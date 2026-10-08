@@ -327,6 +327,7 @@ Fixed opportunistically or scheduled as items.
 - 0.1a: cli/Main.java has an unused `java.util.HashMap` import.
 - 0.6: test-all.sh layer detection for 0.4/0.5 (determinism, screenshot npm script names, game-test count regex, client layer) untested until they land; count regex may print "no count in log".
 - 0.6: running test-all.sh while already holding the heavy lock deadlocks (documented in --help).
+- 0.4: `Planner.smokeBox(seed)` ignores the seed; `--lot`/`--style` accepted but unused (smoke only).
 
 ## Open questions and risks
 
