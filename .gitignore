@@ -1,0 +1,42 @@
+# gradle
+.gradle/
+build/
+out/
+classes/
+
+# node / viewer
+node_modules/
+dist/
+playwright-report/
+test-results/
+
+# ides
+.idea/
+*.iml
+.vscode/
+.settings/
+.classpath
+.project
+bin/
+*.launch
+*.DS_Store
+
+# fabric / minecraft
+run/
+/logs/
+
+# java
+hs_err_*.log
+replay_*.log
+*.hprof
+*.jfr
+
+# Claude Code worktrees (one per branch; see README "Long runs with agents")
+/.claude/worktrees/
+# Agent reports for the verifier/coordinator (see .claude/agents/coder.md)
+/.claude/reports/
+# Lock files for shared resources (see CLAUDE.md "Parallel work")
+/.claude/*.lock
+
+# editor swap files
+*.swp

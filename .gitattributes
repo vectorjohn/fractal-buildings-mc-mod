@@ -1,0 +1,12 @@
+# Linux start script should use lf; Windows scripts crlf
+/gradlew        text eol=lf
+*.bat           text eol=crlf
+
+# Append-only, one-entry-per-line docs that many parallel branches add to.
+# `union` keeps both sides' lines instead of conflicting. After a merge, check
+# these for duplicated entries (an entry edited on both sides shows up twice).
+# See CLAUDE.md "Parallel work".
+docs/research/INDEX.md  merge=union
+docs/NOTES.md           merge=union
+docs/ASSUMPTIONS.md     merge=union
+docs/REVIEW.md          merge=union
