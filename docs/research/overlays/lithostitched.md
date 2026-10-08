@@ -41,7 +41,8 @@ structure registry entry for a `DelegatingStructure` that tests a
 `PlacementCondition` (`sample_density`, `sample_noise_router`, `in_biome`,
 `grid`, `height_filter`, boolean combinators) before delegating to the real
 structure. Terrain: `wrap_noise_router` / `wrap_density_function` change the
-density functions themselves, which is how Tectonic reshapes terrain.
+density functions themselves (Tectonic, same author, MIT, requires
+Lithostitched; I didn't check which modifiers it uses).
 Everything stays a pure function of seed and position.
 
 ## Licence
