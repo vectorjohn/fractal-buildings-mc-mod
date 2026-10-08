@@ -97,7 +97,7 @@ waits for 0.5.
   "Build and test commands". Builds green inside `nix develop`.
 - [x] **0.2 CLAUDE.md**: module boundaries, environment, parallel-work rules,
   review conventions. (Done at setup; 0.1 fills in the commands.)
-- [ ] **0.3 Templates and index.** `docs/research/TEMPLATE.md` (one-pager: what
+- [x] **0.3 Templates and index.** `docs/research/TEMPLATE.md` (one-pager: what
   it is (link), approach in three sentences, procedural vs templated, how it
   hooks into worldgen, licence, what to borrow, what to avoid, verdict);
   `docs/adr/TEMPLATE.md` (context, options, decision, consequences);
