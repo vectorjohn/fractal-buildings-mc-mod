@@ -25,6 +25,11 @@ the end of its track's list. Notes use [TEMPLATE.md](TEMPLATE.md).
 - [GDMC competition](gdmc/gdmc-competition.md) — adopt its four criteria and human-anchored 0–10 scale as our review rubric; its common failures (terraforming scars, floating foundations, buried doors) become automated checks — status: new
 - [Mike's Angels (GDMC 2022 winner)](gdmc/mikes-angels-2022-iterative-planning.md) — strong city-layout reference: plots cut from road frontage scored on slope/water/height; seeded-agent planning loop may suit a region planner; no licence, ideas only — status: new
 - [Frightful Hobgoblin (GDMC 2024 winner)](gdmc/frightful-hobgoblin-2024.md) — reference for terrain fit (site cost, cut-and-fill foundations, retaining walls, traffic-worn paths); simulation approach doesn't fit worldgen; MIT + extra condition, ideas only — status: new
+- [JEB_GEN_ (GDMC 2023 winner)](gdmc/jeb-gen-2023.md) — best adaptability mostly by rejecting bad sites (fill >3/cell, height spread) via prefix-sum lot stats; take its A* road cost (no 2-block steps, climb/water penalties, road reuse discount, ellipse bound); no licence, ideas only — status: new
+- [Gaussianly Filtered (GDMC 2025 winner)](gdmc/gaussianly-filtered-2025.md) — paths merge into lanes by nudging A* toward a blurred path map; portable: Gaussian-blur grading around house pads, doors face downhill; all local; CC BY-NC 4.0, ideas only — status: new
+- [Grimoire / TOME](gdmc/grimoire-tome.md) — districts grown from seeds with height-change cost so borders fall on ridges/water; block rings become roads so every lot fronts a street; MST main roads; fits a cached region planner; no licence, ideas only — status: new
+- [Hauck's UrbanSettlementGenerator (2019)](gdmc/hauck-urban-settlement-generator.md) — repeated partitions keep the flattest non-overlapping lots (vs modal height); MST roads via A* with cost 1+Δh²; MIT but Python 2/MCEdit, reference only — status: new
+- [GDMC first-year report (2018 entries)](gdmc/gdmc-first-year-report.md) — two families (greedy scored placement vs top-down splitting); failure checklist: doors facing water, unbridged rivers, no map-wide adaptation; ideas only — status: new
 
 ## Track 3: PCG literature (`pcg/`)
 
