@@ -10,7 +10,7 @@ import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-class IrJsonTest {
+class IrJsonDeterminismTest {
 	private static final String[] ARGS = {"gen", "--seed", "1", "--lot", "20x20", "--style", "medieval", "--out"};
 
 	private static byte[] gen(Path file) throws Exception {

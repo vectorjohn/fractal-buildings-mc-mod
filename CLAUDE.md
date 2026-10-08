@@ -129,8 +129,8 @@ source of truth, and update it when a command changes.)*
   itself, so don't wrap it in either). Per-step logs in `build/test-all/`; ends
   with a per-layer summary, screenshot and log paths; non-zero exit on failure.
 - Planner core (pure, fast): `nix develop -c ./gradlew :planner-core:test`
-- Mod, incl. server game tests: `nix develop -c ./gradlew :mod:build`  (jar in `mod/build/libs/`, planner-core bundled as jar-in-jar)
-- Client game tests (heavy): `flock <repo root>/.claude/heavy.lock xvfb-run -a nix develop -c ./gradlew :mod:runClientGameTest`
+- Mod, incl. server game tests (`:mod:runGameTest`, wired into `check`): `nix develop -c ./gradlew :mod:build` (jar in `mod/build/libs/`, planner-core bundled as jar-in-jar); server tests alone: `nix develop -c ./gradlew :mod:runGameTest`
+- Client game tests (heavy, ~20 s, exits on its own): `flock <repo root>/.claude/heavy.lock xvfb-run -a nix develop -c ./gradlew :mod:runClientGameTest`; screenshots are copied to `mod/build/screenshots/` (e.g. `hello-hut.png`; the raw ones are in `mod/build/run/clientGameTest/screenshots/`), log in `mod/build/run/clientGameTest/logs/latest.log`
 - Viewer (`viewer/`: Vite + Vitest + strict TS; `npm test` type-checks then runs headless): `cd viewer && nix develop -c npm ci` once, then `nix develop -c npm test`, `nix develop -c npm run build`, `nix develop -c npm run dev` (dev server); gallery: *(Phase 3)*
 - CLI: `nix develop -c ./gradlew :cli:run --args="gen --seed 1 --lot 20x20 --style medieval --out out.json"` (smoke IR JSON; stdout if no `--out`); or `:cli:installDist` then `cli/build/install/fractal-cli/bin/fractal-cli gen ...`
 - Viewer screenshot (Playwright, software WebGL, writes `viewer/out/smoke.png`): `cd viewer && nix develop -c npm run screenshot`

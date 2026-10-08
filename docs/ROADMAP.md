@@ -111,12 +111,13 @@ waits for 0.5.
   Done: `fractal-cli gen ... [--out FILE]` writes provisional `irVersion: 0` JSON
   (floor/wall/roof boxes); `viewer/fixtures/box5.json` is the shared fixture;
   `cd viewer && npm run screenshot` writes `viewer/out/smoke.png`.
-  **Tests:** `IrJsonTest` (byte-identical output, fixture not stale), `voxels.test.ts`
+  **Tests:** `IrJsonDeterminismTest` (byte-identical output, fixture not stale), `voxels.test.ts`
   (parses the CLI fixture), `e2e/smoke.spec.ts` (canvas colour fractions).
-- [ ] **0.5 Mod hello world and Minecraft test harness.** The Fabric mod builds,
+- [x] **0.5 Mod hello world and Minecraft test harness.** The Fabric mod builds,
   one server game test and one client game test (Xvfb + lavapipe, screenshot)
   pass. This warms the shared Loom cache and proves the environment for track 4
   and Phase 2. (Added at setup.)
+  *Tests:* `:mod:runGameTest` (server, part of `:mod:build`), `:mod:runClientGameTest` (screenshot copied to `mod/build/screenshots/hello-hut.png`).
 - [x] **0.6 `scripts/test-all.sh`.** Runs every layer with a short summary
   (counts, screenshot and log paths); `--no-client` skips layer 5; takes the
   heavy lock for client tests itself. (Added at setup.)

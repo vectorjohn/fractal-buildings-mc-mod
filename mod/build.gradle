@@ -14,6 +14,18 @@ loom {
 	}
 }
 
+fabricApi {
+	// Creates the `gametest` source set (its own fabric.mod.json) and the
+	// runGameTest (server) and runClientGameTest (client) tasks.
+	configureTests {
+		createSourceSet = true
+		modId = "fractalbuildings-test"
+		enableGameTests = true
+		enableClientGameTests = true
+		clearRunDirectory = true
+	}
+}
+
 dependencies {
 	minecraft "com.mojang:minecraft:${project.minecraft_version}"
 	implementation "net.fabricmc:fabric-loader:${project.loader_version}"
@@ -36,4 +48,15 @@ java {
 	withSourcesJar()
 	sourceCompatibility = JavaVersion.VERSION_25
 	targetCompatibility = JavaVersion.VERSION_25
+}
+
+// Keep client game test screenshots at a stable path that other tasks' run-dir cleanup can't wipe.
+tasks.named('runClientGameTest') {
+	doLast {
+		copy {
+			from layout.buildDirectory.dir('run/clientGameTest/screenshots')
+			into layout.buildDirectory.dir('screenshots')
+			rename { it.replaceFirst(/^\d+_/, '') }
+		}
+	}
 }

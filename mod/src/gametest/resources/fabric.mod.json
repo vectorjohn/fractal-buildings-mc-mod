@@ -1,0 +1,15 @@
+{
+	"schemaVersion": 1,
+	"id": "fractalbuildings-test",
+	"version": "1.0.0",
+	"name": "Fractal Buildings game tests",
+	"environment": "*",
+	"license": "MIT",
+	"entrypoints": {
+		"fabric-gametest": ["dev.fractalbuildings.gametest.HelloGameTest"],
+		"fabric-client-gametest": ["dev.fractalbuildings.gametest.HelloClientGameTest"]
+	},
+	"depends": {
+		"fractalbuildings": "*"
+	}
+}
