@@ -1,15 +1,20 @@
 # The Lost Cities (McJty)
 
-**What it is.** A mod that fills worlds with ruined modern cities, highways and
+**Track:** mods · **Date:** 2026-10-08 · **Author:** assistant
+
+## What it is
+
+A mod that fills worlds with ruined modern cities, highways and
 railways. [CurseForge](https://www.curseforge.com/minecraft/mc-mods/the-lost-cities),
-[source](https://github.com/McJtyMods/LostCities) (branches per version; read
-`26.2_fabric` at 7e7d102, Oct 2026), developer docs at
+[source](https://github.com/McJtyMods/LostCities), developer docs at
 [mcjty.eu](https://mcjty.eu/docs/mods/lost-cities/city_generation)
 (asset structure, city generation, thread safety). City/biome *selection* is
 covered by track 5 (see [`../overlays/`](../overlays/)); this note is about
-generation and integration.
+generation and integration. Maintained (26.2 Fabric and NeoForge).
 
-**Approach.** The world is a grid of 16×16 chunks; a city factor (seeded
+## Approach
+
+The world is a grid of 16×16 chunks; a city factor (seeded
 city circles or Perlin noise, scaled by biome multipliers and height limits)
 decides which chunks are city, and each city chunk gets one ground level plus a
 `cityLevel` step of **6 blocks**. Streets come from a three-tier grid
@@ -21,7 +26,9 @@ floors plus cellars) chosen per floor from the building's list, with
 **multibuildings** tile ordinary buildings over a `dimx × dimz` chunk
 rectangle.
 
-**Procedural vs templated.** Procedural at the city scale (zoning, street
+## Procedural vs templated
+
+Procedural at the city scale (zoning, street
 grid, levels, highways, rails, damage/explosions, rubble), templated at the
 building scale: every floor is a hand-authored part, randomised only by
 part choice, floor count and palette variants. All assets are data-pack JSON
@@ -29,7 +36,9 @@ part choice, floor count and palette variants. All assets are data-pack JSON
 conditions, city styles, world styles, scattered, predefined, stuff, …), and
 there is an in-game part editor/exporter.
 
-**Worldgen hook.** Not a jigsaw structure and (in current versions) not a
+## How it hooks into worldgen
+
+Not a jigsaw structure and (in current versions) not a
 custom chunk generator: a single `Feature` (`lostcities:lostcities`) injected
 into every overworld biome at the `RAW_GENERATION` step via Fabric biome
 modifications. For its centre chunk it rewrites the whole column: levels
@@ -53,11 +62,14 @@ per-dimension lock is its known throughput bottleneck (`plan_performance.md`).
 palettes swap materials and building sets. Terrain is flattened, not adapted
 to: cities sit on terraces with smoothed edges.
 
-**Licence.** MIT (repo `LICENSE`). Code may be studied and borrowed with
+## Licence
+
+MIT (repo `LICENSE`). Code may be studied and borrowed with
 attribution; assets are in the same repo and, as far as the licence file
 says, also MIT (not checked file-by-file).
 
-**What to borrow.**
+## What to borrow
+
 - Chunk-grid zoning: a cheap, order-independent way to plan an unbounded city
   at chunk resolution, with canonical-origin resolution for multi-chunk items.
 - Fixed floor module (6 blocks) so doors, streets, rails and neighbours align.
@@ -67,7 +79,8 @@ says, also MIT (not checked file-by-file).
   editor/exporter as a workflow idea.
 - Its determinism and thread-safety rules read almost exactly like ours.
 
-**What to avoid.**
+## What to avoid
+
 - Building-scale templating: every building is a 16×16 stack of authored
   floors, so variety is bounded by the part library and everything reads as
   chunk-aligned boxes.
@@ -78,12 +91,17 @@ says, also MIT (not checked file-by-file).
   villages can overlap); fine for "cities everywhere", awkward for settlements
   that should coexist with vanilla.
 
-**Verdict.** Most relevant prior art for *city scale* and for chunk-independent
-determinism; the wrong model for *building* variety. Worth a deep-dive on the
-feature hook, height sampling and canonical-origin planning if we choose a
-non-structure integration.
+## Verdict
 
-**Not verified.** Behaviour in game (not run); whether the Fabric port still
+Best prior art for chunk-independent city-scale planning; wrong model for building variety.
+
+Suggested deep-dive if we choose a non-structure integration: the feature
+hook, neighbour height sampling, and canonical-origin planning.
+
+**Sources / what I couldn't verify:** Read branch `26.2_fabric` at 7e7d102
+(Oct 2026: worldgen sources, `docs/fabric.md`, `plan_performance.md`) and the
+mcjty.eu pages on assets, city generation and thread safety. Not checked:
+behaviour in game (not run); whether the Fabric port still
 has a custom chunk generator option for floating/cavern landscapes (the
 `LandscapeType` config exists; not traced); exact `areasize` default for
 multibuildings; asset licence beyond the root `LICENSE`.

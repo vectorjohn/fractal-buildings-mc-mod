@@ -1,12 +1,19 @@
 # ChoiceTheorem's Overhauled Village (CTOV)
 
-**What it is.** A popular (10M+ Modrinth downloads) mod and datapack adding
+**Track:** mods · **Date:** 2026-10-08 · **Author:** assistant
+
+## What it is
+
+A popular (10M+ Modrinth downloads) mod and datapack adding
 new villages and pillager outposts.
 [Modrinth](https://modrinth.com/mod/ct-overhaul-village),
-[source](https://github.com/ChoiceTheorem/ChoiceTheorem-s-overhauled-village)
-(read branch `26.2` at 090534d, Aug 2026).
+[source](https://github.com/ChoiceTheorem/ChoiceTheorem-s-overhauled-village).
+Maintained;
+Minecraft 26.1–26.2, Fabric, NeoForge, Quilt.
 
-**Approach.** Each village is a standard **jigsaw** structure built from
+## Approach
+
+Each village is a standard **jigsaw** structure built from
 hand-built NBT pieces: a town-centre start pool, then `roads`, `house`,
 `deco`, `terminator` pools (plains: 19 houses, 7 roads, 7 deco), with
 `fallback` pools so failed slots become decoration. 22 village themes
@@ -17,13 +24,17 @@ theme comes from piece choice and **rule processors** that randomly swap
 blocks (30 % stone bricks to cracked, 30 % to mossy, 15 % planks to stripped
 logs, …).
 
-**Procedural vs templated.** Fully templated buildings (about 2,000 village
+## Procedural vs templated
+
+Fully templated buildings (about 2,000 village
 NBTs); the only procedural parts are jigsaw assembly and per-block weathering.
 The Java code is about 20 files: config, registration, and one processor
 (`modular_compat`) that applies extra processor lists only when another mod is
 loaded.
 
-**Worldgen hook.** Structures of type `lithostitched:jigsaw` (Lithostitched's
+## How it hooks into worldgen
+
+Structures of type `lithostitched:jigsaw` (Lithostitched's
 jigsaw, see track 5) with `terrain_adaptation: beard_thin`,
 `project_start_to_heightmap: WORLD_SURFACE_WG`, `use_expansion_hack`, and
 `max_distance_from_center: 80`. At server start it uses Lithostitched's
@@ -43,10 +54,15 @@ vanilla tag (`#minecraft:has_structure/village_plains`, `#minecraft:is_beach`,
 automatically. Several themes share a tag (plains, plains fortified, …) and
 compete by weight. No material swapping by biome within a theme.
 
-**Licence.** **CC BY-NC-ND 4.0** (repo `LICENSE`, Modrinth). We may look at it
+## Licence
+
+**CC BY-NC-ND 4.0** (repo `LICENSE`, Modrinth). We may look at it
 and describe it; no derivatives, so do not copy pieces, pools or code.
 
-**What to borrow (ideas only).**
+## What to borrow
+
+Ideas only; the licence rules out copying.
+
 - Hooking into vanilla's village structure set, so our settlements replace a
   share of villages rather than adding a competing grid: compatible and
   locatable.
@@ -54,7 +70,8 @@ and describe it; no derivatives, so do not copy pieces, pools or code.
 - Small/medium/large as one structure with three depth limits.
 - Fallback pools and weathering processors as a cheap last layer.
 
-**What to avoid.**
+## What to avoid
+
 - Variety by authoring: ~2,000 NBTs for 22 themes, and still each house type
   repeats inside a village. This is the scaling wall our project exists to get
   past.
@@ -63,12 +80,13 @@ and describe it; no derivatives, so do not copy pieces, pools or code.
   #147, "all buildings in village_jungle_tree are set into the ground by one
   block"). Slope handling not checked in game.
 
-**Verdict.** Best-in-class *templated* village variety and the clearest example
-of polite integration (vanilla set + biome tags + Lithostitched). Low value as
-a generation technique; useful as the visual bar a generated village has to
-beat. Do not copy (ND licence).
+## Verdict
 
-**Not verified.** In-game look (not run); how seasonal themes (christmas,
+Best-in-class templated village variety and a model of polite integration; low value as a generation technique; do not copy (ND).
+
+**Sources / what I couldn't verify:** Read the repo (branch `26.2` at 090534d,
+Aug 2026: structures, pools, processor lists, Java) and the Modrinth page.
+Not checked: in-game look (not run); how seasonal themes (christmas,
 halloween) are gated; whether the `.jso` files under
 `lithostitched/worldgen_modifier/` are dead leftovers (the Java event
 appears to have replaced them).
