@@ -47,6 +47,10 @@ land columns above sea level. Load was 10–12 on 20 CPUs.
 At points, `chunk_surface_level` differs from `preliminary` by > 0.5 blocks in
 969 of 3,000 columns. That is expected from its 16-block interpolation.
 
+In game (batch 2 client test, real data pack, 6,040 land columns of 576
+generated chunks), the result was similar: preliminary minus real ground had
+mean −12.4, p10 −17, p90 −8, |error| p90 17 and p99 22.
+
 ## What a flattening wrapper must wrap
 
 Wrapping `final_density` alone is **not enough** (inferred from the source;

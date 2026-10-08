@@ -20,6 +20,12 @@ being true.
 - 1.4 (2026-10-08): `/locate` only handles `RandomSpreadStructurePlacement` and `ConcentricRingsStructurePlacement` (instanceof); a custom placement must subclass one of them to stay locatable.
 - 1.4 (2026-10-08): `NoiseBasedChunkGenerator` is final; Fabric API has no overworld biome injection (only `NetherBiomes`/`TheEndBiomes`) and no structure API; surface rules are now `material_rule` / `material_condition`.
 
+- 1.4 (2026-10-08): Measured in game: a structure piece reaching 20 chunks east of its start chunk placed blocks only in chunks dx 0–8 (silent clip confirmed).
+- 1.4 (2026-10-08): Measured in game: structure-start piece building runs with max concurrency 1 per dimension (serial `worldgen` lane, hopping across Worker-Main threads); a 20 ms build per start adds ~20 ms wall time each.
+- 1.4 (2026-10-08): `getBaseHeight(OCEAN_FLOOR_WG)` matches real generated ground in 98.2% of land columns (p99 |err| 2; seed 12345, 576 chunks); `preliminary_surface_level` is ~12–15 blocks below ground (p90 |err| 17) but 50× cheaper (0.0085 ms/col).
+- 1.4 (2026-10-08): Any generator that isn't `NoiseBasedChunkGenerator` gets a level `RandomState` built from `NoiseRouterData.none()` (`ChunkMap.<init>`), which breaks `/locate`, biome lookups and structure climate sampling unless mixed in.
+- 1.4 (2026-10-08): Overworld surface rules only run where `blockY >= floor(preliminary_surface_level) + surfaceDepth - 8` (`above_preliminary_surface`); a terrain cut deeper than that is bare stone unless `preliminary_surface_level` is wrapped too.
+- 1.4 (2026-10-08): Client game test with a normal world: `context.worldBuilder().setUseConsistentSettings(false).adjustSettings(c -> c.setSeed("..."))`; run server code with `world.getServer().computeOnServer(server -> ...)`; `level.getChunk(x,z)` there generates to FULL (576 chunks ≈ 13 s under lavapipe client).
 ## Planner core
 - 0.1a (2026-10-08): `:planner-core:checkNoMinecraft` fails the build if any source mentions net.minecraft/net.fabricmc/com.mojang or any config declares/resolves such a dependency; it runs before `compileJava` and in `check`.
 

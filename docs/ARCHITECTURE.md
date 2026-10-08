@@ -68,9 +68,9 @@ blocks horizontally of its start (116 with terrain adaptation). Pieces also
 only reach chunks that hold a reference to the start. *Track 4:* that radius is
 exactly 8 chunks. It applies to **every** structure type, not just jigsaw, and
 blocks beyond it are **silently** dropped. A large city is therefore many
-coordinated structure starts, not one. Starts, references and features appear
-to run on one serial worldgen lane per dimension (read in source, unmeasured),
-so start-time planning must stay cheap and lazy
+coordinated structure starts, not one. Starts, references and features run
+on one serial worldgen lane per dimension (measured: max concurrency 1), so
+start-time planning must stay cheap and lazy
 ([note](research/worldgen/structure-pipeline.md)).
 
 **Terrain adaptation exists.** Structures can reshape surrounding terrain:
