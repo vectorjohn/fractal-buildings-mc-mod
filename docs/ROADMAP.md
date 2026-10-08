@@ -95,6 +95,7 @@ waits for 0.5.
   `docs/research/`, `docs/adr/`. Versions from fabricmc.net for Minecraft 26.3.
   Mod id and Java package recorded in `docs/ASSUMPTIONS.md`. Fill in CLAUDE.md
   "Build and test commands". Builds green inside `nix develop`.
+  - 0.1b (viewer half): `viewer/` done: Vite 8 + Vitest 5 + TS 7 strict, three.js scene (orbit controls, instanced voxels), provisional `Ir` type and unit-tested `irToVoxels` stub. `npm ci && npm test && npm run build` green. No Playwright (0.4 adds it).
 - [x] **0.2 CLAUDE.md**: module boundaries, environment, parallel-work rules,
   review conventions. (Done at setup; 0.1 fills in the commands.)
 - [x] **0.3 Templates and index.** `docs/research/TEMPLATE.md` (one-pager: what

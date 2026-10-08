@@ -129,7 +129,7 @@ source of truth, and update it when a command changes.)*
 - Planner core (pure, fast): `nix develop -c ./gradlew :planner-core:test`
 - Mod, incl. server game tests: `nix develop -c ./gradlew :mod:build`
 - Client game tests (heavy): `flock <repo root>/.claude/heavy.lock xvfb-run -a nix develop -c ./gradlew :mod:runClientGameTest`
-- Viewer: `cd viewer && nix develop -c npm test`; gallery: *(Phase 3)*
+- Viewer (`viewer/`: Vite + Vitest + strict TS; `npm test` type-checks then runs headless): `cd viewer && nix develop -c npm ci` once, then `nix develop -c npm test`, `nix develop -c npm run build`, `nix develop -c npm run dev` (dev server); gallery: *(Phase 3)*
 - CLI: *(Phase 0)*
 
 ## Parallel work (a priority)

@@ -18,3 +18,4 @@ being true.
 ## Tests and known flakes
 
 ## Baselines (timings, sizes)
+- Viewer: `npm` inside `nix develop` run from `viewer/` works (flake found by searching upward; the "does not contain a flake.nix" line is just info). `npm test` includes the tsc type-check.
