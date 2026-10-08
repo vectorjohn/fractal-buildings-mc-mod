@@ -44,14 +44,14 @@
               pkgs.ripgrep
               pkgs.poppler-utils # pdftotext / pdftoppm, for reading papers during research
               pkgs.nodejs # viewer/ (TypeScript + three.js); npm comes with it
+              pkgs.playwright-driver.browsers # Chromium for viewer screenshots (see PLAYWRIGHT_* below)
             ];
 
-            # Playwright (viewer screenshots and seed galleries) is not here yet. When it's added:
-            # put pkgs.playwright-driver.browsers in `packages`, set
-            #   PLAYWRIGHT_BROWSERS_PATH = "${pkgs.playwright-driver.browsers}";
-            #   PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS = "true";
-            # and pin the npm `playwright` / `@playwright/test` package in viewer/package.json to
-            # exactly pkgs.playwright-driver.version, or it looks for browsers that aren't there.
+            # Playwright: browsers come from nixpkgs, so the npm `playwright` / `@playwright/test` version in
+            # viewer/package.json MUST equal pkgs.playwright-driver.version (currently 1.63.0), or it looks
+            # for a browser build that isn't in the store. When bumping nixpkgs, bump the npm pin to match.
+            PLAYWRIGHT_BROWSERS_PATH = "${pkgs.playwright-driver.browsers}";
+            PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS = "true";
 
             JAVA_HOME = "${jdk}";
 

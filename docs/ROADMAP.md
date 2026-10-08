@@ -105,14 +105,19 @@ waits for 0.5.
   `docs/adr/TEMPLATE.md` (context, options, decision, consequences);
   `docs/research/INDEX.md` (one line per note: name and link, one-line verdict,
   status `new` / `reviewed` / `deep-dive` / `drop`; grouped by track).
-- [ ] **0.4 Smoke path.** The CLI writes a hard-coded 5×5×5 box as IR JSON; the
+- [x] **0.4 Smoke path.** The CLI writes a hard-coded 5×5×5 box as IR JSON; the
   viewer renders it; one Playwright screenshot proves it (add Playwright to the
   flake, see the comment in `flake.nix`).
+  Done: `fractal-cli gen ... [--out FILE]` writes provisional `irVersion: 0` JSON
+  (floor/wall/roof boxes); `viewer/fixtures/box5.json` is the shared fixture;
+  `cd viewer && npm run screenshot` writes `viewer/out/smoke.png`.
+  **Tests:** `IrJsonTest` (byte-identical output, fixture not stale), `voxels.test.ts`
+  (parses the CLI fixture), `e2e/smoke.spec.ts` (canvas colour fractions).
 - [ ] **0.5 Mod hello world and Minecraft test harness.** The Fabric mod builds,
   one server game test and one client game test (Xvfb + lavapipe, screenshot)
   pass. This warms the shared Loom cache and proves the environment for track 4
   and Phase 2. (Added at setup.)
-- [ ] **0.6 `scripts/test-all.sh`.** Runs every layer with a short summary
+- [x] **0.6 `scripts/test-all.sh`.** Runs every layer with a short summary
   (counts, screenshot and log paths); `--no-client` skips layer 5; takes the
   heavy lock for client tests itself. (Added at setup.)
 
@@ -145,11 +150,11 @@ Agents: `assistant` for tracks 1, 2, 3, 5, 6 (web research); `researcher`
 (high effort) for track 4 (source reading in its own worktree, may write tiny
 probe tests), for notes marked `deep-dive`, and for the synthesis.
 
-- [ ] **1.1 Track 1: Minecraft mods** (batches until the list is covered)
-- [ ] **1.2 Track 2: GDMC**
+- [x] **1.1 Track 1: Minecraft mods** (batches until the list is covered)
+- [x] **1.2 Track 2: GDMC**
 - [ ] **1.3 Track 3: PCG literature**
 - [ ] **1.4 Track 4: Worldgen internals** (needs 0.5)
-- [ ] **1.5 Track 5: Region overlays**
+- [x] **1.5 Track 5: Region overlays**
 - [ ] **1.6 Track 6: Aesthetics**
 - [ ] **1.7 Checkpoint: early skim**, after the first 8–10 notes: John redirects
   tracks or flags deep-dives. (Research keeps going meanwhile.)
@@ -320,6 +325,9 @@ Fixed opportunistically or scheduled as items.
 - 0.1b: viewer `npm run dev` never run; 0.4 screenshot is the first in-browser check.
 - 0.1a: `checkNoMinecraft` also matches forbidden package names in comments/javadoc (a doc comment mentioning net.minecraft fails the build).
 - 0.1a: cli/Main.java has an unused `java.util.HashMap` import.
+- 0.6: test-all.sh layer detection for 0.4/0.5 (determinism, screenshot npm script names, game-test count regex, client layer) untested until they land; count regex may print "no count in log".
+- 0.6: running test-all.sh while already holding the heavy lock deadlocks (documented in --help).
+- 0.4: `Planner.smokeBox(seed)` ignores the seed; `--lot`/`--style` accepted but unused (smoke only).
 
 ## Open questions and risks
 
