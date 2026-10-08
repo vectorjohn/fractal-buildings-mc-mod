@@ -24,3 +24,5 @@ editing the old one.
 | 2026-10-08 | Phase 1 | John's decision (overrides the Stardust Labs row above): agents may read Stardust Labs (Terralith etc.) and similarly restricted code/data to understand the general approach (integration points, algorithms); never copy code or data from them | John: gray area, overview only | yes |
 | 2026-10-08 | Phase 1 | John confirmed: code with no licence or MIT with extra conditions is ideas-only | John | yes |
 | 2026-10-08 | 0.1a | John confirmed: the mod is MIT, author John Reeves | John | yes |
+| 2026-10-08 | 0.5 | Game tests live in a separate `gametest` source set with its own mod id `fractalbuildings-test` (Loom `configureTests`), not in `main` | Keeps test code out of the shipped jar; Loom's default layout | yes |
+| 2026-10-08 | 0.5 r2 | Correction: no `eula = true` in `configureTests`; game tests run without it | EULA is John's to accept; verified both game test tasks pass without it | yes |

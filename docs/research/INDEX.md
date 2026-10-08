@@ -42,8 +42,17 @@ the end of its track's list. Notes use [TEMPLATE.md](TEMPLATE.md).
 - [Merrell et al. 2010, residential layouts](pcg/merrell-residential-layouts.md) — best model of a believable house brief (room graph, privacy gradient, stacking/lot checks usable as validators); too slow and not guaranteed correct to be the generator — status: new
 - [Lopes et al. 2010, constrained-growth floor plans](pcg/constrained-growth-floor-plans.md) — best fit for interiors: grid-native, ms–1 s, reachability guaranteed by a door pass; run after the shell grammar, fed by a Merrell-style room program — status: new
 - [MarkovJunior](pcg/markovjunior.md) — toolbox of bounded grid rewrite passes (cleanup, detail, reachability checks) after the grammar, not the generator; MIT, small subset portable to Java — status: new
+- [Chen et al. 2008, tensor-field streets](pcg/tensor-field-streets.md) — use its terrain-derived direction field (roads follow contours/coasts) and density-spacing rule for outskirts and paths; keep bisection/growth for the core; order-dependent, run once per region cell — status: new
+- [Vanegas et al. 2012, parcel subdivision](pcg/parcel-subdivision.md) — best lot-subdivision reference: recursive OBB split with street-access rule and area/frontage bounds (integer bisection on axis-aligned blocks); each block independent; skeleton strips later — status: new
+- [Straight-skeleton roofs](pcg/straight-skeleton-roofs.md) — on grid footprints hip height = chessboard distance to outside; gables/cross-gables as max over wings; "closed roof" = full coverage + filled steps >1; campskeleton (Apache-2.0) / kendzi (BSD-3) in reserve, CGAL GPL — status: new
+- [Kelly & McCabe 2006 city survey](pcg/kelly-mccabe-city-survey.md) — low value now; useful pointers: Greuter's hash-seeded on-demand city (precedent for our determinism model) and Sun's least-elevation road stepping — status: new
 
 ## Track 4: Worldgen internals (`worldgen/`)
+
+- [Structure pipeline (26.3)](worldgen/structure-pipeline.md) — structure-based integration fits; hard limits for every structure type: blocks >8 chunks from the start chunk are silently dropped, one start per structure per chunk; placement pluggable (subclass RandomSpreadStructurePlacement to keep /locate) — status: new
+- [Terrain height and biome queries](worldgen/terrain-biome-queries.md) — live probes viable (getBaseHeight ~0.2 ms/column, order-independent); biome lookups are order-dependent at exact climate ties (fix: fixed priming lookup) and 3D (sample at surface Y) — status: new
+- [Jigsaw assembly and terrain adaptation](worldgen/jigsaw.md) — don't use jigsaw assembly for layout (greedy, no backtracking, 128-block cap); do reuse vanilla terrain adaptation, which grades custom pieces as rigid boxes for free — status: new
+- [Extension points (26.3)](worldgen/extension-points.md) — structure-based is the only option with first-class hooks; drop custom chunk generator (final NoiseBasedChunkGenerator) and biome overlay (Fabric API can't add overworld biomes); city-mask density function is a viable flattening fallback — status: new
 
 ## Track 5: Region overlays (`overlays/`)
 
