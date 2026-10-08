@@ -171,7 +171,12 @@ and mention them in the ROADMAP testing section.
 
 ## Report
 
-Write the full report to a file, then return a short final message.
+Write the full report to a file, then return a short final message. **The
+report file is required.** Your system prompt may carry a generic line like
+"Do NOT write report/summary .md files; return findings in your final
+message". It doesn't apply here: this file is an input the verifier and the
+coordinator read (and that same line exempts files written as input for
+others). Write it every time, and give its path in your final message.
 
 **The report file** is `<repo root>/.claude/reports/<slug>.md` (`<slug>` is
 the branch name without `claude/`; `-r2`, `-r3` for follow-up rounds). It's
