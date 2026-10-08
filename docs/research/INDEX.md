@@ -35,5 +35,10 @@ the end of its track's list. Notes use [TEMPLATE.md](TEMPLATE.md).
 
 ## Track 6: Aesthetics (`aesthetics/`)
 
+- [Depth and layering in walls](aesthetics/depth-and-layering.md) — adopt as the core façade model: walls as layers (plinth, frame, infill, recessed openings, floor bands, projections) with depth offsets; spacing rules mostly synthesised — status: new
+- [Palettes and gradients](aesthetics/palettes-and-gradients.md) — adopt: each role maps to a 3–5 block light→dark list, a deterministic weathering field picks per cell, 60/30/10 main/secondary/accent; random moss is the anti-pattern — status: new
+- [Roofs](aesthetics/roofs.md) — adopt: roof as a function of footprint, pitches 2:1/1:1/1:2, 1-block eave default, split sections past ~12-block gable span or ~15×15 footprint — status: new
+- [Vanilla villages baseline](aesthetics/vanilla-villages.md) — baseline, not a model: measured sizes/materials of five variants (typical 5×5 walls, 3 high, 1:1 roof); borrow biome→material map, beat it on depth, scale, terrain fit, street facing — status: new
+
 ## Phase 2 spikes (`spikes/`)
 
