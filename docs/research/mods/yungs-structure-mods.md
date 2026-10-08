@@ -90,5 +90,5 @@ The reference for how far the structure/jigsaw path stretches (and its 128-block
 Mineshafts, Strongholds, Desert Temples and Witch Huts at their default
 branches (`26.1.2`, Sept 2026); the jigsaw limits from the
 [wiki](https://minecraft.wiki/w/Structure/JSON_format). Not checked: Better Ocean
-Monuments, Nether Fortresses and Bridges (not opened; (assumed jigsaw or coded pieces like the others); in-game behaviour
+Monuments, Nether Fortresses and Bridges (not opened; assumed jigsaw or coded pieces like the others); in-game behaviour
 not run; whether YUNG's API's jigsaw raises any vertical limit beyond vanilla.

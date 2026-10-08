@@ -8,8 +8,7 @@ A popular (10M+ Modrinth downloads) mod and datapack adding
 new villages and pillager outposts.
 [Modrinth](https://modrinth.com/mod/ct-overhaul-village),
 [source](https://github.com/ChoiceTheorem/ChoiceTheorem-s-overhauled-village).
-Maintained;
-Minecraft 26.1–26.2, Fabric, NeoForge, Quilt.
+Maintained; Minecraft 26.1–26.2, Fabric, NeoForge, Quilt.
 
 ## Approach
 
