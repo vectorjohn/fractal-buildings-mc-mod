@@ -42,6 +42,7 @@
               pkgs.git
               pkgs.jq
               pkgs.ripgrep
+              pkgs.poppler-utils # pdftotext / pdftoppm, for reading papers during research
               pkgs.nodejs # viewer/ (TypeScript + three.js); npm comes with it
             ];
 
