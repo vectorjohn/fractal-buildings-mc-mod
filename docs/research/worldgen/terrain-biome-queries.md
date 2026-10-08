@@ -76,6 +76,9 @@ Minecraft code is proprietary (Mojang EULA): study only. The probe code
   WORLD_SURFACE_WG …)`. `BiomeProbe` → a primed `BiomeResolver` lookup at the
   surface Y. Sample coarsely: a 16-block grid over 512×512 is 1,024 columns,
   about 0.2 s of height queries.
+- Lead, not tested: the 26.x `NoiseRouter.chunkSurfaceLevel`
+  (`interpolated(surfaceLevel, 16, 1)`, used by the material/surface system)
+  may be a much cheaper 2D height estimate than the full column scan.
 - Compute the city plan once in the lazy piece consumer. Cache it
   per region cell (thread-safe, bounded). Recomputing after eviction must give
   the same answer, which is why priming matters.
