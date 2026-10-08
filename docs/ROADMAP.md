@@ -329,6 +329,8 @@ Fixed opportunistically or scheduled as items.
 - 0.6: test-all.sh layer detection for 0.4/0.5 (determinism, screenshot npm script names, game-test count regex, client layer) untested until they land; count regex may print "no count in log".
 - 0.6: running test-all.sh while already holding the heavy lock deadlocks (documented in --help).
 - 0.4: `Planner.smokeBox(seed)` ignores the seed; `--lot`/`--style` accepted but unused (smoke only).
+- 0.5: test-all client layer prints "no count in log" instead of a test count.
+- 0.5: `mod/build/screenshots/` is never cleared and the copy runs only on success, so a failed client run can leave a stale hello-hut.png that looks current; raw shots also duplicated in mod/build/run/clientGameTest/screenshots/.
 
 ## Open questions and risks
 
