@@ -150,12 +150,12 @@ Agents: `assistant` for tracks 1, 2, 3, 5, 6 (web research); `researcher`
 (high effort) for track 4 (source reading in its own worktree, may write tiny
 probe tests), for notes marked `deep-dive`, and for the synthesis.
 
-- [ ] **1.1 Track 1: Minecraft mods** (batches until the list is covered)
-- [ ] **1.2 Track 2: GDMC**
+- [x] **1.1 Track 1: Minecraft mods** (batches until the list is covered)
+- [x] **1.2 Track 2: GDMC**
 - [ ] **1.3 Track 3: PCG literature**
 - [ ] **1.4 Track 4: Worldgen internals** (needs 0.5)
-- [ ] **1.5 Track 5: Region overlays**
-- [ ] **1.6 Track 6: Aesthetics**
+- [x] **1.5 Track 5: Region overlays**
+- [x] **1.6 Track 6: Aesthetics**
 - [ ] **1.7 Checkpoint: early skim**, after the first 8–10 notes: John redirects
   tracks or flags deep-dives. (Research keeps going meanwhile.)
 - [ ] **1.8 Landscape synthesis**: a two-page comparison of approaches for
@@ -327,6 +327,7 @@ Fixed opportunistically or scheduled as items.
 - 0.1a: cli/Main.java has an unused `java.util.HashMap` import.
 - 0.6: test-all.sh layer detection for 0.4/0.5 (determinism, screenshot npm script names, game-test count regex, client layer) untested until they land; count regex may print "no count in log".
 - 0.6: running test-all.sh while already holding the heavy lock deadlocks (documented in --help).
+- 0.4: `Planner.smokeBox(seed)` ignores the seed; `--lot`/`--style` accepted but unused (smoke only).
 
 ## Open questions and risks
 

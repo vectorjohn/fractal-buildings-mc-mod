@@ -14,6 +14,10 @@ the end of its track's list. Notes use [TEMPLATE.md](TEMPLATE.md).
 - [YUNG's structure mods and API](mods/yungs-structure-mods.md) — reference for how far jigsaw stretches (128-block radius, 116 with terrain adaptation); study/link, don't copy; LGPL-3.0 — status: new
 - [ChoiceTheorem's Overhauled Village](mods/ctov.md) — best-in-class templated villages (~2,000 templates), polite integration via vanilla village set + biome tags; ideas only; CC BY-NC-ND 4.0 — status: new
 - [Towns and Towers](mods/towns-and-towers.md) — strongest reference for per-biome architectural themes; templated, no public source (jar is data only); CC BY-NC-ND 4.0 — status: new
+- [Repurposed Structures](mods/repurposed-structures.md) — widest biome-variant catalogue (16 village styles, ~3,500 NBTs) and useful site checks (biome radius, terrain range, liquid, feature-cancelling tags); same jigsaw size wall; LGPL-3.0, read don't copy — status: new
+- [Moog's structures](mods/moogs-structures.md) — scattered single-piece templates, not settlements; take per-set disable toggle, spacing slider and strict flatness veto; LGPL-3.0 code, NBTs All Rights Reserved (not opened) — status: new
+- [Recurrent Complex](mods/recurrent-complex.md) — best prior art for rule-driven variation: plan-once transformers, inherited boolean variables, reachability-checked room-grid mazes (MC-free, tested core); 1.12-era, order-dependent; MIT + Apache-2.0 maze core — status: new
+- [Astruct](mods/astruct.md) — cautionary prototype: off-thread jigsaw placed near players only, clamped to 64–256 blocks, single Y, no blending, player-path-dependent; only its hashed cell centres are worth borrowing; MIT — status: new
 
 ## Track 2: GDMC (`gdmc/`)
 
@@ -21,6 +25,11 @@ the end of its track's list. Notes use [TEMPLATE.md](TEMPLATE.md).
 - [GDMC competition](gdmc/gdmc-competition.md) — adopt its four criteria and human-anchored 0–10 scale as our review rubric; its common failures (terraforming scars, floating foundations, buried doors) become automated checks — status: new
 - [Mike's Angels (GDMC 2022 winner)](gdmc/mikes-angels-2022-iterative-planning.md) — strong city-layout reference: plots cut from road frontage scored on slope/water/height; seeded-agent planning loop may suit a region planner; no licence, ideas only — status: new
 - [Frightful Hobgoblin (GDMC 2024 winner)](gdmc/frightful-hobgoblin-2024.md) — reference for terrain fit (site cost, cut-and-fill foundations, retaining walls, traffic-worn paths); simulation approach doesn't fit worldgen; MIT + extra condition, ideas only — status: new
+- [JEB_GEN_ (GDMC 2023 winner)](gdmc/jeb-gen-2023.md) — best adaptability mostly by rejecting bad sites (fill >3/cell, height spread) via prefix-sum lot stats; take its A* road cost (no 2-block steps, climb/water penalties, road reuse discount, ellipse bound); no licence, ideas only — status: new
+- [Gaussianly Filtered (GDMC 2025 winner)](gdmc/gaussianly-filtered-2025.md) — paths merge into lanes by nudging A* toward a blurred path map; portable: Gaussian-blur grading around house pads, doors face downhill; all local; CC BY-NC 4.0, ideas only — status: new
+- [Grimoire / TOME](gdmc/grimoire-tome.md) — districts grown from seeds with height-change cost so borders fall on ridges/water; block rings become roads so every lot fronts a street; MST main roads; fits a cached region planner; no licence, ideas only — status: new
+- [Hauck's UrbanSettlementGenerator (2019)](gdmc/hauck-urban-settlement-generator.md) — repeated partitions keep the flattest non-overlapping lots (vs modal height); MST roads via A* with cost 1+Δh²; MIT but Python 2/MCEdit, reference only — status: new
+- [GDMC first-year report (2018 entries)](gdmc/gdmc-first-year-report.md) — two families (greedy scored placement vs top-down splitting); failure checklist: doors facing water, unbridged rivers, no map-wide adaptation; ideas only — status: new
 
 ## Track 3: PCG literature (`pcg/`)
 
@@ -28,6 +37,11 @@ the end of its track's list. Notes use [TEMPLATE.md](TEMPLATE.md).
 - [CGA shape grammar (Müller et al. 2006)](pcg/cga-shape-grammar.md) — best reference for massing+façades; adopt staged order, occlusion queries and snap lines via a typed Java rule API, not its rule language — status: new
 - [Parish & Müller 2001, procedural cities](pcg/parish-muller-cities.md) — good model for roads+lots within a region cell; order-dependent, so run once per region cell and cache, never per chunk — status: new
 - [WFC and model synthesis](pcg/wfc-model-synthesis.md) — only as a bounded detail filler with grammar-fixed borders and a fallback; no global structure, and chunked variants break order-independence — status: new
+- [Townscaper](pcg/townscaper.md) — borrow coarse occupancy grid → neighbour-derived modules as the massing→blocks stage; skip the irregular grid; WFC only as a bounded variant picker; proprietary (Sylves reimplementation MIT) — status: new
+- [Watabou city generators](pcg/watabou-city-generators.md) — compact reference for district-typed city plans (Voronoi wards, streets on ward borders, recursive lot bisection); run once per region cell; TownGeneratorOS GPL-3.0, ideas only — status: new
+- [Merrell et al. 2010, residential layouts](pcg/merrell-residential-layouts.md) — best model of a believable house brief (room graph, privacy gradient, stacking/lot checks usable as validators); too slow and not guaranteed correct to be the generator — status: new
+- [Lopes et al. 2010, constrained-growth floor plans](pcg/constrained-growth-floor-plans.md) — best fit for interiors: grid-native, ms–1 s, reachability guaranteed by a door pass; run after the shell grammar, fed by a Merrell-style room program — status: new
+- [MarkovJunior](pcg/markovjunior.md) — toolbox of bounded grid rewrite passes (cleanup, detail, reachability checks) after the grammar, not the generator; MIT, small subset portable to Java — status: new
 
 ## Track 4: Worldgen internals (`worldgen/`)
 
@@ -47,6 +61,10 @@ the end of its track's list. Notes use [TEMPLATE.md](TEMPLATE.md).
 - [Palettes and gradients](aesthetics/palettes-and-gradients.md) — adopt: each role maps to a 3–5 block light→dark list, a deterministic weathering field picks per cell, 60/30/10 main/secondary/accent; random moss is the anti-pattern — status: new
 - [Roofs](aesthetics/roofs.md) — adopt: roof as a function of footprint, pitches 2:1/1:1/1:2, 1-block eave default, split sections past ~12-block gable span or ~15×15 footprint — status: new
 - [Vanilla villages baseline](aesthetics/vanilla-villages.md) — baseline, not a model: measured sizes/materials of five variants (typical 5×5 walls, 3 high, 1:1 roof); borrow biome→material map, beat it on depth, scale, terrain fit, street facing — status: new
+- [vibecraft rule sheets](aesthetics/vibecraft.md) — useful numbers: scale table, window-to-wall ratios (0.10 fortress → 0.30 modern), window rhythm, element × primary/secondary/accent palette; ignore its randomised-material tip; MIT, no code — status: new
+- [Automatic block colour table](aesthetics/block-colour-table.md) — dev-time palette check only (lightness + busyness from Loom's cached client jar); commit script and orderings, not textures; never at runtime; finding: stone variants order weathering, not shade — status: new
+- [WesterosCraft / Conquest style guides](aesthetics/style-guides-westeroscraft-conquest.md) — little geometry; adopt consistency rules (one timber + one infill colour, thatch only ≥1:1, ornament for wealth) and a style × class × region model; caps façades at 2 depth layers — status: new
+- [Roof forms and massing](aesthetics/roof-forms-and-massing.md) — roof = pitch profile over each cell's distance to footprint edge, max over parts (equals straight skeleton for grid footprints); support gable, hip (L/T/U), shed, flat+parapet, helm first; never curved — status: new
 
 ## Phase 2 spikes (`spikes/`)
 
