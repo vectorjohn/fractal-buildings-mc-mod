@@ -6,7 +6,8 @@ worldgen integration is proven with spikes before any architecture is locked
 in. (Converted on 2026-10-07 from John's "Procedural Buildings Mod — Roadmap"
 doc, kept in [archive/original-roadmap.md](archive/original-roadmap.md) with
 the setup prompt. The design sketch and worldgen primer are in
-[ARCHITECTURE.md](ARCHITECTURE.md).)
+[ARCHITECTURE.md](ARCHITECTURE.md). A diagram of the phases, tracks,
+dependencies and gates is in [PROCESS.md](PROCESS.md).)
 
 Target: Minecraft 26.3 (Java edition), Fabric, Java 25. Check exact
 Loader/Fabric API/Loom versions at https://fabricmc.net/develop/ in Phase 0.
@@ -43,9 +44,9 @@ item. Per-item work logs are in [log/](log/); run ledgers in [runs/](runs/).
 
 | Phase | State | Gate |
 |---|---|---|
-| 0. Scaffolding | done 2026-10-08; awaiting gate | builds green; viewer renders the box |
-| 1. Prior art research | in progress: 45+ notes; tracks 1, 2, 5, 6 covered; 3, 4 finishing; early skim open | John picks building-generation direction and the integration approach to spike |
-| 2. Worldgen spikes | not started | worldgen ADR (approach, size limits, determinism rules) |
+| 0. Scaffolding | done 2026-10-08; gate passed 2026-10-14 (John) | builds green; viewer renders the box |
+| 1. Prior art research | tracks 1–6 done (55 notes); track 7 (out-of-worldgen, backup) started 2026-10-15; early skim open; synthesis not started | John picks building-generation direction and the integration approach to spike |
+| 2. Worldgen spikes | not started; S7–S9 added 2026-10-15 | worldgen ADR (approach, size limits, determinism rules) |
 | 3. Planner core and three.js viewer | not started | John reviews seed gallery and invariant report |
 | 4. Building generator depth | not started | per building type, "would I believe a person built this?" |
 | 5. Settlements and cities | not started | cities in ≥5 biome mixes, one straddling a border |
@@ -95,7 +96,7 @@ backlog (0.1a, 0.1b, 0.4, 0.5, 0.6 lines).
 
 ## Phase 1: Prior art research
 
-Six tracks run in parallel. Every alternative examined produces a one-page
+Seven tracks run in parallel. Every alternative examined produces a one-page
 overview the moment it is done, so John can dig into options while research
 continues. Nothing waits for a final report. Process: coordinator.md,
 "Research".
@@ -115,23 +116,30 @@ continues. Nothing waits for a final report. Process: coordinator.md,
 | 4. Worldgen internals | How do 26.x structure, placement, biome-source and terrain-height APIs actually work? | Decompiled sources in the dev env, Fabric worldgen APIs, [jigsaw](https://minecraft.wiki/w/Jigsaw_structure) and [worldgen](https://minecraft.wiki/w/World_generation) wiki pages; confirm the hypotheses in ARCHITECTURE.md "Worldgen primer" |
 | 5. Region overlays | How have mods layered new regions over vanilla biomes? | TerraBlender, Lithostitched, Terralith, The Lost Cities' city/biome handling |
 | 6. Aesthetics | What makes a Minecraft build read as real? | Builder guides on depth, palettes, gradients and roof pitch; vanilla village variants as a baseline |
+| 7. Out-of-worldgen generation (**backup option**) | Could we pregenerate chunks far out, then plan cities on the finished terrain and write them in, free of worldgen threading and size limits? At what cost? | Distant Horizons, Chunky and other pregenerators, C2ME (far-chunk generation speed), mods that place structures into already-generated chunks, chunk tickets and forced loading, save/lighting/neighbour-update effects of writing into finished chunks, coexistence with the structure-based approach |
 
 Agents: `assistant` for tracks 1, 2, 3, 5, 6 (web research); `researcher`
 (high effort) for track 4 (source reading in its own worktree, may write tiny
-probe tests), for notes marked `deep-dive`, and for the synthesis.
+probe tests), for notes marked `deep-dive`, and for the synthesis; `assistant`
+for track 7, which John wants kept as a backup to structure-based generation.
 
 - [x] **1.1 Track 1: Minecraft mods** (batches until the list is covered)
 - [x] **1.2 Track 2: GDMC**
-- [ ] **1.3 Track 3: PCG literature**
-- [ ] **1.4 Track 4: Worldgen internals** (needs 0.5)
+- [x] **1.3 Track 3: PCG literature**
+- [x] **1.4 Track 4: Worldgen internals** (needs 0.5)
 - [x] **1.5 Track 5: Region overlays**
 - [x] **1.6 Track 6: Aesthetics**
+- [ ] **1.9 Track 7: Out-of-worldgen generation** (backup option, added
+  2026-10-15): generate far chunks ahead of the player, as Distant Horizons
+  and pregenerators do, then plan and place cities on the finished terrain.
+  Notes in `docs/research/postgen/`.
 - [ ] **1.7 Checkpoint: early skim**, after the first 8–10 notes: John redirects
   tracks or flags deep-dives. (Research keeps going meanwhile.)
 - [ ] **1.8 Landscape synthesis**: a two-page comparison of approaches for
   buildings (grammar vs WFC vs graph-plus-templates hybrid) and for worldgen
   integration (structure-based vs biome overlay vs custom chunk generator; see
-  ARCHITECTURE.md), with a recommended direction. `docs/research/synthesis.md`.
+  ARCHITECTURE.md; plus track 7's out-of-worldgen generation as the backup),
+  with a recommended direction. `docs/research/synthesis.md`.
 
 **Gate:** John picks the building-generation direction and confirms the
 integration approach to spike (recorded as ADRs).
@@ -146,6 +154,8 @@ ADR. Process: coordinator.md, "Spikes".
 
 Parallel: S1, S2, S4 and S5 side by side; S3 alongside them; S6 after S3
 (it measures S3's multi-start city). S4's 2D map needs the viewer from 0.4.
+S7–S9 (from track 4) run alongside all of these; S7 pairs with S5, whose
+result decides whether flattening is needed.
 
 - [ ] **2.1 S1 Biome footprint.** Can a structure sample biomes across a
   512×512 area at start time, and how fast? Evidence: GameTest logging the
@@ -165,7 +175,25 @@ Parallel: S1, S2, S4 and S5 side by side; S3 alongside them; S6 after S3
 - [ ] **2.6 S6 Scale and cost.** What do piece counts do to save size and chunk
   generation time? Evidence: measurements at village, town and city scale;
   thread-safety check of the plan cache. (Timing under the heavy lock.)
-- [ ] **2.7 Worldgen ADR** (researcher) from the findings: integration approach, practical
+- [ ] **2.7 S7 Terrain flattening** (fallback if S5's beards fall short). Can
+  we level city cells by wrapping `final_density` together with
+  `chunk_surface_level` and the aquifer `surface_level`, without the plan/mask
+  cycle? Evidence: client-test screenshots of a cut and a fill on a hill cell,
+  `final_density` alone (expect bare stone, flooding) vs all three wrapped;
+  `getBaseHeight` matches the levelled ground. See
+  `research/worldgen/surface-level-and-flattening.md`.
+- [ ] **2.8 S8 Structure veto.** Does one tag-driven predicate
+  (`fractalbuildings:excluded_from_cities`) keep foreign surface structures out
+  of city cells at both start generation (`tryGenerateStructure`) and
+  `/locate` (`StructureCheck.canCreateStructure`)? Evidence: server test with a
+  fixed city cell over a known village chunk: no village start, and `/locate`
+  skips it. See `research/worldgen/keeping-structures-out.md`.
+- [ ] **2.9 S9 Procedural pool element.** Can a custom `StructurePoolElement`
+  put our generated houses inside vanilla villages (footprint fixed per
+  element, content regenerated at `place` from seed and position)? Evidence:
+  server test that a village chunk holds our blocks, identical whatever the
+  chunk order. See `research/worldgen/custom-generator-and-pool-element.md`.
+- [ ] **2.10 Worldgen ADR** (researcher) from the findings: integration approach, practical
   size limits, determinism rules.
 
 **Gate:** the worldgen ADR fixes the integration approach, the practical size

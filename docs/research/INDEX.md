@@ -46,6 +46,9 @@ the end of its track's list. Notes use [TEMPLATE.md](TEMPLATE.md).
 - [Vanegas et al. 2012, parcel subdivision](pcg/parcel-subdivision.md) — best lot-subdivision reference: recursive OBB split with street-access rule and area/frontage bounds (integer bisection on axis-aligned blocks); each block independent; skeleton strips later — status: new
 - [Straight-skeleton roofs](pcg/straight-skeleton-roofs.md) — on grid footprints hip height = chessboard distance to outside; gables/cross-gables as max over wings; "closed roof" = full coverage + filled steps >1; campskeleton (Apache-2.0) / kendzi (BSD-3) in reserve, CGAL GPL — status: new
 - [Kelly & McCabe 2006 city survey](pcg/kelly-mccabe-city-survey.md) — low value now; useful pointers: Greuter's hash-seeded on-demand city (precedent for our determinism model) and Sun's least-elevation road stepping — status: new
+- [Greuter et al. 2003, pseudo-infinite cities](pcg/greuter-pseudo-infinite-cities.md) — confirms our determinism model (hashed seed per cell, on-demand, discardable cache); cells never interact, hence our region plan; suggests an evict-and-regenerate byte-compare test — status: new
+- [Bao 2013 / Wu 2018 optimisation layouts](pcg/optimisation-layouts-bao-wu.md) — too slow for worldgen and Wu's time-limited solver breaks determinism; borrow Wu's constraints as IR checks, regions→aisles→rooms for big buildings, Bao's soft terms for generate-N-keep-best — status: new
+- [Nystrom, rooms and mazes](pcg/rooms-and-mazes.md) — adopt its connect pass (spanning tree from the entrance + tunable extra doors) and order-independent dead-end removal as the interior reachability/repair stage; skip the maze; MIT — status: new
 
 ## Track 4: Worldgen internals (`worldgen/`)
 
@@ -53,12 +56,15 @@ the end of its track's list. Notes use [TEMPLATE.md](TEMPLATE.md).
 - [Terrain height and biome queries](worldgen/terrain-biome-queries.md) — live probes viable (getBaseHeight ~0.2 ms/column, order-independent); biome lookups are order-dependent at exact climate ties (fix: fixed priming lookup) and 3D (sample at surface Y) — status: new
 - [Jigsaw assembly and terrain adaptation](worldgen/jigsaw.md) — don't use jigsaw assembly for layout (greedy, no backtracking, 128-block cap); do reuse vanilla terrain adaptation, which grades custom pieces as rigid boxes for free — status: new
 - [Extension points (26.3)](worldgen/extension-points.md) — structure-based is the only option with first-class hooks; drop custom chunk generator (final NoiseBasedChunkGenerator) and biome overlay (Fabric API can't add overworld biomes); city-mask density function is a viable flattening fallback — status: new
+- [Surface level and flattening](worldgen/surface-level-and-flattening.md) — preliminary_surface_level is a cheap screen (~1/50 cost, 12–15 blocks low, p90 8 after bias) not a foundation probe; flattening must wrap final_density, chunk_surface_level and aquifer surface_level, prefer fill to cut; plan reads unwrapped terrain — status: new
+- [Keeping structures out of cities](worldgen/keeping-structures-out.md) — use our own small veto mixin on tryGenerateStructure and StructureCheck.canCreateStructure, driven by a structure tag; exclusion zones and biome tags can't do it; Lithostitched spawn condition works but adds a dependency — status: new
+- [Custom generator and procedural pool element](worldgen/custom-generator-and-pool-element.md) — drop the custom chunk generator (non-NoiseBased generators get an empty-router RandomState); a procedural StructurePoolElement could put our houses into vanilla villages — worth a small spike — status: new
 
 ## Track 5: Region overlays (`overlays/`)
 
 - [TerraBlender](overlays/terrablender.md) — proves a biome-independent region layer works at scale, but wrong vehicle for cities (random blobs that replace biomes); LGPL-3.0, supports 26.3 — status: new
 - [Lithostitched](overlays/lithostitched.md) — closest match to our settlement layer: domain-warped Voronoi region field plus density-gated structures, all data-driven; borrow the design, don't depend on it; MIT — status: new
-- [Terralith](overlays/terralith.md) — compatibility target, not a model; overrides overworld noise, so cities must sit on top as structures with biome-tag palettes; licence restricts AI use (see ledger) — status: new
+- [Terralith](overlays/terralith.md) — compatibility target, not a model: data-only layered on vanilla's noise router; wrap router slots (final_density + preliminary_surface_level) and use its c: biome tags for palettes; height estimates miss dunes/arches — status: new
 - [The Lost Cities: city placement](overlays/lost-cities-city-placement.md) — best placement model to port (position-seeded city field × biome multiplier, height veto); cities cross biome borders freely; MIT — status: new
 - [Tectonic](overlays/tectonic.md) — terrain can be flattened inside city cells compatibly: wrap final density with a cached city mask (not "depth"); spike candidate and compat-test target, not a dependency; MIT (repo LICENSE says CC0) — status: new
 - [Biolith](overlays/biolith.md) — third biome-injection approach (edits vanilla biome table + per-lookup adjust); can't define settlement regions, compat target only; re-implement its BiomePerimeters idea for border palette blending; LGPL-3.0 — status: new
@@ -74,6 +80,13 @@ the end of its track's list. Notes use [TEMPLATE.md](TEMPLATE.md).
 - [Automatic block colour table](aesthetics/block-colour-table.md) — dev-time palette check only (lightness + busyness from Loom's cached client jar); commit script and orderings, not textures; never at runtime; finding: stone variants order weathering, not shade — status: new
 - [WesterosCraft / Conquest style guides](aesthetics/style-guides-westeroscraft-conquest.md) — little geometry; adopt consistency rules (one timber + one infill colour, thatch only ≥1:1, ornament for wealth) and a style × class × region model; caps façades at 2 depth layers — status: new
 - [Roof forms and massing](aesthetics/roof-forms-and-massing.md) — roof = pitch profile over each cell's distance to footprint edge, max over parts (equals straight skeleton for grid footprints); support gable, hip (L/T/U), shed, flat+parapet, helm first; never curved — status: new
+
+## Track 7: Out-of-worldgen generation (`postgen/`)
+
+- [Distant Horizons](postgen/distant-horizons.md) — players accept terrain 256 chunks out, but it is mostly unsaved LOD (cuts structures); its real-chunk mode is the pregenerator ticket loop and can lag servers; borrow ticket pattern + throttles; LGPL-3.0 — status: new
+- [Chunk pregenerators](postgen/pregenerators.md) — Chunky: loading ticket to FULL, ~50 in flight; 26.3 has public `addTicketAndLoadWithRadius`, no dependency needed; vanilla ~40 chunks/s (≈100 s per 64×64 region), C2ME ~450 (unmeasured here); Chunky GPL-3.0, C2ME MIT — status: new
+- [Post-generation placement](postgen/post-generation-placement.md) — `/place structure` writes every chunk of the box on the live level with no 8-chunk cap but no `/locate` registration; `LevelChunk.setBlockState` handles heightmaps, light, saving; problems are cost and pop-in, not correctness; 26.3 claims to confirm listed — status: new
+- [Out-of-worldgen overview](postgen/overview.md) — pipeline: deterministic sites → pregenerate on trigger → snapshot terrain → plan off-thread → write unseen; elytra outruns it; verdict: backup/add-on (admin capitals, extras beyond 8 chunks), not the main path — status: new
 
 ## Phase 2 spikes (`spikes/`)
 

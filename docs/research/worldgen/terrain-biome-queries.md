@@ -37,6 +37,11 @@ generated chunk.
   Over 2,000 columns, 0 differences between a sequential run and a shuffled
   8-thread run on a fresh `RandomState`. `RandomState` is built for sharing
   (`ConcurrentHashMap` noise caches, locked buffer pools).
+- **In game** (batch 2 client test, seed 12345, 576 generated chunks,
+  6,040 land columns, load 4–6): `getBaseHeight(OCEAN_FLOOR_WG)` equals the
+  real ground (top solid non-log, non-leaf block) in **98.2%** of columns.
+  p99 |error| is 2, the range is −11 (carvers) to +19 (features). It costs
+  0.43–0.51 ms per column on the server thread.
 
 ## Biomes (verified in source and by probe)
 
@@ -104,15 +109,12 @@ Minecraft code is proprietary (Mojang EULA): study only. The probe code
 
 ## Probe tests worth writing after 0.5
 
-- S2 in game: `getBaseHeight` versus the real `OCEAN_FLOOR` and
-  `WORLD_SURFACE` after full generation, over 10 seeds, recording carver and
-  surface-step deltas. The standalone probe can't test `OCEAN_FLOOR_WG`:
-  without a data pack the `BLOCKS_MOTION_IN_HEIGHTMAP` tag is empty, so it
-  returned minY.
-- Primed versus stored chunk biomes: report the disagreement rate (expected
-  ≈ tie rate).
-- The same timings on the real server under load, with the heavy lock and
-  load recorded.
+- Done in batch 2 (one seed): the height accuracy above. Primed and
+  unprimed lookups at the surface Y each differ from the **stored** chunk
+  biome in 3 of 9,216 cells (0.03%), matching the tie rate. Stored biomes
+  themselves break ties arbitrarily, so priming makes **our** answer
+  deterministic, not identical to the chunk.
+- Still open: S2 over 10 seeds, including mountains and rivers.
 
 ## Verdict
 

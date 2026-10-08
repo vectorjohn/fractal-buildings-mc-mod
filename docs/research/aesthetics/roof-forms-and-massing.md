@@ -22,8 +22,8 @@ Sources:
   [campskeleton](https://github.com/twak/campskeleton) (Apache-2.0), used by
   Kelly & Wonka's procedural extrusions (gables = edges with vertical weight).
 - Track 3 for the grammar side: [CGA](../pcg/cga-shape-grammar.md),
-  [split grammars](../pcg/split-grammars.md). Track 3 has no straight-skeleton
-  note yet.
+  [split grammars](../pcg/split-grammars.md). Algorithm: [straight-skeleton-roofs](../pcg/straight-skeleton-roofs.md)
+  (voxel chessboard-distance method).
 
 ## Approach
 
