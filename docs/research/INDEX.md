@@ -42,6 +42,10 @@ the end of its track's list. Notes use [TEMPLATE.md](TEMPLATE.md).
 - [Merrell et al. 2010, residential layouts](pcg/merrell-residential-layouts.md) — best model of a believable house brief (room graph, privacy gradient, stacking/lot checks usable as validators); too slow and not guaranteed correct to be the generator — status: new
 - [Lopes et al. 2010, constrained-growth floor plans](pcg/constrained-growth-floor-plans.md) — best fit for interiors: grid-native, ms–1 s, reachability guaranteed by a door pass; run after the shell grammar, fed by a Merrell-style room program — status: new
 - [MarkovJunior](pcg/markovjunior.md) — toolbox of bounded grid rewrite passes (cleanup, detail, reachability checks) after the grammar, not the generator; MIT, small subset portable to Java — status: new
+- [Chen et al. 2008, tensor-field streets](pcg/tensor-field-streets.md) — use its terrain-derived direction field (roads follow contours/coasts) and density-spacing rule for outskirts and paths; keep bisection/growth for the core; order-dependent, run once per region cell — status: new
+- [Vanegas et al. 2012, parcel subdivision](pcg/parcel-subdivision.md) — best lot-subdivision reference: recursive OBB split with street-access rule and area/frontage bounds (integer bisection on axis-aligned blocks); each block independent; skeleton strips later — status: new
+- [Straight-skeleton roofs](pcg/straight-skeleton-roofs.md) — on grid footprints hip height = chessboard distance to outside; gables/cross-gables as max over wings; "closed roof" = full coverage + filled steps >1; campskeleton (Apache-2.0) / kendzi (BSD-3) in reserve, CGAL GPL — status: new
+- [Kelly & McCabe 2006 city survey](pcg/kelly-mccabe-city-survey.md) — low value now; useful pointers: Greuter's hash-seeded on-demand city (precedent for our determinism model) and Sun's least-elevation road stepping — status: new
 
 ## Track 4: Worldgen internals (`worldgen/`)
 
