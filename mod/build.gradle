@@ -1,0 +1,62 @@
+plugins {
+	id 'net.fabricmc.fabric-loom' version "${loom_version}"
+}
+
+base {
+	archivesName = project.mod_id
+}
+
+loom {
+	mods {
+		"${project.mod_id}" {
+			sourceSet sourceSets.main
+		}
+	}
+}
+
+fabricApi {
+	// Creates the `gametest` source set (its own fabric.mod.json) and the
+	// runGameTest (server) and runClientGameTest (client) tasks.
+	configureTests {
+		createSourceSet = true
+		modId = "fractalbuildings-test"
+		enableGameTests = true
+		enableClientGameTests = true
+		clearRunDirectory = true
+	}
+}
+
+dependencies {
+	minecraft "com.mojang:minecraft:${project.minecraft_version}"
+	implementation "net.fabricmc:fabric-loader:${project.loader_version}"
+	implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
+
+	// planner-core is pure Java; it is bundled into the mod jar as jar-in-jar.
+	implementation project(':planner-core')
+	include project(':planner-core')
+}
+
+processResources {
+	def version = project.version
+	inputs.property "version", version
+	filesMatching("fabric.mod.json") {
+		expand "version": version
+	}
+}
+
+java {
+	withSourcesJar()
+	sourceCompatibility = JavaVersion.VERSION_25
+	targetCompatibility = JavaVersion.VERSION_25
+}
+
+// Keep client game test screenshots at a stable path that other tasks' run-dir cleanup can't wipe.
+tasks.named('runClientGameTest') {
+	doLast {
+		copy {
+			from layout.buildDirectory.dir('run/clientGameTest/screenshots')
+			into layout.buildDirectory.dir('screenshots')
+			rename { it.replaceFirst(/^\d+_/, '') }
+		}
+	}
+}
