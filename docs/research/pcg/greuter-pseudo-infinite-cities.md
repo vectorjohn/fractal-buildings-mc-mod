@@ -28,8 +28,8 @@ this note reads it as a precedent for our determinism model.
   of the previous plan; each plan is extruded for a random height below the
   last, so towers step out as they go down (wedding-cake). Scaled to the
   cell. Textures: 10 window tiles, repeats from façade length / window width.
-- **Cost:** ~2–10 ms per building (2003 P4); generation dominates, cache
-  overhead negligible.
+- **Cost:** a few ms up to ~10 ms per building by the paper's plot (2003
+  P4); generation dominates, cache overhead negligible.
 
 ## Procedural vs templated
 
@@ -76,8 +76,8 @@ Paper only, © ACM; no code released. Wang's mix function is public domain
 - Cells that never talk to each other: no continuous streets, districts or
   skyline gradient. Keep cross-lot structure in the region plan.
 - Arbitrary rotated polygons; on blocks use axis-aligned rectangles.
-- Combining coordinates with XOR before hashing (x ^ z symmetry, collisions
-  for swapped or equal coordinates in other schemes); mix each input in turn.
+- XOR-ing raw coordinates together before one hash (x ^ z is symmetric and
+  collides for swapped coordinates); mix each input in turn, as they do.
 
 ## Verdict
 
