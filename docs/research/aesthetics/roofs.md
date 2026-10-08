@@ -1,6 +1,7 @@
 # Roofs: pitch, shapes, overhangs
 
-**Track:** 6 Aesthetics · **Kind:** technique (builder practice) · **Date:** 2026-10-08
+**Track:** aesthetics ·
+**Date:** 2026-10-08 · **Author:** assistant
 
 ## What it is
 
@@ -16,7 +17,7 @@ read right at Minecraft's 1 m resolution. Sources read:
 - Vanilla village roofs, dumped layer by layer from the structure files
   (see `vanilla-villages.md`).
 
-## Approach in three sentences
+## Approach
 
 Minecraft offers three clean pitches: 2:1 (63°, stacked full blocks), 1:1
 (45°, one stair per step) and 1:2 (≈27°; the wiki says 22.5°, but atan(1/2) is 26.6°; alternating bottom/top slabs or
@@ -95,13 +96,9 @@ MIT; vanilla data: Mojang, studied only.
 
 ## Verdict
 
-Adopt. Roof generation is a footprint-to-roof function with a small pitch
-set, an eave parameter and a section splitter for large footprints. Track 3
-(straight skeleton / CGA roof rules) supplies the algorithm.
+Adopt: roofs as a footprint-to-roof function with pitches {2:1, 1:1, 1:2}, a 1-block default eave and section splitting above ~12-block spans; algorithm from track 3.
 
-## Could not verify
-
-The Shockbyte and ExitLag roof guides returned 403 or were not fetched; the
+**Sources / what I couldn't verify:** Sources are linked under "What it is". The Shockbyte and ExitLag roof guides returned 403 or were not fetched; the
 YouTube roof tutorials were not watched. Whether vanilla stair corner shapes
 resolve correctly when placed by worldgen without block updates is a
 Phase 2 / mod-side question, not checked.

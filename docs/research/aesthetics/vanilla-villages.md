@@ -1,6 +1,7 @@
 # Vanilla village variants as a baseline
 
-**Track:** 6 Aesthetics · **Kind:** project (Mojang, vanilla) · **Date:** 2026-10-08
+**Track:** aesthetics ·
+**Date:** 2026-10-08 · **Author:** assistant
 
 ## What it is
 
@@ -14,7 +15,7 @@ vanilla data files themselves via the [misode/mcmeta](https://github.com/misode/
 templates, which I parsed with a throwaway NBT reader (sizes, block counts,
 roof layer dumps; scratch only, not committed).
 
-## Approach in three sentences
+## Approach
 
 A jigsaw structure (`size` 6, `max_distance_from_center` 80, start projected
 to `WORLD_SURFACE_WG`, `terrain_adaptation: beard_thin`) grows from a town
@@ -82,13 +83,9 @@ dev-time only, not shipped) would make the comparison visual.
 
 ## Verdict
 
-Baseline, not a model. Borrow the biome palettes and minimum proportions;
-the generator's job is the depth, scale variety, terrain fit and street
-relationship that vanilla lacks.
+Baseline, not a model: borrow biome palettes and minimum proportions; beat it on depth, scale variety, terrain fit and street relationship.
 
-## Could not verify
-
-Footprints and overhangs were measured with a heuristic script and four
+**Sources / what I couldn't verify:** Sources are linked under "What it is". Footprints and overhangs were measured with a heuristic script and four
 roof dumps, so a few rows (snowy, desert medium) may be off by a block. The
 wiki's description of village sizes/house counts is qualitative; I didn't
 generate villages in game. Older (pre-1.14) village behaviour not covered.

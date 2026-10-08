@@ -1,6 +1,7 @@
 # Depth and layering in walls
 
-**Track:** 6 Aesthetics · **Kind:** technique (builder practice) · **Date:** 2026-10-08
+**Track:** aesthetics ·
+**Date:** 2026-10-08 · **Author:** assistant
 
 ## What it is
 
@@ -20,7 +21,7 @@ instead of one block plane. Sources read:
   terms; not relied on.
 - Vanilla village houses, measured (see `vanilla-villages.md`).
 
-## Approach in three sentences
+## Approach
 
 A wall is built as layers: a stone plinth that is wider or a different
 material, a structural frame (logs/pillars at corners and at intervals) that
@@ -95,14 +96,9 @@ files: Mojang, studied only, never redistributed.
 
 ## Verdict
 
-Adopt as the core of the facade model: walls are layered (plinth, frame,
-infill, openings, bands, projections) with explicit depth offsets. The
-numbers above are builder consensus, not measurements; tune them in the
-viewer gallery.
+Adopt as the core facade model: layered walls (plinth, frame, infill, recessed openings, bands, projections) with explicit depth offsets; numbers are builder consensus to tune in the gallery.
 
-## Could not verify
-
-No source gives measured spacings; "every 3–5" and "> 6 / > 12" are my
+**Sources / what I couldn't verify:** Sources are linked under "What it is". No source gives measured spacings; "every 3–5" and "> 6 / > 12" are my
 synthesis of qualitative advice plus vibecraft's numbers. The YouTube guides
 usually cited (e.g. BdoubleO100, Grian, Mumbo-style tutorials) were not
 watched. Planet Minecraft forum threads returned 403.

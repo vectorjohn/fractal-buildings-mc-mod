@@ -1,6 +1,7 @@
 # Palettes and gradients
 
-**Track:** 6 Aesthetics · **Kind:** technique (builder practice) · **Date:** 2026-10-08
+**Track:** aesthetics ·
+**Date:** 2026-10-08 · **Author:** assistant
 
 ## What it is
 
@@ -18,7 +19,7 @@ or random speckle. Sources read:
 - Vanilla: `processor_list/mossify_10_percent.json` and the village house
   palettes (mcmeta data branch, 26.4-snapshot-3).
 
-## Approach in three sentences
+## Approach
 
 A palette is an ordered list of blocks of similar texture going from light to
 dark (3 to 20+ entries, WesterosCraft); shade matters most, then hue
@@ -90,13 +91,9 @@ Wiki text CC BY-NC-SA 3.0; WesterosCraft and Conquest: no licence stated
 
 ## Verdict
 
-Adopt. Palettes become ordered gradients per role, driven by a deterministic
-weathering field. Needs a block colour/luminance table to automate ordering;
-otherwise hand-order per style.
+Adopt: each role maps to an ordered gradient driven by a deterministic weathering field; needs a block luminance table (or hand ordering per style).
 
-## Could not verify
-
-Block luminance orderings (e.g. vibecraft's wood order puts spruce lighter
+**Sources / what I couldn't verify:** Sources are linked under "What it is". Block luminance orderings (e.g. vibecraft's wood order puts spruce lighter
 than dark oak but after acacia) were not measured; computing mean colours
 from the vanilla textures in the dev env is a cheap follow-up. No source
 gives numeric band widths or noise scales; the numbers above are my choices
