@@ -23,4 +23,9 @@ work becomes a ROADMAP item or a Polish backlog line. Settled items move to
 
 ## Open
 
+- [ ] **0.1a**: mod licence and author in fabric.mod.json (placeholder MIT, author John Reeves)
+  Where: mod/src/main/resources/fabric.mod.json; ASSUMPTIONS row
+  Look for: the licence you want for the mod (affects what we may borrow from other mods)
+  Result:
+
 ## Done

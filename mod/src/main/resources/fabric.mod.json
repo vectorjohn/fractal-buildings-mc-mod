@@ -1,0 +1,19 @@
+{
+	"schemaVersion": 1,
+	"id": "fractalbuildings",
+	"version": "${version}",
+	"name": "Fractal Buildings",
+	"description": "Procedurally generated buildings and cities from rules.",
+	"authors": ["John Reeves"],
+	"license": "MIT",
+	"environment": "*",
+	"entrypoints": {
+		"main": ["dev.fractalbuildings.mod.FractalBuildingsMod"]
+	},
+	"depends": {
+		"fabricloader": ">=0.19.5",
+		"minecraft": "~26.3",
+		"java": ">=25",
+		"fabric-api": "*"
+	}
+}
