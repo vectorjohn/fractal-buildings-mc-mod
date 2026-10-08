@@ -22,3 +22,8 @@ application {
 	mainClass = 'dev.fractalbuildings.cli.Main'
 	applicationName = 'fractal-cli'
 }
+
+// IrJsonTest compares CLI output with the committed viewer fixture; declare it so Gradle reruns the test when it changes.
+tasks.named('test') {
+	inputs.file('../viewer/fixtures/box5.json')
+}
