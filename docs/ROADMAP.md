@@ -105,9 +105,14 @@ waits for 0.5.
   `docs/adr/TEMPLATE.md` (context, options, decision, consequences);
   `docs/research/INDEX.md` (one line per note: name and link, one-line verdict,
   status `new` / `reviewed` / `deep-dive` / `drop`; grouped by track).
-- [ ] **0.4 Smoke path.** The CLI writes a hard-coded 5×5×5 box as IR JSON; the
+- [x] **0.4 Smoke path.** The CLI writes a hard-coded 5×5×5 box as IR JSON; the
   viewer renders it; one Playwright screenshot proves it (add Playwright to the
   flake, see the comment in `flake.nix`).
+  Done: `fractal-cli gen ... [--out FILE]` writes provisional `irVersion: 0` JSON
+  (floor/wall/roof boxes); `viewer/fixtures/box5.json` is the shared fixture;
+  `cd viewer && npm run screenshot` writes `viewer/out/smoke.png`.
+  **Tests:** `IrJsonTest` (byte-identical output, fixture not stale), `voxels.test.ts`
+  (parses the CLI fixture), `e2e/smoke.spec.ts` (canvas colour fractions).
 - [ ] **0.5 Mod hello world and Minecraft test harness.** The Fabric mod builds,
   one server game test and one client game test (Xvfb + lavapipe, screenshot)
   pass. This warms the shared Loom cache and proves the environment for track 4

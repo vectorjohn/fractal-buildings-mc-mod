@@ -1,10 +1,13 @@
 package dev.fractalbuildings.cli;
 
 import dev.fractalbuildings.core.Planner;
-import java.util.HashMap;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Map;
 
-/** Stub CLI: {@code gen --seed N --lot WxD --style NAME}. Item 0.4 makes it write IR JSON. */
+/** CLI: {@code gen --seed N --lot WxD --style NAME [--out FILE]} writes smoke IR JSON (stdout if no --out). */
 public final class Main {
 	private Main() {}
 
@@ -14,11 +17,33 @@ public final class Main {
 
 	static int run(String[] args) {
 		if (args.length == 0 || !args[0].equals("gen")) {
-			System.err.println("usage: gen --seed N --lot WxD --style NAME");
+			System.err.println("usage: gen --seed N --lot WxD --style NAME [--out FILE]");
 			return 2;
 		}
 		Map<String, String> opts = parseOptions(args);
-		System.out.println("fractal-cli " + Planner.version() + " gen (stub) " + opts);
+		long seed;
+		try {
+			seed = Long.parseLong(opts.getOrDefault("seed", "0"));
+		} catch (NumberFormatException e) {
+			System.err.println("bad --seed: " + opts.get("seed"));
+			return 2;
+		}
+		// --lot and --style are accepted but unused until real generation exists.
+		byte[] json = IrJson.write(Planner.smokeBox(seed)).getBytes(StandardCharsets.UTF_8);
+		String out = opts.get("out");
+		try {
+			if (out == null) {
+				System.out.write(json);
+				System.out.flush();
+			} else {
+				Path p = Path.of(out);
+				if (p.getParent() != null) Files.createDirectories(p.getParent());
+				Files.write(p, json);
+			}
+		} catch (IOException e) {
+			System.err.println("write failed: " + e.getMessage());
+			return 1;
+		}
 		return 0;
 	}
 
