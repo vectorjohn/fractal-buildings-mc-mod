@@ -124,8 +124,10 @@ precisely so nobody has to read history to find the current state.
 *(Phase 0 fills these in as they come to exist; keep this section the single
 source of truth, and update it when a command changes.)*
 
-- Everything: `scripts/test-all.sh` (`--no-client` skips the Minecraft client
-  game tests).
+- Everything: `scripts/test-all.sh` (`--no-client` skips layer 5, the Minecraft
+  client game tests; the script enters the dev shell and takes the heavy lock
+  itself, so don't wrap it in either). Per-step logs in `build/test-all/`; ends
+  with a per-layer summary, screenshot and log paths; non-zero exit on failure.
 - Planner core (pure, fast): `nix develop -c ./gradlew :planner-core:test`
 - Mod, incl. server game tests: `nix develop -c ./gradlew :mod:build`  (jar in `mod/build/libs/`, planner-core bundled as jar-in-jar)
 - Client game tests (heavy): `flock <repo root>/.claude/heavy.lock xvfb-run -a nix develop -c ./gradlew :mod:runClientGameTest`

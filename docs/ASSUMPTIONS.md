@@ -16,3 +16,5 @@ editing the old one.
 | 2026-10-08 | 0.1a | Mod id `fractalbuildings`; Java packages `dev.fractalbuildings.{core,cli,mod}`; Gradle group `dev.fractalbuildings` | Short, generic, no real domain owned | yes (rename + sed) |
 | 2026-10-08 | 0.1a | planner-core is bundled in the mod jar via Loom `include project(':planner-core')` (jar-in-jar), not shading | Simplest; one line; core stays a separate jar so Minecraft never sees it on a compile classpath of core | yes |
 | 2026-10-08 | 0.1a | Loom 1.18.3 (release) instead of the template's `1.18-SNAPSHOT`; fabric.mod.json licence MIT as placeholder | Reproducible builds; licence undecided | yes |
+| 2026-10-08 | Phase 1 | Agents don't read Stardust Labs code or data (Terralith etc.); its licence forbids using it to configure, test, debug or augment AI systems. Notes come from public pages only | Licence text; John to decide | yes |
+| 2026-10-08 | Phase 1 | Code with no licence, or MIT with extra conditions (e.g. Frightful Hobgoblin's), is treated as ideas-only: study the approach, never copy code | Conservative default; John to decide | yes |

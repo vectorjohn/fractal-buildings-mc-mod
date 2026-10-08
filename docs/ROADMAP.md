@@ -112,7 +112,7 @@ waits for 0.5.
   one server game test and one client game test (Xvfb + lavapipe, screenshot)
   pass. This warms the shared Loom cache and proves the environment for track 4
   and Phase 2. (Added at setup.)
-- [ ] **0.6 `scripts/test-all.sh`.** Runs every layer with a short summary
+- [x] **0.6 `scripts/test-all.sh`.** Runs every layer with a short summary
   (counts, screenshot and log paths); `--no-client` skips layer 5; takes the
   heavy lock for client tests itself. (Added at setup.)
 
@@ -320,6 +320,8 @@ Fixed opportunistically or scheduled as items.
 - 0.1b: viewer `npm run dev` never run; 0.4 screenshot is the first in-browser check.
 - 0.1a: `checkNoMinecraft` also matches forbidden package names in comments/javadoc (a doc comment mentioning net.minecraft fails the build).
 - 0.1a: cli/Main.java has an unused `java.util.HashMap` import.
+- 0.6: test-all.sh layer detection for 0.4/0.5 (determinism, screenshot npm script names, game-test count regex, client layer) untested until they land; count regex may print "no count in log".
+- 0.6: running test-all.sh while already holding the heavy lock deadlocks (documented in --help).
 
 ## Open questions and risks
 
