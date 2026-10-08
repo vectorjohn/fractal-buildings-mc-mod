@@ -58,7 +58,7 @@ the end of its track's list. Notes use [TEMPLATE.md](TEMPLATE.md).
 
 - [TerraBlender](overlays/terrablender.md) — proves a biome-independent region layer works at scale, but wrong vehicle for cities (random blobs that replace biomes); LGPL-3.0, supports 26.3 — status: new
 - [Lithostitched](overlays/lithostitched.md) — closest match to our settlement layer: domain-warped Voronoi region field plus density-gated structures, all data-driven; borrow the design, don't depend on it; MIT — status: new
-- [Terralith](overlays/terralith.md) — compatibility target, not a model; overrides overworld noise, so cities must sit on top as structures with biome-tag palettes; licence restricts AI use (see ledger) — status: new
+- [Terralith](overlays/terralith.md) — compatibility target, not a model: data-only layered on vanilla's noise router; wrap router slots (final_density + preliminary_surface_level) and use its c: biome tags for palettes; height estimates miss dunes/arches — status: new
 - [The Lost Cities: city placement](overlays/lost-cities-city-placement.md) — best placement model to port (position-seeded city field × biome multiplier, height veto); cities cross biome borders freely; MIT — status: new
 - [Tectonic](overlays/tectonic.md) — terrain can be flattened inside city cells compatibly: wrap final density with a cached city mask (not "depth"); spike candidate and compat-test target, not a dependency; MIT (repo LICENSE says CC0) — status: new
 - [Biolith](overlays/biolith.md) — third biome-injection approach (edits vanilla biome table + per-lookup adjust); can't define settlement regions, compat target only; re-implement its BiomePerimeters idea for border palette blending; LGPL-3.0 — status: new
