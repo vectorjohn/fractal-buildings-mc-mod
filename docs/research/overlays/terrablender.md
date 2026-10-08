@@ -33,7 +33,8 @@ choice inside a region is a hand-authored table of climate ranges.
 Biome source, by mixin: wraps `MultiNoiseBiomeSource`'s resolver
 (`getNoiseBiome` with a positional lookup), extends `Climate.ParameterList`
 with the per-region trees, and merges per-mod surface rules
-(`MaterialRuleManager`; 26.x renamed surface rules to material rules). Terrain shape is untouched:
+(`MaterialRuleManager`; 26.x appears to call surface rules "material
+rules", not checked against sources). Terrain shape is untouched:
 since 1.18 it comes from the noise router, not from biomes, so a TerraBlender
 region changes biomes and surfaces but not height. Since the hook is in the biome
 source, structure code that queries biomes (ours included) sees TerraBlender's
