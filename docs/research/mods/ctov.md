@@ -58,9 +58,10 @@ and describe it; no derivatives, so do not copy pieces, pools or code.
 - Variety by authoring: ~2,000 NBTs for 22 themes, and still each house type
   repeats inside a village. This is the scaling wall our project exists to get
   past.
-- Rigid pieces on a thin beard: houses on slopes sit on dirt skirts or float
-  over terrain (reported in issues such as #147, "buildings set into the
-  ground by one block"; not reproduced).
+- Rigid pieces on a thin beard: placement depends on authored pieces
+  matching the terrain they land on (vanilla jigsaw behaviour; e.g. issue
+  #147, "all buildings in village_jungle_tree are set into the ground by one
+  block"). Slope handling not checked in game.
 
 **Verdict.** Best-in-class *templated* village variety and the clearest example
 of polite integration (vanilla set + biome tags + Lithostitched). Low value as
