@@ -1,0 +1,10 @@
+// Root project: shared Java settings only. Modules are in planner-core/, cli/, mod/.
+subprojects {
+	tasks.withType(JavaCompile).configureEach {
+		options.release = 25
+		options.encoding = 'UTF-8'
+	}
+	tasks.withType(Test).configureEach {
+		useJUnitPlatform()
+	}
+}
