@@ -89,10 +89,13 @@ Start it with `subagent_type: "assistant"` and a short prompt:
 Relay its final message to the human. Then:
 - **A branch to merge** (`claude/assist-<slug>`: docs, plans, scripts, agent
   config, test tooling): merge it into the run branch yourself under the merge
-  lock (`flock <repo root>/.claude/merge.lock git -C <integration checkout>
-  merge --no-ff claude/assist-<slug>`), then remove its worktree and branch.
-  It needs no verifier. If it conflicts, abort and resume the assistant to
-  merge the run branch in and resolve.
+  lock, in one call so a conflict is aborted before the lock is released
+  (`flock <repo root>/.claude/merge.lock sh -c 'git -C <integration checkout>
+  merge --no-ff claude/assist-<slug> || { git -C <integration checkout> merge
+  --abort; exit 1; }'`), then remove its worktree and branch. It needs no
+  verifier. If it conflicts, resume the assistant to merge the run branch in
+  and resolve. The same one-call pattern applies to every merge you do into a
+  shared checkout: never leave one half-done with the lock free.
 - **`## For the coordinator`**: session-level actions the assistant can't do
   (CronCreate, SendMessage, TaskStop, ledger notes). Carry them out as
   written, checking only that they fit the run.
