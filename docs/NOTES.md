@@ -8,8 +8,10 @@ right section, with the item id and date. Fix or remove a line when it stops
 being true.
 
 ## Minecraft and Fabric APIs
+- 0.1a (2026-10-08): Target MC 26.3, Fabric Loader 0.19.5, Fabric API 0.162.0+26.3, Loom 1.18.3 (plugin id `net.fabricmc.fabric-loom`, unobfuscated: no mappings, no `remapJar`), Gradle 9.7.1, JDK 25; all pinned in `gradle.properties`. MC identifiers are `net.minecraft.resources.Identifier` (not ResourceLocation).
 
 ## Planner core
+- 0.1a (2026-10-08): `:planner-core:checkNoMinecraft` fails the build if any source mentions net.minecraft/net.fabricmc/com.mojang or any config declares/resolves such a dependency; it runs before `compileJava` and in `check`.
 
 ## Viewer and Playwright
 

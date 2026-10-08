@@ -96,6 +96,7 @@ waits for 0.5.
   Mod id and Java package recorded in `docs/ASSUMPTIONS.md`. Fill in CLAUDE.md
   "Build and test commands". Builds green inside `nix develop`.
   - 0.1b (viewer half): `viewer/` done: Vite 8 + Vitest 5 + TS 7 strict, three.js scene (orbit controls, instanced voxels), provisional `Ir` type and unit-tested `irToVoxels` stub. `npm ci && npm test && npm run build` green. No Playwright (0.4 adds it).
+  - 0.1a (Gradle half, done): `planner-core/`, `cli/`, `mod/` build green with `./gradlew build`; boundary check `:planner-core:checkNoMinecraft` proven to fail on a bad import and on a Fabric dependency. `viewer/` is 0.1b.
 - [x] **0.2 CLAUDE.md**: module boundaries, environment, parallel-work rules,
   review conventions. (Done at setup; 0.1 fills in the commands.)
 - [x] **0.3 Templates and index.** `docs/research/TEMPLATE.md` (one-pager: what
