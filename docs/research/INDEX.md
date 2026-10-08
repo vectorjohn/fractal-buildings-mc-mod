@@ -10,6 +10,11 @@ the end of its track's list. Notes use [TEMPLATE.md](TEMPLATE.md).
 
 ## Track 1: Minecraft mods (`mods/`)
 
+- [The Lost Cities](mods/the-lost-cities.md) — best prior art for order-independent chunk-by-chunk city planning (per-chunk Feature, no size limit, flattens terrain); wrong model for building variety (stacked 16×16 hand-made parts); MIT — status: new
+- [YUNG's structure mods and API](mods/yungs-structure-mods.md) — reference for how far jigsaw stretches (128-block radius, 116 with terrain adaptation); study/link, don't copy; LGPL-3.0 — status: new
+- [ChoiceTheorem's Overhauled Village](mods/ctov.md) — best-in-class templated villages (~2,000 templates), polite integration via vanilla village set + biome tags; ideas only; CC BY-NC-ND 4.0 — status: new
+- [Towns and Towers](mods/towns-and-towers.md) — strongest reference for per-biome architectural themes; templated, no public source (jar is data only); CC BY-NC-ND 4.0 — status: new
+
 ## Track 2: GDMC (`gdmc/`)
 
 ## Track 3: PCG literature (`pcg/`)
