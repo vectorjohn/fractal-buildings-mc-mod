@@ -9,6 +9,16 @@ being true.
 
 ## Minecraft and Fabric APIs
 - 0.1a (2026-10-08): Target MC 26.3, Fabric Loader 0.19.5, Fabric API 0.162.0+26.3, Loom 1.18.3 (plugin id `net.fabricmc.fabric-loom`, unobfuscated: no mappings, no `remapJar`), Gradle 9.7.1, JDK 25; all pinned in `gradle.properties`. MC identifiers are `net.minecraft.resources.Identifier` (not ResourceLocation).
+- 1.4 (2026-10-08): Decompiled MC sources: `nix develop -c ./gradlew :mod:genSources` (about 20 s with a warm cache); the jar lands in the worktree's `.gradle/loom-cache/minecraftMaven/net/minecraft/minecraft-merged-*/26.3/*-sources.jar`, not in `~/.gradle`.
+- 1.4 (2026-10-08): 26.3 chunk statuses: empty, structure_starts, structure_references, biomes, terrain (noise+surface+carvers merged), features, initialize_light, light, spawn, full (`ChunkPyramid.GENERATION_PYRAMID`).
+- 1.4 (2026-10-08): Structure blocks more than 8 chunks from the start chunk are silently never placed (`createReferences` scans ±8 against the start's bounding box, +12 if terrain_adaptation≠none); only jigsaw validates this (horizontal ≤128, ≤116 with adaptation).
+- 1.4 (2026-10-08): One `StructureStart` per `Structure` per chunk (`ChunkAccess.structureStarts` is a Map keyed by Structure).
+- 1.4 (2026-10-08): `BiomeSource.getNoiseBiome` is gone in 26.x: use `biomeSource.createResolver(climateSampler).getNoiseBiome(qx,qy,qz)` or `createResolverForChunk(...)` for batched volumes.
+- 1.4 (2026-10-08): Biome lookups are order-dependent at exact climate ties (`Climate.RTree` thread-local `lastResult`, about 0.05% of cells); for deterministic results, run a fixed non-tie priming lookup before each query (probe: 0 diffs across orders and threads).
+- 1.4 (2026-10-08): `ChunkGenerator.getBaseHeight(x,z,type,heightAccessor,randomState)` is pure and thread-safe; it costs about 0.2 ms per column on vanilla overworld (full-column density scan), includes aquifer water, and excludes beardifier, carvers and features.
+- 1.4 (2026-10-08): The `postProcess` random for structure pieces is seeded by the structure's index in the registry within its generation step, so other mods' structures change it; derive piece randomness from our own hash.
+- 1.4 (2026-10-08): `/locate` only handles `RandomSpreadStructurePlacement` and `ConcentricRingsStructurePlacement` (instanceof); a custom placement must subclass one of them to stay locatable.
+- 1.4 (2026-10-08): `NoiseBasedChunkGenerator` is final; Fabric API has no overworld biome injection (only `NetherBiomes`/`TheEndBiomes`) and no structure API; surface rules are now `material_rule` / `material_condition`.
 
 ## Planner core
 - 0.1a (2026-10-08): `:planner-core:checkNoMinecraft` fails the build if any source mentions net.minecraft/net.fabricmc/com.mojang or any config declares/resolves such a dependency; it runs before `compileJava` and in `check`.
