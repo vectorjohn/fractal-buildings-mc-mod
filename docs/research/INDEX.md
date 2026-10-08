@@ -17,6 +17,11 @@ the end of its track's list. Notes use [TEMPLATE.md](TEMPLATE.md).
 
 ## Track 2: GDMC (`gdmc/`)
 
+- [GDMC-HTTP and GDPC](gdmc/gdmc-http-and-gdpc.md) — reference and optional tool for recording terrain fixtures, not a dependency; its heightmap types map onto our probe interfaces; MIT — status: new
+- [GDMC competition](gdmc/gdmc-competition.md) — adopt its four criteria and human-anchored 0–10 scale as our review rubric; its common failures (terraforming scars, floating foundations, buried doors) become automated checks — status: new
+- [Mike's Angels (GDMC 2022 winner)](gdmc/mikes-angels-2022-iterative-planning.md) — strong city-layout reference: plots cut from road frontage scored on slope/water/height; seeded-agent planning loop may suit a region planner; no licence, ideas only — status: new
+- [Frightful Hobgoblin (GDMC 2024 winner)](gdmc/frightful-hobgoblin-2024.md) — reference for terrain fit (site cost, cut-and-fill foundations, retaining walls, traffic-worn paths); simulation approach doesn't fit worldgen; MIT + extra condition, ideas only — status: new
+
 ## Track 3: PCG literature (`pcg/`)
 
 - [Split grammars (Wonka et al. 2003)](pcg/split-grammars.md) — strong fit for building shells/façades on a voxel grid; borrow child-inside-parent (lot containment), per-floor/bay control grammar, one draw per rule per building — status: new
