@@ -57,6 +57,8 @@ because they shift between decompiles.
 
 - **Any structure**, not only jigsaw: blocks more than 8 chunks from the start
   chunk are never referenced, so they are **silently dropped** (no error).
+  **Measured in game** (batch 2 probe): a custom piece 20 chunks long got
+  its blocks in chunks dx 0–8 and none in dx 9–19.
   The safe box is roughly the start chunk ±128 blocks, including the +12
   adaptation margin.
 - Jigsaw validates this in its codec (see [jigsaw.md](jigsaw.md)). A custom
@@ -106,7 +108,10 @@ API is Apache-2.0.
 - Heavy work at start time. The synchronous steps (starts, references,
   features) run on one `ConsecutiveExecutor("worldgen")` lane per level
   (`ChunkMap`). Only biomes and terrain go to `Util.backgroundExecutor()`. A
-  slow start stalls that level's generation (read, not measured).
+  slow start stalls that level's generation. **Measured** (batch 2): a
+  20 ms sleep in our lazy piece builder ran with max concurrency 1 across 11
+  worker threads, and 100 chunks took 1.08 s longer with 1.22 s of total
+  sleep.
 - Reading the live world in `postProcess` to make decisions. Neighbour
   chunks' features may already have written into our chunk.
 
@@ -124,13 +129,11 @@ API is Apache-2.0.
 
 ## Probe tests worth writing after 0.5
 
-- A custom structure whose piece box exceeds ±8 chunks: assert the far blocks
-  are missing. Pins down the silent clip.
+- Done (batch 2): the ±8-chunk clip and the serial lane, see above. Keep
+  the clip test as a regression test.
 - Per-chunk block hashes for two generation orders (S3 baseline) with a
   vanilla village. This measures vanilla's own order-dependence before we
   judge ours.
-- Time a deliberately slow start (100 ms) and watch chunk throughput, to
-  confirm the single worldgen lane.
 
 ## Verdict
 
@@ -145,5 +148,5 @@ per structure per chunk.
 `StructureCheck`, `ChunkAccess`, `WorldGenRegion`, `ChunkMap` and
 `AbstractConsecutiveExecutor` (26.3), plus the vanilla
 `structure_set/*.json`. The [World generation](https://minecraft.wiki/w/World_generation)
-wiki page agrees with the source. Nothing in this note was run in game.
-Single-lane serialization and save size are inferred, not measured.
+wiki page agrees with the source. Batch 2 ran the clip and serial-lane probes in a client game test
+(seed 12345, normal world, load 4–6). Save size is still unmeasured.

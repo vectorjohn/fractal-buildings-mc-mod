@@ -23,9 +23,6 @@
 
 ## In flight
 (item | agent | id | started | branch | base | notes). Worktrees `.claude/worktrees/<branch minus claude/>`, reports `.claude/reports/<slug>.md`.
-- 1.5c terralith revisit | assistant | a9c9b401acd16f969 | 01:36 | claude/research-terralith-revisit | 1d8c943 | rewrite terralith.md from datapack under John's overview-only rule
-- 1.4 worldgen-2 | researcher (resumed) | a157a165bdcab6409 | 01:42 | claude/research-worldgen-2 | 284fc15 | chunk_surface_level + wrap_noise_router, keeping villages out, instanceof NBCG + procedural pool element, probes; ARCHITECTURE primer corrections
-- 1.3 pcg-4 | assistant | aa95f9497bdb6acf0 | 01:42 | claude/research-pcg-4 | 284fc15 | Greuter 2003, Bao/Wu floor plans, Nystrom rooms-and-mazes; final track 3 batch
 
 ## Items
 | id | item | branch | base | status | result | notes |
@@ -48,9 +45,11 @@
 | 1.2b | Track 2 GDMC, batch 2 | claude/research-gdmc-2 | 37dbd96 | done | run 9dabe60, main 8783b84 | afdebb4d353bd4292 01:12; 5 notes; track 2 closed. Unfollowed finds: Field Lab Gamma 2023, DustBeam 2025, Slothlab 2025, Hervé-Salge FDG 2021 metrics paper, Terrain-adaptive PCGML CoG 2024 |
 | 1.6b | Track 6 aesthetics, batch 2 | claude/research-aesthetics-2 | 37dbd96 | done | run 959bdaa, main 633b78e | aa79b1225a8898087 01:22; 4 notes; track 6 closed. Unfollowed: class/wealth style axis, quoins/lintels/arches at 1-block scale, dormer catalogue, Colorflow/Blockpedia |
 | 1.3c | Track 3 PCG, batch 3 | claude/research-pcg-3 | 959bdaa | done | run 284fc15, main 0fa8ea0 | a286e03f6a08b9487 01:40; 4 notes: tensor streets, parcels, straight-skeleton roofs, Kelly-McCabe |
+| 1.5c | Terralith note revisit (John OK to read) | claude/research-terralith-revisit | 1d8c943 | done | run fbec1cc/331118b, main 930bfa5 | a9c9b401acd16f969 02:05; data-only on vanilla router; wrap final_density + preliminary_surface_level; c: tags for palettes |
+| 1.3d | Track 3 PCG, batch 4 (final) | claude/research-pcg-4 | 284fc15 | done | run 7ebe332, main 85bf019 | aa95f9497bdb6acf0 02:10; Greuter, Bao/Wu, Nystrom; track 3 closed (1.3 ticked e1dded0). Optional: Hahn 2006, Leblanc 2011, Dormans graph grammars |
 
 ## Gates
-- Phase 0: builds green; viewer renders the box. Package: `scripts/test-all.sh` all 7 layers pass (L1 planner-core 1/1, cli 5/5, viewer 6/6; L2 determinism 3/3; L3 viewer/out/smoke.png; L4 server game tests; L5 client mod/build/screenshots/hello-hut.png on lavapipe). Look at: viewer/out/smoke.png (run `cd viewer && nix develop -c npm run screenshot`), hello-hut.png, the build/flake/package files listed in the to-main merge message. Status: awaiting John (told 01:47). Merge to main: pending verifier.
+- Phase 0: builds green; viewer renders the box. Package: `scripts/test-all.sh` all 7 layers pass (L1 planner-core 1/1, cli 5/5, viewer 6/6; L2 determinism 3/3; L3 viewer/out/smoke.png; L4 server game tests; L5 client mod/build/screenshots/hello-hut.png on lavapipe). Look at: viewer/out/smoke.png (run `cd viewer && nix develop -c npm run screenshot`), hello-hut.png, the build/flake/package files listed in the to-main merge message. Status: awaiting John (told 01:47). Merged to main eb50c75 (verifier a8fb54062eb8ae2fb 01:58, test-all OK with client). Awaiting John.
 - Phase 1: John picks building direction + integration approach (not reached this run).
 
 ## Rules and decisions
@@ -65,3 +64,5 @@
 - 2026-10-08 01:16 0.5 verifier a21e190951ddbb89f: COMPLETE; eula=true unnecessary (only writes eula.txt in clientGameTest run dir; both tests pass without) → removing it instead of asking John. Also :mod:build wiped client screenshot dir.
 - 2026-10-08 01:26 merged assist verifier-lock (03e7628): scripts/squash-merge.sh does check+squash+commit+tests under one flock; verifier.md forbids per-command locking and resolving any conflict (reset instead); coder.md requires report file (harness's generic "don't write report files" line was the cause). Until sessions restart from main with these files, brief each verifier: "merge only via scripts/squash-merge.sh in the integration checkout, one call".
 - 2026-10-08 01:35 John: (1) reading Stardust Labs/restricted code for a general overview is OK, never copy; (2) unlicensed / MIT-with-conditions = ideas only; (3) mod licence MIT, author John. Recorded in ASSUMPTIONS + REVIEW.
+- 2026-10-08 01:58 Phase 0 merged to main eb50c75. Agent-config nit for later: verifier.md to-main merge uses `git merge -F -` which fails; use a message file.
+- 2026-10-08 02:05 run branch is docs-only vs main again after eb50c75 → research goes to main by direct run-branch merge.

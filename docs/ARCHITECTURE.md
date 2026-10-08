@@ -51,17 +51,27 @@ matter.** Overworld biomes come from six climate parameters (temperature,
 humidity, continentalness, erosion, weirdness, depth) computed from noise.
 Structure code can query the biome source at any coordinate, including the
 whole footprint of a planned city. Vanilla structures already check biomes when
-they start.
+they start. *Track 4:* biomes are 3D, so sample at the surface Y. Lookups
+are order-dependent at exact climate ties (about 0.05% of cells), so the
+planner needs deterministic tie-breaking: a fixed priming lookup works
+([note](research/worldgen/terrain-biome-queries.md)).
 
 **Terrain height can also be estimated before generation.** The chunk generator
 exposes base-height queries that structures like villages use to project to the
-surface. Exact method names in 26.x are to be confirmed.
+surface. *Track 4:* the methods are `ChunkGenerator.getBaseHeight` /
+`getFirstFreeHeight` / `getFirstOccupiedHeight(x, z, Heightmap.Types,
+LevelHeightAccessor, RandomState)`. They are pure and cost about 0.2 ms per
+column.
 
 **Size is the real constraint.** One jigsaw structure's pieces stay within 128
 blocks horizontally of its start (116 with terrain adaptation). Pieces also
-only reach chunks that hold a reference to the start, and that search radius
-is believed to be about 8 chunks (to verify). A large city is therefore many
-coordinated structure starts, not one.
+only reach chunks that hold a reference to the start. *Track 4:* that radius is
+exactly 8 chunks. It applies to **every** structure type, not just jigsaw, and
+blocks beyond it are **silently** dropped. A large city is therefore many
+coordinated structure starts, not one. Starts, references and features run
+on one serial worldgen lane per dimension (measured: max concurrency 1), so
+start-time planning must stay cheap and lazy
+([note](research/worldgen/structure-pipeline.md)).
 
 **Terrain adaptation exists.** Structures can reshape surrounding terrain:
 `beard_thin` (villages, outposts), `beard_box` (ancient cities), `bury`
