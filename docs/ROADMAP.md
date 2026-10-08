@@ -89,7 +89,7 @@ Parallel: 0.1 first (it creates the build). Then 0.2–0.3 (docs), 0.4, 0.5 and
 0.6 side by side. Phase 1 tracks 1, 2, 3, 5 and 6 can start at once; track 4
 waits for 0.5.
 
-- [ ] **0.1 Repo layout and build.** Gradle multi-project: `planner-core/`
+- [x] **0.1 Repo layout and build.** Gradle multi-project: `planner-core/`
   (pure Java, **no Minecraft on its classpath**: enforce it), `cli/`, `mod/`
   (Fabric Loom); `viewer/` (TypeScript + three.js, npm, lockfile committed);
   `docs/research/`, `docs/adr/`. Versions from fabricmc.net for Minecraft 26.3.
@@ -316,7 +316,10 @@ public release.
 Non-breaking known issues from verified items, one line each with the item id.
 Fixed opportunistically or scheduled as items.
 
-(none yet)
+- 0.1b: viewer irToVoxels ordering test only varies x; y/z sort keys untested (a mutation survived). Add a multi-row case.
+- 0.1b: viewer `npm run dev` never run; 0.4 screenshot is the first in-browser check.
+- 0.1a: `checkNoMinecraft` also matches forbidden package names in comments/javadoc (a doc comment mentioning net.minecraft fails the build).
+- 0.1a: cli/Main.java has an unused `java.util.HashMap` import.
 
 ## Open questions and risks
 
