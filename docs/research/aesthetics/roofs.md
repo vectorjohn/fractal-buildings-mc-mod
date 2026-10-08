@@ -19,7 +19,7 @@ read right at Minecraft's 1 m resolution. Sources read:
 ## Approach in three sentences
 
 Minecraft offers three clean pitches: 2:1 (63°, stacked full blocks), 1:1
-(45°, one stair per step) and 1:2 (≈27°, alternating bottom/top slabs or
+(45°, one stair per step) and 1:2 (≈27°; the wiki says 22.5°, but atan(1/2) is 26.6°; alternating bottom/top slabs or
 stair + slab); mixing them gives gambrel and mansard profiles. The roof is
 chosen from footprint size and use (gable, hip, half-hip, saltbox, shed,
 flat with parapet, gambrel, mansard, helm, monitor), extended past the wall
