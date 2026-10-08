@@ -112,7 +112,7 @@ waits for 0.5.
   one server game test and one client game test (Xvfb + lavapipe, screenshot)
   pass. This warms the shared Loom cache and proves the environment for track 4
   and Phase 2. (Added at setup.)
-- [ ] **0.6 `scripts/test-all.sh`.** Runs every layer with a short summary
+- [x] **0.6 `scripts/test-all.sh`.** Runs every layer with a short summary
   (counts, screenshot and log paths); `--no-client` skips layer 5; takes the
   heavy lock for client tests itself. (Added at setup.)
 
