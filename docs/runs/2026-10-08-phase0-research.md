@@ -22,6 +22,7 @@
 - 0.1 checkbox ticked by coordinator once 0.1a and 0.1b are both merged.
 
 ## In flight
+(none — run complete 02:20)
 (item | agent | id | started | branch | base | notes). Worktrees `.claude/worktrees/<branch minus claude/>`, reports `.claude/reports/<slug>.md`.
 
 ## Items
@@ -47,6 +48,7 @@
 | 1.3c | Track 3 PCG, batch 3 | claude/research-pcg-3 | 959bdaa | done | run 284fc15, main 0fa8ea0 | a286e03f6a08b9487 01:40; 4 notes: tensor streets, parcels, straight-skeleton roofs, Kelly-McCabe |
 | 1.5c | Terralith note revisit (John OK to read) | claude/research-terralith-revisit | 1d8c943 | done | run fbec1cc/331118b, main 930bfa5 | a9c9b401acd16f969 02:05; data-only on vanilla router; wrap final_density + preliminary_surface_level; c: tags for palettes |
 | 1.3d | Track 3 PCG, batch 4 (final) | claude/research-pcg-4 | 284fc15 | done | run 7ebe332, main 85bf019 | aa95f9497bdb6acf0 02:10; Greuter, Bao/Wu, Nystrom; track 3 closed (1.3 ticked e1dded0). Optional: Hahn 2006, Leblanc 2011, Dormans graph grammars |
+| 1.4b | Track 4 worldgen internals, batch 2 | claude/research-worldgen-2 | 284fc15 | done | run 1dc41e8/f135f56 | a157a165bdcab6409 02:18; 3 notes + in-game probes (8-chunk clip and serial lane confirmed; getBaseHeight 98.2% exact); ARCHITECTURE primer corrected; track 4 closed. Worktree KEPT (untracked probe code + patches under mod/src/*/java/probe/) for Phase 2 re-implementation. Next: flattening spike, pool-element spike, veto mixin PoC, vanilla order-dependence baseline |
 
 ## Gates
 - Phase 0: builds green; viewer renders the box. Package: `scripts/test-all.sh` all 7 layers pass (L1 planner-core 1/1, cli 5/5, viewer 6/6; L2 determinism 3/3; L3 viewer/out/smoke.png; L4 server game tests; L5 client mod/build/screenshots/hello-hut.png on lavapipe). Look at: viewer/out/smoke.png (run `cd viewer && nix develop -c npm run screenshot`), hello-hut.png, the build/flake/package files listed in the to-main merge message. Status: awaiting John (told 01:47). Merged to main eb50c75 (verifier a8fb54062eb8ae2fb 01:58, test-all OK with client). Awaiting John.
@@ -66,3 +68,5 @@
 - 2026-10-08 01:35 John: (1) reading Stardust Labs/restricted code for a general overview is OK, never copy; (2) unlicensed / MIT-with-conditions = ideas only; (3) mod licence MIT, author John. Recorded in ASSUMPTIONS + REVIEW.
 - 2026-10-08 01:58 Phase 0 merged to main eb50c75. Agent-config nit for later: verifier.md to-main merge uses `git merge -F -` which fails; use a message file.
 - 2026-10-08 02:05 run branch is docs-only vs main again after eb50c75 → research goes to main by direct run-branch merge.
+- 2026-10-08 02:20 Scope complete: Phase 0 done (main eb50c75, gate awaiting John); Phase 1 tracks 1–6 covered (49 notes on main). 1.7 early skim open with John; 1.8 synthesis not started (out of scope unless John asks). Open questions for John: Phase 0 gate; optional Lithostitched dependency as a compat path; colour-table licence; façade depth cap.
+- Follow-ups not yet scheduled: verifier.md to-main merge uses `git merge -F -` (fails; use a file); coordinator's research merge helper lives in the session scratchpad only.
