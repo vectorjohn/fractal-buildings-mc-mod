@@ -43,8 +43,8 @@ item. Per-item work logs are in [log/](log/); run ledgers in [runs/](runs/).
 
 | Phase | State | Gate |
 |---|---|---|
-| 0. Scaffolding | not started | builds green; viewer renders the box |
-| 1. Prior art research | not started (can start alongside Phase 0) | John picks building-generation direction and the integration approach to spike |
+| 0. Scaffolding | done 2026-10-08; awaiting gate | builds green; viewer renders the box |
+| 1. Prior art research | in progress: 45+ notes; tracks 1, 2, 5, 6 covered; 3, 4 finishing; early skim open | John picks building-generation direction and the integration approach to spike |
 | 2. Worldgen spikes | not started | worldgen ADR (approach, size limits, determinism rules) |
 | 3. Planner core and three.js viewer | not started | John reviews seed gallery and invariant report |
 | 4. Building generator depth | not started | per building type, "would I believe a person built this?" |
@@ -80,39 +80,16 @@ Notes:
 
 ---
 
-## Phase 0: Scaffolding
+## Phase 0: Scaffolding (done 2026-10-08; gate: awaiting John)
 
-A short phase: set up the repo so research notes and spikes have a home, and
-prove the toolchain end to end before agents fan out.
-
-Parallel: 0.1 first (it creates the build). Then 0.2–0.3 (docs), 0.4, 0.5 and
-0.6 side by side. Phase 1 tracks 1, 2, 3, 5 and 6 can start at once; track 4
-waits for 0.5.
-
-- [ ] **0.1 Repo layout and build.** Gradle multi-project: `planner-core/`
-  (pure Java, **no Minecraft on its classpath**: enforce it), `cli/`, `mod/`
-  (Fabric Loom); `viewer/` (TypeScript + three.js, npm, lockfile committed);
-  `docs/research/`, `docs/adr/`. Versions from fabricmc.net for Minecraft 26.3.
-  Mod id and Java package recorded in `docs/ASSUMPTIONS.md`. Fill in CLAUDE.md
-  "Build and test commands". Builds green inside `nix develop`.
-- [x] **0.2 CLAUDE.md**: module boundaries, environment, parallel-work rules,
-  review conventions. (Done at setup; 0.1 fills in the commands.)
-- [x] **0.3 Templates and index.** `docs/research/TEMPLATE.md` (one-pager: what
-  it is (link), approach in three sentences, procedural vs templated, how it
-  hooks into worldgen, licence, what to borrow, what to avoid, verdict);
-  `docs/adr/TEMPLATE.md` (context, options, decision, consequences);
-  `docs/research/INDEX.md` (one line per note: name and link, one-line verdict,
-  status `new` / `reviewed` / `deep-dive` / `drop`; grouped by track).
-- [ ] **0.4 Smoke path.** The CLI writes a hard-coded 5×5×5 box as IR JSON; the
-  viewer renders it; one Playwright screenshot proves it (add Playwright to the
-  flake, see the comment in `flake.nix`).
-- [ ] **0.5 Mod hello world and Minecraft test harness.** The Fabric mod builds,
-  one server game test and one client game test (Xvfb + lavapipe, screenshot)
-  pass. This warms the shared Loom cache and proves the environment for track 4
-  and Phase 2. (Added at setup.)
-- [ ] **0.6 `scripts/test-all.sh`.** Runs every layer with a short summary
-  (counts, screenshot and log paths); `--no-client` skips layer 5; takes the
-  heavy lock for client tests itself. (Added at setup.)
+Done in run `docs/runs/2026-10-08-phase0-research.md`; full text in
+[archive/roadmap-phase-0.md](archive/roadmap-phase-0.md). Gradle multi-project
+(`planner-core` with the `checkNoMinecraft` boundary check, `cli`, `mod` on
+Loom 1.18.3 / MC 26.3 / Fabric API 0.162.0+26.3), `viewer/` (Vite + Vitest +
+strict TS + three.js), research and ADR templates, a CLI → IR JSON → viewer →
+Playwright smoke path, server and client game tests (lavapipe), and
+`scripts/test-all.sh` covering all five layers. Known issues: see Polish
+backlog (0.1a, 0.1b, 0.4, 0.5, 0.6 lines).
 
 **Gate:** builds green, and the viewer renders the box.
 
@@ -143,12 +120,12 @@ Agents: `assistant` for tracks 1, 2, 3, 5, 6 (web research); `researcher`
 (high effort) for track 4 (source reading in its own worktree, may write tiny
 probe tests), for notes marked `deep-dive`, and for the synthesis.
 
-- [ ] **1.1 Track 1: Minecraft mods** (batches until the list is covered)
-- [ ] **1.2 Track 2: GDMC**
+- [x] **1.1 Track 1: Minecraft mods** (batches until the list is covered)
+- [x] **1.2 Track 2: GDMC**
 - [ ] **1.3 Track 3: PCG literature**
 - [ ] **1.4 Track 4: Worldgen internals** (needs 0.5)
-- [ ] **1.5 Track 5: Region overlays**
-- [ ] **1.6 Track 6: Aesthetics**
+- [x] **1.5 Track 5: Region overlays**
+- [x] **1.6 Track 6: Aesthetics**
 - [ ] **1.7 Checkpoint: early skim**, after the first 8–10 notes: John redirects
   tracks or flags deep-dives. (Research keeps going meanwhile.)
 - [ ] **1.8 Landscape synthesis**: a two-page comparison of approaches for
@@ -314,7 +291,15 @@ public release.
 Non-breaking known issues from verified items, one line each with the item id.
 Fixed opportunistically or scheduled as items.
 
-(none yet)
+- 0.1b: viewer irToVoxels ordering test only varies x; y/z sort keys untested (a mutation survived). Add a multi-row case.
+- 0.1b: viewer `npm run dev` never run; 0.4 screenshot is the first in-browser check.
+- 0.1a: `checkNoMinecraft` also matches forbidden package names in comments/javadoc (a doc comment mentioning net.minecraft fails the build).
+- 0.1a: cli/Main.java has an unused `java.util.HashMap` import.
+- 0.6: test-all.sh layer detection for 0.4/0.5 (determinism, screenshot npm script names, game-test count regex, client layer) untested until they land; count regex may print "no count in log".
+- 0.6: running test-all.sh while already holding the heavy lock deadlocks (documented in --help).
+- 0.4: `Planner.smokeBox(seed)` ignores the seed; `--lot`/`--style` accepted but unused (smoke only).
+- 0.5: test-all client layer prints "no count in log" instead of a test count.
+- 0.5: `mod/build/screenshots/` is never cleared and the copy runs only on success, so a failed client run can leave a stale hello-hut.png that looks current; raw shots also duplicated in mod/build/run/clientGameTest/screenshots/.
 
 ## Open questions and risks
 

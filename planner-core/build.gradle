@@ -1,0 +1,70 @@
+plugins {
+	id 'java-library'
+}
+
+java {
+	sourceCompatibility = JavaVersion.VERSION_25
+	targetCompatibility = JavaVersion.VERSION_25
+}
+
+repositories {
+	mavenCentral()
+}
+
+dependencies {
+	testImplementation platform("org.junit:junit-bom:${junit_version}")
+	testImplementation 'org.junit.jupiter:junit-jupiter'
+	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+// --- Boundary enforcement: planner-core must not know about Minecraft or Fabric. ---
+// 1. No source file may import or mention net.minecraft / net.fabricmc / com.mojang.
+// 2. No resolved configuration may contain a Minecraft/Fabric/Mojang dependency.
+def forbiddenPattern = ~/\b(net\.minecraft|net\.fabricmc|com\.mojang)\b/
+def forbiddenGroups = ['net.minecraft', 'net.fabricmc', 'com.mojang']
+
+tasks.register('checkNoMinecraft') {
+	group = 'verification'
+	description = 'Fails if planner-core sources or dependencies reference Minecraft/Fabric.'
+	def srcDirs = sourceSets.collect { it.allJava.srcDirs }.flatten().unique()
+	def configs = configurations.matching { it.canBeResolved }
+	inputs.files(sourceSets.main.allJava, sourceSets.test.allJava)
+	doLast {
+		def problems = []
+		srcDirs.each { dir ->
+			fileTree(dir).include('**/*.java').each { f ->
+				f.readLines().eachWithIndex { line, i ->
+					if (line =~ forbiddenPattern) {
+						problems << "${f}:${i + 1}: ${line.trim()}"
+					}
+				}
+			}
+		}
+		configs.each { c ->
+			c.incoming.dependencies.each { d ->
+				if (d.group != null && forbiddenGroups.any { d.group == it || d.group.startsWith(it + '.') }) {
+					problems << "configuration ${c.name} declares ${d.group}:${d.name}"
+				}
+			}
+			if (!problems && c.name in ['compileClasspath', 'runtimeClasspath', 'testCompileClasspath', 'testRuntimeClasspath']) {
+				c.resolvedConfiguration.resolvedArtifacts.each { a ->
+					def g = a.moduleVersion.id.group
+					if (forbiddenGroups.any { g == it || g.startsWith(it + '.') }) {
+						problems << "classpath ${c.name} contains ${g}:${a.name}"
+					}
+				}
+			}
+		}
+		if (problems) {
+			throw new GradleException("planner-core must not depend on Minecraft/Fabric:\n  " + problems.join('\n  '))
+		}
+	}
+}
+
+tasks.named('check') {
+	dependsOn 'checkNoMinecraft'
+}
+// Also run before compiling so a violation fails fast.
+tasks.named('compileJava') {
+	dependsOn 'checkNoMinecraft'
+}
