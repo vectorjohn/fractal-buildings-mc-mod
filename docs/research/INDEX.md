@@ -17,6 +17,11 @@ the end of its track's list. Notes use [TEMPLATE.md](TEMPLATE.md).
 
 ## Track 2: GDMC (`gdmc/`)
 
+- [GDMC-HTTP and GDPC](gdmc/gdmc-http-and-gdpc.md) — reference and optional tool for recording terrain fixtures, not a dependency; its heightmap types map onto our probe interfaces; MIT — status: new
+- [GDMC competition](gdmc/gdmc-competition.md) — adopt its four criteria and human-anchored 0–10 scale as our review rubric; its common failures (terraforming scars, floating foundations, buried doors) become automated checks — status: new
+- [Mike's Angels (GDMC 2022 winner)](gdmc/mikes-angels-2022-iterative-planning.md) — strong city-layout reference: plots cut from road frontage scored on slope/water/height; seeded-agent planning loop may suit a region planner; no licence, ideas only — status: new
+- [Frightful Hobgoblin (GDMC 2024 winner)](gdmc/frightful-hobgoblin-2024.md) — reference for terrain fit (site cost, cut-and-fill foundations, retaining walls, traffic-worn paths); simulation approach doesn't fit worldgen; MIT + extra condition, ideas only — status: new
+
 ## Track 3: PCG literature (`pcg/`)
 
 - [Split grammars (Wonka et al. 2003)](pcg/split-grammars.md) — strong fit for building shells/façades on a voxel grid; borrow child-inside-parent (lot containment), per-floor/bay control grammar, one draw per rule per building — status: new
@@ -34,6 +39,11 @@ the end of its track's list. Notes use [TEMPLATE.md](TEMPLATE.md).
 - [The Lost Cities: city placement](overlays/lost-cities-city-placement.md) — best placement model to port (position-seeded city field × biome multiplier, height veto); cities cross biome borders freely; MIT — status: new
 
 ## Track 6: Aesthetics (`aesthetics/`)
+
+- [Depth and layering in walls](aesthetics/depth-and-layering.md) — adopt as the core façade model: walls as layers (plinth, frame, infill, recessed openings, floor bands, projections) with depth offsets; spacing rules mostly synthesised — status: new
+- [Palettes and gradients](aesthetics/palettes-and-gradients.md) — adopt: each role maps to a 3–5 block light→dark list, a deterministic weathering field picks per cell, 60/30/10 main/secondary/accent; random moss is the anti-pattern — status: new
+- [Roofs](aesthetics/roofs.md) — adopt: roof as a function of footprint, pitches 2:1/1:1/1:2, 1-block eave default, split sections past ~12-block gable span or ~15×15 footprint — status: new
+- [Vanilla villages baseline](aesthetics/vanilla-villages.md) — baseline, not a model: measured sizes/materials of five variants (typical 5×5 walls, 3 high, 1:1 roof); borrow biome→material map, beat it on depth, scale, terrain fit, street facing — status: new
 
 ## Phase 2 spikes (`spikes/`)
 
