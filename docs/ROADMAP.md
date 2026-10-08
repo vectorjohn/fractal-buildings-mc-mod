@@ -155,7 +155,7 @@ probe tests), for notes marked `deep-dive`, and for the synthesis.
 - [ ] **1.3 Track 3: PCG literature**
 - [ ] **1.4 Track 4: Worldgen internals** (needs 0.5)
 - [x] **1.5 Track 5: Region overlays**
-- [ ] **1.6 Track 6: Aesthetics**
+- [x] **1.6 Track 6: Aesthetics**
 - [ ] **1.7 Checkpoint: early skim**, after the first 8–10 notes: John redirects
   tracks or flags deep-dives. (Research keeps going meanwhile.)
 - [ ] **1.8 Landscape synthesis**: a two-page comparison of approaches for

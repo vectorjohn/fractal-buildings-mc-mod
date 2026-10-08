@@ -20,3 +20,4 @@ editing the old one.
 | 2026-10-08 | 0.4 | Viewer pins `@playwright/test` to the nixpkgs playwright-driver version (1.63.0) and the e2e screenshot test lives in `viewer/e2e`, run by `npm run screenshot` | Browsers come from Nix, so versions must match | yes |
 | 2026-10-08 | Phase 1 | Agents don't read Stardust Labs code or data (Terralith etc.); its licence forbids using it to configure, test, debug or augment AI systems. Notes come from public pages only | Licence text; John to decide | yes |
 | 2026-10-08 | Phase 1 | Code with no licence, or MIT with extra conditions (e.g. Frightful Hobgoblin's), is treated as ideas-only: study the approach, never copy code | Conservative default; John to decide | yes |
+| 2026-10-08 | Phase 1 | A block colour/lightness table derived from Mojang textures is computed at build/dev time and not committed (scripts and our palette orderings may be committed) | Mojang usage guidelines claim derivatives of assets; John to decide | yes |
