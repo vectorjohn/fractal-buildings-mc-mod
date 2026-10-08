@@ -11,7 +11,7 @@ inward at the same speed; lifting each point by the time the front passed
 it gives "a canonical way of constructing a polygonal roof" (the paper): a
 hip roof over any footprint. This note owns the algorithm; the look
 (pitches, eaves, roof types) is in [aesthetics/roofs](../aesthetics/roofs.md)
-and the track 6 roof-vocabulary note.
+and [aesthetics/roof-forms-and-massing](../aesthetics/roof-forms-and-massing.md).
 
 ## Approach
 

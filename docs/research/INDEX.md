@@ -46,6 +46,9 @@ the end of its track's list. Notes use [TEMPLATE.md](TEMPLATE.md).
 - [Vanegas et al. 2012, parcel subdivision](pcg/parcel-subdivision.md) — best lot-subdivision reference: recursive OBB split with street-access rule and area/frontage bounds (integer bisection on axis-aligned blocks); each block independent; skeleton strips later — status: new
 - [Straight-skeleton roofs](pcg/straight-skeleton-roofs.md) — on grid footprints hip height = chessboard distance to outside; gables/cross-gables as max over wings; "closed roof" = full coverage + filled steps >1; campskeleton (Apache-2.0) / kendzi (BSD-3) in reserve, CGAL GPL — status: new
 - [Kelly & McCabe 2006 city survey](pcg/kelly-mccabe-city-survey.md) — low value now; useful pointers: Greuter's hash-seeded on-demand city (precedent for our determinism model) and Sun's least-elevation road stepping — status: new
+- [Greuter et al. 2003, pseudo-infinite cities](pcg/greuter-pseudo-infinite-cities.md) — confirms our determinism model (hashed seed per cell, on-demand, discardable cache); cells never interact, hence our region plan; suggests an evict-and-regenerate byte-compare test — status: new
+- [Bao 2013 / Wu 2018 optimisation layouts](pcg/optimisation-layouts-bao-wu.md) — too slow for worldgen and Wu's time-limited solver breaks determinism; borrow Wu's constraints as IR checks, regions→aisles→rooms for big buildings, Bao's soft terms for generate-N-keep-best — status: new
+- [Nystrom, rooms and mazes](pcg/rooms-and-mazes.md) — adopt its connect pass (spanning tree from the entrance + tunable extra doors) and order-independent dead-end removal as the interior reachability/repair stage; skip the maze; MIT — status: new
 
 ## Track 4: Worldgen internals (`worldgen/`)
 
@@ -58,7 +61,7 @@ the end of its track's list. Notes use [TEMPLATE.md](TEMPLATE.md).
 
 - [TerraBlender](overlays/terrablender.md) — proves a biome-independent region layer works at scale, but wrong vehicle for cities (random blobs that replace biomes); LGPL-3.0, supports 26.3 — status: new
 - [Lithostitched](overlays/lithostitched.md) — closest match to our settlement layer: domain-warped Voronoi region field plus density-gated structures, all data-driven; borrow the design, don't depend on it; MIT — status: new
-- [Terralith](overlays/terralith.md) — compatibility target, not a model; overrides overworld noise, so cities must sit on top as structures with biome-tag palettes; licence restricts AI use (see ledger) — status: new
+- [Terralith](overlays/terralith.md) — compatibility target, not a model: data-only layered on vanilla's noise router; wrap router slots (final_density + preliminary_surface_level) and use its c: biome tags for palettes; height estimates miss dunes/arches — status: new
 - [The Lost Cities: city placement](overlays/lost-cities-city-placement.md) — best placement model to port (position-seeded city field × biome multiplier, height veto); cities cross biome borders freely; MIT — status: new
 - [Tectonic](overlays/tectonic.md) — terrain can be flattened inside city cells compatibly: wrap final density with a cached city mask (not "depth"); spike candidate and compat-test target, not a dependency; MIT (repo LICENSE says CC0) — status: new
 - [Biolith](overlays/biolith.md) — third biome-injection approach (edits vanilla biome table + per-lookup adjust); can't define settlement regions, compat target only; re-implement its BiomePerimeters idea for border palette blending; LGPL-3.0 — status: new
