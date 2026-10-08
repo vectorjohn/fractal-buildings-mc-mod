@@ -46,6 +46,9 @@ the end of its track's list. Notes use [TEMPLATE.md](TEMPLATE.md).
 - [Vanegas et al. 2012, parcel subdivision](pcg/parcel-subdivision.md) — best lot-subdivision reference: recursive OBB split with street-access rule and area/frontage bounds (integer bisection on axis-aligned blocks); each block independent; skeleton strips later — status: new
 - [Straight-skeleton roofs](pcg/straight-skeleton-roofs.md) — on grid footprints hip height = chessboard distance to outside; gables/cross-gables as max over wings; "closed roof" = full coverage + filled steps >1; campskeleton (Apache-2.0) / kendzi (BSD-3) in reserve, CGAL GPL — status: new
 - [Kelly & McCabe 2006 city survey](pcg/kelly-mccabe-city-survey.md) — low value now; useful pointers: Greuter's hash-seeded on-demand city (precedent for our determinism model) and Sun's least-elevation road stepping — status: new
+- [Greuter et al. 2003, pseudo-infinite cities](pcg/greuter-pseudo-infinite-cities.md) — confirms our determinism model (hashed seed per cell, on-demand, discardable cache); cells never interact, hence our region plan; suggests an evict-and-regenerate byte-compare test — status: new
+- [Bao 2013 / Wu 2018 optimisation layouts](pcg/optimisation-layouts-bao-wu.md) — too slow for worldgen and Wu's time-limited solver breaks determinism; borrow Wu's constraints as IR checks, regions→aisles→rooms for big buildings, Bao's soft terms for generate-N-keep-best — status: new
+- [Nystrom, rooms and mazes](pcg/rooms-and-mazes.md) — adopt its connect pass (spanning tree from the entrance + tunable extra doors) and order-independent dead-end removal as the interior reachability/repair stage; skip the maze; MIT — status: new
 
 ## Track 4: Worldgen internals (`worldgen/`)
 
