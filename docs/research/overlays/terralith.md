@@ -1,78 +1,99 @@
 # Terralith
 
-**Track:** overlays · **Date:** 2026-10-08 · **Author:** assistant
+**Track:** overlays · **Date:** 2026-10-08 (revised same day) · **Author:** assistant
 
 ## What it is
 
-Stardust Labs' overworld overhaul: 95+ new biomes, reworked vanilla biomes,
-new terrain shapes (canyons, shattered, skylands, trenches) and a few
-structures. [Modrinth](https://modrinth.com/mod/terralith),
-[wiki](https://stardustlabs.miraheze.org/). Maintained: 2.6.5 for 26.3 (Sept
-2026) as a datapack zip and as Fabric/NeoForge jars. The GitHub repo
-([Stardust-Labs-MC/Terralith](https://github.com/Stardust-Labs-MC/Terralith))
-stops at 2.5.1 (May 2024); current versions aren't published as source there.
+Stardust Labs' overworld overhaul: 146 biomes in the overworld list (vanilla
+plus ~95 of its own), new terrain shapes and a few structures.
+[Modrinth](https://modrinth.com/mod/terralith). Maintained: 2.6.5 for 26.3
+(2026-09-27), as a datapack and Fabric/NeoForge jars. The Fabric jar is the
+datapack (identical `data/`) plus a config screen and resource conditions for
+toggles; **no mixins**, no Java worldgen. Needs Lithostitched as a mod.
 
 ## Approach
 
-Datapack-only at heart: it **overrides vanilla's worldgen JSON** rather than
-adding code. The 26.3 pack replaces `dimension/overworld.json` (an explicit
-multi-noise biome list), the overworld `noise_settings`, the overworld density
-functions (continentalness, erosion, offset, factor, jaggedness, final
-density) and the surface/material rules, plus its own biomes, features and
-structures. Since 2.6.0 the **mod** version requires Lithostitched and injects
-its biomes through Lithostitched's parameter list instead of overriding the
-whole dimension (the datapack's dimension file is skipped when Lithostitched is
-loaded).
+All data, layered on vanilla's 26.3 noise router:
+- **Router:** `noise_settings/overworld` keeps vanilla's slots but points
+  `continents` at `effective_continentalness` (a light reshaping spline over
+  vanilla continents), and forces aquifers flooded inside cliff zones.
+- **Terrain shape:** rewritten `offset`, `factor`, `jaggedness`: the vanilla
+  model (nested cubic splines continents → erosion → ridges / ridges_folded)
+  with its own tables (~64 nested splines in `offset`). `depth` and
+  `sloped_cheese` stay vanilla and pick these up. Climate noises are retuned
+  (`temperature`, `vegetation`, `erosion` octaves) for larger, varied zones.
+- **Extra shapes** (custom density functions in `terralith:overworld/*`), all
+  gated by 2D splines over continents/erosion/temperature so they follow
+  climate cells: *additive* (dunes, arches, spike tendrils, max'ed into
+  `extra_terrain_sum`) and *subtractive* (noise-driven cliff carving,
+  `subtract_terrain_sum`). `final_density` is vanilla's form with
+  `max(sloped_cheese + beardifier, extra)` and `min(..., subtract)` spliced
+  in, plus its own cave cheese. Several folders look unused (`archd1`,
+  `cliff_cringe`, `skylands/noise`: nothing references them).
+- **Biomes:** an explicit multi-noise list (1708 entries) over the 6 climate
+  parameters, with weirdness cut into ~58 bands to fit more variants per cell.
+  Skylands are biomes in an ocean-continentalness cell.
+- **Surface:** overrides `material_rule/overworld/*` and inserts one large
+  `terralith:preliminary_surface` rule (biome + noise-threshold + steep bands).
+- **Features:** its own placed/configured features per biome, 39 vanilla biome
+  files overridden, ~18 vanilla placed features (ores, disks, trees) retuned.
 
 ## Procedural vs templated
 
-Terrain and biome layout are procedural (vanilla's noise router with its own
-tuning); structures are ordinary jigsaw/NBT templates.
+Terrain and biomes fully procedural (authored spline tables); structures
+(fortified/desert villages, mage towers, camps, rubble) are jigsaw/NBT.
 
 ## How it hooks into worldgen
 
-Data only: registry overrides of `worldgen/*` and `dimension/*` (datapack), or
-Lithostitched modifiers (mod). No biome-source code of its own. Because it
-replaces the terrain density functions, it changes heights everywhere, not just
-biome labels. Deterministic like vanilla.
+Registry overrides of vanilla JSON (last pack wins), file by file. The biome
+list ships twice: `dimension/overworld.json` with inline biomes, load-condition
+skipped when Lithostitched is present, and a
+`multi_noise_biome_source_parameter_list/overworld` override using
+Lithostitched's extended list keys. Toggles (skylands off etc.) are
+Lithostitched biome injectors. Deterministic; nothing chunk-order dependent.
 
 ## Licence
 
 **Stardust Labs License** (custom, not open source;
-[text](https://github.com/Stardust-Labs-MC/license)). Use and play are free;
-copying portions into another project is forbidden. It also **forbids using
-their code "to configure, test, debug, or augment" any AI or generative system**.
-Studying it with an AI agent is arguably covered by that clause, so I stopped
-after listing which files the 26.3 datapack overrides and the first lines of
-`dimension/overworld.json`, deleted the local copy, and wrote the rest from the
-Modrinth description. Treat it as **don't read the source further; compat target only**.
+[text](https://github.com/Stardust-Labs-MC/license)): no copying into other
+projects; a clause restricts use with AI systems. Under John's decision
+(ASSUMPTIONS.md, 2026-10-08) I read the 2.6.5+26.3 datapack and Fabric jar
+**for the approach only**: file layout, router wiring, which functions feed
+which, spline coordinates (not values), parameter-list structure. Nothing
+copied; local copies deleted. Never copy its JSON or tables.
 
 ## What to borrow
 
-- Nothing from its code. Ideas from the public description: whole-world
-  overrides are the most powerful lever (terrain and biomes together), and
-  "flat highlands that builders like" shows terrain can be tuned for building
-  without our own generator.
-- **Compatibility:** Terralith is one of the most-installed worldgen packs, so
-  our cities must survive its terrain (canyons, shattered and steep biomes) and
-  its 95+ unknown biomes. Palette choice by biome **tags** (with a fallback),
-  not biome IDs.
+- **Shape features as `max`/`min` layers over the base terrain**, gated by
+  climate splines: our flatten wrapper fits the same slot naturally.
+- **Weirdness sub-bands for variants**, not new climate axes.
+- Biome palettes by **convention tags**: it fills 41 `c:is_*` biome tags
+  (hot, dry, snowy, mountain, sandy...) for all its biomes. Use those.
 
-## What to avoid
+## What to avoid / integration consequences
 
-- Overriding `dimension/overworld.json` or the noise settings: last pack wins,
-  so it conflicts with Terralith, Tectonic and every other overhaul (the
-  Terralith page itself says biome-adding datapacks are typically
-  incompatible). This rules out a datapack-override form of "city regions".
+- **Structures on top work**: `final_density` keeps `beardifier`, so jigsaw
+  terrain adaptation still flattens under our pieces.
+- **Height estimate lies under dunes/arches**: vanilla 26.3
+  `chunk_surface_level` = interpolated `preliminary_surface_level`; Terralith's
+  version includes cliff carving but not the additive shapes. Site picking must
+  sample real heightmaps (or the full density), not the estimate.
+- **Flattening city cells**: wrap the router's `final_density` *and*
+  `preliminary_surface_level` (whatever file won); never override the files.
+  Inside cliff zones aquifers are forced flooded: fade the mask out there.
+- **"Ocean" ≠ low continentalness**: skylands land sits in ocean cells.
+- **Tectonic + Terralith**: both override `noise_settings/overworld`,
+  `final_density`, `erosion`, `preliminary_surface_level`; mixed load order
+  mixes them. Our wrapper must not assume either.
 
 ## Verdict
 
-A compatibility target, not a model: it shows that biome/terrain overhauls own
-the biome source, so cities belong in structures layered on top.
+Compatibility target: purely data on vanilla's router, so a router-slot
+wrapper plus tag-based palettes composes with it; never override its files.
 
-**Sources / what I couldn't verify:** Modrinth page and version list, file
-listing of the 26.3 datapack, licence text. Didn't read its JSON beyond the
-first lines of one file (licence), didn't run it. Whether Lithostitched-based
-injection is enough for Terralith to coexist with TerraBlender mods is claimed
-on its page, not checked. **For the human:** please decide whether agents may
-read Stardust Labs packs at all, given the AI clause.
+**Sources / what I couldn't verify:** read Terralith 2.6.5+26.3 datapack and
+Fabric jar (metadata, router, density-function graph, parameter-list shape,
+material-rule types), vanilla 26.3 router JSON from the Loom cache for
+comparison. Didn't run it. Unchecked: which game code reads
+`chunk_surface_level` in 26.3; how skylands float (offset/factor in that cell,
+presumably); whether its toggles still match 26.3 registry names.

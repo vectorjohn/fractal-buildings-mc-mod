@@ -26,6 +26,15 @@ heart, spade), and spade uses flat spline segments (derivative 0) to make
 (43 files): config-backed density function types (`config_noise`,
 `config_clamp`, `config_constant`), a height-limits modifier, and fix-up mixins.
 
+**Terratonic (3.0.31+26.3 jar):** Tectonic's own files, not Stardust's.
+It redefines `tectonic:base_terrain` as `max(tectonic sloped_cheese,
+terralith extra_terrain_sum)`, keeps only spike tendrils from Terralith's
+additive shapes, re-keys spike gating to Tectonic's temperature, and retunes
+its continent/island splines. So the combined pack is Tectonic terrain with
+Terralith biomes and spikes on top. The overlay directory is in the jar but I
+found no `pack.mcmeta` entry or code string that enables it: unverified
+whether it is active in 26.3.
+
 ## Procedural vs templated
 
 Fully procedural noise; the authored part is spline tables and config numbers.
@@ -35,7 +44,7 @@ Fully procedural noise; the authored part is spline tables and config numbers.
 Registry overrides of vanilla worldgen JSON (last pack wins), plus three
 Lithostitched modifiers (height limits, ice, islands). It does **not** use
 `wrap_noise_router`. Compat is handled by shipping variants: an overlay for
-Terralith ("Terratonic"; not opened, Stardust-derived), one for CliffTree.
+Terralith ("Terratonic", see below), one for CliffTree.
 Biome mods that go through TerraBlender or Biolith work, since biomes still
 come from the climate parameters Tectonic computes. Mixins touch structure
 pieces (lowers ocean monuments), blending, noise seeding, the lava level.
@@ -71,7 +80,9 @@ Deterministic: pure density functions.
   ~32–64 blocks, keep caves/aquifers (apply only near the surface), and go
   to 0 over oceans/rivers. Unchecked: whether `preliminary_surface_level` (used
   by some height estimates) also needs wrapping so structures see the flattened
-  height; track 4's 26.3 reading should settle this.
+  height. Likely yes: vanilla 26.3 router slot `chunk_surface_level` is an
+  interpolated `preliminary_surface_level` (see terralith.md); which code reads
+  it is still for track 4.
 - Costs: `final_density` is evaluated per cell of every chunk; a `cache_2d`
   mask is one lookup per column, probably small, but it's unmeasured.
 
@@ -85,5 +96,5 @@ dependency.
 (`final_density`, `initial_density_without_jaggedness`, `depth`,
 `offset/final`, `offset/regions`, region splines), the stonecutter config, the
 Modrinth page, on branch `new-islands` (f33a29d). 26.3 source not public;
-`overlay.terratonic` not opened (Stardust Labs content). Not run; the wrapper is
+`overlay.terratonic` listed in the 3.0.31 jar (2026-10-08). Not run; the wrapper is
 a design sketch, not tested; cost not measured.
