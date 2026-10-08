@@ -56,6 +56,9 @@ the end of its track's list. Notes use [TEMPLATE.md](TEMPLATE.md).
 - [Terrain height and biome queries](worldgen/terrain-biome-queries.md) — live probes viable (getBaseHeight ~0.2 ms/column, order-independent); biome lookups are order-dependent at exact climate ties (fix: fixed priming lookup) and 3D (sample at surface Y) — status: new
 - [Jigsaw assembly and terrain adaptation](worldgen/jigsaw.md) — don't use jigsaw assembly for layout (greedy, no backtracking, 128-block cap); do reuse vanilla terrain adaptation, which grades custom pieces as rigid boxes for free — status: new
 - [Extension points (26.3)](worldgen/extension-points.md) — structure-based is the only option with first-class hooks; drop custom chunk generator (final NoiseBasedChunkGenerator) and biome overlay (Fabric API can't add overworld biomes); city-mask density function is a viable flattening fallback — status: new
+- [Surface level and flattening](worldgen/surface-level-and-flattening.md) — preliminary_surface_level is a cheap screen (~1/50 cost, 12–15 blocks low, p90 8 after bias) not a foundation probe; flattening must wrap final_density, chunk_surface_level and aquifer surface_level, prefer fill to cut; plan reads unwrapped terrain — status: new
+- [Keeping structures out of cities](worldgen/keeping-structures-out.md) — use our own small veto mixin on tryGenerateStructure and StructureCheck.canCreateStructure, driven by a structure tag; exclusion zones and biome tags can't do it; Lithostitched spawn condition works but adds a dependency — status: new
+- [Custom generator and procedural pool element](worldgen/custom-generator-and-pool-element.md) — drop the custom chunk generator (non-NoiseBased generators get an empty-router RandomState); a procedural StructurePoolElement could put our houses into vanilla villages — worth a small spike — status: new
 
 ## Track 5: Region overlays (`overlays/`)
 

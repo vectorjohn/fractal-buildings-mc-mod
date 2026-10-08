@@ -123,7 +123,7 @@ probe tests), for notes marked `deep-dive`, and for the synthesis.
 - [x] **1.1 Track 1: Minecraft mods** (batches until the list is covered)
 - [x] **1.2 Track 2: GDMC**
 - [x] **1.3 Track 3: PCG literature**
-- [ ] **1.4 Track 4: Worldgen internals** (needs 0.5)
+- [x] **1.4 Track 4: Worldgen internals** (needs 0.5)
 - [x] **1.5 Track 5: Region overlays**
 - [x] **1.6 Track 6: Aesthetics**
 - [ ] **1.7 Checkpoint: early skim**, after the first 8–10 notes: John redirects
