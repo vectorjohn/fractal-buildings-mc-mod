@@ -14,6 +14,10 @@ the end of its track's list. Notes use [TEMPLATE.md](TEMPLATE.md).
 - [YUNG's structure mods and API](mods/yungs-structure-mods.md) — reference for how far jigsaw stretches (128-block radius, 116 with terrain adaptation); study/link, don't copy; LGPL-3.0 — status: new
 - [ChoiceTheorem's Overhauled Village](mods/ctov.md) — best-in-class templated villages (~2,000 templates), polite integration via vanilla village set + biome tags; ideas only; CC BY-NC-ND 4.0 — status: new
 - [Towns and Towers](mods/towns-and-towers.md) — strongest reference for per-biome architectural themes; templated, no public source (jar is data only); CC BY-NC-ND 4.0 — status: new
+- [Repurposed Structures](mods/repurposed-structures.md) — widest biome-variant catalogue (16 village styles, ~3,500 NBTs) and useful site checks (biome radius, terrain range, liquid, feature-cancelling tags); same jigsaw size wall; LGPL-3.0, read don't copy — status: new
+- [Moog's structures](mods/moogs-structures.md) — scattered single-piece templates, not settlements; take per-set disable toggle, spacing slider and strict flatness veto; LGPL-3.0 code, NBTs All Rights Reserved (not opened) — status: new
+- [Recurrent Complex](mods/recurrent-complex.md) — best prior art for rule-driven variation: plan-once transformers, inherited boolean variables, reachability-checked room-grid mazes (MC-free, tested core); 1.12-era, order-dependent; MIT + Apache-2.0 maze core — status: new
+- [Astruct](mods/astruct.md) — cautionary prototype: off-thread jigsaw placed near players only, clamped to 64–256 blocks, single Y, no blending, player-path-dependent; only its hashed cell centres are worth borrowing; MIT — status: new
 
 ## Track 2: GDMC (`gdmc/`)
 
