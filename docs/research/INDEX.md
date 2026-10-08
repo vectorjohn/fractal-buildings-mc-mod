@@ -45,6 +45,11 @@ the end of its track's list. Notes use [TEMPLATE.md](TEMPLATE.md).
 
 ## Track 4: Worldgen internals (`worldgen/`)
 
+- [Structure pipeline (26.3)](worldgen/structure-pipeline.md) — structure-based integration fits; hard limits for every structure type: blocks >8 chunks from the start chunk are silently dropped, one start per structure per chunk; placement pluggable (subclass RandomSpreadStructurePlacement to keep /locate) — status: new
+- [Terrain height and biome queries](worldgen/terrain-biome-queries.md) — live probes viable (getBaseHeight ~0.2 ms/column, order-independent); biome lookups are order-dependent at exact climate ties (fix: fixed priming lookup) and 3D (sample at surface Y) — status: new
+- [Jigsaw assembly and terrain adaptation](worldgen/jigsaw.md) — don't use jigsaw assembly for layout (greedy, no backtracking, 128-block cap); do reuse vanilla terrain adaptation, which grades custom pieces as rigid boxes for free — status: new
+- [Extension points (26.3)](worldgen/extension-points.md) — structure-based is the only option with first-class hooks; drop custom chunk generator (final NoiseBasedChunkGenerator) and biome overlay (Fabric API can't add overworld biomes); city-mask density function is a viable flattening fallback — status: new
+
 ## Track 5: Region overlays (`overlays/`)
 
 - [TerraBlender](overlays/terrablender.md) — proves a biome-independent region layer works at scale, but wrong vehicle for cities (random blobs that replace biomes); LGPL-3.0, supports 26.3 — status: new
