@@ -28,6 +28,11 @@ the end of its track's list. Notes use [TEMPLATE.md](TEMPLATE.md).
 - [CGA shape grammar (Müller et al. 2006)](pcg/cga-shape-grammar.md) — best reference for massing+façades; adopt staged order, occlusion queries and snap lines via a typed Java rule API, not its rule language — status: new
 - [Parish & Müller 2001, procedural cities](pcg/parish-muller-cities.md) — good model for roads+lots within a region cell; order-dependent, so run once per region cell and cache, never per chunk — status: new
 - [WFC and model synthesis](pcg/wfc-model-synthesis.md) — only as a bounded detail filler with grammar-fixed borders and a fallback; no global structure, and chunked variants break order-independence — status: new
+- [Townscaper](pcg/townscaper.md) — borrow coarse occupancy grid → neighbour-derived modules as the massing→blocks stage; skip the irregular grid; WFC only as a bounded variant picker; proprietary (Sylves reimplementation MIT) — status: new
+- [Watabou city generators](pcg/watabou-city-generators.md) — compact reference for district-typed city plans (Voronoi wards, streets on ward borders, recursive lot bisection); run once per region cell; TownGeneratorOS GPL-3.0, ideas only — status: new
+- [Merrell et al. 2010, residential layouts](pcg/merrell-residential-layouts.md) — best model of a believable house brief (room graph, privacy gradient, stacking/lot checks usable as validators); too slow and not guaranteed correct to be the generator — status: new
+- [Lopes et al. 2010, constrained-growth floor plans](pcg/constrained-growth-floor-plans.md) — best fit for interiors: grid-native, ms–1 s, reachability guaranteed by a door pass; run after the shell grammar, fed by a Merrell-style room program — status: new
+- [MarkovJunior](pcg/markovjunior.md) — toolbox of bounded grid rewrite passes (cleanup, detail, reachability checks) after the grammar, not the generator; MIT, small subset portable to Java — status: new
 
 ## Track 4: Worldgen internals (`worldgen/`)
 
