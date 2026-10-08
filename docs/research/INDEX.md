@@ -61,6 +61,10 @@ the end of its track's list. Notes use [TEMPLATE.md](TEMPLATE.md).
 - [Palettes and gradients](aesthetics/palettes-and-gradients.md) — adopt: each role maps to a 3–5 block light→dark list, a deterministic weathering field picks per cell, 60/30/10 main/secondary/accent; random moss is the anti-pattern — status: new
 - [Roofs](aesthetics/roofs.md) — adopt: roof as a function of footprint, pitches 2:1/1:1/1:2, 1-block eave default, split sections past ~12-block gable span or ~15×15 footprint — status: new
 - [Vanilla villages baseline](aesthetics/vanilla-villages.md) — baseline, not a model: measured sizes/materials of five variants (typical 5×5 walls, 3 high, 1:1 roof); borrow biome→material map, beat it on depth, scale, terrain fit, street facing — status: new
+- [vibecraft rule sheets](aesthetics/vibecraft.md) — useful numbers: scale table, window-to-wall ratios (0.10 fortress → 0.30 modern), window rhythm, element × primary/secondary/accent palette; ignore its randomised-material tip; MIT, no code — status: new
+- [Automatic block colour table](aesthetics/block-colour-table.md) — dev-time palette check only (lightness + busyness from Loom's cached client jar); commit script and orderings, not textures; never at runtime; finding: stone variants order weathering, not shade — status: new
+- [WesterosCraft / Conquest style guides](aesthetics/style-guides-westeroscraft-conquest.md) — little geometry; adopt consistency rules (one timber + one infill colour, thatch only ≥1:1, ornament for wealth) and a style × class × region model; caps façades at 2 depth layers — status: new
+- [Roof forms and massing](aesthetics/roof-forms-and-massing.md) — roof = pitch profile over each cell's distance to footprint edge, max over parts (equals straight skeleton for grid footprints); support gable, hip (L/T/U), shed, flat+parapet, helm first; never curved — status: new
 
 ## Phase 2 spikes (`spikes/`)
 
