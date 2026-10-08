@@ -37,6 +37,9 @@ the end of its track's list. Notes use [TEMPLATE.md](TEMPLATE.md).
 - [Lithostitched](overlays/lithostitched.md) — closest match to our settlement layer: domain-warped Voronoi region field plus density-gated structures, all data-driven; borrow the design, don't depend on it; MIT — status: new
 - [Terralith](overlays/terralith.md) — compatibility target, not a model; overrides overworld noise, so cities must sit on top as structures with biome-tag palettes; licence restricts AI use (see ledger) — status: new
 - [The Lost Cities: city placement](overlays/lost-cities-city-placement.md) — best placement model to port (position-seeded city field × biome multiplier, height veto); cities cross biome borders freely; MIT — status: new
+- [Tectonic](overlays/tectonic.md) — terrain can be flattened inside city cells compatibly: wrap final density with a cached city mask (not "depth"); spike candidate and compat-test target, not a dependency; MIT (repo LICENSE says CC0) — status: new
+- [Biolith](overlays/biolith.md) — third biome-injection approach (edits vanilla biome table + per-lookup adjust); can't define settlement regions, compat target only; re-implement its BiomePerimeters idea for border palette blending; LGPL-3.0 — status: new
+- [The Lost Cities: road planning](overlays/lost-cities-road-planning.md) — strong deterministic road model (world-wide hashed 3-tier street grid clipped to city; highway hub per 128×128-chunk cell, mutual-choice links); avoid its grid-straight geometry and save-dependent hub choices; MIT — status: new
 
 ## Track 6: Aesthetics (`aesthetics/`)
 
