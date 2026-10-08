@@ -150,11 +150,11 @@ Agents: `assistant` for tracks 1, 2, 3, 5, 6 (web research); `researcher`
 (high effort) for track 4 (source reading in its own worktree, may write tiny
 probe tests), for notes marked `deep-dive`, and for the synthesis.
 
-- [ ] **1.1 Track 1: Minecraft mods** (batches until the list is covered)
-- [ ] **1.2 Track 2: GDMC**
+- [x] **1.1 Track 1: Minecraft mods** (batches until the list is covered)
+- [x] **1.2 Track 2: GDMC**
 - [ ] **1.3 Track 3: PCG literature**
 - [ ] **1.4 Track 4: Worldgen internals** (needs 0.5)
-- [ ] **1.5 Track 5: Region overlays**
+- [x] **1.5 Track 5: Region overlays**
 - [ ] **1.6 Track 6: Aesthetics**
 - [ ] **1.7 Checkpoint: early skim**, after the first 8–10 notes: John redirects
   tracks or flags deep-dives. (Research keeps going meanwhile.)
