@@ -72,6 +72,8 @@ no public source; public pages only.
   and unit-tested: a template for interior/compound layout in `planner-core`.
 - Score-based vertical placement over several factors.
 
+Agreed with all these -- @john
+
 ## What to avoid
 
 - Order-dependent rules (world-state limits, blocking registry): breaks our

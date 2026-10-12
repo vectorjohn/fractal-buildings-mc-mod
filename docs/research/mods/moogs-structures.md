@@ -71,11 +71,13 @@ MSS/MMR GPL-3.0, MMV AGPL-3.0, MOS LGPL with ARR structures. Read MSL as
 
 - In-game per-structure-set toggle and spacing slider, generated from data:
   a cheap, loved config UX for our settlement density.
+  * Note: we don’t have set structures, but maybe something about this to configure our “types” of buildings, like if we have a procedurally generated skyscraper type, where they’re all different, and this lets us set how many skyscraper types, etc. -- @John
 - Strict flatness veto for small buildings instead of terraforming.
 - A browsable online 3-D preview of every output: same idea as our viewer
   gallery, good for the human gate.
 - A small "scatter" layer (wells, carts, stalls) between settlements, if we
   want roadside life later.
+   * Agreed, I was thinking cities with skyscrapers don’t start with skyscrapers at the edge. The edge of the city should start gradual and grow towards centers, with this “scatter” layer further out. -- @John
 
 ## What to avoid
 

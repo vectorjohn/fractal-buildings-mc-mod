@@ -43,8 +43,10 @@
               pkgs.jq
               pkgs.ripgrep
               pkgs.poppler-utils # pdftotext / pdftoppm, for reading papers during research
+              pkgs.pandoc # docs/research -> EPUB for reading on a phone (scripts/research-epub.lua)
               pkgs.nodejs # viewer/ (TypeScript + three.js); npm comes with it
               pkgs.playwright-driver.browsers # Chromium for viewer screenshots (see PLAYWRIGHT_* below)
+              pkgs.silverbullet # for viewing markdown files locally
             ];
 
             # Playwright: browsers come from nixpkgs, so the npm `playwright` / `@playwright/test` version in
@@ -65,6 +67,9 @@
             # motion events, so SDL3's XInput2 relative mode sees every move as a huge jump (the view
             # spins and pins to the ground). Without XInput2, SDL emulates relative mode by warping.
             SDL_VIDEO_X11_XINPUT2 = "0";
+
+            # SilverBullet settings
+            SB_SPACE_IGNORE=node_modules
           };
         });
     };

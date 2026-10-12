@@ -10,22 +10,22 @@ the end of its track's list. Notes use [TEMPLATE.md](TEMPLATE.md).
 
 ## Track 1: Minecraft mods (`mods/`)
 
-- [The Lost Cities](mods/the-lost-cities.md) — best prior art for order-independent chunk-by-chunk city planning (per-chunk Feature, no size limit, flattens terrain); wrong model for building variety (stacked 16×16 hand-made parts); MIT — status: new
-- [YUNG's structure mods and API](mods/yungs-structure-mods.md) — reference for how far jigsaw stretches (128-block radius, 116 with terrain adaptation); study/link, don't copy; LGPL-3.0 — status: new
-- [ChoiceTheorem's Overhauled Village](mods/ctov.md) — best-in-class templated villages (~2,000 templates), polite integration via vanilla village set + biome tags; ideas only; CC BY-NC-ND 4.0 — status: new
-- [Towns and Towers](mods/towns-and-towers.md) — strongest reference for per-biome architectural themes; templated, no public source (jar is data only); CC BY-NC-ND 4.0 — status: new
-- [Repurposed Structures](mods/repurposed-structures.md) — widest biome-variant catalogue (16 village styles, ~3,500 NBTs) and useful site checks (biome radius, terrain range, liquid, feature-cancelling tags); same jigsaw size wall; LGPL-3.0, read don't copy — status: new
-- [Moog's structures](mods/moogs-structures.md) — scattered single-piece templates, not settlements; take per-set disable toggle, spacing slider and strict flatness veto; LGPL-3.0 code, NBTs All Rights Reserved (not opened) — status: new
-- [Recurrent Complex](mods/recurrent-complex.md) — best prior art for rule-driven variation: plan-once transformers, inherited boolean variables, reachability-checked room-grid mazes (MC-free, tested core); 1.12-era, order-dependent; MIT + Apache-2.0 maze core — status: new
-- [Astruct](mods/astruct.md) — cautionary prototype: off-thread jigsaw placed near players only, clamped to 64–256 blocks, single Y, no blending, player-path-dependent; only its hashed cell centres are worth borrowing; MIT — status: new
+- [The Lost Cities](mods/the-lost-cities.md) — best prior art for order-independent chunk-by-chunk city planning (per-chunk Feature, no size limit, flattens terrain); wrong model for building variety (stacked 16×16 hand-made parts); MIT — status: reviewed
+- [YUNG's structure mods and API](mods/yungs-structure-mods.md) — reference for how far jigsaw stretches (128-block radius, 116 with terrain adaptation); study/link, don't copy; LGPL-3.0 — status: drop
+- [ChoiceTheorem's Overhauled Village](mods/ctov.md) — best-in-class templated villages (~2,000 templates), polite integration via vanilla village set + biome tags; ideas only; CC BY-NC-ND 4.0 — status: drop
+- [Towns and Towers](mods/towns-and-towers.md) — strongest reference for per-biome architectural themes; templated, no public source (jar is data only); CC BY-NC-ND 4.0 — status: reviewed
+- [Repurposed Structures](mods/repurposed-structures.md) — widest biome-variant catalogue (16 village styles, ~3,500 NBTs) and useful site checks (biome radius, terrain range, liquid, feature-cancelling tags); same jigsaw size wall; LGPL-3.0, read don't copy — status: reviewed
+- [Moog's structures](mods/moogs-structures.md) — scattered single-piece templates, not settlements; take per-set disable toggle, spacing slider and strict flatness veto; LGPL-3.0 code, NBTs All Rights Reserved (not opened) — status: reviewed
+- [Recurrent Complex](mods/recurrent-complex.md) — best prior art for rule-driven variation: plan-once transformers, inherited boolean variables, reachability-checked room-grid mazes (MC-free, tested core); 1.12-era, order-dependent; MIT + Apache-2.0 maze core — status: reviewed
+- [Astruct](mods/astruct.md) — cautionary prototype: off-thread jigsaw placed near players only, clamped to 64–256 blocks, single Y, no blending, player-path-dependent; only its hashed cell centres are worth borrowing; MIT — status: reviewed
 
 ## Track 2: GDMC (`gdmc/`)
 
-- [GDMC-HTTP and GDPC](gdmc/gdmc-http-and-gdpc.md) — reference and optional tool for recording terrain fixtures, not a dependency; its heightmap types map onto our probe interfaces; MIT — status: new
-- [GDMC competition](gdmc/gdmc-competition.md) — adopt its four criteria and human-anchored 0–10 scale as our review rubric; its common failures (terraforming scars, floating foundations, buried doors) become automated checks — status: new
-- [Mike's Angels (GDMC 2022 winner)](gdmc/mikes-angels-2022-iterative-planning.md) — strong city-layout reference: plots cut from road frontage scored on slope/water/height; seeded-agent planning loop may suit a region planner; no licence, ideas only — status: new
-- [Frightful Hobgoblin (GDMC 2024 winner)](gdmc/frightful-hobgoblin-2024.md) — reference for terrain fit (site cost, cut-and-fill foundations, retaining walls, traffic-worn paths); simulation approach doesn't fit worldgen; MIT + extra condition, ideas only — status: new
-- [JEB_GEN_ (GDMC 2023 winner)](gdmc/jeb-gen-2023.md) — best adaptability mostly by rejecting bad sites (fill >3/cell, height spread) via prefix-sum lot stats; take its A* road cost (no 2-block steps, climb/water penalties, road reuse discount, ellipse bound); no licence, ideas only — status: new
+- [GDMC-HTTP and GDPC](gdmc/gdmc-http-and-gdpc.md) — reference and optional tool for recording terrain fixtures, not a dependency; its heightmap types map onto our probe interfaces; MIT — status: reviewed
+- [GDMC competition](gdmc/gdmc-competition.md) — adopt its four criteria and human-anchored 0–10 scale as our review rubric; its common failures (terraforming scars, floating foundations, buried doors) become automated checks — status: reviewed
+- [Mike's Angels (GDMC 2022 winner)](gdmc/mikes-angels-2022-iterative-planning.md) — strong city-layout reference: plots cut from road frontage scored on slope/water/height; seeded-agent planning loop may suit a region planner; no licence, ideas only — status: reviewed
+- [Frightful Hobgoblin (GDMC 2024 winner)](gdmc/frightful-hobgoblin-2024.md) — reference for terrain fit (site cost, cut-and-fill foundations, retaining walls, traffic-worn paths); simulation approach doesn't fit worldgen; MIT + extra condition, ideas only — status: reviewed
+- [JEB_GEN_ (GDMC 2023 winner)](gdmc/jeb-gen-2023.md) — best adaptability mostly by rejecting bad sites (fill >3/cell, height spread) via prefix-sum lot stats; take its A* road cost (no 2-block steps, climb/water penalties, road reuse discount, ellipse bound); no licence, ideas only — status: reviewed
 - [Gaussianly Filtered (GDMC 2025 winner)](gdmc/gaussianly-filtered-2025.md) — paths merge into lanes by nudging A* toward a blurred path map; portable: Gaussian-blur grading around house pads, doors face downhill; all local; CC BY-NC 4.0, ideas only — status: new
 - [Grimoire / TOME](gdmc/grimoire-tome.md) — districts grown from seeds with height-change cost so borders fall on ridges/water; block rings become roads so every lot fronts a street; MST main roads; fits a cached region planner; no licence, ideas only — status: new
 - [Hauck's UrbanSettlementGenerator (2019)](gdmc/hauck-urban-settlement-generator.md) — repeated partitions keep the flattest non-overlapping lots (vs modal height); MST roads via A* with cost 1+Δh²; MIT but Python 2/MCEdit, reference only — status: new
@@ -33,9 +33,9 @@ the end of its track's list. Notes use [TEMPLATE.md](TEMPLATE.md).
 
 ## Track 3: PCG literature (`pcg/`)
 
-- [Split grammars (Wonka et al. 2003)](pcg/split-grammars.md) — strong fit for building shells/façades on a voxel grid; borrow child-inside-parent (lot containment), per-floor/bay control grammar, one draw per rule per building — status: new
-- [CGA shape grammar (Müller et al. 2006)](pcg/cga-shape-grammar.md) — best reference for massing+façades; adopt staged order, occlusion queries and snap lines via a typed Java rule API, not its rule language — status: new
-- [Parish & Müller 2001, procedural cities](pcg/parish-muller-cities.md) — good model for roads+lots within a region cell; order-dependent, so run once per region cell and cache, never per chunk — status: new
+- [Split grammars (Wonka et al. 2003)](pcg/split-grammars.md) — strong fit for building shells/façades on a voxel grid; borrow child-inside-parent (lot containment), per-floor/bay control grammar, one draw per rule per building — status: deep-dive
+- [CGA shape grammar (Müller et al. 2006)](pcg/cga-shape-grammar.md) — best reference for massing+façades; adopt staged order, occlusion queries and snap lines via a typed Java rule API, not its rule language — status: deep-dive
+- [Parish & Müller 2001, procedural cities](pcg/parish-muller-cities.md) — good model for roads+lots within a region cell; order-dependent, so run once per region cell and cache, never per chunk — status: reviewed
 - [WFC and model synthesis](pcg/wfc-model-synthesis.md) — only as a bounded detail filler with grammar-fixed borders and a fallback; no global structure, and chunked variants break order-independence — status: new
 - [Townscaper](pcg/townscaper.md) — borrow coarse occupancy grid → neighbour-derived modules as the massing→blocks stage; skip the irregular grid; WFC only as a bounded variant picker; proprietary (Sylves reimplementation MIT) — status: new
 - [Watabou city generators](pcg/watabou-city-generators.md) — compact reference for district-typed city plans (Voronoi wards, streets on ward borders, recursive lot bisection); run once per region cell; TownGeneratorOS GPL-3.0, ideas only — status: new
@@ -45,7 +45,7 @@ the end of its track's list. Notes use [TEMPLATE.md](TEMPLATE.md).
 - [Chen et al. 2008, tensor-field streets](pcg/tensor-field-streets.md) — use its terrain-derived direction field (roads follow contours/coasts) and density-spacing rule for outskirts and paths; keep bisection/growth for the core; order-dependent, run once per region cell — status: new
 - [Vanegas et al. 2012, parcel subdivision](pcg/parcel-subdivision.md) — best lot-subdivision reference: recursive OBB split with street-access rule and area/frontage bounds (integer bisection on axis-aligned blocks); each block independent; skeleton strips later — status: new
 - [Straight-skeleton roofs](pcg/straight-skeleton-roofs.md) — on grid footprints hip height = chessboard distance to outside; gables/cross-gables as max over wings; "closed roof" = full coverage + filled steps >1; campskeleton (Apache-2.0) / kendzi (BSD-3) in reserve, CGAL GPL — status: new
-- [Kelly & McCabe 2006 city survey](pcg/kelly-mccabe-city-survey.md) — low value now; useful pointers: Greuter's hash-seeded on-demand city (precedent for our determinism model) and Sun's least-elevation road stepping — status: new
+- [Kelly & McCabe 2006 city survey](pcg/kelly-mccabe-city-survey.md) — low value now; useful pointers: Greuter's hash-seeded on-demand city (precedent for our determinism model) and Sun's least-elevation road stepping — status: reviewed
 - [Greuter et al. 2003, pseudo-infinite cities](pcg/greuter-pseudo-infinite-cities.md) — confirms our determinism model (hashed seed per cell, on-demand, discardable cache); cells never interact, hence our region plan; suggests an evict-and-regenerate byte-compare test — status: new
 - [Bao 2013 / Wu 2018 optimisation layouts](pcg/optimisation-layouts-bao-wu.md) — too slow for worldgen and Wu's time-limited solver breaks determinism; borrow Wu's constraints as IR checks, regions→aisles→rooms for big buildings, Bao's soft terms for generate-N-keep-best — status: new
 - [Nystrom, rooms and mazes](pcg/rooms-and-mazes.md) — adopt its connect pass (spanning tree from the entrance + tunable extra doors) and order-independent dead-end removal as the interior reachability/repair stage; skip the maze; MIT — status: new
@@ -63,7 +63,7 @@ the end of its track's list. Notes use [TEMPLATE.md](TEMPLATE.md).
 ## Track 5: Region overlays (`overlays/`)
 
 - [TerraBlender](overlays/terrablender.md) — proves a biome-independent region layer works at scale, but wrong vehicle for cities (random blobs that replace biomes); LGPL-3.0, supports 26.3 — status: new
-- [Lithostitched](overlays/lithostitched.md) — closest match to our settlement layer: domain-warped Voronoi region field plus density-gated structures, all data-driven; borrow the design, don't depend on it; MIT — status: new
+- [Lithostitched](overlays/lithostitched.md) — closest match to our settlement layer: domain-warped Voronoi region field plus density-gated structures, all data-driven; borrow the design, don't depend on it; MIT — status: deep-dive
 - [Terralith](overlays/terralith.md) — compatibility target, not a model: data-only layered on vanilla's noise router; wrap router slots (final_density + preliminary_surface_level) and use its c: biome tags for palettes; height estimates miss dunes/arches — status: new
 - [The Lost Cities: city placement](overlays/lost-cities-city-placement.md) — best placement model to port (position-seeded city field × biome multiplier, height veto); cities cross biome borders freely; MIT — status: new
 - [Tectonic](overlays/tectonic.md) — terrain can be flattened inside city cells compatibly: wrap final density with a cached city mask (not "depth"); spike candidate and compat-test target, not a dependency; MIT (repo LICENSE says CC0) — status: new
