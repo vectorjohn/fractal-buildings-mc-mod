@@ -6,7 +6,8 @@ worldgen integration is proven with spikes before any architecture is locked
 in. (Converted on 2026-10-07 from John's "Procedural Buildings Mod — Roadmap"
 doc, kept in [archive/original-roadmap.md](archive/original-roadmap.md) with
 the setup prompt. The design sketch and worldgen primer are in
-[ARCHITECTURE.md](ARCHITECTURE.md).)
+[ARCHITECTURE.md](ARCHITECTURE.md). A diagram of the phases, tracks,
+dependencies and gates is in [PROCESS.md](PROCESS.md).)
 
 Target: Minecraft 26.3 (Java edition), Fabric, Java 25. Check exact
 Loader/Fabric API/Loom versions at https://fabricmc.net/develop/ in Phase 0.

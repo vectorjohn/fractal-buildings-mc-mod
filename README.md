@@ -2,7 +2,9 @@
 
 A Fabric mod for Minecraft (Java edition) that generates varied, believable
 buildings and cities from rules rather than stamped templates. Work in progress:
-see [docs/ROADMAP.md](docs/ROADMAP.md) for the plan and status, and
+see [docs/ROADMAP.md](docs/ROADMAP.md) for the plan and status,
+[docs/PROCESS.md](docs/PROCESS.md) for a one-page diagram of the phases,
+tracks, gates and where you give input, and
 [CLAUDE.md](CLAUDE.md) for how the repo is organised.
 
 Development happens inside the Nix dev shell: `nix develop` (or
