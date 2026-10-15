@@ -135,11 +135,12 @@ for track 7, which John wants kept as a backup to structure-based generation.
   Notes in `docs/research/postgen/`.
 - [ ] **1.7 Checkpoint: early skim**, after the first 8–10 notes: John redirects
   tracks or flags deep-dives. (Research keeps going meanwhile.)
-- [ ] **1.8 Landscape synthesis**: a two-page comparison of approaches for
+- [x] **1.8 Landscape synthesis**: a two-page comparison of approaches for
   buildings (grammar vs WFC vs graph-plus-templates hybrid) and for worldgen
   integration (structure-based vs biome overlay vs custom chunk generator; see
   ARCHITECTURE.md; plus track 7's out-of-worldgen generation as the backup),
   with a recommended direction. `docs/research/synthesis.md`.
+  *Done 2026-10-15:* recommends a grammar-led layered pipeline and structure-based district starts (per-chunk feature as fallback); gate decisions B1–B4, I1–I6 at the end; deep-dives (split/CGA, Lithostitched) still to fold in.
 
 **Gate:** John picks the building-generation direction and confirms the
 integration approach to spike (recorded as ADRs).
