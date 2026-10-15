@@ -68,8 +68,9 @@
             # spins and pins to the ground). Without XInput2, SDL emulates relative mode by warping.
             SDL_VIDEO_X11_XINPUT2 = "0";
 
-            # SilverBullet settings
-            SB_SPACE_IGNORE = "node_modules";
+            # SilverBullet (John reads the docs with it; docs/SILVERBULLET.md): gitignore-style
+            # patterns, one per line, hiding build output and game run dirs from the space.
+            SB_SPACE_IGNORE = "node_modules/\nbuild/\nrun/\nout/\n";
           };
         });
     };
