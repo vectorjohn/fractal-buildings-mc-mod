@@ -147,6 +147,13 @@ field), and no existing layer we could reuse to place cities
   culture. Leaning: membership as a scalar field with a threshold, with
   biomes as a **multiplier** (oceans and rivers suppress) rather than a
   boundary, plus a height veto from the coarse screen.
+- Field shape ([lithostitched-deep-dive](research/overlays/lithostitched-deep-dive.md)):
+  2D cells (a 3D Voronoi sliced at y = 0 leaves sliver cells, *probe*), a
+  full 64-bit seed hash (Lithostitched truncates to `int`), per-cell decisions
+  evaluated once at the cell's site so every chunk agrees without a cache,
+  and the F2 − F1 edge distance for the flatten-mask fade and the veto
+  margin. Exposed as a `fractalbuildings:settlement` 2D density-function type
+  so packs (with Lithostitched or not) can use our cities.
 - The city plan is a pure function of the cell. It is computed on first use and
   cached (deterministic, bounded, thread-safe); recomputing after eviction must
   give the same bytes. Because it runs whole per cell, the plan may use
@@ -200,19 +207,24 @@ wrap router slots with them, never override the router files (that fights
 Terralith and Tectonic). What is known, mostly *read* and *inferred*, none of
 it run yet:
 
-- Wrap **three slots with the same mask**: `final_density`,
-  `chunk_surface_level` and the aquifer `surface_level` (the last two both
-  derive from `preliminary_surface_level` in vanilla). With `final_density`
-  alone, cuts more than a few blocks deep come out as bare stone (surface rule
-  gated off) and may flood (aquifer sees cave air).
+- Wrap **three slots with the same mask**: router `final_density`, router
+  `chunk_surface_level` and the aquifer `surface_level`. Leave the shared
+  `preliminary_surface_level` entry alone: in vanilla only those last two
+  read it, so it stays the unwrapped coarse screen (*read*,
+  [lithostitched-deep-dive](research/overlays/lithostitched-deep-dive.md)).
+  With `final_density` alone, cuts more than a few blocks deep come out as
+  bare stone (surface rule gated off) and may flood (aquifer sees cave air).
 - **Prefer fill to cut**; fade the mask over ~32–64 blocks; zero over water and
   in Terralith's forced-flooded cliff zones; leave caves alone.
-- **The plan reads unwrapped terrain.** A wrapped `getBaseHeight` would call
-  back into a mask that reads the plan; keep the original function (as
-  Lithostitched does) or use the coarse screen.
+- **The plan reads unwrapped terrain.** Wrapping replaces the router in the
+  shared settings, so `getBaseHeight` sees wrapped terrain. The mask depends
+  on the region field only, never on the lot plan. The plan uses the coarse
+  screen, or exact heights from the original `final_density` captured before
+  wrapping and compiled with `RandomState.getSampler` (*read*, not run).
 - Hook: our own mixin, or Lithostitched's `wrap_noise_router` /
-  `wrap_aquifers` (MIT, but a dependency). Leaning: our own, with Lithostitched
-  modifiers as optional compat.
+  `wrap_aquifers` (MIT, but a dependency, and `wrap_aquifers` needs 2.0.6+).
+  Leaning: our own; compat by publishing our field as a density-function type
+  (region layer, above).
 
 **Keeping other structures out** (*read*, not run,
 [keeping-structures-out](research/worldgen/keeping-structures-out.md)).
@@ -251,10 +263,10 @@ closed roofs, supported floors, inside the lot).
   ([parcel-subdivision](research/pcg/parcel-subdivision.md)) → a brief per lot
   (style × class × region,
   [style-guides](research/aesthetics/style-guides-westeroscraft-conquest.md)).
-- **Building, per lot:** massing by a typed Java rule API in the spirit of
-  split/CGA grammars, children inside parents
-  ([cga-shape-grammar](research/pcg/cga-shape-grammar.md),
-  [split-grammars](research/pcg/split-grammars.md)) → coarse occupancy cells
+- **Building, per lot:** massing by volume assembly inside the lot hull (a
+  checked stage) and one floor grid, then split/repeat/comp in a typed Java
+  rule API for floors, bays and façades
+  ([grammars-deep-dive](research/pcg/grammars-deep-dive.md)) → coarse occupancy cells
   with neighbour-derived modules ([townscaper](research/pcg/townscaper.md)) →
   façades as depth layers
   ([depth-and-layering](research/aesthetics/depth-and-layering.md)) → roofs as
