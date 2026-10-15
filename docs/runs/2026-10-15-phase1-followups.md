@@ -32,3 +32,4 @@ Note: John has a stash on main (`stash@{0}`, ARCHITECTURE.md "Building IR" defin
 ## Rules and decisions
 - 2026-10-15 coordinator: started the 3 deep-dives John flagged in parallel with the synthesis; synthesis to be revised with deep-dive results afterwards.
 - 2026-10-15 coordinator: cbfd76e (John, on main) broke flake.nix syntax; fixed in run branch 4f8b3be. Doc conventions: frontmatter only on research notes/ADRs per templates; # headings; relative links, no [[ ]] in body, no #anchors.
+- 2026-10-15 John: merge into main even when main isn't checked out (his main checkout sits on hide-from-git-push so he can push to it). Method: under merge.lock, if main is an ancestor of the run branch, make a --no-ff merge commit with commit-tree and update-ref main <new> <old>; otherwise merge main into the run branch first. Never touch his checked-out branch.
