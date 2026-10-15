@@ -1,15 +1,20 @@
+---
+tags: research
+track: <mods | gdmc | pcg | worldgen | overlays | aesthetics | postgen | spikes>
+date: "YYYY-MM-DD"
+author: <agent, e.g. assistant / researcher>
+licence: <SPDX id, e.g. MIT | none | unknown | proprietary>
+---
 <!--
 Research one-pager template. Copy to docs/research/<track>/<slug>.md.
 At most one page: short sentences, bullets over prose. Delete these comments.
-Tracks: mods, gdmc, pcg, worldgen, overlays, aesthetics, spikes.
+Frontmatter: keep `tags: research`; fill the other keys (see
+docs/SILVERBULLET.md). The status lives in INDEX.md, not here.
 Spike notes (Phase 2) may swap "Approach" and "How it hooks into worldgen" for
 "Question", "Evidence" and "Result", keeping the rest.
 -->
 
 # <Name>
-
-**Track:** <mods | gdmc | pcg | worldgen | overlays | aesthetics | spikes> ·
-**Date:** <YYYY-MM-DD> · **Author:** <agent, e.g. assistant / researcher>
 
 ## What it is
 

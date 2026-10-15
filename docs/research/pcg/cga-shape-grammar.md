@@ -85,3 +85,5 @@ mass → façade → detail pipeline and occlusion/snap ideas, not its language.
 **Sources / what I couldn't verify:** read the full paper. Did not use
 CityEngine. Patent status unverified. Integer-rounding behaviour is my
 inference for voxels, not from the paper.
+
+**Deep-dive (2026-10-15):** [grammars-deep-dive](grammars-deep-dive.md) covers rule semantics, voxel rounding, seeding, a typed Java API sketch and later work for this and its sibling technique.

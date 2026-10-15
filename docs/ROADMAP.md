@@ -45,7 +45,7 @@ item. Per-item work logs are in [log/](log/); run ledgers in [runs/](runs/).
 | Phase | State | Gate |
 |---|---|---|
 | 0. Scaffolding | done 2026-10-08; gate passed 2026-10-14 (John) | builds green; viewer renders the box |
-| 1. Prior art research | tracks 1–6 done (55 notes); track 7 (out-of-worldgen, backup) started 2026-10-15; early skim open; synthesis not started | John picks building-generation direction and the integration approach to spike |
+| 1. Prior art research | done 2026-10-15: tracks 1–6 + 3 deep-dives, synthesis (1.8); track 7 batch 1 (backup); awaiting gate | John picks building-generation direction and the integration approach to spike |
 | 2. Worldgen spikes | not started; S7–S9 added 2026-10-15 | worldgen ADR (approach, size limits, determinism rules) |
 | 3. Planner core and three.js viewer | not started | John reviews seed gallery and invariant report |
 | 4. Building generator depth | not started | per building type, "would I believe a person built this?" |
@@ -135,11 +135,12 @@ for track 7, which John wants kept as a backup to structure-based generation.
   Notes in `docs/research/postgen/`.
 - [ ] **1.7 Checkpoint: early skim**, after the first 8–10 notes: John redirects
   tracks or flags deep-dives. (Research keeps going meanwhile.)
-- [ ] **1.8 Landscape synthesis**: a two-page comparison of approaches for
+- [x] **1.8 Landscape synthesis**: a two-page comparison of approaches for
   buildings (grammar vs WFC vs graph-plus-templates hybrid) and for worldgen
   integration (structure-based vs biome overlay vs custom chunk generator; see
   ARCHITECTURE.md; plus track 7's out-of-worldgen generation as the backup),
   with a recommended direction. `docs/research/synthesis.md`.
+  *Done 2026-10-15:* recommends a grammar-led layered pipeline and structure-based district starts (per-chunk feature as fallback); gate decisions B1–B4, I1–I6 at the end; deep-dives (split/CGA, Lithostitched) still to fold in.
 
 **Gate:** John picks the building-generation direction and confirms the
 integration approach to spike (recorded as ADRs).

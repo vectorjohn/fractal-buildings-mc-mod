@@ -1,13 +1,31 @@
+---
+tags: adr
+status: proposed
+date: "YYYY-MM-DD"
+author: researcher
+approvedBy:
+supersededBy:
+dependsOn:
+related:
+research:
+---
 <!--
 ADR template. Copy to docs/adr/NNNN-<slug>.md (next free number, 4 digits).
-The researcher drafts it as "proposed"; John approves it at the gate.
+The researcher drafts it with status "proposed"; John approves it at the gate.
 Keep it to about a page. Delete these comments.
+
+Frontmatter (docs/SILVERBULLET.md): keep `tags: adr`. status is one of
+proposed | accepted | rejected | superseded | deprecated. date is when it was
+drafted, updated to the decision date when John decides; approvedBy becomes
+"John, YYYY-MM-DD". supersededBy / dependsOn / related / research are YAML
+lists of quoted wiki links, full path from the repo root, no ".md"
+(e.g. "[[docs/adr/0002-region-planner]]"); leave a key empty when it has none.
+When an ADR is superseded, set status: superseded and supersededBy on the old one.
 -->
 
 # NNNN. <Decision title>
 
-**Status:** <proposed | accepted | superseded by [NNNN](NNNN-slug.md)> ·
-**Date:** <YYYY-MM-DD> · **Author:** <agent> · **Approved by:** <John, date, or blank>
+<One sentence: what this decides.>
 
 ## Context
 

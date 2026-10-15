@@ -1,0 +1,131 @@
+# Writing docs for SilverBullet
+
+John reads this repo's markdown in [SilverBullet](https://silverbullet.md)
+2.11.0 (pinned in `flake.nix`; run `silverbullet .` from the repo root in the dev
+shell). The space root is the repo root (`CONFIG.md` and `Library/` live
+there). Dot-folders (`.claude/`, `.gradle/`) are not part of the space, and
+`SB_SPACE_IGNORE` in the flake hides `node_modules/`, `build/`, `run/` and `out/`.
+The same files are also read on GitHub, in plain editors, and as an EPUB
+(`scripts/research-epub.lua`), so **everything must still read well as plain
+markdown**. This page is the convention; CLAUDE.md has the short version.
+
+The official docs (docs.silverbullet.md) track the newest release (2.12.x as of
+2026-10-15). Check a feature against the
+[CHANGELOG](https://github.com/silverbulletmd/silverbullet/blob/main/docs/CHANGELOG.md)
+before relying on it: for example, `renderFrontmatter` decision cards (the
+coloured card at the top of their ADR pages) are 2.12.0 and **don't work
+here**. Anything from v1 (`<!-- #query -->` directives, `{{handlebars}}`
+templates, `#query` fenced blocks, Space Script) is gone in 2.x.
+
+## Markdown
+
+- **Headings: `#` (ATX) only**, with a space after the hashes; never `===`/`---`
+  underlines. Keep the single `# Title` at the top of each file: SilverBullet's
+  own style drops it (the page name is the title), but GitHub and the EPUB
+  script (which makes each note's first H1 its chapter title) need it.
+- **Links between our docs: relative markdown links**, `[Split grammars](pcg/split-grammars.md)`,
+  `[ROADMAP](../ROADMAP.md)`. SilverBullet 2.11 resolves these relative to the
+  page (only *leading* `../` is resolved), navigates them, and indexes them as
+  backlinks; GitHub and the EPUB script follow them too. Don't use `[[wiki links]]`
+  in body text: GitHub shows them as literal brackets. Don't link to
+  `file.md#some-slug` anchors: SilverBullet matches `#` against the heading
+  *text*, GitHub against a slug, so one of them always misses.
+- **Wiki links belong in frontmatter only**, for relations SilverBullet should
+  index (e.g. an ADR's `dependsOn`). Write the full path from the repo root
+  without `.md`: `"[[docs/adr/0001-worldgen-integration]]"`, quoted.
+- **Tasks:** `- [ ]` and `- [x]` only (ROADMAP items, REVIEW entries). They are
+  indexed and clickable in SilverBullet. No custom states like `[IN PROGRESS]`:
+  GitHub doesn't render them.
+- **Hashtags:** a `#word` in prose (not in backticks, not a heading) becomes a tag
+  in SilverBullet. Put identifiers like `#123` or `#meta` in backticks unless you
+  mean a tag.
+- **Admonitions:** SilverBullet's syntax is `> **note** Text` (`note`,
+  `warning`, `danger`, `success`). It degrades to a bold word in a blockquote
+  elsewhere; use it sparingly.
+- **Mermaid:** ```` ```mermaid ```` fenced blocks render in SilverBullet (via
+  `Library/silverbullet-diagram/Mermaid.md`) and on GitHub. Prefer them to ASCII
+  diagrams.
+- **HTML comments** (`<!-- -->`) render greyed out in 2.11 rather than hidden.
+  Fine for template instructions; delete them from finished docs.
+
+## Frontmatter
+
+YAML between `---` lines at the very top of the file (before the `# Title`).
+GitHub renders it as a small table; pandoc 3.7 (the EPUB script) drops it.
+Rules: `tags:` as space-separated bare words on one line (`tags: research`);
+dates as quoted ISO strings (`date: "2026-10-15"`); lists as YAML lists;
+lower camelCase keys; never set `name` (reserved). Use frontmatter only where it
+earns its place: documents of one *kind* that someone would want to list or
+filter. Today that means:
+
+| Kind | Tag | Keys | Template |
+|---|---|---|---|
+| Research note | `research` | `track`, `date`, `author`, `licence` | [research/TEMPLATE.md](research/TEMPLATE.md) |
+| ADR | `adr` | `status`, `date`, `author`, `approvedBy`, `supersededBy`, `dependsOn`, `related`, `research` | [adr/TEMPLATE.md](adr/TEMPLATE.md) |
+
+`licence` is a short SPDX id or `none` / `unknown` / `proprietary` (the
+Licence section keeps the detail). A research note's **status stays in
+[INDEX.md](research/INDEX.md)**, set by John; don't copy it into the note.
+Existing notes without frontmatter are fine; don't mass-convert them. The
+templates carry the tag too, so queries exclude `docs/research/TEMPLATE` and
+`docs/adr/TEMPLATE` by name.
+
+Not for frontmatter: logs, ledgers, plans, NOTES, ASSUMPTIONS, REVIEW, ROADMAP.
+Their structure (headings, task lists, table rows) is already indexed.
+
+## Queries (Space Lua Integrated Query)
+
+Live queries are `${query[[ ... ]]}` blocks over SilverBullet's object index.
+They render as tables inside SilverBullet and as raw source everywhere else, so
+put them only on aggregator pages that say so in prose (like
+[adr/INDEX.md](adr/INDEX.md)), never in a note's body. Agents can't run them;
+don't hand-edit a "baked" section (`<!--#lua ... -->` … `<!--/lua-->`) either,
+it is regenerated by SilverBullet's `Baked Sections: Update`. Useful sources:
+`index.pages("adr")` (pages by tag, with frontmatter fields), `index.tasks()`,
+`index.items()`, `index.tables()`. Page names are paths without `.md`
+(`docs/ROADMAP`). Examples John can paste into a scratch page:
+
+```lua
+${query[[from p = index.pages("research") where p.licence == "MIT"
+  order by p.track, p.name select { Note = "[[" .. p.name .. "]]", Track = p.track }]]}
+${query[[from t = index.tasks() where t.page == "docs/ROADMAP" and not t.done
+  select templates.taskItem(t)]]}
+```
+
+## ADRs, compared with SilverBullet's own
+
+SilverBullet keeps its ADRs as `ADR/NNN Title.md` pages tagged `adr`, with
+frontmatter `status` (proposed / accepted / superseded / deprecated / rejected),
+`date`, `deciders`, `owner`, `lastReviewed`, and wiki-link lists `supersededBy`,
+`dependsOn`, `related`. Body: Context, Decision, Consequences (Positive /
+Negative), Alternatives considered, References (external links only; links to
+other ADRs live in frontmatter). The `ADR` page is an aggregator: queries for
+counts by status, active decisions, superseded ones, plus Mermaid relation
+graph, timeline and status pie from the frontmatter. `CONFIG.md` adds a
+`tag.define` for `adr` (a schema with the status enum, a status dot prefixed to
+the page name, `tagPage = "ADR"`). See [their ADR page](https://docs.silverbullet.md/ADR).
+
+What we took: tag + status + relation lists in frontmatter, a query-driven
+[adr/INDEX.md](adr/INDEX.md), "rejected"/"deprecated" statuses, supersession as
+a link list. What we kept: `docs/adr/NNNN-<slug>.md` file names (shell- and
+GitHub-friendly), our Options section, `author`/`approvedBy` instead of
+`deciders`/`owner` (John decides every ADR), no `lastReviewed`.
+
+Optional, for John's `CONFIG.md` (his file, not edited by agents), to get the
+schema check, status dots and tag click-through:
+
+```lua
+tag.define {
+  name = "adr",
+  tagPage = "docs/adr/INDEX",
+  schema = { type = "object", required = { "status" }, properties = {
+    status = { type = "string",
+      enum = { "proposed", "accepted", "rejected", "superseded", "deprecated" } } } },
+  transform = function(o)
+    local dot = ({ proposed = "🟡", accepted = "🟢", rejected = "🔴",
+      superseded = "⚪", deprecated = "🟠" })[o.status]
+    if dot then o.pageDecoration = { prefix = dot .. " " } end
+    return o
+  end,
+}
+```
