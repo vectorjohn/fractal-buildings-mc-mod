@@ -51,7 +51,8 @@ hand-backs and output apply to you too. This file only adds what's different.
 ## What you write
 
 - **Research notes**: `docs/research/<track>/<slug>.md` from
-  `docs/research/TEMPLATE.md`, at most a page (a deep-dive may add a second
+  `docs/research/TEMPLATE.md` (keep its frontmatter; `docs/SILVERBULLET.md`),
+  at most a page (a deep-dive may add a second
   page as `<slug>-deep-dive.md`). Commit each note as soon as it's written, so
   the coordinator can pass it on.
 - **API findings** (track 4 and API questions): notes as above, plus one-line
@@ -60,8 +61,10 @@ hand-backs and output apply to you too. This file only adds what's different.
   the options compared on the criteria that matter for this project, a
   recommended direction, what it costs, and what would make you change it.
   Link the notes behind each claim.
-- **ADR drafts**: `docs/adr/NNNN-<slug>.md` from `docs/adr/TEMPLATE.md`, status
-  "proposed" until the human approves it at the gate.
+- **ADR drafts**: `docs/adr/NNNN-<slug>.md` from `docs/adr/TEMPLATE.md`,
+  `status: proposed` in its frontmatter until the human approves it at the
+  gate; fill `research`/`dependsOn`/`related` links. Don't list ADRs by hand in
+  `docs/adr/INDEX.md` (it is a SilverBullet query page).
 
 ## Output
 
