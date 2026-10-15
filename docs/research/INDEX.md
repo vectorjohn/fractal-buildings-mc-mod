@@ -83,5 +83,10 @@ the end of its track's list. Notes use [TEMPLATE.md](TEMPLATE.md).
 
 ## Track 7: Out-of-worldgen generation (`postgen/`)
 
+- [Distant Horizons](postgen/distant-horizons.md) — players accept terrain 256 chunks out, but it is mostly unsaved LOD (cuts structures); its real-chunk mode is the pregenerator ticket loop and can lag servers; borrow ticket pattern + throttles; LGPL-3.0 — status: new
+- [Chunk pregenerators](postgen/pregenerators.md) — Chunky: loading ticket to FULL, ~50 in flight; 26.3 has public `addTicketAndLoadWithRadius`, no dependency needed; vanilla ~40 chunks/s (≈100 s per 64×64 region), C2ME ~450 (unmeasured here); Chunky GPL-3.0, C2ME MIT — status: new
+- [Post-generation placement](postgen/post-generation-placement.md) — `/place structure` writes every chunk of the box on the live level with no 8-chunk cap but no `/locate` registration; `LevelChunk.setBlockState` handles heightmaps, light, saving; problems are cost and pop-in, not correctness; 26.3 claims to confirm listed — status: new
+- [Out-of-worldgen overview](postgen/overview.md) — pipeline: deterministic sites → pregenerate on trigger → snapshot terrain → plan off-thread → write unseen; elytra outruns it; verdict: backup/add-on (admin capitals, extras beyond 8 chunks), not the main path — status: new
+
 ## Phase 2 spikes (`spikes/`)
 
