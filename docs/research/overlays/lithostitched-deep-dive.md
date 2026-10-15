@@ -101,7 +101,7 @@ referenced by the `chunk_surface_level` entry (`interpolated(…, 16, 1)`), by
   compiles **any** DF on demand (lock, `ConcurrentHashMap` cache, R). Not run.
 - **Version caveats:** `wrap_aquifers` was only registered on 2026-10-11
   (released in 2.0.6, 2026-10-13). Before 2026-10-10, markers nested below the top level weren't
-  rewritten (the rule didn't recurse), so 2.0.5 is unusable for this.
+  rewritten (the rule didn't recurse), so nested wrappers on 2.0.5 likely fail to compile (*I*): require 2.0.6+.
 - **Cheaper masks:** a mask DF declaring `domainAxes` X|Z is evaluated once
   per column by the 26.3 compiler's `SLICE_UNIFORM_AXES` pass (R; cost not
   measured).
