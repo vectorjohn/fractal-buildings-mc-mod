@@ -62,8 +62,10 @@ not yet run):
 3. So a spike must wrap three things with the same mask:
    - `final_density`,
    - `chunk_surface_level`,
-   - the aquifer `surface_level` (both are `preliminary_surface_level`;
-     overriding that one registry entry covers both in vanilla).
+   - the aquifer `surface_level` (both read `preliminary_surface_level`;
+     wrap these consumer slots, not that shared entry, which stays the
+     unwrapped coarse screen: see
+     [lithostitched-deep-dive](../overlays/lithostitched-deep-dive.md)).
 
    **Raising** ground (fill) is safe for surface rules; we should prefer fill
    over cut.
@@ -99,8 +101,10 @@ Minecraft: proprietary, study only. Lithostitched: MIT (declared in
 
 - **The cycle.** If the city plan reads heights and the mask reads the plan,
   wrapped `getBaseHeight` calls back into the mask. The plan must sample the
-  **unwrapped** density (keep the original function, as Lithostitched's
-  `MergedDensityFunction.original` does) or `preliminary_surface_level`.
+  **unwrapped** density (capture the original `final_density` before
+  wrapping; Lithostitched keeps `original` only for markers and the codec,
+  see [lithostitched-deep-dive](../overlays/lithostitched-deep-dive.md)) or
+  `preliminary_surface_level`.
 - Cuts deeper than about 5 blocks without wrapping the surface level.
 
 ## Hypotheses from ARCHITECTURE.md

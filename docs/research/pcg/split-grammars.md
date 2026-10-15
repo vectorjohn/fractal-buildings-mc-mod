@@ -81,3 +81,5 @@ containment rule, scoped control attributes and per-building rule draws.
 **Sources / what I couldn't verify:** read the full paper (9 pages). No
 reference implementation exists to run; voxel-snapping behaviour is my
 inference, not from the paper. Patent status not checked in a patent database.
+
+**Deep-dive (2026-10-15):** [grammars-deep-dive](grammars-deep-dive.md) covers rule semantics, voxel rounding, seeding, a typed Java API sketch and later work for this and its sibling technique.

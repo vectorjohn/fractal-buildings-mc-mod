@@ -35,6 +35,7 @@ the end of its track's list. Notes use [TEMPLATE.md](TEMPLATE.md).
 
 - [Split grammars (Wonka et al. 2003)](pcg/split-grammars.md) — strong fit for building shells/façades on a voxel grid; borrow child-inside-parent (lot containment), per-floor/bay control grammar, one draw per rule per building — status: deep-dive
 - [CGA shape grammar (Müller et al. 2006)](pcg/cga-shape-grammar.md) — best reference for massing+façades; adopt staged order, occlusion queries and snap lines via a typed Java rule API, not its rule language — status: deep-dive
+- [Split/CGA grammars deep-dive](pcg/grammars-deep-dive.md) — adopt split/repeat/comp as a typed Java API on integer boxes; exact integer split solver (mirrored leftover: symmetric on 28/28 widths in a throwaway proof); rendezvous-hashed rule choice per scope; context queries read earlier phases only; massing = volume assembly with a lot-containment check, roofs as heightfield; no grammar language; closest prior art Eger 2022 (CRAPL, ideas only) — status: new
 - [Parish & Müller 2001, procedural cities](pcg/parish-muller-cities.md) — good model for roads+lots within a region cell; order-dependent, so run once per region cell and cache, never per chunk — status: reviewed
 - [WFC and model synthesis](pcg/wfc-model-synthesis.md) — only as a bounded detail filler with grammar-fixed borders and a fallback; no global structure, and chunked variants break order-independence — status: new
 - [Townscaper](pcg/townscaper.md) — borrow coarse occupancy grid → neighbour-derived modules as the massing→blocks stage; skip the irregular grid; WFC only as a bounded variant picker; proprietary (Sylves reimplementation MIT) — status: new
@@ -64,6 +65,7 @@ the end of its track's list. Notes use [TEMPLATE.md](TEMPLATE.md).
 
 - [TerraBlender](overlays/terrablender.md) — proves a biome-independent region layer works at scale, but wrong vehicle for cities (random blobs that replace biomes); LGPL-3.0, supports 26.3 — status: new
 - [Lithostitched](overlays/lithostitched.md) — closest match to our settlement layer: domain-warped Voronoi region field plus density-gated structures, all data-driven; borrow the design, don't depend on it; MIT — status: deep-dive
+- [Lithostitched deep-dive](overlays/lithostitched-deep-dive.md) — borrow design, don't depend (~80 mixins, replaces jigsaw assembler); take hashed 2D Voronoi with per-cell decisions at the site and priority-ordered slot wrapping; flaws: seed truncated to 32 bits, 3D cellular sliced at y=0 (17% sliver cells); settles flattening: wrap final_density + chunk_surface_level + aquifer surface_level, never the shared preliminary_surface_level entry; MIT — status: new
 - [Terralith](overlays/terralith.md) — compatibility target, not a model: data-only layered on vanilla's noise router; wrap router slots (final_density + preliminary_surface_level) and use its c: biome tags for palettes; height estimates miss dunes/arches — status: new
 - [The Lost Cities: city placement](overlays/lost-cities-city-placement.md) — best placement model to port (position-seeded city field × biome multiplier, height veto); cities cross biome borders freely; MIT — status: new
 - [Tectonic](overlays/tectonic.md) — terrain can be flattened inside city cells compatibly: wrap final density with a cached city mask (not "depth"); spike candidate and compat-test target, not a dependency; MIT (repo LICENSE says CC0) — status: new
@@ -87,6 +89,10 @@ the end of its track's list. Notes use [TEMPLATE.md](TEMPLATE.md).
 - [Chunk pregenerators](postgen/pregenerators.md) — Chunky: loading ticket to FULL, ~50 in flight; 26.3 has public `addTicketAndLoadWithRadius`, no dependency needed; vanilla ~40 chunks/s (≈100 s per 64×64 region), C2ME ~450 (unmeasured here); Chunky GPL-3.0, C2ME MIT — status: new
 - [Post-generation placement](postgen/post-generation-placement.md) — `/place structure` writes every chunk of the box on the live level with no 8-chunk cap but no `/locate` registration; `LevelChunk.setBlockState` handles heightmaps, light, saving; problems are cost and pop-in, not correctness; 26.3 claims to confirm listed — status: new
 - [Out-of-worldgen overview](postgen/overview.md) — pipeline: deterministic sites → pregenerate on trigger → snapshot terrain → plan off-thread → write unseen; elytra outruns it; verdict: backup/add-on (admin capitals, extras beyond 8 chunks), not the main path — status: new
+
+## Synthesis
+
+- [Landscape synthesis (1.8)](synthesis.md) — buildings: volume massing in lot hull + typed Java split/repeat/comp grammar for floors/bays/façades, roofs as heightfield, room-graph interiors; integration: structures, one start per district, cached per-cell plan, per-chunk feature fallback, track 7 backup; gate decisions B1–B4, I1–I6 with recommended answers — status: new
 
 ## Phase 2 spikes (`spikes/`)
 
