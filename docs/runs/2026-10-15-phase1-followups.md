@@ -9,7 +9,6 @@ Branch `claude/run-phase1-followups`, worktree `.claude/worktrees/run-phase1-fol
 Note: John has a stash on main (`stash@{0}`, ARCHITECTURE.md "Building IR" definition note).
 
 ## In flight
-- G5 researcher a854521194e7df064 (resumed), claude/synthesis, report .claude/reports/synthesis-r2.md
 
 ## Items
 | id | item | branch | base | status | result | notes |
@@ -23,11 +22,11 @@ Note: John has a stash on main (`stash@{0}`, ARCHITECTURE.md "Building IR" defin
 | G2 | 1.8 Landscape synthesis | claude/synthesis | cbfd76e | done (pass 1) | 8cc072d | researcher a854521194e7df064 (b35cae8, 8420e5d); [deep-dive] markers to fold in; gate decisions B1–B4, I1–I6; ADR 0001 building, 0002 integration after John answers |
 | G3 | Deep-dive: split grammars + CGA (pcg/) | claude/research-deepdive-grammars | cbfd76e | done | 568ffd7 | researcher a13ed8951d96d4b42 (2559659); one combined note; synthesis changes → pass 2 |
 | G4 | Deep-dive: Lithostitched (overlays/) | claude/research-deepdive-lithostitched | cbfd76e | done | 8d38014 | researcher aff80fde01a60ac10 (35686bf, baeffd3); changes for ARCHITECTURE flattening, surface-level note, synthesis I4 → fold into synthesis pass 2 |
-| G5 | Synthesis pass 2: fold in G3, G4; ARCHITECTURE flattening + surface-level note fixes | claude/synthesis | 568ffd7 | running | | resumed G2 researcher a854521194e7df064 |
+| G5 | Synthesis pass 2: fold in G3, G4; ARCHITECTURE flattening + surface-level note fixes | claude/synthesis | 568ffd7 | done | cdbc838 | resumed researcher (010b17c); ~2,200 words |
 
 ## Gates
 - Phase 0: passed 2026-10-14 (John).
-- Phase 1: synthesis pass 1 in (docs/research/synthesis.md); waiting on deep-dives G3, G4 for pass 2; then gate package.
+- Phase 1: READY for John 2026-10-15. Package: docs/research/synthesis.md (decisions B1–B4, I1–I6 + spike-scope tweaks, each with recommended answer); background: ARCHITECTURE.md, deep-dives pcg/grammars-deep-dive.md, overlays/lithostitched-deep-dive.md, postgen/overview.md, docs/PROCESS.md. After decision: researcher drafts ADR 0001 (building) + 0002 (integration). Dependent: all Phase 2 spikes awaiting gate.
 
 
 ## Rules and decisions
