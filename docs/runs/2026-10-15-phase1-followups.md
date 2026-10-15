@@ -9,9 +9,7 @@ Branch `claude/run-phase1-followups`, worktree `.claude/worktrees/run-phase1-fol
 Note: John has a stash on main (`stash@{0}`, ARCHITECTURE.md "Building IR" definition note).
 
 ## In flight
-- G1 assistant a74429cbf6b9a0c34, claude/assist-silverbullet, base cbfd76e
 - G3 researcher a13ed8951d96d4b42, claude/research-deepdive-grammars, base cbfd76e
-- G4 researcher aff80fde01a60ac10, claude/research-deepdive-lithostitched, base cbfd76e
 
 ## Items
 | id | item | branch | base | status | result | notes |
@@ -21,10 +19,10 @@ Note: John has a stash on main (`stash@{0}`, ARCHITECTURE.md "Building IR" defin
 | F3 | Answer: 8-chunk cutoff / city as many starts | (none) | | done | | assistant a9a1fd5cadb437fce, answered John 2026-10-15 |
 | F4 | Track 7 research batch 1: out-of-worldgen generation | claude/research-postgen-1 | d42fd9f | done | f147b95 | assistant a0b8d89ab37eebd26; 4 notes; verdict backup/add-on; batch 2 suggestions in its report (pregen rate on host, setStartForStructure after the fact, DH LOD push, Millénaire, Structurize, Moonrise/Folia) |
 | F5 | PROCESS.md: sync to S7–S9, ADR 2.10, track 7 | claude/assist-roadmap-followups | b2e5e93 | done | 7e771e1 | resumed F1 assistant (6b31783); also Gate 0 'passed' in PROCESS.md |
-| G1 | SilverBullet conventions: CLAUDE.md pointers + study SB ADR setup | claude/assist-silverbullet | cbfd76e | running | | assistant |
+| G1 | SilverBullet conventions: CLAUDE.md pointers + study SB ADR setup | claude/assist-silverbullet | cbfd76e | done | 4f8b3be | assistant a74429cbf6b9a0c34; also fixed flake syntax error from cbfd76e (SB_SPACE_IGNORE); flake.nix changed (John to review); templates got frontmatter |
 | G2 | 1.8 Landscape synthesis | claude/synthesis | cbfd76e | done (pass 1) | 8cc072d | researcher a854521194e7df064 (b35cae8, 8420e5d); [deep-dive] markers to fold in; gate decisions B1–B4, I1–I6; ADR 0001 building, 0002 integration after John answers |
 | G3 | Deep-dive: split grammars + CGA (pcg/) | claude/research-deepdive-grammars | cbfd76e | running | | researcher |
-| G4 | Deep-dive: Lithostitched (overlays/) | claude/research-deepdive-lithostitched | cbfd76e | running | | researcher |
+| G4 | Deep-dive: Lithostitched (overlays/) | claude/research-deepdive-lithostitched | cbfd76e | done | 8d38014 | researcher aff80fde01a60ac10 (35686bf, baeffd3); changes for ARCHITECTURE flattening, surface-level note, synthesis I4 → fold into synthesis pass 2 |
 
 ## Gates
 - Phase 0: passed 2026-10-14 (John).
@@ -33,3 +31,4 @@ Note: John has a stash on main (`stash@{0}`, ARCHITECTURE.md "Building IR" defin
 
 ## Rules and decisions
 - 2026-10-15 coordinator: started the 3 deep-dives John flagged in parallel with the synthesis; synthesis to be revised with deep-dive results afterwards.
+- 2026-10-15 coordinator: cbfd76e (John, on main) broke flake.nix syntax; fixed in run branch 4f8b3be. Doc conventions: frontmatter only on research notes/ADRs per templates; # headings; relative links, no [[ ]] in body, no #anchors.
