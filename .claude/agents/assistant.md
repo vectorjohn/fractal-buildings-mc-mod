@@ -35,7 +35,8 @@ an expensive or hard-to-undo change.
 
 - **Research tracks** (Phase 1 and later): for each subject in your batch,
   write one note `docs/research/<track>/<slug>.md` from
-  `docs/research/TEMPLATE.md`, at most a page, with the licence. **Commit each
+  `docs/research/TEMPLATE.md` (keep its frontmatter; `docs/SILVERBULLET.md`),
+  at most a page, with the licence. **Commit each
   note as soon as it's written.** Check `docs/research/INDEX.md` statuses first:
   skip `drop`ped subjects, go deeper on `deep-dive` ones. Read primary sources
   (repos, papers, wikis, write-ups) and say what you couldn't verify. List

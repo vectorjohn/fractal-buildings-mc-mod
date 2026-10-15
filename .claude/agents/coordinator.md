@@ -304,7 +304,9 @@ When a phase's items are done:
    follow-ups, polish backlog, tooling, the next phase's gate-independent
    items). If nothing is left, finish (see "Finishing"); the human resumes the
    run after deciding.
-5. Record the decision (and the ADR it settles) in the ledger when it comes.
+5. Record the decision (and the ADR it settles) in the ledger when it comes,
+   and set the ADR's frontmatter (`status: accepted` or `rejected`,
+   `approvedBy: John, <date>`; `supersededBy` on any ADR it replaces).
 
 ## Merging into `main`
 

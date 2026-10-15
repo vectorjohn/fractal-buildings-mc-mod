@@ -15,7 +15,7 @@ throwaway spikes before the architecture is locked in. The plan is in
 | Work log, one file per item: what was done, how it was verified, surprises | `docs/log/<YYYY-MM-DD>-<item-slug>.md` | the coder of that item |
 | Durable facts: API gotchas, test quirks, known flakes, baselines (one bullet per line) | `docs/NOTES.md` | anyone, append only |
 | Cheap-to-change assumptions made without the human (one table row per line) | `docs/ASSUMPTIONS.md` | anyone, append only |
-| Decisions that shape the architecture (gate outcomes) | `docs/adr/NNNN-<slug>.md` | researcher drafts; the human approves |
+| Decisions that shape the architecture (gate outcomes) | `docs/adr/NNNN-<slug>.md` (listed by the query page `docs/adr/INDEX.md`) | researcher drafts; the human approves |
 | Research one-pagers, and their index with statuses | `docs/research/<track>/<slug>.md`, `docs/research/INDEX.md` | research agents; INDEX lines by the coordinator |
 | Plans for large items | `docs/plans/<slug>.md` | lead-coder (`mode: plan`) |
 | Things only the human can judge (looks, "would a person build this", in-game feel) | `docs/REVIEW.md` | anyone, append only; results by the human |
@@ -24,6 +24,19 @@ throwaway spikes before the architecture is locked in. The plan is in
 Agents read **slices** of the big docs (`grep -n` the item, then read that
 range), not whole files. Keep every doc lean: the log lives in per-item files
 precisely so nobody has to read history to find the current state.
+
+## Reading docs (SilverBullet)
+
+John reads these docs in SilverBullet 2.11.0 (pinned in the flake; the repo
+root is the space), and also on GitHub and as an EPUB, so write plain markdown
+that works in all three. Full conventions: `docs/SILVERBULLET.md`.
+
+- `#` headings only; keep the `# Title` line at the top of each file.
+- Link docs with relative markdown links (`[x](pcg/split-grammars.md)`), not
+  `[[wiki links]]`, and not to `#anchors`. Tasks are `- [ ]` / `- [x]`.
+- Research notes and ADRs start with YAML frontmatter (`tags: research` /
+  `tags: adr`, plus the keys in their `TEMPLATE.md`); other docs don't need it.
+- Backtick a `#word` you don't mean as a tag. Docs are 2.x: no v1 syntax.
 
 ## Module boundaries
 

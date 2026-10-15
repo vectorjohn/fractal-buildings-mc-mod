@@ -66,7 +66,9 @@ filter. Today that means:
 `licence` is a short SPDX id or `none` / `unknown` / `proprietary` (the
 Licence section keeps the detail). A research note's **status stays in
 [INDEX.md](research/INDEX.md)**, set by John; don't copy it into the note.
-Existing notes without frontmatter are fine; don't mass-convert them.
+Existing notes without frontmatter are fine; don't mass-convert them. The
+templates carry the tag too, so queries exclude `docs/research/TEMPLATE` and
+`docs/adr/TEMPLATE` by name.
 
 Not for frontmatter: logs, ledgers, plans, NOTES, ASSUMPTIONS, REVIEW, ROADMAP.
 Their structure (headings, task lists, table rows) is already indexed.
