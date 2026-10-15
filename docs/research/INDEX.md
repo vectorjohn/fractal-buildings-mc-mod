@@ -81,5 +81,7 @@ the end of its track's list. Notes use [TEMPLATE.md](TEMPLATE.md).
 - [WesterosCraft / Conquest style guides](aesthetics/style-guides-westeroscraft-conquest.md) — little geometry; adopt consistency rules (one timber + one infill colour, thatch only ≥1:1, ornament for wealth) and a style × class × region model; caps façades at 2 depth layers — status: new
 - [Roof forms and massing](aesthetics/roof-forms-and-massing.md) — roof = pitch profile over each cell's distance to footprint edge, max over parts (equals straight skeleton for grid footprints); support gable, hip (L/T/U), shed, flat+parapet, helm first; never curved — status: new
 
+## Track 7: Out-of-worldgen generation (`postgen/`)
+
 ## Phase 2 spikes (`spikes/`)
 
