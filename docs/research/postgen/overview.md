@@ -62,8 +62,6 @@ for that site. (c) is the only one that never fails.
   a server's planned capital before opening it.
 - Post-gen has no `terrain_adaptation`; flattening must be written as blocks
   (cut-and-fill), as GDMC entries do.
-- Pregeneration could also feed the main path: if a region exists before
-  worldgen reaches it (it doesn't, by definition), so this stays one-way.
 
 ## Licence
 
