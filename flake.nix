@@ -69,7 +69,7 @@
             SDL_VIDEO_X11_XINPUT2 = "0";
 
             # SilverBullet settings
-            SB_SPACE_IGNORE=node_modules
+            SB_SPACE_IGNORE = "node_modules";
           };
         });
     };
