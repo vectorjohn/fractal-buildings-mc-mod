@@ -45,7 +45,7 @@ item. Per-item work logs are in [log/](log/); run ledgers in [runs/](runs/).
 | Phase | State | Gate |
 |---|---|---|
 | 0. Scaffolding | done 2026-10-08; gate passed 2026-10-14 (John) | builds green; viewer renders the box |
-| 1. Prior art research | tracks 1–6 done (55 notes); track 7 (out-of-worldgen, backup) started 2026-10-15; early skim open; synthesis not started | John picks building-generation direction and the integration approach to spike |
+| 1. Prior art research | done 2026-10-15: tracks 1–6 + 3 deep-dives, synthesis (1.8); track 7 batch 1 (backup); awaiting gate | John picks building-generation direction and the integration approach to spike |
 | 2. Worldgen spikes | not started; S7–S9 added 2026-10-15 | worldgen ADR (approach, size limits, determinism rules) |
 | 3. Planner core and three.js viewer | not started | John reviews seed gallery and invariant report |
 | 4. Building generator depth | not started | per building type, "would I believe a person built this?" |
