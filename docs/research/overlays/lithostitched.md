@@ -83,6 +83,6 @@ compat; don't depend on it.
 `RegionManager`, `Region`, `ParameterMap`, `ReplacePartially`,
 `SetStructureSpawnConditionModifier`, `SampleDensityPlacementCondition`, the
 default `region/overworld` JSONs (26.3 and `cloche`). Not run. Cell size is
-1/frequency, not measured. Possible gotcha: `sample_density` defaults
-`min_inclusive` to `Double.MIN_VALUE` (smallest positive), so an omitted
-minimum excludes negative values; not tested.
+1/frequency, not measured. (The `Double.MIN_VALUE` default for
+`sample_density`'s `min_inclusive` is stale: at 9a12e65 (2.0.6) it is
+`-Float.MAX_VALUE`, see [the deep-dive](lithostitched-deep-dive.md).)
