@@ -4,7 +4,7 @@ A one-page map of how the project moves from research to a release: the
 phases, the parallel tracks inside each, what depends on what, and where John
 decides. The detail lives in [ROADMAP.md](ROADMAP.md) (items, gates) and
 [.claude/agents/](../.claude/agents/) (how agents run an item); this page only
-connects them. Last updated 2026-10-14 (Phase 1, tracks 1–6 done).
+connects them. Last updated 2026-10-15 (Phase 1: tracks 1–6 done, track 7 added).
 
 Why a flowchart and not a Gantt chart: the roadmap has no dates or durations,
 only order and dependencies. A Gantt chart would invent a schedule, and its
@@ -33,12 +33,12 @@ flowchart TB
         direction LR
         P0w["Gradle + planner-core boundary · CLI → IR JSON<br/>viewer + Playwright · server and client game tests"]:::done
     end
-    G0{{"Gate 0: builds green,<br/>viewer renders the box<br/>(awaiting John)"}}:::gate
+    G0{{"Gate 0: builds green,<br/>viewer renders the box<br/>(passed 2026-10-14)"}}:::gate
     P0w --> G0
 
     subgraph P1["Phase 1: Prior art research"]
         direction TB
-        subgraph P1t["six tracks in parallel (done)"]
+        subgraph P1t["tracks 1–6 in parallel (done)"]
             direction LR
             T1["1 Minecraft mods"]:::done
             T2["2 GDMC"]:::done
@@ -47,6 +47,7 @@ flowchart TB
             T5["5 Region overlays"]:::done
             T6["6 Aesthetics"]:::done
         end
+        T7["1.9 Track 7: out-of-worldgen<br/>generation (backup option)"]:::work
         H1(["John: mark INDEX notes<br/>deep-dive / drop, any time"]):::human
         H17(["1.7 Early skim: John<br/>redirects tracks"]):::now
         S18["1.8 Landscape synthesis<br/>(researcher)"]:::work
@@ -54,6 +55,7 @@ flowchart TB
         H17 -.->|steers| P1t
         H1 -.->|steers| P1t
         P1t --> S18
+        T7 -.->|backup option| S18
         H17 --> S18
     end
     P0w -->|"dev env (0.5)"| T4
@@ -71,12 +73,21 @@ flowchart TB
             SP5["S5 Terrain adaptation"]:::work
         end
         SP6["S6 Scale and cost<br/>(heavy lock)"]:::work
-        A27["2.7 Worldgen ADR<br/>(researcher)"]:::work
+        subgraph P2n["track 4 follow-ups, in parallel"]
+            direction LR
+            SP7["S7 Terrain flattening<br/>(only if S5 falls short)"]:::work
+            SP8["S8 Structure veto"]:::work
+            SP9["S9 Procedural pool element"]:::work
+        end
+        A27["2.10 Worldgen ADR<br/>(researcher)"]:::work
         SP3 --> SP6
         P2s --> A27
         SP6 --> A27
+        SP5 -.->|decides need| SP7
+        P2n --> A27
     end
     G1 -->|integration approach| P2s
+    G1 --> P2n
     G2{{"Gate 2: worldgen ADR<br/>(approach, size limits,<br/>determinism rules)"}}:::gate
     A27 --> G2
 
@@ -157,9 +168,12 @@ Notes on the dependencies:
   before Phase 6 wires anything into worldgen.
 - Spike outputs reused later (not drawn, to keep the chart readable): S4 needs
   the viewer from 0.4 for its 2D map, and its terrain/biome dumps feed Phase 5;
-  S5 decides 6.3 (vanilla beard modes or our own grading); S3's
-  order-independence test is re-implemented as a permanent regression test
-  (Phase 3 or 6).
+  S5 decides 6.3 (vanilla beard modes or our own grading), with S7 as the
+  flattening fallback; S3's order-independence test is re-implemented as a
+  permanent regression test (Phase 3 or 6).
+- Track 7 (1.9) is a backup research track: pregenerating far chunks and
+  placing cities into finished chunks, outside worldgen. It feeds the 1.8
+  synthesis but nothing waits on it.
 - Gate 0 doesn't block anything in practice: research started alongside
   Phase 0, and only track 4 needed the dev environment.
 
