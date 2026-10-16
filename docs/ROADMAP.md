@@ -364,7 +364,7 @@ Wire the proven core into worldgen using the approach fixed in the Phase 2 ADR.
 - [ ] **6.3 Terrain**: adaptation mode or our own grading, per S5.
 - [ ] **6.4 Gameplay hooks**: loot tables, villager workstations and beds,
   `/locate` support. Leave room for a villager AI mod later.
-- [ ] **6.5 Config**: frequency, maximum city size, enabled styles.
+- [ ] **6.5 Config**: frequency, maximum city size (a default from S6, not a design cap; ADR 0002), enabled styles.
 - [ ] **6.6 Compatibility**: test with popular terrain mods (Terralith,
   Tectonic) and alongside vanilla villages.
 - [ ] **6.7 Performance budget**: worldgen time per chunk and save size per
