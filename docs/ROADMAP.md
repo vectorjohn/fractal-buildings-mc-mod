@@ -213,13 +213,13 @@ result decides whether flattening is needed.
   `final_density` alone (expect bare stone, flooding) vs all three wrapped;
   `getBaseHeight` matches the levelled ground. See
   `research/worldgen/surface-level-and-flattening.md`.
-- [ ] **2.8 S8 Structure veto.** Does one tag-driven predicate
+- [x] **2.8 S8 Structure veto.** Does one tag-driven predicate
   (`fractalbuildings:excluded_from_cities`) keep foreign surface structures out
   of city cells at both start generation (`tryGenerateStructure`) and
   `/locate` (`StructureCheck.canCreateStructure`)? Evidence: server test with a
   fixed city cell over a known village chunk: no village start, and `/locate`
   skips it. See `research/worldgen/keeping-structures-out.md`.
-- [ ] **2.9 S9 Procedural pool element.** Can a custom `StructurePoolElement`
+- [x] **2.9 S9 Procedural pool element.** Can a custom `StructurePoolElement`
   put our generated houses inside vanilla villages (footprint fixed per
   element, content regenerated at `place` from seed and position)? Evidence:
   server test that a village chunk holds our blocks, identical whatever the

@@ -96,3 +96,6 @@ the end of its track's list. Notes use [TEMPLATE.md](TEMPLATE.md).
 
 ## Phase 2 spikes (`spikes/`)
 
+- [S8 Structure veto](spikes/s8.md) — yes: two mixins (ChunkGenerator#tryGenerateStructure, StructureCheck#canCreateStructure) share one tag predicate; generation and /locate agree (190→189 villages), mineshafts untouched; private-method hooks, re-check each MC bump; F2−F1 margin untested — status: new
+- [S9 Procedural pool element](spikes/s9.md) — yes: custom StructurePoolElement (fixed footprint, content hashed from seed+pos+rotation) puts our houses in plains villages via a houses.json override, order-independent incl. NBT reload; Lithostitched works but changes vanilla layouts; flat test world, real pipeline/slopes untested; vanilla pieces differ by order in 0–7 chunks (likely partly artefact) — status: new
+
