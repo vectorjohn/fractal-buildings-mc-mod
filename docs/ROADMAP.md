@@ -313,8 +313,9 @@ Critical path: S3 → S5 → V4 → S9.
   across threads, request order and cache states (cold, warm, evicted,
   prefetched); golden digests catch cross-JVM drift; a lint bans
   nondeterministic APIs in the core.
-- [ ] **3.11 Diversity score** (S7) across a seed batch, so sameness is measured
+- [x] **3.11 Diversity score** (S7) across a seed batch, so sameness is measured
   and not just eyeballed; a regression floor in a test.
+  *Gap:* the CLI `diversity` command + `Main` case line wait for S5 (core entry point `Diversity.of`); v0 floors, baseline and report are in.
 - [ ] **3.12 Gate pack** (S9): invariant report over 10,000 seeds, galleries and
   the diversity report in `docs/review/phase3/`, v0 timing per building, a
   REVIEW.md entry.
