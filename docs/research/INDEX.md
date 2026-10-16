@@ -104,6 +104,7 @@ the end of its track's list. Notes use [TEMPLATE.md](TEMPLATE.md).
 
 ## Phase 2 spikes (`spikes/`)
 
+- [S4 Region map](spikes/s4.md) — sensible on 4 seeds (no centres in water/rivers/peaks, even spacing, 23–37% straddle palette groups); design change: best-of-8 hashed candidate centres per cell (site-only loses most cities); unbounded: keep 1024 cells + join rule (claim cells within radius, hashed priority), don't grow cells; dump format fb-region-dump/1; priming untested, cost derived — status: new
 - [S8 Structure veto](spikes/s8.md) — yes: two mixins (ChunkGenerator#tryGenerateStructure, StructureCheck#canCreateStructure) share one tag predicate; generation and /locate agree (190→189 villages), mineshafts untouched; private-method hooks, re-check each MC bump; F2−F1 margin untested — status: new
 - [S9 Procedural pool element](spikes/s9.md) — yes: custom StructurePoolElement (fixed footprint, content hashed from seed+pos+rotation) puts our houses in plains villages via a houses.json override, order-independent incl. NBT reload; Lithostitched works but changes vanilla layouts; flat test world, real pipeline/slopes untested; vanilla pieces differ by order in 0–7 chunks (likely partly artefact) — status: new
 

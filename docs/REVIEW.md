@@ -28,4 +28,6 @@ work becomes a ROADMAP item or a Polish backlog line. Settled items move to
   Look for: the licence you want for the mod (affects what we may borrow from other mods)
   Result: MIT with John as author (John, 2026-10-08)
 
+- [ ] **2.4 S4**: region maps in `docs/research/spikes/s4/*.png` — do city density and placement at 1024-block cells, and the size of joined cities, look like where a person would put towns?
+
 ## Done

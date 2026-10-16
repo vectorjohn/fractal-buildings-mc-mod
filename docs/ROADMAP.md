@@ -196,7 +196,7 @@ result decides whether flattening is needed.
   crosses a district border (each side owned by one start) meets without a
   seam, and `/locate` finds a district start through a
   `RandomSpreadStructurePlacement` subclass.
-- [ ] **2.4 S4 Region map.** Does the region layer place cities sensibly
+- [x] **2.4 S4 Region map.** Does the region layer place cities sensibly
   against real biomes? Evidence: dev command dumping region cells plus biomes
   to JSON; 2D map in the viewer. (The dump format becomes a test fixture for
   Phases 3 and 5.)
