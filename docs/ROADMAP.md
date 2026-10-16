@@ -178,7 +178,7 @@ result decides whether flattening is needed.
   game), stated per km² for large cities. Evidence: server test per mod set
   with a primed grid in two orders and on 8 threads (0 differences); in-game
   timing under the heavy lock.
-- [ ] **2.2 S2 Terrain probe** (shrunk after track 4, ADR 0002). Already
+- [x] **2.2 S2 Terrain probe** (shrunk after track 4, ADR 0002). Already
   measured for vanilla, one seed (12345): `getBaseHeight(OCEAN_FLOOR_WG)`
   matches real ground in 98.2% of land columns (p99 2 blocks);
   `preliminary_surface_level` reads 12–15 low (p90 17). Left open: (a) 10
