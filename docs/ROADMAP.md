@@ -293,7 +293,7 @@ Critical path: S3 → S5 → V4 → S9.
 
 **Viewer (TypeScript, three.js)**
 
-- [ ] **3.5 Instanced voxel mesh** (V1) with orbit controls; colour by role or
+- [x] **3.5 Instanced voxel mesh** (V1) with orbit controls; colour by role or
   by mapped palette; layer groups; placement and rotation as in the core.
 - [ ] **3.6 Controls** (V2): seed scrubber, style switch, layer toggles
   (shell, interior, roof, foundation, terrain), storey slider; state in the URL.

@@ -1,14 +1,14 @@
 import { expect, test } from '@playwright/test';
 import { mkdirSync, writeFileSync } from 'node:fs';
 
-// Smoke path: the viewer loads the CLI's 5x5x5 box, renders it, and we screenshot it to out/smoke.png.
-test('viewer renders the 5x5x5 box with two role colours', async ({ page }) => {
+// Smoke path: the viewer loads the sample house (fb-scene/1), renders it, and we screenshot it to out/smoke.png.
+test('viewer renders the sample house with role colours', async ({ page }) => {
   const errors: string[] = [];
   page.on('pageerror', (e) => errors.push(String(e)));
   await page.goto('/');
   await page.waitForFunction(() => window.__viewerReady !== undefined, undefined, { timeout: 30_000 });
   const ready = await page.evaluate(() => window.__viewerReady);
-  expect(ready).toEqual({ ok: true, voxels: 125 });
+  expect(ready).toEqual({ ok: true, voxels: 196 });
 
   const png = await page.screenshot();
   mkdirSync('out', { recursive: true });

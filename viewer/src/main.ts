@@ -1,27 +1,38 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
-import fixtureText from '../fixtures/box5.json?raw';
-import { parseIr } from './ir';
-import type { Ir } from './ir';
-import { irToVoxels } from './voxels';
-
-const ROLE_COLORS: Record<string, number> = { wall: 0xc8b89a, trim: 0x7a5c3a, roof: 0xa04a3a, floor: 0x4a6a8a };
+import { parseScene } from './ir';
+import type { Scene } from './ir';
+import { buildSceneObject, frameCamera } from './render';
+import type { RenderOptions } from './render';
+import { sceneBounds, sceneVoxels } from './voxels';
 
 declare global {
   interface Window {
-    /** Set once the IR has been drawn (or failed); the Playwright screenshot waits for it. */
+    /** Set once the scene has been drawn (or failed); the Playwright screenshot waits for it. voxels = building voxels, not terrain. */
     __viewerReady?: { ok: boolean; voxels: number; error?: string };
   }
 }
 
-/** IR source: `?ir=<url>` loads JSON from that URL, otherwise the bundled CLI fixture. */
-async function loadIr(): Promise<Ir> {
-  const url = new URLSearchParams(location.search).get('ir');
-  if (!url) return parseIr(JSON.parse(fixtureText));
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`fetch ${url}: ${res.status}`);
-  return parseIr(await res.json());
+const fixtures = import.meta.glob('../fixtures/*.json', { query: '?raw', import: 'default', eager: true }) as Record<string, string>;
+
+/** Scene source: `?ir=<url>`, or `?fixture=<name>` (viewer/fixtures/<name>.json); default sample-house. */
+async function loadScene(params: URLSearchParams): Promise<Scene> {
+  const url = params.get('ir');
+  if (url) {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`fetch ${url}: ${res.status}`);
+    return parseScene(await res.json());
+  }
+  const name = params.get('fixture') ?? 'sample-house';
+  const text = fixtures[`../fixtures/${name}.json`];
+  if (text === undefined) throw new Error(`no fixture "${name}"`);
+  return parseScene(JSON.parse(text));
 }
+
+const params = new URLSearchParams(location.search);
+const opts: RenderOptions = { colour: params.get('colour') === 'palette' ? 'palette' : 'role' };
+const style = params.get('style');
+if (style) opts.style = style;
 
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setPixelRatio(window.devicePixelRatio);
@@ -32,29 +43,35 @@ const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x1b1d22);
 const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
 const controls = new OrbitControls(camera, renderer.domElement);
-
 scene.add(new THREE.HemisphereLight(0xffffff, 0x444455, 1.2));
 const sun = new THREE.DirectionalLight(0xffffff, 2);
 sun.position.set(5, 10, 7);
 scene.add(sun);
-scene.add(new THREE.GridHelper(32, 32));
 
-function show(ir: Ir): number {
-  const voxels = irToVoxels(ir);
-  const mesh = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshLambertMaterial(), voxels.length);
-  const m = new THREE.Matrix4();
-  voxels.forEach((v, i) => {
-    m.makeTranslation(v.x + 0.5, v.y + 0.5, v.z + 0.5);
-    mesh.setMatrixAt(i, m);
-    mesh.setColorAt(i, new THREE.Color(ROLE_COLORS[v.role] ?? 0xff00ff));
-  });
-  scene.add(mesh);
-  const [sx, sy, sz] = ir.size;
-  controls.target.set(sx / 2, sy / 2, sz / 2);
-  const d = Math.max(sx, sy, sz);
-  camera.position.set(sx / 2 + d * 1.6, sy / 2 + d * 1.1, sz / 2 + d * 2.0);
-  controls.update();
-  return voxels.length;
+let current: Scene | null = null;
+let content: THREE.Object3D | null = null;
+
+function rebuild(): void {
+  if (!current) return;
+  if (content) {
+    scene.remove(content);
+    content.traverse((o) => {
+      if (o instanceof THREE.InstancedMesh) { o.geometry.dispose(); (o.material as THREE.Material).dispose(); o.dispose(); }
+    });
+  }
+  content = buildSceneObject(current, opts);
+  scene.add(content);
+}
+
+function addControls(): void {
+  const bar = document.createElement('div');
+  bar.style.cssText = 'position:fixed;top:8px;left:8px;font:12px sans-serif;color:#ddd;background:#0008;padding:4px 8px;border-radius:4px';
+  const sel = document.createElement('select');
+  sel.id = 'colour';
+  for (const v of ['role', 'palette']) sel.add(new Option(`colour: ${v}`, v, false, v === opts.colour));
+  sel.onchange = () => { opts.colour = sel.value === 'palette' ? 'palette' : 'role'; rebuild(); };
+  bar.appendChild(sel);
+  document.body.appendChild(bar);
 }
 
 window.addEventListener('resize', () => {
@@ -62,15 +79,20 @@ window.addEventListener('resize', () => {
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
 });
-
 renderer.setAnimationLoop(() => {
   controls.update();
   renderer.render(scene, camera);
 });
 
-loadIr().then(
-  (ir) => {
-    const voxels = show(ir);
+loadScene(params).then(
+  (s) => {
+    current = s;
+    rebuild();
+    addControls();
+    const b = sceneBounds(s);
+    scene.add(new THREE.GridHelper(64, 64, 0x888888, 0x444444).translateX((b.min[0] + b.max[0]) / 2).translateY(b.min[1]).translateZ((b.min[2] + b.max[2]) / 2));
+    frameCamera(camera, controls, b);
+    const voxels = sceneVoxels(s).length;
     // Wait two frames so the first render with the mesh has happened.
     requestAnimationFrame(() => requestAnimationFrame(() => (window.__viewerReady = { ok: true, voxels })));
   },
