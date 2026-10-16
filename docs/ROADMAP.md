@@ -50,7 +50,7 @@ item. Per-item work logs are in [log/](log/); run ledgers in [runs/](runs/).
 | 0. Scaffolding | done 2026-10-08; gate passed 2026-10-14 (John) | builds green; viewer renders the box |
 | 1. Prior art research | done; gate passed 2026-10-16 (John signed off in synthesis.md; wants effectively unbounded cities) | John picks building-generation direction and the integration approach to spike |
 | 2. Worldgen spikes | done; gate passed 2026-10-16 (John accepted ADR 0003; S6 figures being re-measured) | worldgen ADR (approach, size limits, determinism rules) |
-| 3. Planner core and three.js viewer | not started | John reviews seed gallery and invariant report |
+| 3. Planner core and three.js viewer | done 2026-10-16; gate awaiting John (pack: docs/review/phase3/README.md, REVIEW 3.12) | John reviews seed gallery and invariant report |
 | 4. Building generator depth | not started | per building type, "would I believe a person built this?" |
 | 5. Settlements and cities | not started | cities in ≥5 biome mixes, one straddling a border |
 | 6. Minecraft integration and release | not started | fresh world on three seeds plays well for an hour; first release |
@@ -81,6 +81,14 @@ Notes:
   deliberately broken rule fails.
 - Shared test infrastructure (synthetic probes, terrain dumps, seed lists,
   gallery presets) is listed here as it's added.
+- Added in Phase 3: `SampleScenes.house()` + `viewer/fixtures/sample-house.json`;
+  recorded terrain `fixtures/terrain/s4-12345-crop32.json` and `RecordedProbe`;
+  `ProbeSpecs` strings (`flat:`, `plane:`, `hill:`, `noise:`, `recorded:`)
+  shared by the CLI and tests; `Invariants` + `InvariantReport`, the violations
+  fixture and the viewer overlay; golden digests and the determinism lint;
+  `fractal-cli check|bench|diversity` over the default 128-cell matrix;
+  `cli batch` and the gallery presets (`npm run gallery`, not part of
+  `scripts/test-all.sh`: run it on generator or viewer changes).
 
 ---
 
@@ -253,44 +261,75 @@ permanent regression test (re-implemented properly, in Phase 3 or 6).
 
 ## Phase 3: Planner core and three.js viewer
 
-Updated: 2026-10-08
+Updated: 2026-10-16
 
 Build the review loop and a deliberately plain first generator: one building on
-one lot, viewable from any seed.
+one lot, viewable from any seed. The generator stays plain, but the IR is built
+for what follows: tall setback towers, buildings over several lots, scenes with
+many buildings, and shells cached by spec (ADR 0001, ADR 0003 D6).
 
-Parallel: 3.1 (IR and its JSON schema, with a checked-in sample fixture) comes
-first. Then the planner track (3.2 → 3.3 → 3.4, with 3.9–3.11 alongside 3.3)
-and the viewer track (3.5 → 3.6, 3.7, 3.8, working against the fixture) run
-side by side.
+Plan: [plans/phase3.md](plans/phase3.md) (steps S1–S9 and V1–V4, with the IR
+v1 spec, the v0 rules and the invariant definitions). The plan commit already
+holds the IR types, probe interfaces, `Hash64`, the sample scene (Java and
+`viewer/fixtures/sample-house.json`) and a terrain crop of S4's dump
+(`fixtures/terrain/s4-12345-crop32.json`), so five steps start at once.
+
+Parallel: wave 1 is S1 (3.1), S2 (3.2), S3 (3.3), S4 (3.9a) and V1 (3.5),
+side by side. Wave 2 as they land: S5 (3.4), S8 (3.9b), S6 (3.10), S7
+(3.11), V2 (3.6), V3 (3.7), V4 (3.8). Then the gate pack, S9 (3.12).
+Critical path: S3 → S5 → V4 → S9.
 
 **Planner core (Java, no Minecraft)**
 
-- [ ] **3.1 Building IR**: footprint, floors, rooms, openings, roof, abstract
-  material roles; JSON serialisation with a stable, documented schema; a sample
-  fixture for the viewer.
-- [ ] **3.2 Probes**: interfaces for terrain height and biome; synthetic
-  implementation; recorded implementation reading S4's dump.
-- [ ] **3.3 Generator v0**: rectangular footprint, 1–3 floors, doors and
-  windows, gable roof.
-- [ ] **3.4 CLI**: `gen --seed --lot --style` writes JSON.
+- [x] **3.1 Building IR** (S1): format `fb-scene/1`: a scene of lots, placed
+  buildings, terrain and violations; a building is a site-independent shell
+  (spec, spec hash, storey grid, volumes, rooms, openings, roofs,
+  role-tagged boxes) plus its placement and site boxes. Deterministic JSON
+  writer, validator, schema in `docs/IR.md`, the sample fixture written by
+  the writer.
+- [x] **3.2 Probes** (S2): terrain and biome interfaces; synthetic shapes
+  (flat, plane, hill, terraces, noise); recorded implementation reading S4's
+  `fb-region-dump/1` (the committed crop), with integer interpolation;
+  probe spec strings shared by the CLI and tests.
+- [x] **3.3 Generator v0** (S3): rectangular footprint, 1–3 floors, rooms,
+  stairs, doors and windows, gable roof, foundations to the terrain; written
+  as spec policy → shell generator → instance pass, on `IntSplit` and
+  `Choice` (ADR 0001 B2).
+- [x] **3.4 CLI** (S5): `gen --seed --lot --style --terrain` writes scene
+  JSON; `batch` (for the viewer), `check` (invariant report), `bench`.
+  Replaces the Phase 0 smoke IR. Also `diversity` (S7). `check --seeds 0..999` (128,000 cases) takes 1.4 s; see `docs/log/2026-10-16-p3-s5-cli.md`.
 
 **Viewer (TypeScript, three.js)**
 
-- [ ] **3.5 Instanced voxel mesh** with orbit controls; colour by role or by
-  mapped palette.
-- [ ] **3.6 Controls**: seed scrubber, style switch, layer toggles (shell,
-  interior, roof).
-- [ ] **3.7 Invariant overlay**: failures from the test suite drawn in red.
-- [ ] **3.8 Seed gallery**: a 4×4 grid of seeds from fixed camera presets;
+- [x] **3.5 Instanced voxel mesh** (V1) with orbit controls; colour by role or
+  by mapped palette; layer groups; placement and rotation as in the core.
+- [x] **3.6 Controls** (V2): seed scrubber, style switch, layer toggles
+  (shell, interior, roof, foundation, terrain), storey slider; state in the URL.
+- [x] **3.7 Invariant overlay** (V3): failures from the core's checks drawn in
+  red, visible through walls, with a list.
+- [x] **3.8 Seed gallery** (V4): a 4×4 grid of seeds from fixed camera presets;
   Playwright captures it as PNGs, so agents review the same pictures John does.
+  `cd viewer && nix develop -c npm run gallery` (CLI batch to `viewer/gallery-data/gen/`, build, Playwright; PNGs in `viewer/out/gallery/`). *Known issues:* top preset is flat-shaded (roof ridges not readable from above); styles differ only by palette at generator v0.
 
 **Tests**
 
-- [ ] **3.9 Property tests** over thousands of seeds: every room reachable from a
-  door, roof closed, no floating blocks, stays in its lot.
-- [ ] **3.10 Determinism**: same seed gives byte-identical JSON.
-- [ ] **3.11 Diversity score** across a seed batch, so sameness is measured and
-  not just eyeballed.
+- [x] **3.9 Property tests** over thousands of seeds: every room reachable from a
+  door, roof closed, no floating blocks, stays in its lot. Split: checks on a
+  voxel grid with one mutant per invariant (S4, 3.9a); generator property
+  tests over seeds, lots, fronts and terrains (S8, 3.9b).
+  - [x] **3.9a** (S4): `core/voxel/VoxelGrid`, `core/check/{Invariants,Invariant,InvariantReport}`; mutant per invariant in `InvariantsTest`; fixture `viewer/fixtures/sample-house-violations.json`. 3.9b still open.
+  - [x] **3.9b** (S8): `gen/v0/V0PropertyTest` (2000 drawn seeds + 14400-scene cross product, 9 terrains incl. recorded crop; mutation checks); 0 violations. `-Dfb.propertySeeds=N` raises the count.
+- [x] **3.10 Determinism** (S6): same seed gives byte-identical JSON, also
+  across threads, request order and cache states (cold, warm, evicted,
+  prefetched); golden digests catch cross-JVM drift; a lint bans
+  nondeterministic APIs in the core.
+- [x] **3.11 Diversity score** (S7) across a seed batch, so sameness is measured
+  and not just eyeballed; a regression floor in a test.
+  CLI: `fractal-cli diversity --seeds A..B` (added with S5); v0 floors, baseline and report are in.
+- [x] **3.12 Gate pack** (S9): invariant report over 10,000 seeds, galleries and
+  the diversity report in `docs/review/phase3/`, v0 timing per building, a
+  REVIEW.md entry.
+  Pack in `docs/review/phase3/` (README, invariants.md: 1,280,000 cases, 0 failures; diversity.md; 16 gallery PNGs); house generation about 0.011 ms, check 0.13 ms (NOTES); REVIEW.md item 3.12. `scripts/test-all.sh` runs `npm run screenshot` for layer 3, not the gallery (on purpose).
 
 **Gate:** John reviews the seed gallery and the invariant report.
 
@@ -421,6 +460,19 @@ Fixed opportunistically or scheduled as items.
 - 0.4: `Planner.smokeBox(seed)` ignores the seed; `--lot`/`--style` accepted but unused (smoke only).
 - 0.5: test-all client layer prints "no count in log" instead of a test count.
 - 0.5: `mod/build/screenshots/` is never cleared and the copy runs only on success, so a failed client run can leave a stale hello-hut.png that looks current; raw shots also duplicated in mod/build/run/clientGameTest/screenshots/.
+
+- 3 (plan): `SampleScenes` (test helper) ships in planner-core main jar.
+- 3.2: biome lookup between lattice points untested (a +step/2 rounding mutant survived); ProbeSpecs has no `terraces:` form; `SyntheticTerrain.hill` computes `x - cx` in int before widening (overflow at extreme coords).
+- 3.1: IrValidator doesn't check storey ≥ 0 (except roof −1) or site-box containment.
+- 3.5: `buildSceneObject` has no unit test (group names, palette colouring).
+- 3.9a: shell-closed/in-lot/in-world mutants assert presence, not exclusivity; `no-gap-below` cell order is (z,x), class comment says (y,z,x); `ir-valid` has no mutant through `Invariants.check`; `no-gap-below` flags buried floors (basements will need a rule change).
+- 3.3: no front steps (door unreachable from lower ground on slopes); no world-height cap near y 319.
+- 3.6: in `?fixture=` mode the seed box is empty while the slider sits at 0.
+- 3.8: the flat-terrain `top` view shows a thin line across the grass (e.g. plain-flat seed 5): a viewer rendering artifact, not the generator (the V4 log calls it a site-box edge, which is wrong).
+- 3.8: gallery noise terrain is the same patch in every cell (one `noise:` spec, same lot position), so terrain variety isn't reviewed.
+- 3.8: flat-shaded `top` view reads each roof as one colour block (ridge and pitch not visible).
+- 3.4: `check` exit-1 path (a scene with violations) is untested.
+- 3.4: a failing property case can't be replayed via the CLI (no flags for the test's terrain or lot position).
 
 ## Open questions and risks
 

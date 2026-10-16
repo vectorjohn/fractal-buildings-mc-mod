@@ -1,59 +1,54 @@
 package dev.fractalbuildings.cli;
 
-import dev.fractalbuildings.core.Planner;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.Map;
-
-/** CLI: {@code gen --seed N --lot WxD --style NAME [--out FILE]} writes smoke IR JSON (stdout if no --out). */
+/** CLI entry: {@code gen | batch | check | bench}; see {@link #USAGE}. */
 public final class Main {
 	private Main() {}
+
+	static final String USAGE = """
+			usage: fractal-cli <command> [options]
+			  gen   --seed N --lot WxD [--at X,Z] [--front north|east|south|west] [--style S] [--terrain SPEC] [--check] [--out FILE]
+			  batch --seeds A..B --lot WxD [--style S] [--terrain SPEC] [--front F] [--no-check] --out-dir DIR
+			  check --seeds A..B [--lots L,..] [--styles S,..] [--terrains T,..] [--fronts F,..] [--out FILE.md]
+			  bench --n N [--lots ..] [--styles ..] [--terrains ..] [--fronts ..]
+			  diversity --seeds A..B [--lot WxD] [--style S] [--terrain SPEC] [--json] [--out FILE]
+			terrain SPEC: flat:Y | plane:Y0:RISEX:RISEZ:RUN | hill:BASE:PEAK:RADIUS | noise:SEED:BASE:AMP:WAVELEN | recorded:FILE
+			""";
 
 	public static void main(String[] args) {
 		System.exit(run(args));
 	}
 
 	static int run(String[] args) {
-		if (args.length == 0 || !args[0].equals("gen")) {
-			System.err.println("usage: gen --seed N --lot WxD --style NAME [--out FILE]");
+		if (args.length == 0) {
+			System.err.print(USAGE);
 			return 2;
 		}
-		Map<String, String> opts = parseOptions(args);
-		long seed;
+		String[] rest = java.util.Arrays.copyOfRange(args, 1, args.length);
 		try {
-			seed = Long.parseLong(opts.getOrDefault("seed", "0"));
-		} catch (NumberFormatException e) {
-			System.err.println("bad --seed: " + opts.get("seed"));
-			return 2;
-		}
-		// --lot and --style are accepted but unused until real generation exists.
-		byte[] json = IrJson.write(Planner.smokeBox(seed)).getBytes(StandardCharsets.UTF_8);
-		String out = opts.get("out");
-		try {
-			if (out == null) {
-				System.out.write(json);
-				System.out.flush();
-			} else {
-				Path p = Path.of(out);
-				if (p.getParent() != null) Files.createDirectories(p.getParent());
-				Files.write(p, json);
+			switch (args[0]) {
+				case "gen" -> { return GenCommand.run(rest); }
+				case "batch" -> { return BatchCommand.run(rest); }
+				case "check" -> { return CheckCommand.run(rest); }
+				case "bench" -> { return BenchCommand.run(rest); }
+				case "diversity" -> { return DiversityCommand.run(rest); }
+				default -> {
+					System.err.println("unknown command '" + args[0] + "'");
+					System.err.print(USAGE);
+					return 2;
+				}
 			}
-		} catch (IOException e) {
-			System.err.println("write failed: " + e.getMessage());
+		} catch (UsageException e) {
+			System.err.println(e.getMessage());
+			System.err.print(USAGE);
+			return 2;
+		} catch (java.io.IOException e) {
+			System.err.println("i/o failed: " + e.getMessage());
 			return 1;
 		}
-		return 0;
 	}
 
-	static Map<String, String> parseOptions(String[] args) {
-		Map<String, String> opts = new java.util.TreeMap<>();
-		for (int i = 1; i + 1 < args.length; i += 2) {
-			if (args[i].startsWith("--")) {
-				opts.put(args[i].substring(2), args[i + 1]);
-			}
-		}
-		return opts;
+	/** Bad command-line input; exit code 2. */
+	static final class UsageException extends RuntimeException {
+		UsageException(String m) { super(m); }
 	}
 }
