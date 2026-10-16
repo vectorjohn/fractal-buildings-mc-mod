@@ -23,7 +23,7 @@ application {
 	applicationName = 'fractal-cli'
 }
 
-// IrJsonDeterminismTest compares CLI output with the committed viewer fixture; declare it so Gradle reruns the test when it changes.
+// SceneFixtureTest compares CLI output with the committed viewer fixture; declare it so Gradle reruns the test when it changes.
 tasks.named('test') {
-	inputs.file('../viewer/fixtures/box5.json')
+	inputs.file('../viewer/fixtures/v0-seed1.json')
 }

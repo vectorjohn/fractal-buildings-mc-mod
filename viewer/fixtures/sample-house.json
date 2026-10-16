@@ -1,0 +1,71 @@
+{
+  "format": "fb-scene/1",
+  "genVersion": 1,
+  "seed": "42",
+  "terrain": {"x0": 98, "z0": -42, "nx": 11, "nz": 9, "floorY": [63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64]},
+  "lots": [
+    {"id": "lot0", "x": 98, "z": -42, "w": 11, "d": 9, "front": "north"}
+  ],
+  "buildings": [
+    {
+      "id": "b0",
+      "lots": ["lot0"],
+      "origin": [100, 64, -40],
+      "rotation": 0,
+      "shell": {
+        "spec": {"genVersion": 1, "specSeed": "42", "style": "plain", "type": "house", "width": 7, "depth": 5, "storeys": 1, "roof": "gable"},
+        "specHash": "8b7b09defc2546e2",
+        "bounds": {"min": [0, 0, 0], "size": [7, 8, 5]},
+        "storeys": [
+          {"index": 0, "y": 0, "height": 4}
+        ],
+        "volumes": [
+          {"id": "v0", "min": [0, 0, 0], "size": [7, 5, 5], "parent": null}
+        ],
+        "rooms": [
+          {"id": "r0", "storey": 0, "volume": "v0", "use": "room", "parts": [{"min": [1, 1, 1], "size": [2, 3, 3]}]},
+          {"id": "r1", "storey": 0, "volume": "v0", "use": "room", "parts": [{"min": [4, 1, 1], "size": [2, 3, 3]}]}
+        ],
+        "openings": [
+          {"id": "o0", "kind": "door", "min": [1, 1, 0], "size": [1, 2, 1], "facing": "north", "from": "r0", "to": "outside"},
+          {"id": "o1", "kind": "door", "min": [3, 1, 2], "size": [1, 2, 1], "facing": "east", "from": "r0", "to": "r1"},
+          {"id": "o2", "kind": "window", "min": [1, 2, 4], "size": [1, 1, 1], "facing": "south", "from": "r0", "to": "outside"},
+          {"id": "o3", "kind": "window", "min": [5, 2, 4], "size": [1, 1, 1], "facing": "south", "from": "r1", "to": "outside"},
+          {"id": "o4", "kind": "window", "min": [6, 2, 2], "size": [1, 1, 1], "facing": "east", "from": "r1", "to": "outside"},
+          {"id": "o5", "kind": "window", "min": [0, 2, 2], "size": [1, 1, 1], "facing": "west", "from": "r0", "to": "outside"}
+        ],
+        "roofs": [
+          {"form": "gable", "volume": "v0", "ridgeAxis": "x", "baseY": 5, "rise": 1, "run": 1}
+        ],
+        "boxes": [
+          {"min": [0, 0, 0], "size": [7, 1, 5], "role": "floor", "layer": "shell", "storey": 0},
+          {"min": [0, 1, 0], "size": [7, 3, 1], "role": "wall", "layer": "shell", "storey": 0},
+          {"min": [0, 1, 4], "size": [7, 3, 1], "role": "wall", "layer": "shell", "storey": 0},
+          {"min": [0, 1, 1], "size": [1, 3, 3], "role": "wall", "layer": "shell", "storey": 0},
+          {"min": [6, 1, 1], "size": [1, 3, 3], "role": "wall", "layer": "shell", "storey": 0},
+          {"min": [3, 1, 1], "size": [1, 3, 3], "role": "wall", "layer": "interior", "storey": 0},
+          {"min": [0, 4, 0], "size": [7, 1, 5], "role": "floor", "layer": "roof", "storey": -1},
+          {"min": [0, 5, 0], "size": [7, 1, 1], "role": "roof", "layer": "roof", "storey": -1},
+          {"min": [0, 5, 4], "size": [7, 1, 1], "role": "roof", "layer": "roof", "storey": -1},
+          {"min": [0, 5, 1], "size": [1, 1, 3], "role": "wall", "layer": "roof", "storey": -1},
+          {"min": [6, 5, 1], "size": [1, 1, 3], "role": "wall", "layer": "roof", "storey": -1},
+          {"min": [0, 6, 1], "size": [7, 1, 1], "role": "roof", "layer": "roof", "storey": -1},
+          {"min": [0, 6, 3], "size": [7, 1, 1], "role": "roof", "layer": "roof", "storey": -1},
+          {"min": [0, 6, 2], "size": [1, 1, 1], "role": "wall", "layer": "roof", "storey": -1},
+          {"min": [6, 6, 2], "size": [1, 1, 1], "role": "wall", "layer": "roof", "storey": -1},
+          {"min": [0, 7, 2], "size": [7, 1, 1], "role": "roof", "layer": "roof", "storey": -1},
+          {"min": [1, 1, 0], "size": [1, 2, 1], "role": "door", "layer": "shell", "storey": 0},
+          {"min": [3, 1, 2], "size": [1, 2, 1], "role": "door", "layer": "interior", "storey": 0},
+          {"min": [1, 2, 4], "size": [1, 1, 1], "role": "window", "layer": "shell", "storey": 0},
+          {"min": [5, 2, 4], "size": [1, 1, 1], "role": "window", "layer": "shell", "storey": 0},
+          {"min": [6, 2, 2], "size": [1, 1, 1], "role": "window", "layer": "shell", "storey": 0},
+          {"min": [0, 2, 2], "size": [1, 1, 1], "role": "window", "layer": "shell", "storey": 0}
+        ]
+      },
+      "siteBoxes": [
+        {"min": [0, -1, 0], "size": [7, 1, 2], "role": "foundation", "layer": "foundation", "storey": -1}
+      ]
+    }
+  ],
+  "violations": []
+}
