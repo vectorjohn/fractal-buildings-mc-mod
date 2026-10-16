@@ -371,6 +371,12 @@ skeleton, then district detail built lazily (ARCHITECTURE.md, "City scale").
 - [ ] **5.9 Scale check**: plan time and memory per district, measured outside
   the game at 512², 2048² and a multi-cell city; flat per-district cost is the
   bar (feeds 6.5 and 6.7).
+- [ ] **5.10 Water bias**: city sites prefer rivers, lakes and coasts, via a
+  distance-to-water term (coarse biome and height probes) in the region
+  field's best-of-8 candidate score (ADR 0003, R1); villages and hamlets stay
+  unbiased (John, 2026-10-16). Stays a pure function of (seed, position) and
+  cheap (S6: coarse suitability ~11 ms per cell). Evidence: S4-style region
+  maps before and after, showing city sites shifting toward water.
 
 **Gate:** John reviews cities in at least five biome mixes, including one
 straddling a border, one larger than 512 × 512, and one with a high-rise
