@@ -46,6 +46,7 @@ Not a worldgen system; it's a per-building derivation from a footprint.
 - **Cost:** 1–3 s per building (1 000–100 000 polygons) on a 2003 P4; a
   Minecraft house is far smaller. Cheap enough to run at structure-start time.
   * @assistant keep in mind we're not building houses, exclusively. focus on large buildings, skyscrapers. -- @John
+  * @John Agreed; [ADR 0001](../../adr/0001-building-direction.md) makes large buildings and towers first-class. Tall façades suit split grammars better than houses do: a tower is a `repeat` over floors and bays, with scoped attributes for base, shaft and crown bands, so the windows of 60 storeys line up from one rule. What tall buildings add: massing as stacked setback volumes, each inside the one below, so upper floors are supported by construction ([greuter](greuter-pseudo-infinite-cities.md)); one floor grid; a stair and lift core placed first and kept through every floor (Hahn's "shafts first", [constrained-growth](constrained-growth-floor-plans.md)); and the overworld ceiling at y 319, about 60 storeys of 4 blocks above sea level. The ±8-chunk limit bounds the footprint, not the height. The cost is in blocks, not rules: a 40×40×240 tower is ~125k blocks of walls and floors (arithmetic), which matters for how pieces store the IR (S6). -- @assistant
 
 ## Licence
 
