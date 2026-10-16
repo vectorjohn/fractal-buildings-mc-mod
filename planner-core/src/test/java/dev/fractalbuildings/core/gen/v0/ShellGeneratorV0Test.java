@@ -3,7 +3,11 @@ package dev.fractalbuildings.core.gen.v0;
 import static org.junit.jupiter.api.Assertions.*;
 
 import dev.fractalbuildings.core.ir.*;
+import dev.fractalbuildings.core.check.Invariants;
+import dev.fractalbuildings.core.gen.GenRequest;
+import dev.fractalbuildings.core.probe.TerrainProbe;
 import dev.fractalbuildings.core.rand.Hash64;
+import dev.fractalbuildings.core.voxel.VoxelGrid;
 import java.util.List;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
@@ -23,8 +27,8 @@ class ShellGeneratorV0Test {
 				assertEquals(s[2], b.storeys().size());
 				for (int i = 0; i < s[2]; i++) {
 					assertEquals(4 * i, b.storeys().get(i).y());
-					TestVoxels v = new TestVoxels(b);
-					assertEquals(Role.FLOOR, v.at(0, 4 * i, 0));
+					VoxelGrid v = grid(b);
+					assertEquals(Role.FLOOR, v.get(0, 4 * i, 0));
 				}
 				for (Box box : b.boxes()) assertTrue(b.bounds().contains(box.box()), box.toString());
 				for (Opening o : b.openings()) assertTrue(b.bounds().contains(o.box()));
@@ -47,9 +51,9 @@ class ShellGeneratorV0Test {
 				assertEquals(0, d.box().y() - 1);
 				assertEquals(Facing.NORTH, d.facing());
 				assertEquals(2, d.box().sy());
-				TestVoxels v = new TestVoxels(b);
-				assertEquals(Role.DOOR, v.at(d.box().x(), 1, 0));
-				assertEquals(Role.DOOR, v.at(d.box().x(), 2, 0));
+				VoxelGrid v = grid(b);
+				assertEquals(Role.DOOR, v.get(d.box().x(), 1, 0));
+				assertEquals(Role.DOOR, v.get(d.box().x(), 2, 0));
 			}
 		}
 	}
@@ -60,7 +64,7 @@ class ShellGeneratorV0Test {
 			for (long seed = 0; seed < 50; seed++) {
 				BuildingSpec sp = spec(seed, s[0], s[1], s[2]);
 				BuildingIr b = ShellGeneratorV0.generate(sp);
-				TestVoxels v = new TestVoxels(b);
+				VoxelGrid v = grid(b);
 				int windows = 0;
 				for (Opening o : b.openings()) {
 					if (o.kind() != OpeningKind.WINDOW) continue;
@@ -69,12 +73,12 @@ class ShellGeneratorV0Test {
 					boolean perimeter = c.x() == 0 || c.x() == sp.width() - 1 || c.z() == 0 || c.z() == sp.depth() - 1;
 					assertTrue(perimeter, "window not on perimeter: " + c);
 					assertFalse(c.x() == 0 && c.z() == 0 || c.x() == sp.width() - 1 && c.z() == sp.depth() - 1, "corner");
-					assertEquals(Role.WINDOW, v.at(c.x(), c.y(), c.z()));
-					assertEquals(Role.WALL, v.at(c.x(), c.y() - 1, c.z()));
-					assertEquals(Role.WALL, v.at(c.x(), c.y() + 1, c.z()));
+					assertEquals(Role.WINDOW, v.get(c.x(), c.y(), c.z()));
+					assertEquals(Role.WALL, v.get(c.x(), c.y() - 1, c.z()));
+					assertEquals(Role.WALL, v.get(c.x(), c.y() + 1, c.z()));
 					// the partition (if any) would be directly behind a front/back window
 					int inward = c.z() == 0 ? 1 : c.z() == sp.depth() - 1 ? -1 : 0;
-					if (inward != 0 && v.at(c.x(), c.y(), c.z() + inward).solid) fail("window blocked from inside at " + c);
+					if (inward != 0 && v.get(c.x(), c.y(), c.z() + inward).solid) fail("window blocked from inside at " + c);
 				}
 				assertTrue(windows >= 3 * sp.storeys(), "windows " + windows);
 				assertEquals(windows, v.count(Role.WINDOW));
@@ -88,7 +92,7 @@ class ShellGeneratorV0Test {
 			BuildingIr b = ShellGeneratorV0.generate(spec(3, s[0], s[1], s[2]));
 			long stairs = b.openings().stream().filter(o -> o.kind() == OpeningKind.STAIR).count();
 			assertEquals(s[2] - 1, stairs);
-			assertEquals(3L * (s[2] - 1), new TestVoxels(b).count(Role.STAIR));
+			assertEquals(3L * (s[2] - 1), grid(b).count(Role.STAIR));
 		}
 	}
 
@@ -97,31 +101,35 @@ class ShellGeneratorV0Test {
 		for (int[] s : SIZES) {
 			for (long seed = 0; seed < 200; seed++) {
 				BuildingIr b = ShellGeneratorV0.generate(spec(Hash64.hash(seed, "walk"), s[0], s[1], s[2]));
-				TestVoxels v = new TestVoxels(b);
-				Opening door = b.openings().stream().filter(o -> o.kind() == OpeningKind.DOOR && o.to().equals("outside")).findFirst().get();
-				Set<Long> reach = v.reachable(door.box().x(), 1, door.box().z());
-				for (Room r : b.rooms()) {
-					Box3 p = r.parts().get(0);
-					boolean any = false;
-					for (int x = p.x(); x < p.maxX() && !any; x++)
-						for (int z = p.z(); z < p.maxZ() && !any; z++) any = reach.contains(TestVoxels.key(x, p.y(), z));
-					assertTrue(any, "room " + r.id() + " unreachable, spec " + b.spec());
-				}
+				var violations = Invariants.check(flatScene(b), (x, z) -> 64);
+				assertTrue(violations.isEmpty(), "spec " + b.spec() + ": " + violations);
 			}
 		}
+	}
+
+	/** The shell placed unrotated on flat terrain in a lot with a one-block margin. */
+	static SceneDoc flatScene(BuildingIr b) {
+		Lot lot = new Lot("lot0", 0, 0, b.bounds().maxX() + 2, b.bounds().maxZ() + 2, Facing.NORTH);
+		TerrainProbe flat = (x, z) -> 64;
+		PlacedBuilding pb = InstancePassV0.place(b, new GenRequest(1, lot, "plain", flat, (x, z) -> "plains"));
+		return new SceneDoc(1, 1, TerrainPatch.sample(flat, -2, -2, lot.w() + 4, lot.d() + 4), List.of(lot), List.of(pb), List.of());
+	}
+
+	static VoxelGrid grid(BuildingIr b) {
+		return VoxelGrid.of(new PlacedBuilding("b0", List.of("lot0"), 0, 0, 0, 0, b, List.of()));
 	}
 
 	@Test
 	void stairHoleStartsOverTheFirstStepAndBackIsSolid() {
 		BuildingIr b = ShellGeneratorV0.generate(spec(5, 9, 7, 3));
-		TestVoxels v = new TestVoxels(b);
+		VoxelGrid v = grid(b);
 		for (int i = 0; i < 2; i++) {
 			for (int k = 0; k < 3; k++) {
-				assertEquals(Role.STAIR, v.at(2 + k, 4 * i + 1 + k, 5));
-				assertEquals(Role.AIR, v.at(2 + k, 4 * i + 4, 5), "hole over step " + k);
+				assertEquals(Role.STAIR, v.get(2 + k, 4 * i + 1 + k, 5));
+				assertEquals(Role.AIR, v.get(2 + k, 4 * i + 4, 5), "hole over step " + k);
 			}
-			assertEquals(Role.FLOOR, v.at(5, 4 * i + 4, 5), "landing slab");
-			assertEquals(Role.FLOOR, v.at(1, 4 * i + 4, 5), "slab west of the hole");
+			assertEquals(Role.FLOOR, v.get(5, 4 * i + 4, 5), "landing slab");
+			assertEquals(Role.FLOOR, v.get(1, 4 * i + 4, 5), "slab west of the hole");
 		}
 	}
 
@@ -136,12 +144,12 @@ class ShellGeneratorV0Test {
 	void roofIsClosedAndCoversEveryColumn() {
 		for (int[] s : SIZES) {
 			BuildingIr b = ShellGeneratorV0.generate(spec(9, s[0], s[1], s[2]));
-			TestVoxels v = new TestVoxels(b);
+			VoxelGrid v = grid(b);
 			int top = 4 * s[2];
 			for (int x = 0; x < s[0]; x++)
 				for (int z = 0; z < s[1]; z++) {
 					boolean roof = false;
-					for (int y = top + 1; y < v.sy; y++) roof |= v.at(x, y, z) == Role.ROOF;
+					for (int y = top + 1; y < v.sy; y++) roof |= v.get(x, y, z) == Role.ROOF;
 					assertTrue(roof, "no roof over " + x + "," + z);
 				}
 			assertEquals(v.sy, 4 * s[2] + 1 + (Math.min(s[0] >= s[1] ? s[1] : s[0], 99) + 1) / 2);

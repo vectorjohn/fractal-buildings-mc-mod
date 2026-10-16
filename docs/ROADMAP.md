@@ -309,6 +309,7 @@ Critical path: S3 → S5 → V4 → S9.
   voxel grid with one mutant per invariant (S4, 3.9a); generator property
   tests over seeds, lots, fronts and terrains (S8, 3.9b).
   - [x] **3.9a** (S4): `core/voxel/VoxelGrid`, `core/check/{Invariants,Invariant,InvariantReport}`; mutant per invariant in `InvariantsTest`; fixture `viewer/fixtures/sample-house-violations.json`. 3.9b still open.
+  - [x] **3.9b** (S8): `gen/v0/V0PropertyTest` (2000 drawn seeds + 14400-scene cross product, 9 terrains incl. recorded crop; mutation checks); 0 violations. `-Dfb.propertySeeds=N` raises the count.
 - [ ] **3.10 Determinism** (S6): same seed gives byte-identical JSON, also
   across threads, request order and cache states (cold, warm, evicted,
   prefetched); golden digests catch cross-JVM drift; a lint bans
