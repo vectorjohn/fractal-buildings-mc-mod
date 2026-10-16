@@ -214,7 +214,7 @@ result decides whether flattening is needed.
   lane becomes noticeable, and whether a two-level plan (city skeleton, lazy
   district detail) is needed past it; thread-safety of the cache; evict a
   cell's plan, regenerate it and compare bytes.
-- [ ] **2.7 S7 Terrain flattening** (fallback if S5's beards fall short). Can
+- [x] **2.7 S7 Terrain flattening** (fallback if S5's beards fall short). Can
   we level city cells by wrapping `final_density` together with
   `chunk_surface_level` and the aquifer `surface_level`, without the plan/mask
   cycle? Evidence: client-test screenshots of a cut and a fill on a hill cell,
