@@ -287,9 +287,9 @@ Critical path: S3 → S5 → V4 → S9.
   stairs, doors and windows, gable roof, foundations to the terrain; written
   as spec policy → shell generator → instance pass, on `IntSplit` and
   `Choice` (ADR 0001 B2).
-- [ ] **3.4 CLI** (S5): `gen --seed --lot --style --terrain` writes scene
+- [x] **3.4 CLI** (S5): `gen --seed --lot --style --terrain` writes scene
   JSON; `batch` (for the viewer), `check` (invariant report), `bench`.
-  Replaces the Phase 0 smoke IR.
+  Replaces the Phase 0 smoke IR. Also `diversity` (S7). `check --seeds 0..999` (128,000 cases) takes 1.4 s; see `docs/log/2026-10-16-p3-s5-cli.md`.
 
 **Viewer (TypeScript, three.js)**
 
