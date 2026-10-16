@@ -1,0 +1,19 @@
+== mod set: lithostitched+terralith | loadavg 9.00 13.31 13.42 9/4041 172225
+biome source: net.minecraft.world.level.biome.MultiNoiseBiomeSource
+possibleBiomes by namespace: {minecraft=56, terralith=90}
+seed 12345 origin [0, 0] distinct biomes 18 {minecraft:beach=1089, minecraft:cold_ocean=2320, minecraft:dark_forest=199, minecraft:deep_cold_ocean=111, minecraft:deep_ocean=1126, minecraft:frozen_peaks=2, minecraft:lush_caves=1833, minecraft:ocean=5235, minecraft:old_growth_pine_taiga=1054, minecraft:pale_garden=4, minecraft:river=422, minecraft:stony_shore=5, minecraft:taiga=128, terralith:cave/thermal_caves=33, terralith:gravel_beach=748, terralith:lavender_forest=275, terralith:moonlight_grove=89, terralith:sakura_grove=1711}
+  prime=none   seq-vs-shuffled 6, seq-vs-8thr 8, seq-vs-8thr' 7, 8thr-vs-8thr' 1 | vs primed-single seq: 7
+  prime=single seq-vs-shuffled 0, seq-vs-8thr 0, seq-vs-8thr' 0, 8thr-vs-8thr' 0 | vs primed-single seq: 0
+  prime=multi  seq-vs-shuffled 0, seq-vs-8thr 0, seq-vs-8thr' 0, 8thr-vs-8thr' 0 | vs primed-single seq: 0
+seed 12345 origin [12500, -7500] distinct biomes 4
+  prime=none   seq-vs-shuffled 10, seq-vs-8thr 9, seq-vs-8thr' 14, 8thr-vs-8thr' 15 | vs primed-single seq: 13
+  prime=single seq-vs-shuffled 0, seq-vs-8thr 0, seq-vs-8thr' 0, 8thr-vs-8thr' 0 | vs primed-single seq: 0
+  prime=multi  seq-vs-shuffled 0, seq-vs-8thr 0, seq-vs-8thr' 0, 8thr-vs-8thr' 0 | vs primed-single seq: 0
+seed -987654321 origin [0, 0] distinct biomes 9
+  prime=none   seq-vs-shuffled 3, seq-vs-8thr 3, seq-vs-8thr' 0, 8thr-vs-8thr' 3 | vs primed-single seq: 2
+  prime=single seq-vs-shuffled 0, seq-vs-8thr 0, seq-vs-8thr' 0, 8thr-vs-8thr' 0 | vs primed-single seq: 0
+  prime=multi  seq-vs-shuffled 0, seq-vs-8thr 0, seq-vs-8thr' 0, 8thr-vs-8thr' 0 | vs primed-single seq: 5
+seed -987654321 origin [12500, -7500] distinct biomes 15
+  prime=none   seq-vs-shuffled 13, seq-vs-8thr 14, seq-vs-8thr' 13, 8thr-vs-8thr' 5 | vs primed-single seq: 14
+  prime=single seq-vs-shuffled 0, seq-vs-8thr 0, seq-vs-8thr' 0, 8thr-vs-8thr' 0 | vs primed-single seq: 0
+  prime=multi  seq-vs-shuffled 0, seq-vs-8thr 0, seq-vs-8thr' 0, 8thr-vs-8thr' 0 | vs primed-single seq: 0

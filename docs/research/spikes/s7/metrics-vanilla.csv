@@ -1,0 +1,6 @@
+variant,level,interiorCols,absErrMean,withinOne,bareStoneFrac,fluidBlocksBelowGround30,fluidBlocksAboveGround,getBaseHeightEqOriginalFrac,getBaseHeightWithinOne,unwrappedReadEqOriginalFrac,genMsPerChunk,baseHeightUsPerCol
+base,0,961,97.06,NaN,0.005,0,0,0.990,NaN,1.000,44.6,382
+cut-fd,85,961,0.08,0.985,0.200,88,0,0.021,1.000,1.000,40.0,395
+cut-all,85,961,0.08,0.985,0.000,88,0,0.021,1.000,1.000,40.0,343
+fill-fd,109,961,0.11,0.979,0.006,0,0,0.022,1.000,1.000,38.7,330
+fill-all,109,961,0.11,0.979,0.006,0,0,0.022,1.000,1.000,29.6,280

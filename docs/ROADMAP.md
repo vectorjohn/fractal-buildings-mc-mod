@@ -46,7 +46,7 @@ item. Per-item work logs are in [log/](log/); run ledgers in [runs/](runs/).
 |---|---|---|
 | 0. Scaffolding | done 2026-10-08; gate passed 2026-10-14 (John) | builds green; viewer renders the box |
 | 1. Prior art research | done; gate passed 2026-10-16 (John signed off in synthesis.md; wants effectively unbounded cities) | John picks building-generation direction and the integration approach to spike |
-| 2. Worldgen spikes | not started; S7–S9 added 2026-10-15 | worldgen ADR (approach, size limits, determinism rules) |
+| 2. Worldgen spikes | done 2026-10-16: S1–S9 findings, ADR 0003 proposed; awaiting gate | worldgen ADR (approach, size limits, determinism rules) |
 | 3. Planner core and three.js viewer | not started | John reviews seed gallery and invariant report |
 | 4. Building generator depth | not started | per building type, "would I believe a person built this?" |
 | 5. Settlements and cities | not started | cities in ≥5 biome mixes, one straddling a border |
@@ -166,7 +166,7 @@ Parallel: S1, S2, S4 and S5 side by side; S3 alongside them; S6 after S3
 S7–S9 (from track 4) run alongside all of these; S7 pairs with S5, whose
 result decides whether flattening is needed.
 
-- [ ] **2.1 S1 Biome footprint** (shrunk after track 4, ADR 0002). Already
+- [x] **2.1 S1 Biome footprint** (shrunk after track 4, ADR 0002). Already
   answered for vanilla (*probe*, `research/worldgen/terrain-biome-queries.md`):
   ~0.0025 ms per lookup, ~40 ms per 512² layer, sample at the surface Y,
   and a priming lookup makes answers independent of order and thread. Left
@@ -178,7 +178,7 @@ result decides whether flattening is needed.
   game), stated per km² for large cities. Evidence: server test per mod set
   with a primed grid in two orders and on 8 threads (0 differences); in-game
   timing under the heavy lock.
-- [ ] **2.2 S2 Terrain probe** (shrunk after track 4, ADR 0002). Already
+- [x] **2.2 S2 Terrain probe** (shrunk after track 4, ADR 0002). Already
   measured for vanilla, one seed (12345): `getBaseHeight(OCEAN_FLOOR_WG)`
   matches real ground in 98.2% of land columns (p99 2 blocks);
   `preliminary_surface_level` reads 12–15 low (p90 17). Left open: (a) 10
@@ -190,7 +190,7 @@ result decides whether flattening is needed.
   `getBaseHeight`. Evidence: predicted vs actual diff per seed and mod set
   (exact: % equal, p99; coarse: bias, p90) and in-game cost per column. Share
   the Terralith + Tectonic setup with S7.
-- [ ] **2.3 S3 Multi-start city.** Can 2–4 starts share one plan and join
+- [x] **2.3 S3 Multi-start city.** Can 2–4 starts share one plan and join
   seamlessly? Evidence: blocks hashed per chunk are identical whatever order
   chunks generate in; no seams at start or chunk borders. Also: a road that
   crosses a district border (each side owned by one start) meets without a
@@ -203,7 +203,7 @@ result decides whether flattening is needed.
 - [x] **2.5 S5 Terrain adaptation.** Do vanilla beard modes suffice on hills, or
   do we grade terrain ourselves? Evidence: client-test screenshots of a test
   city on flat, hilly and river terrain.
-- [ ] **2.6 S6 Scale and cost.** How large can a city go, and what does it
+- [x] **2.6 S6 Scale and cost.** How large can a city go, and what does it
   cost? John's target is effectively unbounded cities; 512×512 is the floor
   to prove, not a cap (ADR 0002, I6). Evidence (timing under the heavy lock,
   load recorded): plan time against city size (512², 1024², 2048², and on
@@ -214,7 +214,7 @@ result decides whether flattening is needed.
   lane becomes noticeable, and whether a two-level plan (city skeleton, lazy
   district detail) is needed past it; thread-safety of the cache; evict a
   cell's plan, regenerate it and compare bytes.
-- [ ] **2.7 S7 Terrain flattening** (fallback if S5's beards fall short). Can
+- [x] **2.7 S7 Terrain flattening** (fallback if S5's beards fall short). Can
   we level city cells by wrapping `final_density` together with
   `chunk_surface_level` and the aquifer `surface_level`, without the plan/mask
   cycle? Evidence: client-test screenshots of a cut and a fill on a hill cell,
@@ -235,7 +235,7 @@ result decides whether flattening is needed.
   Also a compat check: with Lithostitched installed, its global jigsaw
   redirect (`breaks_seed_parity`, default true) runs our element too; our
   blocks must still match, and note whether vanilla villages change.
-- [ ] **2.10 Worldgen ADR** (researcher) from the findings: integration approach, practical
+- [x] **2.10 Worldgen ADR** (researcher) from the findings: integration approach, practical
   size limits, determinism rules.
 
 **Gate:** the worldgen ADR fixes the integration approach, the practical size

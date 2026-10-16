@@ -52,6 +52,10 @@ java {
 
 // Keep client game test screenshots at a stable path that other tasks' run-dir cleanup can't wipe.
 tasks.named('runClientGameTest') {
+	// Headless only: with WAYLAND_DISPLAY set (a logged-in GNOME session) SDL picks Wayland
+	// over Xvfb and the client dies at the first frame. runClient is left alone on purpose.
+	environment.remove('WAYLAND_DISPLAY')
+	environment 'SDL_VIDEODRIVER', 'x11'
 	doLast {
 		copy {
 			from layout.buildDirectory.dir('run/clientGameTest/screenshots')

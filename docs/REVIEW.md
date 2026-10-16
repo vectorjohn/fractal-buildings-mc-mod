@@ -34,4 +34,6 @@ work becomes a ROADMAP item or a Polish backlog line. Settled items move to
   Look for: cut faces beside the hall and tower; grass vs bare stone on the cuts; whether stepped bays on the big hall read as built.
   Result:
 
+- [ ] **2.7 S7**: `docs/research/spikes/s7/cut-all-side.jpg` and `fill-all-side.jpg` — would a cut floor/wall like this look acceptable around a city? Prefer fill, as the note suggests? Does the steep wall at the cut edge need a softer fade?
+
 ## Done

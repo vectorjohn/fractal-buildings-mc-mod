@@ -1,0 +1,19 @@
+== mod set: lithostitched | loadavg 19.32 20.25 15.53 47/4847 129720
+biome source: net.minecraft.world.level.biome.MultiNoiseBiomeSource
+possibleBiomes by namespace: {minecraft=56}
+seed 12345 origin [0, 0] distinct biomes 11 {minecraft:cold_ocean=3242, minecraft:dark_forest=187, minecraft:deep_cold_ocean=226, minecraft:deep_ocean=1011, minecraft:lush_caves=3301, minecraft:ocean=4647, minecraft:old_growth_pine_taiga=1381, minecraft:old_growth_spruce_taiga=299, minecraft:river=345, minecraft:stony_shore=1744, minecraft:taiga=1}
+  prime=none   seq-vs-shuffled 5, seq-vs-8thr 5, seq-vs-8thr' 5, 8thr-vs-8thr' 0 | vs primed-single seq: 5
+  prime=single seq-vs-shuffled 0, seq-vs-8thr 0, seq-vs-8thr' 0, 8thr-vs-8thr' 0 | vs primed-single seq: 0
+  prime=multi  seq-vs-shuffled 0, seq-vs-8thr 0, seq-vs-8thr' 0, 8thr-vs-8thr' 0 | vs primed-single seq: 0
+seed 12345 origin [12500, -7500] distinct biomes 5
+  prime=none   seq-vs-shuffled 2, seq-vs-8thr 1, seq-vs-8thr' 0, 8thr-vs-8thr' 1 | vs primed-single seq: 2
+  prime=single seq-vs-shuffled 0, seq-vs-8thr 0, seq-vs-8thr' 0, 8thr-vs-8thr' 0 | vs primed-single seq: 0
+  prime=multi  seq-vs-shuffled 0, seq-vs-8thr 0, seq-vs-8thr' 0, 8thr-vs-8thr' 0 | vs primed-single seq: 0
+seed -987654321 origin [0, 0] distinct biomes 6
+  prime=none   seq-vs-shuffled 4, seq-vs-8thr 4, seq-vs-8thr' 4, 8thr-vs-8thr' 0 | vs primed-single seq: 4
+  prime=single seq-vs-shuffled 0, seq-vs-8thr 0, seq-vs-8thr' 0, 8thr-vs-8thr' 0 | vs primed-single seq: 0
+  prime=multi  seq-vs-shuffled 0, seq-vs-8thr 0, seq-vs-8thr' 0, 8thr-vs-8thr' 0 | vs primed-single seq: 0
+seed -987654321 origin [12500, -7500] distinct biomes 9
+  prime=none   seq-vs-shuffled 12, seq-vs-8thr 15, seq-vs-8thr' 14, 8thr-vs-8thr' 1 | vs primed-single seq: 14
+  prime=single seq-vs-shuffled 0, seq-vs-8thr 0, seq-vs-8thr' 0, 8thr-vs-8thr' 0 | vs primed-single seq: 0
+  prime=multi  seq-vs-shuffled 0, seq-vs-8thr 0, seq-vs-8thr' 0, 8thr-vs-8thr' 0 | vs primed-single seq: 0
