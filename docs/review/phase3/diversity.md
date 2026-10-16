@@ -1,8 +1,9 @@
 # Phase 3 diversity report (generator v0)
 
-256 seeds (0..255), 20x20 flat lot at y 64, `plains` biome, front facing north. Produced by
-`V0DiversityTest` (same numbers for `plain` and `medieval`: v0 styles differ in palette only).
-S9 regenerates this with the CLI `diversity` command once it exists.
+Regenerated for the gate pack (S9, 2026-10-16) with the CLI:
+`fractal-cli diversity --seeds 0..255 --lot 20x20` (style `plain`, terrain `flat:64`, front north;
+v0 styles differ only in palette, so `medieval` gives the same numbers). Identical to the
+`V0DiversityTest` baseline from 3.11.
 
 | metric | value |
 |---|---|
@@ -24,5 +25,9 @@ S9 regenerates this with the CLI `diversity` command once it exists.
 | doorEighths | 2.7391 |
 | windows | 4.7196 |
 
-Regression floors in the test: distance >= 0.55, near-dup rate <= 0.01, signatures >= 145,
+Regression floors in `V0DiversityTest`: distance >= 0.55, near-dup rate <= 0.01, signatures >= 145,
 voxel-set repeats <= 80. A "seed ignored" run (always seed 0) fails them.
+
+For scale: 10,000 seeds on a 31x17 lot (pairwise metrics over the first 256) give 434 distinct
+signatures, storeys entropy 1.5365 bits (log2 3 = 1.585: storeys are 1-3), and 9,203 voxel-set
+repeats: v0 has a small shape space, which Phase 4 is meant to widen.

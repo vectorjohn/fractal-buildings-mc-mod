@@ -81,6 +81,14 @@ Notes:
   deliberately broken rule fails.
 - Shared test infrastructure (synthetic probes, terrain dumps, seed lists,
   gallery presets) is listed here as it's added.
+- Added in Phase 3: `SampleScenes.house()` + `viewer/fixtures/sample-house.json`;
+  recorded terrain `fixtures/terrain/s4-12345-crop32.json` and `RecordedProbe`;
+  `ProbeSpecs` strings (`flat:`, `plane:`, `hill:`, `noise:`, `recorded:`)
+  shared by the CLI and tests; `Invariants` + `InvariantReport`, the violations
+  fixture and the viewer overlay; golden digests and the determinism lint;
+  `fractal-cli check|bench|diversity` over the default 128-cell matrix;
+  `cli batch` and the gallery presets (`npm run gallery`, not part of
+  `scripts/test-all.sh`: run it on generator or viewer changes).
 
 ---
 
@@ -317,10 +325,11 @@ Critical path: S3 → S5 → V4 → S9.
   nondeterministic APIs in the core.
 - [x] **3.11 Diversity score** (S7) across a seed batch, so sameness is measured
   and not just eyeballed; a regression floor in a test.
-  *Gap:* the CLI `diversity` command + `Main` case line wait for S5 (core entry point `Diversity.of`); v0 floors, baseline and report are in.
-- [ ] **3.12 Gate pack** (S9): invariant report over 10,000 seeds, galleries and
+  CLI: `fractal-cli diversity --seeds A..B` (added with S5); v0 floors, baseline and report are in.
+- [x] **3.12 Gate pack** (S9): invariant report over 10,000 seeds, galleries and
   the diversity report in `docs/review/phase3/`, v0 timing per building, a
   REVIEW.md entry.
+  Pack in `docs/review/phase3/` (README, invariants.md: 1,280,000 cases, 0 failures; diversity.md; 16 gallery PNGs); house generation about 0.011 ms, check 0.13 ms (NOTES); REVIEW.md item 3.12. `scripts/test-all.sh` runs `npm run screenshot` for layer 3, not the gallery (on purpose).
 
 **Gate:** John reviews the seed gallery and the invariant report.
 
@@ -459,7 +468,11 @@ Fixed opportunistically or scheduled as items.
 - 3.9a: shell-closed/in-lot/in-world mutants assert presence, not exclusivity; `no-gap-below` cell order is (z,x), class comment says (y,z,x); `ir-valid` has no mutant through `Invariants.check`; `no-gap-below` flags buried floors (basements will need a rule change).
 - 3.3: no front steps (door unreachable from lower ground on slopes); no world-height cap near y 319.
 - 3.6: in `?fixture=` mode the seed box is empty while the slider sits at 0.
-- 3.5–3.7: `viewer/playwright.config.ts` hard-codes port 4173, so parallel e2e runs collide (3.8 to make it configurable).
+- 3.8: the flat-terrain `top` view shows a thin line across the grass (e.g. plain-flat seed 5): a viewer rendering artifact, not the generator (the V4 log calls it a site-box edge, which is wrong).
+- 3.8: gallery noise terrain is the same patch in every cell (one `noise:` spec, same lot position), so terrain variety isn't reviewed.
+- 3.8: flat-shaded `top` view reads each roof as one colour block (ridge and pitch not visible).
+- 3.4: `check` exit-1 path (a scene with violations) is untested.
+- 3.4: a failing property case can't be replayed via the CLI (no flags for the test's terrain or lot position).
 
 ## Open questions and risks
 
