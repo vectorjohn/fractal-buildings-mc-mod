@@ -1,9 +1,17 @@
 # Architecture
 
 The design as it stands. Parts marked **hypothesis** or **open** wait for the
-Phase 1 gate (building direction), the Phase 2 spikes and the worldgen ADR;
-settled decisions live in [adr/](adr/). (From John's original roadmap doc,
-2026-10-07; brought in line with Phase 1 research, 2026-10-15.)
+Phase 2 spikes and the worldgen ADR (2.10); settled decisions live in
+[adr/](adr/): the building direction in
+[ADR 0001](adr/0001-building-direction.md) and the integration approach to
+spike in [ADR 0002](adr/0002-integration-approach.md), both accepted at the
+Phase 1 gate (2026-10-16). (From John's original roadmap doc, 2026-10-07;
+brought in line with Phase 1 research, 2026-10-15.)
+
+**Size targets (ADRs 0001, 0002):** cities have **no fixed size cap**;
+512 × 512 blocks is the first size to prove, not a limit. Buildings of every
+size are first-class, from cottages to halls, city blocks and towers up to
+the y 319 build ceiling.
 
 Evidence tags, where a claim comes from research
 ([INDEX](research/INDEX.md)): *measured in game* (client game test on a real
@@ -156,9 +164,9 @@ field), and no existing layer we could reuse to place cities
   so packs (with Lithostitched or not) can use our cities.
 - The city plan is a pure function of the cell. It is computed on first use and
   cached (deterministic, bounded, thread-safe); recomputing after eviction must
-  give the same bytes. Because it runs whole per cell, the plan may use
-  global, sequential algorithms (road growth, agents, scoring) that could
-  never run per chunk ([parish-muller](research/pcg/parish-muller-cities.md)).
+  give the same bytes. Because it runs whole per cell (at least the skeleton,
+  see "City scale" below), the plan may use global, sequential algorithms
+  (road growth, agents, scoring) that could never run per chunk ([parish-muller](research/pcg/parish-muller-cities.md)).
 - Each district is its own structure start on a sub-grid inside the cell, in
   its own chunk, its pieces kept within ±8 chunks of it. It reads the shared
   plan and emits only its own pieces. Placement: a subclass of
@@ -172,9 +180,29 @@ field), and no existing layer we could reuse to place cities
   deterministic, [biolith](research/overlays/biolith.md)), palettes chosen
   through `c:` convention biome tags so biome mods map too
   ([terralith](research/overlays/terralith.md)).
-- **Open:** roads that cross region-cell edges need agreed endpoints (hashed
-  gates on cell borders, or Lost Cities' world-wide hashed arterial lines,
-  [lost-cities-road-planning](research/overlays/lost-cities-road-planning.md)).
+
+**City scale: a two-level plan** (*inferred*,
+[ADR 0002](adr/0002-integration-approach.md) I6; S6 measures it). The ±8-chunk
+box bounds a district (~250 blocks), not a city. What doesn't scale for free
+is the whole-cell plan on the serial lane: ~0.5 s per 512² with exact
+heights, ~8 s at 2048². So the plan has two levels:
+
+- **City skeleton** (cheap, built first): the coarse height screen, roads on
+  position-hashed lines (as Lost Cities' arterials,
+  [lost-cities-road-planning](research/overlays/lost-cities-road-planning.md)),
+  district borders, and the big lots that districts must be drawn around.
+  Any district can read it without building its neighbours.
+- **District detail** (lazy): exact heights, lots and building briefs, built
+  per district in the lazy piece builder and warmed off the lane where
+  possible. Save size and cache memory grow linearly per district.
+- **Across cells:** neighbouring settled cells meet at **hashed gates on
+  their shared border**, so roads agree without either plan reading the
+  other.
+- **Open:** grow cells (one settlement's skeleton spans as many region cells
+  as it reaches) vs join cells (each cell plans its own settlement and
+  adjacent ones fuse into a conurbation through the gates). Decided in the
+  worldgen ADR (2.10) from S4 (region map) and S6 (scale). A ceiling S6 finds
+  becomes 6.5's default maximum city size, not a design limit.
 
 ## Integration options
 
@@ -247,14 +275,16 @@ beardifier, and cost. The one related note so far,
 [astruct](research/mods/astruct.md), is a player-driven version of this and a
 cautionary example, not a verdict on the idea.
 
-## Planner pipeline (hypothesis)
+## Planner pipeline
 
-What the building and city tracks point to, pending the synthesis (1.8) and
-the Phase 1 gate, which picks the building-generation direction. Each stage
-emits roles, not blocks, and is checked by invariants (reachable rooms,
-closed roofs, supported floors, inside the lot).
+The building pipeline is decided ([ADR 0001](adr/0001-building-direction.md):
+volume massing, then a typed split grammar for floors and façades); the city
+stages are still a **hypothesis**. Each stage emits roles, not blocks, and is
+checked by invariants (reachable rooms, closed roofs, supported floors,
+inside the lot).
 
-- **City, per region cell:** districts grown from seeds with a height-change
+- **City, per region cell** (skeleton first, district detail lazily; see
+  "City scale" above): districts grown from seeds with a height-change
   cost so borders follow ridges and water
   ([grimoire-tome](research/gdmc/grimoire-tome.md),
   [watabou](research/pcg/watabou-city-generators.md)) → road hierarchy with
@@ -277,6 +307,27 @@ closed roofs, supported floors, inside the lot).
   [rooms-and-mazes](research/pcg/rooms-and-mazes.md)) → bounded detail passes
   with a fallback (WFC or rewrite rules, never the main generator,
   [wfc-model-synthesis](research/pcg/wfc-model-synthesis.md)).
+- **Large buildings** ([ADR 0001](adr/0001-building-direction.md); towers,
+  halls and city blocks are classes of their own, not an extension of houses):
+  - *Setback massing:* a tower is stacked volumes, each inside the one below
+    (Greuter's "wedding cake",
+    [greuter](research/pcg/greuter-pseudo-infinite-cities.md)), so upper
+    floors are supported by construction; podium, shaft and crown are bands.
+    Halls and blocks are unions of volumes, as for houses.
+  - *Storey grid:* one grid of storey heights per building (taller ground
+    floor, repeated typical floors); façade splits run once per band, so
+    windows align over any number of storeys.
+  - *Core first:* the vertical core (stairs, later lifts) is placed before the
+    floors and kept through all of them; each floor grows around it, so
+    reachability holds per floor
+    ([constrained-growth-floor-plans](research/pcg/constrained-growth-floor-plans.md)).
+  - *Limits:* the build ceiling is y 319 (*read*, 26.3 data), about 60 storeys
+    of 4 blocks above sea level. The ±8-chunk box bounds the footprint, not
+    the height: a building lies in one district, so footprints up to ~200
+    blocks need district borders drawn around big lots (*inferred*).
+  - *Cost:* block count, not rule count, dominates (~125k blocks of walls and
+    floors for a 40×40×240 tower, arithmetic); interiors may be generated per
+    floor from (building, floor) hashes rather than cached whole (*inferred*).
 - **Palette:** each role maps to an ordered 3–5 block gradient; a
   deterministic weathering field picks the step
   ([palettes-and-gradients](research/aesthetics/palettes-and-gradients.md)).

@@ -115,6 +115,8 @@ comments fit it:
 | Custom generator ([custom-generator](worldgen/custom-generator-and-pool-element.md)) | Unbounded | Fine | Empty-router `RandomState` without a mixin (*read*) | Clashes with presets | Drop |
 | Post-generation, track 7 ([overview](postgen/overview.md)) | Unbounded | Plan must come from noise; timing depends on players | None | DH shows unsaved LODs | **Backup / add-on**, ~40 chunks/s |
 
+  * @John (biome overlay row) It adds biome *types*, not a layer: every position still resolves to exactly one biome. TerraBlender gives its regions their own climate trees, and Biolith and Lithostitched add, replace or carve climate ranges out of existing biomes ([terrablender](overlays/terrablender.md), [biolith](overlays/biolith.md), [lithostitched](overlays/lithostitched.md)). So an "urban" biome under a city takes the place of the desert or forest that would have been there. That erases the signal the district palettes read (cities that span biomes), and since 1.18 biomes don't shape terrain, so it wouldn't flatten either. Our settlement field is the additive layer: it sits beside the biomes and leaves them intact, and a pack that wants urban grass or mobs can still inject a biome on our cities through `fractalbuildings:settlement` (I4). -- @assistant
+
 ## Recommended integration: structure-based, district starts over a region plan
 
 - **Region cells**
@@ -247,6 +249,7 @@ by the Phase 3 gallery and the 3.11 diversity score, starting with the
 - **I5 Track 7:** **a backup; park batch 2 until S3 and S6 report.**
 - **I6 Scale in v1:** **cities up to ~512 × 512 blocks** until S6 says
   otherwise. @assistant 512 is too small. Is S6 deciding if we can go bigger? why that limit? -- @John
+  * @John It isn't a design limit. 512 came from the original roadmap's S1 question and was then reused as the unit for the cost estimates (1,024 coarse height samples, ~0.5 s of planning on the serial worldgen lane, ~1,000 chunks) and as the field sketch's cell size. What actually bounds a city: (1) the ±8-chunk box bounds a *district* (~250 blocks), not the city; districts tile, so more area is more starts. (2) The plan is built whole per region cell on the one serial lane, and its cost grows with area (2048² is 16×, ~8 s at the same height-sample density). Going well past 512 needs a two-level plan: a cheap city skeleton (roads as position-hashed lines, as Lost Cities does, [lost-cities-road-planning](overlays/lost-cities-road-planning.md); coarse screen only), and district detail built lazily per district and warmed off the lane. (3) For effectively unbounded cities, neighbouring settled cells join into one conurbation, with roads meeting at hashed gates on cell borders, so no single plan covers the whole city. (4) Save size and cache memory grow linearly per district. Yes, S6 now answers "how big": plan time against city size, cost and save size per district, and evict-and-regenerate. [ADR 0002](../adr/0002-integration-approach.md) records 512 as the floor to prove first, not a cap. -- @assistant
 - **Spikes:** **add the S3, S6 and S9 extras above; shrink S1 and S2.**
 
 > **success** Success
