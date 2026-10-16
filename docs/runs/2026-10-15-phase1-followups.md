@@ -26,10 +26,12 @@ Note: John has a stash on main (`stash@{0}`, ARCHITECTURE.md "Building IR" defin
 
 ## Gates
 - Phase 0: passed 2026-10-14 (John).
-- Phase 1: READY for John 2026-10-15. Package: docs/research/synthesis.md (decisions B1–B4, I1–I6 + spike-scope tweaks, each with recommended answer); background: ARCHITECTURE.md, deep-dives pcg/grammars-deep-dive.md, overlays/lithostitched-deep-dive.md, postgen/overview.md, docs/PROCESS.md. After decision: researcher drafts ADR 0001 (building) + 0002 (integration). Dependent: all Phase 2 spikes awaiting gate.
+- Phase 1: PASSED 2026-10-16 (John sign-off in synthesis.md, ef48bee; notes: cities should be effectively unbounded, 512 too small; focus on large buildings/skyscrapers; question on biome overlay "replaces"). Was ready 2026-10-15. Package: docs/research/synthesis.md (decisions B1–B4, I1–I6 + spike-scope tweaks, each with recommended answer); background: ARCHITECTURE.md, deep-dives pcg/grammars-deep-dive.md, overlays/lithostitched-deep-dive.md, postgen/overview.md, docs/PROCESS.md. After decision: researcher drafts ADR 0001 (building) + 0002 (integration). Dependent: all Phase 2 spikes awaiting gate.
 
 
 ## Rules and decisions
 - 2026-10-15 coordinator: started the 3 deep-dives John flagged in parallel with the synthesis; synthesis to be revised with deep-dive results afterwards.
 - 2026-10-15 coordinator: cbfd76e (John, on main) broke flake.nix syntax; fixed in run branch 4f8b3be. Doc conventions: frontmatter only on research notes/ADRs per templates; # headings; relative links, no [[ ]] in body, no #anchors.
 - 2026-10-15 John: merge into main even when main isn't checked out (his main checkout sits on hide-from-git-push so he can push to it). Method: under merge.lock, if main is an ancestor of the run branch, make a --no-ff merge commit with commit-tree and update-ref main <new> <old>; otherwise merge main into the run branch first. Never touch his checked-out branch.
+- 2026-10-16 John: his branch is now `john-work` (main checkout). Anything committed there gets merged into main; main gets folded into run/feature branches.
+- 2026-10-16 Run closed; continues as docs/runs/2026-10-16-phase2.md.
