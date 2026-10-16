@@ -450,6 +450,15 @@ Fixed opportunistically or scheduled as items.
 - 0.5: test-all client layer prints "no count in log" instead of a test count.
 - 0.5: `mod/build/screenshots/` is never cleared and the copy runs only on success, so a failed client run can leave a stale hello-hut.png that looks current; raw shots also duplicated in mod/build/run/clientGameTest/screenshots/.
 
+- 3 (plan): `SampleScenes` (test helper) ships in planner-core main jar.
+- 3.2: biome lookup between lattice points untested (a +step/2 rounding mutant survived); ProbeSpecs has no `terraces:` form; `SyntheticTerrain.hill` computes `x - cx` in int before widening (overflow at extreme coords).
+- 3.1: IrValidator doesn't check storey ≥ 0 (except roof −1) or site-box containment.
+- 3.5: `buildSceneObject` has no unit test (group names, palette colouring).
+- 3.9a: shell-closed/in-lot/in-world mutants assert presence, not exclusivity; `no-gap-below` cell order is (z,x), class comment says (y,z,x); `ir-valid` has no mutant through `Invariants.check`; `no-gap-below` flags buried floors (basements will need a rule change).
+- 3.3: no front steps (door unreachable from lower ground on slopes); no world-height cap near y 319.
+- 3.6: in `?fixture=` mode the seed box is empty while the slider sits at 0.
+- 3.5–3.7: `viewer/playwright.config.ts` hard-codes port 4173, so parallel e2e runs collide (3.8 to make it configurable).
+
 ## Open questions and risks
 
 - **Core language:** Java keeps one codebase with the mod; Kotlin is pleasanter
