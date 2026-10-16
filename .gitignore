@@ -40,3 +40,7 @@ replay_*.log
 
 # editor swap files
 *.swp
+
+# viewer gallery (npm run gen / gallery)
+viewer/gallery-data/
+viewer/dist-gallery/

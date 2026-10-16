@@ -29,7 +29,7 @@ export function batchDir(style: string): string {
 
 /** Fixture names (`../fixtures/x.json` keys) in scrub order: sample-house first, then alphabetical. */
 export function fixtureNames(fixtures: Record<string, string>): string[] {
-  // Only fb-scene files: viewer/fixtures also holds box5.json, a bare IR for the CLI test.
+  // Only fb-scene files: a stray bare-IR json in viewer/fixtures (the old box5.json) must not become a scene.
   const names = Object.keys(fixtures).filter((k) => fixtures[k]!.includes('"fb-scene/')).map((k) => k.replace(/^.*\//, '').replace(/\.json$/, '')).sort();
   const i = names.indexOf('sample-house');
   if (i > 0) { names.splice(i, 1); names.unshift('sample-house'); }

@@ -8,7 +8,10 @@
     "build": "tsc --noEmit && vite build",
     "typecheck": "tsc --noEmit",
     "screenshot": "tsc --noEmit && vite build && playwright test",
-    "test": "tsc --noEmit && vitest run"
+    "test": "tsc --noEmit && vitest run",
+    "gen": "bash scripts/gen-gallery.sh",
+    "dev:gen": "npm run gen && FB_GALLERY=1 vite",
+    "gallery": "npm run gen && tsc --noEmit && FB_GALLERY=1 vite build && FB_GALLERY=1 GALLERY=1 playwright test e2e/gallery.spec.ts"
   },
   "dependencies": {
     "three": "^0.186.1"

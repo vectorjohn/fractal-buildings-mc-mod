@@ -299,8 +299,9 @@ Critical path: S3 → S5 → V4 → S9.
   (shell, interior, roof, foundation, terrain), storey slider; state in the URL.
 - [x] **3.7 Invariant overlay** (V3): failures from the core's checks drawn in
   red, visible through walls, with a list.
-- [ ] **3.8 Seed gallery** (V4): a 4×4 grid of seeds from fixed camera presets;
+- [x] **3.8 Seed gallery** (V4): a 4×4 grid of seeds from fixed camera presets;
   Playwright captures it as PNGs, so agents review the same pictures John does.
+  `cd viewer && nix develop -c npm run gallery` (CLI batch to `viewer/gallery-data/gen/`, build, Playwright; PNGs in `viewer/out/gallery/`). *Known issues:* top preset is flat-shaded (roof ridges not readable from above); styles differ only by palette at generator v0.
 
 **Tests**
 
