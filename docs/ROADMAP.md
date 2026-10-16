@@ -37,6 +37,9 @@ Loader/Fabric API/Loom versions at https://fabricmc.net/develop/ in Phase 0.
 - **Parallel by default.** Items are split so several agents can work at once
   (CLAUDE.md, "Parallel work"). Each phase lists what can run side by side.
 
+Each phase section has an `Updated: YYYY-MM-DD` line under its heading:
+whoever edits a phase section updates it, so John can see what changed.
+
 ## Status
 
 Owned by the coordinator. Item checkboxes below are ticked by the coder of each
@@ -83,6 +86,8 @@ Notes:
 
 ## Phase 0: Scaffolding (done 2026-10-08; gate: awaiting John)
 
+Updated: 2026-10-08
+
 Done in run `docs/runs/2026-10-08-phase0-research.md`; full text in
 [archive/roadmap-phase-0.md](archive/roadmap-phase-0.md). Gradle multi-project
 (`planner-core` with the `checkNoMinecraft` boundary check, `cli`, `mod` on
@@ -95,6 +100,8 @@ backlog (0.1a, 0.1b, 0.4, 0.5, 0.6 lines).
 **Gate:** builds green, and the viewer renders the box.
 
 ## Phase 1: Prior art research
+
+Updated: 2026-10-16
 
 Eight tracks run in parallel. Every alternative examined produces a one-page
 overview the moment it is done, so John can dig into options while research
@@ -154,6 +161,8 @@ for track 7, which John wants kept as a backup to structure-based generation;
 integration approach to spike (recorded as ADRs).
 
 ## Phase 2: Worldgen spikes
+
+Updated: 2026-10-16
 
 Small, throwaway proofs of concept answer the integration questions before the
 core is designed around them. Each spike runs in its own worktree and ends with
@@ -244,6 +253,8 @@ permanent regression test (re-implemented properly, in Phase 3 or 6).
 
 ## Phase 3: Planner core and three.js viewer
 
+Updated: 2026-10-08
+
 Build the review loop and a deliberately plain first generator: one building on
 one lot, viewable from any seed.
 
@@ -285,6 +296,8 @@ side by side.
 
 ## Phase 4: Building generator depth
 
+Updated: 2026-10-16
+
 Grow v0 into buildings that read as built by a person, using the technique
 chosen at the Phase 1 gate ([ADR 0001](adr/0001-building-direction.md): volume
 massing, then a typed split grammar). Large buildings and towers are
@@ -325,6 +338,8 @@ built this?" review, including the high-rise, city-block and hall classes.
 
 ## Phase 5: Settlements and cities
 
+Updated: 2026-10-16
+
 Compose buildings into places, still entirely outside Minecraft, using real
 terrain and biome dumps from S4. Cities have no fixed size cap; 512 × 512 is
 the first size to prove (ADR 0002, I6). The plan has two levels: a cheap city
@@ -356,12 +371,20 @@ skeleton, then district detail built lazily (ARCHITECTURE.md, "City scale").
 - [ ] **5.9 Scale check**: plan time and memory per district, measured outside
   the game at 512², 2048² and a multi-cell city; flat per-district cost is the
   bar (feeds 6.5 and 6.7).
+- [ ] **5.10 Water bias**: city sites prefer rivers, lakes and coasts, via a
+  distance-to-water term (coarse biome and height probes) in the region
+  field's best-of-8 candidate score (ADR 0003, R1); villages and hamlets stay
+  unbiased (John, 2026-10-16). Stays a pure function of (seed, position) and
+  cheap (S6: coarse suitability ~11 ms per cell). Evidence: S4-style region
+  maps before and after, showing city sites shifting toward water.
 
 **Gate:** John reviews cities in at least five biome mixes, including one
 straddling a border, one larger than 512 × 512, and one with a high-rise
 downtown.
 
 ## Phase 6: Minecraft integration and release
+
+Updated: 2026-10-16
 
 Wire the proven core into worldgen using the approach fixed in the Phase 2 ADR.
 

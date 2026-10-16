@@ -194,7 +194,10 @@ re-measured on a quiet machine.
   predicate (S4 read `getBaseColumn`).
 - **For Phase 5, not decided:** John (S4 review) notes that people put cities
   near water; joined cities often reach it, villages go anywhere. A water
-  term in the best-of-8 score would keep the decision pure.
+  term in the best-of-8 score would keep the decision pure. **Decided (John,
+  2026-10-16): yes**, city sites are biased toward water, villages stay
+  unbiased; a Phase 5 requirement (ROADMAP 5.10), not a change to the
+  accepted decisions above.
 
 ### Practical size limits
 

@@ -37,6 +37,22 @@ that works in all three. Full conventions: `docs/SILVERBULLET.md`.
 - Research notes and ADRs start with YAML frontmatter (`tags: research` /
   `tags: adr`, plus the keys in their `TEMPLATE.md`); other docs don't need it.
 - Backtick a `#word` you don't mean as a tag. Docs are 2.x: no v1 syntax.
+- ROADMAP phase sections carry an `Updated: YYYY-MM-DD` line; update it when
+  you edit that section.
+
+## Human review loop
+
+- John reviews docs in the worktree `.claude/worktrees/docs-feedback` (branch
+  `john/docs-feedback`), served by SilverBullet on `127.0.0.1:3000`
+  (localhost only). It is kept at the run branch's latest docs.
+- He edits there without committing and signs feedback `@John` (inline
+  `-- @John` or not). Some of it is questions for agents: answer in place
+  with `-- @assistant` (or your role) on your own branch, or let the
+  coordinator relay the answer.
+- **Only the coordinator** syncs, commits or merges that worktree; other
+  agents never touch it (procedure in `.claude/agents/coordinator.md`).
+- John's own working branches are `john/<claude branch it came from>` (e.g.
+  `john/adr-worldgen`); the coordinator merges them like `john-work`.
 
 ## Module boundaries
 
