@@ -166,7 +166,7 @@ Parallel: S1, S2, S4 and S5 side by side; S3 alongside them; S6 after S3
 S7–S9 (from track 4) run alongside all of these; S7 pairs with S5, whose
 result decides whether flattening is needed.
 
-- [ ] **2.1 S1 Biome footprint** (shrunk after track 4, ADR 0002). Already
+- [x] **2.1 S1 Biome footprint** (shrunk after track 4, ADR 0002). Already
   answered for vanilla (*probe*, `research/worldgen/terrain-biome-queries.md`):
   ~0.0025 ms per lookup, ~40 ms per 512² layer, sample at the surface Y,
   and a priming lookup makes answers independent of order and thread. Left
