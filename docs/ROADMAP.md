@@ -96,7 +96,7 @@ backlog (0.1a, 0.1b, 0.4, 0.5, 0.6 lines).
 
 ## Phase 1: Prior art research
 
-Seven tracks run in parallel. Every alternative examined produces a one-page
+Eight tracks run in parallel. Every alternative examined produces a one-page
 overview the moment it is done, so John can dig into options while research
 continues. Nothing waits for a final report. Process: coordinator.md,
 "Research".
@@ -117,11 +117,13 @@ continues. Nothing waits for a final report. Process: coordinator.md,
 | 5. Region overlays | How have mods layered new regions over vanilla biomes? | TerraBlender, Lithostitched, Terralith, The Lost Cities' city/biome handling |
 | 6. Aesthetics | What makes a Minecraft build read as real? | Builder guides on depth, palettes, gradients and roof pitch; vanilla village variants as a baseline |
 | 7. Out-of-worldgen generation (**backup option**) | Could we pregenerate chunks far out, then plan cities on the finished terrain and write them in, free of worldgen threading and size limits? At what cost? | Distant Horizons, Chunky and other pregenerators, C2ME (far-chunk generation speed), mods that place structures into already-generated chunks, chunk tickets and forced loading, save/lighting/neighbour-update effects of writing into finished chunks, coexistence with the structure-based approach |
+| 8. Precomputed building pools (added 2026-10-16; runs alongside Phase 2) | Can the generic part of building generation be computed off the serial worldgen lane (at first launch or in worker threads) into a pool that worldgen draws from deterministically? What does that cost in variety, memory and determinism, and what does it buy over prefetching the exact per-cell plan? | John's proposal (2026-10-16); vanilla stronghold-ring precompute and template cache; Lost Cities 26.x planning service and persisted cache; S6 cost figures |
 
 Agents: `assistant` for tracks 1, 2, 3, 5, 6 (web research); `researcher`
 (high effort) for track 4 (source reading in its own worktree, may write tiny
 probe tests), for notes marked `deep-dive`, and for the synthesis; `assistant`
-for track 7, which John wants kept as a backup to structure-based generation.
+for track 7, which John wants kept as a backup to structure-based generation;
+`researcher` for track 8.
 
 - [x] **1.1 Track 1: Minecraft mods** (batches until the list is covered)
 - [x] **1.2 Track 2: GDMC**
@@ -133,6 +135,12 @@ for track 7, which John wants kept as a backup to structure-based generation.
   2026-10-15): generate far chunks ahead of the player, as Distant Horizons
   and pregenerators do, then plan and place cities on the finished terrain.
   Notes in `docs/research/postgen/`.
+- [ ] **1.10 Track 8: Precomputed building pools** (added 2026-10-16, runs in
+  parallel with Phase 2): John's idea of pre-generating a deterministic pool of
+  candidate buildings off the worldgen lane, drawn from by a pure choose
+  function; the pool must be a pure cache, never a source of truth. Notes in
+  `docs/research/pool/`; feeds S6 (what to measure) and Phase 3 (a generator
+  interface that keeps "pool as cache" possible).
 - [ ] **1.7 Checkpoint: early skim**, after the first 8–10 notes: John redirects
   tracks or flags deep-dives. (Research keeps going meanwhile.)
 - [x] **1.8 Landscape synthesis**: a two-page comparison of approaches for
