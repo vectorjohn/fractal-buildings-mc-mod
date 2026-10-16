@@ -14,6 +14,9 @@ import java.util.function.Function;
 public final class IrJson {
 	private IrJson() {}
 
+	/** Parses {@code fb-scene/1} JSON (strict; errors name the JSON path). See {@link IrReader}. */
+	public static SceneDoc read(String json) { return IrReader.read(json); }
+
 	public static String write(SceneDoc d) {
 		StringBuilder sb = new StringBuilder("{\n");
 		sb.append("  \"format\": ").append(quote(SceneDoc.FORMAT)).append(",\n");
