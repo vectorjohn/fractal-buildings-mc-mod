@@ -96,3 +96,5 @@ the end of its track's list. Notes use [TEMPLATE.md](TEMPLATE.md).
 
 ## Phase 2 spikes (`spikes/`)
 
+- [S8 Structure veto](spikes/s8.md) — yes: two mixins (ChunkGenerator#tryGenerateStructure, StructureCheck#canCreateStructure) share one tag predicate; generation and /locate agree (190→189 villages), mineshafts untouched; private-method hooks, re-check each MC bump; F2−F1 margin untested — status: new
+

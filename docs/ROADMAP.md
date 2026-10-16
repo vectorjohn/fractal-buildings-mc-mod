@@ -213,7 +213,7 @@ result decides whether flattening is needed.
   `final_density` alone (expect bare stone, flooding) vs all three wrapped;
   `getBaseHeight` matches the levelled ground. See
   `research/worldgen/surface-level-and-flattening.md`.
-- [ ] **2.8 S8 Structure veto.** Does one tag-driven predicate
+- [x] **2.8 S8 Structure veto.** Does one tag-driven predicate
   (`fractalbuildings:excluded_from_cities`) keep foreign surface structures out
   of city cells at both start generation (`tryGenerateStructure`) and
   `/locate` (`StructureCheck.canCreateStructure`)? Evidence: server test with a
