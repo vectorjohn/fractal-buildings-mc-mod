@@ -101,8 +101,13 @@ compute inline at elytra speed.
   believable on its own and makes pooling possible; neighbour exclusion.
 - **6.x:** prefetch triggers, worker count (config; Lost Cities uses
   cores / 2), and spawn-cell prefetch during level load.
-- **ADR 0002:** add one line, "plan and IR are pure caches; workers may
-  prefetch them; the lane joins".
+- **Worldgen ADR (2.10):** [ADR 0002](../../adr/0002-integration-approach.md)
+  (I6) already expects district detail to be "warmed off the lane". 2.10
+  should state the contract: "plan and IR are pure caches; workers may
+  prefetch them; the lane joins; no result depends on cache state".
+- [S9](../spikes/s9.md)'s procedural pool element already has the spec shape.
+  Its footprint is fixed per element (a quantised key), and its content comes
+  from H(world seed, position, rotation, w, d), which is the exact policy.
 
 ## The case against, and what would change it
 
