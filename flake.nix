@@ -69,8 +69,9 @@
             SDL_VIDEO_X11_XINPUT2 = "0";
 
             # SilverBullet (John reads the docs with it; docs/SILVERBULLET.md): gitignore-style
-            # patterns, one per line, hiding build output and game run dirs from the space.
-            SB_SPACE_IGNORE = "node_modules/\nbuild/\nrun/\nout/\n";
+            # patterns, one per line, hiding build output, game run dirs and agent state from the
+            # space. .claude/ holds agent worktrees, reports and locks; SB must not index or edit them.
+            SB_SPACE_IGNORE = "node_modules/\nbuild/\nrun/\nout/\n.claude/\n.gradle/\ndist/\nplaywright-report/\ntest-results/\n";
           };
         });
     };

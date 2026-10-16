@@ -5,11 +5,13 @@ Phase 2 spikes and the worldgen ADR (2.10); settled decisions live in
 [adr/](adr/): the building direction in
 [ADR 0001](adr/0001-building-direction.md) and the integration approach to
 spike in [ADR 0002](adr/0002-integration-approach.md), both accepted at the
-Phase 1 gate (2026-10-16). (From John's original roadmap doc, 2026-10-07;
+Phase 1 gate (2026-10-16). The worldgen decisions are in
+[ADR 0003](adr/0003-worldgen.md) (accepted at the Phase 2 gate, 2026-10-16),
+which supersedes 0002. (From John's original roadmap doc, 2026-10-07;
 brought in line with Phase 1 research, 2026-10-15.)
 
-**Size targets (ADRs 0001, 0002):** cities have **no fixed size cap**;
-512 × 512 blocks is the first size to prove, not a limit. Buildings of every
+**Size targets (ADRs 0001, 0003):** cities have **no fixed size cap**; the
+practical limit is chunk generation time. Buildings of every
 size are first-class, from cottages to halls, city blocks and towers up to
 the y 319 build ceiling.
 
@@ -73,7 +75,9 @@ sample, a 512×512 layer in ~40 ms). Two corrections
   Sampled at y = 64, hills returned `lush_caves` (*probe*).
 - Lookups are **order-dependent at exact climate ties** (~0.05% of cells,
   thread-local R-tree state). A fixed non-tie **priming lookup** before each
-  query removes it (*probe*: 0 differences across orders and threads). Our
+  query removes it (*probe*: 0 differences across orders and threads); under
+  TerraBlender with more than one region, prime with a per-region anchor
+  instead ([S1](research/spikes/s1.md); [ADR 0003](adr/0003-worldgen.md) D3). Our
   answer is then deterministic, though not always the chunk's stored biome
   (*measured in game*: differs in 0.03% of cells).
 
@@ -154,13 +158,18 @@ field), and no existing layer we could reuse to place cities
   Each cell decides whether it holds a settlement, its centre, size and
   culture. Leaning: membership as a scalar field with a threshold, with
   biomes as a **multiplier** (oceans and rivers suppress) rather than a
-  boundary, plus a height veto from the coarse screen.
+  boundary, plus a height veto from the coarse screen, which only culls, with
+  a margin of at least 20 blocks, and never gives a floor height (its bias is
+  not stable, [S2](research/spikes/s2.md); [ADR 0003](adr/0003-worldgen.md)
+  D4).
 - Field shape ([lithostitched-deep-dive](research/overlays/lithostitched-deep-dive.md)):
   2D cells (a 3D Voronoi sliced at y = 0 leaves sliver cells, *probe*), a
   full 64-bit seed hash (Lithostitched truncates to `int`), per-cell decisions
-  evaluated once at the cell's site so every chunk agrees without a cache,
-  and the F2 − F1 edge distance for the flatten-mask fade and the veto
-  margin. Exposed as a `fractalbuildings:settlement` 2D density-function type
+  taken from the best of 8 hashed candidate centres (deciding at the site
+  alone lost half the cities, [S4](research/spikes/s4.md)), pure but cached
+  ([ADR 0003](adr/0003-worldgen.md) R1, D6), and the exact distance to the
+  city footprint's edge for the flatten-mask fade and the veto margin
+  (F2 − F1 only bounds it). Exposed as a `fractalbuildings:settlement` 2D density-function type
   so packs (with Lithostitched or not) can use our cities.
 - The city plan is a pure function of the cell. It is computed on first use and
   cached (deterministic, bounded, thread-safe); recomputing after eviction must
@@ -181,11 +190,12 @@ field), and no existing layer we could reuse to place cities
   through `c:` convention biome tags so biome mods map too
   ([terralith](research/overlays/terralith.md)).
 
-**City scale: a two-level plan** (*inferred*,
-[ADR 0002](adr/0002-integration-approach.md) I6; S6 measures it). The ±8-chunk
-box bounds a district (~250 blocks), not a city. What doesn't scale for free
-is the whole-cell plan on the serial lane: ~0.5 s per 512² with exact
-heights, ~8 s at 2048². So the plan has two levels:
+**City scale: a two-level plan** ([ADR 0003](adr/0003-worldgen.md) P1,
+measured by [S6](research/spikes/s6.md)). The ±8-chunk box bounds a district
+(at most 14 × 14 chunks, 224 blocks, with the beard), not a city. What
+doesn't scale for free is a monolithic plan on the serial lane: about 0.5 s
+per Mblock² with exact heights, ~2.5 s at 2048² and 29.5 s at 8192²
+(S6, quiet machine, stand-in generator). So the plan has two levels:
 
 - **City skeleton** (cheap, built first): the coarse height screen, roads on
   position-hashed lines (as Lost Cities' arterials,
@@ -198,11 +208,12 @@ heights, ~8 s at 2048². So the plan has two levels:
 - **Across cells:** neighbouring settled cells meet at **hashed gates on
   their shared border**, so roads agree without either plan reading the
   other.
-- **Open:** grow cells (one settlement's skeleton spans as many region cells
-  as it reaches) vs join cells (each cell plans its own settlement and
-  adjacent ones fuse into a conurbation through the gates). Decided in the
-  worldgen ADR (2.10) from S4 (region map) and S6 (scale). A ceiling S6 finds
-  becomes 6.5's default maximum city size, not a design limit.
+- **Join cells, don't grow them** ([ADR 0003](adr/0003-worldgen.md) R2,
+  from S4): a big city's hashed radius claims the neighbouring cells whose
+  sites it covers; the higher hashed priority wins a conflict, and a dropped
+  or unsuitable claimant releases its cells. Pure, over a bounded radius;
+  the exact rule is Phase 5's (5.8). S6 found no ceiling: 6.5's default is
+  unbounded, with a soft warning above 8192².
 
 ## Integration options
 
@@ -323,8 +334,9 @@ inside the lot).
     ([constrained-growth-floor-plans](research/pcg/constrained-growth-floor-plans.md)).
   - *Limits:* the build ceiling is y 319 (*read*, 26.3 data), about 60 storeys
     of 4 blocks above sea level. The ±8-chunk box bounds the footprint, not
-    the height: a building lies in one district, so footprints up to ~200
-    blocks need district borders drawn around big lots (*inferred*).
+    the height: a building lies in one district (at most 224 blocks across,
+    [ADR 0003](adr/0003-worldgen.md)), so footprints up to ~200 blocks need
+    district borders drawn around big lots (*inferred*).
   - *Cost:* block count, not rule count, dominates (~125k blocks of walls and
     floors for a 40×40×240 tower, arithmetic); interiors may be generated per
     floor from (building, floor) hashes rather than cached whole (*inferred*).
