@@ -1,10 +1,11 @@
 ---
 tags: adr
-status: accepted
+status: superseded
 date: "2026-10-16"
 author: researcher
 approvedBy: "John, 2026-10-16"
 supersededBy:
+  - "[[docs/adr/0003-worldgen]]"
 dependsOn:
 related:
   - "[[docs/adr/0001-building-direction]]"
@@ -23,6 +24,9 @@ research:
 ---
 
 # 0002. Integration approach to spike: structure-based district starts over a region plan
+
+**Superseded by [ADR 0003](0003-worldgen.md)** (John, 2026-10-16): every decision here that
+is still in force is restated there.
 
 What Phase 2 spikes: cities enter the world as many structure starts, one per
 district, reading one pure plan per region cell, with no fixed city size. The
