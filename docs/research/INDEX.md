@@ -90,9 +90,22 @@ the end of its track's list. Notes use [TEMPLATE.md](TEMPLATE.md).
 - [Post-generation placement](postgen/post-generation-placement.md) — `/place structure` writes every chunk of the box on the live level with no 8-chunk cap but no `/locate` registration; `LevelChunk.setBlockState` handles heightmaps, light, saving; problems are cost and pop-in, not correctness; 26.3 claims to confirm listed — status: new
 - [Out-of-worldgen overview](postgen/overview.md) — pipeline: deterministic sites → pregenerate on trigger → snapshot terrain → plan off-thread → write unseen; elytra outruns it; verdict: backup/add-on (admin capitals, extras beyond 8 chunks), not the main path — status: new
 
+## Track 8: Precomputed building pools (`pool/`)
+
+- [Pool overview](pool/overview.md) — splits the idea into quantisation (costs variety), memoisation (needs shared keys) and prefetch (free: per-cell plan is pure, workers compute it early); verdict: prefetch + memo now, pool components (tower floors/crowns) later only if needed — status: new
+- [Cost model](pool/cost-model.md) — toy pipeline: house 0.13 ms, 60-floor tower 5.4 ms (2.6 memoised); real est. house 0.5–2 ms, tower 15–200 ms; houses ≤5% of district lane time, downtown can exceed the lane; 32 variants → visible repeats — status: new
+- [Vanilla precompute precedents](pool/vanilla-precompute.md) — stronghold rings computed off-thread at level load with all random draws before fan-out; template cache + per-instance processors; pitfall: Mth.getSeed omits world seed; proprietary, read only — status: new
+- [Lost Cities planning cache](pool/lost-cities-planning-cache.md) — closest precedent: worker-pool planning behind futures worldgen waits on, decisions saved under an input signature; two ways its cache silently becomes source of truth; MIT — status: new
+- [Pool recommendation](pool/recommendation.md) — pool is only ever a pure cache behind a BuildingSpec interface (policy: exact vs pooled); S6 measurement list; pooling rule (>10% downtown lane time or >5% inline at elytra speed); Phase 3 items — status: new
+
 ## Synthesis
 
 - [Landscape synthesis (1.8)](synthesis.md) — buildings: volume massing in lot hull + typed Java split/repeat/comp grammar for floors/bays/façades, roofs as heightfield, room-graph interiors; integration: structures, one start per district, cached per-cell plan, per-chunk feature fallback, track 7 backup; gate decisions B1–B4, I1–I6 with recommended answers — status: new
 
 ## Phase 2 spikes (`spikes/`)
+
+- [S4 Region map](spikes/s4.md) — sensible on 4 seeds (no centres in water/rivers/peaks, even spacing, 23–37% straddle palette groups); design change: best-of-8 hashed candidate centres per cell (site-only loses most cities); unbounded: keep 1024 cells + join rule (claim cells within radius, hashed priority), don't grow cells; dump format fb-region-dump/1; priming untested, cost derived — status: new
+- [S5 Terrain adaptation](spikes/s5.md) — beard_thin is enough at building scale (one rigid piece per building, box bottom at floor), incl. 25×15 hall and 30-high tower on a 0.72 slope; never bury/encapsulate; best: thin + foundation columns + stepped bays; don't reject steep lots for large buildings; uphill cut faces 5–12 blocks (REVIEW); one seed — status: new
+- [S8 Structure veto](spikes/s8.md) — yes: two mixins (ChunkGenerator#tryGenerateStructure, StructureCheck#canCreateStructure) share one tag predicate; generation and /locate agree (190→189 villages), mineshafts untouched; private-method hooks, re-check each MC bump; F2−F1 margin untested — status: new
+- [S9 Procedural pool element](spikes/s9.md) — yes: custom StructurePoolElement (fixed footprint, content hashed from seed+pos+rotation) puts our houses in plains villages via a houses.json override, order-independent incl. NBT reload; Lithostitched works but changes vanilla layouts; flat test world, real pipeline/slopes untested; vanilla pieces differ by order in 0–7 chunks (likely partly artefact) — status: new
 

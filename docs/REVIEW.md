@@ -28,4 +28,10 @@ work becomes a ROADMAP item or a Polish backlog line. Settled items move to
   Look for: the licence you want for the mod (affects what we may borrow from other mods)
   Result: MIT with John as author (John, 2026-10-08)
 
+- [ ] **2.4 S4**: region maps in `docs/research/spikes/s4/*.png` — do city density and placement at 1024-block cells, and the size of joined cities, look like where a person would put towns?
+- [ ] **2.5 S5**: terrain adaptation on a steep hillside in `docs/research/spikes/s5/` (`steep-thin_found-v0.jpg`, `steep-thin_found-v1.jpg`, vs `steep-none-v0.jpg`) — is a flat shelf per building with 5-12 block cut faces on the uphill side acceptable, or do we want retaining walls, terraces or level streets (which would trigger S7)?
+  Where: `docs/research/spikes/s5.md`
+  Look for: cut faces beside the hall and tower; grass vs bare stone on the cuts; whether stepped bays on the big hall read as built.
+  Result:
+
 ## Done

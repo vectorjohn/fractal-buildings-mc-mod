@@ -45,7 +45,7 @@ item. Per-item work logs are in [log/](log/); run ledgers in [runs/](runs/).
 | Phase | State | Gate |
 |---|---|---|
 | 0. Scaffolding | done 2026-10-08; gate passed 2026-10-14 (John) | builds green; viewer renders the box |
-| 1. Prior art research | done 2026-10-15: tracks 1–6 + 3 deep-dives, synthesis (1.8); track 7 batch 1 (backup); awaiting gate | John picks building-generation direction and the integration approach to spike |
+| 1. Prior art research | done; gate passed 2026-10-16 (John signed off in synthesis.md; wants effectively unbounded cities) | John picks building-generation direction and the integration approach to spike |
 | 2. Worldgen spikes | not started; S7–S9 added 2026-10-15 | worldgen ADR (approach, size limits, determinism rules) |
 | 3. Planner core and three.js viewer | not started | John reviews seed gallery and invariant report |
 | 4. Building generator depth | not started | per building type, "would I believe a person built this?" |
@@ -96,7 +96,7 @@ backlog (0.1a, 0.1b, 0.4, 0.5, 0.6 lines).
 
 ## Phase 1: Prior art research
 
-Seven tracks run in parallel. Every alternative examined produces a one-page
+Eight tracks run in parallel. Every alternative examined produces a one-page
 overview the moment it is done, so John can dig into options while research
 continues. Nothing waits for a final report. Process: coordinator.md,
 "Research".
@@ -117,11 +117,13 @@ continues. Nothing waits for a final report. Process: coordinator.md,
 | 5. Region overlays | How have mods layered new regions over vanilla biomes? | TerraBlender, Lithostitched, Terralith, The Lost Cities' city/biome handling |
 | 6. Aesthetics | What makes a Minecraft build read as real? | Builder guides on depth, palettes, gradients and roof pitch; vanilla village variants as a baseline |
 | 7. Out-of-worldgen generation (**backup option**) | Could we pregenerate chunks far out, then plan cities on the finished terrain and write them in, free of worldgen threading and size limits? At what cost? | Distant Horizons, Chunky and other pregenerators, C2ME (far-chunk generation speed), mods that place structures into already-generated chunks, chunk tickets and forced loading, save/lighting/neighbour-update effects of writing into finished chunks, coexistence with the structure-based approach |
+| 8. Precomputed building pools (added 2026-10-16; runs alongside Phase 2) | Can the generic part of building generation be computed off the serial worldgen lane (at first launch or in worker threads) into a pool that worldgen draws from deterministically? What does that cost in variety, memory and determinism, and what does it buy over prefetching the exact per-cell plan? | John's proposal (2026-10-16); vanilla stronghold-ring precompute and template cache; Lost Cities 26.x planning service and persisted cache; S6 cost figures |
 
 Agents: `assistant` for tracks 1, 2, 3, 5, 6 (web research); `researcher`
 (high effort) for track 4 (source reading in its own worktree, may write tiny
 probe tests), for notes marked `deep-dive`, and for the synthesis; `assistant`
-for track 7, which John wants kept as a backup to structure-based generation.
+for track 7, which John wants kept as a backup to structure-based generation;
+`researcher` for track 8.
 
 - [x] **1.1 Track 1: Minecraft mods** (batches until the list is covered)
 - [x] **1.2 Track 2: GDMC**
@@ -133,6 +135,12 @@ for track 7, which John wants kept as a backup to structure-based generation.
   2026-10-15): generate far chunks ahead of the player, as Distant Horizons
   and pregenerators do, then plan and place cities on the finished terrain.
   Notes in `docs/research/postgen/`.
+- [ ] **1.10 Track 8: Precomputed building pools** (added 2026-10-16, runs in
+  parallel with Phase 2): John's idea of pre-generating a deterministic pool of
+  candidate buildings off the worldgen lane, drawn from by a pure choose
+  function; the pool must be a pure cache, never a source of truth. Notes in
+  `docs/research/pool/`; feeds S6 (what to measure) and Phase 3 (a generator
+  interface that keeps "pool as cache" possible).
 - [ ] **1.7 Checkpoint: early skim**, after the first 8–10 notes: John redirects
   tracks or flags deep-dives. (Research keeps going meanwhile.)
 - [x] **1.8 Landscape synthesis**: a two-page comparison of approaches for
@@ -158,24 +166,54 @@ Parallel: S1, S2, S4 and S5 side by side; S3 alongside them; S6 after S3
 S7–S9 (from track 4) run alongside all of these; S7 pairs with S5, whose
 result decides whether flattening is needed.
 
-- [ ] **2.1 S1 Biome footprint.** Can a structure sample biomes across a
-  512×512 area at start time, and how fast? Evidence: GameTest logging the
-  sampled grid; timing per start.
-- [ ] **2.2 S2 Terrain probe.** How close is pre-generation height sampling to
-  the real surface? Evidence: predicted vs actual heightmap diff over 10 seeds.
+- [ ] **2.1 S1 Biome footprint** (shrunk after track 4, ADR 0002). Already
+  answered for vanilla (*probe*, `research/worldgen/terrain-biome-queries.md`):
+  ~0.0025 ms per lookup, ~40 ms per 512² layer, sample at the surface Y,
+  and a priming lookup makes answers independent of order and thread. Left
+  open: (a) does priming still give identical answers in two orders and on 8
+  threads when a mod changes the biome source: TerraBlender (one climate tree
+  per region, so one priming query may not prime them all), Lithostitched
+  injectors, Terralith's parameter list? (b) the in-game cost per lookup on
+  the worldgen lane (only the probe timed biomes; heights cost 2.2–2.5× more in
+  game), stated per km² for large cities. Evidence: server test per mod set
+  with a primed grid in two orders and on 8 threads (0 differences); in-game
+  timing under the heavy lock.
+- [ ] **2.2 S2 Terrain probe** (shrunk after track 4, ADR 0002). Already
+  measured for vanilla, one seed (12345): `getBaseHeight(OCEAN_FLOOR_WG)`
+  matches real ground in 98.2% of land columns (p99 2 blocks);
+  `preliminary_surface_level` reads 12–15 low (p90 17). Left open: (a) 10
+  seeds chosen to include mountains, rivers and coasts; (b) the same under
+  Terralith and Tectonic, alone and together (their `final_density` differs,
+  and the coarse screen misses Terralith's dunes and arches); (c) whether the
+  coarse screen's bias is stable enough for a fixed +15 correction per seed
+  and mod set; (d) whether surface rules ever add blocks above
+  `getBaseHeight`. Evidence: predicted vs actual diff per seed and mod set
+  (exact: % equal, p99; coarse: bias, p90) and in-game cost per column. Share
+  the Terralith + Tectonic setup with S7.
 - [ ] **2.3 S3 Multi-start city.** Can 2–4 starts share one plan and join
   seamlessly? Evidence: blocks hashed per chunk are identical whatever order
-  chunks generate in; no seams at start or chunk borders.
-- [ ] **2.4 S4 Region map.** Does the region layer place cities sensibly
+  chunks generate in; no seams at start or chunk borders. Also: a road that
+  crosses a district border (each side owned by one start) meets without a
+  seam, and `/locate` finds a district start through a
+  `RandomSpreadStructurePlacement` subclass.
+- [x] **2.4 S4 Region map.** Does the region layer place cities sensibly
   against real biomes? Evidence: dev command dumping region cells plus biomes
   to JSON; 2D map in the viewer. (The dump format becomes a test fixture for
   Phases 3 and 5.)
-- [ ] **2.5 S5 Terrain adaptation.** Do vanilla beard modes suffice on hills, or
+- [x] **2.5 S5 Terrain adaptation.** Do vanilla beard modes suffice on hills, or
   do we grade terrain ourselves? Evidence: client-test screenshots of a test
   city on flat, hilly and river terrain.
-- [ ] **2.6 S6 Scale and cost.** What do piece counts do to save size and chunk
-  generation time? Evidence: measurements at village, town and city scale;
-  thread-safety check of the plan cache. (Timing under the heavy lock.)
+- [ ] **2.6 S6 Scale and cost.** How large can a city go, and what does it
+  cost? John's target is effectively unbounded cities; 512×512 is the floor
+  to prove, not a cap (ADR 0002, I6). Evidence (timing under the heavy lock,
+  load recorded): plan time against city size (512², 1024², 2048², and on
+  while it holds), split into coarse screen, exact heights and layout; per
+  district: start, piece build and `postProcess` time and save size, with
+  pieces saving references vs stored IR (include a tall building); plan-cache
+  memory per cell; the city size at which the first-touch stall on the serial
+  lane becomes noticeable, and whether a two-level plan (city skeleton, lazy
+  district detail) is needed past it; thread-safety of the cache; evict a
+  cell's plan, regenerate it and compare bytes.
 - [ ] **2.7 S7 Terrain flattening** (fallback if S5's beards fall short). Can
   we level city cells by wrapping `final_density` together with
   `chunk_surface_level` and the aquifer `surface_level`, without the plan/mask
@@ -183,17 +221,20 @@ result decides whether flattening is needed.
   `final_density` alone (expect bare stone, flooding) vs all three wrapped;
   `getBaseHeight` matches the levelled ground. See
   `research/worldgen/surface-level-and-flattening.md`.
-- [ ] **2.8 S8 Structure veto.** Does one tag-driven predicate
+- [x] **2.8 S8 Structure veto.** Does one tag-driven predicate
   (`fractalbuildings:excluded_from_cities`) keep foreign surface structures out
   of city cells at both start generation (`tryGenerateStructure`) and
   `/locate` (`StructureCheck.canCreateStructure`)? Evidence: server test with a
   fixed city cell over a known village chunk: no village start, and `/locate`
   skips it. See `research/worldgen/keeping-structures-out.md`.
-- [ ] **2.9 S9 Procedural pool element.** Can a custom `StructurePoolElement`
+- [x] **2.9 S9 Procedural pool element.** Can a custom `StructurePoolElement`
   put our generated houses inside vanilla villages (footprint fixed per
   element, content regenerated at `place` from seed and position)? Evidence:
   server test that a village chunk holds our blocks, identical whatever the
   chunk order. See `research/worldgen/custom-generator-and-pool-element.md`.
+  Also a compat check: with Lithostitched installed, its global jigsaw
+  redirect (`breaks_seed_parity`, default true) runs our element too; our
+  blocks must still match, and note whether vanilla villages change.
 - [ ] **2.10 Worldgen ADR** (researcher) from the findings: integration approach, practical
   size limits, determinism rules.
 
@@ -245,8 +286,9 @@ side by side.
 ## Phase 4: Building generator depth
 
 Grow v0 into buildings that read as built by a person, using the technique
-chosen at the Phase 1 gate. A likely shape is a hybrid: grammars for massing and
-facades, graph-based floor plans, and small hand-authored detail pieces.
+chosen at the Phase 1 gate ([ADR 0001](adr/0001-building-direction.md): volume
+massing, then a typed split grammar). Large buildings and towers are
+first-class, not only houses.
 
 Each new rule lands with a property test and a gallery update; the verifier
 compares galleries before and after. Parallel: after a short planning pass
@@ -257,40 +299,67 @@ fan out one per item.
 - [ ] **4.1 Plan**: the generator architecture for the chosen technique, with
   the extension points that let 4.2–4.7 run in parallel.
 - [ ] **4.2 Massing**: L, T, U and courtyard footprints; multi-volume buildings;
-  towers and wings.
+  towers and wings; setback stacks (podium, shaft, crown, each volume inside
+  the one below); one storey grid per building.
 - [ ] **4.3 Roofs**: gable, hip and combinations; dormers; overhangs; pitch per
-  style.
+  style; flat roofs, parapets and crowns for tall buildings.
 - [ ] **4.4 Facades**: bays and rhythm, trim, depth (insets, beams, sills), a
-  gradient of materials.
-- [ ] **4.5 Interiors**: room graph, stairs, simple furnishing hooks.
+  gradient of materials; bands that repeat over many storeys without
+  looking stamped.
+- [ ] **4.5 Interiors**: room graph, stairs, simple furnishing hooks; a
+  vertical core placed first in multi-storey buildings, each floor grown
+  around it (typical floors repeat with per-band variation).
 - [ ] **4.6 Building types**: house, shop, workshop, tower, temple, wall and
-  gate (one item each when scheduled).
+  gate (one item each when scheduled). Large classes, also one item each:
+  - **high-rise**: setback tower up to the y 319 ceiling (~60 storeys),
+    stair core, podium on the street;
+  - **city block**: a perimeter block of joined units with shared walls and a
+    courtyard, filling a whole street block;
+  - **hall / civic**: large spans (market hall, town hall, cathedral, bath),
+    footprints up to ~200 blocks (ADR 0001 limits).
 - [ ] **4.7 Styles**: a palette and rule set per culture, mapped from biome
   (desert, taiga, plains, jungle, snowy to start; one item each).
 
 **Gate:** per building type, a gallery passes John's "would I believe a person
-built this?" review.
+built this?" review, including the high-rise, city-block and hall classes.
 
 ## Phase 5: Settlements and cities
 
 Compose buildings into places, still entirely outside Minecraft, using real
-terrain and biome dumps from S4.
+terrain and biome dumps from S4. Cities have no fixed size cap; 512 × 512 is
+the first size to prove (ADR 0002, I6). The plan has two levels: a cheap city
+skeleton, then district detail built lazily (ARCHITECTURE.md, "City scale").
 
-- [ ] **5.1 Scale ladder**: hamlet, village, town, city. Each step adds
-  structure (a square, a main street, districts, walls).
+- [ ] **5.1 Scale ladder**: hamlet, village, town, city, metropolis. Each step
+  adds structure (a square, a main street, districts, walls, a downtown);
+  no step has a fixed size cap.
 - [ ] **5.2 Layout**: road network (primary and secondary), lot subdivision,
-  plazas and landmarks, gates.
+  plazas and landmarks, gates. Split into the city skeleton (arterials on
+  position-hashed lines, district borders drawn around big lots, coarse
+  height screen) and lazy per-district detail (lots, briefs, exact heights).
 - [ ] **5.3 Terrain**: respond to slope, rivers and coast; choose where to level
   ground and where to step buildings.
 - [ ] **5.4 Biome-aware style**: each district takes its palette from the biomes
   underneath, blended across borders.
 - [ ] **5.5 Viewer**: a 2D plan view over the terrain dump, plus a 3D fly-through
-  of a chosen district.
-- [ ] **5.6 Determinism**: the city plan is built from the region cell alone, so
-  every district start reproduces it identically.
+  of a chosen district; the plan view stays usable for cities of several
+  thousand blocks (skeleton overview, district detail on demand).
+- [ ] **5.6 Determinism**: the skeleton is built from the region cell alone and
+  each district's detail from (cell, district), so every district start
+  reproduces them identically in any order.
+- [ ] **5.7 Density and skyline**: building class and height follow distance
+  to the centre and to arterials (downtown high-rises and blocks, halls on
+  squares, houses at the edge).
+- [ ] **5.8 Cities across cells**: neighbouring settled cells meet at hashed
+  gates on their shared border, so roads join without either plan reading
+  the other; grow cells or join cells per the worldgen ADR (2.10).
+- [ ] **5.9 Scale check**: plan time and memory per district, measured outside
+  the game at 512², 2048² and a multi-cell city; flat per-district cost is the
+  bar (feeds 6.5 and 6.7).
 
 **Gate:** John reviews cities in at least five biome mixes, including one
-straddling a border.
+straddling a border, one larger than 512 × 512, and one with a high-rise
+downtown.
 
 ## Phase 6: Minecraft integration and release
 
@@ -303,7 +372,7 @@ Wire the proven core into worldgen using the approach fixed in the Phase 2 ADR.
 - [ ] **6.3 Terrain**: adaptation mode or our own grading, per S5.
 - [ ] **6.4 Gameplay hooks**: loot tables, villager workstations and beds,
   `/locate` support. Leave room for a villager AI mod later.
-- [ ] **6.5 Config**: frequency, maximum city size, enabled styles.
+- [ ] **6.5 Config**: frequency, maximum city size (a default from S6, not a design cap; ADR 0002), enabled styles.
 - [ ] **6.6 Compatibility**: test with popular terrain mods (Terralith,
   Tectonic) and alongside vanilla villages.
 - [ ] **6.7 Performance budget**: worldgen time per chunk and save size per
