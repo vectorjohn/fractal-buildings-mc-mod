@@ -200,7 +200,7 @@ result decides whether flattening is needed.
   against real biomes? Evidence: dev command dumping region cells plus biomes
   to JSON; 2D map in the viewer. (The dump format becomes a test fixture for
   Phases 3 and 5.)
-- [ ] **2.5 S5 Terrain adaptation.** Do vanilla beard modes suffice on hills, or
+- [x] **2.5 S5 Terrain adaptation.** Do vanilla beard modes suffice on hills, or
   do we grade terrain ourselves? Evidence: client-test screenshots of a test
   city on flat, hilly and river terrain.
 - [ ] **2.6 S6 Scale and cost.** How large can a city go, and what does it
