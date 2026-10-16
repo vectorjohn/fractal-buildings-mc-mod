@@ -1,0 +1,9 @@
+== cost, mod set: terrablender+lithostitched | loadavg before 13.31 8.58 6.36 10/4110 79361 | thread Server thread
+  prime=none   1 thread: first 121.3 ms, median 130.2 ms per 512^2 layer (7.95 us/lookup, 497 ms/km2);  8 threads: median 35.3 ms (135 ms/km2 wall)
+  prime=single 1 thread: first 122.0 ms, median 147.2 ms per 512^2 layer (8.99 us/lookup, 562 ms/km2);  8 threads: median 43.7 ms (167 ms/km2 wall)
+  prime=multi  1 thread: first 822.8 ms, median 853.0 ms per 512^2 layer (52.06 us/lookup, 3254 ms/km2);  8 threads: median 419.5 ms (1600 ms/km2 wall)
+  prime=region 1 thread: first 166.5 ms, median 176.8 ms per 512^2 layer (10.79 us/lookup, 675 ms/km2);  8 threads: median 51.9 ms (198 ms/km2 wall)
+  prime=none   1 thread beside 8 busy terrain threads: median 138.2 ms per 512^2 layer (8.44 us/lookup, 527 ms/km2)
+  prime=single 1 thread beside 8 busy terrain threads: median 227.9 ms per 512^2 layer (13.91 us/lookup, 869 ms/km2)
+  prime=region 1 thread beside 8 busy terrain threads: median 322.0 ms per 512^2 layer (19.66 us/lookup, 1228 ms/km2)
+  loadavg after 15.13 9.21 6.60 11/4091 79567

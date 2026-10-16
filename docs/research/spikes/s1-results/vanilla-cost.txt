@@ -1,0 +1,7 @@
+== cost, mod set: vanilla | loadavg before 6.72 7.34 6.78 5/4024 91138 | thread Server thread
+  prime=none   1 thread: first 65.3 ms, median 78.2 ms per 512^2 layer (4.78 us/lookup, 298 ms/km2);  8 threads: median 24.3 ms (93 ms/km2 wall)
+  prime=single 1 thread: first 120.0 ms, median 151.8 ms per 512^2 layer (9.26 us/lookup, 579 ms/km2);  8 threads: median 29.6 ms (113 ms/km2 wall)
+  prime=multi  1 thread: first 721.6 ms, median 736.3 ms per 512^2 layer (44.94 us/lookup, 2809 ms/km2);  8 threads: median 116.0 ms (443 ms/km2 wall)
+  prime=none   1 thread beside 8 busy terrain threads: median 81.8 ms per 512^2 layer (5.00 us/lookup, 312 ms/km2)
+  prime=single 1 thread beside 8 busy terrain threads: median 173.5 ms per 512^2 layer (10.59 us/lookup, 662 ms/km2)
+  loadavg after 6.48 7.27 6.76 1/4011 91343

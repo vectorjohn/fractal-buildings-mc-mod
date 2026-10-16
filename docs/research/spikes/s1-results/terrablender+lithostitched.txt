@@ -1,0 +1,28 @@
+== mod set: terrablender+lithostitched | loadavg 15.13 9.21 6.60 11/4090 79567
+biome source: net.minecraft.world.level.biome.MultiNoiseBiomeSource
+possibleBiomes by namespace: {minecraft=56}
+TerraBlender climate trees (regions): 3
+seed 12345 origin [0, 0] cells per region [14435, 0, 1949]
+seed 12345 origin [0, 0] distinct biomes 11 {minecraft:cold_ocean=3242, minecraft:dark_forest=187, minecraft:deep_cold_ocean=226, minecraft:deep_ocean=1011, minecraft:lush_caves=3301, minecraft:ocean=4647, minecraft:old_growth_pine_taiga=1381, minecraft:old_growth_spruce_taiga=299, minecraft:river=345, minecraft:stony_shore=1744, minecraft:taiga=1}
+  prime=none   seq-vs-shuffled 5, seq-vs-8thr 5, seq-vs-8thr' 5, 8thr-vs-8thr' 0 | vs primed-region seq: 5
+  prime=single seq-vs-shuffled 0, seq-vs-8thr 0, seq-vs-8thr' 0, 8thr-vs-8thr' 0 | vs primed-region seq: 0
+  prime=multi  seq-vs-shuffled 0, seq-vs-8thr 0, seq-vs-8thr' 0, 8thr-vs-8thr' 0 | vs primed-region seq: 0
+  prime=region seq-vs-shuffled 0, seq-vs-8thr 0, seq-vs-8thr' 0, 8thr-vs-8thr' 0 | vs primed-region seq: 0
+seed 12345 origin [12500, -7500] cells per region [2750, 13634, 0]
+seed 12345 origin [12500, -7500] distinct biomes 5
+  prime=none   seq-vs-shuffled 2, seq-vs-8thr 0, seq-vs-8thr' 0, 8thr-vs-8thr' 0 | vs primed-region seq: 2
+  prime=single seq-vs-shuffled 2, seq-vs-8thr 0, seq-vs-8thr' 0, 8thr-vs-8thr' 0 | vs primed-region seq: 2
+  prime=multi  seq-vs-shuffled 0, seq-vs-8thr 0, seq-vs-8thr' 0, 8thr-vs-8thr' 0 | vs primed-region seq: 0
+  prime=region seq-vs-shuffled 0, seq-vs-8thr 0, seq-vs-8thr' 0, 8thr-vs-8thr' 0 | vs primed-region seq: 0
+seed -987654321 origin [0, 0] cells per region [14435, 0, 1949]
+seed -987654321 origin [0, 0] distinct biomes 6
+  prime=none   seq-vs-shuffled 4, seq-vs-8thr 4, seq-vs-8thr' 4, 8thr-vs-8thr' 0 | vs primed-region seq: 4
+  prime=single seq-vs-shuffled 0, seq-vs-8thr 0, seq-vs-8thr' 0, 8thr-vs-8thr' 0 | vs primed-region seq: 0
+  prime=multi  seq-vs-shuffled 0, seq-vs-8thr 0, seq-vs-8thr' 0, 8thr-vs-8thr' 0 | vs primed-region seq: 0
+  prime=region seq-vs-shuffled 0, seq-vs-8thr 0, seq-vs-8thr' 0, 8thr-vs-8thr' 0 | vs primed-region seq: 0
+seed -987654321 origin [12500, -7500] cells per region [2750, 13634, 0]
+seed -987654321 origin [12500, -7500] distinct biomes 10
+  prime=none   seq-vs-shuffled 12, seq-vs-8thr 15, seq-vs-8thr' 13, 8thr-vs-8thr' 2 | vs primed-region seq: 14
+  prime=single seq-vs-shuffled 12, seq-vs-8thr 14, seq-vs-8thr' 13, 8thr-vs-8thr' 1 | vs primed-region seq: 13
+  prime=multi  seq-vs-shuffled 0, seq-vs-8thr 0, seq-vs-8thr' 0, 8thr-vs-8thr' 0 | vs primed-region seq: 0
+  prime=region seq-vs-shuffled 0, seq-vs-8thr 0, seq-vs-8thr' 0, 8thr-vs-8thr' 0 | vs primed-region seq: 0
