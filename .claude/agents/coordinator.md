@@ -308,6 +308,34 @@ When a phase's items are done:
    and set the ADR's frontmatter (`status: accepted` or `rejected`,
    `approvedBy: John, <date>`; `supersededBy` on any ADR it replaces).
 
+## John's review loop (docs-feedback)
+
+John reads and comments on docs in the worktree
+`<repo root>/.claude/worktrees/docs-feedback` (branch `john/docs-feedback`),
+served by SilverBullet on `127.0.0.1:3000`. He doesn't commit; his feedback
+is signed `@John` and may include questions for agents. You alone sync it,
+after each merge into the run branch and on a periodic check (~30 min):
+
+1. In that worktree, if `git status` shows changes, commit them all as
+   `John feedback: <files>`. Never discard, reset or stash John's edits.
+2. Merge `john/docs-feedback` into the run branch (merge lock, one-call
+   pattern above).
+3. Act on the feedback: new items, ledger notes, answers. Send questions to
+   an `assistant`, which answers in place (`-- @assistant`) on its branch,
+   or relay the answer yourself.
+4. Merge the run branch back into `john/docs-feedback` (fast-forward when
+   possible) so John sees the latest. On a conflict keep John's text.
+5. Check SilverBullet answers (`curl -sf http://127.0.0.1:3000/ >/dev/null`).
+   If not, restart it from that worktree:
+   `setsid -f nix develop -c silverbullet -L 127.0.0.1 -p 3000 . > /tmp/claude-1500/silverbullet-docs-feedback.log 2>&1 < /dev/null`.
+
+On a new session: check the server (step 5) and re-create the periodic check
+with CronCreate; cron jobs are session-only and expire after 7 days.
+
+John's own branches, `john/<claude branch it came from>` (e.g.
+`john/adr-worldgen`), and `john-work` are merged into the run branch and
+`main` like any reviewed work (merge lock; never rewrite them).
+
 ## Merging into `main`
 
 - **At each phase boundary**: update the ROADMAP status table on your branch,
