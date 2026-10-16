@@ -279,7 +279,7 @@ Critical path: S3 → S5 → V4 → S9.
   role-tagged boxes) plus its placement and site boxes. Deterministic JSON
   writer, validator, schema in `docs/IR.md`, the sample fixture written by
   the writer.
-- [ ] **3.2 Probes** (S2): terrain and biome interfaces; synthetic shapes
+- [x] **3.2 Probes** (S2): terrain and biome interfaces; synthetic shapes
   (flat, plane, hill, terraces, noise); recorded implementation reading S4's
   `fb-region-dump/1` (the committed crop), with integer interpolation;
   probe spec strings shared by the CLI and tests.
