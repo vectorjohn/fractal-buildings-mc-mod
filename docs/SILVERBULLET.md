@@ -3,8 +3,9 @@
 John reads this repo's markdown in [SilverBullet](https://silverbullet.md)
 2.11.0 (pinned in `flake.nix`; run `silverbullet .` from the repo root in the dev
 shell). The space root is the repo root (`CONFIG.md` and `Library/` live
-there). Dot-folders (`.claude/`, `.gradle/`) are not part of the space, and
-`SB_SPACE_IGNORE` in the flake hides `node_modules/`, `build/`, `run/` and `out/`.
+there). `SB_SPACE_IGNORE` in the flake (gitignore patterns, one per line) hides
+`node_modules/`, `build/`, `run/`, `out/`, `.claude/` (agent worktrees, reports,
+locks), `.gradle/`, `dist/`, `playwright-report/` and `test-results/`.
 The same files are also read on GitHub, in plain editors, and as an EPUB
 (`scripts/research-epub.lua`), so **everything must still read well as plain
 markdown**. This page is the convention; CLAUDE.md has the short version.
