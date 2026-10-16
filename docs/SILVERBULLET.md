@@ -10,6 +10,14 @@ The same files are also read on GitHub, in plain editors, and as an EPUB
 (`scripts/research-epub.lua`), so **everything must still read well as plain
 markdown**. This page is the convention; CLAUDE.md has the short version.
 
+There are two instances. John's own runs wherever he starts it, on his
+checkout. The **review instance** is the one agents keep running: on
+`127.0.0.1:3000` (localhost only), serving the
+`.claude/worktrees/docs-feedback` worktree (branch `john/docs-feedback`),
+which the coordinator keeps at the latest docs and from which it commits
+John's `@John` feedback (CLAUDE.md, "Human review loop"). Only the
+coordinator starts, restarts or syncs it.
+
 The official docs (docs.silverbullet.md) track the newest release (2.12.x as of
 2026-10-15). Check a feature against the
 [CHANGELOG](https://github.com/silverbulletmd/silverbullet/blob/main/docs/CHANGELOG.md)
