@@ -253,44 +253,70 @@ permanent regression test (re-implemented properly, in Phase 3 or 6).
 
 ## Phase 3: Planner core and three.js viewer
 
-Updated: 2026-10-08
+Updated: 2026-10-16
 
 Build the review loop and a deliberately plain first generator: one building on
-one lot, viewable from any seed.
+one lot, viewable from any seed. The generator stays plain, but the IR is built
+for what follows: tall setback towers, buildings over several lots, scenes with
+many buildings, and shells cached by spec (ADR 0001, ADR 0003 D6).
 
-Parallel: 3.1 (IR and its JSON schema, with a checked-in sample fixture) comes
-first. Then the planner track (3.2 → 3.3 → 3.4, with 3.9–3.11 alongside 3.3)
-and the viewer track (3.5 → 3.6, 3.7, 3.8, working against the fixture) run
-side by side.
+Plan: [plans/phase3.md](plans/phase3.md) (steps S1–S9 and V1–V4, with the IR
+v1 spec, the v0 rules and the invariant definitions). The plan commit already
+holds the IR types, probe interfaces, `Hash64`, the sample scene (Java and
+`viewer/fixtures/sample-house.json`) and a terrain crop of S4's dump
+(`fixtures/terrain/s4-12345-crop32.json`), so five steps start at once.
+
+Parallel: wave 1 is S1 (3.1), S2 (3.2), S3 (3.3), S4 (3.9a) and V1 (3.5),
+side by side. Wave 2 as they land: S5 (3.4), S8 (3.9b), S6 (3.10), S7
+(3.11), V2 (3.6), V3 (3.7), V4 (3.8). Then the gate pack, S9 (3.12).
+Critical path: S3 → S5 → V4 → S9.
 
 **Planner core (Java, no Minecraft)**
 
-- [ ] **3.1 Building IR**: footprint, floors, rooms, openings, roof, abstract
-  material roles; JSON serialisation with a stable, documented schema; a sample
-  fixture for the viewer.
-- [ ] **3.2 Probes**: interfaces for terrain height and biome; synthetic
-  implementation; recorded implementation reading S4's dump.
-- [ ] **3.3 Generator v0**: rectangular footprint, 1–3 floors, doors and
-  windows, gable roof.
-- [ ] **3.4 CLI**: `gen --seed --lot --style` writes JSON.
+- [ ] **3.1 Building IR** (S1): format `fb-scene/1`: a scene of lots, placed
+  buildings, terrain and violations; a building is a site-independent shell
+  (spec, spec hash, storey grid, volumes, rooms, openings, roofs,
+  role-tagged boxes) plus its placement and site boxes. Deterministic JSON
+  writer, validator, schema in `docs/IR.md`, the sample fixture written by
+  the writer.
+- [ ] **3.2 Probes** (S2): terrain and biome interfaces; synthetic shapes
+  (flat, plane, hill, terraces, noise); recorded implementation reading S4's
+  `fb-region-dump/1` (the committed crop), with integer interpolation;
+  probe spec strings shared by the CLI and tests.
+- [ ] **3.3 Generator v0** (S3): rectangular footprint, 1–3 floors, rooms,
+  stairs, doors and windows, gable roof, foundations to the terrain; written
+  as spec policy → shell generator → instance pass, on `IntSplit` and
+  `Choice` (ADR 0001 B2).
+- [ ] **3.4 CLI** (S5): `gen --seed --lot --style --terrain` writes scene
+  JSON; `batch` (for the viewer), `check` (invariant report), `bench`.
+  Replaces the Phase 0 smoke IR.
 
 **Viewer (TypeScript, three.js)**
 
-- [ ] **3.5 Instanced voxel mesh** with orbit controls; colour by role or by
-  mapped palette.
-- [ ] **3.6 Controls**: seed scrubber, style switch, layer toggles (shell,
-  interior, roof).
-- [ ] **3.7 Invariant overlay**: failures from the test suite drawn in red.
-- [ ] **3.8 Seed gallery**: a 4×4 grid of seeds from fixed camera presets;
+- [ ] **3.5 Instanced voxel mesh** (V1) with orbit controls; colour by role or
+  by mapped palette; layer groups; placement and rotation as in the core.
+- [ ] **3.6 Controls** (V2): seed scrubber, style switch, layer toggles
+  (shell, interior, roof, foundation, terrain), storey slider; state in the URL.
+- [ ] **3.7 Invariant overlay** (V3): failures from the core's checks drawn in
+  red, visible through walls, with a list.
+- [ ] **3.8 Seed gallery** (V4): a 4×4 grid of seeds from fixed camera presets;
   Playwright captures it as PNGs, so agents review the same pictures John does.
 
 **Tests**
 
 - [ ] **3.9 Property tests** over thousands of seeds: every room reachable from a
-  door, roof closed, no floating blocks, stays in its lot.
-- [ ] **3.10 Determinism**: same seed gives byte-identical JSON.
-- [ ] **3.11 Diversity score** across a seed batch, so sameness is measured and
-  not just eyeballed.
+  door, roof closed, no floating blocks, stays in its lot. Split: checks on a
+  voxel grid with one mutant per invariant (S4, 3.9a); generator property
+  tests over seeds, lots, fronts and terrains (S8, 3.9b).
+- [ ] **3.10 Determinism** (S6): same seed gives byte-identical JSON, also
+  across threads, request order and cache states (cold, warm, evicted,
+  prefetched); golden digests catch cross-JVM drift; a lint bans
+  nondeterministic APIs in the core.
+- [ ] **3.11 Diversity score** (S7) across a seed batch, so sameness is measured
+  and not just eyeballed; a regression floor in a test.
+- [ ] **3.12 Gate pack** (S9): invariant report over 10,000 seeds, galleries and
+  the diversity report in `docs/review/phase3/`, v0 timing per building, a
+  REVIEW.md entry.
 
 **Gate:** John reviews the seed gallery and the invariant report.
 

@@ -33,6 +33,8 @@ being true.
 
 ## Planner core
 - 0.1a (2026-10-08): `:planner-core:checkNoMinecraft` fails the build if any source mentions net.minecraft/net.fabricmc/com.mojang or any config declares/resolves such a dependency; it runs before `compileJava` and in `check`.
+- P3 plan (2026-10-16): IR types, `Placement` (rotation maths), `Hash64`/`Draws` and `SampleScenes.house()` live in `core/ir` and `core/rand`; `SampleScenes.house()` and `viewer/fixtures/sample-house.json` are the same scene (196 voxels: floor 70, wall 69, roof 35, foundation 14, door 4, window 4). Spec and rules: docs/plans/phase3.md until docs/IR.md exists.
+- P3 plan (2026-10-16): `fixtures/terrain/s4-12345-crop32.json` is a 32x32 crop (step 64, x0 -1408, z0 -4160) of S4's `fb-region-dump/1` for seed 12345 with `layers` emptied; made with jq from the spike-s4 worktree's `viewer/public/region/seed-12345.json` (grid i 170-201, j 127-158). Known values: (576, -4160) river, surface 63, water 20.
 
 ## Viewer and Playwright
 - Playwright pin (0.4): browsers come from nixpkgs `playwright-driver.browsers` (`PLAYWRIGHT_BROWSERS_PATH` in the flake); npm `@playwright/test` is pinned **exactly** (`--save-exact`) to `pkgs.playwright-driver.version` of the *locked* nixpkgs, currently 1.63.0 (check with `nix eval --raw --impure --expr "(import (builtins.getFlake (toString ./.)).inputs.nixpkgs {}).playwright-driver.version"`; `nix eval nixpkgs#...` uses the registry and can differ). Bump both together.
