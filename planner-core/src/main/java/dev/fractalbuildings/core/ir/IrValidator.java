@@ -68,7 +68,7 @@ public final class IrValidator {
 	}
 
 	private static Set<String> unique(List<Violation> out, String building, String what, List<String> ids) {
-		Set<String> seen = new HashSet<>(); // membership only; never iterated
+		Set<String> seen = new HashSet<>(); // det-ok: membership only; never iterated
 		for (String i : ids) if (!seen.add(i)) bad(out, building, "duplicate " + what + " id " + i, null);
 		return seen;
 	}
