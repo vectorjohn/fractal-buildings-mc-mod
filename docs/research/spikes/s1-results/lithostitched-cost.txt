@@ -1,0 +1,7 @@
+== cost, mod set: lithostitched | loadavg before 17.56 19.84 15.45 18/4825 130080 | thread Server thread
+  prime=none   1 thread: first 66.7 ms, median 92.7 ms per 512^2 layer (5.66 us/lookup, 353 ms/km2);  8 threads: median 22.9 ms (87 ms/km2 wall)
+  prime=single 1 thread: first 153.0 ms, median 200.5 ms per 512^2 layer (12.24 us/lookup, 765 ms/km2);  8 threads: median 37.3 ms (142 ms/km2 wall)
+  prime=multi  1 thread: first 987.7 ms, median 966.7 ms per 512^2 layer (59.00 us/lookup, 3688 ms/km2);  8 threads: median 170.3 ms (650 ms/km2 wall)
+  prime=none   1 thread beside 8 busy terrain threads: median 130.8 ms per 512^2 layer (7.98 us/lookup, 499 ms/km2)
+  prime=single 1 thread beside 8 busy terrain threads: median 261.9 ms per 512^2 layer (15.99 us/lookup, 999 ms/km2)
+  loadavg after 17.43 19.73 15.46 8/4807 130292
