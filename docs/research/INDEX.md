@@ -90,6 +90,14 @@ the end of its track's list. Notes use [TEMPLATE.md](TEMPLATE.md).
 - [Post-generation placement](postgen/post-generation-placement.md) — `/place structure` writes every chunk of the box on the live level with no 8-chunk cap but no `/locate` registration; `LevelChunk.setBlockState` handles heightmaps, light, saving; problems are cost and pop-in, not correctness; 26.3 claims to confirm listed — status: new
 - [Out-of-worldgen overview](postgen/overview.md) — pipeline: deterministic sites → pregenerate on trigger → snapshot terrain → plan off-thread → write unseen; elytra outruns it; verdict: backup/add-on (admin capitals, extras beyond 8 chunks), not the main path — status: new
 
+## Track 8: Precomputed building pools (`pool/`)
+
+- [Pool overview](pool/overview.md) — splits the idea into quantisation (costs variety), memoisation (needs shared keys) and prefetch (free: per-cell plan is pure, workers compute it early); verdict: prefetch + memo now, pool components (tower floors/crowns) later only if needed — status: new
+- [Cost model](pool/cost-model.md) — toy pipeline: house 0.13 ms, 60-floor tower 5.4 ms (2.6 memoised); real est. house 0.5–2 ms, tower 15–200 ms; houses ≤5% of district lane time, downtown can exceed the lane; 32 variants → visible repeats — status: new
+- [Vanilla precompute precedents](pool/vanilla-precompute.md) — stronghold rings computed off-thread at level load with all random draws before fan-out; template cache + per-instance processors; pitfall: Mth.getSeed omits world seed; proprietary, read only — status: new
+- [Lost Cities planning cache](pool/lost-cities-planning-cache.md) — closest precedent: worker-pool planning behind futures worldgen waits on, decisions saved under an input signature; two ways its cache silently becomes source of truth; MIT — status: new
+- [Pool recommendation](pool/recommendation.md) — pool is only ever a pure cache behind a BuildingSpec interface (policy: exact vs pooled); S6 measurement list; pooling rule (>10% downtown lane time or >5% inline at elytra speed); Phase 3 items — status: new
+
 ## Synthesis
 
 - [Landscape synthesis (1.8)](synthesis.md) — buildings: volume massing in lot hull + typed Java split/repeat/comp grammar for floors/bays/façades, roofs as heightfield, room-graph interiors; integration: structures, one start per district, cached per-cell plan, per-chunk feature fallback, track 7 backup; gate decisions B1–B4, I1–I6 with recommended answers — status: new
