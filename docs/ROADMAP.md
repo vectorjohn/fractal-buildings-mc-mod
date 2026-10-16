@@ -283,7 +283,7 @@ Critical path: S3 → S5 → V4 → S9.
   (flat, plane, hill, terraces, noise); recorded implementation reading S4's
   `fb-region-dump/1` (the committed crop), with integer interpolation;
   probe spec strings shared by the CLI and tests.
-- [ ] **3.3 Generator v0** (S3): rectangular footprint, 1–3 floors, rooms,
+- [x] **3.3 Generator v0** (S3): rectangular footprint, 1–3 floors, rooms,
   stairs, doors and windows, gable roof, foundations to the terrain; written
   as spec policy → shell generator → instance pass, on `IntSplit` and
   `Choice` (ADR 0001 B2).
