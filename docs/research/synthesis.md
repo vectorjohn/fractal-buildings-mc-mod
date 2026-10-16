@@ -38,7 +38,7 @@ variety with coherence, invariants by construction, and licences.
 
 ## Buildings: options compared
 
-| | A. Shape grammar (split / CGA) | B. WFC / model synthesis, MarkovJunior | C. Graph + templates (jigsaw, Lost Cities parts, RC mazes) |
+|x| A. Shape grammar (split / CGA) | B. WFC / model synthesis, MarkovJunior | C. Graph + templates (jigsaw, Lost Cities parts, RC mazes) |
 |---|---|---|---|
 | Notes | [split](pcg/split-grammars.md), [CGA](pcg/cga-shape-grammar.md), [deep-dive](pcg/grammars-deep-dive.md) | [wfc](pcg/wfc-model-synthesis.md), [townscaper](pcg/townscaper.md), [markovjunior](pcg/markovjunior.md) | [jigsaw](worldgen/jigsaw.md), [lost-cities](mods/the-lost-cities.md), [repurposed](mods/repurposed-structures.md), [recurrent-complex](mods/recurrent-complex.md) |
 | Determinism, chunk order | Each rule is chosen by weighted rendezvous hashing, keyed by the scope that should agree. A building is derived whole, then clipped | Fine within one bounded solve. Solving per chunk depends on generation order | Deterministic |
@@ -107,11 +107,11 @@ comments fit it:
 
 ## Integration: options compared
 
-| | Size | Chunk order | `/locate`, boxes, beard | Compat | Verdict |
+|x| Size | Chunk order | `/locate`, boxes, beard | Compat | Verdict |
 |---|---|---|---|---|---|
 | **Structures, one start per district** ([pipeline](worldgen/structure-pipeline.md), [extension-points](worldgen/extension-points.md)) | ±8 chunks per start; one start per structure per chunk | Pure starts; clip to `chunkBB`; one owner per block | All free; the beard grades custom pieces (*read*) | Any generator that uses vanilla `createStructures` | **Adopt; S3 decides** |
 | **Per-chunk feature** ([lost-cities](mods/the-lost-cities.md)) | Unbounded | Each chunk writes its share of a pure plan | None; vanilla structures overlap | Good (*inferred*) | **Fallback** if S3 or S6 fail |
-| Biome overlay ([terrablender](overlays/terrablender.md)) | — | Fine | n/a | No Fabric overworld API; replaces the biomes a city should span | Drop |
+| Biome overlay ([terrablender](overlays/terrablender.md)) | — | Fine | n/a | No Fabric overworld API; replaces the biomes a city should span #review @assistant why? how does it replace, seems like an overlay by definition is additive. -- @John | Drop |
 | Custom generator ([custom-generator](worldgen/custom-generator-and-pool-element.md)) | Unbounded | Fine | Empty-router `RandomState` without a mixin (*read*) | Clashes with presets | Drop |
 | Post-generation, track 7 ([overview](postgen/overview.md)) | Unbounded | Plan must come from noise; timing depends on players | None | DH shows unsaved LODs | **Backup / add-on**, ~40 chunks/s |
 
@@ -246,8 +246,11 @@ by the Phase 3 gallery and the 3.11 diversity score, starting with the
   shipping Lithostitched modifiers.
 - **I5 Track 7:** **a backup; park batch 2 until S3 and S6 report.**
 - **I6 Scale in v1:** **cities up to ~512 × 512 blocks** until S6 says
-  otherwise.
+  otherwise. @assistant 512 is too small. Is S6 deciding if we can go bigger? why that limit? -- @John
 - **Spikes:** **add the S3, S6 and S9 extras above; shrink S1 and S2.**
+
+> **success** Success
+> This direction looks good to me. I have some notes and questions, but I wouldn’t change this at this moment. I give the go-ahead. -- @John
 
 ADRs: 0001 covers the building direction (B1–B4), and 0002 the integration
 approach to spike (I1–I6). The worldgen ADR (2.10) finalises 0002 after the
