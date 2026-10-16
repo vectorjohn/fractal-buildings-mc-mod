@@ -35,3 +35,14 @@
 - **REVIEW:** S5 ticked; S4, S5 and S7 moved to Done; John's text unchanged.
 - **Not run:** nothing (docs only; the heavy lock was busy with S6's
   re-measure).
+
+## S6 quiet re-measure folded in
+
+- Refreshed the 16 `[S6]` figures in 0003 from `s6.md` at 7b098fa
+  (`claude/spike-s6`) and removed the tags; the Context now says once that
+  S6 figures are quiet-machine, stand-in generator. Changed: 8192²
+  monolithic 29.5 s; suitability 11–12 ms coarse, about 130 ms exact;
+  `/locate` 0.1–0.24 s against 2.5–25 s; walk lead 7.5 s; the 1 MB slot
+  spills to `.mcc` (not a hard limit). New in P2: at most 4 prefetch
+  workers (8 cost 22 % and 16 cost 44 % of chunk throughput on land), a
+  refinement, not a new decision. ARCHITECTURE's 34 s became 29.5 s.

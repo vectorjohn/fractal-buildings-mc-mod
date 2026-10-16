@@ -194,8 +194,8 @@ field), and no existing layer we could reuse to place cities
 measured by [S6](research/spikes/s6.md)). The ±8-chunk box bounds a district
 (at most 14 × 14 chunks, 224 blocks, with the beard), not a city. What
 doesn't scale for free is a monolithic plan on the serial lane: about 0.5 s
-per Mblock² with exact heights, ~2.5 s at 2048² and 34 s at 8192² (S6,
-pending a quiet-machine re-measure). So the plan has two levels:
+per Mblock² with exact heights, ~2.5 s at 2048² and 29.5 s at 8192²
+(S6, quiet machine, stand-in generator). So the plan has two levels:
 
 - **City skeleton** (cheap, built first): the coarse height screen, roads on
   position-hashed lines (as Lost Cities' arterials,

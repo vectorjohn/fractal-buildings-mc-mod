@@ -65,11 +65,10 @@ re-measured on a quiet machine.
   and the pool element work. [S6](../research/spikes/s6.md): a two-level plan
   has no ceiling; prefetch hides the serial lane; pieces must save
   references.
-- **Figures marked [S6] are pending a quiet-machine re-measure** (John,
-  2026-10-16). S6 ran at loadavg 5–20: lane totals repeat within 3 % and
-  byte counts within 0.03 %, but wall-clock, chunks/s and lead times vary
-  ±25 %. S6 also used a stand-in generator; real ones are expected to cost
-  5–20× more. The decisions stand; only the figures may change.
+- **S6 figures are quiet-machine, stand-in generator**: re-measured at John's
+  request with nothing else running (loadavg under 2, three repeats). Real
+  generators are expected to cost 5–20× more. The re-measure changed no
+  decision; it added the prefetch worker cap (P2).
 
 ## Options
 
@@ -80,7 +79,7 @@ re-measured on a quiet machine.
    terrain, no Fabric API. (e) A custom chunk generator: clashes with world
    presets.
 2. **Plan.** (a) One monolithic plan per city: about 0.5 s per Mblock², 2.5 s
-   at 2048², 34 s at 8192² [S6]. (b) Two levels: a skeleton plus lazy
+   at 2048², 29.5 s at 8192². (b) Two levels: a skeleton plus lazy
    district detail.
 3. **Big cities.** (a) Grow region cells: a radius-1000 city needs cells
    about 5,000 blocks across. (b) Join 1024-block cells.
@@ -106,14 +105,15 @@ re-measured on a quiet machine.
   decision; the lazy piece builder reads the cached plan. `/locate` finds a
   district, not the city centre.
 - **W2 Suitability is decided per city, never per start**, by one cached
-  decision on the **coarse screen** (12–17 ms [S6]); exact heights cost
-  140–185 ms and make `/locate` 3–34 s instead of 0.1–0.3 s [S6].
+  decision on the **coarse screen** (11–12 ms); exact heights cost about
+  130 ms and make `/locate` 2.5–25 s instead of 0.1–0.24 s.
 - **W3 Pieces save references and their brief, never IR.** A reference is
-  13 B per piece [S6]; stored IR is 11–24 KB per tower, so a 58-tower
-  downtown fills the 1 MB region slot [S6]. A piece carries its brief (about
-  40–60 B) or the plan entry is pinned while a start is live: a thrashing
-  cache otherwise rebuilt a 68 ms district plan per `postProcess` (119 s in
-  total) [S6].
+  13 B per piece; stored IR is 11–24 KB per tower, so a 58-tower downtown
+  reaches the 1 MB region slot (vanilla then spills to an external `.mcc`
+  file, which works, but the size argument stands). A piece carries its brief
+  (about 40–60 B) or the plan entry is pinned while a start is live: a
+  thrashing cache otherwise rebuilt a 68 ms district plan per `postProcess`
+  (119 s in total).
 - **W4** Structure step `top_layer_modification`; at the default step, trees
   overwrote our blocks.
 - **W5 Terrain: the S5 way** (John kept it, 2026-10-16). One rigid piece per
@@ -155,15 +155,19 @@ re-measured on a quiet machine.
 
 - **P1 Two-level plan.** The **skeleton** is the coarse screen on a 32-block
   stride plus arterials hashed from (seed, axis, line index), computed per
-  tile of at most 4096² (83 ms, 2 B per 1024 blocks² [S6]). A gate on a cell
+  tile of at most 4096² (83 ms, 2 B per 1024 blocks²). A gate on a cell
   border comes from a hash of the edge key (0 mismatches over 9,800 edges),
   so tiles and cells agree without coordination. **District detail** probes
-  exactly only at building sites: 40–100 ms whatever the city size [S6]. A
-  district is computable from the skeleton alone.
-- **P2 Prefetch, don't pool.** Four workers build a district's IR from start
+  exactly only at building sites: under 100 ms whatever the city size. The
+  first start of a 1024² city costs 60–79 ms against 786–789 ms monolithic.
+  A district is computable from the skeleton alone.
+- **P2 Prefetch, don't pool.** Workers build a district's IR from start
   creation. At walk, sprint and elytra speed 0 of 244 IR lookups ran inline;
-  the cold downtown lane fell from 6.5 s to 9 ms; a Chunky-style pregen ran
-  12 of 469 inline [S6]. **A teleport has no lead** and pays the cold cost
+  the cold downtown lane fell from 6.5 s to under 10 ms; a Chunky-style
+  pregen ran 12 of about 470 inline. **At most 4 workers** (a refinement
+  from the re-measure): on land, 4 busy workers cost 3 % of chunk
+  throughput, 8 cost 22 % and 16 cost 44 %; keep the cap until the real
+  generator is measured. **A teleport has no lead** and pays the cold cost
   (mitigation, untested: build the skeleton shell first). Pool only if, with
   the real generator, more than 5 % of lookups run inline at elytra speed or
   inline time exceeds 10 % of the downtown lane.
@@ -195,18 +199,21 @@ re-measured on a quiet machine.
 ### Practical size limits
 
 - **City: no limit in the design**; the practical one is chunk generation:
-  4096² is 65k chunks, about 40 min at 25 chunks/s; 8192² about 3 h [S6].
+  4096² is 65k chunks, about 40 min at 25 chunks/s; 8192² about 3 h
+  (pregeneration ran 32–46 chunks/s on 20 cores).
   6.5's default: unbounded, with a soft warning above 8192².
 - **District:** at most 14 × 14 chunks (224 blocks), start at the centre (±8
   chunks less the 12-block beard; S3). Buildings never cross a district
   border, so a footprint is under 224 blocks (0001 estimated about 200).
 - **Pieces:** keep a start under about 10k pieces; a district can't reach
-  about 11k, and the region slot overflows at about 80k references [S6].
+  about 11k, and a start passes the 1 MB region slot at about 80k
+  references.
 - **Lane budget:** writes about 100 ns per block, 3–5 ms per downtown chunk;
   about 200 exact probes per district unless prefetched; first touch must
-  fit the lead of about 26 blocks of travel, 0.8–1 s at elytra [S6].
+  fit the lead of about 26 blocks of travel at every speed (0.9–1 s at
+  elytra, 5.7 s sprinting, 7.5 s walking).
 - **Memory:** compact IR, 2.2 MB per downtown district; an LRU of 64 is
-  about 140 MB before any typical-floor memo [S6].
+  about 140 MB before any typical-floor memo.
 
 ### Determinism rules
 
@@ -244,8 +251,8 @@ re-measured on a quiet machine.
   S8's margin test with a village just outside a city, plus `/locate`.
 - Also: S1 priming over the supported mod sets; S4's field tests with a
   quart-resolution priming case; S6's acceptance numbers as Phase 4
-  assertions (skeleton and detail under 100 ms each, constant first touch
-  [S6]); lane counters behind a flag; 3.10.
+  assertions (skeleton and detail under 100 ms each, constant first touch);
+  lane counters behind a flag; 3.10.
 
 ## Consequences
 
