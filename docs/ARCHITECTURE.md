@@ -24,7 +24,8 @@ game), *read* (decompiled 26.3 source or a mod's source, not run),
 ## Overview
 
 A pure planner produces one **Building IR** (and, later, city plans). The
-three.js viewer and the Fabric adapter are two consumers of that same IR.
+three.js viewer and the Fabric adapter are two consumers of that same IR. Its JSON
+schema is in [IR.md](IR.md).
 
 ```
                  ┌──────────── probes (terrain height, biome) ───────────┐

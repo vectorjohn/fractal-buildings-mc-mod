@@ -68,3 +68,8 @@ tasks.named('check') {
 tasks.named('compileJava') {
 	dependsOn 'checkNoMinecraft'
 }
+
+// SampleFixtureTest compares the writer's output with the viewer's fixture; rerun when it changes.
+tasks.named('test') {
+	inputs.file('../viewer/fixtures/sample-house.json')
+}

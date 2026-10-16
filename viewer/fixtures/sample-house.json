@@ -14,7 +14,7 @@
       "rotation": 0,
       "shell": {
         "spec": {"genVersion": 1, "specSeed": "42", "style": "plain", "type": "house", "width": 7, "depth": 5, "storeys": 1, "roof": "gable"},
-        "specHash": "0000000000000000",
+        "specHash": "8b7b09defc2546e2",
         "bounds": {"min": [0, 0, 0], "size": [7, 8, 5]},
         "storeys": [
           {"index": 0, "y": 0, "height": 4}

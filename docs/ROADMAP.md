@@ -273,7 +273,7 @@ Critical path: S3 → S5 → V4 → S9.
 
 **Planner core (Java, no Minecraft)**
 
-- [ ] **3.1 Building IR** (S1): format `fb-scene/1`: a scene of lots, placed
+- [x] **3.1 Building IR** (S1): format `fb-scene/1`: a scene of lots, placed
   buildings, terrain and violations; a building is a site-independent shell
   (spec, spec hash, storey grid, volumes, rooms, openings, roofs,
   role-tagged boxes) plus its placement and site boxes. Deterministic JSON
