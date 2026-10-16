@@ -15,278 +15,252 @@ research:
   - "[[docs/research/spikes/s3]]"
   - "[[docs/research/spikes/s4]]"
   - "[[docs/research/spikes/s5]]"
+  - "[[docs/research/spikes/s6]]"
   - "[[docs/research/spikes/s7]]"
   - "[[docs/research/spikes/s8]]"
   - "[[docs/research/spikes/s9]]"
   - "[[docs/research/pool/recommendation]]"
   - "[[docs/research/worldgen/structure-pipeline]]"
-  - "[[docs/research/worldgen/surface-level-and-flattening]]"
 ---
 
-# 0003. Worldgen: district starts over a joined region field, with determinism rules
+# 0003. Worldgen: district starts, a two-level plan, and determinism rules
 
-Cities enter the world as one structure start per district. Each start reads
-a lazily built, purely cached city plan, and the plan is placed by a 2D
-hashed region field. This ADR fixes the integration approach, the size limits
-and the determinism rules. **Draft: the size limits wait on S6.**
+Cities enter the world as one structure start per district. Every start
+reads a pure, cached two-level plan, and a 2D hashed region field places the
+cities. City size has no design limit.
 
 ## Context
 
-[ADR 0002](0002-integration-approach.md) chose what to spike. Phase 2 has
-answered all of it except S6 (scale and cost):
+[ADR 0002](0002-integration-approach.md) chose what to spike. The Phase 2
+spikes answered it:
 
-| Spike | Answer that shapes this ADR |
-|---|---|
-| [S3](../research/spikes/s3.md) multi-start | Yes. 4 and 9 starts share one plan. Owned blocks were identical in 7 orders (8 threads plus a cache evictor among them), and no block was written twice. A road across a district border stays one component. `/locate` works through the placement subclass. Whole-chunk hashes are order-dependent in vanilla itself. |
-| [S4](../research/spikes/s4.md) region map | Sensible on 4 seeds, but deciding at the site alone loses half the cities. Use the best of 8 hashed candidate centres. Big cities: join cells, don't grow them. |
-| [S5](../research/spikes/s5.md) terrain | `beard_thin` and one rigid piece per building are enough at building scale, a 30-high tower on a 0.72 slope included. Never `bury` or `encapsulate`. |
-| [S7](../research/spikes/s7.md) flattening | The accessor wrap of three slots levels terrain to within ±1 in 100 % of columns, vanilla and Terralith + Tectonic. The planner's unwrapped read is exact. |
-| [S1](../research/spikes/s1.md), [S2](../research/spikes/s2.md) probes | With priming, biome lookups are order-independent (TerraBlender needs a per-region anchor). `getBaseHeight` is exact on land (99.05–99.92 %). The coarse screen is not. |
-| [S8](../research/spikes/s8.md) veto, [S9](../research/spikes/s9.md) pool element | Both work and are order-independent. The tests only partly cover them (no margin test, flat test world). |
+- [S3](../research/spikes/s3.md): 4 and 9 starts share one plan. The blocks
+  they own are identical in 7 orders.
+- [S4](../research/spikes/s4.md): deciding at the site loses half the
+  cities. Join cells rather than growing them.
+- [S5](../research/spikes/s5.md): `beard_thin` is enough at building scale.
+- [S7](../research/spikes/s7.md): flattening works.
+- [S1](../research/spikes/s1.md) and [S2](../research/spikes/s2.md): the
+  probes are deterministic, and accurate where it matters.
+- [S8](../research/spikes/s8.md) and [S9](../research/spikes/s9.md): the
+  veto and the pool element work.
+- [S6](../research/spikes/s6.md): the plan has no ceiling if it is two-level.
+  Prefetch hides the serial lane. Pieces must save references.
+
+**S6's numbers come from a shared machine** (loadavg 5–20). Its lane totals
+repeat within 3 %, but wall-clock figures vary ±25 %. They need a
+quiet-machine re-measure before they are final. S6 also used a stand-in
+generator, and real generators are expected to cost 5–20× more.
 
 ## Options
 
-1. **Integration**: (a) structure starts per district; (b) per-chunk feature
-   (no ±8-chunk box, no serial lane, but no `/locate`, beard or boxes);
-   (c) post-generation (track 7).
-2. **Big cities**: (a) grow cells (a radius-1000 city needs cells about
-   5,000 across, so cities become rare and uniform); (b) join cells (keep
-   1024, a big city claims its neighbours); either way, maybe (c) a
-   two-level plan, if whole-city planning stalls the lane.
-3. **City decision**: (a) evaluate at the cell's site (no cache, but 26–41
-   cities per window); (b) best of K hashed candidates (73–96 cities, but
-   probes per cell, so it needs a cache).
-4. **Terrain**: (a) beard only; (b) flatten every city; (c) beard, with
-   flattening as an optional tool.
+1. **Integration.** (a) Structure starts per district. (b) A per-chunk
+   feature: no box limit and no serial lane, but no `/locate`, no beard and
+   no boxes. (c) Post-generation.
+2. **Plan.** (a) One monolithic plan per city. It costs about 0.5 s per
+   Mblock²: 0.76 s at 1024², 34 s at 8192². (b) Two levels: a skeleton plus
+   lazy district detail.
+3. **Big cities.** (a) Grow region cells: a radius-1000 city needs cells
+   about 5,000 blocks across. (b) Join 1024 cells.
+4. **City decision.** (a) Decide at the cell's site: no cache, but only
+   26–41 cities per window. (b) Best of 8 hashed candidates: 73–96 cities,
+   but the decision needs a cache.
+5. **Terrain.** (a) Beard only. (b) Flatten every city. (c) Beard, with
+   flattening as a tool.
 
 ## Decision
 
-1a, 2b (2c pending S6), 3b, 4c. The rules:
+**1a, 2b, 3b, 4b, 5c.**
 
 ### Integration
 
-- **W1 Starts.** Use a custom `Structure` with a `RandomSpreadStructurePlacement`
+- **W1 Starts.** A custom `Structure` with a `RandomSpreadStructurePlacement`
   subclass.
-  - `isPlacementChunk` answers "district origin?" from geometry plus a hashed
-    per-cell roll: pure, no probes, no world access, 3–36 ns.
+  - `isPlacementChunk` decides "district origin?" from geometry plus a hashed
+    roll. It makes no probes and takes 3–36 ns.
   - `getPotentialStructureChunk` returns the district centre.
   - `findGenerationPoint` repeats the origin test, because `StructureCheck`
-    skips the placement. It also reads the cached city decision.
-  - `/locate` finds the nearest *district*. A city-centre target needs its
-    own mechanism.
-- **W2 Suitability per city, never per start.** All districts of a city
-  read one decision from the region layer, using broad biome tags. A start
-  never fails on its own (no per-start `isValidBiome`): one ocean district
-  would cut the road network.
-- **W3 One plan per city, built lazily and cached.** The lazy piece builder
-  asks for the plan. It is keyed by the owning cell (R1) and obeys the
-  pure-cache contract (D6). Each district emits only the pieces in its own
-  box. Pieces save references (cell, district, kind, index, baseY; about
-  20 B per piece). *Pending S6:* references or stored IR.
-- **W4 Step `top_layer_modification`.** With the default step, vegetation
-  overwrote 2–4 of our blocks in 3 of 5 orders (S3).
+    skips the placement. It then reads the cached city decision.
+  - `/locate` finds a district, not the city centre.
+- **W2 Suitability is decided per city, never per start.** One cached
+  decision covers every district (no per-start `isValidBiome`).
+  - It uses the **coarse screen** (12–17 ms per decision). With exact
+    heights it costs 140–185 ms, and `/locate` takes 3–34 s instead of
+    0.1–0.3 s.
+- **W3 Pieces save references and their brief, never IR.**
+  - A reference costs 13 B per piece.
+  - Stored IR costs 11–24 KB per tower, so a 58-tower downtown start fills
+    the 1 MB region slot.
+  - A piece carries its brief (about 40–60 B), or the plan entry is pinned
+    while a start is live. Without that, a thrashing cache rebuilt a 68 ms
+    district plan on every `postProcess` (119 s in total).
+- **W4** The structure step is `top_layer_modification`. At the default step,
+  trees overwrote our blocks.
 - **W5 Terrain adaptation.**
-  - One rigid piece per building (per wing for stepped large buildings),
-    with the box bottom at floor level and `terrain_adaptation: beard_thin`.
-  - Foundations are our own blocks below the box, written in `postProcess`.
-  - Never `bury` or `encapsulate` for surface styles.
-  - **Don't reject steep lots for large buildings.** On S5's steep site,
-    rejection dropped the hall and most of the houses. Use it only for
-    optional small infill. This replaces
-    ADR 0002 I2's "reject steep lots".
-- **W6 Flattening is an optional tool**, not the default. Use it for plazas,
-  level streets and water edges, where the beard falls short (12-block
-  kernel, one ground plane per piece). The method is S7's mixin on the
-  `NoiseGeneratorSettings.noiseRouter()` and `aquifers()` accessors:
-  - Wrap three slots with one mask: `final_density`, `chunk_surface_level`
-    and the aquifer `surface_level`. **Never wrap
-    `preliminary_surface_level`.**
+  - One rigid piece per building, or per wing on a slope, with the box bottom
+    at floor level and `beard_thin`.
+  - Foundations are our own blocks, below the box.
+  - Never use `bury` or `encapsulate`.
+  - Don't reject steep lots for large buildings: on S5's steep site that
+    dropped the hall and most of the houses.
+- **W6 Flattening is an optional tool** for plazas, level streets and water
+  edges. It uses S7's mixin on the `noiseRouter()` and `aquifers()`
+  accessors.
+  - Wrap `final_density`, `chunk_surface_level` and the aquifer
+    `surface_level` with one mask. Never wrap `preliminary_surface_level`.
   - Prefer fill to cut.
-  - A depth band is required. A full replacement inside the mask drops caves,
-    ores and the beard.
-  - Use our own mixin; Lithostitched is not a dependency.
-  - The mask may read the region field and the city skeleton (both built
-    from unwrapped probes, D4), never lot or building detail.
-  - Untested: flooding near sea level, the look under terrain mods, the
-    depth band itself.
-- **W7 Veto foreign structures.** Two `@Inject(HEAD, cancellable)` mixins share
-  one predicate: `ChunkGenerator#tryGenerateStructure` and
-  `StructureCheck#canCreateStructure`. The predicate is: structure in tag
-  `fractalbuildings:excluded_from_cities`, and the start chunk within the
-  city footprint plus a margin.
-  - The margin must cover the foreign structure's reach: villages 80, the
-    jigsaw cap 128 + 12.
-  - Edge distance is exact: distance to the bisectors, or to the radius for
-    joined cities. S4 found that F2 − F1 only bounds it.
-  - Both hooks are private methods. Re-check their signatures with
-    `javap -p` on every Minecraft bump.
-  - **The margin is untested** (T3).
-- **W8 Pool element for vanilla villages** (S9). This is a showcase and
-  compat path, not the city path.
-  - Footprint is fixed per element. Content is hashed from (seed, position,
-    rotation, w, d), and the supplied `RandomSource` is ignored.
-  - It is wired in through a `houses.json` override, which collides with
-    other packs that override the same file.
-  - Lithostitched (`breaks_seed_parity: true`) changes every village's layout.
-  - **A real noise-world pipeline test is still owed** (T2).
-- **Fallback:** the per-chunk feature adapter stays the fallback, because the
-  same pure plan feeds it. *Pending S6:* whether lane or piece cost forces it.
-- Known limits: a district start is made only when its chunk generates, so
-  chunks generated before the mod was added stay empty. Only one start per
-  `Structure` type per chunk is allowed, so a second layer (walls) needs its
-  own type.
+  - A depth band is needed, because full replacement removes caves, ores and
+    the beard.
+  - The mask reads only the region field and the skeleton.
+  - Untested: sea level, how it looks under terrain mods, and the depth band
+    itself.
+- **W7 Veto.** Two `@Inject(HEAD, cancellable)` mixins share one predicate
+  (`tryGenerateStructure`, `StructureCheck.canCreateStructure`). The
+  predicate: the structure is in `fractalbuildings:excluded_from_cities`,
+  and its start chunk lies inside the city footprint plus a margin.
+  - The margin must be at least the structure's reach: villages 80, jigsaw
+    128 + 12.
+  - The distance to the edge is exact. F2 − F1 only bounds it (S4).
+  - The margin is **untested**.
+  - The mixins hook private methods: re-check them with `javap -p` on every
+    Minecraft bump.
+- **W8 Pool element** (S9). Showcase and compat for vanilla villages, not the
+  city path.
+  - The `houses.json` override collides with other packs.
+  - Lithostitched changes every village.
+  - The real-pipeline test is still owed.
+- **Fallback: not forced.** S6 found no ceiling, so the per-chunk feature
+  stays only as a contingency.
 
-### Region field
+### Plan and region field
 
-- **R1 Field.** A 2D hashed Voronoi field: cell size 1024, jitter 0.7.
-  - Seeds come from a full 64-bit hash. S4's mutation test caught an `int`
-    cast.
-  - Biome acts as a multiplier through `c:` tags.
-  - Each cell decides from the **best of 8 hashed candidate centres**,
-    sampled on a snapped 64-block lattice, with centres at least 0.15 S
-    from the cell edge. **This changes the Phase 1 gate's "evaluate once at
-    the site, no cache"**: the decision now reads probes, so it is cached
-    (D6), but it stays a pure function of the cell.
-- **R2 Unbounded cities by joining cells (untested).**
-  - A cell's hashed type and radius claim every cell whose site lies within
-    that radius. A claimed cell holds no city of its own.
-  - Conflicts go to the higher hashed priority, and the loser is dropped, not
-    shrunk. The lookup covers about 7 × 7 cells.
-  - Open for Phase 5: does a dropped or unsuitable claimant release its
-    cells? The rule must stay a pure function over a bounded radius, with no
-    chains.
-  - Adjacent separate cities meet at hashed gates on shared borders
-    (ARCHITECTURE).
-- **R3 Fixture:** `fb-region-dump/1` (S4). A recorded 64-block grid replays every
-  decision exactly. The live and recorded probes must use **one** height
-  predicate: S4 read `getBaseColumn` (first non-air, non-fluid block), while
-  production uses `getBaseHeight(OCEAN_FLOOR_WG)`.
+- **P1 Two-level plan.**
+  - The **skeleton** is the coarse screen on a 32-block stride, plus arterial
+    roads hashed from (seed, axis, line index).
+    - It is computed per tile of at most 4096², which takes 83 ms and 2 B per
+      1024 blocks².
+    - Tiles agree without coordination. A gate on a cell border comes from a
+      hash of the edge key: 0 mismatches over 9,800 edges.
+  - **District detail** makes exact probes only at building sites. It costs
+    40–100 ms, whatever the city size.
+  - A district is computable from the skeleton alone.
+- **P2 Prefetch, don't pool.**
+  - Four workers start building a district's IR as soon as its start is
+    created.
+  - At walk, sprint and elytra speed, no IR lookup ran inline (0 of 244).
+    The cold downtown lane fell from 6.5 s to 9 ms.
+  - A Chunky-style pregeneration ran 12 of 469 lookups inline.
+  - **A teleport has no lead** and pays the cold cost. Mitigation, untested:
+    build the skeleton shell first.
+  - The pooling rule (more than 5 % of lookups inline at elytra, or more than
+    10 % of downtown lane time) did not trigger with the stand-in. **Check it
+    again with the real generator.**
+- **R1 Field.** 2D hashed Voronoi, cell size 1024, jitter 0.7, a full 64-bit
+  seed hash, biome as a multiplier through `c:` tags.
+  - Each cell decides from the **best of 8 hashed candidate centres** on a
+    snapped 64-block lattice. **This changes the Phase 1 gate's "evaluate
+    once at the site, with no cache"**: the decision is still pure, but it is
+    cached (D6).
+- **R2 Big cities join cells (untested).** A cell's hashed type and radius
+  claim the cells whose sites lie within that radius. On a conflict the
+  higher hashed priority wins, and the loser is dropped.
+  - Open for Phase 5: does a dropped claimant release its cells? The rule
+    must stay pure and look only within a bounded radius.
+- **R3 Fixture.** The fixture format is `fb-region-dump/1`. Live and recorded
+  probes must use one height predicate: S4 read `getBaseColumn`.
 
-### Size limits and cost (pending S6)
+### Practical size limits
 
-Settled now:
-
-- **A district is at most 14 × 14 chunks (224 blocks)**, with its start at
-  the centre chunk: ±8 chunks less the 12-block beard margin. 12 × 12 was
-  tested. Buildings never cross a district border.
-- **The number of districts per city is not limited** by the pipeline.
-  Placement is O(1) and stateless.
-- A city held in one 1024 cell has a mean radius of about 220. Larger cities
-  join cells.
-
-Costs, single thread, measured under load:
-
-| Item | Cost |
-|---|---|
-| Exact height | 0.32–0.93 ms per column (1.3–3.6 s/km² on a 16-block grid) |
-| Primed biome lookup | 9–15 µs (0.6–1.3 s/km² at quart resolution, about 40 ms/km² at 16 blocks) |
-| One cell decision | ≤ 400 lattice columns, about 0.1–0.4 s (*derived*, not measured) |
-
-**Pending S6.** The numbers that make these rules concrete:
-
-1. Plan time against city size (512², 1024², 2048², then larger), split into
-   screen, exact heights and layout. Find the size at which the first-touch
-   stall on the serial lane becomes noticeable. That decides whether the
-   two-level plan (2c) is required, and gives 6.5's default maximum city
-   size (a default, not a design limit).
-2. Per district: start creation, piece build and `postProcess` time, and
-   save size, for references against stored IR, with a tall building. That
-   settles W3.
-3. Plan-cache memory per cell, which sets the LRU bound. Also thread safety,
-   and evict/regenerate byte equality **with heights in the plan** (S3's
-   plan was 2D only).
-4. The track 8 list: lane time per district by part (cold and warm), ns per
-   block write, prefetch lead (walking, sprinting, elytra, pregeneration),
-   worker contention, and IR memory (compact against object). These settle
-   the pooling rule (> 10 % of downtown lane time, or > 5 % inline at elytra
-   speed) and the worker count.
-5. Whether anything forces the per-chunk fallback.
-
-Also owed, outside S6's brief: a measured cell-decision cost, and `/locate`
-over many unsuitable cells (each touches a cold decision).
+- **City size: none in the design.** The practical limit is chunk
+  generation.
+  - 4096² is 65k chunks, about 40 min at 25 chunks/s; 8192² is about 3 h.
+  - **6.5's default:** unbounded, with a soft warning above 8192².
+- **District:** at most 14 × 14 chunks (224 blocks), with the start at the
+  centre: ±8 chunks less the 12-block beard. 12 and 16 chunks were tested,
+  the 16 without a beard. Buildings never cross a district border.
+- **Pieces:** keep a start under about 10k pieces. A district can't reach
+  more than about 11k, and the region slot overflows at about 80k
+  references.
+- **Lane budget:**
+  - Writes cost about 100 ns per block, so 3–5 ms per downtown chunk.
+  - About 200 exact probes per district, unless prefetched.
+  - Everything a start does on first touch must fit the lead: about 26
+    blocks of travel, which is 0.8–1 s at elytra speed.
+- **Memory:** compact IR, at 2.2 MB per downtown district. An LRU of 64
+  downtown districts is about 140 MB, before any typical-floor memo.
 
 ### Determinism rules
 
-- **D1 Hash everything.** Every value comes from (world seed, position,
-  purpose) through a full 64-bit mixer. A piece ignores its `random`
-  argument (S9's mutation test caught a mix-in). No shared counters (S3's
-  mutation test caught one).
-- **D2 Use bit-exact math in the core**: integer math or `StrictMath`.
-  Never `Math.sin`/`cos`/`pow`, which may use platform intrinsics. S4 used
-  `Math.sin`/`cos`, so the port must change that.
-- **D3 Prime biome lookups.** Make a fixed anchor lookup before each query.
-  Under TerraBlender with more than one tree:
-  - Find the target's region index, then prime with a **per-region anchor**.
-  - Derive anchors from (seed, region index) with a fixed scan order, and
-    never change them within a world.
-  - Detect TerraBlender at runtime through a small adapter.
+- **D1 Hash everything.** Every value comes from (seed, position, purpose)
+  through a 64-bit mixer. Pieces ignore their `random` argument. No shared
+  counters.
+- **D2 Core math is bit-exact:** integers or `StrictMath`, never
+  `Math.sin`, `cos` or `pow`. S4's port must change this.
+- **D3 Biome lookups are primed with a fixed anchor.** Under TerraBlender
+  with more than one tree, prime with a per-region anchor. Derive it from
+  (seed, region index), keep it fixed for the world, and detect TerraBlender
+  at runtime.
 - **D4 Heights.**
-  - `getBaseHeight(OCEAN_FLOOR_WG)` is exact on land, and an upper bound of
-    solid ground: keep ±a few blocks for powder snow, carvers and features.
-  - Over frozen oceans, add a water-surface check (icebergs reach +99).
-  - The coarse screen only culls, with a margin of at least 20. Never use it
-    for a placement height, and skip it under Tectonic, where it costs more
-    than the exact probe.
-  - The plan picks its own floor heights and never re-probes after the beard.
-  - Every planner probe reads **unwrapped** terrain, so flattening (W6) has
-    no cycle.
-- **D5 Ownership by construction.**
+  - `getBaseHeight(OCEAN_FLOOR_WG)` is exact on land, and an upper bound
+    there.
+  - Check the water surface over frozen oceans, where icebergs reach +99.
+  - The coarse screen is for culling and skeleton use only, with a margin of
+    at least 20. Never use it for a floor height.
+  - Planner probes read **unwrapped** terrain.
+  - The plan never re-probes after the beard.
+- **D5 Ownership.**
   - District boxes partition the plane.
-  - Global features (roads) are one list in the plan, and each block is
-    drawn by the district that owns it.
+  - A road is drawn by the district that owns the block.
   - Pieces clip to `chunkBB` and to their district box.
-  - Never assume we own our air volumes (foreign leaves get in).
-- **D6 The pure-cache contract** ([recommendation](../research/pool/recommendation.md)).
-  - Plan, cell decisions and IR are pure caches, keyed by everything they
-    depend on (seed, cell or spec, `genVersion`, config that changes output).
-  - Workers may prefetch. The lane joins an in-flight future or computes the
-    value itself.
-  - **No result depends on cache state.** Eviction is always safe.
-  - Use a future per key. Don't run a long build inside
-    `ConcurrentHashMap.computeIfAbsent`: a cell decision that reads its
-    neighbours' decisions would update the map recursively, which is
-    disallowed.
-- **D7 Order-independence criterion.** Every write our pieces make (the
-  ledger) is checked exactly, plus a reference raster from the global plan,
-  solid blocks exact.
-  - S3 measured 0 mismatches with W4, so its suggested 0.1 % tolerance is
-    dropped.
-  - **Whole-chunk hashes are unusable**: vanilla differs in 455–575 of 576
-    chunks between orders.
-  - Put the test cell away from spawn chunks, and keep the three S3 mutants.
+  - Our air is not ours: foreign leaves get in.
+- **D6 The pure-cache contract.** The plan, cell decisions and IR are pure
+  caches. Each is keyed by everything it depends on, `genVersion` included.
+  - Workers may prefetch. The lane joins the in-flight future, or computes
+    the value itself.
+  - **No result depends on cache state.** S6 showed this: byte-exact with
+    live heights under 122k evictions.
+  - Use one future per key. Never run a long build inside
+    `computeIfAbsent`.
+- **D7 Test criterion: the blocks we own, exactly.** Check our ledger or
+  write digest, plus a raster of the global plan with solid blocks exact.
+  - Whole-chunk hashes don't work: vanilla differs in 455–575 of 576 chunks.
+  - Put the test cell away from spawn.
+  - Keep the mutants.
 
 ### Permanent regression tests
 
-- **T1 S3 order test** (gate requirement), rebuilt in Phase 3 or 6. It is a
-  client game test with a fresh world per order, 7 orders including
-  threads plus an evictor, the ledger and the raster (D7), and the mutants.
-- **T2 S9 real-pipeline test.** Use a noise world through `createStructures`
-  and decoration. Count non-leaf foreign blocks in our boxes. Add a
-  Lithostitched matrix, including `breaks_seed_parity: false`.
-- **T3 S8 margin test.** A village starting just outside a city, whose box
-  reaches in. Plus a smoke test of the `/locate` command.
-- **Also:** the S1 priming test over the supported mod sets; S4's field tests
-  in `planner-core`, with a quart-resolution priming case (S4 could not catch
-  a missing prime); 3.10 (IR identical across cold, warm, evicted and
-  prefetched caches); S7's test if W6 is used.
+- **T1** S3's order test (the gate requirement), with S6's evict-and-compare
+  and its mutants, in Phase 3 or 6.
+- **T2** S9 in a real noise world, with a Lithostitched matrix.
+- **T3** S8's margin test, with a village just outside a city, plus a
+  `/locate` smoke test.
+- **Also:**
+  - S1 priming over the supported mod sets.
+  - S4's field tests, with a priming case at quart resolution.
+  - S6's acceptance numbers as Phase 4 assertions: skeleton under 100 ms,
+    detail under 100 ms, constant first-touch.
+  - Lane counters behind a flag.
+  - 3.10.
 
 ## Consequences
 
-- This ADR replaces parts of ADR 0002: I2's "reject steep lots" and
-  "flatten only if S5 fails", and I3's "F2 − F1 margin". It also settles
-  0002's open question of growing against joining cells.
-  - ARCHITECTURE still needs edits: decide-at-site, the single priming
-    lookup, district "~250 blocks", and the coarse-screen height veto.
-- What becomes easier: one plan per city feeds structures, the fallback
-  feature and the pool element alike. Districts don't coordinate.
-- What becomes harder:
-  - Cell decisions now read probes, so they need a cache and a cost budget.
+- **0003 replaces parts of 0002:** I2's "reject steep lots" and "flatten only
+  if S5 fails", I3's "F2 − F1 margin", and the open choice between growing
+  and joining cells.
+- **ARCHITECTURE needs updates:** deciding at the site, the single priming
+  lookup, "~250-block" districts, the estimate of 8 s at 2048² (it is about
+  2.5 s), and the coarse-screen height veto.
+- **What gets easier:** one plan feeds structures, the fallback and the pool
+  element, with no coordination between districts.
+- **What gets harder:**
+  - Teleporting into a downtown.
   - The join rule is unproven.
-  - Uphill cut faces of 5–12 blocks beside big buildings go to John (REVIEW).
-  - A `genVersion` change mid-world leaves seams between old and new chunks.
+  - Coarse-screen cost under Tectonic is unmeasured for suitability and the
+    skeleton (S2 put it above an exact probe there). Measure it in Phase 5,
+    or fall back to sparse exact probes.
+  - Uphill cuts of 5–12 blocks (REVIEW).
+  - A `genVersion` change mid-world leaves seams.
 - **Revisit:**
-  - If S6 finds that the lane cost per district can't be hidden by prefetch,
-    use 1b. That is the strongest case for the feature: no box limit and no
-    serial lane.
-  - If join rules can't stay local, use 2a with larger cells.
-  - If best-of-8 costs too much per cell, use 3a with more, smaller cities.
+  - Use 1b if the real generator outruns 4 workers at elytra speed.
+  - Pool components if the pooling rule triggers with the real generator.
+  - Use 3a if joins can't stay local.

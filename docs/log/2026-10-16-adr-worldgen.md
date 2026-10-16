@@ -22,3 +22,24 @@
   - the district size of about 250 blocks against at most 224;
   - S5's count of rejected lots;
   - S2's coarse-screen cost wording.
+
+## Draft 2: S6 folded in
+
+- **Filled from S6** (from the note on `claude/spike-s6`, numbers taken
+  while the note was still being verified):
+  - P1: the two-level plan;
+  - P2: prefetch without a pool;
+  - W2: coarse suitability, and its `/locate` cost;
+  - W3: references plus the brief, never stored IR;
+  - the fallback is not forced;
+  - the practical size limits, including 6.5's default (unbounded, with a
+    soft warning above 8192²).
+- Marked S6's numbers as taken on a shared machine.
+- Rewrote the ADR in plain markdown, at about 2 pages.
+- **New contradictions:**
+  - S6 recommends the coarse screen for suitability and for the skeleton.
+    S2 found the coarse screen unstable, and, under Tectonic, more
+    expensive than an exact probe. Only vanilla was measured, so this is
+    listed under Consequences.
+  - S6's districts were 16 chunks with no beard, against S3's limit of 14
+    with a beard. The ADR keeps 14.
