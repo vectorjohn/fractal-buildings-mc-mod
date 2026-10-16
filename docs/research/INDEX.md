@@ -90,6 +90,8 @@ the end of its track's list. Notes use [TEMPLATE.md](TEMPLATE.md).
 - [Post-generation placement](postgen/post-generation-placement.md) — `/place structure` writes every chunk of the box on the live level with no 8-chunk cap but no `/locate` registration; `LevelChunk.setBlockState` handles heightmaps, light, saving; problems are cost and pop-in, not correctness; 26.3 claims to confirm listed — status: new
 - [Out-of-worldgen overview](postgen/overview.md) — pipeline: deterministic sites → pregenerate on trigger → snapshot terrain → plan off-thread → write unseen; elytra outruns it; verdict: backup/add-on (admin capitals, extras beyond 8 chunks), not the main path — status: new
 
+## Track 8: Precomputed building pools (`pool/`)
+
 ## Synthesis
 
 - [Landscape synthesis (1.8)](synthesis.md) — buildings: volume massing in lot hull + typed Java split/repeat/comp grammar for floors/bays/façades, roofs as heightfield, room-graph interiors; integration: structures, one start per district, cached per-cell plan, per-chunk feature fallback, track 7 backup; gate decisions B1–B4, I1–I6 with recommended answers — status: new
