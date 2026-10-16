@@ -1,39 +1,35 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
-import { parseScene } from './ir';
 import type { Scene } from './ir';
-import { mountViolationPanel } from './overlay';
 import { buildSceneObject, frameCamera } from './render';
-import type { RenderOptions } from './render';
+import { resolveSource } from './source';
+import type { Source } from './source';
+import { parseState, resolveSeed, serializeState, stepSeed, toggleLayer } from './state';
+import type { ViewState } from './state';
+import { STYLE_PALETTES } from './palettes';
+import { mountViolationPanel } from './overlay';
+import { createUi } from './ui';
+import { applyLayers, applyStoreyLimit, topStorey } from './visibility';
 import { sceneBounds, sceneVoxels } from './voxels';
 
 declare global {
   interface Window {
-    /** Set once the scene has been drawn (or failed); the Playwright screenshot waits for it. voxels = building voxels, not terrain. */
-    __viewerReady?: { ok: boolean; voxels: number; error?: string };
+    /** Set once the scene has been drawn (or failed); the Playwright screenshot waits for it. voxels = building voxels, not terrain. `seed` is the seed shown; `loads` counts scene (re)builds. */
+    __viewerReady?: { ok: boolean; voxels: number; error?: string; seed: number | null; loads: number };
   }
 }
 
 const fixtures = import.meta.glob('../fixtures/*.json', { query: '?raw', import: 'default', eager: true }) as Record<string, string>;
 
-/** Scene source: `?ir=<url>`, or `?fixture=<name>` (viewer/fixtures/<name>.json); default sample-house. */
-async function loadScene(params: URLSearchParams): Promise<Scene> {
-  const url = params.get('ir');
-  if (url) {
-    const res = await fetch(url);
-    if (!res.ok) throw new Error(`fetch ${url}: ${res.status}`);
-    return parseScene(await res.json());
-  }
-  const name = params.get('fixture') ?? 'sample-house';
-  const text = fixtures[`../fixtures/${name}.json`];
-  if (text === undefined) throw new Error(`no fixture "${name}"`);
-  return parseScene(JSON.parse(text));
-}
-
-const params = new URLSearchParams(location.search);
-const opts: RenderOptions = { colour: params.get('colour') === 'palette' ? 'palette' : 'role' };
-const style = params.get('style');
-if (style) opts.style = style;
+let state: ViewState = parseState(location.search);
+let source: Source | null = null;
+let sourceKey = '';
+let current: Scene | null = null;
+let content: THREE.Object3D | null = null;
+let top = 0;
+let loads = 0;
+let framed = false;
+let error: string | null = null;
 
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setPixelRatio(window.devicePixelRatio);
@@ -48,32 +44,8 @@ scene.add(new THREE.HemisphereLight(0xffffff, 0x444455, 1.2));
 const sun = new THREE.DirectionalLight(0xffffff, 2);
 sun.position.set(5, 10, 7);
 scene.add(sun);
-
-let current: Scene | null = null;
-let content: THREE.Object3D | null = null;
-
-function rebuild(): void {
-  if (!current) return;
-  if (content) {
-    scene.remove(content);
-    content.traverse((o) => {
-      if (o instanceof THREE.InstancedMesh) { o.geometry.dispose(); (o.material as THREE.Material).dispose(); o.dispose(); }
-    });
-  }
-  content = buildSceneObject(current, opts);
-  scene.add(content);
-}
-
-function addControls(): void {
-  const bar = document.createElement('div');
-  bar.style.cssText = 'position:fixed;top:8px;left:8px;font:12px sans-serif;color:#ddd;background:#0008;padding:4px 8px;border-radius:4px';
-  const sel = document.createElement('select');
-  sel.id = 'colour';
-  for (const v of ['role', 'palette']) sel.add(new Option(`colour: ${v}`, v, false, v === opts.colour));
-  sel.onchange = () => { opts.colour = sel.value === 'palette' ? 'palette' : 'role'; rebuild(); };
-  bar.appendChild(sel);
-  document.body.appendChild(bar);
-}
+const grid = new THREE.GridHelper(64, 64, 0x888888, 0x444444);
+scene.add(grid);
 
 window.addEventListener('resize', () => {
   camera.aspect = window.innerWidth / window.innerHeight;
@@ -85,21 +57,95 @@ renderer.setAnimationLoop(() => {
   renderer.render(scene, camera);
 });
 
-loadScene(params).then(
-  (s) => {
-    current = s;
-    rebuild();
-    addControls();
-    mountViolationPanel(document.body, s);
-    const b = sceneBounds(s);
-    scene.add(new THREE.GridHelper(64, 64, 0x888888, 0x444444).translateX((b.min[0] + b.max[0]) / 2).translateY(b.min[1]).translateZ((b.min[2] + b.max[2]) / 2));
-    frameCamera(camera, controls, b);
-    const voxels = sceneVoxels(s).length;
-    // Wait two frames so the first render with the mesh has happened.
-    requestAnimationFrame(() => requestAnimationFrame(() => (window.__viewerReady = { ok: true, voxels })));
+const sceneStyle = (): string => current?.buildings[0]?.shell.spec.style ?? 'plain';
+const effectiveStyle = (): string => state.style ?? sceneStyle();
+
+const ui = createUi({
+  onSeed(d) {
+    const seeds = source?.seeds ?? [];
+    const to = typeof d === 'number' ? stepSeed(seeds, state.seed, d) : resolveSeed(seeds, d.to);
+    if (to === state.seed) return;
+    void change({ ...state, seed: to }, true);
   },
-  (e: unknown) => {
+  onStyle(style) { void change({ ...state, style }, true); },
+  onLayer(layer, on) { void change(toggleLayer(state, layer, on), false); },
+  onColour(colour) { void change({ ...state, colour }, true); },
+  onStoreys(maxStorey) { void change({ ...state, maxStorey }, false); },
+});
+
+function syncUi(): void {
+  ui.update({
+    state, styles: Object.keys(STYLE_PALETTES), style: effectiveStyle(), seeds: source?.seeds ?? [], topStorey: top,
+    status: error ?? (source ? `${source.kind}${source.seeds.length > 1 ? `, ${source.seeds.length} seeds` : ''}` : 'loading'),
+  });
+}
+
+/** Cheap view changes: layer visibility and storey limit act on the existing groups. */
+function applyView(): void {
+  if (!content) return;
+  applyLayers(content, state.layers);
+  applyStoreyLimit(content, state.maxStorey, top);
+}
+
+function disposeContent(): void {
+  if (!content) return;
+  scene.remove(content);
+  content.traverse((o) => {
+    if (o instanceof THREE.InstancedMesh) { o.geometry.dispose(); (o.material as THREE.Material).dispose(); o.dispose(); }
+  });
+  content = null;
+}
+
+function buildContent(): void {
+  if (!current) return;
+  disposeContent();
+  content = buildSceneObject(current, { colour: state.colour, style: effectiveStyle() });
+  scene.add(content);
+  mountViolationPanel(document.body, current); // V3: remounts (or clears) the panel on every scene change; the red overlay is the render.ts violations group
+  top = topStorey(content);
+  const b = sceneBounds(current);
+  grid.position.set((b.min[0] + b.max[0]) / 2, b.min[1], (b.min[2] + b.max[2]) / 2);
+  if (!framed) { frameCamera(camera, controls, b); framed = true; }
+  applyView();
+}
+
+/**
+ * Apply a new state. `rebuild` = scene geometry or colours change (seed, style, colour); the source is re-resolved
+ * only when the batch it comes from changes (style, ir, fixture).
+ */
+async function change(next: ViewState, rebuild: boolean): Promise<void> {
+  const prevState = state;
+  state = next;
+  history.replaceState(null, '', `${location.pathname}${serializeState(state) ? `?${serializeState(state)}` : ''}`);
+  if (!rebuild) { applyView(); syncUi(); return; }
+  try {
+    const key = `${state.ir ?? ''}|${state.fixture ?? ''}|${state.style ?? ''}`;
+    if (!source || key !== sourceKey) {
+      source = await resolveSource({ ir: state.ir, fixture: state.fixture, style: state.style },
+        (u) => fetch(u), fixtures);
+      sourceKey = key;
+    }
+    state = { ...state, seed: resolveSeed(source.seeds, state.seed) };
+    if (state.seed !== prevState.seed || source.seeds.length > 0) {
+      history.replaceState(null, '', `${location.pathname}${serializeState(state) ? `?${serializeState(state)}` : ''}`);
+    }
+    const needScene = !current || state.seed !== prevState.seed || key !== lastSceneKey;
+    if (needScene) { current = await source.load(state.seed); lastSceneKey = key; }
+    error = null;
+    buildContent();
+    loads++;
+    syncUi();
+    const voxels = sceneVoxels(current!).length;
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      window.__viewerReady = { ok: true, voxels, seed: state.seed, loads };
+    }));
+  } catch (e) {
     console.error(e);
-    window.__viewerReady = { ok: false, voxels: 0, error: String(e) };
-  },
-);
+    error = String(e);
+    syncUi();
+    window.__viewerReady = { ok: false, voxels: 0, error: String(e), seed: state.seed, loads };
+  }
+}
+let lastSceneKey = '';
+
+void change(state, true);

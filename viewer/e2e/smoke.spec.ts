@@ -8,7 +8,7 @@ test('viewer renders the sample house with role colours', async ({ page }) => {
   await page.goto('/');
   await page.waitForFunction(() => window.__viewerReady !== undefined, undefined, { timeout: 30_000 });
   const ready = await page.evaluate(() => window.__viewerReady);
-  expect(ready).toEqual({ ok: true, voxels: 196 });
+  expect(ready).toMatchObject({ ok: true, voxels: 196 });
 
   const png = await page.screenshot();
   mkdirSync('out', { recursive: true });
