@@ -46,7 +46,7 @@ item. Per-item work logs are in [log/](log/); run ledgers in [runs/](runs/).
 |---|---|---|
 | 0. Scaffolding | done 2026-10-08; gate passed 2026-10-14 (John) | builds green; viewer renders the box |
 | 1. Prior art research | done; gate passed 2026-10-16 (John signed off in synthesis.md; wants effectively unbounded cities) | John picks building-generation direction and the integration approach to spike |
-| 2. Worldgen spikes | not started; S7–S9 added 2026-10-15 | worldgen ADR (approach, size limits, determinism rules) |
+| 2. Worldgen spikes | done 2026-10-16: S1–S9 findings, ADR 0003 proposed; awaiting gate | worldgen ADR (approach, size limits, determinism rules) |
 | 3. Planner core and three.js viewer | not started | John reviews seed gallery and invariant report |
 | 4. Building generator depth | not started | per building type, "would I believe a person built this?" |
 | 5. Settlements and cities | not started | cities in ≥5 biome mixes, one straddling a border |
@@ -203,7 +203,7 @@ result decides whether flattening is needed.
 - [x] **2.5 S5 Terrain adaptation.** Do vanilla beard modes suffice on hills, or
   do we grade terrain ourselves? Evidence: client-test screenshots of a test
   city on flat, hilly and river terrain.
-- [ ] **2.6 S6 Scale and cost.** How large can a city go, and what does it
+- [x] **2.6 S6 Scale and cost.** How large can a city go, and what does it
   cost? John's target is effectively unbounded cities; 512×512 is the floor
   to prove, not a cap (ADR 0002, I6). Evidence (timing under the heavy lock,
   load recorded): plan time against city size (512², 1024², 2048², and on
@@ -235,7 +235,7 @@ result decides whether flattening is needed.
   Also a compat check: with Lithostitched installed, its global jigsaw
   redirect (`breaks_seed_parity`, default true) runs our element too; our
   blocks must still match, and note whether vanilla villages change.
-- [ ] **2.10 Worldgen ADR** (researcher) from the findings: integration approach, practical
+- [x] **2.10 Worldgen ADR** (researcher) from the findings: integration approach, practical
   size limits, determinism rules.
 
 **Gate:** the worldgen ADR fixes the integration approach, the practical size
