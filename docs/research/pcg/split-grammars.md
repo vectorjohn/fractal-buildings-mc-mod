@@ -45,6 +45,7 @@ Not a worldgen system; it's a per-building derivation from a footprint.
   clipped per chunk by the adapter; nothing here depends on chunk order.
 - **Cost:** 1–3 s per building (1 000–100 000 polygons) on a 2003 P4; a
   Minecraft house is far smaller. Cheap enough to run at structure-start time.
+  * @assistant keep in mind we're not building houses, exclusively. focus on large buildings, skyscrapers. -- @John
 
 ## Licence
 
