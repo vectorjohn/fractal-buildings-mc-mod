@@ -278,8 +278,9 @@ side by side.
 ## Phase 4: Building generator depth
 
 Grow v0 into buildings that read as built by a person, using the technique
-chosen at the Phase 1 gate. A likely shape is a hybrid: grammars for massing and
-facades, graph-based floor plans, and small hand-authored detail pieces.
+chosen at the Phase 1 gate ([ADR 0001](adr/0001-building-direction.md): volume
+massing, then a typed split grammar). Large buildings and towers are
+first-class, not only houses.
 
 Each new rule lands with a property test and a gallery update; the verifier
 compares galleries before and after. Parallel: after a short planning pass
@@ -290,40 +291,67 @@ fan out one per item.
 - [ ] **4.1 Plan**: the generator architecture for the chosen technique, with
   the extension points that let 4.2–4.7 run in parallel.
 - [ ] **4.2 Massing**: L, T, U and courtyard footprints; multi-volume buildings;
-  towers and wings.
+  towers and wings; setback stacks (podium, shaft, crown, each volume inside
+  the one below); one storey grid per building.
 - [ ] **4.3 Roofs**: gable, hip and combinations; dormers; overhangs; pitch per
-  style.
+  style; flat roofs, parapets and crowns for tall buildings.
 - [ ] **4.4 Facades**: bays and rhythm, trim, depth (insets, beams, sills), a
-  gradient of materials.
-- [ ] **4.5 Interiors**: room graph, stairs, simple furnishing hooks.
+  gradient of materials; bands that repeat over many storeys without
+  looking stamped.
+- [ ] **4.5 Interiors**: room graph, stairs, simple furnishing hooks; a
+  vertical core placed first in multi-storey buildings, each floor grown
+  around it (typical floors repeat with per-band variation).
 - [ ] **4.6 Building types**: house, shop, workshop, tower, temple, wall and
-  gate (one item each when scheduled).
+  gate (one item each when scheduled). Large classes, also one item each:
+  - **high-rise**: setback tower up to the y 319 ceiling (~60 storeys),
+    stair core, podium on the street;
+  - **city block**: a perimeter block of joined units with shared walls and a
+    courtyard, filling a whole street block;
+  - **hall / civic**: large spans (market hall, town hall, cathedral, bath),
+    footprints up to ~200 blocks (ADR 0001 limits).
 - [ ] **4.7 Styles**: a palette and rule set per culture, mapped from biome
   (desert, taiga, plains, jungle, snowy to start; one item each).
 
 **Gate:** per building type, a gallery passes John's "would I believe a person
-built this?" review.
+built this?" review, including the high-rise, city-block and hall classes.
 
 ## Phase 5: Settlements and cities
 
 Compose buildings into places, still entirely outside Minecraft, using real
-terrain and biome dumps from S4.
+terrain and biome dumps from S4. Cities have no fixed size cap; 512 × 512 is
+the first size to prove (ADR 0002, I6). The plan has two levels: a cheap city
+skeleton, then district detail built lazily (ARCHITECTURE.md, "City scale").
 
-- [ ] **5.1 Scale ladder**: hamlet, village, town, city. Each step adds
-  structure (a square, a main street, districts, walls).
+- [ ] **5.1 Scale ladder**: hamlet, village, town, city, metropolis. Each step
+  adds structure (a square, a main street, districts, walls, a downtown);
+  no step has a fixed size cap.
 - [ ] **5.2 Layout**: road network (primary and secondary), lot subdivision,
-  plazas and landmarks, gates.
+  plazas and landmarks, gates. Split into the city skeleton (arterials on
+  position-hashed lines, district borders drawn around big lots, coarse
+  height screen) and lazy per-district detail (lots, briefs, exact heights).
 - [ ] **5.3 Terrain**: respond to slope, rivers and coast; choose where to level
   ground and where to step buildings.
 - [ ] **5.4 Biome-aware style**: each district takes its palette from the biomes
   underneath, blended across borders.
 - [ ] **5.5 Viewer**: a 2D plan view over the terrain dump, plus a 3D fly-through
-  of a chosen district.
-- [ ] **5.6 Determinism**: the city plan is built from the region cell alone, so
-  every district start reproduces it identically.
+  of a chosen district; the plan view stays usable for cities of several
+  thousand blocks (skeleton overview, district detail on demand).
+- [ ] **5.6 Determinism**: the skeleton is built from the region cell alone and
+  each district's detail from (cell, district), so every district start
+  reproduces them identically in any order.
+- [ ] **5.7 Density and skyline**: building class and height follow distance
+  to the centre and to arterials (downtown high-rises and blocks, halls on
+  squares, houses at the edge).
+- [ ] **5.8 Cities across cells**: neighbouring settled cells meet at hashed
+  gates on their shared border, so roads join without either plan reading
+  the other; grow cells or join cells per the worldgen ADR (2.10).
+- [ ] **5.9 Scale check**: plan time and memory per district, measured outside
+  the game at 512², 2048² and a multi-cell city; flat per-district cost is the
+  bar (feeds 6.5 and 6.7).
 
 **Gate:** John reviews cities in at least five biome mixes, including one
-straddling a border.
+straddling a border, one larger than 512 × 512, and one with a high-rise
+downtown.
 
 ## Phase 6: Minecraft integration and release
 
@@ -336,7 +364,7 @@ Wire the proven core into worldgen using the approach fixed in the Phase 2 ADR.
 - [ ] **6.3 Terrain**: adaptation mode or our own grading, per S5.
 - [ ] **6.4 Gameplay hooks**: loot tables, villager workstations and beds,
   `/locate` support. Leave room for a villager AI mod later.
-- [ ] **6.5 Config**: frequency, maximum city size, enabled styles.
+- [ ] **6.5 Config**: frequency, maximum city size (a default from S6, not a design cap; ADR 0002), enabled styles.
 - [ ] **6.6 Compatibility**: test with popular terrain mods (Terralith,
   Tectonic) and alongside vanilla villages.
 - [ ] **6.7 Performance budget**: worldgen time per chunk and save size per
