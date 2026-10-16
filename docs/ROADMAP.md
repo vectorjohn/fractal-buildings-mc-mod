@@ -190,7 +190,7 @@ result decides whether flattening is needed.
   `getBaseHeight`. Evidence: predicted vs actual diff per seed and mod set
   (exact: % equal, p99; coarse: bias, p90) and in-game cost per column. Share
   the Terralith + Tectonic setup with S7.
-- [ ] **2.3 S3 Multi-start city.** Can 2–4 starts share one plan and join
+- [x] **2.3 S3 Multi-start city.** Can 2–4 starts share one plan and join
   seamlessly? Evidence: blocks hashed per chunk are identical whatever order
   chunks generate in; no seams at start or chunk borders. Also: a road that
   crosses a district border (each side owned by one start) meets without a
