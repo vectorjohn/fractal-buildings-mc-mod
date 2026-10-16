@@ -27,3 +27,4 @@ editing the old one.
 | 2026-10-08 | 0.5 | Game tests live in a separate `gametest` source set with its own mod id `fractalbuildings-test` (Loom `configureTests`), not in `main` | Keeps test code out of the shipped jar; Loom's default layout | yes |
 | 2026-10-08 | 0.5 r2 | Correction: no `eula = true` in `configureTests`; game tests run without it | EULA is John's to accept; verified both game test tasks pass without it | yes |
 | 2026-10-16 | S3 | Spike grid: district 12x12 chunks, city cell 2x2 districts, 50 % of cells are cities, structure step `top_layer_modification`. Placeholders for the real region layer, not decisions | Fits the 8-chunk start reach with margin; the real sizes come from S4/S6 and Phase 5 | yes |
+| 2026-10-16 | S6 | Stand-in generator cost modelled as thread CPU spin (1 ms house, 50/200 ms mid/tall tower), IR as greedy boxes; real generators are 5-20x dearer | Findings scale linearly; re-run with the real generator in Phase 3/4 |
