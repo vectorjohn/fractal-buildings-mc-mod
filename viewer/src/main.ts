@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { parseScene } from './ir';
 import type { Scene } from './ir';
+import { mountViolationPanel } from './overlay';
 import { buildSceneObject, frameCamera } from './render';
 import type { RenderOptions } from './render';
 import { sceneBounds, sceneVoxels } from './voxels';
@@ -89,6 +90,7 @@ loadScene(params).then(
     current = s;
     rebuild();
     addControls();
+    mountViolationPanel(document.body, s);
     const b = sceneBounds(s);
     scene.add(new THREE.GridHelper(64, 64, 0x888888, 0x444444).translateX((b.min[0] + b.max[0]) / 2).translateY(b.min[1]).translateZ((b.min[2] + b.max[2]) / 2));
     frameCamera(camera, controls, b);

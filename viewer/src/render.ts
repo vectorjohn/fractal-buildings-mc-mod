@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import type { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import type { Scene } from './ir';
 import { LAYERS } from './ir';
+import { buildViolationOverlay } from './overlay';
 import { paletteColour, roleColour, TERRAIN_COLOUR } from './palettes';
 import { sceneBounds, sceneVoxels, terrainVoxels } from './voxels';
 
@@ -11,7 +12,7 @@ export interface RenderOptions {
   style?: string;
 }
 
-/** Child group names: the contract V2-V4 build on. `violations` is empty here; V3 fills it. */
+/** Child group names: the contract V2-V4 build on. `violations` holds the red overlay (overlay.ts). */
 export const GROUP_NAMES = ['terrain', ...LAYERS, 'violations'] as const;
 
 function instanced(cells: { x: number; y: number; z: number }[], colour: (i: number) => number): THREE.InstancedMesh {
@@ -51,6 +52,7 @@ export function buildSceneObject(scene: Scene, opts: RenderOptions): THREE.Group
     mesh.userData['voxels'] = vs;
     group(layer).add(mesh);
   }
+  group('violations').add(buildViolationOverlay(scene.violations));
   return root;
 }
 
