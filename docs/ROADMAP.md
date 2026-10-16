@@ -158,14 +158,36 @@ Parallel: S1, S2, S4 and S5 side by side; S3 alongside them; S6 after S3
 S7–S9 (from track 4) run alongside all of these; S7 pairs with S5, whose
 result decides whether flattening is needed.
 
-- [ ] **2.1 S1 Biome footprint.** Can a structure sample biomes across a
-  512×512 area at start time, and how fast? Evidence: GameTest logging the
-  sampled grid; timing per start.
-- [ ] **2.2 S2 Terrain probe.** How close is pre-generation height sampling to
-  the real surface? Evidence: predicted vs actual heightmap diff over 10 seeds.
+- [ ] **2.1 S1 Biome footprint** (shrunk after track 4, ADR 0002). Already
+  answered for vanilla (*probe*, `research/worldgen/terrain-biome-queries.md`):
+  ~0.0025 ms per lookup, ~40 ms per 512² layer, sample at the surface Y,
+  and a priming lookup makes answers independent of order and thread. Left
+  open: (a) does priming still give identical answers in two orders and on 8
+  threads when a mod changes the biome source: TerraBlender (one climate tree
+  per region, so one priming query may not prime them all), Lithostitched
+  injectors, Terralith's parameter list? (b) the in-game cost per lookup on
+  the worldgen lane (only the probe timed biomes; heights cost 2.2–2.5× more in
+  game), stated per km² for large cities. Evidence: server test per mod set
+  with a primed grid in two orders and on 8 threads (0 differences); in-game
+  timing under the heavy lock.
+- [ ] **2.2 S2 Terrain probe** (shrunk after track 4, ADR 0002). Already
+  measured for vanilla, one seed (12345): `getBaseHeight(OCEAN_FLOOR_WG)`
+  matches real ground in 98.2% of land columns (p99 2 blocks);
+  `preliminary_surface_level` reads 12–15 low (p90 17). Left open: (a) 10
+  seeds chosen to include mountains, rivers and coasts; (b) the same under
+  Terralith and Tectonic, alone and together (their `final_density` differs,
+  and the coarse screen misses Terralith's dunes and arches); (c) whether the
+  coarse screen's bias is stable enough for a fixed +15 correction per seed
+  and mod set; (d) whether surface rules ever add blocks above
+  `getBaseHeight`. Evidence: predicted vs actual diff per seed and mod set
+  (exact: % equal, p99; coarse: bias, p90) and in-game cost per column. Share
+  the Terralith + Tectonic setup with S7.
 - [ ] **2.3 S3 Multi-start city.** Can 2–4 starts share one plan and join
   seamlessly? Evidence: blocks hashed per chunk are identical whatever order
-  chunks generate in; no seams at start or chunk borders.
+  chunks generate in; no seams at start or chunk borders. Also: a road that
+  crosses a district border (each side owned by one start) meets without a
+  seam, and `/locate` finds a district start through a
+  `RandomSpreadStructurePlacement` subclass.
 - [ ] **2.4 S4 Region map.** Does the region layer place cities sensibly
   against real biomes? Evidence: dev command dumping region cells plus biomes
   to JSON; 2D map in the viewer. (The dump format becomes a test fixture for
@@ -173,9 +195,17 @@ result decides whether flattening is needed.
 - [ ] **2.5 S5 Terrain adaptation.** Do vanilla beard modes suffice on hills, or
   do we grade terrain ourselves? Evidence: client-test screenshots of a test
   city on flat, hilly and river terrain.
-- [ ] **2.6 S6 Scale and cost.** What do piece counts do to save size and chunk
-  generation time? Evidence: measurements at village, town and city scale;
-  thread-safety check of the plan cache. (Timing under the heavy lock.)
+- [ ] **2.6 S6 Scale and cost.** How large can a city go, and what does it
+  cost? John's target is effectively unbounded cities; 512×512 is the floor
+  to prove, not a cap (ADR 0002, I6). Evidence (timing under the heavy lock,
+  load recorded): plan time against city size (512², 1024², 2048², and on
+  while it holds), split into coarse screen, exact heights and layout; per
+  district: start, piece build and `postProcess` time and save size, with
+  pieces saving references vs stored IR (include a tall building); plan-cache
+  memory per cell; the city size at which the first-touch stall on the serial
+  lane becomes noticeable, and whether a two-level plan (city skeleton, lazy
+  district detail) is needed past it; thread-safety of the cache; evict a
+  cell's plan, regenerate it and compare bytes.
 - [ ] **2.7 S7 Terrain flattening** (fallback if S5's beards fall short). Can
   we level city cells by wrapping `final_density` together with
   `chunk_surface_level` and the aquifer `surface_level`, without the plan/mask
@@ -194,6 +224,9 @@ result decides whether flattening is needed.
   element, content regenerated at `place` from seed and position)? Evidence:
   server test that a village chunk holds our blocks, identical whatever the
   chunk order. See `research/worldgen/custom-generator-and-pool-element.md`.
+  Also a compat check: with Lithostitched installed, its global jigsaw
+  redirect (`breaks_seed_parity`, default true) runs our element too; our
+  blocks must still match, and note whether vanilla villages change.
 - [ ] **2.10 Worldgen ADR** (researcher) from the findings: integration approach, practical
   size limits, determinism rules.
 
