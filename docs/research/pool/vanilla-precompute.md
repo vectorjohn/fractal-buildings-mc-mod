@@ -120,5 +120,6 @@ seeds.
 `getRingPositionsFor`), `ServerLevel` (constructor), `StructureTemplateManager`,
 `StructureTemplate` (`Palette`, `processBlockInfos`), `StructurePlaceSettings`,
 `BlockRotProcessor`, `RuleProcessor`, `CappedProcessor`, `Mth.getSeed` (26.3
-sources jar). I did not time the ring precompute or check whether any later
+sources jar) and `structure_set/strongholds.json` (count 128, distance 32,
+spread 3). I did not time the ring precompute or check whether any later
 code persists it.
