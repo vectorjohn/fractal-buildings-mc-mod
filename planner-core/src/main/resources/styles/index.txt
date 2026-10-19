@@ -2,5 +2,6 @@
 plain
 medieval
 desert
+jungle
 taiga
 plains

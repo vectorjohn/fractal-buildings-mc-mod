@@ -330,6 +330,12 @@ gate.
   looking stamped.
   *Tests:* `FacadeLayoutTest` (bays sum and range, mirror symmetry, one rhythm per band, windows aligned per band, >= 2 layouts on tall shafts, one door per entrance, decor never on openings or in front of them, double doors). *Known issues:* half-timber braces not done (posts and slab-line rails only); 2-wide windows only in even bays of 4+; windows beside a core or partition are simply not cut (opening checks the inside is air).
 - [x] **4.5 Interiors** [I]: room graph, stairs, simple furnishing hooks; a
+- [x] **4.4 Facades** [Fa]: bays and rhythm, trim, depth (insets, beams, sills), a
+  gradient of materials; bands that repeat over many storeys without
+  looking stamped.
+  *Tests:* `FacadeLayoutTest` (bays sum and range, mirror symmetry, one rhythm per band, windows aligned per band, >= 2 layouts on tall shafts, one door per entrance, decor never on openings or in front of them, double doors). *Known issues:* half-timber braces not done (posts and slab-line rails only); 2-wide windows only in even bays of 4+; windows beside a core or partition are simply not cut (opening checks the inside is air).
+- [ ] **4.5 Interiors** [I]: room graph, stairs, simple furnishing hooks; a
+>>>>>>> claude/p4-fa-facades
   vertical core placed first in multi-storey buildings, each floor grown
   around it (typical floors repeat with per-band variation).
   Tests: `RoomSplitTest` (tiling, room sides, no partition behind a window or the entrance, hooks, typical floors, corridor, 60-storey tower); rooms-reachable over every fixture and every house in `V1PropertyTest`.
@@ -360,7 +366,8 @@ gate.
   - [x] taiga [St-taiga]
     - *Known issues:* dormers need a 1/1 slope (R), so taiga's 2/1 roofs carry none (`dormers: 50` is set and takes effect only if a roof falls back to 1/1); no steep-dormer roof key added. Tower roofs show no log-post/plinth differences from house beyond the shared facade keys.
   - [ ] snowy [St-snowy]
-  - [ ] jungle [St-jungle]
+  - [x] jungle [St-jungle]
+    *Known issues:* no verandas (FENCE railings): no pass offers a porch and adding one safely (doors, S front flights) is its own step; the 2-block hip overhang gives the porch silhouette. Raised ground floors not done (optional).
 - [x] **4.8 Site** [S]: front steps from every entrance down to the ground and a new
   `entrance-reachable` invariant (Phase 3 known issue), the height cap under y 319
   tested at extremes (Phase 3 known issue; `spec.maxHeight` exists since 4.1), and
