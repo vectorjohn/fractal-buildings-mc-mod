@@ -1,6 +1,6 @@
 # Plan: Phase 4, building generator depth
 
-Status: active. Author: lead-coder, 2026-10-19. Items: ROADMAP "Phase 4" 4.1–4.10.
+Status: done (2026-10-19; gate awaiting John). Author: lead-coder, 2026-10-19. Items: ROADMAP "Phase 4" 4.1–4.10.
 Decisions this plan relies on: [ADR 0001](../adr/0001-building-direction.md)
 (volume massing, then a typed split grammar; large buildings first-class; limits),
 [ADR 0003](../adr/0003-worldgen.md) (D1–D7 determinism, D6 pure-cache contract, W3
