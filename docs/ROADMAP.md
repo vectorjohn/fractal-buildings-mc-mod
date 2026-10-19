@@ -338,10 +338,11 @@ gate.
   - [x] house [T-house]
     - Room program (living/kitchen/entry down, bedrooms up, bed/table/chest/hearth hooks), cores against a wall, wall-side room beside every stair. *Known issues:* jetties/setbacks only on the main stack and wings only on the main block (M); steep-ground presets wait for S.
   - [ ] shop [T-shop]
-  - [ ] workshop [T-workshop]
   - [x] tower [T-tower]
     Tests: `TowerTypeTest` (height >= 2 x widest footprint, top under the cap, one core through every storey, storeys capped by maxHeight, shape and footprint variety; mutant: dropping the 2x rule fails it), `V1PropertyTest` (4 lots x 250), golden `tower.txt`, `check --types tower` 0 failures over 51k cases.
     *Known issues:* no slit windows (facade is the style's; a tower facade program needs a style override the context does not offer); the roof is the style's (flat with parapet from 6 storeys, else gable/hip), no spire.
+  - [x] workshop [T-workshop]
+    *Known issues:* lots under 12x12 are unsupported (a hall alone fits 10x9 envelopes, no wing); no yard props, chimney or forge geometry yet (only a `hearth` hook); the cart door is the 2-wide, 2-high double door the facade pass offers (no taller lintel), and a 1-storey wing shares the hall's 5-6 high ground storey.
   - [ ] temple [T-temple]
   - [x] wall and gate [T-wall]
   - [ ] **high-rise** [T-highrise]: setback tower up to the y 319 ceiling (~60
