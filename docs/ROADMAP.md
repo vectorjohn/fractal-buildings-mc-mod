@@ -337,12 +337,13 @@ gate.
 - [ ] **4.6 Building types** [T-*], one step each:
   - [x] house [T-house]
     - Room program (living/kitchen/entry down, bedrooms up, bed/table/chest/hearth hooks), cores against a wall, wall-side room beside every stair. *Known issues:* jetties/setbacks only on the main stack and wings only on the main block (M); steep-ground presets wait for S.
-  - [ ] shop [T-shop]
   - [x] tower [T-tower]
     Tests: `TowerTypeTest` (height >= 2 x widest footprint, top under the cap, one core through every storey, storeys capped by maxHeight, shape and footprint variety; mutant: dropping the 2x rule fails it), `V1PropertyTest` (4 lots x 250), golden `tower.txt`, `check --types tower` 0 failures over 51k cases.
     *Known issues:* no slit windows (facade is the style's; a tower facade program needs a style override the context does not offer); the roof is the style's (flat with parapet from 6 storeys, else gable/hip), no spire.
   - [x] workshop [T-workshop]
     *Known issues:* lots under 12x12 are unsupported (a hall alone fits 10x9 envelopes, no wing); no yard props, chimney or forge geometry yet (only a `hearth` hook); the cart door is the 2-wide, 2-high double door the facade pass offers (no taller lintel), and a 1-storey wing shares the hall's 5-6 high ground storey.
+  - [x] shop [T-shop]
+    *Done 2026-10-19.* Shopfront (door centred, 2-3 wide display windows between piers, trim fascia), 5-high ground storey, counter hook, rear wing and front jetty variants; lots 9-14 x 13-26 (margins 1, envelope 7-12 wide). `ShopTypeTest`, gallery `shop-medieval|plain|flat`. *Known issues:* envelopes narrower than 7 are not supported (a centred door plus a window each side needs 7); no awning or sign yet (envelope has no free cell in front of the wall; belongs with the site step).
   - [ ] temple [T-temple]
   - [x] wall and gate [T-wall]
   - [ ] **high-rise** [T-highrise]: setback tower up to the y 319 ceiling (~60
