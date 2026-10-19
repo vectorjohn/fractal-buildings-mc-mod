@@ -89,6 +89,16 @@ Notes:
   `fractal-cli check|bench|diversity` over the default 128-cell matrix;
   `cli batch` and the gallery presets (`npm run gallery`, not part of
   `scripts/test-all.sh`: run it on generator or viewer changes).
+- Added in Phase 4: `TestMassings` fixtures (incl. `tall50`) dumped by
+  `FixtureDumpTest` (`-Dfb.dumpFixtures=DIR`) and `RoofPassTest`
+  (`-Dfb.dumpRoofForms=DIR`); `V1Case` + `V1PropertyTest` over each type's
+  `TypeLimits.testLots` (turned by `TypeLimits.oriented`, gentle terrains for
+  `maxGrade` > 3); golden digests per type in `golden/v1/*.txt`; the
+  `entrance-reachable` invariant; replayable failing cases (`ReplayTest`);
+  `check`/`bench --types T` and `diversity --type T`; the shared block-id list
+  `vanilla-26.3-blocks.txt` for style tests; gallery presets one file per
+  type/style (`viewer/gallery-presets/`) with the `cutaway` camera. Gate pack
+  numbers (168,000 cases, per-type timing and diversity): `docs/review/phase4/`.
 
 ---
 
@@ -381,8 +391,9 @@ gate.
   per-voxel material gradient, gallery presets as one file per type/style, a
   cutaway camera for interiors, and tall-building gallery performance.
   Done: `viewer/gallery-presets/<name>.json` (one file per type/style; `fixtures` = the `TestMassings` dump), `?camera=cutaway` (+ `cutStorey`), furnishing-hook markers. The tall fixture is `tall50` (50 storeys), not `tall60`: 60 storeys of >= 4 blocks do not fit under y 319. *Known issues:* hook markers are untested on real output until the interiors step (4.5) emits hooks; the `front-left` slope check passes even without the tint (3/4 lighting alone differs), only `top` catches a broken tint.
-- [ ] **4.10 Gate pack** [G]: per-type galleries, invariant, diversity and timing
+- [x] **4.10 Gate pack** [G]: per-type galleries, invariant, diversity and timing
   reports in `docs/review/phase4/`, and the REVIEW entry.
+  Done 2026-10-19: [review/phase4/README.md](review/phase4/README.md) (what to look at per type, questions, timing); 168,000 invariant cases over all nine types, 0 failing; per-type diversity; per-class timing on a quiet machine in NOTES; 28 gallery PNGs (a reviewable subset, about 7.6 MB; the full set is regenerated with `npm run gallery`) plus a style sheet per new style (new presets `block-plains`, `temple-desert`, `temple-jungle`, `hall-taiga`, `hall-snowy`); REVIEW "4.10 Phase 4 gate" plus house, shop, facades, interiors and styles entries; Phase 4 known issues copied into the Polish backlog. Log: `docs/log/2026-10-19-p4-g-gate-pack.md`.
 
 Open for John (plan, "Risks and open questions"): v1 keeps one ground level per
 building, so deep types are tested only on ground up to 1 in 3; per-wing ground
@@ -490,6 +501,27 @@ Fixed opportunistically or scheduled as items.
 - 3.4: `check` exit-1 path (a scene with violations) is untested.
 - 3.4: a failing property case can't be replayed via the CLI (no flags for the test's terrain or lot position).
 - 4.3: dormers only on 1/1 slopes; shed rises at most 3 then plateaus; no crowns or spires beyond flat + parapet; a lower roof meeting a taller wall is a plain lean-to (no hip against the wall); overhang-past-envelope mutant not expressible (clip is by array bounds).
+- 4.1 (plan): "Golden digests" section says the verifier regenerates golden files after a merge; the verifier rules have coders regenerate before verification.
+- 4.2: jetties and setbacks only on the main stack; wings attach only to the main block (no wing-on-wing); `MassingOps.stack` unused; no jetty when the wing blocks every side; `TestMassings` M fixtures sit before `tall50`.
+- 4.3: `RoofField.distance` is O(cells²) per roof group (watch on big lots); a parapet stops one cell short of a taller wall (gap).
+- 4.4: half-timber braces not done (posts and rails only); material gradient by role only; the band rule "never the same variant as below" compares keys, not tiling; 2-wide windows only in even bays of 4+; windows beside a core or partition are not cut.
+- 4.5: a furnishing hook can sit under a window; the courtyard door-count assert is a lower bound; the entry room is not forced onto the corridor; small centred cores leave one stair hall per floor.
+- 4.8: removing only the top step block isn't caught (foundation tops form a flight); `hill:` probe has no centre option; a type with front margin 0 gets no steps.
+- 4.9: only the `top` e2e catches a broken roof tint; `render.ts` per-voxel shade wiring untested; cutaway partitions hard to see at gallery scale; `top` camera perspective-skewed on 250-block towers.
+- 4.6 house: `roomy()` rejects small upper floors, so more houses are single-storey (21/32 on small envelopes, was 16/32).
+- 4.6 tower: no slit windows (needs a per-type facade override); no spire; uniform window bands.
+- 4.6 workshop: lots under 12x12 get the hall only; no chimney, forge geometry or yard props; the cart door is the facade's 2x2 double door (no taller lintel); cluttered roofs.
+- 4.6 shop: envelopes under 7 wide unsupported; no awning or sign (needs a free cell in front of the wall; site step).
+- 4.6 temple: windows repeat per grid storey on the open nave and tower (needs tall windows), so bell towers read as tall houses.
+- 4.6 wall: flat along its length on slopes (one slab at the highest ground); plain low curtains; no extra wall towers or stairs to the walk; towers don't project; gate is a plain door box, not an arch; dead loop in `roofsAreFlatWithGapsInTheParapet`.
+- 4.6 high-rise: tiers are nested rectangles (no corner towers or twin shafts); crown always a flat box (no pyramid or spire); podium not always distinct.
+- 4.6 hall: no crossing tower on cathedrals; arcade is glazed arches (invisible at gallery zoom), not doors; halls ignore the style's massing plans; tall exposed foundations on slopes; no 200x200 preset (buildings capped 150x120); roof test allows rise 10 vs design 7.
+- 4.6 city block: gentle ground only (steeper than 1 in 16 rejected) until per-wing ground levels (6.3); minimum lot 52x52; no jetties or setbacks on units; one storey grid across units; `check` stops the whole run at the first rejected lot.
+- 4.7 plains: wall gradient (birch/oak/plaster) reads noisy per voxel.
+- 4.7 desert: yellow terracotta in the wall gradient makes walls look speckled; `DesertStyleTest` and `TaigaStyleTest` keep their own block whitelists (switch to the shared `vanilla-26.3-blocks.txt`).
+- 4.7 taiga / snowy: dormers need 1/1 slopes, so 2/1 roofs carry none; snowy's window-density assertion only catches a big facade change; 4-block roof gradient noisy per voxel.
+- 4.7 jungle: no verandas or FENCE railings (needs a porch pass); no raised ground floors.
+- 4 (docs): NOTES has the "Facades (4.4)" line twice; ASSUMPTIONS has the wall-margins and workshop rows twice; commit a72a23f's subject says T-workshop but holds the T-wall squash.
 
 ## Open questions and risks
 
