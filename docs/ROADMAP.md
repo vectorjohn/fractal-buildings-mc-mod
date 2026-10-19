@@ -284,22 +284,26 @@ via the CLI (3.4).
 
 ## Phase 4: Building generator depth
 
-Updated: 2026-10-18
+Updated: 2026-10-19
 
 Grow v0 into buildings that read as built by a person, using the technique
 chosen at the Phase 1 gate ([ADR 0001](adr/0001-building-direction.md): volume
 massing, then a typed split grammar). Large buildings and towers are
 first-class, not only houses.
 
-Each new rule lands with a property test and a gallery update; the verifier
-compares galleries before and after. Parallel: after a short planning pass
-(lead-coder, `mode: plan`) fixes the extension points, massing, roofs, facades
-and interiors can largely proceed side by side, then building types and styles
-fan out one per item.
+Plan: [plans/phase4.md](plans/phase4.md) (step ids in brackets below). Generator
+v1 sits beside the frozen v0 (`--gen v1` is the CLI default). Each new rule lands
+with a property test and a gallery update; the verifier compares galleries before
+and after. Parallel: after 4.1 fixed the extension points, 4.2–4.5, 4.8 and 4.9 run
+side by side; then building types and styles fan out one per step; 4.10 packs the
+gate.
 
-- [ ] **4.1 Plan**: the generator architecture for the chosen technique, with
-  the extension points that let 4.2–4.7 run in parallel.
-- [ ] **4.2 Massing**: L, T, U and courtyard footprints; multi-volume buildings;
+- [x] **4.1 Plan**: the generator architecture for the chosen technique, with
+  the extension points that let 4.2–4.7 run in parallel. Done 2026-10-19: the plan
+  plus step F0 (v1 pipeline with default passes, massing model and contract, style
+  files, type registry, IR additions, CLI `--gen`/`--type`, fixtures and property
+  tests).
+- [ ] **4.2 Massing** [M]: L, T, U and courtyard footprints; multi-volume buildings;
   towers and wings; setback stacks (podium, shaft, crown, each volume inside
   the one below); one storey grid per building.
   - Wings from multiple volumes: L, T and U plans built as a main block plus
@@ -316,24 +320,49 @@ fan out one per item.
     overhang without a rule change (NOTES, Planner core, 2026-10-18). A
     jetty past the lot edge (over a street) still fails `in-lot`; Phase 5
     decides whether streets allow that.
-- [ ] **4.3 Roofs**: gable, hip and combinations; dormers; overhangs; pitch per
+- [ ] **4.3 Roofs** [R]: gable, hip and combinations; dormers; overhangs; pitch per
   style; flat roofs, parapets and crowns for tall buildings.
-- [ ] **4.4 Facades**: bays and rhythm, trim, depth (insets, beams, sills), a
+- [ ] **4.4 Facades** [Fa]: bays and rhythm, trim, depth (insets, beams, sills), a
   gradient of materials; bands that repeat over many storeys without
   looking stamped.
-- [ ] **4.5 Interiors**: room graph, stairs, simple furnishing hooks; a
+- [ ] **4.5 Interiors** [I]: room graph, stairs, simple furnishing hooks; a
   vertical core placed first in multi-storey buildings, each floor grown
   around it (typical floors repeat with per-band variation).
-- [ ] **4.6 Building types**: house, shop, workshop, tower, temple, wall and
-  gate (one item each when scheduled). Large classes, also one item each:
-  - **high-rise**: setback tower up to the y 319 ceiling (~60 storeys),
-    stair core, podium on the street;
-  - **city block**: a perimeter block of joined units with shared walls and a
-    courtyard, filling a whole street block;
-  - **hall / civic**: large spans (market hall, town hall, cathedral, bath),
-    footprints up to ~200 blocks (ADR 0001 limits).
-- [ ] **4.7 Styles**: a palette and rule set per culture, mapped from biome
-  (desert, taiga, plains, jungle, snowy to start; one item each).
+- [ ] **4.6 Building types** [T-*], one step each:
+  - [ ] house [T-house]
+  - [ ] shop [T-shop]
+  - [ ] workshop [T-workshop]
+  - [ ] tower [T-tower]
+  - [ ] temple [T-temple]
+  - [ ] wall and gate [T-wall]
+  - [ ] **high-rise** [T-highrise]: setback tower up to the y 319 ceiling (~60
+    storeys), stair core, podium on the street
+  - [ ] **city block** [T-block]: a perimeter block of joined units with shared
+    walls and a courtyard, filling a whole street block
+  - [ ] **hall / civic** [T-hall]: large spans (market hall, town hall,
+    cathedral, bath), footprints up to ~200 blocks (ADR 0001 limits)
+- [ ] **4.7 Styles** [St-*]: a palette and rule set per culture, mapped from biome,
+  one step each:
+  - [ ] plains [St-plains]
+  - [ ] desert [St-desert]
+  - [ ] taiga [St-taiga]
+  - [ ] snowy [St-snowy]
+  - [ ] jungle [St-jungle]
+- [ ] **4.8 Site** [S]: front steps from every entrance down to the ground and a new
+  `entrance-reachable` invariant (Phase 3 known issue), the height cap under y 319
+  tested at extremes (Phase 3 known issue; `spec.maxHeight` exists since 4.1), and
+  failing property cases replayable via the CLI (Phase 3 known issue; replay
+  commands exist since 4.1, S adds the round-trip test).
+- [ ] **4.9 Viewer for the gate** [V]: roof slopes shaded by their slope (Phase 3
+  known issue, John at REVIEW 3.12), style colours read from the style files with a
+  per-voxel material gradient, gallery presets as one file per type/style, a
+  cutaway camera for interiors, and tall-building gallery performance.
+- [ ] **4.10 Gate pack** [G]: per-type galleries, invariant, diversity and timing
+  reports in `docs/review/phase4/`, and the REVIEW entry.
+
+Open for John (plan, "Risks and open questions"): v1 keeps one ground level per
+building, so deep types are tested only on ground up to 1 in 3; per-wing ground
+levels (ADR 0003 W5) are assumed to come with 6.3.
 
 **Gate:** per building type, a gallery passes John's "would I believe a person
 built this?" review, including the high-rise, city-block and hall classes.

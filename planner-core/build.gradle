@@ -74,3 +74,8 @@ tasks.named('test') {
 	inputs.file('../viewer/fixtures/sample-house.json')
 	inputs.files('../viewer/fixtures/sample-house-violations.json')
 }
+
+// Forward -Dfb.* options to the test JVM (e.g. -Dfb.propertyScale=10, -Dfb.dumpFixtures=DIR).
+tasks.named('test') {
+	systemProperties System.properties.findAll { it.key.toString().startsWith('fb.') }
+}

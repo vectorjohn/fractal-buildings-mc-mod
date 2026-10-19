@@ -29,6 +29,19 @@ describe('parseScene', () => {
   it('rejects a bad role with its path', () => {
     expect(() => parseScene(mutate((j) => { j.buildings[0].shell.boxes[3].role = 'glass'; }))).toThrow(/buildings\[0\]\.shell\.boxes\[3\]\.role/);
   });
+  it('reads genVersion 2 keys (hooks, maxHeight, streets) and the beam and fence roles', () => {
+    const s = parseScene(mutate((j) => {
+      j.buildings[0].shell.spec.maxHeight = 200;
+      j.buildings[0].shell.spec.streets = 1;
+      j.buildings[0].shell.hooks = [{ id: 'h0', kind: 'bed', room: 'r0', pos: [1, 1, 1], facing: 'south' }];
+      j.buildings[0].shell.boxes[3].role = 'beam';
+      j.buildings[0].shell.boxes[4].role = 'fence';
+    }));
+    expect(s.buildings[0]!.shell.hooks[0]!.kind).toBe('bed');
+    expect(s.buildings[0]!.shell.spec.maxHeight).toBe(200);
+    expect(parseScene(raw()).buildings[0]!.shell.hooks).toEqual([]);
+    expect(() => parseScene(mutate((j) => { j.buildings[0].shell.hooks = [{ id: 'h0' }]; }))).toThrow(/hooks\[0\]\.kind/);
+  });
   it('rejects an unknown lot id', () => {
     expect(() => parseScene(mutate((j) => { j.buildings[0].lots[0] = 'nope'; }))).toThrow(/buildings\[0\]\.lots\[0\].*nope/);
   });

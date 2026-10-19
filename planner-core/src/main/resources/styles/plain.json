@@ -1,0 +1,39 @@
+{
+  "format": "fb-style/1",
+  "id": "plain",
+  "biomes": [],
+
+  "massing": {"ground": 4, "typical": 4, "jetty": 0},
+
+  "roof": {"forms": {"gable": 1}, "rise": 1, "run": 1, "overhang": 0},
+
+  "facade": {"bayMin": 2, "bayMax": 3, "sill": 1, "windowHeight": 1},
+
+  "interior": {"roomMin": 2},
+
+  "palette": {
+    "foundation": ["minecraft:cobblestone"],
+    "floor": ["minecraft:oak_planks"],
+    "wall": ["minecraft:white_terracotta"],
+    "trim": ["minecraft:stripped_oak_log"],
+    "beam": ["minecraft:oak_log"],
+    "fence": ["minecraft:oak_fence"],
+    "window": ["minecraft:glass_pane"],
+    "door": ["minecraft:oak_door"],
+    "roof": ["minecraft:stone_bricks"],
+    "stair": ["minecraft:oak_planks"]
+  },
+
+  "colours": {
+    "foundation": ["#7f7f7f"],
+    "floor": ["#b08a55"],
+    "wall": ["#d8d2c4"],
+    "trim": ["#8a6a40"],
+    "beam": ["#6b5030"],
+    "fence": ["#8a6a40"],
+    "window": ["#a8d4f0"],
+    "door": ["#9c7a46"],
+    "roof": ["#8a8a8a"],
+    "stair": ["#9c7a46"]
+  }
+}

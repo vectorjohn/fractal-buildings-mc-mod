@@ -73,7 +73,7 @@ class MainTest {
 	void batchWritesSeedFilesAndIndex(@TempDir Path dir) throws Exception {
 		Result r = run("batch", "--seeds", "2..4", "--lot", "12x10", "--style", "medieval", "--out-dir", dir.toString());
 		assertEquals(0, r.code(), r.err());
-		assertEquals("{\"style\": \"medieval\", \"lot\": \"12x10\", \"terrain\": \"flat:64\", \"seeds\": [2, 3, 4]}\n",
+		assertEquals("{\"type\": \"house\", \"style\": \"medieval\", \"lot\": \"12x10\", \"terrain\": \"flat:64\", \"seeds\": [2, 3, 4]}\n",
 				Files.readString(dir.resolve("index.json")));
 		for (int s = 2; s <= 4; s++) {
 			SceneDoc d = IrJson.read(Files.readString(dir.resolve("seed-" + s + ".json")));

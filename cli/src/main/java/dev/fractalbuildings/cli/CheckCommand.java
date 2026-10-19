@@ -30,7 +30,7 @@ final class CheckCommand {
 			List<Violation>[] results = new List[m.cells.size()];
 			IntStream.range(0, results.length).parallel().forEach(i -> {
 				var req = m.cells.get(i).request(s);
-				SceneDoc scene = Scenes.generate(req, false);
+				SceneDoc scene = Scenes.generate(req, false, m.gen);
 				results[i] = Invariants.check(scene, req.terrain());
 			});
 			for (int i = 0; i < results.length; i++) report.add("seed " + s + " " + m.cells.get(i).label(), results[i]);

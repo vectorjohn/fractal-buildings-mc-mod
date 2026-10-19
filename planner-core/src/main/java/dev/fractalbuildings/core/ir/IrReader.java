@@ -182,8 +182,12 @@ final class IrReader {
 	private static BuildingIr shell(Map<String, Object> o, String p) {
 		String spp = p + ".spec";
 		Map<String, Object> so = obj(req(o, p, "spec"), spp);
-		BuildingSpec spec = guard(spp, () -> new BuildingSpec(integer(so, spp, "genVersion"), seed(so, spp, "specSeed"), string(so, spp, "style"),
-				string(so, spp, "type"), integer(so, spp, "width"), integer(so, spp, "depth"), integer(so, spp, "storeys"), string(so, spp, "roof")));
+		int gv = integer(so, spp, "genVersion");
+		int maxHeight = gv >= 2 ? integer(so, spp, "maxHeight") : BuildingSpec.DEFAULT_MAX_HEIGHT;
+		int streets = gv >= 2 ? integer(so, spp, "streets") : BuildingSpec.STREET_FRONT;
+		BuildingSpec spec = guard(spp, () -> new BuildingSpec(gv, seed(so, spp, "specSeed"), string(so, spp, "style"),
+				string(so, spp, "type"), integer(so, spp, "width"), integer(so, spp, "depth"), integer(so, spp, "storeys"), string(so, spp, "roof"),
+				maxHeight, streets));
 		String hash = string(o, p, "specHash");
 		if (!hash.equals(SpecHash.of(spec))) {
 			throw new IllegalArgumentException(p + ".specHash: '" + hash + "' does not match the spec (expected '" + SpecHash.of(spec) + "')");
@@ -196,7 +200,14 @@ final class IrReader {
 				list(o, p, "rooms", IrReader::room),
 				list(o, p, "openings", IrReader::opening),
 				list(o, p, "roofs", IrReader::roof),
-				list(o, p, "boxes", IrReader::box)));
+				list(o, p, "boxes", IrReader::box),
+				spec.v2Keys() ? list(o, p, "hooks", IrReader::hook) : List.of()));
+	}
+
+	private static Hook hook(Map<String, Object> o, String p) {
+		int[] pos = ints(o, p, "pos", 3);
+		return guard(p, () -> new Hook(string(o, p, "id"), string(o, p, "kind"), string(o, p, "room"), pos[0], pos[1], pos[2],
+				enumOf(o, p, "facing", Facing.class)));
 	}
 
 	private static Storey storey(Map<String, Object> o, String p) {

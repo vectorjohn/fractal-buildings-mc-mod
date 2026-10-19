@@ -91,8 +91,15 @@ public final class IrJson {
 		sb.append(in).append("\"rooms\": ").append(lines(s.rooms(), IrJson::room, 8)).append(",\n");
 		sb.append(in).append("\"openings\": ").append(lines(s.openings(), IrJson::opening, 8)).append(",\n");
 		sb.append(in).append("\"roofs\": ").append(lines(s.roofs(), IrJson::roof, 8)).append(",\n");
-		sb.append(in).append("\"boxes\": ").append(lines(s.boxes(), IrJson::box, 8)).append("\n      }");
+		sb.append(in).append("\"boxes\": ").append(lines(s.boxes(), IrJson::box, 8));
+		if (s.spec().v2Keys()) sb.append(",\n").append(in).append("\"hooks\": ").append(lines(s.hooks(), IrJson::hook, 8));
+		sb.append("\n      }");
 		return sb.toString();
+	}
+
+	private static String hook(Hook h) {
+		return JsonWriter.object().text("id", h.id()).text("kind", h.kind()).text("room", h.room())
+				.raw("pos", ints(h.x(), h.y(), h.z())).text("facing", h.facing().json()).build();
 	}
 
 	private static String storey(Storey s) {
