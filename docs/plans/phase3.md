@@ -1,5 +1,7 @@
 # Plan: Phase 3, planner core and three.js viewer
 
+Status: done (Phase 3 gate passed 2026-10-18; ROADMAP text archived in [../archive/roadmap-phase-3.md](../archive/roadmap-phase-3.md)).
+
 Author: lead-coder, 2026-10-16. Items: ROADMAP "Phase 3" 3.1–3.12.
 Decisions this plan relies on: [ADR 0001](../adr/0001-building-direction.md)
 (massing, then a typed split grammar; large buildings first-class),
