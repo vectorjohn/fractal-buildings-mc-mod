@@ -109,7 +109,7 @@ byte-for-byte unchanged; readers treat them as absent for genVersion 1.
   `chest`, `hearth`, `altar`, `counter`, `light`...). The mod places furniture there
   (6.4); the planner never does. `ir-valid` checks ids are unique, `room` resolves and
   `pos` lies inside `bounds`.
-- **roof.form** strings in use (the roofs step, 4.3, owns this line): `gable`, `flat`.
+- **roof.form** strings in use (the roofs step, 4.3, owns this line): `gable`, `hip`, `pyramid`, `shed`, `mansard`, `flat`. One record per roofed mass; masses of one roof group share the form; `ridgeAxis` only for `gable`.
 - **room.use** strings in use (the interiors step, 4.5, owns this line): `room`, `entry` (the room behind an entrance), `corridor`, `stair` (the room holding a core), `hall` (an open mass); a type's `RoomProgram` may add its own.
 - **hook.kind** strings in use (the interiors step, 4.5, owns this line): `bed`, `table`, `chest`, `workstation`, `hearth`, `light` (default `RoomProgram`); hooks are floor cells against a wall or partition, never within one cell of a door, the entrance or a core.
 

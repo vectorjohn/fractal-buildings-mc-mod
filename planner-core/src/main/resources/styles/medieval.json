@@ -6,7 +6,7 @@
 
   "massing": {"ground": 4, "typical": 4, "jetty": 1, "plans": {"box": 3, "L": 3, "T": 2, "U": 2, "courtyard": 1}, "jettyChance": 40, "setbackChance": 15, "groundExtra": 1, "groundExtraChance": 25},
 
-  "roof": {"forms": {"gable": 3, "hip": 1}, "rise": 1, "run": 1, "overhang": 1},
+  "roof": {"forms": {"gable": 3, "hip": 1}, "rise": 1, "run": 1, "overhang": 1, "parapet": 1, "tallStoreys": 6, "dormers": 50},
 
   "facade": {"bayMin": 2, "bayMax": 3, "sill": 1, "windowHeight": 1},
 

@@ -321,8 +321,10 @@ gate.
     jetty past the lot edge (over a street) still fails `in-lot`; Phase 5
     decides whether streets allow that.
   - Done 2026-10-19 (house massing; the high-rise, hall and city-block programs use the same ops in wave 2). `gen/v1/mass/MassingOps` (grid, main, wing, jetty, setback, stack, core) + `HouseMassing` (plans box/L/T/U/courtyard, wings of other widths and storeys, jetty and setback stacks, back-off to simpler shapes). Medieval 2000 houses (18x18 and 29x15 envelopes): 56 % multi-volume, 39 % of 2-3 storey houses jettied; plain: 44 % multi-volume, no jetties. Log: `docs/log/2026-10-19-p4-m-massing.md`. *Known issues:* wings attach only to the main block (no wing-on-wing or second main); jetties only on the main stack, never over a wing; no jetty on lots where the wing blocks every side.
-- [ ] **4.3 Roofs** [R]: gable, hip and combinations; dormers; overhangs; pitch per
+- [x] **4.3 Roofs** [R]: gable, hip and combinations; dormers; overhangs; pitch per
   style; flat roofs, parapets and crowns for tall buildings.
+  *Tests:* `RoofFieldTest` (pure fields over 3..24 x 3..24), `RoofPassTest` (every `TestMassings` fixture x forms x pitches x 10 seeds: all invariants; tight `maxHeight`; overhang clip; dormers; groups); `-Dfb.dumpRoofForms=DIR` writes each fixture once per form as viewer batches.
+  *Known issues:* dormers only on 1/1 slopes (others skip them); shed rises at most 3 then plateaus; no valley/hip ridge caps or crowns beyond flat + parapet; roofs over a lower mass that meets a taller one use a plain lean-to (no hip against the wall).
 - [ ] **4.4 Facades** [Fa]: bays and rhythm, trim, depth (insets, beams, sills), a
   gradient of materials; bands that repeat over many storeys without
   looking stamped.
@@ -469,6 +471,7 @@ Fixed opportunistically or scheduled as items.
 - 3.8: flat-shaded `top` view reads each roof as one colour block (ridge and pitch not visible).
 - 3.4: `check` exit-1 path (a scene with violations) is untested.
 - 3.4: a failing property case can't be replayed via the CLI (no flags for the test's terrain or lot position).
+- 4.3: dormers only on 1/1 slopes; shed rises at most 3 then plateaus; no crowns or spires beyond flat + parapet; a lower roof meeting a taller wall is a plain lean-to (no hip against the wall); overhang-past-envelope mutant not expressible (clip is by array bounds).
 
 ## Open questions and risks
 

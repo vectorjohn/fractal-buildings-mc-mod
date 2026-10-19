@@ -663,4 +663,5 @@ Each with the assumption made if nobody answers.
 # Deviations
 
 (Steps add one line each when they change a contract above.)
+- R (4.3): `RoofStyle` grew `parapet`, `parapetRole`, `tallStoreys`, `dormers` (4-arg constructor kept); a `Roof` record is emitted for every roofed mass, not only the group's main mass, so `roof-covers`/`roof-closed` check every volume; dormers need a 1/1 slope (pitch >= 1/1 reduced to == 1/1); sloped steps are filled to the neighbour's level (face-adjacent) because `no-floating` is 6-connected. `Invariants.roofChecks` unchanged.
 - 4.2 (M): `MassingStyle` also has `groundExtraChance` (percent) beside `groundExtra` (blocks); `HouseMassing` is in `gen/v1/mass/` and the type calls it. No rule in `MassingCheck` changed.
