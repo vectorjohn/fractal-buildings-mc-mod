@@ -39,7 +39,7 @@ class StyleLibraryTest {
 				String prev = seen.put(b, id);
 				if (prev != null) fail("biome " + b + " is claimed by " + prev + " and " + id);
 			}
-		assertEquals("medieval", StyleLibrary.forBiome("minecraft:plains").id());
+		assertEquals("plains", StyleLibrary.forBiome("minecraft:plains").id());
 		assertEquals(StyleLibrary.FALLBACK, StyleLibrary.forBiome("minecraft:the_void").id());
 	}
 

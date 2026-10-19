@@ -2,3 +2,4 @@
 plain
 medieval
 taiga
+plains

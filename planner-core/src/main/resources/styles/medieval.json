@@ -2,7 +2,7 @@
   "format": "fb-style/1",
   "id": "medieval",
   "extends": "plain",
-  "biomes": ["minecraft:plains", "minecraft:sunflower_plains", "minecraft:meadow", "minecraft:forest", "minecraft:flower_forest"],
+  "biomes": [],
 
   "massing": {"ground": 4, "typical": 4, "jetty": 1, "plans": {"box": 3, "L": 3, "T": 2, "U": 2, "courtyard": 1}, "jettyChance": 40, "setbackChance": 15, "groundExtra": 1, "groundExtraChance": 25},
 

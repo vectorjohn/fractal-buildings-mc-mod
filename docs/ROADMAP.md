@@ -353,7 +353,7 @@ gate.
     cathedral, bath), footprints up to ~200 blocks (ADR 0001 limits)
 - [ ] **4.7 Styles** [St-*]: a palette and rule set per culture, mapped from biome,
   one step each:
-  - [ ] plains [St-plains]
+  - [x] plains [St-plains] (`styles/plains.json`; biomes moved from medieval; large-type preset deferred: only `house` is merged)
   - [ ] desert [St-desert]
   - [x] taiga [St-taiga]
     - *Known issues:* dormers need a 1/1 slope (R), so taiga's 2/1 roofs carry none (`dormers: 50` is set and takes effect only if a roof falls back to 1/1); no steep-dormer roof key added. Tower roofs show no log-post/plinth differences from house beyond the shared facade keys.
