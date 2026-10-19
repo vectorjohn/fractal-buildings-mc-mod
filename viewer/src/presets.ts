@@ -7,6 +7,9 @@ export type PresetName = (typeof PRESET_NAMES)[number];
 /** Fixed for every cell, so the same seed always frames the same. */
 export const FOV_DEG = 35;
 const DISTANCE_FACTOR = 1.15;
+/** The top preset's angle off vertical, so roof slopes and gable ends read instead of a flat rectangle. */
+export const TOP_PITCH_DEG = 22;
+const TOP_PITCH = (TOP_PITCH_DEG * Math.PI) / 180;
 
 /** Horizontal unit vector pointing out of the front of a lot (north is -z, east is +x, as in the IR). */
 export function frontVector(front: Facing): [number, number] {
@@ -22,8 +25,8 @@ export interface CameraPose { position: THREE.Vector3; target: THREE.Vector3; up
 
 /**
  * Camera pose for a preset, relative to the world bounds [min, max) of a building and the facing of its lot.
- * front-left: 3/4 view from the front-left corner, 30 degrees down; back-right: the opposite corner; top: straight
- * down with the front at the bottom of the picture; front: level elevation from the front.
+ * front-left: 3/4 view from the front-left corner, 30 degrees down; back-right: the opposite corner; top: 22 degrees off
+ * straight down (tipped towards the front, slightly to the left) with the front at the bottom of the picture; front: level elevation from the front.
  */
 export function presetPose(
   name: PresetName, bounds: { min: number[]; max: number[] }, front: Facing,
@@ -44,7 +47,11 @@ export function presetPose(
     case 'front-left': dir.copy(flat(1, 1)).multiplyScalar(Math.cos(tilt)).setY(Math.sin(tilt)); break;
     case 'back-right': dir.copy(flat(-1, -1)).multiplyScalar(Math.cos(tilt)).setY(Math.sin(tilt)); break;
     case 'front': dir.copy(flat(1, 0)); break;
-    case 'top': dir.set(0, 1, 0); up.set(-fx, 0, -fz); break; // front edge at the bottom of the picture
+    case 'top': { // front edge at the bottom of the picture, tipped off vertical towards the front and a little to the left
+      dir.copy(flat(1, 0.35)).multiplyScalar(Math.sin(TOP_PITCH)).setY(Math.cos(TOP_PITCH));
+      up.set(-fx, 0, -fz);
+      break;
+    }
   }
   return { position: target.clone().add(dir.multiplyScalar(dist)), target, up };
 }
