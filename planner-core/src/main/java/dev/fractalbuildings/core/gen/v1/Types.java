@@ -1,6 +1,7 @@
 package dev.fractalbuildings.core.gen.v1;
 
 import dev.fractalbuildings.core.gen.v1.types.house.HouseType;
+import dev.fractalbuildings.core.gen.v1.types.temple.TempleType;
 import dev.fractalbuildings.core.gen.v1.types.tower.TowerType;
 import dev.fractalbuildings.core.gen.v1.types.wall.WallType;
 import dev.fractalbuildings.core.gen.v1.types.workshop.WorkshopType;
@@ -22,6 +23,7 @@ public final class Types {
 	static {
 		List<BuildingType> r = new ArrayList<>();
 		r.add(new HouseType());
+		r.add(new TempleType());
 		r.add(new TowerType());
 		r.add(new WallType());
 		r.add(new WorkshopType());

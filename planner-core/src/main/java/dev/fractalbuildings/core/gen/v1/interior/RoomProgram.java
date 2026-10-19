@@ -25,6 +25,9 @@ public interface RoomProgram {
 	/** As {@link #use(Role, int, Draws)}, for a program that cares which storey the room is on. */
 	default String use(Role role, int area, Where where, Draws d) { return use(role, area, d); }
 
+	/** As the {@code Where} overload, knowing the kind of the mass the room is in (a temple's nave versus its apse). */
+	default String use(Role role, String massKind, int area, Where where, Draws d) { return use(role, area, where, d); }
+
 	/** As {@link #hooks(String, int, Draws)}, with the room's place in the building. */
 	default List<String> hooks(String use, int area, Where where, Draws d) { return hooks(use, area, d); }
 

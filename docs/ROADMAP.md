@@ -350,7 +350,7 @@ gate.
     *Known issues:* lots under 12x12 are unsupported (a hall alone fits 10x9 envelopes, no wing); no yard props, chimney or forge geometry yet (only a `hearth` hook); the cart door is the 2-wide, 2-high double door the facade pass offers (no taller lintel), and a 1-storey wing shares the hall's 5-6 high ground storey.
   - [x] shop [T-shop]
     *Done 2026-10-19.* Shopfront (door centred, 2-3 wide display windows between piers, trim fascia), 5-high ground storey, counter hook, rear wing and front jetty variants; lots 9-14 x 13-26 (margins 1, envelope 7-12 wide). `ShopTypeTest`, gallery `shop-medieval|plain|flat`. *Known issues:* envelopes narrower than 7 are not supported (a centred door plus a window each side needs 7); no awning or sign yet (envelope has no free cell in front of the wall; belongs with the site step).
-  - [ ] temple [T-temple]
+  - [x] temple [T-temple]: `gen/v1/types/temple/` (nave on one axis, porch or bell tower at the front with the door on the axis, apse with the altar in the back third, optional side chapels); lots 15x25..31x45, `check --types temple` 0 failing. *Known issues:* windows repeat per grid storey on the open nave and tower (facade step: tall windows); `RoomProgram.use` has a mass-kind overload (additive).
   - [x] wall and gate [T-wall]
   - [x] **high-rise** [T-highrise]: setback tower up to the y 319 ceiling (~60
     storeys), stair core, podium on the street

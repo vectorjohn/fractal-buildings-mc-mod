@@ -175,7 +175,7 @@ public final class InteriorPass {
 			else if (info.entry().stream().anyMatch(e -> lf.contains(e[0], e[1]))) role = RoomProgram.Role.ENTRY;
 			else if (l == plan.corridor()) role = RoomProgram.Role.CORRIDOR;
 			else if (hasCore(info, lf)) role = RoomProgram.Role.STAIR;
-			uses[l] = prog.use(role, lf.area(), new RoomProgram.Where(s, g.count()), c.draws("interior/use", idx, s, l));
+			uses[l] = prog.use(role, a.kind(), lf.area(), new RoomProgram.Where(s, g.count()), c.draws("interior/use", idx, s, l));
 		}
 		List<Site> hooks = new ArrayList<>();
 		for (int l = 0; l < n; l++) hookSites(c, prog, plan, info, idx, s, l, uses[l], hooks);
