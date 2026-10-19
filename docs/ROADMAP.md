@@ -343,7 +343,7 @@ gate.
     Tests: `TowerTypeTest` (height >= 2 x widest footprint, top under the cap, one core through every storey, storeys capped by maxHeight, shape and footprint variety; mutant: dropping the 2x rule fails it), `V1PropertyTest` (4 lots x 250), golden `tower.txt`, `check --types tower` 0 failures over 51k cases.
     *Known issues:* no slit windows (facade is the style's; a tower facade program needs a style override the context does not offer); the roof is the style's (flat with parapet from 6 storeys, else gable/hip), no spire.
   - [ ] temple [T-temple]
-  - [ ] wall and gate [T-wall]
+  - [x] wall and gate [T-wall]
   - [ ] **high-rise** [T-highrise]: setback tower up to the y 319 ceiling (~60
     storeys), stair core, podium on the street
   - [ ] **city block** [T-block]: a perimeter block of joined units with shared

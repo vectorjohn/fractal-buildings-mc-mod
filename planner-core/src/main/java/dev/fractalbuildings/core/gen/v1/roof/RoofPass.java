@@ -50,7 +50,10 @@ public final class RoofPass {
 	/** A shed stops rising here (a plateau), so wide buildings do not get a wall-high ramp. */
 	static final int SHED_MAX = 3;
 
-	public static void run(BuildContext c) {
+	public static void run(BuildContext c) { run(c, c.style().roof()); }
+
+	/** As {@link #run(BuildContext)} with the roof rules {@code rs} in place of the style's (types that force flat roofs). */
+	public static void run(BuildContext c, RoofStyle rs) {
 		Massing m = c.massing();
 		StoreyGrid grid = m.grid();
 		List<Mass> ms = m.masses();
@@ -80,7 +83,7 @@ public final class RoofPass {
 				for (int x = mass.x(); x < mass.maxX(); x++)
 					for (int z = mass.z(); z < mass.maxZ(); z++)
 						if (claim[x][z] < 0 && !coveredHigher(ms, mass.to(), x, z)) claim[x][z] = gi;
-		for (int gi = 0; gi < groups.size(); gi++) new Group(c, ms, groups.get(gi), gi, claim).build();
+		for (int gi = 0; gi < groups.size(); gi++) new Group(c, rs, ms, groups.get(gi), gi, claim).build();
 	}
 
 	private static int find(int[] root, int i) {
@@ -137,13 +140,13 @@ public final class RoofPass {
 		int[][] h;
 		Facing shedDown; // shed: the downhill direction
 
-		Group(BuildContext c, List<Mass> all, List<Mass> masses, int gi, int[][] claim) {
+		Group(BuildContext c, RoofStyle rs, List<Mass> all, List<Mass> masses, int gi, int[][] claim) {
 			this.c = c;
 			this.all = all;
 			this.masses = masses;
 			this.gi = gi;
 			this.grid = c.massing().grid();
-			this.rs = c.style().roof();
+			this.rs = rs;
 			this.t = masses.get(0).to();
 			this.base = masses.get(0).topSlab(grid) + 1;
 			this.w = c.width();

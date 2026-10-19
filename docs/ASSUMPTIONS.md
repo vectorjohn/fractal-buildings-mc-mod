@@ -52,3 +52,4 @@ editing the old one.
 | 2026-10-19 | 4.3 | Dormers: 50 % of street-facing slopes in `medieval`, none in `plain`; 3-wide closed boxes on 1/1 slopes only | Cheap look variety; no attic rooms behind them in Phase 4 | yes |
 | 2026-10-19 | 4.5 | Interior defaults: `roomMin` 3, plain `roomArea` 30 / medieval 24, corridor at 6 / 8 rooms, 20-30 % extra loop doors | Beds and tables need about 3x3; cheap to change per style | yes |
 | 2026-10-19 | 4.2 | Jetties and setbacks only on the main stack; wings are plain boxes of 1..3 storeys that may be one taller than the main block | Keeps every pair of masses inside the contract; wing jetties come with the house type step | yes |
+| 2026-10-19 | 4.6 | Wall: margins side 0 / front 1 / back 1 (segments abut, both gates land on lot ground), curtains one storey, towers 10-12 wide with 2-3 storeys, gate 3x4 as closed DOOR leaves | Fits lots 24x7 up; cheap to change in `WallType` | yes |

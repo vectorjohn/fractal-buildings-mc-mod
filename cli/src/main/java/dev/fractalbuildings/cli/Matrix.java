@@ -35,6 +35,7 @@ final class Matrix {
 		for (String type : types) {
 			Scenes.type(type, gen);
 			List<String> lots = new ArrayList<>();
+			boolean own = !(o.has("lots") || gen.equals(Scenes.V0));
 			if (o.has("lots") || gen.equals(Scenes.V0)) lots.addAll(Opts.list(o.get("lots", LOTS)));
 			else for (int[] l : Types.get(type).limits().testLots()) lots.add(l[0] + "x" + l[1]);
 			for (String lot : lots)
@@ -42,7 +43,7 @@ final class Matrix {
 					for (String terrain : Opts.list(o.get("terrains", TERRAINS)))
 						for (String front : Opts.list(o.get("fronts", FRONTS))) {
 							Scenes.style(style, gen);
-							cells.add(new Cell(type + " " + lot + " " + style + " " + terrain + " " + front, type, Opts.lot(lot), style,
+							cells.add(new Cell(type + " " + lot + " " + style + " " + terrain + " " + front, type, own ? Types.get(type).limits().oriented(Opts.lot(lot), Opts.front(front)) : Opts.lot(lot), style,
 									Scenes.probes(terrain), Opts.front(front)));
 						}
 		}

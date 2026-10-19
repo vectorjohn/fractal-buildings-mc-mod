@@ -146,7 +146,9 @@ class InstancePassV1Test {
 			int[] wd = t.limits().testLots().get(t.limits().testLots().size() / 2);
 			for (int y : new int[] {250, 280, 300, 310, 313, 314}) {
 				for (int seed = 0; seed < 4; seed++) {
-					GenRequest rq = new GenRequest(seed, new Lot("lot0", 3, -5, wd[0], wd[1], Facing.values()[seed]), t.id(), "medieval",
+					Facing fr = Facing.values()[seed];
+					int[] lt = t.limits().oriented(wd, fr);
+					GenRequest rq = new GenRequest(seed, new Lot("lot0", 3, -5, lt[0], lt[1], fr), t.id(), "medieval",
 							SyntheticTerrain.flat(y), (x, z) -> "minecraft:plains");
 					SceneDoc s = new GeneratorV1().generate(rq);
 					PlacedBuilding b = s.buildings().get(0);

@@ -1,0 +1,11 @@
+{
+  "type": "wall",
+  "style": "plain",
+  "lot": "36x9",
+  "terrain": "noise:7:64:6:32",
+  "front": "north",
+  "seeds": "0..11",
+  "gen": "v1",
+  "cutStorey": 0,
+  "cameras": ["front-left", "back-right", "top", "front", "cutaway"]
+}

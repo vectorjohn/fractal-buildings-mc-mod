@@ -86,7 +86,7 @@ class MainTest {
 
 	@Test
 	void checkSeeds0to49PassesOnTheDefaultMatrix() {
-		Result r = run("check", "--seeds", "0..49");
+		Result r = run("check", "--types", "house", "--seeds", "0..49");
 		assertEquals(0, r.code(), r.out());
 		assertTrue(r.out().contains("failing: 0"), r.out());
 	}

@@ -27,6 +27,16 @@ public record TypeLimits(int minWidth, int minDepth, int minStoreys, int maxStor
 		if (maxGrade < 1) throw new IllegalArgumentException("maxGrade " + maxGrade);
 	}
 
+	/**
+	 * A test lot {@code {w, d}} given in the front frame (width along the front), as the lot for a given
+	 * front: east/west fronts see the lot turned round if it does not fit as given (narrow deep lots).
+	 */
+	public int[] oriented(int[] lot, dev.fractalbuildings.core.ir.Facing front) {
+		boolean alongX = front == dev.fractalbuildings.core.ir.Facing.NORTH || front == dev.fractalbuildings.core.ir.Facing.SOUTH;
+		int lw = alongX ? lot[0] : lot[1], ld = alongX ? lot[1] : lot[0];
+		return lw < minLotWidth() || ld < minLotDepth() ? new int[] {lot[1], lot[0]} : lot;
+	}
+
 	public int minLotWidth() { return minWidth + 2 * side; }
 
 	public int minLotDepth() { return minDepth + front + back; }

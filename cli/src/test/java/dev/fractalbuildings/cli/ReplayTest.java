@@ -62,7 +62,9 @@ class ReplayTest {
 			};
 			int x = r.range(-60, 60), z = r.range(-60, 60);
 			if (terrain.startsWith("recorded:")) { x = -700 + r.range(-40, 40); z = -3500 + r.range(-40, 40); }
-			out.add(new Case(t.id(), i * 7L, lot[0], lot[1], x, z, Facing.values()[r.below(4)], styles.get(r.below(styles.size())), terrain));
+			Facing front = Facing.values()[r.below(4)];
+			int[] dims = t.limits().oriented(lot, front); // a long thin type turns its lot to fit the front
+			out.add(new Case(t.id(), i * 7L, dims[0], dims[1], x, z, front, styles.get(r.below(styles.size())), terrain));
 		}
 		return out;
 	}

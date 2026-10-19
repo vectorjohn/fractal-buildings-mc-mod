@@ -62,6 +62,7 @@ public record V1Case(long seed, String type, String style, int lotW, int lotD, i
 		Draws r = new Draws(Hash64.hash(seed, "v1-case", lotIdx, Hash64.of(t.id())));
 		Facing front = Facing.values()[r.below(4)];
 		String style = styles.get(r.below(styles.size()));
+		lot = t.limits().oriented(lot, front);
 		int x = r.range(-60, 60), z = r.range(-60, 60);
 		int cx = x + lot[0] / 2, cz = z + lot[1] / 2;
 		int g = t.limits().maxGrade(); // no ground steeper than 1 in g

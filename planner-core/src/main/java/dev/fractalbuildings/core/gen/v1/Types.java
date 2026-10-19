@@ -2,6 +2,7 @@ package dev.fractalbuildings.core.gen.v1;
 
 import dev.fractalbuildings.core.gen.v1.types.house.HouseType;
 import dev.fractalbuildings.core.gen.v1.types.tower.TowerType;
+import dev.fractalbuildings.core.gen.v1.types.wall.WallType;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -19,6 +20,7 @@ public final class Types {
 		List<BuildingType> r = new ArrayList<>();
 		r.add(new HouseType());
 		r.add(new TowerType());
+		r.add(new WallType());
 		r.sort(Comparator.comparing(BuildingType::id));
 		for (int i = 1; i < r.size(); i++) {
 			if (r.get(i).id().equals(r.get(i - 1).id())) throw new IllegalStateException("duplicate type " + r.get(i).id());

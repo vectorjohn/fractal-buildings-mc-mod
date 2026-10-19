@@ -23,12 +23,15 @@ public final class OpeningPass {
 
 	private record Cut(Face face, int pos, int y, int h) {}
 
-	public static void run(BuildContext c) {
+	public static void run(BuildContext c) { run(c, e -> door(c, e)); }
+
+	/** As {@link #run(BuildContext)} with the types own cutter for each entrance (the wall type cuts 3 x 4 gates); it returns the entrance as cut. */
+	public static void run(BuildContext c, java.util.function.UnaryOperator<FacadePlan.Entrance> cutDoor) {
 		FacadePlan plan = c.facadePlan();
 		FacadeStyle st = c.style().facade();
 		Decor d = new Decor(c, plan);
 		List<FacadePlan.Entrance> doors = new ArrayList<>();
-		for (FacadePlan.Entrance e : plan.entrances()) doors.add(door(c, e));
+		for (FacadePlan.Entrance e : plan.entrances()) doors.add(cutDoor.apply(e));
 
 		List<Cut> cuts = new ArrayList<>();
 		for (FacadePlan.Layout l : plan.layouts()) {

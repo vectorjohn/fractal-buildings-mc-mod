@@ -106,3 +106,5 @@ being true.
 - Roof groups (4.3): masses with the same `to` that overlap (not party walls) share one heightfield; columns under a strictly higher mass are not roofed (the higher mass's roof covers them); `RoofPass` overhang sits at the top-slab level (y = base - 1) on envelope columns no mass stands on.
 
 - Tower: `TowerType` ignores the style's `groundExtra` (a 5-high ground storey needs a core of 6, more than a 7-wide tower holds).
+- Wall type (4.6): the passage is an `open` one-storey mass so it is one room; gates are DOOR-role boxes 3x4 (closed gate leaves) with their own `Opening`, not 1x2 doors; the second (town) gate is a second `FacadePlan` entrance on the same mass (`others`), not a second entrance mass. Ground storey is 5 high for the whole grid (4-high gate, core length 6).
+- Wall type (4.6): wall-walk door sits one block above the tower floor (tower storey 1, y = slab + 2) so you step up onto the curtain's ROOF layer; `RoofPass.run(c, RoofStyle)` and an `OpeningPass.run(c, doorCutter)` overload are the additive helpers it needed.
