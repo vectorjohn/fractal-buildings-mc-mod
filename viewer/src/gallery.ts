@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { buildSceneObject } from './render';
-import { FOV_DEG, PRESET_NAMES, presetPose } from './presets';
+import { FOV_DEG, PRESET_NAMES, frontVector, presetPose } from './presets';
 import type { PresetName } from './presets';
 import { resolveSource } from './source';
 import { sceneBounds, sceneVoxels } from './voxels';
@@ -40,7 +40,8 @@ async function main(): Promise<void> {
   if (seeds.length === 0) throw new Error(`no seeds >= ${from}`);
 
   const scene = new THREE.Scene();
-  scene.add(new THREE.HemisphereLight(0xffffff, 0x444455, 1.2));
+  const hemi = new THREE.HemisphereLight(0xffffff, 0x444455, 1.2);
+  scene.add(hemi);
   const sun = new THREE.DirectionalLight(0xffffff, 2);
   sun.position.set(5, 10, 7);
   scene.add(sun, sun.target);
@@ -60,7 +61,15 @@ async function main(): Promise<void> {
     camera.lookAt(pose.target);
     camera.updateProjectionMatrix();
     // Headlight-ish: the sun follows the camera (a bit above it) so every preset and facing is lit alike.
-    sun.position.copy(pose.position).add(new THREE.Vector3(0, pose.position.distanceTo(pose.target) * 0.6, 0));
+    const dist = pose.position.distanceTo(pose.target);
+    sun.position.copy(pose.position).add(new THREE.Vector3(0, dist * 0.6, 0));
+    if (preset === 'top') {
+      // From above a headlight makes every upward face identical. Use a fixed low sun from the front-right
+      // (relative to the lot's front) so roof slopes, ridges and gable ends take different shades.
+      const [fx, fz] = frontVector(data.lots[0]?.front ?? 'south');
+      sun.position.copy(pose.target).add(new THREE.Vector3(0.8 * fx + 0.6 * fz, 0.55, 0.8 * fz - 0.6 * fx).multiplyScalar(dist));
+      hemi.intensity = 0.5;
+    } else hemi.intensity = 1.2;
     sun.target.position.copy(pose.target);
     sun.target.updateMatrixWorld();
     const col = i % COLS, row = Math.floor(i / COLS);
