@@ -346,8 +346,9 @@ gate.
     *Done 2026-10-19.* Shopfront (door centred, 2-3 wide display windows between piers, trim fascia), 5-high ground storey, counter hook, rear wing and front jetty variants; lots 9-14 x 13-26 (margins 1, envelope 7-12 wide). `ShopTypeTest`, gallery `shop-medieval|plain|flat`. *Known issues:* envelopes narrower than 7 are not supported (a centred door plus a window each side needs 7); no awning or sign yet (envelope has no free cell in front of the wall; belongs with the site step).
   - [ ] temple [T-temple]
   - [x] wall and gate [T-wall]
-  - [ ] **high-rise** [T-highrise]: setback tower up to the y 319 ceiling (~60
+  - [x] **high-rise** [T-highrise]: setback tower up to the y 319 ceiling (~60
     storeys), stair core, podium on the street
+    - Done 2026-10-19: `gen/v1/types/highrise/` (`HighriseType`, `HighriseMassing`): podium 1-3 storeys (ground 5 high, trimmed on the sides and back), shaft bands of 8-20 storeys with per-side insets 1-4 between them, crown 1-3 storeys, one core 0..n; storeys = spec (20-60) capped by `maxHeight` (top slab + 3 under it, so never above y 319); lots 20x20-44x44, margins 1, `maxGrade` 3. Roofs/facades/interiors are the shared passes (flat parapet roofs from R). Shell p95 ~14 ms, check p95 ~19 ms (heavy lock, 60 storeys at 44x44 included); `check --types highrise --seeds 0..199`: 25600 cases, 0 violations. Log: `docs/log/2026-10-19-p4-t-highrise.md`. *Known issues:* all tiers are rectangles stacked inside each other (no corner towers or twin shafts); crown is always a flat box (no pyramid or spire yet); `top` gallery camera is perspective-skewed on 250-block towers.
   - [ ] **city block** [T-block]: a perimeter block of joined units with shared
     walls and a courtyard, filling a whole street block
   - [ ] **hall / civic** [T-hall]: large spans (market hall, town hall,

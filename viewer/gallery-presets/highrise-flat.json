@@ -1,0 +1,10 @@
+{
+  "type": "highrise",
+  "style": "plain",
+  "lot": "44x44",
+  "terrain": "flat:64",
+  "front": "north",
+  "seeds": "0..15",
+  "gen": "v1",
+  "cameras": ["front-left", "back-right", "top"]
+}
