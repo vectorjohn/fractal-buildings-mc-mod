@@ -353,11 +353,17 @@ gate.
   - [ ] taiga [St-taiga]
   - [ ] snowy [St-snowy]
   - [ ] jungle [St-jungle]
-- [ ] **4.8 Site** [S]: front steps from every entrance down to the ground and a new
+- [x] **4.8 Site** [S]: front steps from every entrance down to the ground and a new
   `entrance-reachable` invariant (Phase 3 known issue), the height cap under y 319
   tested at extremes (Phase 3 known issue; `spec.maxHeight` exists since 4.1), and
   failing property cases replayable via the CLI (Phase 3 known issue; replay
   commands exist since 4.1, S adds the round-trip test).
+  Done: front steps in `InstancePassV1` (BFS flight, landing + one block per step on
+  foundation, turning along the facade; slab lifted to buried doors), `entrance-reachable`
+  (v1 only), height-cap tests at ground 250..315, `cli` `ReplayTest`. Houses reach every
+  door on slopes up to 2 blocks per column (`maxGrade` stays 1). *Known issues:* the
+  `hill:` probe has no centre option (property cases centre it at 0,0, so replay works);
+  a type with front margin 0 gets no steps (outside the lot), so type steps need margin >= 1.
 - [x] **4.9 Viewer for the gate** [V]: roof slopes shaded by their slope (Phase 3
   known issue, John at REVIEW 3.12), style colours read from the style files with a
   per-voxel material gradient, gallery presets as one file per type/style, a

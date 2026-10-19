@@ -1,6 +1,7 @@
 package dev.fractalbuildings.core.check;
 
 import dev.fractalbuildings.core.ir.Box3;
+import dev.fractalbuildings.core.ir.Facing;
 import dev.fractalbuildings.core.ir.Lot;
 import dev.fractalbuildings.core.ir.Opening;
 import dev.fractalbuildings.core.ir.OpeningKind;
@@ -8,6 +9,7 @@ import dev.fractalbuildings.core.ir.PlacedBuilding;
 import dev.fractalbuildings.core.ir.Role;
 import dev.fractalbuildings.core.ir.Roof;
 import dev.fractalbuildings.core.ir.Room;
+import dev.fractalbuildings.core.ir.Storey;
 import dev.fractalbuildings.core.ir.SceneDoc;
 import dev.fractalbuildings.core.ir.TerrainPatch;
 import dev.fractalbuildings.core.ir.Violation;
@@ -78,6 +80,7 @@ public final class Invariants {
 			roofChecks();
 			roomGraph();
 			roomsReachable();
+			entranceReachable();
 		}
 
 		int floorY(int lx, int lz) { return ground.floorY(g.worldX(lx, lz), g.worldZ(lx, lz)); }
@@ -338,6 +341,108 @@ public final class Invariants {
 				for (Box3 p : r.parts()) cells.add(g.placement().toWorld(p));
 				out.add(new Violation(Invariant.ROOMS_REACHABLE.id, b.id(), "room " + r.id() + " not reachable on foot from an exterior door", cells));
 			}
+		}
+
+		/**
+		 * Generator v1 (genVersion >= 2): from the cell outside each exterior door of the ground
+		 * storey, a walk (rooms-reachable's moves, terrain solid up to each column's floorY, never
+		 * back through a door) reaches a position standing on the terrain itself, in one of the
+		 * building's lots and outside its footprint.
+		 */
+		void entranceReachable() {
+			if (scene.genVersion() < 2 || b.shell().storeys().isEmpty()) return;
+			Storey s0 = b.shell().storeys().get(0);
+			List<Opening> doors = new ArrayList<>();
+			for (Opening o : b.shell().openings()) {
+				if (o.kind() != OpeningKind.DOOR || o.box().y() >= s0.y() + s0.height()) continue;
+				if (o.to().equals(Opening.OUTSIDE) == o.from().equals(Opening.OUTSIDE)) continue;
+				doors.add(o);
+			}
+			List<Lot> lots = new ArrayList<>();
+			for (String id : b.lots()) for (Lot l : scene.lots()) if (l.id().equals(id)) lots.add(l);
+			if (doors.isEmpty() || lots.isEmpty()) return;
+			// local x/z window: the lots' corners and the grid, one cell of slack
+			int x0 = g.minX, x1 = g.minX + g.sx - 1, z0 = g.minZ, z1 = g.minZ + g.sz - 1;
+			for (Lot l : lots)
+				for (int cx : new int[] {l.x(), l.x() + l.w() - 1})
+					for (int cz : new int[] {l.z(), l.z() + l.d() - 1}) {
+						int lx = g.placement().localX(cx, cz), lz = g.placement().localZ(cx, cz);
+						x0 = Math.min(x0, lx); x1 = Math.max(x1, lx); z0 = Math.min(z0, lz); z1 = Math.max(z1, lz);
+					}
+			x0--; x1++; z0--; z1++;
+			int nx = x1 - x0 + 1, nz = z1 - z0 + 1;
+			int[] top = new int[nx * nz]; // terrain top as local y
+			int lo = Integer.MAX_VALUE, hi = Integer.MIN_VALUE;
+			for (int z = z0; z <= z1; z++)
+				for (int x = x0; x <= x1; x++) {
+					int t = floorY(x, z) - b.oy();
+					top[(z - z0) * nx + (x - x0)] = t;
+					lo = Math.min(lo, t);
+					hi = Math.max(hi, t);
+				}
+			int ylo = Math.min(lo, g.minY), yhi = Math.max(hi, g.minY + g.sy) + 3, ny = yhi - ylo + 1;
+			boolean[] footprint = new boolean[nx * nz];
+			for (Volume v : b.shell().volumes()) {
+				if (v.box().y() != 0) continue;
+				for (int z = v.box().z(); z < v.box().maxZ(); z++)
+					for (int x = v.box().x(); x < v.box().maxX(); x++) footprint[(z - z0) * nx + (x - x0)] = true;
+			}
+			List<Box3> bad = new ArrayList<>();
+			List<String> names = new ArrayList<>();
+			for (Opening o : doors) {
+				Facing out = o.to().equals(Opening.OUTSIDE) ? o.facing() : o.facing().rotate(2);
+				int sx = o.box().x() + out.dx, sz = o.box().z() + out.dz, sy = o.box().y();
+				boolean[] seen = new boolean[nx * ny * nz];
+				int[] queue = new int[seen.length];
+				int head = 0, tail = 0;
+				for (int y = sy; y >= sy - 1; y--) {
+					if (sx < x0 || sx > x1 || sz < z0 || sz > z1 || !walkStanding(top, x0, z0, nx, sx, y, sz)) continue;
+					int i = ((y - ylo) * nz + (sz - z0)) * nx + (sx - x0);
+					if (!seen[i]) { seen[i] = true; queue[tail++] = i; }
+				}
+				boolean ok = false;
+				int[] hx = {1, -1, 0, 0}, hz = {0, 0, 1, -1};
+				while (head < tail && !ok) {
+					int c = queue[head++];
+					int cx = x0 + c % nx, cz = z0 + (c / nx) % nz, cy = ylo + c / (nx * nz);
+					int col = (cz - z0) * nx + (cx - x0);
+					if (!footprint[col] && cy - 1 == top[col]) {
+						int wx = g.worldX(cx, cz), wz = g.worldZ(cx, cz);
+						for (Lot l : lots) if (l.containsColumn(wx, wz)) ok = true;
+						if (ok) break;
+					}
+					for (int d = 0; d < 4; d++) {
+						for (int dy = -1; dy <= 1; dy++) {
+							int px = cx + hx[d], py = cy + dy, pz = cz + hz[d];
+							if (px < x0 || px > x1 || pz < z0 || pz > z1 || py < ylo || py > yhi) continue;
+							if (g.get(px, py, pz) == Role.DOOR || g.get(px, py + 1, pz) == Role.DOOR) continue;
+							if (!walkStanding(top, x0, z0, nx, px, py, pz)) continue;
+							if (dy == 1 && !walkPassable(top, x0, z0, nx, cx, cy + 2, cz)) continue;
+							if (dy == -1 && !walkPassable(top, x0, z0, nx, px, py + 2, pz)) continue;
+							int ni = ((py - ylo) * nz + (pz - z0)) * nx + (px - x0);
+							if (seen[ni]) continue;
+							seen[ni] = true;
+							queue[tail++] = ni;
+						}
+					}
+				}
+				if (!ok) {
+					bad.add(g.placement().toWorld(o.box()));
+					names.add(o.id());
+				}
+			}
+			if (!bad.isEmpty()) report(Invariant.ENTRANCE_REACHABLE, "exterior door(s) " + String.join(", ", names) + " have no walkable way down to the terrain inside the lot", bad, bad.size());
+		}
+
+		boolean walkPassable(int[] top, int x0, int z0, int nx, int x, int y, int z) {
+			if (y <= top[(z - z0) * nx + (x - x0)]) return false;
+			Role r = g.get(x, y, z);
+			return r == Role.AIR || r == Role.DOOR;
+		}
+
+		boolean walkStanding(int[] top, int x0, int z0, int nx, int x, int y, int z) {
+			if (!walkPassable(top, x0, z0, nx, x, y, z) || !walkPassable(top, x0, z0, nx, x, y + 1, z)) return false;
+			return y - 1 <= top[(z - z0) * nx + (x - x0)] || g.get(x, y - 1, z).solid;
 		}
 	}
 }
