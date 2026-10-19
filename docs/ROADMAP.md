@@ -335,7 +335,7 @@ Critical path: S3 → S5 → V4 → S9.
 
 ## Phase 4: Building generator depth
 
-Updated: 2026-10-16
+Updated: 2026-10-18
 
 Grow v0 into buildings that read as built by a person, using the technique
 chosen at the Phase 1 gate ([ADR 0001](adr/0001-building-direction.md): volume
@@ -353,6 +353,20 @@ fan out one per item.
 - [ ] **4.2 Massing**: L, T, U and courtyard footprints; multi-volume buildings;
   towers and wings; setback stacks (podium, shaft, crown, each volume inside
   the one below); one storey grid per building.
+  - Wings from multiple volumes: L, T and U plans built as a main block plus
+    wings of different widths and heights, not one extruded outline. John at
+    the Phase 3 gate (REVIEW 3.12): v0 "read[s] as plain houses"; he likes
+    the variety in size and shape and wants "wings and stories that aren't
+    all the same size".
+  - Storeys with different footprints in both directions: setbacks (upper
+    storey smaller) and jetties (upper storey wider than the one below,
+    overhanging by 1–2 blocks on one or more sides, "like how some old
+    houses are wider with an overhang on top"; John, same comment). Model
+    each differing storey as its own volume starting above storey 0
+    (`parent` = the volume below): the current invariants then accept the
+    overhang without a rule change (NOTES, Planner core, 2026-10-18). A
+    jetty past the lot edge (over a street) still fails `in-lot`; Phase 5
+    decides whether streets allow that.
 - [ ] **4.3 Roofs**: gable, hip and combinations; dormers; overhangs; pitch per
   style; flat roofs, parapets and crowns for tall buildings.
 - [ ] **4.4 Facades**: bays and rhythm, trim, depth (insets, beams, sills), a
