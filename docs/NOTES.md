@@ -103,3 +103,5 @@ being true.
 - Front steps (4.8): `InstancePassV1` adds STAIR blocks on FOUNDATION outside the footprint; a test mutant that removes only the STAIR tops still passes `entrance-reachable` (the foundation tops form a flight one lower), remove the whole flight to test the invariant.
 - Roofs (4.3): `no-floating` is 6-connected, so a 1/1 stair of single ROOF voxels counts as floating; the roof pass fills each higher column down to the lower neighbour's level (steps touch face to face). Heightfield closure (fill beside lower neighbours and open air, cap beside higher masses' walls) makes roof-closed hold for any field, so forms are purely aesthetic choices.
 - Roof groups (4.3): masses with the same `to` that overlap (not party walls) share one heightfield; columns under a strictly higher mass are not roofed (the higher mass's roof covers them); `RoofPass` overhang sits at the top-slab level (y = base - 1) on envelope columns no mass stands on.
+
+- Tower: `TowerType` ignores the style's `groundExtra` (a 5-high ground storey needs a core of 6, more than a 7-wide tower holds).

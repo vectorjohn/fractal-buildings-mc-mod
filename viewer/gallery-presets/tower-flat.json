@@ -1,0 +1,9 @@
+{
+  "type": "tower",
+  "style": "plain",
+  "lot": "13x13",
+  "terrain": "flat:64",
+  "front": "north",
+  "seeds": "0..15",
+  "gen": "v1"
+}
