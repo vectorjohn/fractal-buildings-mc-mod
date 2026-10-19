@@ -365,7 +365,7 @@ gate.
   - [x] desert [St-desert]
   - [x] taiga [St-taiga]
     - *Known issues:* dormers need a 1/1 slope (R), so taiga's 2/1 roofs carry none (`dormers: 50` is set and takes effect only if a roof falls back to 1/1); no steep-dormer roof key added. Tower roofs show no log-post/plinth differences from house beyond the shared facade keys.
-  - [ ] snowy [St-snowy]
+  - [x] snowy [St-snowy]: `snowy.json` (pitch 2/1, bays 3-5, blank corners; stone + spruce); window density 0.013 vs plains 0.027 per bbox facade area (`SnowyStyleTest`). tower-snowy preset too. *Known issues:* no highrise/hall/block preset (not merged); dormers need 1/1 slopes so 2/1 roofs carry none.
   - [x] jungle [St-jungle]
     *Known issues:* no verandas (FENCE railings): no pass offers a porch and adding one safely (doors, S front flights) is its own step; the 2-block hip overhang gives the porch silhouette. Raised ground floors not done (optional).
 - [x] **4.8 Site** [S]: front steps from every entrance down to the ground and a new

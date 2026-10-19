@@ -3,5 +3,6 @@ plain
 medieval
 desert
 jungle
+snowy
 taiga
 plains
