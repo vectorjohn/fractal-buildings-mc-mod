@@ -77,6 +77,18 @@ public final class TestMassings {
 				List.of(new Core(3, 7, 5, 2, 0, 2), new Core(10, 7, 5, 2, 0, 2), new Core(17, 7, 5, 2, 0, 2)),
 				List.of("main0", "unit1", "unit2"),
 				List.of(new Massing.Party("main0", "unit1"), new Massing.Party("unit1", "unit2"))));
+		// appended by the massing step (4.2): storeys that differ both ways, wings of other heights
+		m.put("jettyStep", new Massing(grid(3), List.of(
+				g("main0", "main", 5, 5, 9, 7, 1),
+				up("jetty1", "jetty", 4, 4, 11, 9, 1, 2, "main0"),
+				up("jetty2", "jetty", 3, 3, 13, 11, 2, 3, "jetty1")), List.of(new Core(6, 9, 5, 2, 0, 3))));
+		m.put("setbackWing", new Massing(grid(3), List.of(
+				g("main0", "main", 3, 3, 12, 8, 2),
+				g("wing1", "wing", 3, 10, 6, 8, 1),
+				up("setback2", "setback", 4, 4, 10, 6, 2, 3, "main0")), List.of(new Core(5, 7, 5, 2, 0, 3))));
+		m.put("tallWingCore", new Massing(grid(3), List.of(
+				g("main0", "main", 2, 2, 10, 7, 2),
+				g("wing1", "wing", 11, 3, 8, 6, 3)), List.of(new Core(3, 6, 5, 2, 0, 2), new Core(12, 6, 5, 2, 1, 3))));
 		m.put("tall50", new Massing(grid(50), List.of(g("podium0", "podium", 2, 2, 28, 28, 50)), List.of(new Core(12, 14, 5, 2, 0, 50))));
 		return m;
 	}

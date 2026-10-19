@@ -303,7 +303,7 @@ gate.
   plus step F0 (v1 pipeline with default passes, massing model and contract, style
   files, type registry, IR additions, CLI `--gen`/`--type`, fixtures and property
   tests).
-- [ ] **4.2 Massing** [M]: L, T, U and courtyard footprints; multi-volume buildings;
+- [x] **4.2 Massing** [M]: L, T, U and courtyard footprints; multi-volume buildings;
   towers and wings; setback stacks (podium, shaft, crown, each volume inside
   the one below); one storey grid per building.
   - Wings from multiple volumes: L, T and U plans built as a main block plus
@@ -320,6 +320,7 @@ gate.
     overhang without a rule change (NOTES, Planner core, 2026-10-18). A
     jetty past the lot edge (over a street) still fails `in-lot`; Phase 5
     decides whether streets allow that.
+  - Done 2026-10-19 (house massing; the high-rise, hall and city-block programs use the same ops in wave 2). `gen/v1/mass/MassingOps` (grid, main, wing, jetty, setback, stack, core) + `HouseMassing` (plans box/L/T/U/courtyard, wings of other widths and storeys, jetty and setback stacks, back-off to simpler shapes). Medieval 2000 houses (18x18 and 29x15 envelopes): 56 % multi-volume, 39 % of 2-3 storey houses jettied; plain: 44 % multi-volume, no jetties. Log: `docs/log/2026-10-19-p4-m-massing.md`. *Known issues:* wings attach only to the main block (no wing-on-wing or second main); jetties only on the main stack, never over a wing; no jetty on lots where the wing blocks every side.
 - [ ] **4.3 Roofs** [R]: gable, hip and combinations; dormers; overhangs; pitch per
   style; flat roofs, parapets and crowns for tall buildings.
 - [ ] **4.4 Facades** [Fa]: bays and rhythm, trim, depth (insets, beams, sills), a

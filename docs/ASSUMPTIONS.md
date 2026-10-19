@@ -47,3 +47,4 @@ editing the old one.
 | 2026-10-19 | 4.1 | All stairs are in massing-reserved cores; the default stair is a two-row switchback (core at least storey height + 1 by 2) | Cores first (ADR 0001); a flight that stands on an intact slab needs no supports | yes |
 | 2026-10-19 | 4.1 | Large building types are property-tested only on ground up to 1 in 3; per-wing ground levels (ADR 0003 W5) come with 6.3 | One ground level per building keeps Phase 4 to the generator; flagged for John | yes |
 | 2026-10-19 | 4.1 | `medieval` claims the plains-family biomes until the plains style step moves them | `auto` needs a style for plains in the meantime | yes |
+| 2026-10-19 | 4.2 | Jetties and setbacks only on the main stack; wings are plain boxes of 1..3 storeys that may be one taller than the main block | Keeps every pair of masses inside the contract; wing jetties come with the house type step | yes |

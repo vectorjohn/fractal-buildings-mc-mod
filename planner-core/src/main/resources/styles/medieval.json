@@ -4,7 +4,7 @@
   "extends": "plain",
   "biomes": ["minecraft:plains", "minecraft:sunflower_plains", "minecraft:meadow", "minecraft:forest", "minecraft:flower_forest"],
 
-  "massing": {"ground": 4, "typical": 4, "jetty": 1},
+  "massing": {"ground": 4, "typical": 4, "jetty": 1, "plans": {"box": 3, "L": 3, "T": 2, "U": 2, "courtyard": 1}, "jettyChance": 40, "setbackChance": 15, "groundExtra": 1, "groundExtraChance": 25},
 
   "roof": {"forms": {"gable": 3, "hip": 1}, "rise": 1, "run": 1, "overhang": 1},
 

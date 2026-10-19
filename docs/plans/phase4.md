@@ -663,3 +663,4 @@ Each with the assumption made if nobody answers.
 # Deviations
 
 (Steps add one line each when they change a contract above.)
+- 4.2 (M): `MassingStyle` also has `groundExtraChance` (percent) beside `groundExtra` (blocks); `HouseMassing` is in `gen/v1/mass/` and the type calls it. No rule in `MassingCheck` changed.
