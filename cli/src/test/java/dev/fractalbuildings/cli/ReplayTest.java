@@ -60,6 +60,7 @@ class ReplayTest {
 				case 3 -> "noise:" + i + ":" + r.range(40, 150) + ":3:12";
 				default -> CROP_FROM_ROOT;
 			};
+			if (t.limits().maxGrade() > 3 && !terrain.startsWith("flat:")) terrain = "flat:64"; // gentle-ground types reject steep lots
 			int x = r.range(-60, 60), z = r.range(-60, 60);
 			if (terrain.startsWith("recorded:")) { x = -700 + r.range(-40, 40); z = -3500 + r.range(-40, 40); }
 			Facing front = Facing.values()[r.below(4)];

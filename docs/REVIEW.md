@@ -67,6 +67,9 @@ work becomes a ROADMAP item or a Polish backlog line. Settled items move to
   Where: `npm run gallery` then `viewer/out/gallery/medieval-flat-front-left.png` (seeds 0..15); more with `gallery.html?style=medieval&terrain=flat&from=16`. Jetties: seeds 16, 27. Setbacks: seeds 2, 32. Courtyard: seed 15.
   Look for: wings clearly different in width and height from the main block; jetty overhang of 1 block that looks like an old overhanging upper floor, not a bug; roofs over wings and jetties are still plain (roof step 4.3).
   Result:
+- [ ] **4.6 city block**: does a block read as a row of separate houses joined by party walls around a courtyard?
+  Where: `FB_PRESETS=block-medieval,block-plain-flat npm run gallery` then `viewer/out/gallery/block-medieval-front-left.png`, `-front.png`, `-top.png`, `-cutaway.png`; `block-medieval-flat` (100x80).
+  Look for: unit seams visible (height steps, roof forms, window rhythm) rather than one long wall; the alley gaps (about half the blocks) read as a lane into the yard; courtyard size; doors on streets only. Known: no jetties or setbacks on units, shared storey bands run across units.
 
 ### Temple (4.6)
 
@@ -88,4 +91,8 @@ work becomes a ROADMAP item or a Polish backlog line. Settled items move to
 - [ ] **4.6 high-rise**: do the setback towers read as skyscrapers?
   Where: `FB_PRESETS=highrise-plain,highrise-medieval,highrise-flat npm run gallery`, `viewer/out/gallery/highrise-*-front-left.png`, seeds 0..15 (cutaway on `highrise-medieval`).
   Look for: podium visible at the street, 2-4 steps of setback up the shaft, a different crown; storeys of 4 blocks make a 60-storey tower 250 blocks tall (is that the right feel in game?). Window bands repeat evenly until the facade step (4.4) lands.
+  Result:
+- [ ] **4.6 city block, ground**: blocks only get built on gentle ground (steeper than 1 in 16 is rejected) until per-wing ground levels in 6.3, and need lots of at least 52x52. OK for now?
+  Where: `docs/log/2026-10-19-p4-t-block.md` (round 2); `fractal-cli gen --type block --lot 64x56 --terrain plane:64:1:0:3` exits 2.
+  Look for: whether worldgen block sites (Phase 6) can be picked on flat enough ground, or whether you want terraced blocks sooner.
   Result:

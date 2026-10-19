@@ -1,0 +1,9 @@
+{
+  "type": "block",
+  "style": "medieval",
+  "lot": "100x80",
+  "terrain": "flat:64",
+  "front": "north",
+  "seeds": "0..3",
+  "gen": "v1"
+}

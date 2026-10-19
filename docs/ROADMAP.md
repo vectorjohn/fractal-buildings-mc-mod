@@ -349,8 +349,9 @@ gate.
   - [x] **high-rise** [T-highrise]: setback tower up to the y 319 ceiling (~60
     storeys), stair core, podium on the street
     - Done 2026-10-19: `gen/v1/types/highrise/` (`HighriseType`, `HighriseMassing`): podium 1-3 storeys (ground 5 high, trimmed on the sides and back), shaft bands of 8-20 storeys with per-side insets 1-4 between them, crown 1-3 storeys, one core 0..n; storeys = spec (20-60) capped by `maxHeight` (top slab + 3 under it, so never above y 319); lots 20x20-44x44, margins 1, `maxGrade` 3. Roofs/facades/interiors are the shared passes (flat parapet roofs from R). Shell p95 ~14 ms, check p95 ~19 ms (heavy lock, 60 storeys at 44x44 included); `check --types highrise --seeds 0..199`: 25600 cases, 0 violations. Log: `docs/log/2026-10-19-p4-t-highrise.md`. *Known issues:* all tiers are rectangles stacked inside each other (no corner towers or twin shafts); crown is always a flat box (no pyramid or spire yet); `top` gallery camera is perspective-skewed on 250-block towers.
-  - [ ] **city block** [T-block]: a perimeter block of joined units with shared
+  - [x] **city block** [T-block]: a perimeter block of joined units with shared
     walls and a courtyard, filling a whole street block
+    Done 2026-10-19 (`docs/log/2026-10-19-p4-t-block.md`): ring of 8-30 party-wall units around a courtyard, one street door and one core per unit. *Known issues:* gentle ground only (steeper than 1 in 16 is rejected with an IllegalArgumentException) until per-wing ground levels in 6.3; minimum lot 52x52 (not 40x40; margins 5 for the front steps); no jetties or setbacks on units (M6), so seams read through height, roofs and facade rhythm.
   - [x] **hall / civic** [T-hall]: large spans (market hall, town hall,
     cathedral, bath), footprints up to ~200 blocks (ADR 0001 limits)
     Tests: `HallTypeTest` (kind mix, open span >= 15, footprint >= 20x20, roofs <= 7 over wide spans incl. 200x200, arches, furnishing, diversity floors; mutants for span, arches, roof pitch, seed), `V1PropertyTest` (5 lots x 40, incl. 200x200 on slopes up to 1:3), golden `hall.txt`. Log: `docs/log/2026-10-19-p4-t-hall.md`.

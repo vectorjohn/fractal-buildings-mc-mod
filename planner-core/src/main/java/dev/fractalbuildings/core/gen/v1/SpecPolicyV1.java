@@ -38,9 +38,17 @@ public final class SpecPolicyV1 {
 		StyleRules style = StyleLibrary.AUTO.equals(req.style())
 				? StyleLibrary.forBiome(req.biome().biome(lot.x() + lot.w() / 2, lot.z() + lot.d() / 2))
 				: StyleLibrary.get(req.style());
-		int maxFloor = Integer.MIN_VALUE;
+		int maxFloor = Integer.MIN_VALUE, minFloor = Integer.MAX_VALUE;
 		for (int x = lot.x(); x < lot.x() + lot.w(); x++)
-			for (int z = lot.z(); z < lot.z() + lot.d(); z++) maxFloor = Math.max(maxFloor, req.terrain().floorY(x, z));
+			for (int z = lot.z(); z < lot.z() + lot.d(); z++) {
+				int fy = req.terrain().floorY(x, z);
+				maxFloor = Math.max(maxFloor, fy);
+				minFloor = Math.min(minFloor, fy);
+			}
+		// types that need gentle ground (maxGrade > 3: the city block) reject a lot steeper than 1 in maxGrade; others adapt with foundations and steps
+		if (lim.maxGrade() > 3 && (long) (maxFloor - minFloor) * lim.maxGrade() > lot.w() + lot.d() + lim.maxGrade()) {
+			throw new IllegalArgumentException("lot ground relief " + (maxFloor - minFloor) + " over " + lot.w() + "x" + lot.d() + " is steeper than 1 in " + lim.maxGrade() + ", too steep for a " + t.id());
+		}
 		int maxHeight = Invariants.WORLD_MAX_Y + 1 - maxFloor;
 		if (maxHeight < MIN_HEIGHT) throw new IllegalArgumentException("lot ground at y " + maxFloor + " leaves no room under the world ceiling");
 		long specSeed = Hash64.hash(req.worldSeed(), "building", lot.x(), lot.z());
