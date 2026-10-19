@@ -11,7 +11,9 @@ public enum Invariant {
 	ROOF_COVERS("roof-covers"),
 	ROOF_CLOSED("roof-closed"),
 	ROOM_GRAPH("room-graph"),
-	ROOMS_REACHABLE("rooms-reachable");
+	ROOMS_REACHABLE("rooms-reachable"),
+	/** Generator v1 only: every exterior ground-floor door has a walkable way down to the terrain inside the lot. */
+	ENTRANCE_REACHABLE("entrance-reachable");
 
 	public final String id;
 

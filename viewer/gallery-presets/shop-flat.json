@@ -1,0 +1,9 @@
+{
+  "type": "shop",
+  "style": "medieval",
+  "lot": "11x18",
+  "terrain": "flat:64",
+  "front": "north",
+  "seeds": "0..15",
+  "gen": "v1"
+}

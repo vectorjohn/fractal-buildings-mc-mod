@@ -1,0 +1,6 @@
+{
+  "kind": "dump",
+  "style": "medieval",
+  "cutStorey": 0,
+  "cameras": ["front-left", "back-right", "top", "cutaway"]
+}

@@ -25,8 +25,9 @@ export function applyStoreyLimit(root: THREE.Object3D, max: number | null, top: 
   root.traverse((o) => {
     const vs = o.userData['voxels'] as Voxel[] | undefined;
     if (!vs || !(o instanceof THREE.InstancedMesh)) return;
+    const k = (o.userData['scale'] as number | undefined) ?? 1;
     vs.forEach((v, i) => {
-      o.setMatrixAt(i, storeyVisible(v.storey, max, top) ? m.makeTranslation(v.x + 0.5, v.y + 0.5, v.z + 0.5) : HIDDEN);
+      o.setMatrixAt(i, storeyVisible(v.storey, max, top) ? m.makeTranslation(v.x + 0.5, v.y + 0.5, v.z + 0.5).scale(new THREE.Vector3(k, k, k)) : HIDDEN);
     });
     o.instanceMatrix.needsUpdate = true;
   });

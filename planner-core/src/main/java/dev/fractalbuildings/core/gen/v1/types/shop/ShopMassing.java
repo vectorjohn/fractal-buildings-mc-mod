@@ -1,0 +1,120 @@
+package dev.fractalbuildings.core.gen.v1.types.shop;
+
+import dev.fractalbuildings.core.gen.v1.BuildContext;
+import dev.fractalbuildings.core.gen.v1.mass.MassingOps;
+import dev.fractalbuildings.core.gen.v1.model.Core;
+import dev.fractalbuildings.core.gen.v1.model.Mass;
+import dev.fractalbuildings.core.gen.v1.model.Massing;
+import dev.fractalbuildings.core.gen.v1.model.MassingCheck;
+import dev.fractalbuildings.core.gen.v1.model.StoreyGrid;
+import dev.fractalbuildings.core.gen.v1.style.MassingStyle;
+import dev.fractalbuildings.core.ir.BuildingSpec;
+import dev.fractalbuildings.core.rand.Draws;
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * Shop massing: a main block spanning the envelope's width (so the front room spans the front),
+ * optionally a narrower rear wing (a back house) and, in styles with jetties, a front-only jetty on
+ * the upper storeys. The ground storey is {@link ShopType#GROUND} high. Falls back to fewer storeys,
+ * then to a plain block; always passes {@link MassingCheck}.
+ */
+final class ShopMassing {
+	private ShopMassing() {}
+
+	static Massing build(BuildContext c, int maxStoreys) {
+		BuildingSpec sp = c.spec();
+		for (int n = Math.min(sp.storeys(), maxStoreys); n >= 1; n--) {
+			for (int variant = 0; variant < 3; variant++) {
+				Massing m = attempt(c, n, variant);
+				if (m != null) return m;
+			}
+		}
+		Mass main = Mass.ground("main0", "main", 0, 0, sp.width(), Math.min(sp.depth(), 11), 1);
+		// under a low ceiling (maxHeight 6) the ground storey is 4 high
+		return new Massing(StoreyGrid.of(1, sp.maxHeight() >= ShopType.GROUND + 2 ? ShopType.GROUND : 4, 4), List.of(main), List.of());
+	}
+
+	/** variant 0: as drawn (rear wing, jetty); 1: no jetty; 2: plain block. */
+	static Massing attempt(BuildContext c, int n, int variant) {
+		BuildingSpec sp = c.spec();
+		MassingStyle st = c.style().massing();
+		int W = sp.width(), D = sp.depth();
+		Draws r = c.draws("massing/shop", n);
+		StoreyGrid g = StoreyGrid.of(n, ShopType.GROUND, Math.max(4, st.typical()));
+		if (g.y(n) + 2 > sp.maxHeight()) return null;
+
+		boolean jetty = variant == 0 && n >= 2 && st.jetty() > 0 && D >= 9 && r.below(100) < st.jettyChance();
+		boolean rear = variant < 2 && D >= 15 && W >= 7 && r.chance(2, 5);
+		int z0 = jetty ? 1 : 0;
+		int md, wingW = 0, wingD = 0;
+		if (rear) {
+			md = r.range(10, Math.min(13, D - z0 - 4));
+			wingW = r.range(5, Math.min(W - 2, 9));
+			wingD = r.range(5, Math.min(D - z0 - md + 1, 12));
+		} else {
+			md = r.range(Math.min(D - z0, 11), D - z0);
+		}
+		Mass base = Mass.ground("main0", "main", 0, z0, W, md, n);
+		List<Mass> stack = new ArrayList<>();
+		List<Mass> wings = new ArrayList<>();
+		if (jetty) {
+			Mass m0 = new Mass("main0", "main", 0, z0, W, md, 0, 1, null, false);
+			Mass j = MassingOps.jetty("jetty1", m0, new int[] {r.range(1, Math.min(st.jetty(), MassingCheck.JETTY_MAX)), 0, 0, 0}, n, st.jetty(), W, D);
+			if (j == null) return null;
+			stack.add(m0);
+			stack.add(j);
+		} else {
+			stack.add(base);
+		}
+		if (rear) {
+			int ws = Math.max(1, Math.min(n, r.chance(1, 2) ? n - 1 : n));
+			MassingOps.Align al = MassingOps.Align.values()[r.below(3)];
+			Mass w = MassingOps.wing("wing1", stack.get(0), MassingOps.S, al, wingW, wingD, ws, W, D);
+			if (w == null) return null;
+			wings.add(w);
+		}
+		List<Mass> ordered = new ArrayList<>();
+		ordered.add(stack.get(0));
+		ordered.addAll(wings);
+		ordered.addAll(stack.subList(1, stack.size()));
+		List<Core> cores = new ArrayList<>();
+		if (n >= 2) {
+			Core k = MassingOps.core(g, stack, wings, 0, n, r);
+			if (k == null) k = sideCore(g, stack, wings, n, r);
+			if (k == null) return null;
+			cores.add(k);
+		}
+		Massing m = new Massing(g, ordered, cores);
+		return MassingCheck.check(m, W, D, sp.maxHeight()).isEmpty() ? m : null;
+	}
+
+	/**
+	 * A core along a side wall of the main block, behind the two front rows (counter space), clear of
+	 * the wall strips to the wings: for rear wings that cover the back row where the shared core
+	 * candidates sit.
+	 */
+	private static Core sideCore(StoreyGrid g, List<Mass> stack, List<Mass> wings, int n, Draws r) {
+		Mass host = stack.get(0);
+		int len = Core.length(g, 0, n);
+		List<Core> ok = new ArrayList<>();
+		int ix0 = host.x() + 1, ix1 = host.maxX() - 1, iz0 = host.z() + 3, iz1 = host.maxZ() - 1;
+		for (Mass s : stack) {
+			ix0 = Math.max(ix0, s.x() + 1);
+			ix1 = Math.min(ix1, s.maxX() - 1);
+			iz1 = Math.min(iz1, s.maxZ() - 1);
+		}
+		for (int z = iz0; z + len <= iz1; z++) {
+			for (int x : new int[] {ix0, ix1 - 2}) {
+				Core k = new Core(x, z, 2, len, 0, n);
+				boolean clear = true;
+				for (Mass w : wings) {
+					int[] st = Massing.strip(stack.get(0), w);
+					if (st != null && st[0] < k.maxX() + 1 && k.x() - 1 < st[0] + st[2] && st[1] < k.maxZ() + 1 && k.z() - 1 < st[1] + st[3]) clear = false;
+				}
+				if (clear) ok.add(k);
+			}
+		}
+		return ok.isEmpty() ? null : ok.get(r.below(ok.size()));
+	}
+}

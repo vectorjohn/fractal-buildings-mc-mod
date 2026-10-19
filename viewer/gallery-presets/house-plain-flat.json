@@ -1,0 +1,9 @@
+{
+  "type": "house",
+  "style": "plain",
+  "lot": "20x20",
+  "terrain": "flat:64",
+  "front": "north",
+  "seeds": "0..15",
+  "gen": "v1"
+}

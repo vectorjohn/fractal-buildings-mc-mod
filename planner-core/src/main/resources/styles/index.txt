@@ -1,0 +1,8 @@
+# Style ids, one per line (union-merged: parallel style steps each append a line; order does not matter).
+plain
+medieval
+desert
+jungle
+snowy
+taiga
+plains

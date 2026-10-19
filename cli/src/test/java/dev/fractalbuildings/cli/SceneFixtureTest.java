@@ -13,8 +13,8 @@ class SceneFixtureTest {
 	@Test
 	void v0Seed1MatchesCliOutput(@TempDir Path dir) throws Exception {
 		Path out = dir.resolve("a.json");
-		assertEquals(0, Main.run(new String[] {"gen", "--seed", "1", "--lot", "16x12", "--style", "medieval", "--terrain", "plane:64:1:0:4", "--check", "--out", out.toString()}));
+		assertEquals(0, Main.run(new String[] {"gen", "--gen", "v0", "--seed", "1", "--lot", "16x12", "--style", "medieval", "--terrain", "plane:64:1:0:4", "--check", "--out", out.toString()}));
 		assertArrayEquals(Files.readAllBytes(Path.of("..", "viewer", "fixtures", "v0-seed1.json")), Files.readAllBytes(out),
-				"viewer/fixtures/v0-seed1.json is stale; regenerate: fractal-cli gen --seed 1 --lot 16x12 --style medieval --terrain plane:64:1:0:4 --check --out viewer/fixtures/v0-seed1.json");
+				"viewer/fixtures/v0-seed1.json is stale; regenerate: fractal-cli gen --gen v0 --seed 1 --lot 16x12 --style medieval --terrain plane:64:1:0:4 --check --out viewer/fixtures/v0-seed1.json");
 	}
 }

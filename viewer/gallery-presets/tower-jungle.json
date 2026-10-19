@@ -1,0 +1,11 @@
+{
+  "type": "tower",
+  "style": "jungle",
+  "lot": "13x13",
+  "terrain": "noise:7:64:6:32",
+  "front": "north",
+  "seeds": "0..15",
+  "gen": "v1",
+  "cutStorey": 2,
+  "cameras": ["front-left", "back-right", "top", "front", "cutaway"]
+}

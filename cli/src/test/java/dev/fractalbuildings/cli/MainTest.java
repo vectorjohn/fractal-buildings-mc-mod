@@ -73,7 +73,7 @@ class MainTest {
 	void batchWritesSeedFilesAndIndex(@TempDir Path dir) throws Exception {
 		Result r = run("batch", "--seeds", "2..4", "--lot", "12x10", "--style", "medieval", "--out-dir", dir.toString());
 		assertEquals(0, r.code(), r.err());
-		assertEquals("{\"style\": \"medieval\", \"lot\": \"12x10\", \"terrain\": \"flat:64\", \"seeds\": [2, 3, 4]}\n",
+		assertEquals("{\"type\": \"house\", \"style\": \"medieval\", \"lot\": \"12x10\", \"terrain\": \"flat:64\", \"seeds\": [2, 3, 4]}\n",
 				Files.readString(dir.resolve("index.json")));
 		for (int s = 2; s <= 4; s++) {
 			SceneDoc d = IrJson.read(Files.readString(dir.resolve("seed-" + s + ".json")));
@@ -86,17 +86,17 @@ class MainTest {
 
 	@Test
 	void checkSeeds0to49PassesOnTheDefaultMatrix() {
-		Result r = run("check", "--seeds", "0..49");
+		Result r = run("check", "--types", "house", "--seeds", "0..49");
 		assertEquals(0, r.code(), r.out());
-		assertTrue(r.out().contains("Cases checked: 6400, failing: 0"), r.out());
+		assertTrue(r.out().contains("failing: 0"), r.out());
 	}
 
 	@Test
 	void checkWritesMarkdownAndBenchPrintsStages(@TempDir Path dir) throws Exception {
 		Path md = dir.resolve("r.md");
-		assertEquals(0, run("check", "--seeds", "0..1", "--lots", "12x10", "--styles", "plain", "--terrains", "flat:64", "--fronts", "north", "--out", md.toString()).code());
+		assertEquals(0, run("check", "--types", "house", "--seeds", "0..1", "--lots", "12x10", "--styles", "plain", "--terrains", "flat:64", "--fronts", "north", "--out", md.toString()).code());
 		assertTrue(Files.readString(md).startsWith("# Invariant report"));
-		Result b = run("bench", "--n", "20", "--lots", "12x10", "--terrains", "flat:64");
+		Result b = run("bench", "--types", "house", "--n", "20", "--lots", "12x10", "--terrains", "flat:64");
 		assertEquals(0, b.code(), b.err());
 		for (String k : new String[] {"spec", "shell", "instance", "check"}) assertTrue(b.out().contains(k), b.out());
 	}

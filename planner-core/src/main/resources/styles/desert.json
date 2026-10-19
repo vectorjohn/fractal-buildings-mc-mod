@@ -1,0 +1,42 @@
+{
+  "format": "fb-style/1",
+  "id": "desert",
+  "extends": "plain",
+  "biomes": ["minecraft:desert", "minecraft:badlands", "minecraft:eroded_badlands", "minecraft:wooded_badlands"],
+
+  "massing": {"ground": 4, "typical": 4, "jetty": 0, "plans": {"box": 2, "L": 1, "T": 1, "U": 3, "courtyard": 3}, "jettyChance": 0, "setbackChance": 20},
+
+  "roof": {"forms": {"flat": 1}, "rise": 0, "run": 1, "overhang": 0, "parapet": 1, "parapetRole": "wall", "tallStoreys": 6, "dormers": 0},
+
+  "facade": {"bayMin": 3, "bayMax": 4, "sill": 1, "windowHeight": 1, "windowWidth": 1, "symmetric": false, "bandSize": 3,
+    "narrowCorners": false, "blankCorners": true, "doorSurround": true, "plinth": true, "sills": true, "lintels": true, "cornice": true,
+    "corners": "none", "timber": "none"},
+
+  "interior": {"roomMin": 3, "roomArea": 28, "corridorAbove": 8, "loopPercent": 20},
+
+  "palette": {
+    "foundation": ["minecraft:cut_sandstone", "minecraft:sandstone", "minecraft:smooth_sandstone"],
+    "floor": ["minecraft:smooth_sandstone", "minecraft:cut_sandstone", "minecraft:acacia_planks"],
+    "wall": ["minecraft:sandstone", "minecraft:smooth_sandstone", "minecraft:cut_sandstone", "minecraft:yellow_terracotta"],
+    "trim": ["minecraft:chiseled_sandstone", "minecraft:orange_terracotta", "minecraft:terracotta"],
+    "beam": ["minecraft:stripped_acacia_log", "minecraft:acacia_log"],
+    "fence": ["minecraft:acacia_fence"],
+    "window": ["minecraft:glass_pane"],
+    "door": ["minecraft:acacia_door", "minecraft:jungle_door"],
+    "roof": ["minecraft:smooth_sandstone", "minecraft:cut_sandstone", "minecraft:sandstone", "minecraft:terracotta"],
+    "stair": ["minecraft:smooth_sandstone", "minecraft:cut_sandstone"]
+  },
+
+  "colours": {
+    "foundation": ["#d9c58f", "#dccb94", "#e0d3a2"],
+    "floor": ["#e0d3a2", "#d9c58f", "#a85a32"],
+    "wall": ["#dccb94", "#e0d3a2", "#d9c58f", "#d8a84a"],
+    "trim": ["#d6c288", "#c4743a", "#985e43"],
+    "beam": ["#8f5c3a", "#6e5a4a"],
+    "fence": ["#a85a32"],
+    "window": ["#a8d4f0"],
+    "door": ["#a85a32", "#9c6a44"],
+    "roof": ["#e0d3a2", "#d9c58f", "#dccb94", "#985e43"],
+    "stair": ["#e0d3a2", "#d9c58f"]
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "type": "workshop",
+  "style": "plain",
+  "lot": "18x16",
+  "terrain": "flat:64",
+  "front": "north",
+  "seeds": "0..15",
+  "gen": "v1"
+}

@@ -1,0 +1,9 @@
+{
+  "type": "block",
+  "style": "plain",
+  "lot": "52x52",
+  "terrain": "noise:7:64:1:48",
+  "front": "north",
+  "seeds": "0..15",
+  "gen": "v1"
+}

@@ -1,0 +1,42 @@
+{
+  "format": "fb-style/1",
+  "id": "plains",
+  "extends": "plain",
+  "biomes": ["minecraft:plains", "minecraft:sunflower_plains", "minecraft:meadow", "minecraft:forest", "minecraft:flower_forest", "minecraft:birch_forest"],
+
+  "massing": {"ground": 4, "typical": 4, "jetty": 0, "plans": {"box": 4, "L": 3, "T": 1, "U": 1}, "jettyChance": 0, "setbackChance": 10, "groundExtra": 0, "groundExtraChance": 0},
+
+  "roof": {"forms": {"gable": 4, "hip": 2}, "rise": 1, "run": 1, "overhang": 1, "parapet": 1, "tallStoreys": 6, "dormers": 25},
+
+  "facade": {"bayMin": 2, "bayMax": 3, "sill": 1, "windowHeight": 1, "windowWidth": 1, "symmetric": true, "bandSize": 3, "narrowCorners": false,
+    "doorSurround": true, "plinth": true, "sills": true, "shutters": true, "cornice": false,
+    "corners": "post", "timber": "none"},
+
+  "interior": {"roomMin": 3, "roomArea": 28, "corridorAbove": 8, "loopPercent": 25},
+
+  "palette": {
+    "foundation": ["minecraft:cobblestone", "minecraft:stone", "minecraft:andesite", "minecraft:mossy_cobblestone"],
+    "floor": ["minecraft:oak_planks", "minecraft:birch_planks", "minecraft:spruce_planks"],
+    "wall": ["minecraft:birch_planks", "minecraft:oak_planks", "minecraft:white_terracotta", "minecraft:smooth_stone"],
+    "trim": ["minecraft:stripped_oak_log", "minecraft:stripped_birch_log"],
+    "beam": ["minecraft:oak_log", "minecraft:birch_log"],
+    "fence": ["minecraft:oak_fence", "minecraft:birch_fence"],
+    "window": ["minecraft:glass_pane"],
+    "door": ["minecraft:oak_door", "minecraft:birch_door"],
+    "roof": ["minecraft:bricks", "minecraft:terracotta", "minecraft:brown_terracotta"],
+    "stair": ["minecraft:oak_planks", "minecraft:birch_planks"]
+  },
+
+  "colours": {
+    "foundation": ["#7f7f7f", "#8a8a8a", "#8c8c8c", "#6f7a62"],
+    "floor": ["#b08a55", "#c8b077", "#7a5a36"],
+    "wall": ["#c8b077", "#b08a55", "#d4ccc0", "#9a9a9a"],
+    "trim": ["#a58a55", "#c8b890"],
+    "beam": ["#6b5030", "#d7d3c8"],
+    "fence": ["#b08a55", "#c8b077"],
+    "window": ["#a8d4f0"],
+    "door": ["#9c7a46", "#c8b077"],
+    "roof": ["#9a4a3a", "#985f46", "#4d3324"],
+    "stair": ["#b08a55", "#c8b077"]
+  }
+}

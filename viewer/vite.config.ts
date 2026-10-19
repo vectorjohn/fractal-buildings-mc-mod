@@ -11,5 +11,6 @@ export default defineConfig({
     outDir: gallery ? 'dist-gallery' : 'dist',
     rollupOptions: { input: { main: 'index.html', gallery: 'gallery.html' } },
   },
+  server: { fs: { allow: ['..'] } }, // the style files under ../planner-core/src/main/resources/styles are bundled (styles.ts)
   test: { environment: 'node', include: ['src/**/*.test.ts'] },
 });
