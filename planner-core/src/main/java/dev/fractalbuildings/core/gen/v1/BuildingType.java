@@ -3,6 +3,7 @@ package dev.fractalbuildings.core.gen.v1;
 import dev.fractalbuildings.core.gen.v1.facade.FacadePass;
 import dev.fractalbuildings.core.gen.v1.facade.OpeningPass;
 import dev.fractalbuildings.core.gen.v1.interior.InteriorPass;
+import dev.fractalbuildings.core.gen.v1.interior.RoomProgram;
 import dev.fractalbuildings.core.gen.v1.model.Massing;
 import dev.fractalbuildings.core.gen.v1.roof.RoofPass;
 import dev.fractalbuildings.core.gen.v1.structure.StructurePass;
@@ -33,4 +34,7 @@ public interface BuildingType {
 	default Program interior() { return InteriorPass::run; }
 
 	default Program openings() { return OpeningPass::run; }
+
+	/** Room uses and furnishing hooks for the interior pass (4.5). */
+	default RoomProgram rooms() { return RoomProgram.DEFAULT; }
 }

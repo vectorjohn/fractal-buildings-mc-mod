@@ -326,9 +326,11 @@ gate.
 - [ ] **4.4 Facades** [Fa]: bays and rhythm, trim, depth (insets, beams, sills), a
   gradient of materials; bands that repeat over many storeys without
   looking stamped.
-- [ ] **4.5 Interiors** [I]: room graph, stairs, simple furnishing hooks; a
+- [x] **4.5 Interiors** [I]: room graph, stairs, simple furnishing hooks; a
   vertical core placed first in multi-storey buildings, each floor grown
   around it (typical floors repeat with per-band variation).
+  Tests: `RoomSplitTest` (tiling, room sides, no partition behind a window or the entrance, hooks, typical floors, corridor, 60-storey tower); rooms-reachable over every fixture and every house in `V1PropertyTest`.
+  *Known issues:* a core in the middle of a small mass (e.g. the 10x10 `setback` shaft) leaves too little room for a partition with `roomMin` 3, so those floors stay one stair hall; hooks avoid windows only by never placing furniture blocks (a hook may sit under a window); the entry room is not forced to open onto the corridor.
 - [ ] **4.6 Building types** [T-*], one step each:
   - [ ] house [T-house]
   - [ ] shop [T-shop]

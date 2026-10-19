@@ -10,7 +10,7 @@
 
   "facade": {"bayMin": 2, "bayMax": 3, "sill": 1, "windowHeight": 1},
 
-  "interior": {"roomMin": 2},
+  "interior": {"roomMin": 3, "roomArea": 24, "corridorAbove": 8, "loopPercent": 30},
 
   "palette": {
     "foundation": ["minecraft:cobblestone", "minecraft:mossy_cobblestone", "minecraft:stone"],
