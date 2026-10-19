@@ -67,7 +67,7 @@ public final class InteriorPass {
 			for (int s = a.from(); s < a.to(); s++) {
 				if (!a.floorAt(s)) continue;
 				Info info = info(c, m, i, a, s);
-				if (cur == null || !cur.info().same(info) || bands[i][s - 1] != cur) cur = band(c, prog, st, i, a, s, info);
+				if (cur == null || !cur.info().same(info) || bands[i][s - 1] != cur || prog.newBand(s)) cur = band(c, prog, st, i, a, s, info);
 				bands[i][s] = cur;
 				int top = a.open() ? g.y(a.to()) : g.y(s + 1);
 				String[] ids = new String[cur.plan().leaves().size()];
@@ -169,12 +169,13 @@ public final class InteriorPass {
 		String[] uses = new String[n];
 		for (int l = 0; l < n; l++) {
 			FloorPlan.Leaf lf = plan.leaves().get(l);
+			StoreyGrid g = c.massing().grid();
 			RoomProgram.Role role = RoomProgram.Role.ROOM;
 			if (a.open()) role = RoomProgram.Role.HALL;
 			else if (info.entry().stream().anyMatch(e -> lf.contains(e[0], e[1]))) role = RoomProgram.Role.ENTRY;
 			else if (l == plan.corridor()) role = RoomProgram.Role.CORRIDOR;
 			else if (hasCore(info, lf)) role = RoomProgram.Role.STAIR;
-			uses[l] = prog.use(role, lf.area(), c.draws("interior/use", idx, s, l));
+			uses[l] = prog.use(role, lf.area(), new RoomProgram.Where(s, g.count()), c.draws("interior/use", idx, s, l));
 		}
 		List<Site> hooks = new ArrayList<>();
 		for (int l = 0; l < n; l++) hookSites(c, prog, plan, info, idx, s, l, uses[l], hooks);
@@ -190,7 +191,7 @@ public final class InteriorPass {
 	private static void hookSites(BuildContext c, RoomProgram prog, FloorPlan plan, Info info, int idx, int s, int l, String use, List<Site> out) {
 		FloorPlan.Leaf lf = plan.leaves().get(l);
 		Draws dr = c.draws("interior/hooks", idx, s, l);
-		List<String> kinds = prog.hooks(use, lf.area(), dr);
+		List<String> kinds = prog.hooks(use, lf.area(), new RoomProgram.Where(s, c.massing().grid().count()), dr);
 		List<int[]> cand = new ArrayList<>(); // {x, z, wall direction}
 		for (int x = lf.x(); x < lf.x() + lf.w(); x++)
 			for (int z = lf.z(); z < lf.z() + lf.d(); z++) {

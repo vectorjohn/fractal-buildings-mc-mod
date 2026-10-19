@@ -32,6 +32,9 @@ public final class HouseMassing {
 
 	private static final int BIG = 1000, ORIGIN = 100;
 
+	/** Wall-side interior cells a mass must keep clear of its stair core and its margin. */
+	static final int MIN_FREE = 5;
+
 	/** The massing for the context's spec: its storeys unless the lot or height cap can't hold them. */
 	public static Massing build(BuildContext c, int maxStoreys) {
 		BuildingSpec sp = c.spec();
@@ -260,19 +263,30 @@ public final class HouseMassing {
 			ordered.addAll(stack.subList(1, stack.size()));
 			List<Core> cores = new ArrayList<>();
 			if (n >= 2) {
-				Core k = MassingOps.core(g, stack, wings, 0, n, r);
+				Core k = MassingOps.core(g, stack, wings, 0, n, r, false);
 				if (k == null) return null;
 				cores.add(k);
 			}
 			for (Mass w : wings) {
 				int u = firstUnlinked(w, stack, wings);
 				if (u < 0) continue;
-				Core k = MassingOps.core(g, List.of(w), others(w, stack, wings), u - 1, w.to(), r);
+				Core k = MassingOps.core(g, List.of(w), others(w, stack, wings), u - 1, w.to(), r, false);
 				if (k == null) return null;
 				cores.add(k);
 			}
+			for (Core k : cores) for (Mass h : ordered) if (!roomy(h, k)) return null;
 			Massing m = new Massing(g, ordered, cores);
 			return MassingCheck.check(m, sp.width(), sp.depth(), sp.maxHeight()).isEmpty() ? m : null;
+		}
+
+		/** True unless mass {@code h} has a floor served by core {@code k} where fewer than {@link #MIN_FREE} interior cells against its walls lie outside the core and the two-cell margin the interior pass keeps hook-free around it (no room for a bed beside the stairs). */
+		static boolean roomy(Mass h, Core k) {
+			if (h.to() <= k.from() || h.from() >= k.to() || h.open() || !(h.x() < k.maxX() && k.x() < h.maxX() && h.z() < k.maxZ() && k.z() < h.maxZ())) return true;
+			int free = 0;
+			for (int x = h.x() + 1; x < h.maxX() - 1; x++)
+				for (int z = h.z() + 1; z < h.maxZ() - 1; z++)
+					if ((x == h.x() + 1 || z == h.z() + 1 || x == h.maxX() - 2 || z == h.maxZ() - 2) && (x < k.x() - 2 || x > k.maxX() + 1 || z < k.z() - 2 || z > k.maxZ() + 1)) free++;
+			return free >= MIN_FREE;
 		}
 
 		static List<Mass> others(Mass self, List<Mass> stack, List<Mass> wings) {

@@ -145,6 +145,11 @@ public final class MassingOps {
 	 * centre, long side along x and along z; the first drawn one that fits is returned, else null.
 	 */
 	public static Core core(StoreyGrid g, List<Mass> hosts, List<Mass> others, int from, int to, Draws r) {
+		return core(g, hosts, others, from, to, r, true);
+	}
+
+	/** As {@link #core(StoreyGrid, List, List, int, int, Draws)}; with {@code centre} false the core always stands in a corner or against a side wall, never mid-wall (no stair-only room beside it). */
+	public static Core core(StoreyGrid g, List<Mass> hosts, List<Mass> others, int from, int to, Draws r, boolean centre) {
 		if (to < from + 2) return null;
 		int len = Core.length(g, from, to);
 		int ix0 = Integer.MIN_VALUE, iz0 = Integer.MIN_VALUE, ix1 = Integer.MAX_VALUE, iz1 = Integer.MAX_VALUE;
@@ -160,7 +165,7 @@ public final class MassingOps {
 			int z = iz1 - 2;
 			cand.add(new Core(ix0, z, len, 2, from, to));
 			cand.add(new Core(ix1 - len, z, len, 2, from, to));
-			cand.add(new Core(ix0 + (ix1 - ix0 - len) / 2, z, len, 2, from, to));
+			if (centre) cand.add(new Core(ix0 + (ix1 - ix0 - len) / 2, z, len, 2, from, to));
 		}
 		// long side along z against a side wall
 		if (iz1 - iz0 >= len + 1 && ix1 - ix0 >= 3) {

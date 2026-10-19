@@ -5,6 +5,7 @@ import dev.fractalbuildings.core.gen.v1.BuildingType;
 import dev.fractalbuildings.core.gen.v1.TypeLimits;
 import dev.fractalbuildings.core.gen.v1.mass.HouseMassing;
 import dev.fractalbuildings.core.gen.v1.model.Massing;
+import dev.fractalbuildings.core.gen.v1.interior.RoomProgram;
 import java.util.List;
 
 /**
@@ -15,6 +16,8 @@ import java.util.List;
 public final class HouseType implements BuildingType {
 	public static final String ID = "house";
 
+	private static final RoomProgram ROOMS = new HouseRooms();
+
 	private static final TypeLimits LIMITS = new TypeLimits(5, 5, 1, 3, 1, 1, 1, false,
 			List.of(new int[] {7, 7}, new int[] {12, 10}, new int[] {20, 20}, new int[] {31, 17}), 500, 1);
 
@@ -23,6 +26,9 @@ public final class HouseType implements BuildingType {
 
 	@Override
 	public TypeLimits limits() { return LIMITS; }
+
+	@Override
+	public RoomProgram rooms() { return ROOMS; }
 
 	@Override
 	public Massing mass(BuildContext c) { return HouseMassing.build(c, LIMITS.maxStoreys()); }
