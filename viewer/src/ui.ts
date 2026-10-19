@@ -101,7 +101,8 @@ export function createUi(h: UiHandlers): Ui {
       seeds = m.seeds;
       const single = m.seeds.length === 0;
       for (const c of [prev, next, seedBox, slider]) c.disabled = single;
-      seedBox.value = m.state.seed === null ? '' : String(m.state.seed);
+      // Don't clobber a seed being typed because an earlier load finished.
+      if (document.activeElement !== seedBox) seedBox.value = m.state.seed === null ? '' : String(m.state.seed);
       slider.min = '0'; slider.max = String(Math.max(0, m.seeds.length - 1));
       const idx = m.state.seed === null ? -1 : m.seeds.indexOf(m.state.seed);
       slider.value = String(Math.max(idx, 0));

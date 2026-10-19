@@ -1,0 +1,11 @@
+{
+  "type": "house",
+  "style": "medieval",
+  "lot": "20x20",
+  "terrain": "noise:7:64:6:32",
+  "front": "north",
+  "seeds": "0..15",
+  "gen": "v1",
+  "cutStorey": 0,
+  "cameras": ["front-left", "back-right", "top", "front", "cutaway"]
+}

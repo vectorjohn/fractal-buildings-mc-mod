@@ -1,0 +1,42 @@
+{
+  "format": "fb-style/1",
+  "id": "medieval",
+  "extends": "plain",
+  "biomes": [],
+
+  "massing": {"ground": 4, "typical": 4, "jetty": 1, "plans": {"box": 3, "L": 3, "T": 2, "U": 2, "courtyard": 1}, "jettyChance": 40, "setbackChance": 15, "groundExtra": 1, "groundExtraChance": 25},
+
+  "roof": {"forms": {"gable": 3, "hip": 1}, "rise": 1, "run": 1, "overhang": 1, "parapet": 1, "tallStoreys": 6, "dormers": 50},
+
+  "facade": {"bayMin": 2, "bayMax": 4, "sill": 1, "windowHeight": 1, "windowWidth": 2, "symmetric": false, "bandSize": 3, "narrowCorners": true,
+    "doorSurround": true, "plinth": true, "sills": true, "cornice": true, "bressumer": true,
+    "corners": "post", "timber": "upper"},
+
+  "interior": {"roomMin": 3, "roomArea": 24, "corridorAbove": 8, "loopPercent": 30},
+
+  "palette": {
+    "foundation": ["minecraft:cobblestone", "minecraft:mossy_cobblestone", "minecraft:stone"],
+    "floor": ["minecraft:spruce_planks"],
+    "wall": ["minecraft:white_terracotta", "minecraft:mushroom_stem", "minecraft:smooth_sandstone"],
+    "trim": ["minecraft:dark_oak_log"],
+    "beam": ["minecraft:dark_oak_log"],
+    "fence": ["minecraft:dark_oak_fence"],
+    "window": ["minecraft:glass_pane"],
+    "door": ["minecraft:spruce_door"],
+    "roof": ["minecraft:bricks", "minecraft:mud_bricks", "minecraft:granite"],
+    "stair": ["minecraft:spruce_planks"]
+  },
+
+  "colours": {
+    "foundation": ["#7a7a78", "#6f7a62", "#7f7f7f"],
+    "floor": ["#6b5030"],
+    "wall": ["#d9c9a3", "#d4ccb8", "#ddd3b0"],
+    "trim": ["#3e2c18"],
+    "beam": ["#3e2c18"],
+    "fence": ["#3e2c18"],
+    "window": ["#a8d4f0"],
+    "door": ["#9c7a46"],
+    "roof": ["#9a3a2a", "#8a4434", "#a0503a"],
+    "stair": ["#9c7a46"]
+  }
+}

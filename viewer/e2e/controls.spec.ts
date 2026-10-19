@@ -102,14 +102,18 @@ test('seed keys, scrubber and style switch drive a batch and the URL', async ({ 
   await expect(page).toHaveURL(/seed=5/);
   await page.locator('#seed-slider').fill('0');
   await expect(page).toHaveURL(/seed=3/);
+  // let the seed-3 load settle before typing (its UI sync would overwrite the box); intermediate loads may be superseded, so wait on the seed shown
+  await page.waitForFunction(() => window.__viewerReady?.ok && window.__viewerReady.seed === 3);
   await page.locator('#seed').fill('8');
   await page.locator('#seed').press('Enter');
   await expect(page).toHaveURL(/seed=8/);
   expect(seen).toContain('/gen/plain/seed-8.json');
 
+  await page.waitForFunction(() => window.__viewerReady?.ok && window.__viewerReady.seed === 8);
+  const before = await page.evaluate(() => window.__viewerReady!.loads);
   await page.locator('#style').selectOption('medieval');
   await expect(page).toHaveURL(/style=medieval/);
-  await page.waitForFunction(() => window.__viewerReady!.loads >= 6);
+  await page.waitForFunction((n) => window.__viewerReady!.loads > n, before);
   expect(seen).toContain('/gen/medieval/index.json');
   await page.locator('#colour').selectOption('palette');
   await expect(page).toHaveURL(/colour=palette/);

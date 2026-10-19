@@ -7,6 +7,10 @@ import dev.fractalbuildings.core.gen.v0.GeneratorV0;
 import dev.fractalbuildings.core.gen.v0.InstancePassV0;
 import dev.fractalbuildings.core.gen.v0.ShellGeneratorV0;
 import dev.fractalbuildings.core.gen.v0.SpecPolicyV0;
+import dev.fractalbuildings.core.gen.v1.GeneratorV1;
+import dev.fractalbuildings.core.gen.v1.InstancePassV1;
+import dev.fractalbuildings.core.gen.v1.ShellGeneratorV1;
+import dev.fractalbuildings.core.gen.v1.SpecPolicyV1;
 import dev.fractalbuildings.core.ir.BuildingIr;
 import dev.fractalbuildings.core.ir.BuildingSpec;
 import dev.fractalbuildings.core.ir.PlacedBuilding;
@@ -36,7 +40,7 @@ final class BenchCommand {
 		// Warm up so JIT time doesn't land in the first samples.
 		for (int i = 0; i < Math.min(count, 200); i++) one(m, i, null, 0);
 		for (int i = 0; i < count; i++) one(m, i, ms, i);
-		System.out.printf("bench: %d buildings over %d matrix cells, single thread%n", count, m.cells.size());
+		System.out.printf("bench (%s): %d buildings over %d matrix cells, single thread%n", m.gen, count, m.cells.size());
 		String[] stage = {"spec", "shell", "instance", "check"};
 		for (int k = 0; k < 4; k++) {
 			double[] a = ms[k];
@@ -55,16 +59,17 @@ final class BenchCommand {
 
 	private static void one(Matrix m, int i, double[][] out, int slot) {
 		GenRequest req = m.cells.get(i % m.cells.size()).request(i);
+		boolean v0 = m.gen.equals(Scenes.V0);
 		long t0 = System.nanoTime();
-		BuildingSpec spec = SpecPolicyV0.spec(req);
+		BuildingSpec spec = v0 ? SpecPolicyV0.spec(req) : SpecPolicyV1.spec(req);
 		long t1 = System.nanoTime();
-		BuildingIr shell = ShellGeneratorV0.generate(spec);
+		BuildingIr shell = v0 ? ShellGeneratorV0.generate(spec) : ShellGeneratorV1.generate(spec);
 		long t2 = System.nanoTime();
-		PlacedBuilding b = InstancePassV0.place(shell, req);
+		PlacedBuilding b = v0 ? InstancePassV0.place(shell, req) : InstancePassV1.place(shell, req);
 		long t3 = System.nanoTime();
 		var lot = req.lot();
 		TerrainPatch terrain = TerrainPatch.sample(req.terrain(), lot.x() - 2, lot.z() - 2, lot.w() + 4, lot.d() + 4);
-		SceneDoc scene = new SceneDoc(GeneratorV0.GEN_VERSION, req.worldSeed(), terrain, List.of(lot), List.of(b), List.of());
+		SceneDoc scene = new SceneDoc(v0 ? GeneratorV0.GEN_VERSION : GeneratorV1.GEN_VERSION, req.worldSeed(), terrain, List.of(lot), List.of(b), List.of());
 		Invariants.check(scene, req.terrain());
 		long t4 = System.nanoTime();
 		if (out != null) {

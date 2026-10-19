@@ -28,17 +28,18 @@ building { id, lots: [lot id], origin: [x,y,z], rotation: 0..3,
            shell: shell, siteBoxes: [box] }
 shell    { spec, specHash: "<16 hex>", bounds: {min,size}, storeys: [storey],
            volumes: [volume], rooms: [room], openings: [opening],
-           roofs: [roof], boxes: [box] }
+           roofs: [roof], boxes: [box], hooks: [hook] }   hooks: genVersion >= 2 only
 spec     { genVersion, specSeed: "<int64>", style, type, width, depth,
-           storeys, roof }
+           storeys, roof, maxHeight, streets }       maxHeight, streets: genVersion >= 2 only
 storey   { index, y, height }       y = local y of the slab; stand at y + 1
 volume   { id, min, size, parent: id | null }
 room     { id, storey, volume, use, parts: [{min,size}] }
 opening  { id, kind: door|window|stair, min, size, facing, from, to }
            from/to: room id or "outside"; stair facing = direction of ascent
 roof     { form, volume, ridgeAxis: "x"|"z"|null, baseY, rise, run }
+hook     { id, kind, room: room id, pos: [x,y,z], facing }
 box      { min, size, role, layer, storey }
-           role: air|foundation|floor|wall|trim|window|door|roof|stair
+           role: air|foundation|floor|wall|trim|window|door|roof|stair|beam|fence
            layer: foundation|shell|interior|roof;  storey: index or -1
 violation { invariant, building: id | null, message, cells: [{min,size}] }
 ```
@@ -83,6 +84,34 @@ Examples (from the sample house):
   volumes resolve; room and box storeys exist; storeys are numbered from 0 and
   stack (`y` of storey i+1 = `y + height` of storey i, first `y` = 0); volumes,
   room parts, openings and shell boxes lie inside `bounds`.
+
+## Generator v1 additions (genVersion 2, Phase 4)
+
+Added keys only; `format` stays `fb-scene/1` (plan: [plans/phase4.md](plans/phase4.md)).
+Writers emit them only when the spec's `genVersion` is 2 or more, so v0 files are
+byte-for-byte unchanged; readers treat them as absent for genVersion 1.
+
+- **spec.width / spec.depth** mean the *envelope*: the part of the lot the shell may
+  use. The shell's `bounds` cover exactly `[0, width) x [0, depth)` in x and z; the
+  building's volumes sit somewhere inside it.
+- **spec.maxHeight**: exclusive bound on local y, chosen by the spec policy so that the
+  building stays at or below world y 319 wherever the instance pass sets it down on the
+  lot. **spec.streets**: bit mask of local sides facing a street (1 north = front,
+  2 east, 4 south, 8 west); the front bit is always set. **spec.roof** is `"auto"`.
+- **volume ids** are `<kind><n>` (`main0`, `wing1`, `jetty1`, `podium0`, `shaft1`,
+  `crown2`, `hall0`...); a volume's box runs from its first storey's slab to its top
+  slab inclusive. A volume whose `min` y is above 0 stands on its `parent` (inside it:
+  a setback; around it with at most 2 blocks of overhang: a jetty).
+- **roles** `beam` (posts, beams, half-timbering, columns) and `fence` (railings,
+  balustrades); both solid and closed.
+- **hooks**: furnishing hooks, `{id, kind, room, pos, facing}`; `pos` is a cell of room
+  air standing on a floor; `kind` is a free tag (`bed`, `table`, `workstation`,
+  `chest`, `hearth`, `altar`, `counter`, `light`...). The mod places furniture there
+  (6.4); the planner never does. `ir-valid` checks ids are unique, `room` resolves and
+  `pos` lies inside `bounds`.
+- **roof.form** strings in use (the roofs step, 4.3, owns this line): `gable`, `hip`, `pyramid`, `shed`, `mansard`, `flat`. One record per roofed mass; masses of one roof group share the form; `ridgeAxis` only for `gable`.
+- **room.use** strings in use (the interiors step, 4.5, owns this line): `room`, `entry` (the room behind an entrance), `corridor`, `stair` (the room holding a core), `hall` (an open mass); a type's `RoomProgram` may add its own.
+- **hook.kind** strings in use (the interiors step, 4.5, owns this line): `bed`, `table`, `chest`, `workstation`, `hearth`, `light` (default `RoomProgram`); hooks are floor cells against a wall or partition, never within one cell of a door, the entrance or a core.
 
 ## Versioning
 

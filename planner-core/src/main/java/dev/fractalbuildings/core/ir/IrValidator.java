@@ -62,6 +62,12 @@ public final class IrValidator {
 			if (!s.bounds().contains(b.box())) bad(out, id, "shell box (" + b.role().json() + ") outside bounds", b.box());
 			if (b.storey() >= s.storeys().size()) bad(out, id, "box has unknown storey " + b.storey(), b.box());
 		}
+		unique(out, id, "hook", s.hooks().stream().map(Hook::id).toList());
+		for (Hook h : s.hooks()) {
+			Box3 cell = Box3.of(h.x(), h.y(), h.z(), 1, 1, 1);
+			if (!rooms.contains(h.room())) bad(out, id, "hook " + h.id() + " references unknown room " + h.room(), cell);
+			if (!s.bounds().contains(cell)) bad(out, id, "hook " + h.id() + " outside bounds", cell);
+		}
 		for (Box b : pb.siteBoxes()) {
 			if (b.storey() >= s.storeys().size()) bad(out, id, "site box has unknown storey " + b.storey(), b.box());
 		}

@@ -24,8 +24,10 @@ public final class SpecHash {
 	public static String canonical(BuildingSpec s) { return fill(JsonWriter.compactObject(), s).build(); }
 
 	static JsonWriter fill(JsonWriter w, BuildingSpec s) {
-		return w.num("genVersion", s.genVersion()).str64("specSeed", s.specSeed()).text("style", s.style())
+		w.num("genVersion", s.genVersion()).str64("specSeed", s.specSeed()).text("style", s.style())
 				.text("type", s.type()).num("width", s.width()).num("depth", s.depth())
 				.num("storeys", s.storeys()).text("roof", s.roof());
+		if (s.v2Keys()) w.num("maxHeight", s.maxHeight()).num("streets", s.streets());
+		return w;
 	}
 }

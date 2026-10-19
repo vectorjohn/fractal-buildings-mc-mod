@@ -1,0 +1,11 @@
+{
+  "type": "temple",
+  "style": "medieval",
+  "lot": "31x45",
+  "terrain": "flat:64",
+  "front": "north",
+  "seeds": "0..15",
+  "gen": "v1",
+  "cutStorey": 0,
+  "cameras": ["front-left", "back-right", "top", "front", "cutaway"]
+}

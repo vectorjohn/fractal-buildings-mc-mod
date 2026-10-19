@@ -3,29 +3,36 @@ import { buildSceneObject } from './render';
 import { FOV_DEG, PRESET_NAMES, frontVector, presetPose } from './presets';
 import type { PresetName } from './presets';
 import { resolveSource } from './source';
-import { sceneBounds, sceneVoxels } from './voxels';
+import { ALL_LAYERS } from './state';
+import { applyLayers, applyStoreyLimit, topStorey } from './visibility';
+import { cutBounds, sceneBounds, sceneVoxels } from './voxels';
 
 declare global {
   interface Window {
-    /** Set once all cells are drawn (or failed). `cells[i]` describes the i-th cell in reading order. */
+    /** Set once all cells are drawn (or failed). `cells[i]` describes the i-th cell in reading order; `ms` is the draw time of the whole page. */
     __galleryReady?: {
-      ok: boolean; error?: string; violations: number; style: string; preset: string; dir: string;
+      ok: boolean; error?: string; violations: number; style: string; camera: string; dir: string; ms: number;
       cells: { seed: number; voxels: number; violations: number }[];
     };
   }
 }
 
-const COLS = 4, ROWS = 4;
+const MAX_COLS = 4;
+const fixtures = import.meta.glob('../fixtures/*.json', { query: '?raw', import: 'default', eager: true }) as Record<string, string>;
+// ?dir=<preset name> (gallery-data/gen/<dir>/), ?camera=<front-left|back-right|top|front|cutaway>, ?cut=<storey> for cutaway,
+// ?from=<first seed>, ?colour=role, ?exterior=1 (skip the interior layer: the fast path for tall buildings).
 const q = new URLSearchParams(location.search);
-const style = q.get('style') ?? 'medieval';
-const terrain = q.get('terrain') ?? 'noise'; // `flat` reads gen/<style>-flat
+const fixture = q.get('fixture'); // ?fixture=<name>: one bundled scene in one big cell
+const dir = q.get('dir') ?? q.get('style') ?? 'house-medieval';
+const cameraName = (q.get('camera') ?? q.get('preset') ?? 'front-left') as PresetName;
 const from = Number(q.get('from') ?? 0);
-const preset = (q.get('preset') ?? 'front-left') as PresetName;
-const dir = q.get('dir') ?? (terrain === 'flat' ? `${style}-flat` : style);
+const cut = Number(q.get('cut') ?? 0);
+const exterior = q.get('exterior') === '1';
 const colour = q.get('colour') === 'role' ? 'role' : 'palette';
+const t0 = performance.now();
 
 async function main(): Promise<void> {
-  if (!PRESET_NAMES.includes(preset)) throw new Error(`unknown preset ${preset}`);
+  if (!PRESET_NAMES.includes(cameraName)) throw new Error(`unknown camera ${cameraName}`);
   const wrap = document.getElementById('wrap')!;
   const size = Math.min(window.innerWidth, window.innerHeight);
   const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
@@ -34,9 +41,10 @@ async function main(): Promise<void> {
   renderer.setClearColor(0x1b1d22);
   wrap.prepend(renderer.domElement);
 
-  const source = await resolveSource({ ir: null, fixture: null, style: dir }, (u) => fetch(u), {});
-  if (source.kind !== 'batch') throw new Error(`no batch at gen/${dir}/index.json (run npm run gen)`);
-  const seeds = source.seeds.filter((s) => s >= from).slice(0, COLS * ROWS);
+  const source = await resolveSource({ ir: null, fixture, style: dir }, (u) => fetch(u), fixtures);
+  if (source.kind !== 'batch' && source.kind !== 'fixture') throw new Error(`no batch at gen/${dir}/index.json (run npm run gen)`);
+  const seeds = source.kind === 'fixture' ? [0] : source.seeds.filter((s) => s >= from).slice(0, MAX_COLS * MAX_COLS);
+  const COLS = source.kind === 'fixture' ? 1 : MAX_COLS;
   if (seeds.length === 0) throw new Error(`no seeds >= ${from}`);
 
   const scene = new THREE.Scene();
@@ -48,6 +56,7 @@ async function main(): Promise<void> {
   const camera = new THREE.PerspectiveCamera(FOV_DEG, 1, 0.1, 2000);
 
   const cellPx = size / COLS;
+  let styleName = '';
   const cells: { seed: number; voxels: number; violations: number }[] = [];
   renderer.setScissorTest(true);
   for (let i = 0; i < seeds.length; i++) {
@@ -55,7 +64,11 @@ async function main(): Promise<void> {
     const data = await source.load(seed);
     const content = buildSceneObject(data, { colour, style: data.buildings[0]?.shell.spec.style });
     scene.add(content);
-    const pose = presetPose(preset, sceneBounds(data), data.lots[0]?.front ?? 'south');
+    if (cameraName === 'cutaway') {
+      applyLayers(content, new Set(ALL_LAYERS.filter((l) => l !== 'roof' && !(exterior && l === 'interior'))));
+      applyStoreyLimit(content, cut, topStorey(content));
+    } else if (exterior) applyLayers(content, new Set(ALL_LAYERS.filter((l) => l !== 'interior')));
+    const pose = presetPose(cameraName, cameraName === 'cutaway' ? cutBounds(data, cut) : sceneBounds(data), data.lots[0]?.front ?? 'south');
     camera.position.copy(pose.position);
     camera.up.copy(pose.up);
     camera.lookAt(pose.target);
@@ -63,7 +76,7 @@ async function main(): Promise<void> {
     // Headlight-ish: the sun follows the camera (a bit above it) so every preset and facing is lit alike.
     const dist = pose.position.distanceTo(pose.target);
     sun.position.copy(pose.position).add(new THREE.Vector3(0, dist * 0.6, 0));
-    if (preset === 'top') {
+    if (cameraName === 'top' || cameraName === 'cutaway') {
       // From above a headlight makes every upward face identical. Use a fixed low sun from the front-right
       // (relative to the lot's front) so roof slopes, ridges and gable ends take different shades.
       const [fx, fz] = frontVector(data.lots[0]?.front ?? 'south');
@@ -83,6 +96,7 @@ async function main(): Promise<void> {
       if (o instanceof THREE.InstancedMesh) { o.geometry.dispose(); (o.material as THREE.Material).dispose(); o.dispose(); }
     });
 
+    styleName = data.buildings[0]?.shell.spec.style ?? styleName;
     const voxels = sceneVoxels(data).length, violations = data.violations.length;
     cells.push({ seed, voxels, violations });
     const label = document.createElement('div');
@@ -92,12 +106,12 @@ async function main(): Promise<void> {
     wrap.appendChild(label);
   }
   window.__galleryReady = {
-    ok: true, violations: cells.reduce((n, c) => n + c.violations, 0), style, preset, dir, cells,
+    ok: true, violations: cells.reduce((n, c) => n + c.violations, 0), style: styleName, camera: cameraName, dir, ms: Math.round(performance.now() - t0), cells,
   };
 }
 
 main().catch((e) => {
   console.error(e);
   document.getElementById('msg')!.textContent = String(e);
-  window.__galleryReady = { ok: false, error: String(e), violations: 0, style, preset, dir, cells: [] };
+  window.__galleryReady = { ok: false, error: String(e), violations: 0, style: '', camera: cameraName, dir, ms: 0, cells: [] };
 });

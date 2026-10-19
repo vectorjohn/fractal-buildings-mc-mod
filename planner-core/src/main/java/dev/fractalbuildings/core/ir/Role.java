@@ -21,7 +21,11 @@ public enum Role {
 	DOOR(false, true),
 	ROOF(true, true),
 	/** A step you can stand on; full-block steps of 1 in v0. */
-	STAIR(true, true);
+	STAIR(true, true),
+	/** Structural frame on show: posts, beams, columns, half-timbering, jetty bressumers (Phase 4). */
+	BEAM(true, true),
+	/** Thin barrier: railings, balustrades, grilles. Blocks movement and closes the shell. */
+	FENCE(true, true);
 
 	public final boolean solid;
 	public final boolean closesShell;

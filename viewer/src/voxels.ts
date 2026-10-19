@@ -71,3 +71,12 @@ export function sceneBounds(scene: Scene): { min: Vec3; max: Vec3 } {
   if (!isFinite(min[0])) return { min: [0, 0, 0], max: [1, 1, 1] };
   return { min, max };
 }
+
+/** World bounds as {@link sceneBounds}, but building voxels above storey `maxStorey` (and foundations) do not count: the cutaway frame. */
+export function cutBounds(scene: Scene, maxStorey: number): { min: Vec3; max: Vec3 } {
+  const full = sceneBounds(scene);
+  let top = -Infinity;
+  for (const v of sceneVoxels(scene)) if (v.storey >= 0 && v.storey <= maxStorey) top = Math.max(top, v.y + 1);
+  if (!isFinite(top)) return full;
+  return { min: full.min, max: [full.max[0], Math.max(top, full.min[1] + 1), full.max[2]] };
+}

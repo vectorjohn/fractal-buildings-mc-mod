@@ -4,7 +4,7 @@ export const SCENE_FORMAT = 'fb-scene/1';
 export type Vec3 = [number, number, number];
 export const FACINGS = ['north', 'east', 'south', 'west'] as const;
 export type Facing = (typeof FACINGS)[number];
-export const ROLES = ['air', 'foundation', 'floor', 'wall', 'trim', 'window', 'door', 'roof', 'stair'] as const;
+export const ROLES = ['air', 'foundation', 'floor', 'wall', 'trim', 'window', 'door', 'roof', 'stair', 'beam', 'fence'] as const;
 export type Role = (typeof ROLES)[number];
 export const LAYERS = ['foundation', 'shell', 'interior', 'roof'] as const;
 export type Layer = (typeof LAYERS)[number];
@@ -18,6 +18,8 @@ export interface Lot { id: string; x: number; z: number; w: number; d: number; f
 export interface Spec {
   genVersion: number; specSeed: string; style: string; type: string;
   width: number; depth: number; storeys: number; roof: string;
+  /** genVersion 2+: exclusive local y bound and street-side mask (docs/IR.md). */
+  maxHeight?: number; streets?: number;
 }
 export interface Storey { index: number; y: number; height: number }
 export interface Volume { id: string; min: Vec3; size: Vec3; parent: string | null }
@@ -25,10 +27,14 @@ export interface Room { id: string; storey: number; volume: string; use: string;
 export interface Opening {
   id: string; kind: OpeningKind; min: Vec3; size: Vec3; facing: Facing; from: string; to: string;
 }
+/** Furnishing hook (genVersion 2+): a room cell where the mod may place furniture. */
+export interface Hook { id: string; kind: string; room: string; pos: Vec3; facing: Facing }
 export interface Roof { form: string; volume: string; ridgeAxis: 'x' | 'z' | null; baseY: number; rise: number; run: number }
 export interface Shell {
   spec: Spec; specHash: string; bounds: Part; storeys: Storey[]; volumes: Volume[];
   rooms: Room[]; openings: Opening[]; roofs: Roof[]; boxes: Box[];
+  /** Empty for genVersion 1 files, which have no hooks key. */
+  hooks: Hook[];
 }
 export interface Building {
   id: string; lots: string[]; origin: Vec3; rotation: 0 | 1 | 2 | 3; shell: Shell; siteBoxes: Box[];
@@ -119,6 +125,8 @@ function parseShell(v: unknown, p: string): Shell {
     type: str(so, 'type', sp), width: int(so, 'width', sp), depth: int(so, 'depth', sp),
     storeys: int(so, 'storeys', sp), roof: str(so, 'roof', sp),
   };
+  if ('maxHeight' in so) spec.maxHeight = int(so, 'maxHeight', sp);
+  if ('streets' in so) spec.streets = int(so, 'streets', sp);
   const specHash = str(o, 'specHash', p);
   if (!/^[0-9a-f]{16}$/.test(specHash)) fail(at(p, 'specHash'), 'must be 16 lower-case hex digits');
   return {
@@ -158,6 +166,13 @@ function parseShell(v: unknown, p: string): Shell {
       };
     }),
     boxes: list(o, 'boxes', p, parseBox),
+    hooks: 'hooks' in o ? list(o, 'hooks', p, (x, q) => {
+      const s = obj(x, q);
+      return {
+        id: str(s, 'id', q), kind: str(s, 'kind', q), room: str(s, 'room', q), pos: vec3(s, 'pos', q),
+        facing: oneOf(s, 'facing', q, FACINGS),
+      };
+    }) : [],
   };
 }
 

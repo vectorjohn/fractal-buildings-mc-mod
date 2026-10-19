@@ -59,3 +59,80 @@ work becomes a ROADMAP item or a Polish backlog line. Settled items move to
 
 - [x] **2.7 S7**: `docs/research/spikes/s7/cut-all-side.jpg` and `fill-all-side.jpg` — would a cut floor/wall like this look acceptable around a city? Prefer fill, as the note suggests? Does the steep wall at the cut edge need a softer fade?
   * This looks acceptable. -- @John
+- [ ] **4.3 roofs**: do the roofs read as built? Gable, hip, cross gables on L/T/U/courtyard, dormers, overhang, flat parapets on the setback tower.
+  Where: `npm run gallery` medieval/plain presets; or `-Dfb.dumpRoofForms=viewer/gallery-data/gen` on `RoofPassTest.dumpForms`, then `gallery.html?dir=roof-<form>` (forms gable, hip, pyramid, shed, mansard, flat)
+  Look for: valleys where wings meet the main roof, gable ends closed, dormers that look attached, overhang depth, whether shed/mansard are worth keeping or too blocky
+
+- [ ] **4.2 Massing** [M]: do house wings, jetties and setbacks read as a person built it?
+  Where: `npm run gallery` then `viewer/out/gallery/medieval-flat-front-left.png` (seeds 0..15); more with `gallery.html?style=medieval&terrain=flat&from=16`. Jetties: seeds 16, 27. Setbacks: seeds 2, 32. Courtyard: seed 15.
+  Look for: wings clearly different in width and height from the main block; jetty overhang of 1 block that looks like an old overhanging upper floor, not a bug; roofs over wings and jetties are still plain (roof step 4.3).
+  Result:
+- [ ] **4.6 city block**: does a block read as a row of separate houses joined by party walls around a courtyard?
+  Where: `FB_PRESETS=block-medieval,block-plain-flat npm run gallery` then `viewer/out/gallery/block-medieval-front-left.png`, `-front.png`, `-top.png`, `-cutaway.png`; `block-medieval-flat` (100x80).
+  Look for: unit seams visible (height steps, roof forms, window rhythm) rather than one long wall; the alley gaps (about half the blocks) read as a lane into the yard; courtyard size; doors on streets only. Known: no jetties or setbacks on units, shared storey bands run across units.
+
+### Temple (4.6)
+
+- [ ] **Temples read as temples, not houses or towers**
+  Where: `FB_PRESETS=temple-medieval,temple-plain,temple-flat npm run gallery` (in `viewer/`) then `viewer/out/gallery/temple-*-front.png`, `-front-left.png`, `-cutaway.png`. Bell-tower variants: medieval seeds 0, 1, 2, 3, 12, 13, 15.
+  Look for: a clear axis (porch or tower, tall nave, narrower apse), the door in the middle of the front, generous nave height; whether the tower variants look like a bell tower or like a tall house (windows repeat per storey today); side chapels reading as transepts.
+- 4.6 tower: does it read as a pre-modern tower (watchtower, keep) or as a thin high-rise? Look at `tower-medieval` front-left and cutaway (npm run gallery, FB_PRESETS=tower-medieval); window bands are still the shared ones, no slit windows or spire.
+
+- [ ] 4.6 hall: do the four sub-kinds read as a market hall, a town hall with a tower, a cathedral and a bath? Look at `hall-medieval`, `hall-flat` and `hall-big` (npm run gallery, FB_PRESETS=hall-medieval,hall-flat,hall-big); the roofs are the style's, lowered on wide spans; the arcade is glazed arches; no crossing tower, no spire.
+- [ ] **4.6 Wall and gate** [T-wall]: does the gatehouse read as a town wall segment?
+  Where: `npm run gallery` (`FB_PRESETS=wall-medieval,wall-plain,wall-flat`) then `viewer/out/gallery/wall-medieval-front-left.png`, `wall-flat-cutaway.png` (passage and galleries).
+  Look for: gate arches and flanking towers legible from the field side; curtain walls too plain or too tall; battlements read as merlons; the wall is a flat 5-high strip beside 2-3 storey towers.
+- [ ] **4.6 Workshop** [T-workshop]: does the tall open hall with the 2-wide front door, the lower living wing and the lean-to read as a smithy/workshop, not a tall cottage?
+  Where: `FB_PRESETS=workshop-medieval,workshop-flat npm run gallery` then `viewer/out/gallery/workshop-medieval-front-left.png` and `-cutaway.png`.
+  Look for: hall clearly taller than the wing, door wide enough to read as a cart door, work hooks (blue) inside the hall.
+## 4.7 plains style (house)
+  Where: `npm run gallery` with `FB_PRESETS=house-plains,house-medieval`, `viewer/out/gallery/house-plains-front-left.png` (seeds 0..15).
+  Look for: does it read as a rural cottage/farmhouse, distinct from medieval (no jetties, no timber)? Is the wall mix (birch/oak/plaster) too busy? Are the brick/terracotta roofs right?
+- [ ] **4.6 high-rise**: do the setback towers read as skyscrapers?
+  Where: `FB_PRESETS=highrise-plain,highrise-medieval,highrise-flat npm run gallery`, `viewer/out/gallery/highrise-*-front-left.png`, seeds 0..15 (cutaway on `highrise-medieval`).
+  Look for: podium visible at the street, 2-4 steps of setback up the shaft, a different crown; storeys of 4 blocks make a 60-storey tower 250 blocks tall (is that the right feel in game?). Window bands repeat evenly until the facade step (4.4) lands.
+  Result:
+- [ ] **4.6 city block, ground**: blocks only get built on gentle ground (steeper than 1 in 16 is rejected) until per-wing ground levels in 6.3, and need lots of at least 52x52. OK for now?
+  Where: `docs/log/2026-10-19-p4-t-block.md` (round 2); `fractal-cli gen --type block --lot 64x56 --terrain plane:64:1:0:3` exits 2.
+  Look for: whether worldgen block sites (Phase 6) can be picked on flat enough ground, or whether you want terraced blocks sooner.
+  Result:
+
+## 4.10 Phase 4 gate
+
+- [ ] **4.10 Phase 4 gate**: per building type, would you believe a person built this? Generator v1: nine types, seven styles.
+  Where: [the pack's README](review/phase4/README.md) (what to look at per type, with seeds); a subset of PNGs in `docs/review/phase4/gallery/<type>/` and the style sheet in `gallery/styles/` (full set: `npm run gallery` in `viewer/`, then `viewer/out/gallery/`); [invariants.md](review/phase4/invariants.md) (168,000 cases, 0 failures), [diversity.md](review/phase4/diversity.md).
+  Look for, per type (answer here or on the type's own entry): house (4.6 house below), shop (4.6 shop below), workshop, tower, temple, wall and gate, high-rise, hall, city block (entries above). Questions collected during the phase, each also in its own entry:
+  1. Facades: is the medieval half-timbering too dark or heavy? (4.4 facades below)
+  2. Wall: half-timber (and windows) on a stone town wall looks odd? (4.6 Wall and gate)
+  3. Tower: does a timber tower read as pre-modern? (4.6 tower; that entry has no checkbox, answer here)
+  4. Workshop: tall cottage with a barn door? (4.6 Workshop)
+  5. Shop: does the shopfront read as a shop? (4.6 shop below)
+  6. Temple: the bell towers read as tall houses; acceptable for now? (Temples read as temples)
+  7. City block only on gentle ground (up to 1 in 16) and lots of 52x52+, until per-wing ground levels in 6.3: OK? (4.6 city block, ground)
+  8. City block in the plain style reads as one long banded facade: fine? (4.6 city block)
+  9. Plains: wall mix too busy? (4.7 plains style) Desert walls speckled? Jungle palette reads as jungle/bamboo? (4.7 styles below)
+  10. Plan, open: per-wing ground levels (ADR 0003 W5) deferred to 6.3, so deep types are tested only on ground up to their `maxGrade` (1 in 3; block 1 in 16). OK?
+  11. Plan, open: jetties over the street (past the lot edge) wait for Phase 5's street rules. OK?
+  12. Plan, open: `medieval` is now a style by name only (plains took its biomes; still requestable). Keep, rename, or give it biomes back?
+  Agent notes: pictures looked at 2026-10-19 (README, "What to look at"). Medieval blocks and halls read best; walls and towers read most like houses (windows and timber framing on every storey); the plains, desert, taiga and snowy colour mixes look speckled at gallery scale.
+  Result:
+- [ ] **4.6 house** [T-house]: do v1 houses read as built by a person (wings, jetties, room program)?
+  Where: `docs/review/phase4/gallery/house/house-medieval-front-left.png`, `house-medieval-cutaway.png`; full set: `viewer/out/gallery/house-plain-flat-*.png`, `house-slope-front-left.png`
+  Look for: living room, kitchen and entry downstairs, bedrooms upstairs (cutaway: storey 0 only), hearth and bed hooks; more single-storey houses than before on small lots (a known effect of rejecting cramped upper floors).
+  Result:
+- [ ] **4.6 shop** [T-shop]: does the shopfront read as a shop, not a house with big windows?
+  Where: `docs/review/phase4/gallery/shop/shop-medieval-front-left.png`, `shop-plain-front.png`; full set: `viewer/out/gallery/shop-flat-front-left.png`
+  Look for: centred door between 2-3 wide display windows under a fascia, a taller ground storey; on slopes the shop floor sits up a flight of steps on a stone base (is that acceptable on a street?); no awning or sign yet.
+  Result:
+- [ ] **4.4 facades** [Fa]: is the medieval half-timbering too dark or heavy?
+  Where: `docs/review/phase4/gallery/house/house-medieval-front-left.png`, `gallery/block/block-medieval-front-left.png`, `gallery/tower/tower-medieval-front-left.png`
+  Look for: dark posts and rails covering much of the wall; whether bays and window rhythm on tall buildings (`gallery/highrise/highrise-plain-front-left.png`) look stamped; no diagonal braces yet.
+  Result:
+- [ ] **4.5 interiors** [I]: do the cutaway floor plans look like rooms a person would lay out?
+  Where: `docs/review/phase4/gallery/{house,temple,hall,block,workshop}/*-cutaway.png`; every preset's cutaway in the full set (`viewer/out/gallery/*-cutaway.png`)
+  Look for: room sizes, doors between rooms, the stair core against a wall, hook markers (furniture places). Interiors are not gameplay yet; this is about the plan only.
+  Result:
+- [ ] **4.7 styles** [St-desert, St-taiga, St-snowy, St-jungle]: does each new style read as its biome?
+  Where: `docs/review/phase4/gallery/styles/` (a house and a large type per style; `desert-*`, `taiga-*`, `snowy-*`, `jungle-*`), and in the full set `viewer/out/gallery/tower-<style>-front-left.png`
+  Look for: desert flat sandstone roofs (walls speckled by the terracotta in the mix: drop it?); taiga steep spruce roofs; snowy small windows, stone and spruce; jungle green roofs and bamboo/jungle wood (does it read as jungle?). Known: no dormers on 2/1 roofs, no verandas or raised floors in jungle.
+  Result:
