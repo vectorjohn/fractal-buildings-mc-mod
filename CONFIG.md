@@ -14,3 +14,9 @@ Anything you add to the block below is yours, edit freely.
 
 ## Managed by the Configuration Manager
 The block below is maintained by the ${widgets.commandButton("Configuration Manager", "Configuration: Open")}. Prefer editing it through the UI, although simple hand edits should survive.
+
+```space-lua
+-- managed-by: configuration-manager
+config.set("index.paragraph.all", true)
+config.set("journal.enabled", false)
+```
