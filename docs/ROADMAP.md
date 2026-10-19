@@ -50,7 +50,7 @@ item. Per-item work logs are in [log/](log/); run ledgers in [runs/](runs/).
 | 0. Scaffolding | done 2026-10-08; gate passed 2026-10-14 (John) | builds green; viewer renders the box |
 | 1. Prior art research | done; gate passed 2026-10-16 (John signed off in synthesis.md; wants effectively unbounded cities) | John picks building-generation direction and the integration approach to spike |
 | 2. Worldgen spikes | done; gate passed 2026-10-16 (John accepted ADR 0003; S6 figures being re-measured) | worldgen ADR (approach, size limits, determinism rules) |
-| 3. Planner core and three.js viewer | done 2026-10-16; gate awaiting John (pack: docs/review/phase3/README.md, REVIEW 3.12) | John reviews seed gallery and invariant report |
+| 3. Planner core and three.js viewer | done 2026-10-16; gate passed 2026-10-18 (John, REVIEW 3.12: "These all look good"; follow-ups: top view tilted, Phase 4 4.2 wings/jetties) | John reviews seed gallery and invariant report |
 | 4. Building generator depth | not started | per building type, "would I believe a person built this?" |
 | 5. Settlements and cities | not started | cities in ≥5 biome mixes, one straddling a border |
 | 6. Minecraft integration and release | not started | fresh world on three seeds plays well for an hour; first release |
