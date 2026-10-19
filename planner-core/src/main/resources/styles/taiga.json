@@ -1,0 +1,42 @@
+{
+  "format": "fb-style/1",
+  "id": "taiga",
+  "extends": "plain",
+  "biomes": ["minecraft:taiga", "minecraft:old_growth_pine_taiga", "minecraft:old_growth_spruce_taiga"],
+
+  "massing": {"ground": 4, "typical": 4, "jetty": 0, "plans": {"box": 4, "L": 3, "T": 2}, "jettyChance": 0, "setbackChance": 10},
+
+  "roof": {"forms": {"gable": 5, "hip": 1}, "rise": 2, "run": 1, "overhang": 1, "parapet": 1, "tallStoreys": 6, "dormers": 50},
+
+  "facade": {"bayMin": 2, "bayMax": 3, "sill": 1, "windowHeight": 1, "windowWidth": 1, "symmetric": false, "bandSize": 3, "narrowCorners": false,
+    "doorSurround": true, "plinth": true, "sills": true, "lintels": true, "cornice": false, "bressumer": false,
+    "corners": "post", "timber": "none"},
+
+  "interior": {"roomMin": 3, "roomArea": 26, "corridorAbove": 8, "loopPercent": 25},
+
+  "palette": {
+    "foundation": ["minecraft:cobblestone", "minecraft:mossy_cobblestone", "minecraft:andesite", "minecraft:stone"],
+    "floor": ["minecraft:spruce_planks", "minecraft:dark_oak_planks"],
+    "wall": ["minecraft:spruce_planks", "minecraft:stripped_spruce_wood", "minecraft:spruce_planks", "minecraft:dark_oak_planks"],
+    "trim": ["minecraft:stripped_spruce_log"],
+    "beam": ["minecraft:spruce_log"],
+    "fence": ["minecraft:spruce_fence"],
+    "window": ["minecraft:glass_pane"],
+    "door": ["minecraft:spruce_door"],
+    "roof": ["minecraft:dark_oak_planks", "minecraft:mud_bricks", "minecraft:brown_terracotta", "minecraft:deepslate_bricks"],
+    "stair": ["minecraft:spruce_planks"]
+  },
+
+  "colours": {
+    "foundation": ["#7a7a78", "#6f7a62", "#8a8a88", "#7f7f7f"],
+    "floor": ["#6f4f2c", "#4a2f15"],
+    "wall": ["#7a5a36", "#6e5232", "#7a5a36", "#4a2f15"],
+    "trim": ["#8a6a3c"],
+    "beam": ["#3b2a14"],
+    "fence": ["#7a5a36"],
+    "window": ["#a8d4f0"],
+    "door": ["#6a4a2a"],
+    "roof": ["#3e2a14", "#6a4a3a", "#5f4331", "#4a4a52"],
+    "stair": ["#7a5a36"]
+  }
+}
