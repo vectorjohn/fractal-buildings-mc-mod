@@ -353,10 +353,11 @@ gate.
   tested at extremes (Phase 3 known issue; `spec.maxHeight` exists since 4.1), and
   failing property cases replayable via the CLI (Phase 3 known issue; replay
   commands exist since 4.1, S adds the round-trip test).
-- [ ] **4.9 Viewer for the gate** [V]: roof slopes shaded by their slope (Phase 3
+- [x] **4.9 Viewer for the gate** [V]: roof slopes shaded by their slope (Phase 3
   known issue, John at REVIEW 3.12), style colours read from the style files with a
   per-voxel material gradient, gallery presets as one file per type/style, a
   cutaway camera for interiors, and tall-building gallery performance.
+  Done: `viewer/gallery-presets/<name>.json` (one file per type/style; `fixtures` = the `TestMassings` dump), `?camera=cutaway` (+ `cutStorey`), furnishing-hook markers. The tall fixture is `tall50` (50 storeys), not `tall60`: 60 storeys of >= 4 blocks do not fit under y 319. *Known issues:* hook markers are untested on real output until the interiors step (4.5) emits hooks; the `front-left` slope check passes even without the tint (3/4 lighting alone differs), only `top` catches a broken tint.
 - [ ] **4.10 Gate pack** [G]: per-type galleries, invariant, diversity and timing
   reports in `docs/review/phase4/`, and the REVIEW entry.
 

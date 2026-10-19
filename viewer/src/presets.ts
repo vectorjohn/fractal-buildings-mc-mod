@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import type { Facing } from './ir';
 
-export const PRESET_NAMES = ['front-left', 'back-right', 'top', 'front'] as const;
+export const PRESET_NAMES = ['front-left', 'back-right', 'top', 'front', 'cutaway'] as const;
 export type PresetName = (typeof PRESET_NAMES)[number];
 
 /** Fixed for every cell, so the same seed always frames the same. */
@@ -26,7 +26,7 @@ export interface CameraPose { position: THREE.Vector3; target: THREE.Vector3; up
 /**
  * Camera pose for a preset, relative to the world bounds [min, max) of a building and the facing of its lot.
  * front-left: 3/4 view from the front-left corner, 30 degrees down; back-right: the opposite corner; top: 22 degrees off
- * straight down (tipped towards the front, slightly to the left) with the front at the bottom of the picture; front: level elevation from the front.
+ * straight down (tipped towards the front, slightly to the left) with the front at the bottom of the picture; front: level elevation from the front; cutaway: the same pose as top (the gallery hides the roof and the upper storeys).
  */
 export function presetPose(
   name: PresetName, bounds: { min: number[]; max: number[] }, front: Facing,
@@ -47,7 +47,8 @@ export function presetPose(
     case 'front-left': dir.copy(flat(1, 1)).multiplyScalar(Math.cos(tilt)).setY(Math.sin(tilt)); break;
     case 'back-right': dir.copy(flat(-1, -1)).multiplyScalar(Math.cos(tilt)).setY(Math.sin(tilt)); break;
     case 'front': dir.copy(flat(1, 0)); break;
-    case 'top': { // front edge at the bottom of the picture, tipped off vertical towards the front and a little to the left
+    case 'top':
+    case 'cutaway': { // front edge at the bottom of the picture, tipped off vertical towards the front and a little to the left
       dir.copy(flat(1, 0.35)).multiplyScalar(Math.sin(TOP_PITCH)).setY(Math.cos(TOP_PITCH));
       up.set(-fx, 0, -fz);
       break;

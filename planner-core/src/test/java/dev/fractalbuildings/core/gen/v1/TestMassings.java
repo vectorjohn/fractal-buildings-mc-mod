@@ -77,6 +77,7 @@ public final class TestMassings {
 				List.of(new Core(3, 7, 5, 2, 0, 2), new Core(10, 7, 5, 2, 0, 2), new Core(17, 7, 5, 2, 0, 2)),
 				List.of("main0", "unit1", "unit2"),
 				List.of(new Massing.Party("main0", "unit1"), new Massing.Party("unit1", "unit2"))));
+		m.put("tall50", new Massing(grid(50), List.of(g("podium0", "podium", 2, 2, 28, 28, 50)), List.of(new Core(12, 14, 5, 2, 0, 50))));
 		return m;
 	}
 

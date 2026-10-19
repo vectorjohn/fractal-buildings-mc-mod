@@ -6,7 +6,7 @@ import { resolveSource } from './source';
 import type { Source } from './source';
 import { parseState, resolveSeed, serializeState, stepSeed, toggleLayer } from './state';
 import type { ViewState } from './state';
-import { STYLE_PALETTES } from './palettes';
+import { styleIds } from './styles';
 import { mountViolationPanel } from './overlay';
 import { createUi } from './ui';
 import { applyLayers, applyStoreyLimit, topStorey } from './visibility';
@@ -75,7 +75,7 @@ const ui = createUi({
 
 function syncUi(): void {
   ui.update({
-    state, styles: Object.keys(STYLE_PALETTES), style: effectiveStyle(), seeds: source?.seeds ?? [], topStorey: top,
+    state, styles: styleIds(), style: effectiveStyle(), seeds: source?.seeds ?? [], topStorey: top,
     status: error ?? (source ? `${source.kind}${source.seeds.length > 1 ? `, ${source.seeds.length} seeds` : ''}` : 'loading'),
   });
 }
