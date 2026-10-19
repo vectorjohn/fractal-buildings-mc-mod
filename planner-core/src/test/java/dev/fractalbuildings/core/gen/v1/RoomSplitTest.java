@@ -121,6 +121,7 @@ class RoomSplitTest {
 		forEachCase((name, style, seed, m, t, ir) -> {
 			int min = StyleLibrary.get(style).interior().roomMin();
 			for (Room r : ir.rooms()) {
+				if (r.use().equals("corridor")) continue; // corridors are 2-3 wide by design
 				Box3 vb = ir.volumes().stream().filter(v -> v.id().equals(r.volume())).findFirst().orElseThrow().box();
 				for (Box3 p : r.parts()) {
 					assertTrue(p.sx() >= Math.min(min, vb.sx() - 2) && p.sz() >= Math.min(min, vb.sz() - 2), name + " " + style + " " + seed + " room " + r.id() + " is " + p.sx() + "x" + p.sz());
@@ -198,10 +199,14 @@ class RoomSplitTest {
 		for (String style : STYLES)
 			for (long seed = 0; seed < 5; seed++) {
 				BuildingIr ir = TestMassings.shell(TestMassings.all().get("setback"), seed, style);
+				// the facade pass changes bay rhythm every band (bandSize storeys), and a plan follows the bays: floors repeat within a band
+				int bs = StyleLibrary.get(style).facade().bandSize();
 				for (int s = 3; s < 8; s++) {
-					assertEquals(plan(ir, 3), plan(ir, s), style + " " + seed + ": storey " + s + " partitions and doors differ from storey 3");
-					assertEquals(hooks(ir, 3), hooks(ir, s), style + " " + seed + ": storey " + s + " hooks differ from storey 3");
-					if ((s - 3) % 2 == 0) assertEquals(stairs(ir, 3), stairs(ir, s), "flights of the same parity are identical");
+					int ref = s - 1; // the previous storey, if it is in the same facade band
+					if (FacadePass.band(TestMassings.all().get("setback").mass("shaft1"), s, bs) != FacadePass.band(TestMassings.all().get("setback").mass("shaft1"), ref, bs) || ref < 2) continue;
+					assertEquals(plan(ir, ref), plan(ir, s), style + " " + seed + ": storey " + s + " partitions and doors differ from storey " + ref);
+					assertEquals(hooks(ir, ref), hooks(ir, s), style + " " + seed + ": storey " + s + " hooks differ from storey " + ref);
+					if (s - 2 >= 2 && FacadePass.band(TestMassings.all().get("setback").mass("shaft1"), s - 2, bs) == FacadePass.band(TestMassings.all().get("setback").mass("shaft1"), s, bs)) assertEquals(stairs(ir, s - 2), stairs(ir, s), "flights of the same parity are identical");
 				}
 			}
 	}
@@ -258,6 +263,7 @@ class RoomSplitTest {
 		assertTrue(v.isEmpty(), v.isEmpty() ? "" : v.get(0).invariant() + " " + v.get(0).message());
 		assertTrue(ms < 20_000, "generation took " + ms + " ms");
 		BuildingIr ir = scene.buildings().get(0).shell();
-		assertEquals(plan(ir, 5), plan(ir, 40), "typical floors repeat");
+		assertEquals(plan(ir, 4), plan(ir, 6), "typical floors repeat within a facade band");
+		assertEquals(plan(ir, 40), plan(ir, 42), "typical floors repeat within a facade band");
 	}
 }

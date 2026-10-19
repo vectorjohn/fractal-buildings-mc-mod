@@ -325,9 +325,10 @@ gate.
   style; flat roofs, parapets and crowns for tall buildings.
   *Tests:* `RoofFieldTest` (pure fields over 3..24 x 3..24), `RoofPassTest` (every `TestMassings` fixture x forms x pitches x 10 seeds: all invariants; tight `maxHeight`; overhang clip; dormers; groups); `-Dfb.dumpRoofForms=DIR` writes each fixture once per form as viewer batches.
   *Known issues:* dormers only on 1/1 slopes (others skip them); shed rises at most 3 then plateaus; no valley/hip ridge caps or crowns beyond flat + parapet; roofs over a lower mass that meets a taller one use a plain lean-to (no hip against the wall).
-- [ ] **4.4 Facades** [Fa]: bays and rhythm, trim, depth (insets, beams, sills), a
+- [x] **4.4 Facades** [Fa]: bays and rhythm, trim, depth (insets, beams, sills), a
   gradient of materials; bands that repeat over many storeys without
   looking stamped.
+  *Tests:* `FacadeLayoutTest` (bays sum and range, mirror symmetry, one rhythm per band, windows aligned per band, >= 2 layouts on tall shafts, one door per entrance, decor never on openings or in front of them, double doors). *Known issues:* half-timber braces not done (posts and slab-line rails only); 2-wide windows only in even bays of 4+; windows beside a core or partition are simply not cut (opening checks the inside is air).
 - [x] **4.5 Interiors** [I]: room graph, stairs, simple furnishing hooks; a
   vertical core placed first in multi-storey buildings, each floor grown
   around it (typical floors repeat with per-band variation).
