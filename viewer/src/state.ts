@@ -83,3 +83,9 @@ export function storeyVisible(storey: number, max: number | null, top: number): 
   if (max === null || max >= top) return true;
   return storey >= 0 && storey <= max;
 }
+
+/** Latest-wins ticket gate for overlapping async rebuilds: a stale one must not publish its result. */
+export function latestGate(): { begin(): number; isLatest(ticket: number): boolean } {
+  let n = 0;
+  return { begin: () => ++n, isLatest: (t) => t === n };
+}

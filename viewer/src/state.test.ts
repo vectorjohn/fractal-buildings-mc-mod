@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ALL_LAYERS, defaultState, parseState, resolveSeed, serializeState, stepSeed, storeyVisible, toggleLayer } from './state';
+import { ALL_LAYERS, latestGate, defaultState, parseState, resolveSeed, serializeState, stepSeed, storeyVisible, toggleLayer } from './state';
 
 describe('state <-> URL', () => {
   it('defaults serialise to an empty query', () => {
@@ -65,5 +65,16 @@ describe('storeyVisible', () => {
     expect(storeyVisible(-1, 1, 2)).toBe(false);
     expect(storeyVisible(-1, 2, 2)).toBe(true);
     expect(storeyVisible(2, null, 2)).toBe(true);
+  });
+});
+
+describe('latestGate', () => {
+  it('only the newest ticket is current', () => {
+    const g = latestGate();
+    const a = g.begin();
+    expect(g.isLatest(a)).toBe(true);
+    const b = g.begin();
+    expect(g.isLatest(a)).toBe(false);
+    expect(g.isLatest(b)).toBe(true);
   });
 });

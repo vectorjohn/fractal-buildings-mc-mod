@@ -4,7 +4,7 @@ import type { Scene } from './ir';
 import { buildSceneObject, frameCamera } from './render';
 import { resolveSource } from './source';
 import type { Source } from './source';
-import { parseState, resolveSeed, serializeState, stepSeed, toggleLayer } from './state';
+import { latestGate, parseState, resolveSeed, serializeState, stepSeed, toggleLayer } from './state';
 import type { ViewState } from './state';
 import { styleIds } from './styles';
 import { mountViolationPanel } from './overlay';
@@ -28,6 +28,7 @@ let current: Scene | null = null;
 let content: THREE.Object3D | null = null;
 let top = 0;
 let loads = 0;
+const rebuilds = latestGate();
 let framed = false;
 let error: string | null = null;
 
@@ -118,19 +119,25 @@ async function change(next: ViewState, rebuild: boolean): Promise<void> {
   state = next;
   history.replaceState(null, '', `${location.pathname}${serializeState(state) ? `?${serializeState(state)}` : ''}`);
   if (!rebuild) { applyView(); syncUi(); return; }
+  const ticket = rebuilds.begin();
   try {
     const key = `${state.ir ?? ''}|${state.fixture ?? ''}|${state.style ?? ''}`;
     if (!source || key !== sourceKey) {
       source = await resolveSource({ ir: state.ir, fixture: state.fixture, style: state.style },
         (u) => fetch(u), fixtures);
       sourceKey = key;
+      if (!rebuilds.isLatest(ticket)) return;
     }
     state = { ...state, seed: resolveSeed(source.seeds, state.seed) };
     if (state.seed !== prevState.seed || source.seeds.length > 0) {
       history.replaceState(null, '', `${location.pathname}${serializeState(state) ? `?${serializeState(state)}` : ''}`);
     }
-    const needScene = !current || state.seed !== prevState.seed || key !== lastSceneKey;
-    if (needScene) { current = await source.load(state.seed); lastSceneKey = key; }
+    const needScene = !current || state.seed !== lastSceneSeed || key !== lastSceneKey;
+    if (needScene) {
+      const loaded = await source.load(state.seed);
+      if (!rebuilds.isLatest(ticket)) return; // a newer change superseded this load
+      current = loaded; lastSceneKey = key; lastSceneSeed = state.seed;
+    }
     error = null;
     buildContent();
     loads++;
@@ -147,5 +154,6 @@ async function change(next: ViewState, rebuild: boolean): Promise<void> {
   }
 }
 let lastSceneKey = '';
+let lastSceneSeed: number | null = null;
 
 void change(state, true);
