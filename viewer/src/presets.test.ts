@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { PRESET_NAMES, presetPose } from './presets';
+import { PRESET_NAMES, TOP_PITCH_DEG, presetPose } from './presets';
 
 const b = { min: [10, 60, 20], max: [30, 70, 40] };
 
@@ -22,9 +22,13 @@ describe('camera presets', () => {
     const bl = presetPose('front-left', b, 'north'), br = presetPose('back-right', b, 'north');
     expect(bl.position.x + br.position.x).toBeCloseTo(2 * bl.target.x, 6);
   });
-  it('top looks straight down', () => {
-    const p = presetPose('top', b, 'west');
-    expect(p.position.x).toBeCloseTo(p.target.x); expect(p.position.z).toBeCloseTo(p.target.z);
-    expect(p.position.y).toBeGreaterThan(p.target.y);
+  it('top looks down at a slight angle off vertical, tipped towards the front and the viewer-left', () => {
+    const p = presetPose('top', b, 'south');
+    const d = p.position.clone().sub(p.target);
+    expect(d.y).toBeGreaterThan(0);
+    expect(Math.acos(d.y / d.length()) * 180 / Math.PI).toBeCloseTo(TOP_PITCH_DEG, 6);
+    expect(p.position.z).toBeGreaterThan(p.target.z); // front (south) side
+    expect(p.position.x).toBeLessThan(p.target.x); // viewer-left
+    expect(p.up.x + 0).toBeCloseTo(0); expect(p.up.z).toBeCloseTo(-1); // front edge stays at the bottom of the picture
   });
 });
