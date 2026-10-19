@@ -28,7 +28,7 @@ work becomes a ROADMAP item or a Polish backlog line. Settled items move to
   Look for: the licence you want for the mod (affects what we may borrow from other mods)
   Result: MIT with John as author (John, 2026-10-08)
 
-- [ ] **3.12 Phase 3 gate**: generator v0 seed gallery, invariant report and diversity report
+- [x] **3.12 Phase 3 gate**: generator v0 seed gallery, invariant report and diversity report
   Where: [the pack's README](review/phase3/README.md); 16 PNGs in `docs/review/phase3/gallery/` (`<style>[-flat]-<preset>.png`: plain and medieval, noise and flat terrain, presets front-left, back-right, top, front; seeds 0-15 on a 20x20 lot), [invariants.md](review/phase3/invariants.md) (1,280,000 cases, 0 failures), [diversity.md](review/phase3/diversity.md). Start with `plain-front-left.png` and `medieval-flat-back-right.png`.
   Look for:
   1. Does v0 read as plain houses (a box, 1 to 3 storeys, a gable roof, a door, windows)? It is meant to be plain; variety comes in Phase 4. Plain and medieval differ only in colour at v0.
@@ -37,7 +37,7 @@ work becomes a ROADMAP item or a Polish backlog line. Settled items move to
   4. Is the flat-shaded `top` view useful, or should it go (or get shading so roof ridges show)?
   5. The noise terrain is the same patch in every cell (one terrain spec, building at the same lot position). Fine for review, or do you want each seed on different ground?
   Agent notes: 3-storey houses show four brown bands (a floor slab per storey plus the top slab under the roof), so they can look like 4 storeys; the IR has at most 3 (spec range [1, 3], checked in the gallery IR and the code). Small houses look alike from outside (seeds 0 and 8: 7x6 vs 7x5, both 2 storeys; 64 of 256 seeds repeat another seed's shell voxels exactly, see diversity.md). The thin line in the grass of `plain-flat-top.png` seed 5 is a viewer rendering artifact.
-  Result: These all 
+  Result: These all look good. Couple notes below. -- @John
    1. These read as plain houses. I like the variety in size and shape. I’d like to see things like wings and stories that aren’t all the same size - like how some old houses are wider with an overhang on top. But it sounds like that kind of thing comes in phase 4.
    2. Camera framing is good. The top view might be a little too dead on, so they all just look like a plain rectangle. A slight angle from the top view might help.
    3. Looks good so far.
