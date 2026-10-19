@@ -51,7 +51,7 @@ item. Per-item work logs are in [log/](log/); run ledgers in [runs/](runs/).
 | 1. Prior art research | done; gate passed 2026-10-16 (John signed off in synthesis.md; wants effectively unbounded cities) | John picks building-generation direction and the integration approach to spike |
 | 2. Worldgen spikes | done; gate passed 2026-10-16 (John accepted ADR 0003; S6 figures being re-measured) | worldgen ADR (approach, size limits, determinism rules) |
 | 3. Planner core and three.js viewer | done 2026-10-16; gate passed 2026-10-18 (John, REVIEW 3.12: "These all look good"; follow-ups: top view tilted, Phase 4 4.2 wings/jetties) | John reviews seed gallery and invariant report |
-| 4. Building generator depth | not started | per building type, "would I believe a person built this?" |
+| 4. Building generator depth | done 2026-10-19; gate awaiting John (pack: docs/review/phase4/README.md, REVIEW 4.10) | per building type, "would I believe a person built this?" |
 | 5. Settlements and cities | not started | cities in ≥5 biome mixes, one straddling a border |
 | 6. Minecraft integration and release | not started | fresh world on three seeds plays well for an hour; first release |
 
@@ -344,7 +344,7 @@ gate.
   around it (typical floors repeat with per-band variation).
   Tests: `RoomSplitTest` (tiling, room sides, no partition behind a window or the entrance, hooks, typical floors, corridor, 60-storey tower); rooms-reachable over every fixture and every house in `V1PropertyTest`.
   *Known issues:* a core in the middle of a small mass (e.g. the 10x10 `setback` shaft) leaves too little room for a partition with `roomMin` 3, so those floors stay one stair hall; hooks avoid windows only by never placing furniture blocks (a hook may sit under a window); the entry room is not forced to open onto the corridor.
-- [ ] **4.6 Building types** [T-*], one step each:
+- [x] **4.6 Building types** [T-*], one step each:
   - [x] house [T-house]
     - Room program (living/kitchen/entry down, bedrooms up, bed/table/chest/hearth hooks), cores against a wall, wall-side room beside every stair. *Known issues:* jetties/setbacks only on the main stack and wings only on the main block (M); steep-ground presets wait for S.
   - [x] tower [T-tower]
@@ -366,7 +366,7 @@ gate.
     cathedral, bath), footprints up to ~200 blocks (ADR 0001 limits)
     Tests: `HallTypeTest` (kind mix, open span >= 15, footprint >= 20x20, roofs <= 7 over wide spans incl. 200x200, arches, furnishing, diversity floors; mutants for span, arches, roof pitch, seed), `V1PropertyTest` (5 lots x 40, incl. 200x200 on slopes up to 1:3), golden `hall.txt`. Log: `docs/log/2026-10-19-p4-t-hall.md`.
     *Known issues:* no crossing tower on cathedrals (a core can't stand in an open mass); the market arcade is glazed arches, not doors (extra doors need their own front steps, which the lot margin can't hold on slopes); halls ignore the style's massing plans.
-- [ ] **4.7 Styles** [St-*]: a palette and rule set per culture, mapped from biome,
+- [x] **4.7 Styles** [St-*]: a palette and rule set per culture, mapped from biome,
   one step each:
   - [x] plains [St-plains] (`styles/plains.json`; biomes moved from medieval; large-type preset deferred: only `house` is merged)
   - [x] desert [St-desert]
