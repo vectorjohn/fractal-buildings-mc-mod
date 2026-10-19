@@ -82,10 +82,14 @@ public record V1Case(long seed, String type, String style, int lotW, int lotD, i
 				terrain = "noise:" + seed + ":" + r.range(40, 150) + ":" + Math.max(1, Math.min(r.range(2, 8), wl / g)) + ":" + wl;
 			}
 			default -> {
-				int[] spot = CROP_SPOTS[r.below(CROP_SPOTS.length)];
-				x = spot[0] + r.range(-40, 40);
-				z = spot[1] + r.range(-40, 40);
-				terrain = "recorded:" + CROP;
+				if (lot[0] > 120 || lot[1] > 120) { // the recorded crop is only ~2000 x 2000: big lots get noise instead
+					terrain = "noise:" + seed + ":" + r.range(40, 150) + ":" + r.range(2, 6) + ":" + r.range(3, 12);
+				} else {
+					int[] spot = CROP_SPOTS[r.below(CROP_SPOTS.length)];
+					x = spot[0] + r.range(-40, 40);
+					z = spot[1] + r.range(-40, 40);
+					terrain = "recorded:" + CROP;
+				}
 			}
 		}
 		return new V1Case(seed, t.id(), style, lot[0], lot[1], x, z, front, terrain);

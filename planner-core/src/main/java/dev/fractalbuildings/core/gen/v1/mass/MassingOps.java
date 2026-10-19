@@ -179,6 +179,39 @@ public final class MassingOps {
 		return ok.get(r.below(ok.size()));
 	}
 
+	/**
+	 * Like {@link #core}, but with candidates at all four corners and the middle of the hosts' common
+	 * interior, so a mass whose back wall is a shared strip (a tower in front of a hall) still finds a
+	 * place for its stair. Returns null if none is clear of every wall strip.
+	 */
+	public static Core coreAnywhere(StoreyGrid g, List<Mass> hosts, List<Mass> others, int from, int to, Draws r) {
+		if (to < from + 2) return null;
+		int len = Core.length(g, from, to);
+		int ix0 = Integer.MIN_VALUE, iz0 = Integer.MIN_VALUE, ix1 = Integer.MAX_VALUE, iz1 = Integer.MAX_VALUE;
+		for (Mass h : hosts) {
+			ix0 = Math.max(ix0, h.x() + 1);
+			iz0 = Math.max(iz0, h.z() + 1);
+			ix1 = Math.min(ix1, h.maxX() - 1);
+			iz1 = Math.min(iz1, h.maxZ() - 1);
+		}
+		List<Core> ok = new ArrayList<>();
+		for (int along = 0; along < 2; along++) {
+			int sx = along == 0 ? len : 2, sz = along == 0 ? 2 : len;
+			if (ix1 - ix0 < sx || iz1 - iz0 - 1 < sz) continue;
+			int[] xs = {ix0, ix1 - sx, ix0 + (ix1 - ix0 - sx) / 2};
+			int[] zs = {iz1 - sz, iz0 + 1 + (iz1 - iz0 - 1 - sz) / 2}; // never the front inside row (the entrance)
+			for (int x : xs)
+				for (int z : zs) {
+					Core k = new Core(x, z, sx, sz, from, to);
+					boolean dup = false;
+					for (Core o : ok) dup |= o.x() == k.x() && o.z() == k.z() && o.sx() == k.sx();
+					if (!dup && clear(k, hosts, others, from, to)) ok.add(k);
+				}
+		}
+		if (ok.isEmpty()) return null;
+		return ok.get(r.below(ok.size()));
+	}
+
 	/** True if no shared wall strip between a host and another mass (on a served storey) touches {@code k}'s one-block neighbourhood. */
 	private static boolean clear(Core k, List<Mass> hosts, List<Mass> others, int from, int to) {
 		for (Mass h : hosts) {

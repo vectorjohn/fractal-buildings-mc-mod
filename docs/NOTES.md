@@ -113,6 +113,11 @@ being true.
 
 - Tower: `TowerType` ignores the style's `groundExtra` (a 5-high ground storey needs a core of 6, more than a 7-wide tower holds).
 - Snowy style window density (120 flat 20x20 houses, windows per bbox facade area 2(sx+sz)sy): 0.0128 vs plains 0.0266; all snowy pitched roofs are 2/1.
+
+- Hall (4.6): a core can't stand in an open mass (M8), so halls put stairs in small tower/annex masses; `MassingOps.core` finds nothing for a mass whose back wall is a shared strip, use `coreAnywhere`.
+- Hall (4.6): every extra ground-floor exterior DOOR gets its own front-step flight (4.8); on slopes the lot margin cannot hold several, `entrance-reachable` then fails (3-9 of 200 cases for 3-wide arcade doors). Use window-kind openings for decorative arches.
+- Hall (4.6): `RoofPass.run(c, RoofStyle)` lets a type lower the pitch for wide spans (a 1/1 gable over a 36-wide hall rises 18); 200x200 hall: generate 8-72 ms, invariant check 42-281 ms (host load ~40).
+- `V1Case`: lots wider than 120 use noise terrain, the recorded crop is only ~2000 x 2000 blocks.
 - Wall type (4.6): the passage is an `open` one-storey mass so it is one room; gates are DOOR-role boxes 3x4 (closed gate leaves) with their own `Opening`, not 1x2 doors; the second (town) gate is a second `FacadePlan` entrance on the same mass (`others`), not a second entrance mass. Ground storey is 5 high for the whole grid (4-high gate, core length 6).
 - Wall type (4.6): wall-walk door sits one block above the tower floor (tower storey 1, y = slab + 2) so you step up onto the curtain's ROOF layer; `RoofPass.run(c, RoofStyle)` and an `OpeningPass.run(c, doorCutter)` overload are the additive helpers it needed.
 - Facades (4.4): `./gradlew :planner-core:test --tests '*FixtureDumpTest*' -Dfb.dumpFixtures=...` needs `--rerun` (the test task is otherwise UP-TO-DATE and writes nothing). Facade decor outside the wall plane must be checked against `Decor.outFree` (envelope, free air, not in front of a door/window); `assemble` throws on boxes outside the envelope.
