@@ -156,6 +156,6 @@ cd viewer && nix develop -c npm ci && FB_PORT=4817 nix develop -c npm run galler
 ```
 
 # Q and A
-@John 2026-10-19: I'm going to start writing responses like this. My name, date: question/comment. Still trying to get good conventions, this reads more natural. 
+@John 2026-10-19: I'm going to start writing responses/questions/feedback like this. My name, date: question/comment. Still trying to get good conventions, this reads more natural. You could respond like a threaded conversation. If answered by a specialized agent, say so.
 
-@John 2026-10-19: can I get some general usage instructions for the viewer? I see scattered examples, some showing environment var 
+- @John 2026-10-19: can I get some general usage instructions for the viewer? I see scattered examples, some showing environment var usage, but nothing that just says how to use it. Maybe it needs a readme. 
