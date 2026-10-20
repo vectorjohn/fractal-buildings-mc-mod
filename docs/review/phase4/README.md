@@ -105,11 +105,12 @@ that asked them first:
    ground levels in 6.3. OK?
 9. City block, plain style: the units read as one long banded facade. Fine for a plain style?
 10. Plains: is the wall mix too busy?
-11. Jungle: does the palette read as jungle/bamboo?
-12. Desert: walls look speckled. Drop the yellow terracotta from the wall mix?
-13. Open from the plan: per-wing ground levels (ADR 0003 W5) deferred to 6.3, so deep types
+      - @John 2026-10-19: a bit, yes. Are the colors representing specific blocks or just symbols? I could imagine it looking ok if the right blocks are used.
+12. Jungle: does the palette read as jungle/bamboo?
+13. Desert: walls look speckled. Drop the yellow terracotta from the wall mix?
+14. Open from the plan: per-wing ground levels (ADR 0003 W5) deferred to 6.3, so deep types
     are tested only on ground up to their `maxGrade`. OK?
-14. Open from the plan: jetties over the street (past the lot edge) wait for Phase 5's street
+15. Open from the plan: jetties over the street (past the lot edge) wait for Phase 5's street
     rules. OK?
     Yes -- @John
 16. Open from the plan: `medieval` is now a style by name only (plains took its biomes; it is
@@ -156,6 +157,7 @@ cd viewer && nix develop -c npm ci && FB_PORT=4817 nix develop -c npm run galler
 ```
 
 # Q and A
-@John 2026-10-19: I'm going to start writing responses/questions/feedback like this. My name, date: question/comment. Still trying to get good conventions, this reads more natural. You could respond like a threaded conversation. If answered by a specialized agent, say so.
+@John 2026-10-19: I'm going to start writing responses/questions/feedback like this. My name, date: question/comment. Still trying to get good conventions, this reads more natural. You could respond like a threaded conversation. If answered by a specialized agent, say so. Could you write a SB slash command for me that starts a comment like below? E.g `/reply`. Might help me be consistent.
 
-- @John 2026-10-19: can I get some general usage instructions for the viewer? I see scattered examples, some showing environment var usage, but nothing that just says how to use it. Maybe it needs a readme. 
+- @John 2026-10-19: can I get some general usage instructions for the viewer? I see scattered examples, some showing environment var usage, but nothing that just says how to use it. Maybe it needs a readme.
+- @John 2026-10-19: can you elaborate on what the colored blocks added in structures are?
