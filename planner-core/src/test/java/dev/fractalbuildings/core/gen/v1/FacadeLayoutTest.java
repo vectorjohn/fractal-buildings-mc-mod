@@ -232,7 +232,7 @@ class FacadeLayoutTest {
 		StyleRules s = StyleLibrary.get("medieval");
 		FacadeStyle f = s.facade();
 		StyleRules wide = withFacade(s, new FacadeStyle(3, 4, f.sill(), f.windowHeight(), 2, true, f.bandSize(), false, false, 2, true, f.plinth(), f.sills(), f.lintels(),
-				f.shutters(), f.stringCourse(), f.cornice(), f.bressumer(), f.corners(), f.timber()));
+				f.shutters(), f.stringCourse(), f.cornice(), f.bressumer(), f.corners(), f.timber(), f.unglazed()));
 		int wideDoors = 0;
 		for (Massing m : TestMassings.all().values())
 			for (long seed = 0; seed < 8; seed++) {
@@ -248,7 +248,7 @@ class FacadeLayoutTest {
 		// FixturePipelineTest covers plain and medieval; this adds a style with every decor kind on and corner quoins
 		StyleRules s = StyleLibrary.get("medieval");
 		FacadeStyle f = s.facade();
-		StyleRules all = withFacade(s, new FacadeStyle(2, 4, 1, 2, 2, true, 2, true, true, 2, true, true, true, true, true, true, true, true, "quoins", "all"));
+		StyleRules all = withFacade(s, new FacadeStyle(2, 4, 1, 2, 2, true, 2, true, true, 2, true, true, true, true, true, true, true, true, "quoins", "all", false));
 		for (var e : TestMassings.all().entrySet())
 			for (long seed = 0; seed < 5; seed++) {
 				BuildingIr ir = ShellGeneratorV1.generate(TestMassings.spec(seed, "medieval"), new TestMassings.FixtureType(e.getValue()), all);

@@ -1,4 +1,4 @@
-# Phase 4 gate pack
+  # Phase 4 gate pack
 
 What John looks at for the Phase 4 gate (ROADMAP 4.10): generator v1, with massing (wings,
 jetties, setbacks), roofs, facades, interiors, front steps, nine building types (house, shop,
@@ -42,6 +42,10 @@ Each line: the first pictures to open, what to judge, and what the agent saw (pi
   and heights (seeds 6, 7, 14), jetties and tall timber houses (2, 5), courtyard (15); the
   cutaway shows the room partitions and furnishing hooks on the ground floor. Seen: clearly more varied than v0; the dark medieval
   timber frames dominate the walls.
+    - @John 2026-10-19:
+      - Overall I like it.
+      - Some houses, like phase4/gallery/house/house-medieval-cutaway.png seed 7, have floor plans that don’t make sense I think. This has the entrance come into a small room (could be a mud room, that’s ok) but then some other rooms seem to be only reachable by traversing many other rooms. I feel like usually there would be a hall or a central room, so you could get from one area to another without going through someone’s room. Maybe we need a concept of “room purpose” (if there isn’t one already). I could see a bedroom with a master bathroom attached (although probably not in a medieval house), but not a series of 4 rooms you have to walk through. That said, weirdness is good in moderation so layouts like this make sense to have sometimes.
+      - Consider the possibility of connecting rooms without doors. More open plans in some cases, open “arch” ways. 
 - **Shop** ([shop-medieval-front-left](gallery/shop/shop-medieval-front-left.png),
   [shop-plain-front](gallery/shop/shop-plain-front.png)). Narrow, 2-4 storeys, a centred door
   between 2-3 wide display windows and a fascia. Seen: reads as a narrow town house with big
@@ -56,6 +60,7 @@ Each line: the first pictures to open, what to judge, and what the agent saw (pi
   width, pyramid or hip roofs (e.g. seeds 0, 4, 9) or parapets (e.g. 1, 5, 13). Seen: many windows per
   storey in timber framing, so they read more like slim town houses or small high-rises than
   watchtowers.
+  2026-10-19: agreed, they don't look like watch towers. I guess there are many types of watch tower, but at least some should have frame spindly legs. And distinctive larger room on top. But also some should look like this. Maybe Windows that are just holes, not glass. -- @John
 - **Temple** ([temple-medieval-front-left](gallery/temple/temple-medieval-front-left.png),
   [temple-plain-top](gallery/temple/temple-plain-top.png),
   `viewer/out/gallery/temple-medieval-front.png`). Axis of porch or bell
@@ -98,22 +103,56 @@ that asked them first:
 3. Wall: does half-timbering on a stone town wall look odd (and windows in a wall)?
 4. Tower: does a timber tower read as pre-modern?
 5. Workshop: does it read as a tall cottage with a barn door?
+    - @John 2026-10-19: Similar to shops, there could be a bit more covered outdoor area on the bottom.
 6. Shop: does the shopfront read as a shop?
+    - @John 2026-10-19:
+      - Agreed on comments about the window at the top of stairs. Might be that shops only make sense when their window can be ground level.
+      - Consider a covered area outside, e.g. much of the ground level being open / no walls with space for a more bazaar like shopping area.
 7. Temple: bell towers read as tall houses. Acceptable for now?
 8. City block: only on gentle ground (up to 1 in 16) and lots of 52x52 or more until per-wing
    ground levels in 6.3. OK?
 9. City block, plain style: the units read as one long banded facade. Fine for a plain style?
 10. Plains: is the wall mix too busy?
-11. Jungle: does the palette read as jungle/bamboo?
-12. Desert: walls look speckled. Drop the yellow terracotta from the wall mix?
-13. Open from the plan: per-wing ground levels (ADR 0003 W5) deferred to 6.3, so deep types
+      - @John 2026-10-19: a bit, yes. Are the colors representing specific blocks or just symbols? I could imagine it looking ok if the right blocks are used.
+        - @assistant 2026-10-19: Specific blocks, approximately. Each style file lists
+          real blocks per role (plains walls: birch planks, oak planks, white terracotta,
+          smooth stone) and, beside them, one hand-picked colour per block meant to
+          approximate it (not sampled from the textures, so some are off: white
+          terracotta is really a pinkish beige). In `palette` mode the viewer gives every wall
+          cell one entry from that list, picked by a hash of its position, so the four
+          blocks are scattered evenly, one cell at a time, with no texture. The game
+          doesn't place style blocks yet (mapping roles to blocks is item 6.1). If 6.1
+          picks blocks the same way, the in-game wall is that same even per-block
+          scatter, with real textures on top: planks show grain, terracotta and smooth
+          stone are flat, so it would probably look at least as busy as the picture.
+          What usually reads well is fewer blocks or blocks in patches (one material per
+          wall, or a gradient by height), not a per-block mix. Not checked in-game.
+12. Jungle: does the palette read as jungle/bamboo?
+13. Desert: walls look speckled. Drop the yellow terracotta from the wall mix?
+14. Open from the plan: per-wing ground levels (ADR 0003 W5) deferred to 6.3, so deep types
     are tested only on ground up to their `maxGrade`. OK?
-14. Open from the plan: jetties over the street (past the lot edge) wait for Phase 5's street
+15. Open from the plan: jetties over the street (past the lot edge) wait for Phase 5's street
     rules. OK?
-15. Open from the plan: `medieval` is now a style by name only (plains took its biomes; it is
+    Yes -- @John
+16. Open from the plan: `medieval` is now a style by name only (plains took its biomes; it is
     still requestable with `--style medieval`). Keep it, rename it, or give it biomes back?
+    Please expand on this, I didn't know what it means.  -- @John
+    - @assistant 2026-10-19: Each style lists the Minecraft biomes it is used in. With
+      style `auto` (what the game will use) the generator picks the style whose list
+      contains the biome; biomes no style lists get `plain`. `medieval` (half-timbered,
+      jettied, gabled) used to own plains, meadow, forest and flower forest; the new
+      `plains` style took them, so `medieval` now lists no biome. It still works when
+      asked for by name (`--style medieval`, the medieval galleries), but a world would
+      never pick it, so in-game no half-timbered town appears unless something assigns
+      that style. Options: (a) keep it as an opt-in style, for a later "town style"
+      setting or for city districts in Phase 5 to choose; (b) give it biomes back, e.g.
+      `forest`, `flower_forest` and `birch_forest` (leaving `plains` the open plains and
+      meadow) or the unlisted `dark_forest`; (c) rename it (say `timber-town`) to say it
+      is a look, not a place.
 
 The storey slider and roof toggle (REVIEW 3.6) are settled and not asked again.
+
+@John 2026-10-21: Overall, I like the progress. I think we should consider this gate passed and move on (after accounting for the feedback I've given). My feeling is we can move forward with phases without being perfect. Once we start getting settlements, and then Minecraft integration, it will be a lot easier to see and feel how these buildings play, and we may at that point want to iterate on building generation in the viewer, etc. It seems to me the value of the viewer step is you can quickly generate many variations and compare and contrast, once we see a real problem or polish we want to achieve.
 
 # Timing
 
@@ -151,3 +190,37 @@ flock .claude/heavy.lock nix develop -c $C bench --types highrise --n 448
 cd viewer && nix develop -c npm ci && FB_PORT=4817 nix develop -c npm run gallery
 # PNGs in viewer/out/gallery/<preset>-<camera>.png
 ```
+
+# Q and A
+@John 2026-10-19: I'm going to start writing responses/questions/feedback like this. My name, date: question/comment. Still trying to get good conventions, this reads more natural. You could respond like a threaded conversation. If answered by a specialized agent, say so. Could you write a SB slash command for me that starts a comment like below? E.g `/reply`. Might help me be consistent.
+  - @assistant 2026-10-19: Works for us. Recorded in CLAUDE.md ("Human review loop")
+    and the coordinator's instructions: you write `@John <date>: <comment>`, agents
+    reply as an indented list item under it, signed with their role
+    (`@assistant`, `@coder`, `@researcher`...) and the date. The inline `-- @John`
+    still works too.
+  - @assistant 2026-10-19: `/reply` is in [Library/reply-command.md](../../../Library/reply-command.md).
+    Run `System: Reload` once (or reload the tab), then type `/reply` and pick it. On an
+    empty line it inserts `- @John <today>: `; at the end of a line with text (type a
+    space before the `/`) it adds `  - @John <today>: ` as a new line at the end of that
+    comment's thread, indented under it, with the cursor after the colon. Tested in a
+    scratch SilverBullet 2.11 driven by a headless browser (on a numbered question, a
+    plain comment, a list comment and an empty line), not in your running instance.
+
+- @John 2026-10-19: can I get some general usage instructions for the viewer? I see scattered examples, some showing environment var usage, but nothing that just says how to use it. Maybe it needs a readme.
+  - @assistant 2026-10-19: Added [Viewer how-to](../../VIEWER.md): starting it, opening
+    a batch or one file, the controls and the red violation overlay, galleries, making
+    your own batch with the CLI, and every environment variable (`FB_GALLERY`,
+    `FB_PORT`, `FB_PRESETS`, `GALLERY`) with what it does. `viewer/README.md` now
+    points to it, so it is there where you would look first.
+- @John 2026-10-19: can you elaborate on what the colored blocks added in structures are?
+  - @assistant 2026-10-19: Those are furnishing markers, drawn by the viewer only:
+    small cubes (0.4 of a block) standing where the planner reserves a spot for
+    furniture. The game will place real furniture there later (item 6.4); the
+    planner itself places no furniture blocks. Colours: pink = bed, yellow = table,
+    light blue = workstation, brown = chest, orange = hearth, purple = altar,
+    green = counter, pale yellow = light; any other kind gets a colour made from its
+    name. They belong to the `interior` layer, so unticking `interior` hides them
+    (along with the rest of the interior). Also added to the
+    [Viewer how-to](../../VIEWER.md). If you meant full-size blocks in odd colours:
+    in `colour: role` mode every material role has a debug colour (stairs green,
+    doors orange, windows cyan); switch to `palette` for the style's colours.

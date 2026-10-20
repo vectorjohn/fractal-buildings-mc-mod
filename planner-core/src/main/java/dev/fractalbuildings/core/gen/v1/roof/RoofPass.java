@@ -151,7 +151,7 @@ public final class RoofPass {
 			this.base = masses.get(0).topSlab(grid) + 1;
 			this.w = c.width();
 			this.d = c.depth();
-			this.maxH = c.spec().maxHeight();
+			this.maxH = c.maxHeight();
 			region = new boolean[w][d];
 			solid = new boolean[w][d];
 			footprint = new boolean[w][d];
