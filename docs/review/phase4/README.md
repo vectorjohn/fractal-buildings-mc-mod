@@ -56,6 +56,7 @@ Each line: the first pictures to open, what to judge, and what the agent saw (pi
   width, pyramid or hip roofs (e.g. seeds 0, 4, 9) or parapets (e.g. 1, 5, 13). Seen: many windows per
   storey in timber framing, so they read more like slim town houses or small high-rises than
   watchtowers.
+  2026-10-19: agreed, they don't look like watch towers. I guess there are many types of watch tower, but at least some should have frame spindly legs. And distinctive larger room on top. But also some should look like this. Maybe Windows that are just holes, not glass. -- @John
 - **Temple** ([temple-medieval-front-left](gallery/temple/temple-medieval-front-left.png),
   [temple-plain-top](gallery/temple/temple-plain-top.png),
   `viewer/out/gallery/temple-medieval-front.png`). Axis of porch or bell
@@ -110,8 +111,10 @@ that asked them first:
     are tested only on ground up to their `maxGrade`. OK?
 14. Open from the plan: jetties over the street (past the lot edge) wait for Phase 5's street
     rules. OK?
-15. Open from the plan: `medieval` is now a style by name only (plains took its biomes; it is
+    Yes -- @John
+16. Open from the plan: `medieval` is now a style by name only (plains took its biomes; it is
     still requestable with `--style medieval`). Keep it, rename it, or give it biomes back?
+    Please expand on this, I didn't know what it means.  -- @John
 
 The storey slider and roof toggle (REVIEW 3.6) are settled and not asked again.
 
@@ -151,3 +154,8 @@ flock .claude/heavy.lock nix develop -c $C bench --types highrise --n 448
 cd viewer && nix develop -c npm ci && FB_PORT=4817 nix develop -c npm run gallery
 # PNGs in viewer/out/gallery/<preset>-<camera>.png
 ```
+
+# Q and A
+@John 2026-10-19: I'm going to start writing responses like this. My name, date: question/comment. Still trying to get good conventions, this reads more natural. 
+
+@John 2026-10-19: can I get some general usage instructions for the viewer? I see scattered examples, some showing environment var 
