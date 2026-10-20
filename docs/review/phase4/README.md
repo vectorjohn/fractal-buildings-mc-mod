@@ -105,11 +105,25 @@ that asked them first:
    ground levels in 6.3. OK?
 9. City block, plain style: the units read as one long banded facade. Fine for a plain style?
 10. Plains: is the wall mix too busy?
-11. Jungle: does the palette read as jungle/bamboo?
-12. Desert: walls look speckled. Drop the yellow terracotta from the wall mix?
-13. Open from the plan: per-wing ground levels (ADR 0003 W5) deferred to 6.3, so deep types
+      - @John 2026-10-19: a bit, yes. Are the colors representing specific blocks or just symbols? I could imagine it looking ok if the right blocks are used.
+        - @assistant 2026-10-19: Specific blocks, approximately. Each style file lists
+          real blocks per role (plains walls: birch planks, oak planks, white terracotta,
+          smooth stone) and, beside them, one hand-picked colour per block meant to
+          approximate it (not sampled from the textures, so some are off: white
+          terracotta is really a pinkish beige). In `palette` mode the viewer gives every wall
+          cell one entry from that list, picked by a hash of its position, so the four
+          blocks are scattered evenly, one cell at a time, with no texture. The game
+          doesn't place style blocks yet (mapping roles to blocks is item 6.1). If 6.1
+          picks blocks the same way, the in-game wall is that same even per-block
+          scatter, with real textures on top: planks show grain, terracotta and smooth
+          stone are flat, so it would probably look at least as busy as the picture.
+          What usually reads well is fewer blocks or blocks in patches (one material per
+          wall, or a gradient by height), not a per-block mix. Not checked in-game.
+12. Jungle: does the palette read as jungle/bamboo?
+13. Desert: walls look speckled. Drop the yellow terracotta from the wall mix?
+14. Open from the plan: per-wing ground levels (ADR 0003 W5) deferred to 6.3, so deep types
     are tested only on ground up to their `maxGrade`. OK?
-14. Open from the plan: jetties over the street (past the lot edge) wait for Phase 5's street
+15. Open from the plan: jetties over the street (past the lot edge) wait for Phase 5's street
     rules. OK?
     Yes -- @John
 16. Open from the plan: `medieval` is now a style by name only (plains took its biomes; it is
@@ -126,8 +140,7 @@ that asked them first:
       setting or for city districts in Phase 5 to choose; (b) give it biomes back, e.g.
       `forest`, `flower_forest` and `birch_forest` (leaving `plains` the open plains and
       meadow) or the unlisted `dark_forest`; (c) rename it (say `timber-town`) to say it
-      is a look, not a place. (This item is 15; it shows as 16 because of the line
-      added under 14. Left as written.)
+      is a look, not a place.
 
 The storey slider and roof toggle (REVIEW 3.6) are settled and not asked again.
 
@@ -169,16 +182,35 @@ cd viewer && nix develop -c npm ci && FB_PORT=4817 nix develop -c npm run galler
 ```
 
 # Q and A
-@John 2026-10-19: I'm going to start writing responses/questions/feedback like this. My name, date: question/comment. Still trying to get good conventions, this reads more natural. You could respond like a threaded conversation. If answered by a specialized agent, say so.
+@John 2026-10-19: I'm going to start writing responses/questions/feedback like this. My name, date: question/comment. Still trying to get good conventions, this reads more natural. You could respond like a threaded conversation. If answered by a specialized agent, say so. Could you write a SB slash command for me that starts a comment like below? E.g `/reply`. Might help me be consistent.
   - @assistant 2026-10-19: Works for us. Recorded in CLAUDE.md ("Human review loop")
     and the coordinator's instructions: you write `@John <date>: <comment>`, agents
     reply as an indented list item under it, signed with their role
     (`@assistant`, `@coder`, `@researcher`...) and the date. The inline `-- @John`
     still works too.
+  - @assistant 2026-10-19: `/reply` is in [Library/reply-command.md](../../../Library/reply-command.md).
+    Run `System: Reload` once (or reload the tab), then type `/reply` and pick it. On an
+    empty line it inserts `- @John <today>: `; at the end of a line with text (type a
+    space before the `/`) it adds `  - @John <today>: ` as a new line at the end of that
+    comment's thread, indented under it, with the cursor after the colon. Tested in a
+    scratch SilverBullet 2.11 driven by a headless browser (on a numbered question, a
+    plain comment, a list comment and an empty line), not in your running instance.
 
-- @John 2026-10-19: can I get some general usage instructions for the viewer? I see scattered examples, some showing environment var usage, but nothing that just says how to use it. Maybe it needs a readme. 
+- @John 2026-10-19: can I get some general usage instructions for the viewer? I see scattered examples, some showing environment var usage, but nothing that just says how to use it. Maybe it needs a readme.
   - @assistant 2026-10-19: Added [Viewer how-to](../../VIEWER.md): starting it, opening
     a batch or one file, the controls and the red violation overlay, galleries, making
     your own batch with the CLI, and every environment variable (`FB_GALLERY`,
     `FB_PORT`, `FB_PRESETS`, `GALLERY`) with what it does. `viewer/README.md` now
     points to it, so it is there where you would look first.
+- @John 2026-10-19: can you elaborate on what the colored blocks added in structures are?
+  - @assistant 2026-10-19: Those are furnishing markers, drawn by the viewer only:
+    small cubes (0.4 of a block) standing where the planner reserves a spot for
+    furniture. The game will place real furniture there later (item 6.4); the
+    planner itself places no furniture blocks. Colours: pink = bed, yellow = table,
+    light blue = workstation, brown = chest, orange = hearth, purple = altar,
+    green = counter, pale yellow = light; any other kind gets a colour made from its
+    name. They belong to the `interior` layer, so unticking `interior` hides them
+    (along with the rest of the interior). Also added to the
+    [Viewer how-to](../../VIEWER.md). If you meant full-size blocks in odd colours:
+    in `colour: role` mode every material role has a debug colour (stairs green,
+    doors orange, windows cyan); switch to `palette` for the style's colours.

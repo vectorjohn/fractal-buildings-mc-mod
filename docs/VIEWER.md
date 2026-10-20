@@ -70,6 +70,22 @@ lot...) are drawn as red translucent boxes, visible through walls (`violations` 
 A panel at the bottom left lists each failure: invariant id, building, message and cell
 count. No panel means no violations. `?fixture=sample-house-violations` shows one.
 
+## Colours and markers
+
+- `colour: role`: one debug colour per material role (wall beige, roof red, floor blue,
+  stair green, door orange, window cyan, trim and beam brown, foundation grey, fence
+  light grey; magenta = unknown role). Terrain is green.
+- `colour: palette`: each style file lists real blocks per role and one hand-picked
+  colour per block. Every cell takes one entry, picked by a hash of its position, so a
+  role with four blocks shows an even per-cell scatter of four colours. The colours
+  approximate the blocks; they are not sampled from the textures.
+- **Furnishing markers**: small cubes (0.4 of a block) where the planner reserves a
+  spot for furniture, which the game will place later. Viewer only; the planner places
+  no furniture blocks. Pink = bed, yellow = table, light blue = workstation, brown =
+  chest, orange = hearth, purple = altar, green = counter, pale yellow = light; other
+  kinds get a colour from their name. They are part of the `interior` layer: untick it
+  to hide them.
+
 # Galleries (PNGs)
 
 ```sh
