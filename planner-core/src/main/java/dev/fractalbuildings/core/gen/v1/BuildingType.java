@@ -6,6 +6,7 @@ import dev.fractalbuildings.core.gen.v1.interior.InteriorPass;
 import dev.fractalbuildings.core.gen.v1.interior.RoomProgram;
 import dev.fractalbuildings.core.gen.v1.model.Massing;
 import dev.fractalbuildings.core.gen.v1.roof.RoofPass;
+import dev.fractalbuildings.core.gen.v1.structure.Stilts;
 import dev.fractalbuildings.core.gen.v1.structure.StructurePass;
 
 /**
@@ -23,6 +24,13 @@ public interface BuildingType {
 
 	/** Massing inside the envelope; must pass {@code MassingCheck}. Reads spec, style and draws only. */
 	Massing mass(BuildContext c);
+
+	/**
+	 * Stilts: null (the default) for a building that stands on the ground. A type whose massing is a
+	 * room raised on legs returns them here (read from {@code c.massing()}); every pass then works in
+	 * the room's own frame, and assembly lifts the result and adds the legs ({@link Stilts}).
+	 */
+	default Stilts stilts(BuildContext c) { return null; }
 
 	default Program structure() { return StructurePass::run; }
 

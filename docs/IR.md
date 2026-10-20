@@ -118,3 +118,7 @@ byte-for-byte unchanged; readers treat them as absent for genVersion 1.
 `format` changes only when an old reader would misread a file; adding optional
 keys is fine. `genVersion` changes whenever generated output changes on purpose
 (it is part of every cache key).
+
+## Stilts and window holes (tower watchtowers, genVersion 2)
+
+No new keys. A building on stilts (tower type, stilted lookout) has **storey 0 = the open leg zone**: `y` 0, `height` = the leg height, no rooms and no walls; the room above is storey 1 and later. Its volumes start at `y` = the leg height (parent `null`), and four extra 1 x 1 volumes `leg0`..`leg3` (north-west, north-east, south-west, south-east) stand on the ground under its corners, each with a `beam` column from y 0; a `stair` flight (each step on a block) climbs along the front wall to the entrance door, whose `y` is above storey 0. An **unglazed window** is an opening of kind `window` whose cells are `air` (no `window` voxels); `shell-closed` and `roof-closed` count air inside a declared `window` opening as closed.

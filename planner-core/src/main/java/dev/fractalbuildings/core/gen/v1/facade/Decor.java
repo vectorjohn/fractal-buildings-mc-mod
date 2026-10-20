@@ -86,7 +86,7 @@ final class Decor {
 
 	/** The cell is free air inside the envelope and not in front of a door or a window. */
 	boolean outFree(int x, int y, int z) {
-		if (x < 0 || z < 0 || y < 0 || x >= c.width() || z >= c.depth() || y >= c.spec().maxHeight()) return false;
+		if (x < 0 || z < 0 || y < 0 || x >= c.width() || z >= c.depth() || y >= c.maxHeight()) return false;
 		return c.role(x, y, z) == Role.AIR && !fronts.contains(key(x, y, z));
 	}
 

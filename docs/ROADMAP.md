@@ -431,7 +431,7 @@ Fixed opportunistically or scheduled as items.
 - 4.8: removing only the top step block isn't caught (foundation tops form a flight); `hill:` probe has no centre option; a type with front margin 0 gets no steps.
 - 4.9: only the `top` e2e catches a broken roof tint; `render.ts` per-voxel shade wiring untested; cutaway partitions hard to see at gallery scale; `top` camera perspective-skewed on 250-block towers.
 - 4.6 house: `roomy()` rejects small upper floors, so more houses are single-storey (21/32 on small envelopes, was 16/32).
-- 4.6 tower: no slit windows (needs a per-type facade override); no spire; uniform window bands.
+- 4.6 tower: no slit windows (window holes are plain 1-wide openings of the style's height); no spire; uniform window bands. Watchtower variants (gate follow-up): stilted lookouts only where the envelope is at least 7 wide and the stair (one step per block of leg height, along the front wall) fits; the way up is the site pass's front steps (a foundation-backed ramp, no rail); dormer panes stay glass in buildings with window holes; hole windows are not yet a style choice anywhere but the tower.
 - 4.6 workshop: lots under 12x12 get the hall only; no chimney, forge geometry or yard props; the cart door is the facade's 2x2 double door (no taller lintel); cluttered roofs.
 - 4.6 shop: envelopes under 7 wide unsupported; no awning or sign (needs a free cell in front of the wall; site step).
 - 4.6 temple: windows repeat per grid storey on the open nave and tower (needs tall windows), so bell towers read as tall houses.

@@ -22,18 +22,22 @@ import java.util.Map;
  * {@code cornice} (trim under the eaves), {@code bressumer} (beam along a jetty's slab edge),
  * {@code corners} ({@code none}, {@code post} = beam column, {@code quoins} = alternating trim),
  * {@code timber} ({@code none}, {@code upper} = half-timbering above the ground storey, {@code all}).
+ * {@code unglazed} (default off) cuts window openings as plain holes (no glass): the opening is still
+ * declared as a WINDOW opening, so the shell-closed invariant counts it as closed. Types may force it per building
+ * ({@code OpeningPass.run(c, cutter, true)}).
  *
  * @param sill window bottom, in blocks above the storey's standing level (y0 of the face)
  * @param windowHeight window height in blocks
  */
 public record FacadeStyle(int bayMin, int bayMax, int sill, int windowHeight, int windowWidth, boolean symmetric, int bandSize,
 		boolean narrowCorners, boolean blankCorners, int doorWidth, boolean doorSurround, boolean plinth, boolean sills,
-		boolean lintels, boolean shutters, boolean stringCourse, boolean cornice, boolean bressumer, String corners, String timber) {
+		boolean lintels, boolean shutters, boolean stringCourse, boolean cornice, boolean bressumer, String corners, String timber,
+		boolean unglazed) {
 	public static final List<String> CORNERS = List.of("none", "post", "quoins");
 	public static final List<String> TIMBER = List.of("none", "upper", "all");
 
 	public static final FacadeStyle DEFAULT = new FacadeStyle(2, 3, 1, 1, 1, false, 3, false, false, 1, false, false, false,
-			false, false, false, false, false, "none", "none");
+			false, false, false, false, false, "none", "none", false);
 
 	public static FacadeStyle from(Map<String, Object> o, String path) {
 		FacadeStyle d = DEFAULT;
@@ -57,7 +61,8 @@ public record FacadeStyle(int bayMin, int bayMax, int sill, int windowHeight, in
 				Json.bool(o, "cornice", d.cornice, path),
 				Json.bool(o, "bressumer", d.bressumer, path),
 				Json.string(o, "corners", d.corners, path),
-				Json.string(o, "timber", d.timber, path));
+				Json.string(o, "timber", d.timber, path),
+				Json.bool(o, "unglazed", d.unglazed, path));
 		if (f.bayMin < 1 || f.bayMax < f.bayMin || f.windowHeight < 1 || f.sill < 0) throw new IllegalArgumentException(path + ": bad facade " + f);
 		if (f.windowWidth < 1 || f.windowWidth > 2 || f.doorWidth < 1 || f.doorWidth > 2 || f.bandSize < 1) throw new IllegalArgumentException(path + ": bad facade " + f);
 		if (!CORNERS.contains(f.corners)) throw new IllegalArgumentException(path + ".corners: one of " + CORNERS);

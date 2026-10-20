@@ -5,12 +5,18 @@ import dev.fractalbuildings.core.gen.v1.model.Mass;
 import dev.fractalbuildings.core.gen.v1.model.Massing;
 import dev.fractalbuildings.core.gen.v1.model.MassingCheck;
 import dev.fractalbuildings.core.gen.v1.model.StoreyGrid;
+import dev.fractalbuildings.core.gen.v1.structure.Stilts;
 import dev.fractalbuildings.core.gen.v1.style.StyleLibrary;
 import dev.fractalbuildings.core.gen.v1.style.StyleRules;
 import dev.fractalbuildings.core.ir.Box;
 import dev.fractalbuildings.core.ir.Box3;
 import dev.fractalbuildings.core.ir.BuildingIr;
 import dev.fractalbuildings.core.ir.BuildingSpec;
+import dev.fractalbuildings.core.ir.Hook;
+import dev.fractalbuildings.core.ir.Opening;
+import dev.fractalbuildings.core.ir.OpeningKind;
+import dev.fractalbuildings.core.ir.Roof;
+import dev.fractalbuildings.core.ir.Room;
 import dev.fractalbuildings.core.ir.Storey;
 import dev.fractalbuildings.core.ir.Volume;
 import java.util.ArrayList;
@@ -34,8 +40,8 @@ public final class ShellGeneratorV1 {
 		if (!type.id().equals(spec.type())) throw new IllegalArgumentException("spec type " + spec.type() + " but type " + type.id());
 		BuildContext c = new BuildContext(spec, type, style);
 		Massing m = type.mass(c);
-		MassingCheck.require(m, spec.width(), spec.depth(), spec.maxHeight());
 		c.setMassing(m);
+		MassingCheck.require(m, spec.width(), spec.depth(), c.maxHeight());
 		run(c, Phase.STRUCTURE, type.structure());
 		run(c, Phase.ROOF, type.roofs());
 		run(c, Phase.FACADE, type.facade());
@@ -55,23 +61,40 @@ public final class ShellGeneratorV1 {
 		BuildingSpec spec = c.spec();
 		Massing m = c.massing();
 		StoreyGrid g = m.grid();
+		Stilts stilts = c.stilts();
+		int lift = stilts == null ? 0 : stilts.lift(), si = stilts == null ? 0 : 1;
 		List<Box> boxes = new ArrayList<>();
 		int top = 1;
 		for (Phase p : Phase.values()) {
 			for (Box b : c.boxes(p)) {
 				Box3 q = b.box();
-				if (q.x() < 0 || q.y() < 0 || q.z() < 0 || q.maxX() > spec.width() || q.maxZ() > spec.depth() || q.maxY() > spec.maxHeight()) {
+				if (q.x() < 0 || q.y() < 0 || q.z() < 0 || q.maxX() > spec.width() || q.maxZ() > spec.depth() || q.maxY() + lift > spec.maxHeight()) {
 					throw new IllegalStateException(p + " box " + b + " leaves the envelope " + spec.width() + "x" + spec.maxHeight() + "x" + spec.depth());
 				}
-				top = Math.max(top, q.maxY());
-				boxes.add(b);
+				top = Math.max(top, q.maxY() + lift);
+				boxes.add(stilts == null ? b : new Box(up(q, lift), b.role(), b.layer(), b.storey() < 0 ? b.storey() : b.storey() + si));
 			}
 		}
 		List<Storey> storeys = new ArrayList<>();
-		for (int i = 0; i < g.count(); i++) storeys.add(new Storey(i, g.y(i), g.height(i)));
+		if (stilts != null) storeys.add(new Storey(0, 0, lift)); // the open leg zone
+		for (int i = 0; i < g.count(); i++) storeys.add(new Storey(i + si, g.y(i) + lift, g.height(i)));
 		List<Volume> volumes = new ArrayList<>();
-		for (Mass mass : m.masses()) volumes.add(new Volume(mass.id(), mass.box(g), mass.parent()));
+		for (Mass mass : m.masses()) volumes.add(new Volume(mass.id(), up(mass.box(g), lift), mass.parent()));
+		List<Room> rooms = new ArrayList<>();
+		for (Room r : c.rooms()) rooms.add(stilts == null ? r : new Room(r.id(), r.storey() + si, r.volume(), r.parts().stream().map(q -> up(q, lift)).toList(), r.use()));
+		List<Opening> openings = new ArrayList<>();
+		for (Opening o : c.openings()) openings.add(stilts == null ? o : new Opening(o.id(), o.kind(), up(o.box(), lift), o.facing(), o.from(), o.to()));
+		List<Roof> roofs = new ArrayList<>();
+		for (Roof r : c.roofs()) roofs.add(stilts == null ? r : new Roof(r.form(), r.volume(), r.ridgeAxis(), r.baseY() + lift, r.rise(), r.run()));
+		List<Hook> hooks = new ArrayList<>();
+		for (Hook h : c.hooks()) hooks.add(stilts == null ? h : new Hook(h.id(), h.kind(), h.room(), h.x(), h.y() + lift, h.z(), h.facing()));
+		if (stilts != null) {
+			boxes.addAll(stilts.boxes(m.main()));
+			volumes.addAll(stilts.volumes(m.main()));
+		}
 		return new BuildingIr(spec, Box3.of(0, 0, 0, spec.width(), top, spec.depth()), storeys, volumes,
-				c.rooms(), c.openings(), c.roofs(), boxes, c.hooks());
+				rooms, openings, roofs, boxes, hooks);
 	}
+
+	private static Box3 up(Box3 q, int dy) { return dy == 0 ? q : Box3.of(q.x(), q.y() + dy, q.z(), q.sx(), q.sy(), q.sz()); }
 }

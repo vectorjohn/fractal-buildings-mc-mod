@@ -26,10 +26,14 @@ public final class OpeningPass {
 	public static void run(BuildContext c) { run(c, e -> door(c, e)); }
 
 	/** As {@link #run(BuildContext)} with the types own cutter for each entrance (the wall type cuts 3 x 4 gates); it returns the entrance as cut. */
-	public static void run(BuildContext c, java.util.function.UnaryOperator<FacadePlan.Entrance> cutDoor) {
+	public static void run(BuildContext c, java.util.function.UnaryOperator<FacadePlan.Entrance> cutDoor) { run(c, cutDoor, false); }
+
+	/** As above; {@code unglazed} forces plain window holes (the type's choice) on top of the style's {@code unglazed} key. */
+	public static void run(BuildContext c, java.util.function.UnaryOperator<FacadePlan.Entrance> cutDoor, boolean unglazed) {
 		FacadePlan plan = c.facadePlan();
 		FacadeStyle st = c.style().facade();
 		Decor d = new Decor(c, plan);
+		boolean holes = unglazed || st.unglazed();
 		List<FacadePlan.Entrance> doors = new ArrayList<>();
 		for (FacadePlan.Entrance e : plan.entrances()) doors.add(cutDoor.apply(e));
 
@@ -41,7 +45,7 @@ public final class OpeningPass {
 				if (!FacadePlan.WINDOW.equals(l.kinds().get(b))) continue;
 				for (int k = 0; k < l.windowWidth(b); k++) {
 					int p = l.windowStart(b) + k;
-					if (window(c, f, p, f.y0() + w.sill(), w.height())) cuts.add(new Cut(f, p, f.y0() + w.sill(), w.height()));
+					if (window(c, f, p, f.y0() + w.sill(), w.height(), holes)) cuts.add(new Cut(f, p, f.y0() + w.sill(), w.height()));
 				}
 			}
 		}
@@ -59,11 +63,14 @@ public final class OpeningPass {
 	 * {@code f} if the wall is wall, the inside is air in one room and the outside is open air; returns
 	 * whether it did. Public for types' programs (shopfronts, arcades) that cut their own windows.
 	 */
-	public static boolean window(BuildContext c, Face f, int p, int y, int h) {
+	public static boolean window(BuildContext c, Face f, int p, int y, int h) { return window(c, f, p, y, h, c.style().facade().unglazed()); }
+
+	/** As above; {@code hole} cuts the window as plain air (an unglazed opening) instead of a glass pane. */
+	public static boolean window(BuildContext c, Face f, int p, int y, int h, boolean hole) {
 		if (y + h > f.y0() + f.height()) return false;
 		String r = windowRoom(c, f, p, y, h);
 		if (r == null) return false;
-		c.box(Role.WINDOW, Layer.SHELL, f.storey(), f.x(p), y, f.z(p), 1, h, 1);
+		c.box(hole ? Role.AIR : Role.WINDOW, Layer.SHELL, f.storey(), f.x(p), y, f.z(p), 1, h, 1);
 		c.opening(OpeningKind.WINDOW, Box3.of(f.x(p), y, f.z(p), 1, h, 1), f.side(), r, Opening.OUTSIDE);
 		return true;
 	}

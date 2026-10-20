@@ -56,7 +56,7 @@ public final class InstancePassV1 {
 		for (Opening o : entranceDoors(shell)) {
 			Facing f = outward(o);
 			int wx = p0.worldX(o.box().x() + f.dx, o.box().z() + f.dz), wz = p0.worldZ(o.box().x() + f.dx, o.box().z() + f.dz);
-			if (lot.containsColumn(wx, wz)) oy = Math.max(oy, t.floorY(wx, wz));
+			if (lot.containsColumn(wx, wz)) oy = Math.max(oy, t.floorY(wx, wz) - entranceStorey(shell).y());
 		}
 		List<Box> site = new ArrayList<>();
 		for (int lz = 0; lz < d; lz++) {
@@ -76,13 +76,20 @@ public final class InstancePassV1 {
 		return new PlacedBuilding("b0", List.of(lot.id()), ox, oy, oz, r, shell, all);
 	}
 
+	/** The lowest storey with rooms (storey 0, except under stilts, where it is the open leg zone): its exterior doors need a way down. */
+	public static Storey entranceStorey(BuildingIr shell) {
+		int lowest = Integer.MAX_VALUE;
+		for (dev.fractalbuildings.core.ir.Room r : shell.rooms()) lowest = Math.min(lowest, r.storey());
+		return shell.storeys().get(lowest == Integer.MAX_VALUE ? 0 : lowest);
+	}
+
 	/** Ground-storey doors that lead outside: the ones that need a way down to the ground. */
 	static List<Opening> entranceDoors(BuildingIr shell) {
 		List<Opening> doors = new ArrayList<>();
 		if (shell.storeys().isEmpty()) return doors;
-		Storey s0 = shell.storeys().get(0);
+		Storey s0 = entranceStorey(shell);
 		for (Opening o : shell.openings()) {
-			if (o.kind() != OpeningKind.DOOR || o.box().y() >= s0.y() + s0.height()) continue;
+			if (o.kind() != OpeningKind.DOOR || o.box().y() < s0.y() || o.box().y() >= s0.y() + s0.height()) continue;
 			if (o.to().equals(Opening.OUTSIDE) == o.from().equals(Opening.OUTSIDE)) continue;
 			doors.add(o);
 		}
@@ -104,7 +111,7 @@ public final class InstancePassV1 {
 		List<Opening> doors = entranceDoors(shell);
 		if (doors.isEmpty()) return;
 		Placement p = provisional.placement();
-		int oy = provisional.oy();
+		int base = provisional.oy(), oy = base + entranceStorey(shell).y(); // oy: the entrance floor level (above the slab under stilts)
 		VoxelGrid grid = VoxelGrid.of(provisional);
 		boolean[][] fp = footprint(shell);
 		int[] cs = {p.localX(lot.x(), lot.z()), p.localX(lot.x() + lot.w() - 1, lot.z()), p.localX(lot.x(), lot.z() + lot.d() - 1), p.localX(lot.x() + lot.w() - 1, lot.z() + lot.d() - 1)};
@@ -147,7 +154,7 @@ public final class InstancePassV1 {
 				int top = ends ? g : h; // highest solid under the feet
 				// the cells the walker occupies (and the step block itself) must be free of the building
 				boolean free = true;
-				for (int y = top - oy; y <= top + 2 - oy && free; y++) free = grid.get(cx, y, cz) == Role.AIR;
+				for (int y = top - base; y <= top + 3 - base && free; y++) free = grid.get(cx, y, cz) == Role.AIR;
 				if (!free) continue;
 				if (ends) { found = c; break; }
 				if (g > h + 2) continue;
@@ -167,8 +174,8 @@ public final class InstancePassV1 {
 				if (c == found) continue; // ends on the terrain itself
 				int cx = x0 + c % nx, cz = z0 + c / nx, h = oy - depth[c], g = ground[c];
 				if (h > g) {
-					site.add(new Box(Box3.of(cx, g - oy, cz, 1, h - g, 1), Role.FOUNDATION, Layer.FOUNDATION, Box.NO_STOREY));
-					site.add(new Box(Box3.of(cx, h - oy, cz, 1, 1, 1), Role.STAIR, Layer.FOUNDATION, Box.NO_STOREY));
+					site.add(new Box(Box3.of(cx, g - base, cz, 1, h - g, 1), Role.FOUNDATION, Layer.FOUNDATION, Box.NO_STOREY));
+					site.add(new Box(Box3.of(cx, h - base, cz, 1, 1, 1), Role.STAIR, Layer.FOUNDATION, Box.NO_STOREY));
 				}
 			}
 		}
