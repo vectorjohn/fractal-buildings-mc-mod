@@ -49,8 +49,9 @@ that works in all three. Full conventions: `docs/SILVERBULLET.md`.
   `-- @John` or not). Some of it is questions for agents: answer in place
   with `-- @assistant` (or your role) on your own branch, or let the
   coordinator relay the answer.
-- He may also write `@John <date>: <comment>` on its own line; reply below it
-  with `@<role> <date>: ...` (e.g. `@assistant 2026-10-19: ...`).
+- He may also write `@John <date>: <comment>` on its own line. Reply as a
+  thread: an indented list item under his line, `  - @<role> <date>: ...`,
+  naming the agent role that answered (e.g. `@assistant`, `@researcher`).
 - **Only the coordinator** syncs, commits or merges that worktree; other
   agents never touch it (procedure in `.claude/agents/coordinator.md`).
 - John's own working branches are `john/<claude branch it came from>` (e.g.

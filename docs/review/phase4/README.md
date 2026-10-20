@@ -115,20 +115,19 @@ that asked them first:
 16. Open from the plan: `medieval` is now a style by name only (plains took its biomes; it is
     still requestable with `--style medieval`). Keep it, rename it, or give it biomes back?
     Please expand on this, I didn't know what it means.  -- @John
-
-    @assistant 2026-10-19: Each style lists the Minecraft biomes it is used in. With
-    style `auto` (what the game will use) the generator picks the style whose list
-    contains the biome; biomes no style lists get `plain`. `medieval` (half-timbered,
-    jettied, gabled) used to own plains, meadow, forest and flower forest; the new `plains` style
-    took them, so `medieval` now lists no biome. It still works when asked for by name
-    (`--style medieval`, the medieval galleries), but a world would never pick it, so
-    in-game no half-timbered town appears unless something assigns that style. Options:
-    (a) keep it as an opt-in style, for a later "town style" setting or for city
-    districts in Phase 5 to choose; (b) give it biomes back, e.g. `forest`,
-    `flower_forest` and `birch_forest` (leaving `plains` the open plains and meadow) or
-    the unlisted `dark_forest`; (c) rename it (say `timber-town`) to say it is a
-    look, not a place. (This item is 15; it shows as 16 because of the line added
-    under 14. Left as written.)
+    - @assistant 2026-10-19: Each style lists the Minecraft biomes it is used in. With
+      style `auto` (what the game will use) the generator picks the style whose list
+      contains the biome; biomes no style lists get `plain`. `medieval` (half-timbered,
+      jettied, gabled) used to own plains, meadow, forest and flower forest; the new
+      `plains` style took them, so `medieval` now lists no biome. It still works when
+      asked for by name (`--style medieval`, the medieval galleries), but a world would
+      never pick it, so in-game no half-timbered town appears unless something assigns
+      that style. Options: (a) keep it as an opt-in style, for a later "town style"
+      setting or for city districts in Phase 5 to choose; (b) give it biomes back, e.g.
+      `forest`, `flower_forest` and `birch_forest` (leaving `plains` the open plains and
+      meadow) or the unlisted `dark_forest`; (c) rename it (say `timber-town`) to say it
+      is a look, not a place. (This item is 15; it shows as 16 because of the line
+      added under 14. Left as written.)
 
 The storey slider and roof toggle (REVIEW 3.6) are settled and not asked again.
 
@@ -170,17 +169,16 @@ cd viewer && nix develop -c npm ci && FB_PORT=4817 nix develop -c npm run galler
 ```
 
 # Q and A
-@John 2026-10-19: I'm going to start writing responses like this. My name, date: question/comment. Still trying to get good conventions, this reads more natural. 
+@John 2026-10-19: I'm going to start writing responses/questions/feedback like this. My name, date: question/comment. Still trying to get good conventions, this reads more natural. You could respond like a threaded conversation. If answered by a specialized agent, say so.
+  - @assistant 2026-10-19: Works for us. Recorded in CLAUDE.md ("Human review loop")
+    and the coordinator's instructions: you write `@John <date>: <comment>`, agents
+    reply as an indented list item under it, signed with their role
+    (`@assistant`, `@coder`, `@researcher`...) and the date. The inline `-- @John`
+    still works too.
 
-@assistant 2026-10-19: Works for us. Recorded in CLAUDE.md ("Human review loop"):
-you write `@John <date>: <comment>`, and agents reply on the next lines with
-`@<role> <date>: ...`. The inline `-- @John` still works too.
-
-@John 2026-10-19: can I get some general usage instructions for the viewer? I see scattered examples, some showing environment var 
-
-@assistant 2026-10-19: Here is a single guide: [Viewer how-to](../../VIEWER.md). It
-covers starting the viewer, opening a batch or one file, the controls and the red
-violation overlay, galleries, making your own batch with the CLI, and every environment
-variable (`FB_GALLERY`, `FB_PORT`, `FB_PRESETS`, `GALLERY`) with what it does. Your line
-stops at "some showing environment var": was there a question about a particular
-variable or command? If so, add it here.
+- @John 2026-10-19: can I get some general usage instructions for the viewer? I see scattered examples, some showing environment var usage, but nothing that just says how to use it. Maybe it needs a readme. 
+  - @assistant 2026-10-19: Added [Viewer how-to](../../VIEWER.md): starting it, opening
+    a batch or one file, the controls and the red violation overlay, galleries, making
+    your own batch with the CLI, and every environment variable (`FB_GALLERY`,
+    `FB_PORT`, `FB_PRESETS`, `GALLERY`) with what it does. `viewer/README.md` now
+    points to it, so it is there where you would look first.

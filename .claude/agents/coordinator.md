@@ -314,7 +314,8 @@ John reads and comments on docs in the worktree
 `<repo root>/.claude/worktrees/docs-feedback` (branch `john/docs-feedback`),
 served by SilverBullet on `127.0.0.1:3000`. He doesn't commit; his feedback
 is signed `@John` (inline `-- @John`, or a line `@John <date>: ...`, which
-agents answer below with `@<role> <date>: ...`) and may include questions for agents. You alone sync it,
+agents answer as a threaded, indented list item `  - @<role> <date>: ...` naming
+the role that answered) and may include questions for agents. You alone sync it,
 after each merge into the run branch and on a periodic check (~30 min):
 
 1. In that worktree, if `git status` shows changes, commit them all as
