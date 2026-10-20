@@ -4,6 +4,7 @@ import dev.fractalbuildings.core.gen.v1.facade.FacadePlan;
 import dev.fractalbuildings.core.gen.v1.model.Face;
 import dev.fractalbuildings.core.gen.v1.model.Faces;
 import dev.fractalbuildings.core.gen.v1.model.Massing;
+import dev.fractalbuildings.core.gen.v1.structure.Stilts;
 import dev.fractalbuildings.core.gen.v1.style.StyleRules;
 import dev.fractalbuildings.core.ir.Box;
 import dev.fractalbuildings.core.ir.Box3;
@@ -43,6 +44,7 @@ public final class BuildContext {
 	private final StyleRules style;
 	private Phase phase = Phase.MASSING;
 	private Massing massing;
+	private Stilts stilts;
 	private List<Face> faces;
 	private FacadePlan facadePlan;
 	private final EnumMap<Phase, List<Box>> boxes = new EnumMap<>(Phase.class);
@@ -66,6 +68,15 @@ public final class BuildContext {
 	public StyleRules style() { return style; }
 
 	public Phase phase() { return phase; }
+
+	/** The building's stilts ({@link BuildingType#stilts}), or null; known once the massing is set. */
+	public Stilts stilts() { return stilts; }
+
+	/**
+	 * Highest local y the passes may use: the spec's {@code maxHeight} less the stilts' lift (passes
+	 * work in the frame of the raised part; {@code ShellGeneratorV1} lifts it at assembly).
+	 */
+	public int maxHeight() { return spec.maxHeight() - (stilts == null ? 0 : stilts.lift()); }
 
 	/** Envelope width (local x) = bounds x extent. */
 	public int width() { return spec.width(); }
@@ -112,6 +123,7 @@ public final class BuildContext {
 	void setMassing(Massing m) {
 		if (phase != Phase.MASSING) throw new IllegalStateException("massing set in phase " + phase);
 		massing = Objects.requireNonNull(m);
+		stilts = type.stilts(this);
 	}
 
 	public void setFacadePlan(FacadePlan plan) {

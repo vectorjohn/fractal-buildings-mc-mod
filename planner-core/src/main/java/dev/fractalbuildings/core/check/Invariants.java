@@ -189,13 +189,26 @@ public final class Invariants {
 		static final int[] DY = {0, 0, 1, -1, 0, 0};
 		static final int[] DZ = {0, 0, 0, 0, 1, -1};
 
-		/** Flood of air from outside the grid, treating every non-air role as closed. */
+		/**
+		 * Flood of air from outside the grid, treating every non-air role as closed, and also the cells of a
+		 * declared {@code window} opening that are air (an unglazed window hole: the opening is the declaration
+		 * that the hole is meant, so an undeclared gap in a wall is still a leak).
+		 */
 		void floodOutside() {
 			ox = g.minX - 1; oy = g.minY - 1; oz = g.minZ - 1;
 			ex = g.sx + 2; ey = g.sy + 2; ez = g.sz + 2;
 			outside = new boolean[ex * ey * ez];
 			int[] queue = new int[outside.length];
 			int head = 0, tail = 0;
+			boolean[] hole = new boolean[outside.length];
+			for (Opening o : b.shell().openings()) {
+				if (o.kind() != OpeningKind.WINDOW) continue;
+				Box3 q = o.box();
+				for (int y = q.y(); y < q.maxY(); y++)
+					for (int z = q.z(); z < q.maxZ(); z++)
+						for (int x = q.x(); x < q.maxX(); x++)
+							if (x >= ox && y >= oy && z >= oz && x < ox + ex && y < oy + ey && z < oz + ez && g.get(x, y, z) == Role.AIR) hole[((y - oy) * ez + (z - oz)) * ex + (x - ox)] = true;
+			}
 			outside[0] = true;
 			queue[tail++] = 0;
 			while (head < tail) {
@@ -205,7 +218,7 @@ public final class Invariants {
 					int nx = cx + DX[d], ny = cy + DY[d], nz = cz + DZ[d];
 					if (nx < 0 || ny < 0 || nz < 0 || nx >= ex || ny >= ey || nz >= ez) continue;
 					int ni = (ny * ez + nz) * ex + nx;
-					if (outside[ni] || g.get(ox + nx, oy + ny, oz + nz).closesShell) continue;
+					if (outside[ni] || hole[ni] || g.get(ox + nx, oy + ny, oz + nz).closesShell) continue;
 					outside[ni] = true;
 					queue[tail++] = ni;
 				}
@@ -344,17 +357,19 @@ public final class Invariants {
 		}
 
 		/**
-		 * Generator v1 (genVersion >= 2): from the cell outside each exterior door of the ground
+		 * Generator v1 (genVersion >= 2): from the cell outside each exterior door of the lowest storey with rooms
 		 * storey, a walk (rooms-reachable's moves, terrain solid up to each column's floorY, never
 		 * back through a door) reaches a position standing on the terrain itself, in one of the
 		 * building's lots and outside its footprint.
 		 */
 		void entranceReachable() {
 			if (scene.genVersion() < 2 || b.shell().storeys().isEmpty()) return;
-			Storey s0 = b.shell().storeys().get(0);
+			int lowest = Integer.MAX_VALUE; // the lowest storey with rooms: storey 0, but the open leg zone of a building on stilts has none
+			for (Room r : b.shell().rooms()) lowest = Math.min(lowest, r.storey());
+			Storey s0 = b.shell().storeys().get(lowest == Integer.MAX_VALUE ? 0 : lowest);
 			List<Opening> doors = new ArrayList<>();
 			for (Opening o : b.shell().openings()) {
-				if (o.kind() != OpeningKind.DOOR || o.box().y() >= s0.y() + s0.height()) continue;
+				if (o.kind() != OpeningKind.DOOR || o.box().y() < s0.y() || o.box().y() >= s0.y() + s0.height()) continue;
 				if (o.to().equals(Opening.OUTSIDE) == o.from().equals(Opening.OUTSIDE)) continue;
 				doors.add(o);
 			}
