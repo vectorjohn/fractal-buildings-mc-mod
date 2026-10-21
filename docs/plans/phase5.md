@@ -838,6 +838,20 @@ Tests: `city-check` over the T1 windows and 200 synthetic sites: 0 violations;
 `tile-border-agree` mutant (shift one district's street) fails; gallery spec writes
 plan PNG plus fly frames per preset (open them).
 
+### IRR1. Old-town subdivision layout (5.13) — size S to M
+
+Needs: D0. Owns `StreetLayout.SUBDIVIDE` and its splitter in DL's `Districts` (+
+tests, a preset); ticks **5.13** with D3's avenues. Added 2026-10-21 (John, "Irregular
+cities, costed" below). D3 picks `SUBDIVIDE` for `OLD_TOWN` quarters (and `MARKET`
+where not grid). The tile's urban rectangle minus skeleton roads is split recursively:
+the longer side at a hashed 35 to 65 % (snapped to 4), keyed by (seed, tile, split
+path), a street 5 wide at the first level and lanes 3 wide deeper, stopping at 30 to
+90 blocks. The result is different-size rectangles meeting in T junctions, packed with
+frontage lots; tile ports carry the streets across borders. Tests: every split block
+is 30 to 90 across and reached by a street; no four-way crossings inside a subdivided
+tile; `roads-connected` and `tile-border-agree` hold; determinism (same seed, same
+splits); plan PNG of an old town beside a grid quarter in the log (open it).
+
 ### D1. Hamlet and village programs (5.1) — size M
 
 Needs: D0. Owns `tiers/HamletProgram`, `tiers/VillageProgram` (+ tests, presets).
@@ -873,6 +887,14 @@ property matrix, add a `briefMinStoreys` 10 to its limits and use it at 70 ≤ d
 Tests: mean storeys by density band rise monotonically; tallest building within
 0.3 radius of the centre in 90 % of metropolises; no highrise below d 70; skyline
 profile PNG (max height along a transect) in the log.
+- *Diagonal avenues* (5.13, added 2026-10-21 for John): 45-degree avenues cutting
+  through grid quarters in `CityProgram.mainRoads` (a turn penalty in the A* cost, or
+  a straight 45-degree raster checked with `Grading.road`), from the hub to gates and
+  landmarks. DL handles the cut blocks: it subtracts skeleton roads from grid blocks,
+  packs frontage lots along the cut, and makes the leftover triangle a plaza or green
+  (at least 16 across) or park or empty. Tests: avenues stay at 45 degrees, no lot
+  overlaps an avenue, `roads-connected` holds; a plan PNG with an avenue in the log.
+  Size M in D3, S in DL.
 
 ### MC2. Cities across cells (5.8) — size M
 
@@ -957,6 +979,7 @@ here). How to open the interactive views: `npm run city-gallery` then the plan U
 | T2 | R2, T1 (MC1 for window 8) | DL, DB, JT | S |
 | JT | P0, 5.12 | DL, T2, wave D | M |
 | D0 | DL, DB | – | M |
+| IRR1 | D0 | D1, D2, D3 (D3 picks the layout; IRR1 owns the splitter in `Districts`), MC2, DT, TR | S–M |
 | D1, D2, D3 | D0 (D3: D2 for walls) | each other, MC2, DT, TR | M, M, L |
 | MC2 | D0, MC1 | D1–D3, DT, TR | M |
 | DT | D0 | D1–D3, MC2, TR | S |
@@ -979,6 +1002,8 @@ Shared files and who edits them:
 - `SettlementChecks`: each step adds its own rule methods at the end.
 - `Invariants.java`: JT only (`in-lot`); 5.11/5.12 may also edit it.
 - `ClassTable`: P0, then D3 only.
+- DL's `Districts`: IRR1 (the `SUBDIVIDE` splitter) and D3 (cut blocks along diagonal
+  avenues); on a conflict keep both sides' logic.
 - `Tiers`: R1, then R2 (water constants) and MC1 (priority); one block each.
 - CLI `CityCommand`: SK → DL → D0 → MC2 in sequence; `RegionCommand`: R1 → R2 → MC1.
 - `viewer/**`: V0, V1, V2 own their new files; `render.ts` is V2's; D0 adds
@@ -987,7 +1012,8 @@ Shared files and who edits them:
 - Goldens (`golden/settlement`, `golden/region`, `golden/v1`): generated, never
   hand-merged.
 - ROADMAP: owners tick 5.2 DL, 5.3 TR, 5.4 ST/DB, 5.5 later of V1/V2, 5.6 DT, 5.7 D3,
-  5.8 MC2, 5.9 SC, 5.10 R2; 5.1 is ticked by the coordinator when D1–D3 have merged.
+  5.8 MC2, 5.9 SC, 5.10 R2, 5.13 the later of IRR1/D3; 5.1 is ticked by the coordinator
+  when D1–D3 have merged.
 
 # Interaction with 5.11 and 5.12
 
@@ -1075,6 +1101,8 @@ in game):
   skeletons) and leave it out, and arterials on those four border segments are
   switched off. Cost: an SK landmark rule, a DL carve-out, and a second kind of start in
   6.x. Recommended only if the gate shows that cities miss such buildings.
+- @John 2026-10-21: #question are bigger tiles something that has to be set for the whole plan, or can you have the _occasional_ bigger tile? From your wording it sounds like always, we choose the tile size up front. Either way, I think we just need to leave this issue as a possible option if we need it but we’ll see if it looks like we do. We fit some fairly large buildings, especially if you go up!
+  - @assistant 2026-10-21: The tile size is fixed world-wide: `DistrictGrid` puts every line at chunk `PERIOD` x k plus a hashed jitter of at most `JITTER` (10 and 1 chunks), so tiles are 8 to 12 chunks everywhere and one tile cannot be made larger on its own. The occasional bigger plot is still possible two ways, both on top of the fixed grid: the corner start above (a rare big lot, up to about 220 across, centred on a hashed tile corner and spanning the four tiles around it), or merging two neighbouring tiles where a hash on their shared border says so (both skip their own detail there and one big lot straddles the border; it is still limited to about 220 along that axis by how far one structure start reaches). Either costs an SK rule, a DL carve-out and a second kind of start in 6.x. Parked as an option, as you say; the gate will show whether cities miss such buildings.
 
 **Grid streets and tile borders** (proposed for DL; the plan text is silent on both):
 - *Shared lines.* The inner grid streets on an axis come from (seed, axis, interval
@@ -1093,6 +1121,8 @@ in game):
   nearest street. Lanes then continue across tile borders, and `roads-connected` and
   `tile-border-agree` hold by construction instead of only being checked. Cost: small,
   in DL.
+- @John 2026-10-21: Yes, I think we should do these.
+  - @coordinator 2026-10-21: Done in DL (merged 9aceea1): shared grid street lines, border streets and tile ports.
 
 **Irregular cities, costed:**
 - *Quarter choice* (hook exists; SK's `QuarterField` already draws `OLD_TOWN` near the
@@ -1113,5 +1143,8 @@ in game):
   generator work); streets run at 0, 45 or 90 degrees; and lots never cross tile
   borders. That leaves a straight line where back lot lines meet, every 128 to 192
   blocks, unless a lane or wall runs along it.
+
+  - @John 2026-10-21: I like these options, I think we should integrate them into the plan. Subdividing and some diagonal paths. 
+    - @coordinator 2026-10-21: Yes. They are in the plan: step IRR1 (old-town subdivision, after D0) and a diagonal-avenues bullet in D3, both in the parallelism table; ROADMAP item 5.13.
 
 - DL (2026-10-21): streets of a tile are clipped to the tile plus 8 blocks, not to the tile (both tiles at a border then list the same streets, `tile-border-agree` holds by construction); `Districts.plan(SkeletonSource, ix, iz, exact)` replaces the plan's `(seed, tileKey, SkeletonSource, TerrainProbe, BiomeProbe)` (the style comes from `Briefs.fill`); lots are packed along axis-aligned street runs only, with lanes branching off 45 degree roads; hall and temple landmarks become lots flush against the hub square; arterials come from the pointwise `Arterials` rule, not from the cell skeletons' road parts; `Grading.profile` added (the profile without boxes). No `SUBDIVIDE` layout, no diagonal avenues (John decides; D3).
