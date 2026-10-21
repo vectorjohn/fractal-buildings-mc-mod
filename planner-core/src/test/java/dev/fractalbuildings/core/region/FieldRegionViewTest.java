@@ -61,6 +61,29 @@ class FieldRegionViewTest {
 		}
 	}
 
+	/** The memos are bounded LRUs (D6 pure cache): views that forget almost everything, shared by threads, give the unbounded answers. */
+	@Test
+	void tinyCachesChangeNothing() throws Exception {
+		for (long seed : new long[] {12345, 5}) {
+			RegionProbe world = new RegionTestWorld(seed);
+			var expected = batch(new FieldRegionView(planner(seed, world)), 8);
+			for (int cap : new int[] {1, 3, 40}) {
+				FieldRegionView tiny = new FieldRegionView(planner(seed, world), null, cap);
+				List<int[]> all = new ArrayList<>();
+				for (int cz = -8; cz <= 8; cz++) for (int cx = -8; cx <= 8; cx++) all.add(new int[] {cx, cz});
+				Collections.shuffle(all, new Random(cap));
+				ExecutorService ex = Executors.newFixedThreadPool(8);
+				try {
+					List<Future<FieldRegionView.Resolved>> fs = new ArrayList<>();
+					for (int[] c : all) fs.add(ex.submit(() -> tiny.cell(c[0], c[1])));
+					for (int i = 0; i < all.size(); i++) assertEquals(expected[all.get(i)[1] + 8][all.get(i)[0] + 8], fs.get(i).get(), "capacity " + cap);
+				} finally {
+					ex.shutdown();
+				}
+			}
+		}
+	}
+
 	/** A direct, global implementation of the rule over a big grid, as an oracle for the bounded one. */
 	private static final class Oracle {
 		final RegionPlanner p;

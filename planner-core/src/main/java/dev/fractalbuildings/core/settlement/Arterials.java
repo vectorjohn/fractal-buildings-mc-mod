@@ -24,7 +24,7 @@ public final class Arterials {
 	private final DensityField density;
 	private final CoarseTerrain terrain;
 	private final DistrictGrid grid;
-	private final TreeMap<String, Boolean> memo = new TreeMap<>();
+	private final dev.fractalbuildings.core.cache.BoundedCache<String, Boolean> memo = new dev.fractalbuildings.core.cache.BoundedCache<>(4096); // pure memo, shared by threads
 
 	Arterials(long seed, Tier tier, DensityField density, CoarseTerrain terrain, DistrictGrid grid) {
 		this.seed = seed;
@@ -52,11 +52,7 @@ public final class Arterials {
 	public boolean is(DistrictGrid.Segment s) {
 		if (!tier.atLeast(Tier.CITY)) return false;
 		String key = s.axis() + ":" + s.line() + ":" + s.index();
-		Boolean m = memo.get(key);
-		if (m != null) return m;
-		boolean r = compute(s);
-		memo.put(key, r);
-		return r;
+		return memo.get(key, k -> compute(s));
 	}
 
 	private boolean compute(DistrictGrid.Segment s) {

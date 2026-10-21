@@ -367,10 +367,11 @@ skeleton, then district detail built lazily (ARCHITECTURE.md, "City scale").
 - [ ] **5.7 Density and skyline**: building class and height follow distance
   to the centre and to arterials (downtown high-rises and blocks, halls on
   squares, houses at the edge).
-- [ ] **5.8 Cities across cells**: neighbouring settled cells meet at hashed
+- [x] **5.8 Cities across cells**: neighbouring settled cells meet at hashed
   gates on their shared border, so roads join without either plan reading
   the other; grow cells or join cells per the worldgen ADR (2.10).
   *SK: cell gates agree from the cell pair alone (`cell-gate-agree` over 200 synthetic sites of 2 to 6 cells, also under a ±20 height error); MC2 ticks this item.*
+  *MC2 done 2026-10-21* (log `docs/log/2026-10-21-p5-mc2-cells.md`): `city --cell` plans every settled cell (solo hamlets/villages/towns and dropped claimants get a one-cell site), joined cities from any member cell with identical bytes, cell by cell, shuffled and on 8 threads with evicting caches (`MultiCellCityTest`); the join view and the skeleton source use bounded pure LRU caches (`BoundedCache`); on a fine window `--cell` says what the window cannot answer and points at `--site`. *Known issues:* the T2 fine windows still need `--site` (the join rule reads up to ~3 x max radius around a cell); `--cell` on a recorded world dump prints a "cannot see outside the dump" note for every city-or-larger cell.
 - [ ] **5.9 Scale check**: plan time and memory per district, measured outside
   the game at 512², 2048² and a multi-cell city; flat per-district cost is the
   bar (feeds 6.5 and 6.7).
