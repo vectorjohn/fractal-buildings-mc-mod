@@ -236,11 +236,12 @@ class SkeletonsTest {
 			SettlementSite s = SkeletonFixtures.site(f, 0, 0, t, radius[t.ordinal()], 6);
 			SettlementPlan p = Skeletons.plan(21, new FixedSiteView(s, f), s, flat, GEN);
 			assertEquals(List.of(), p.violations(), t.toString());
-			assertEquals(p.landmarks().stream().filter(l -> l.kind() == LandmarkKind.GREEN || l.kind() == LandmarkKind.MARKET || l.kind() == LandmarkKind.SQUARE).count(),
-					t == Tier.HAMLET ? 0 : 1, t + " hub squares");
+			long squares = p.landmarks().stream().filter(l -> l.kind() == LandmarkKind.GREEN || l.kind() == LandmarkKind.MARKET || l.kind() == LandmarkKind.SQUARE).count();
+			if (t.atLeast(Tier.CITY)) assertTrue(squares >= 1, t + " squares: the hub's and those at arterial crossings (D3)"); // plus one per tile of a crossing
+			else assertEquals(t == Tier.HAMLET ? 0 : 1, squares, t + " hub squares");
 			long arterials = p.roads().stream().filter(r -> r.kind() == RoadKind.ARTERIAL).count();
 			if (t.atLeast(Tier.CITY)) assertTrue(arterials > 5, t + " arterials: " + arterials); else assertEquals(0, arterials, t + " has arterials");
-			for (Road r : p.roads()) if (r.kind() == RoadKind.MAIN || r.kind() == RoadKind.PATH) assertEquals(mainWidth[t.ordinal()], r.width(), t + " main road width");
+			for (Road r : p.roads()) if (r.kind() == RoadKind.MAIN || r.kind() == RoadKind.PATH) assertTrue(r.width() == mainWidth[t.ordinal()] || (t == Tier.CITY && r.width() == 5), t + " main road width " + r.width()); // a walled city narrows its avenues to its 5-wide gates (D3)
 			long exits = p.gates().stream().filter(g -> g.kind() == GateKind.EXIT).count();
 			assertTrue(exits >= (t == Tier.HAMLET ? 1 : 2) , t + " exits: " + exits);
 			assertTrue(exits <= 4 * s.cells().size(), t + " exits: " + exits);

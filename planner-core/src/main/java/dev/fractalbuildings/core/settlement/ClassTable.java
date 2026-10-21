@@ -33,9 +33,9 @@ public final class ClassTable {
 			List.of(e("house", 70, 1, 2), e("workshop", 20, 1, 2), e("tower", 5, 4, 6), e("shop", 5, 2, 2)),
 			List.of(e("house", 50, 1, 3), e("shop", 25, 2, 3), e("workshop", 20, 1, 2), e("tower", 5, 4, 8)),
 			List.of(e("shop", 40, 2, 4), e("house", 25, 2, 3), e("block", 15, 2, 4), e("workshop", 10, 2, 2)),
-			List.of(e("block", 45, 3, 5), e("shop", 25, 3, 4), e("highrise", 15, 20, 30), e("hall", 0, 1, 3)),
-			// highrise storeys depend on density: see storeys()
-			List.of(e("highrise", 60, 20, 60), e("block", 35, 4, 5), e("shop", 5, 4, 4)));
+			List.of(e("block", 45, 3, 5), e("shop", 25, 3, 4), e("highrise", 15, 10, 19), e("hall", 0, 1, 3)),
+			// highrise storeys depend on density: see highriseStoreys(); 10 to 19 is the mid-rise
+			List.of(e("highrise", 70, 20, 60), e("block", 25, 4, 5), e("shop", 5, 4, 4)));
 
 	/** Rows for a density, before quarter overrides (for tests and tools). */
 	static List<Entry> row(int density) {
@@ -46,6 +46,8 @@ public final class ClassTable {
 
 	/** Storey cap of a waterfront quarter. */
 	public static final int WATERFRONT_CAP = 4;
+	/** Storey cap of an old town (no blocks or high-rises inside the walls). */
+	public static final int OLD_TOWN_CAP = 5;
 
 	/** Entries after quarter overrides: weights and storey ranges used for the draw. */
 	static List<Entry> entries(int density, QuarterKind quarter) {
@@ -53,21 +55,36 @@ public final class ClassTable {
 		for (Entry en : row(density)) {
 			int w = en.weight(), min = en.min(), max = en.max();
 			String type = en.type();
-			if (type.equals("highrise") && density >= BANDS[BANDS.length - 1]) {
-				int base = 20 + (density - 85) * 40 / 15; // 20..60
-				min = Math.max(20, base - base / 5);
-				max = Math.min(60, base + base / 5);
+			if (type.equals("highrise")) {
+				int[] s = highriseStoreys(density);
+				min = s[0];
+				max = s[1];
 			}
 			if (quarter == QuarterKind.WORKSHOP && type.equals("workshop")) w *= 2;
-			if (quarter == QuarterKind.WATERFRONT) {
-				if (type.equals("block")) continue; // the block's weight goes to shop
-				if (type.equals("shop")) w += blockWeight(density);
-				max = Math.min(max, WATERFRONT_CAP);
+			if (quarter == QuarterKind.WATERFRONT || quarter == QuarterKind.OLD_TOWN) {
+				if (type.equals("block") || (quarter == QuarterKind.OLD_TOWN && type.equals("highrise"))) continue; // the weight goes to shop
+				if (type.equals("shop")) w += blockWeight(density) + (quarter == QuarterKind.OLD_TOWN ? highriseWeight(density) : 0);
+				max = Math.min(max, quarter == QuarterKind.OLD_TOWN ? OLD_TOWN_CAP : WATERFRONT_CAP);
 				if (max < min) continue;
 			}
 			out.add(new Entry(type, w, min, max));
 		}
 		return out;
+	}
+
+	/** Storeys of a high-rise at a density: a mid-rise of 10 to 19 from density 70 (the gap between 5-storey blocks and the 20-storey towers), 20 at 85, rising to 60 at 100; at most 12 % spread. */
+	public static int[] highriseStoreys(int density) {
+		if (density < BANDS[BANDS.length - 1]) {
+			int d = Math.max(70, density);
+			return new int[] {10 + (d - 70) * 5 / 15, 14 + (d - 70) * 5 / 14};
+		}
+		int base = 20 + (density - 85) * 40 / 15; // 20..60
+		return new int[] {Math.max(20, base - base * 12 / 100), Math.min(60, base + base * 12 / 100)};
+	}
+
+	private static int highriseWeight(int density) {
+		for (Entry en : row(density)) if (en.type().equals("highrise")) return en.weight();
+		return 0;
 	}
 
 	private static int blockWeight(int density) {

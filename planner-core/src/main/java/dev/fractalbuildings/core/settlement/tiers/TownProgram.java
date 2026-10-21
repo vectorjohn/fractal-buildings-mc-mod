@@ -23,21 +23,21 @@ import java.util.function.BiPredicate;
  * lot, and from the point {@code reach} outside on to the target. {@link #walls} reads the roads back, so a ring whose roads
  * cross it anywhere else (or not straight) is dropped whole.
  */
-public final class TownProgram extends DefaultProgram {
+public class TownProgram extends DefaultProgram {
 	public static final int WALL_PCT = 40;
 	/** A ring column keeps this far from coarse water (a stream between lattice columns can still slip through; its lots are then dropped). */
 	static final int WATER_MARGIN = 28;
 
 	/** Does this town get a wall? (hash of the seed and the centre; D3 uses its own percentage for old towns). */
-	static boolean walled(SkeletonContext c) {
+	protected boolean walled(SkeletonContext c) {
 		return c.holdsCentre() && Hash64.below(Hash64.hash(c.seed, "town-wall", c.site.centre().x(), c.site.centre().z()), 100) < WALL_PCT;
 	}
 
-	static int reach(SkeletonContext c) { return (14 + c.step - 1) / c.step * c.step; }
+	protected static int reach(SkeletonContext c) { return (14 + c.step - 1) / c.step * c.step; }
 
-	static BiPredicate<Integer, Integer> ok(SkeletonContext c) { return (x, z) -> c.owned(x, z) && c.terrain.buildable(x, z) && !c.terrain.waterWithin(x, z, WATER_MARGIN); }
+	protected static BiPredicate<Integer, Integer> ok(SkeletonContext c) { return (x, z) -> c.owned(x, z) && c.terrain.buildable(x, z) && !c.terrain.waterWithin(x, z, WATER_MARGIN); }
 
-	static Optional<WallRing.Ring> ring(SkeletonContext c, Pt hub) {
+	protected Optional<WallRing.Ring> ring(SkeletonContext c, Pt hub) {
 		if (!walled(c) || hub == null) return Optional.empty();
 		return WallRing.ring(c.seed, c.site.centre(), c.site.radius(), hub, c.grid, c.step, ok(c), (x, z) -> c.density.urban(x, z));
 	}
@@ -61,7 +61,7 @@ public final class TownProgram extends DefaultProgram {
 	}
 
 	/** Hub to the gate's inner point, straight through the gate lot, then on to the target. */
-	private Route through(SkeletonContext c, Pt hub, Pt target, WallRing.Gate g) {
+	protected Route through(SkeletonContext c, Pt hub, Pt target, WallRing.Gate g) {
 		int[] n = WallRing.normal(g.side());
 		int r = reach(c);
 		Pt in = new Pt(g.at().x() - n[0] * r, g.at().z() - n[1] * r), out = new Pt(g.at().x() + n[0] * r, g.at().z() + n[1] * r);

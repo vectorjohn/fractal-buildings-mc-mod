@@ -48,7 +48,7 @@ class MultiCellCityTest {
 		}
 
 		SkeletonSource source(int cache) {
-			return new SkeletonSource.Direct(w.seed(), view, site, coarse, new DefaultProgram(), cache);
+			return new SkeletonSource.Direct(w.seed(), view, site, coarse, TierPrograms.of(site.tier()), cache);
 		}
 	}
 
@@ -75,7 +75,7 @@ class MultiCellCityTest {
 				Fixture fresh = Fixture.of(w, 2); // a view that forgets almost everything: a pure cache
 				SettlementSite s = fresh.view().siteOf(c).orElseThrow();
 				assertEquals(batch.site(), s, "the site seen from " + c);
-				alone.add(Skeletons.build(w.seed(), fresh.view(), c, fresh.coarse(), new DistrictGrid(w.seed()), new DefaultProgram()));
+				alone.add(Skeletons.build(w.seed(), fresh.view(), c, fresh.coarse(), new DistrictGrid(w.seed()), TierPrograms.of(s.tier())));
 			}
 			SettlementPlan got = Skeletons.assemble(w.seed(), batch.view(), batch.site(), batch.coarse(), GeneratorV1.GEN_VERSION, alone);
 			assertEquals(SettlementJson.write(expected), SettlementJson.write(got), "seed " + w.seed());
@@ -184,7 +184,7 @@ class MultiCellCityTest {
 			for (int cz = -5; cz <= 5; cz++) {
 				for (int cx = -5; cx <= 5; cx++) {
 					var s = f.view().siteOf(new Cell(cx, cz));
-					if (s.isPresent() && !sources.containsKey(s.get().id())) sources.put(s.get().id(), new SkeletonSource.Direct(seed, f.view(), s.get(), f.coarse(), new DefaultProgram(), 4));
+					if (s.isPresent() && !sources.containsKey(s.get().id())) sources.put(s.get().id(), new SkeletonSource.Direct(seed, f.view(), s.get(), f.coarse(), TierPrograms.of(s.get().tier()), 4));
 				}
 			}
 			sites += sources.size();

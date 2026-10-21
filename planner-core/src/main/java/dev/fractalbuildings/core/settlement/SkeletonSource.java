@@ -64,7 +64,7 @@ public interface SkeletonSource {
 			this.program = program;
 			CoarseTerrain terrain = new CoarseTerrain(probe);
 			this.density = new DensityField(seed, site, terrain, grid);
-			this.quarters = new QuarterField(seed, site, terrain);
+			this.quarters = new QuarterField(seed, site, terrain, density);
 		}
 
 		@Override public long seed() { return seed; }

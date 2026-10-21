@@ -178,7 +178,7 @@ does not serve `fixtures/`; use `/@fs/<abs path>/viewer/fixtures/settlement/samp
 - Layers (`&layers=a,b` exact, `&layers=%2Bdensity,-lots` edits the defaults; a raw `+` decodes to a space and is accepted too):
   terrain (hillshade of the coarse raster, or of `&terrain=<dump url>`, a fine `fb-region-dump/1`, drawn over it), water, biome, mask (urban,
   water, steep, open), density, quarters, cells, tiles, roads (by kind and width, bridges tan), gates, landmarks, walls, lots (fill by type,
-  outline by style, front edge marked from 2 px per block, empty lots faded), violations (red). Default on: all but biome, mask, density, quarters, cells.
+  outline by style, front edge marked from 2 px per block, empty lots faded), height (D3: lots filled by their top storey, pale yellow at 1 through red to violet at 60; off by default, `&layers=%2Bheight,-terrain`), violations (red). Default on: all but biome, mask, density, quarters, cells.
 - Level of detail: below 1/2 px per block no district file is fetched and each tile shows its density; at or above it the visible districts
   load lazily (8 at a time, 400 kept) and draw their lots, plazas and own streets. State is in the URL (`x`, `z` = view centre, `zoom`, `layers`).
 - Test hooks: `window.__planReady` ({ok, error, districts, loaded, pending, draws, lots, roads, lod, scale, lastDrawMs}), `window.__planApi.setView(x, z, scale)`
@@ -231,3 +231,4 @@ A preset is `{seed, terrain, site: {at: [x, z], tier, radius} | {cell: [cx, cz]}
 the fly camera, and `plan.png`, `<district>-overview.png`, `<district>-street.png` are written next to the data. Asserted: no `tile-border-agree` violation, no building
 violation in the scenes, no page error; `roads-connected` is reported as a test annotation, not asserted.
 `FB_PLAN_LAYERS="-terrain,+mask,+density"` overrides the plan layers and `FB_PLAN_SUFFIX=-mask` names the file `plan-mask.png` (a second look at the same city). Presets `tr-coast`, `tr-river`, `tr-steep` (TR) are zoomed on a waterfront and a steep district; their pictures are in `docs/review/phase5/terrain/`.
+For a city or metropolis the plan test also writes `plan-height.png` (the `height` layer over the plain background). `node scripts/city-stats.mjs <preset>` (in `viewer/`, after `npm run city`) prints built lots by type, mean and top storeys per tenth of the radius. Presets `d3-metropolis-flat`, `d3-city-walled`, `d3-city-avenues` (D3) show a downtown skyline, an old-town wall with gates and diagonal avenues; their pictures are in `docs/review/phase5/d3/`.

@@ -56,6 +56,11 @@ for (const p of presets) {
       expect(ready.ok, ready.error).toBe(true);
       expect(ready.districts).toBe(s.districts.length);
       writeFileSync(join(dir, `plan${process.env['FB_PLAN_SUFFIX'] ?? ''}.png`), await page.screenshot());
+      if (s.site.tier === 'city' || s.site.tier === 'metropolis') { // D3: the skyline, lots coloured by their top storey (plan-height.png)
+        await page.goto(`/plan.html?city=${base}&terrain=${base}terrain.json.gz&layers=${encodeURIComponent('+height,-terrain')}${view}`);
+        await page.waitForFunction(() => { const r = window.__planReady; return r !== undefined && (!r.ok || r.pending === 0); }, undefined, { timeout: 90_000 });
+        writeFileSync(join(dir, `plan-height${process.env['FB_PLAN_SUFFIX'] ?? ''}.png`), await page.screenshot());
+      }
       expect(errors).toEqual([]);
     });
 

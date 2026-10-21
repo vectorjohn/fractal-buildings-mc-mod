@@ -9,27 +9,29 @@
     {"id": "a052_m3536", "kind": "arterial", "width": 9, "points": [[8304, -3352], [8304, -3345], [8304, -3344]], "y": [74, 74, 75]},
     {"id": "a053_m3200", "kind": "arterial", "width": 9, "points": [[8464, -3200], [8464, -3199], [8464, -3192]], "y": [69, 68, 68]},
     {"id": "a1m20_8304", "kind": "arterial", "width": 9, "points": [[8304, -3200], [8327, -3200], [8328, -3200], [8331, -3200], [8332, -3200], [8335, -3200], [8336, -3200], [8400, -3200], [8401, -3200], [8404, -3200], [8405, -3200], [8427, -3200], [8428, -3200], [8431, -3200], [8432, -3200], [8435, -3200], [8436, -3200], [8439, -3200], [8440, -3200], [8447, -3200], [8448, -3200], [8464, -3200]], "y": [63, 63, 64, 64, 65, 65, 66, 66, 65, 65, 64, 64, 65, 65, 66, 66, 67, 67, 68, 68, 69, 69]},
+    {"id": "q0", "kind": "lane", "width": 3, "points": [[8323, -3273], [8322, -3273], [8314, -3273]], "y": [65, 64, 64]},
     {"id": "quay8404_m3283", "kind": "quay", "width": 4, "points": [[8404, -3283], [8404, -3272], [8388, -3256], [8388, -3252], [8388, -3251], [8388, -3248], [8380, -3240], [8380, -3235], [8380, -3234], [8380, -3232], [8376, -3228], [8344, -3228], [8332, -3216], [8332, -3200], [8328, -3196], [8320, -3196], [8316, -3192]], "y": [63, 63, 63, 63, 64, 64, 64, 64, 63, 63, 63, 63, 63, 63, 63, 63, 63]},
     {"id": "quay8472_m3348", "kind": "quay", "width": 4, "points": [[8472, -3348], [8469, -3345]], "y": [63, 63]},
     {"id": "r8_m4_0", "kind": "main", "width": 7, "points": [[8472, -3256], [8456, -3240], [8455, -3239], [8452, -3236], [8451, -3235], [8408, -3192]], "y": [66, 66, 65, 65, 64, 64]},
     {"id": "szm3275_8296", "kind": "street", "width": 5, "points": [[8296, -3275], [8303, -3275], [8304, -3275], [8312, -3275]], "y": [63, 63, 64, 64]},
-    {"id": "t0", "kind": "lane", "width": 3, "points": [[8368, -3352], [8368, -3351], [8368, -3344], [8368, -3343], [8368, -3328], [8365, -3325], [8364, -3324], [8361, -3321], [8360, -3320], [8344, -3304], [8352, -3296], [8336, -3280], [8328, -3280], [8327, -3279], [8324, -3276], [8323, -3275], [8320, -3272], [8319, -3272], [8316, -3272], [8315, -3272], [8312, -3272], [8312, -3275]], "y": [68, 67, 67, 66, 66, 66, 67, 67, 68, 68, 68, 68, 68, 67, 67, 66, 66, 65, 65, 64, 64, 64]}
+    {"id": "t0", "kind": "lane", "width": 3, "points": [[8368, -3352], [8368, -3351], [8368, -3344], [8368, -3343], [8368, -3336]], "y": [68, 67, 67, 66, 66]}
   ],
-  "plazas": [],
+  "plazas": [
+    {"id": "p0", "kind": "square", "x": 8325, "z": -3285, "w": 29, "d": 32, "y": 65}
+  ],
   "lots": [
-    {"id": "d52_m21.l0", "x": 8309, "z": -3344, "w": 31, "d": 31, "front": "west", "type": "highrise", "style": "plains", "storeys": [20, 30], "streets": 1, "airRights": 2, "frontY": 75, "density": 78, "status": "build"},
+    {"id": "d52_m21.l0", "x": 8309, "z": -3344, "w": 31, "d": 31, "front": "west", "type": "highrise", "style": "plains", "storeys": [12, 16], "streets": 1, "airRights": 2, "frontY": 75, "density": 78, "status": "build"},
     {"id": "d52_m21.l1", "x": 8309, "z": -3311, "w": 22, "d": 15, "front": "west", "type": "shop", "style": "plains", "storeys": [3, 4], "streets": 1, "airRights": 2, "frontY": 73, "density": 78, "status": "build"},
-    {"id": "d52_m21.l2", "x": 8309, "z": -3270, "w": 14, "d": 10, "front": "west", "type": "shop", "style": "plains", "storeys": [3, 4], "streets": 3, "airRights": 2, "frontY": 64, "density": 79, "status": "build"},
-    {"id": "d52_m21.l3", "x": 8309, "z": -3256, "w": 25, "d": 12, "front": "west", "type": "shop", "style": "plains", "storeys": [3, 4], "streets": 1, "airRights": 2, "frontY": 64, "density": 79, "status": "build"},
-    {"id": "d52_m21.l4", "x": 8309, "z": -3241, "w": 26, "d": 16, "front": "west", "type": "shop", "style": "plains", "storeys": [3, 4], "streets": 1, "airRights": 2, "frontY": 64, "density": 79, "status": "build"},
-    {"id": "d52_m21.l5", "x": 8309, "z": -3225, "w": 15, "d": 13, "front": "west", "type": "shop", "style": "plains", "storeys": [3, 4], "streets": 1, "airRights": 2, "frontY": 64, "density": 77, "status": "build"},
-    {"id": "d52_m21.l6", "x": 8388, "z": -3285, "w": 14, "d": 12, "front": "east", "type": "shop", "style": "plains", "storeys": [3, 4], "streets": 1, "airRights": 1, "frontY": 63, "density": 78, "status": "build"},
-    {"id": "d52_m21.l7", "x": 8369, "z": -3258, "w": 17, "d": 9, "front": "east", "type": "shop", "style": "plains", "storeys": [3, 4], "streets": 1, "airRights": 1, "frontY": 63, "density": 78, "status": "build"},
-    {"id": "d52_m21.l8", "x": 8363, "z": -3242, "w": 15, "d": 9, "front": "east", "type": "shop", "style": "plains", "storeys": [3, 4], "streets": 1, "airRights": 1, "frontY": 64, "density": 77, "status": "build"},
-    {"id": "d52_m21.l9", "x": 8342, "z": -3249, "w": 13, "d": 19, "front": "south", "type": "shop", "style": "plains", "storeys": [3, 4], "streets": 1, "airRights": 1, "frontY": 63, "density": 74, "status": "build"},
-    {"id": "d52_m21.l10", "x": 8352, "z": -3344, "w": 15, "d": 16, "front": "east", "type": "shop", "style": "plains", "storeys": [3, 4], "streets": 1, "airRights": 0, "frontY": 66, "density": 75, "status": "build"},
-    {"id": "d52_m21.l11", "x": 8370, "z": -3344, "w": 17, "d": 11, "front": "west", "type": "shop", "style": "plains", "storeys": [3, 4], "streets": 1, "airRights": 0, "frontY": 66, "density": 80, "status": "build"},
-    {"id": "d52_m21.l12", "x": 8327, "z": -3296, "w": 9, "d": 15, "front": "south", "type": "shop", "style": "plains", "storeys": [3, 4], "streets": 1, "airRights": 0, "frontY": 68, "density": 78, "status": "build"}
+    {"id": "d52_m21.l2", "x": 8309, "z": -3271, "w": 16, "d": 10, "front": "west", "type": "shop", "style": "plains", "storeys": [3, 4], "streets": 7, "airRights": 2, "frontY": 64, "density": 79, "status": "build"},
+    {"id": "d52_m21.l3", "x": 8309, "z": -3259, "w": 15, "d": 10, "front": "west", "type": "shop", "style": "plains", "storeys": [3, 4], "streets": 1, "airRights": 2, "frontY": 64, "density": 79, "status": "build"},
+    {"id": "d52_m21.l4", "x": 8309, "z": -3249, "w": 15, "d": 12, "front": "west", "type": "shop", "style": "plains", "storeys": [3, 4], "streets": 1, "airRights": 2, "frontY": 64, "density": 79, "status": "build"},
+    {"id": "d52_m21.l5", "x": 8309, "z": -3237, "w": 14, "d": 10, "front": "west", "type": "shop", "style": "plains", "storeys": [3, 4], "streets": 1, "airRights": 2, "frontY": 64, "density": 79, "status": "build"},
+    {"id": "d52_m21.l6", "x": 8309, "z": -3227, "w": 20, "d": 13, "front": "west", "type": "shop", "style": "plains", "storeys": [3, 4], "streets": 1, "airRights": 2, "frontY": 65, "density": 77, "status": "build"},
+    {"id": "d52_m21.l7", "x": 8309, "z": -3214, "w": 16, "d": 10, "front": "west", "type": "shop", "style": "plains", "storeys": [3, 4], "streets": 9, "airRights": 2, "frontY": 63, "density": 77, "status": "build"},
+    {"id": "d52_m21.l8", "x": 8388, "z": -3285, "w": 14, "d": 12, "front": "east", "type": "shop", "style": "plains", "storeys": [3, 4], "streets": 1, "airRights": 1, "frontY": 63, "density": 78, "status": "build"},
+    {"id": "d52_m21.l9", "x": 8369, "z": -3258, "w": 17, "d": 9, "front": "east", "type": "shop", "style": "plains", "storeys": [3, 4], "streets": 1, "airRights": 1, "frontY": 63, "density": 78, "status": "build"},
+    {"id": "d52_m21.l10", "x": 8363, "z": -3242, "w": 15, "d": 9, "front": "east", "type": "shop", "style": "plains", "storeys": [3, 4], "streets": 1, "airRights": 1, "frontY": 64, "density": 77, "status": "build"},
+    {"id": "d52_m21.l11", "x": 8342, "z": -3249, "w": 13, "d": 19, "front": "south", "type": "shop", "style": "plains", "storeys": [3, 4], "streets": 1, "airRights": 1, "frontY": 63, "density": 74, "status": "build"}
   ],
   "scene": null,
   "violations": []

@@ -135,7 +135,8 @@ public final class WallRing {
 		return Math.min(Math.abs(c - grid.lineBlock(axis, k)), Math.abs(grid.lineBlock(axis, k + 1) - c));
 	}
 
-	private static boolean fits(Ring r, int step, BiPredicate<Integer, Integer> ok, BiPredicate<Integer, Integer> urban) {
+	/** Do the ring's centrelines (and the lines 6 blocks to each side) pass {@code ok} everywhere, and are most of them {@code urban}? */
+	public static boolean fits(Ring r, int step, BiPredicate<Integer, Integer> ok, BiPredicate<Integer, Integer> urban) {
 		int total = 0, urb = 0;
 		for (int side = 0; side < 4; side++) {
 			int[] n = Ring.normal(side);

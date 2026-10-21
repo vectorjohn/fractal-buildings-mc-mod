@@ -533,9 +533,17 @@ public final class Districts {
 
 		void landmarksAndPlazas() {
 			paintSkeletonRoads();
-			Cell centreCell = CellGeometry.owner(src.view().field(), src.site().centre().x(), src.site().centre().z());
 			found = new ArrayList<>();
-			if (src.site().cells().contains(centreCell)) for (Landmark l : src.skeleton(centreCell).landmarks()) if (l.district().equals(id)) found.add(l);
+			// landmarks of this tile from every cell that reaches it (the hub's from the centre cell, squares at arterial crossings from the cell that owns the crossing)
+			TreeMap<Cell, Boolean> nearCells = new TreeMap<>(CellGeometry::compare);
+			RegionField rf = src.view().field();
+			for (int z = tile.minZ() - 64; z <= tile.maxZ() + 64; z += 32) {
+				for (int x = tile.minX() - 64; x <= tile.maxX() + 64; x += 32) {
+					Cell oc = CellGeometry.owner(rf, x, z);
+					if (src.site().cells().contains(oc)) nearCells.put(oc, true);
+				}
+			}
+			for (Cell oc : nearCells.keySet()) for (Landmark l : src.skeleton(oc).landmarks()) if (l.district().equals(id)) found.add(l);
 			all = new ArrayList<>();
 			for (Landmark l : found) all.add(new Rect(l.x(), l.z(), l.w(), l.d()));
 			squares = new ArrayList<>();

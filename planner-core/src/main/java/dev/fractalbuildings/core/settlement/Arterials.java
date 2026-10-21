@@ -57,6 +57,8 @@ public final class Arterials {
 
 	private boolean compute(DistrictGrid.Segment s) {
 		if (!density.urban(ax(s, s.from()), az(s, s.from())) || !density.urban(ax(s, s.to()), az(s, s.to()))) return false;
+		if (tier == Tier.CITY && density.oldTown().cuts(s)) return false; // the old-town wall takes no arterial through its gates
+		if (tier == Tier.METROPOLIS && outerRing(s)) return waterOk(s);
 		int mid = Math.floorDiv(s.from() + s.to(), 2);
 		double p = probability(density.base(ax(s, mid), az(s, mid)));
 		if (p <= 0 || Tiers.unit(s.hash(seed, "arterial")) >= p) return false;
@@ -78,6 +80,28 @@ public final class Arterials {
 			prev = h;
 		}
 		return true;
+	}
+
+	/** Where a metropolis's outer ring of arterials runs, as a fraction of the footprint radius. */
+	public static final double RING_AT = 0.62;
+
+	/**
+	 * Is the segment on the metropolis's outer ring: the border between the tiles whose centres lie inside the ring radius
+	 * (at their angle, the footprint's radius times {@link #RING_AT}) and those outside it? The tile borders where the two sides differ
+	 * form a closed staircase round the city; the test reads the two tiles' centres only, so both sides of a border agree.
+	 */
+	boolean outerRing(DistrictGrid.Segment s) {
+		boolean alongZ = s.axis() == DistrictGrid.AXIS_X; // a line of constant x
+		DistrictGrid.Tile a = alongZ ? grid.tile(s.line() - 1, s.index()) : grid.tile(s.index(), s.line() - 1);
+		DistrictGrid.Tile b = alongZ ? grid.tile(s.line(), s.index()) : grid.tile(s.index(), s.line());
+		return insideRing(a) != insideRing(b);
+	}
+
+	private boolean insideRing(DistrictGrid.Tile t) {
+		int cx = (t.minX() + t.maxX()) / 2, cz = (t.minZ() + t.maxZ()) / 2;
+		double dx = cx - density.site().centre().x(), dz = cz - density.site().centre().z();
+		if (dx == 0 && dz == 0) return true;
+		return StrictMath.sqrt(dx * dx + dz * dz) < RING_AT * density.radiusAt(StrictMath.atan2(dz, dx));
 	}
 
 	/** The segment crosses no run of water wider than {@link #MAX_BRIDGE} (coarse lattice samples along it). Pointwise. */

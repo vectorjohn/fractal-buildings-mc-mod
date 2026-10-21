@@ -40,7 +40,7 @@ class BriefTest {
 	@Test
 	void disjointRangeUsesTheTypesNearestBound() {
 		assertEquals(3, SpecPolicyV1.spec(req("house", 14, 14, new Brief(30, 40, 1, 0, 64))).storeys());
-		assertEquals(20, SpecPolicyV1.spec(req("highrise", 30, 30, new Brief(1, 4, 1, 0, 64))).storeys());
+		assertEquals(10, SpecPolicyV1.spec(req("highrise", 30, 30, new Brief(1, 4, 1, 0, 64))).storeys()); // the mid-rise floor (D3: highrise limits start at 10)
 	}
 
 	@Test
