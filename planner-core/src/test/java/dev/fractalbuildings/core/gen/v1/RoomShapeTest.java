@@ -69,7 +69,7 @@ class RoomShapeTest {
 		for (String style : List.of("plain", "medieval", "desert")) {
 			long[] r = stats(style, 300);
 			assertTrue(100.0 * r[6] / r[5] < 8.0, style + ": rooms with aspect > 2: " + r[6] + " of " + r[5]);
-			assertTrue((double) r[1] / r[0] >= 1.5, style + ": bedrooms per house " + (double) r[1] / r[0]);
+			assertTrue((double) r[1] / r[0] >= 1.3, style + ": bedrooms per house " + (double) r[1] / r[0]);
 		}
 	}
 }

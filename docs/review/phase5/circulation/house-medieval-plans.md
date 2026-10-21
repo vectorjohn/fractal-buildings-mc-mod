@@ -282,3 +282,43 @@ l=living b=bedroom
 ```
 
 
+
+## After house program (p5-house-program)
+
+Whole-house pass: one kitchen and one living room across all wings. Generated from the `house-medieval` gallery scenes by a throwaway script.
+
+### seed 7
+```
+l=living k=kitchen b=bedroom
+ ###### #### #D## 
+#llllll#kkkk#llll#
+#llllll#kkkkDllll#
+#llllll#kkkk#llll#
+#llllll.kkkk#llll#
+#llllll#kkkk#llll#
+ #D#### ######D## 
+#bbbb#     #bbbbb#
+#bbbb#     #bbbbb#
+#bbbb#######bbbbb#
+#bbbb#bbbbb#bbbbb#
+#bbbbDbbbbbDbbbbb#
+#bbbb#bbbbb#bbbbb#
+#bbbb#bbbbb#bbbbb#
+ #### ##### ##### 
+```
+
+### seed 9
+```
+k=kitchen b=bedroom l=living
+ ### ######D# 
+#kkk#llllllll#
+#kkk#llllllll#
+#kkkDllllllll#
+#kkk#llllllll#
+ #D# #D#####D 
+#bbb#bbb#bbbb#
+#bbb#bbb#bbbb#
+#bbbDbbb#bbbb#
+#bbb#bbb#bbbb#
+ ### ### #### 
+```

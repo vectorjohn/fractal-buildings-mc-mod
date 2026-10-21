@@ -46,6 +46,9 @@ public final class InteriorPass {
 	/** The plan shared by a band of storeys, with room uses and hook sites. */
 	private record Band(int start, Info info, FloorPlan plan, String[] uses, List<Site> hooks) {}
 
+	/** A band before the whole-building program has run: plan and uses, no archways or hooks yet. */
+	private record Draft(int start, int idx, Info info, FloorPlan plan, RoomProgram.Role[] roles, int[] areas, String[] uses) {}
+
 	/** A band's plan placed on one storey of one mass. */
 	private record Placed(Band band, String[] ids, int ox, int oz) {
 		String idAt(int x, int z) {
@@ -63,15 +66,28 @@ public final class InteriorPass {
 		RoomProgram prog = c.type().rooms();
 		InteriorStyle st = c.style().interior();
 		Placed[][] placed = new Placed[ms.size()][g.count()];
-		Band[][] bands = new Band[ms.size()][g.count()];
+		Draft[][] drafts = new Draft[ms.size()][g.count()];
+		List<Draft> all = new ArrayList<>();
 		for (int i = 0; i < ms.size(); i++) {
 			Mass a = ms.get(i);
-			Band cur = null;
+			Draft cur = null;
 			for (int s = a.from(); s < a.to(); s++) {
 				if (!a.floorAt(s)) continue;
 				Info info = info(c, m, i, a, s);
-				if (cur == null || !cur.info().same(info) || bands[i][s - 1] != cur || prog.newBand(s)) cur = band(c, prog, st, i, a, s, info);
-				bands[i][s] = cur;
+				if (cur == null || !cur.info().same(info) || drafts[i][s - 1] != cur || prog.newBand(s)) {
+					cur = draft(c, prog, st, i, a, s, info);
+					all.add(cur);
+				}
+				drafts[i][s] = cur;
+			}
+		}
+		program(c, prog, all, drafts, g.count());
+		java.util.Map<Draft, Band> done = new java.util.IdentityHashMap<>();
+		for (int i = 0; i < ms.size(); i++) {
+			Mass a = ms.get(i);
+			for (int s = a.from(); s < a.to(); s++) {
+				if (drafts[i][s] == null) continue;
+				Band cur = done.computeIfAbsent(drafts[i][s], dr -> band(c, prog, dr));
 				int top = a.open() ? g.y(a.to()) : g.y(s + 1);
 				String[] ids = new String[cur.plan().leaves().size()];
 				for (int l = 0; l < ids.length; l++) {
@@ -166,7 +182,7 @@ public final class InteriorPass {
 		return a.interior(x - 1, z) ? new int[] {x - 1, z} : new int[] {x + 1, z};
 	}
 
-	private static Band band(BuildContext c, RoomProgram prog, InteriorStyle st, int idx, Mass a, int s, Info info) {
+	private static Draft draft(BuildContext c, RoomProgram prog, InteriorStyle st, int idx, Mass a, int s, Info info) {
 		int w = a.sx() - 2, d = a.sz() - 2;
 		FloorPlan plan = a.open() ? FloorPlan.single(w, d) : FloorPlan.plan(w, d, info.reserved(), info.core(), arrivals(info), st, c.hash("interior/plan", idx, s));
 		int n = plan.leaves().size();
@@ -187,10 +203,46 @@ public final class InteriorPass {
 			uses[l] = prog.use(role, a.kind(), lf.area(), new RoomProgram.Where(s, g.count()), c.draws("interior/use", idx, s, l));
 		}
 		prog.refine(roles, areas, uses, new RoomProgram.Where(s, c.massing().grid().count()), c.draws("interior/refine", idx, s));
-		plan = plan.withArches(prog::openPlan, uses, info.core(), ARCH_PERCENT, c.draws("interior/arch", idx, s));
+		return new Draft(s, idx, info, plan, roles, areas, uses);
+	}
+
+	/** The whole-building pass: lets the type revise uses across masses and storeys (a house's one kitchen and living room). */
+	private static void program(BuildContext c, RoomProgram prog, List<Draft> all, Draft[][] drafts, int storeys) {
+		List<RoomProgram.Slot> slots = new ArrayList<>();
+		List<Draft> owner = new ArrayList<>();
+		List<Integer> leaf = new ArrayList<>();
+		java.util.Map<Draft, Integer> base = new java.util.IdentityHashMap<>();
+		for (Draft dr : all) {
+			base.put(dr, slots.size());
+			for (int l = 0; l < dr.uses().length; l++) {
+				slots.add(new RoomProgram.Slot(dr.idx(), dr.start(), span(drafts, dr), dr.roles()[l], dr.areas()[l], dr.uses()[l]));
+				owner.add(dr);
+				leaf.add(l);
+			}
+		}
+		for (Draft dr : all)
+			for (FloorPlan.Door door : dr.plan().doors()) {
+				RoomProgram.Slot x = slots.get(base.get(dr) + door.from()), y = slots.get(base.get(dr) + door.to());
+				x.next().add(y);
+				y.next().add(x);
+			}
+		prog.refineBuilding(slots, new RoomProgram.Where(0, storeys), c.draws("interior/program"));
+		for (int k = 0; k < slots.size(); k++) owner.get(k).uses()[leaf.get(k)] = slots.get(k).use;
+	}
+
+	private static int span(Draft[][] drafts, Draft dr) {
+		int n = 0;
+		for (Draft[] row : drafts) for (Draft x : row) if (x == dr) n++;
+		return n;
+	}
+
+	private static Band band(BuildContext c, RoomProgram prog, Draft dr) {
+		String[] uses = dr.uses();
+		int s = dr.start(), idx = dr.idx();
+		FloorPlan plan = dr.plan().withArches(prog::openPlan, uses, dr.info().core(), ARCH_PERCENT, c.draws("interior/arch", idx, s));
 		List<Site> hooks = new ArrayList<>();
-		for (int l = 0; l < n; l++) hookSites(c, prog, plan, info, idx, s, l, uses[l], hooks);
-		return new Band(s, info, plan, uses, hooks);
+		for (int l = 0; l < uses.length; l++) hookSites(c, prog, plan, dr.info(), idx, s, l, uses[l], hooks);
+		return new Band(s, dr.info(), plan, uses, hooks);
 	}
 
 	/** Where people arrive on this floor of a mass: the entrance cells, else the cells inside the doors from other masses. */
