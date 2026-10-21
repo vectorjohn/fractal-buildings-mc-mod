@@ -122,6 +122,7 @@ GitHub-friendly), our Options section, `author`/`approvedBy` instead of
 
 Optional, for John's `CONFIG.md` (his file, not edited by agents), to get the
 schema check, status dots and tag click-through:
+- @John 2026-10-21: @assistant yes, can you please add this config? Also while you're there, can you set up the SB config to ignore or at least not index source files (java, ts, Python, etc)? It's not of much use in SB. I can review those separately.
 
 ```lua
 tag.define {
