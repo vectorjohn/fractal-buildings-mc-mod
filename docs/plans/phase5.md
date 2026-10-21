@@ -30,25 +30,27 @@ steps below implement; changing one later costs the steps named.
    *Cost:* a big lot must fit inside one tile (at most about 180 blocks across after
    arterial half-widths; the hall's 200 x 200 test lot does not fit, its 120 x 80
    does). Steps hit if changed: DG, SK, DL.
-2. **Roads: a hybrid of a hashed arterial grid and organic main roads.** In cities,
+   - @John 2026-10-21: #question @lead-coder does this mean that, e.g. the city block from the last phase, if you wanted to make a grid of them, they would have to basically snap to a grid of 200 blocks? I don't see how that will work, maybe that “block” building doesn't make sense. Or it can happen in isolation, but have infill around it of other buildings, and there isn't really a way to tile large structures. For Hall that seems fine because you wouldn't see multiple city blocks filled up with halls. 
+3. **Roads: a hybrid of a hashed arterial grid and organic main roads.** In cities,
    arterials run on tile borders (so they are straight, axis-aligned and continue
    across cells for free); main roads in every tier are paths found on the coarse
    lattice (slope- and water-aware A*) from the settlement's hub to gates and exits,
    so villages and towns are organic and cities are part grid, part organic.
    *Rejected:* all-organic (cross-cell joins need gates for every road, no free
    continuity) and all-grid (every town looks like Manhattan). Steps hit: SK, D3.
-3. **"No size cap" means a configured maximum radius, not a design limit.** The join
+   - @John 2026-10-21: #question @lead-coder how much continuity are we getting for free here? It sounds like it's possible to do cross cell joins, right? Because the organic ones cross. Or do the side roads stay in their cell? Or, are you saying organic roads only in settlements/villages?
+5. **"No size cap" means a configured maximum radius, not a design limit.** The join
    rule (R2) must read a bounded neighbourhood (about 3 x the largest radius), so the
    radius distribution's tail is clipped at `maxRadius`, a config value
    (default **4096**, cities up to about 8192², matching ADR 0003's "soft warning
    above 8192²"). 6.5 exposes it. Steps hit: R1, MC1.
-4. **Settlement plans get their own formats beside `fb-scene/1`.** The 2026-10-16
+6. **Settlement plans get their own formats beside `fb-scene/1`.** The 2026-10-16
    assumption was "one document format for every scale". A plan view of a 4096²
    city cannot carry voxel shells, so the plan is `fb-settlement/1` (skeleton,
    districts, roads) plus one `fb-district/1` per district (streets, lots, briefs);
    a district's 3D view stays `fb-scene/1` with two additive keys. Steps hit: P0,
    V1, V2.
-5. **Jetties over streets** (John said yes, Phase 4): a building may overhang a
+7. **Jetties over streets** (John said yes, Phase 4): a building may overhang a
    street by at most 1 block (2 on streets at least 7 wide), from storey 1 up, with
    at least 3 blocks of clearance over the street surface, never over an arterial's
    carriageway centre or a lane narrower than 4. Step JT.
@@ -101,6 +103,7 @@ world seed
   frontage** (lots packed along both sides of every organic road). Lots are
   axis-aligned rectangles (the IR's `Lot`), front facing the street. Rejected:
   polygon parcels (no IR, no generator support, Minecraft is axis-aligned anyway).
+  - @John 2026-10-21: #ideas @lead-coder can you think of any ways a city can be mostly grid based with exceptions? Real cities often have an odd diagonal road cutting through in some places. Similarly, can you envision any way the architecture as it stands now could support non-grid based cities? It's Minecraft so it's always rectangles but it could be different size rectangles that don't line up. Even grids are a modern American more planned city thing, but old cities are a lot less regular. Just want to understand what is possible.
 - **Type and height by density** (5.7): a pointwise density 0–100 (distance to the
   centre over the radius, a bonus near arterials, hashed low-frequency noise, capped
   by tier) and the quarter pick the type and storey range through one table,
