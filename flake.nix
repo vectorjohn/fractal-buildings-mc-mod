@@ -69,9 +69,27 @@
             SDL_VIDEO_X11_XINPUT2 = "0";
 
             # SilverBullet (John reads the docs with it; docs/SILVERBULLET.md): gitignore-style
-            # patterns, one per line, hiding build output, game run dirs and agent state from the
-            # space. .claude/ holds agent worktrees, reports and locks; SB must not index or edit them.
-            SB_SPACE_IGNORE = "node_modules/\nbuild/\nrun/\nout/\n.claude/\n.gradle/\ndist/\nplaywright-report/\ntest-results/\n";
+            # patterns, one per line, hiding files from the space: not listed, indexed or in pickers
+            # (a direct URL still serves them).
+            # Read once at server start: restart SilverBullet after changing them.
+            # .claude/ holds agent worktrees, reports and locks; SB must not index or edit them.
+            # Source, build and data files are hidden too (John reviews code elsewhere); the
+            # space keeps markdown, images, SVG/CSV/text attached to docs, and SB plugs.
+            SB_SPACE_IGNORE = pkgs.lib.concatStringsSep "\n" [
+              # build output, game run dirs, agent state
+              "node_modules/" "build/" "run/" "out/" ".claude/" ".gradle/" "dist/"
+              "playwright-report/" "test-results/"
+              # source code and src/ trees incl. test resources (SB plugs are .plug.js: re-included below)
+              "*.java" "*.kt" "*.ts" "*.tsx" "*.js" "*.mjs" "*.cjs" "*.py" "*.lua" "*.sh" "*.bat"
+              "*.html" "*.css" "src/"
+              "!*.plug.js"
+              # build config, lockfiles, wrappers
+              "*.gradle" "*.kts" "*.properties" "gradlew" "*.jar" "*.nix" "*.lock"
+              ".gitignore" ".gitattributes" ".envrc"
+              # generator data: fixtures, presets, recorded terrain, logs
+              "*.json" "*.gz" "*.tsv" "*.log"
+              ""
+            ];
           };
         });
     };
