@@ -29,29 +29,31 @@
     {"cx": -1, "cz": -4, "site": [-500, -3378], "polygon": [[-920, -2737], [-1147, -2973], [-1200, -3758], [-1165, -3805], [-30, -4075], [108, -3195], [-333, -2805]]}
   ],
   "districts": [
-    {"id": "dm7_m24", "ix": -7, "iz": -24, "x": -1120, "z": -3856, "w": 160, "d": 176, "origin": [-70, -241], "quarter": 5, "density": 22, "styles": [], "lots": 0, "detail": "districts/dm7_m24.json"},
+    {"id": "dm7_m24", "ix": -7, "iz": -24, "x": -1120, "z": -3856, "w": 160, "d": 176, "origin": [-70, -241], "quarter": 5, "density": 22, "styles": [{"style": "plains", "weight": 2}], "lots": 3, "detail": "districts/dm7_m24.json"},
     {"id": "dm6_m24", "ix": -6, "iz": -24, "x": -960, "z": -3856, "w": 160, "d": 176, "origin": [-60, -241], "quarter": 7, "density": 22, "styles": [], "lots": 0, "detail": "districts/dm6_m24.json"},
     {"id": "dm5_m24", "ix": -5, "iz": -24, "x": -800, "z": -3856, "w": 176, "d": 176, "origin": [-50, -241], "quarter": 7, "density": 28, "styles": [], "lots": 0, "detail": "districts/dm5_m24.json"},
-    {"id": "dm7_m23", "ix": -7, "iz": -23, "x": -1120, "z": -3680, "w": 160, "d": 144, "origin": [-70, -230], "quarter": 4, "density": 58, "styles": [{"style": "plains", "weight": 22}], "lots": 23, "detail": "districts/dm7_m23.json"},
+    {"id": "dm7_m23", "ix": -7, "iz": -23, "x": -1120, "z": -3680, "w": 160, "d": 144, "origin": [-70, -230], "quarter": 4, "density": 58, "styles": [{"style": "plains", "weight": 18}], "lots": 20, "detail": "districts/dm7_m23.json"},
     {"id": "dm6_m23", "ix": -6, "iz": -23, "x": -960, "z": -3680, "w": 160, "d": 144, "origin": [-60, -230], "quarter": 5, "density": 64, "styles": [], "lots": 0, "detail": "districts/dm6_m23.json"},
     {"id": "dm5_m23", "ix": -5, "iz": -23, "x": -800, "z": -3680, "w": 176, "d": 144, "origin": [-50, -230], "quarter": 3, "density": 56, "styles": [{"style": "plains", "weight": 7}, {"style": "taiga", "weight": 1}], "lots": 10, "detail": "districts/dm5_m23.json"},
-    {"id": "dm7_m22", "ix": -7, "iz": -22, "x": -1120, "z": -3536, "w": 160, "d": 192, "origin": [-70, -221], "quarter": 5, "density": 60, "styles": [{"style": "plains", "weight": 8}], "lots": 8, "detail": "districts/dm7_m22.json"},
-    {"id": "dm6_m22", "ix": -6, "iz": -22, "x": -960, "z": -3536, "w": 160, "d": 192, "origin": [-60, -221], "quarter": 3, "density": 65, "styles": [{"style": "plains", "weight": 23}], "lots": 25, "detail": "districts/dm6_m22.json"},
+    {"id": "dm7_m22", "ix": -7, "iz": -22, "x": -1120, "z": -3536, "w": 160, "d": 192, "origin": [-70, -221], "quarter": 5, "density": 60, "styles": [{"style": "plains", "weight": 37}], "lots": 37, "detail": "districts/dm7_m22.json"},
+    {"id": "dm6_m22", "ix": -6, "iz": -22, "x": -960, "z": -3536, "w": 160, "d": 192, "origin": [-60, -221], "quarter": 3, "density": 65, "styles": [{"style": "plains", "weight": 22}], "lots": 24, "detail": "districts/dm6_m22.json"},
     {"id": "dm5_m22", "ix": -5, "iz": -22, "x": -800, "z": -3536, "w": 176, "d": 192, "origin": [-50, -221], "quarter": 3, "density": 59, "styles": [], "lots": 0, "detail": "districts/dm5_m22.json"},
     {"id": "dm4_m22", "ix": -4, "iz": -22, "x": -624, "z": -3536, "w": 144, "d": 192, "origin": [-39, -221], "quarter": 5, "density": 2, "styles": [], "lots": 0, "detail": "districts/dm4_m22.json"},
-    {"id": "dm7_m21", "ix": -7, "iz": -21, "x": -1120, "z": -3344, "w": 160, "d": 160, "origin": [-70, -209], "quarter": 5, "density": 30, "styles": [{"style": "plains", "weight": 25}], "lots": 25, "detail": "districts/dm7_m21.json"},
-    {"id": "dm6_m21", "ix": -6, "iz": -21, "x": -960, "z": -3344, "w": 160, "d": 160, "origin": [-60, -209], "quarter": 5, "density": 48, "styles": [], "lots": 0, "detail": "districts/dm6_m21.json"},
+    {"id": "dm7_m21", "ix": -7, "iz": -21, "x": -1120, "z": -3344, "w": 160, "d": 160, "origin": [-70, -209], "quarter": 5, "density": 30, "styles": [], "lots": 0, "detail": "districts/dm7_m21.json"},
+    {"id": "dm6_m21", "ix": -6, "iz": -21, "x": -960, "z": -3344, "w": 160, "d": 160, "origin": [-60, -209], "quarter": 5, "density": 48, "styles": [{"style": "plains", "weight": 18}], "lots": 19, "detail": "districts/dm6_m21.json"},
     {"id": "dm5_m21", "ix": -5, "iz": -21, "x": -800, "z": -3344, "w": 176, "d": 160, "origin": [-50, -209], "quarter": 5, "density": 46, "styles": [], "lots": 0, "detail": "districts/dm5_m21.json"}
   ],
   "roads": [
     {"id": "rm1_m4_0", "kind": "main", "width": 5, "points": [[-896, -3488], [-864, -3520], [-832, -3520], [-768, -3584], [-704, -3584], [-672, -3552], [-640, -3552], [-608, -3520]], "bridges": [[5, 7]]},
-    {"id": "rm1_m4_1", "kind": "main", "width": 5, "points": [[-896, -3488], [-896, -3456], [-928, -3424], [-928, -3392], [-960, -3360], [-992, -3328], [-1024, -3296], [-1024, -3232]], "bridges": [[4, 6]]},
-    {"id": "rm1_m4_2", "kind": "main", "width": 5, "points": [[-896, -3488], [-928, -3520], [-960, -3520], [-1056, -3616], [-1056, -3680], [-1088, -3712]], "bridges": []}
+    {"id": "rm1_m4_1", "kind": "main", "width": 5, "points": [[-896, -3488], [-896, -3456], [-864, -3424], [-864, -3392], [-832, -3360], [-832, -3200]], "bridges": []},
+    {"id": "rm1_m4_2", "kind": "main", "width": 5, "points": [[-896, -3488], [-928, -3520], [-960, -3520], [-992, -3488], [-1024, -3488], [-1056, -3456], [-1152, -3456]], "bridges": []},
+    {"id": "rm1_m4_3", "kind": "main", "width": 5, "points": [[-896, -3488], [-928, -3520], [-960, -3520], [-1056, -3616], [-1056, -3680], [-1024, -3712], [-1024, -3744]], "bridges": []}
   ],
   "gates": [
-    {"id": "g0", "kind": "exit", "x": -1088, "z": -3712, "cells": null, "road": "rm1_m4_2"},
-    {"id": "g1", "kind": "exit", "x": -1024, "z": -3232, "cells": null, "road": "rm1_m4_1"},
-    {"id": "g2", "kind": "exit", "x": -608, "z": -3520, "cells": null, "road": "rm1_m4_0"}
+    {"id": "g0", "kind": "exit", "x": -1152, "z": -3456, "cells": null, "road": "rm1_m4_2"},
+    {"id": "g1", "kind": "exit", "x": -1024, "z": -3744, "cells": null, "road": "rm1_m4_3"},
+    {"id": "g2", "kind": "exit", "x": -832, "z": -3200, "cells": null, "road": "rm1_m4_1"},
+    {"id": "g3", "kind": "exit", "x": -608, "z": -3520, "cells": null, "road": "rm1_m4_0"}
   ],
   "landmarks": [
     {"id": "l0", "kind": "market", "x": -915, "z": -3508, "w": 39, "d": 41, "district": "dm6_m22"},

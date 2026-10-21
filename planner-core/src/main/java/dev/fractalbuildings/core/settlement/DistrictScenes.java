@@ -67,7 +67,7 @@ public final class DistrictScenes {
 			SceneDoc one = tryGenerate(gen, plan, used, lot, exact, biome);
 			if (one == null) {
 				fallbacks.add(l.id());
-				if (!l.type().equals("house")) {
+				if (!l.type().equals("house") && !dev.fractalbuildings.core.settlement.tiers.WallRing.isRingLotId(l.id())) {
 					used = new LotBrief(l.id(), l.x(), l.z(), l.w(), l.d(), l.front(), "house", l.style(), 1, 2, l.streets(), l.airRights(), l.frontY(), l.density(), LotBrief.BUILD);
 					one = tryGenerate(gen, plan, used, lot, exact, biome);
 				}

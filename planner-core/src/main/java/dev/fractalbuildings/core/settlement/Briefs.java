@@ -68,6 +68,7 @@ public final class Briefs {
 		int relief = hi - lo;
 		String type = l.type();
 		if (!buildable(type, l, relief)) {
+			if (dev.fractalbuildings.core.settlement.tiers.WallRing.isRingLotId(l.id())) return empty(l, style, mask, frontY, "empty:no-fit"); // a wall lot is never swapped for another type
 			boolean alongX = l.front() == Facing.NORTH || l.front() == Facing.SOUTH;
 			Optional<ClassTable.Pick> p = ClassTable.pick(plan.seed(), l.x(), l.z(), l.density(), quarter, relief, alongX ? l.w() : l.d(), alongX ? l.d() : l.w());
 			if (p.isPresent() && buildable(p.get().type(), l, relief)) type = p.get().type();

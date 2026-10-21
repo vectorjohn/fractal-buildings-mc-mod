@@ -72,7 +72,7 @@ public final class SettlementChecks {
 			}
 			for (Street s : d.streets()) {
 				for (Rect r : footprint(s)) {
-					if (Rect.overlap(a.x(), a.z(), a.w(), a.d(), r.x(), r.z(), r.w(), r.d())) {
+					if (Rect.overlap(a.x(), a.z(), a.w(), a.d(), r.x(), r.z(), r.w(), r.d()) && !inGatePassage(a, r)) {
 						out.add(v(LOTS_DISJOINT, "lot " + a.id() + " overlaps street " + s.id(), a.x(), a.z(), a.w(), a.d()));
 						break;
 					}
@@ -90,6 +90,16 @@ public final class SettlementChecks {
 			}
 		}
 		return out;
+	}
+
+	/** A street may cross a ring gate lot (a {@code wall} lot exactly 23 long) within its passage: the 5 columns each side of the lot's middle, through its depth. */
+	static boolean inGatePassage(LotBrief l, Rect street) {
+		if (!dev.fractalbuildings.core.settlement.tiers.WallRing.isGateShape(l.type(), l.front(), l.w(), l.d())) return false;
+		boolean alongX = l.front() == Facing.NORTH || l.front() == Facing.SOUTH;
+		int gate = alongX ? l.x() + l.w() / 2 : l.z() + l.d() / 2, b = dev.fractalbuildings.core.settlement.tiers.WallRing.BAND;
+		int lo = Math.max(alongX ? street.x() : street.z(), gate - b), hi = Math.min(alongX ? street.x() + street.w() : street.z() + street.d(), gate + b + 1);
+		int sLo = alongX ? street.x() : street.z(), sHi = alongX ? street.x() + street.w() : street.z() + street.d();
+		return sLo >= gate - b && sHi <= gate + b + 1 && lo < hi;
 	}
 
 	/**
@@ -247,6 +257,7 @@ public final class SettlementChecks {
 		List<Violation> out = new ArrayList<>();
 		Cover c = new Cover(d);
 		for (LotBrief l : d.lots()) {
+			if (dev.fractalbuildings.core.settlement.tiers.WallRing.isRingLotId(l.id())) continue; // the wall faces the field
 			int n = l.front().dx != 0 ? l.d() : l.w(), hit = 0;
 			for (int k = 0; k < n; k++) {
 				int x = switch (l.front()) { case EAST -> l.x() + l.w(); case WEST -> l.x() - 1; default -> l.x() + k; };

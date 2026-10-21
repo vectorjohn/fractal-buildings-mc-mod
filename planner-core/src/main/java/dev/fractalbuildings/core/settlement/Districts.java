@@ -13,6 +13,7 @@ import dev.fractalbuildings.core.rand.Hash64;
 import dev.fractalbuildings.core.region.RegionField;
 import dev.fractalbuildings.core.terrain.Grading;
 import dev.fractalbuildings.core.terrain.LatticePath;
+import dev.fractalbuildings.core.settlement.tiers.WallRing;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -125,6 +126,8 @@ public final class Districts {
 		final List<Plaza> plazas = new ArrayList<>();
 		final List<Landmark> landmarks = new ArrayList<>();
 		final List<Rect> reserved = new ArrayList<>();
+		/** The wall ring's lots in and near this tile, less gate passages: the one reservation both sides of a tile border share. */
+		final List<Rect> wallBlocked = new ArrayList<>();
 		final List<LotBrief> lots = new ArrayList<>();
 		final List<Integer> lotAir = new ArrayList<>();
 		final List<String> notes = new ArrayList<>();
@@ -256,6 +259,7 @@ public final class Districts {
 
 		Detail run() {
 			landmarksAndPlazas();
+			wallLots();
 			skeletonStreets();
 			borderStreets();
 			gridStreets();
@@ -359,6 +363,59 @@ public final class Districts {
 			}
 		}
 
+		// ---- the wall ring (D2): wall and corner-tower lots, reserved so that streets stop at them except through a gate's passage
+
+		void wallLots() {
+			Cell centreCell = CellGeometry.owner(src.view().field(), src.site().centre().x(), src.site().centre().z());
+			if (!src.site().cells().contains(centreCell)) return;
+			CellSkeleton sk = src.skeleton(centreCell);
+			for (Wall w : sk.walls()) {
+				List<Pt> gates = new ArrayList<>();
+				for (Gate g : sk.gates()) if (g.kind() == GateKind.WALL) gates.add(new Pt(g.x(), g.z()));
+				List<WallRing.Piece> pieces = WallRing.pieces(w, gates, grid, seed);
+				for (int k = 0; k < pieces.size(); k++) {
+					WallRing.Piece p = pieces.get(k);
+					Rect r = p.rect();
+					if (!tr.containsRect(r.x(), r.z(), r.w(), r.d())) {
+						// a neighbour tile's lot: keep streets and port stubs of this tile off it too, so both sides of the border agree
+						if (Rect.overlap(r.x(), r.z(), r.w(), r.d(), tr.x() - 24, tr.z() - 24, tr.w() + 48, tr.d() + 48)) {
+							reserved.addAll(WallRing.blocked(p));
+							wallBlocked.addAll(WallRing.blocked(p));
+							paintRect(r, RESERVED);
+						}
+						continue;
+					}
+					boolean taken = !free(r, STREET | PLAZA | LOT | RESERVED), wet = !taken && !dry(r); // a wall may stand beside water: only its own columns must be dry
+					if (taken || wet) {
+						notes.add("wall lot " + p.type() + " at " + r.x() + "," + r.z() + " dropped (" + (wet ? "wet ground" : "ground taken: " + whatIsOn(r)) + ")");
+						reserved.addAll(WallRing.blocked(p)); // the neighbour tile reserves it too
+						wallBlocked.addAll(WallRing.blocked(p));
+						continue;
+					}
+					TypeLimits lim = Types.get(p.type()).limits();
+					int dens = den.at(r.x() + r.w() / 2, r.z() + r.d() / 2);
+					lots.add(new LotBrief(id + WallRing.MARK + k, r.x(), r.z(), r.w(), r.d(), p.front(), p.type(), StyleLibrary.AUTO, lim.minStoreys(), lim.maxStoreys(), 1, 0, Brief.NO_FRONT_Y, dens, LotBrief.BUILD));
+					lotAir.add(0);
+					paintRect(r, LOT | RESERVED);
+					reserved.addAll(WallRing.blocked(p));
+					wallBlocked.addAll(WallRing.blocked(p));
+				}
+			}
+		}
+
+		/** Which flags are set somewhere on the rectangle, for notes. */
+		String whatIsOn(Rect r) {
+			int f = 0;
+			for (int z = r.z(); z < r.z() + r.d(); z++) for (int x = r.x(); x < r.x() + r.w(); x++) f |= fg(x, z);
+			StringBuilder sb = new StringBuilder();
+			if ((f & STREET) != 0) sb.append("street ");
+			if ((f & PLAZA) != 0) sb.append("plaza ");
+			if ((f & LOT) != 0) sb.append("lot ");
+			if ((f & RESERVED) != 0) sb.append("reserved ");
+			if ((f & WET) != 0) sb.append("water-margin ");
+			return sb.toString().trim();
+		}
+
 		/** How far (in 16-block steps) a square that does not grade may move, and how often it may shrink (4 blocks a side per step) before it is dropped. */
 		static final int SHIFT_RINGS = 10, NEAR_RINGS = 4, HALL_ROOM = 22, HALL_MAX_RELIEF = 3, SQUARE_SHRINK_STEPS = 3, MIN_SQUARE = 16;
 
@@ -432,6 +489,11 @@ public final class Districts {
 		/** Every column of the rectangle is dry (exact probes, memoised): the 4-lattice flags are a conservative first screen only. */
 		boolean dry(Rect r) {
 			for (int z = r.z(); z < r.z() + r.d(); z++) for (int x = r.x(); x < r.x() + r.w(); x++) if (wt(x, z)) return false;
+			return true;
+		}
+
+		boolean free(Rect r, int mask) {
+			for (int z = r.z(); z < r.z() + r.d(); z++) for (int x = r.x(); x < r.x() + r.w(); x++) if ((fg(x, z) & mask) != 0) return false;
 			return true;
 		}
 
@@ -732,9 +794,15 @@ public final class Districts {
 						if (full != null && !hitsReservedAny(full) && grade(full)) { raws.add(full); paint(full); continue; }
 					}
 					Raw stub = laneRaw(laneId, pts);
-					if (stub != null) { grade(stub); raws.add(stub); paint(stub); }
+					if (stub != null && !hitsWall(stub)) { grade(stub); raws.add(stub); paint(stub); }
 				}
 			}
+		}
+
+		/** Does the street cross the wall ring's lots (this tile's and its neighbours' within reach)? Only the ring: every other reservation is private to its tile. */
+		boolean hitsWall(Raw r) {
+			for (int[] c : r.cols) for (Rect w : wallBlocked) if (StreetCols.footprintOverlaps(c, r.width, w)) return true;
+			return false;
 		}
 
 		boolean hitsReservedAny(Raw r) {
