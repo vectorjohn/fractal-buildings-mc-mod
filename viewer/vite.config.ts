@@ -9,7 +9,7 @@ export default defineConfig({
   publicDir: gallery ? 'gallery-data' : false,
   build: {
     outDir: gallery ? 'dist-gallery' : 'dist',
-    rollupOptions: { input: { main: 'index.html', gallery: 'gallery.html', region: 'region.html' } },
+    rollupOptions: { input: { main: 'index.html', gallery: 'gallery.html', region: 'region.html', plan: 'plan.html' } },
   },
   server: { fs: { allow: ['..'] } }, // the style files under ../planner-core/src/main/resources/styles are bundled (styles.ts)
   test: { environment: 'node', include: ['src/**/*.test.ts'] },

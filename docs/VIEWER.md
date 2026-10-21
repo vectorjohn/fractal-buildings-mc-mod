@@ -165,6 +165,28 @@ Screenshots: `FB_PORT=N nix develop -c bash -c 'npx vite build && npx playwright
 writes `viewer/out/region/*.png`. The committed dumps in `viewer/fixtures/region/` come from
 `fractal-cli region --seed S --terrain recorded:fixtures/terrain/world-S-s64.json.gz --out ...` then `gzip -9n`.
 
+# Plan view (Phase 5, V1)
+
+`plan.html?city=<dir>` draws a settlement plan (`fb-settlement/1` + `fb-district/1`, docs/IR.md "Settlement plans") in 2D.
+`<dir>` is a URL directory holding `settlement.json` and the files it names (gzip allowed, detected by magic): the committed sample
+`fixtures/settlement/sample/`, or output of `fractal-cli sample-city --out-dir DIR [--big N]` / the later `city` command. The dev server
+does not serve `fixtures/`; use `/@fs/<abs path>/viewer/fixtures/settlement/sample` or copy a city under `gallery-data/city/<name>/` and run with
+`FB_GALLERY=1`. Example: `http://localhost:5173/plan.html?city=/@fs/<abs path>/viewer/fixtures/settlement/sample`.
+
+- Controls: drag to pan, wheel to zoom (1/16 to 8 px per block), hover for district and lot info, click a district: its info (and, when its
+  file names a scene, a link `index.html?ir=<scene>&camera=fly`). The panel toggles layers.
+- Layers (`&layers=a,b` exact, `&layers=%2Bdensity,-lots` edits the defaults; a raw `+` decodes to a space and is accepted too):
+  terrain (hillshade of the coarse raster, or of `&terrain=<dump url>`, a fine `fb-region-dump/1`, drawn over it), water, biome, mask (urban,
+  water, steep, open), density, quarters, cells, tiles, roads (by kind and width, bridges tan), gates, landmarks, walls, lots (fill by type,
+  outline by style, front edge marked from 2 px per block, empty lots faded), violations (red). Default on: all but biome, mask, density, quarters, cells.
+- Level of detail: below 1/2 px per block no district file is fetched and each tile shows its density; at or above it the visible districts
+  load lazily (8 at a time, 400 kept) and draw their lots, plazas and own streets. State is in the URL (`x`, `z` = view centre, `zoom`, `layers`).
+- Test hooks: `window.__planReady` ({ok, error, districts, loaded, pending, draws, lots, roads, lod, scale, lastDrawMs}), `window.__planApi.setView(x, z, scale)`
+  and `.redraw()` (returns ms).
+- Code: `src/settlement.ts` (strict parsers, gzip fetch), `src/planDraw.ts` (pure transform, LOD rule, rasters, drawing), `src/plan.ts` (page).
+  Tests: `settlement.test.ts`, `planDraw.test.ts`, `e2e/plan.spec.ts` (writes `out/plan/*.png`; generates `out/city-big/` with `sample-city --big 4096`,
+  installing the CLI first if needed): `FB_PORT=N nix develop -c bash -c 'npx vite build && npx playwright test e2e/plan.spec.ts'`.
+
 # Generated files (all gitignored)
 
 - `viewer/gallery-data/gen/<preset>/`: `index.json` plus `seed-N.json` per seed.
