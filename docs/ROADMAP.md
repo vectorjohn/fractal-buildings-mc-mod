@@ -497,6 +497,7 @@ Fixed opportunistically or scheduled as items.
 - FLK (viewer): a superseded rebuild still assigns `source`/`sourceKey`; stale errors still publish (check `isLatest` in the catch).
 - 4.7 plains (John, REVIEW 2026-10-21): plains palette: smoother, more similar wall blocks (less speckle); subtle shading instead of dark and light scatter.
 - 5 (John, REVIEW 2026-10-21, later phase): biome-specific building forms beyond palette and roof pitch (desert courtyard and flat roofs, jungle raised floors and verandas, snowy steep roofs and small windows).
+- Balconies on residential and commercial buildings, including high-rises (John, REVIEW 2026-10-21, 5.11 entry); later iteration.
 
 ## Open questions and risks
 

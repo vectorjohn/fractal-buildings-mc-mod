@@ -172,11 +172,13 @@ work becomes a ROADMAP item or a Polish backlog line. Settled items move to
   Look for: any remaining chain of rooms you would not build (15 % of plans keep one on purpose: too many, too few?); archways too common (40 % of doors between public rooms) or too wide (1-3); halls that are too small to be a hall.
   Result:
   - @John 2026-10-21: these are better now. One note I'd like to add is some or more balconies in all residential and commercial (highrise) buildings. This can come in a future iteration.
-- [x] **JT Jetties oniover streets**: do upper storeys that reach out over the street look right (medieval houses and shops on a lot with a street brief)?
+    - @coordinator 2026-10-21: Noted for a later iteration: added to the ROADMAP Polish backlog ("balconies on residential and commercial buildings, incl. high-rises"). The shopfront deck on market halls (SHOPLAND) is the only balcony-like element today.
+- [x] **JT Jetties over streets**: do upper storeys that reach out over the street look right (medieval houses and shops on a lot with a street brief)?
   Where: `docs/review/phase5/jetties/house-medieval-jetty-front-left.png`, `shop-medieval-jetty-front-left.png` (seeds 0..15, `--air 1` houses, `--air 2` shops); regenerate with `cd viewer && npm run gen -- house-medieval-jetty shop-medieval-jetty && FB_PRESETS=house-medieval-jetty,shop-medieval-jetty npm run gallery`.
   Look for: the overhang reads as a jetty (bressumer beam under the floor edge, not a floating box); 1 block past the lot edge looks modest, 2 on wide streets is not silly; a front jetty of 2-3 blocks from the wall is deeper than the old ones (the front wall stays at the lot edge so the yard under it is only 1 block); shop arcades never reach into the street.
   Result:
   - @John 2026-10-21: looks great. I mangled something in the bullet above, not intended 
+    - @coordinator 2026-10-21: Fixed ("oniover" → "over").
 - [x] **5.10 R2 Water bias**: do city sites now visibly prefer water, and are the two deviations from the plan acceptable?
   Where: `docs/review/phase5/region/before-12345.png` vs `after-12345.png` and `after-heat-12345.png` (same for seed 987654321); numbers in `docs/log/2026-10-21-p5-r2-water.md`
   Look for: (1) the raised water cap admitted so many coast cells that the plan's constants gave +50 % big settlements, so the boost now only picks among candidates (roll and minSuitability use the unboosted score) and coastal footprints roll at x0.5 (`Tiers.COASTAL_CHANCE`): count +9 %, is the shift strong enough? (2) "+50 % within 256 blocks of water" was unmeasurable (31 of 32 big sites already within 256), so it is measured at 64 blocks: 31 % -> 46 %. Big join circles still cover as much water as before.
