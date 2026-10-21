@@ -1,6 +1,6 @@
 # Plan: Phase 5, settlements and cities
 
-Status: planned (2026-10-21). Author: lead-coder, 2026-10-21. Items: ROADMAP "Phase 5"
+Status: done (2026-10-21; gate awaiting John). Author: lead-coder, 2026-10-21. Items: ROADMAP "Phase 5"
 5.1–5.10 (5.11 and 5.12 are building-level items coded in parallel; see "Interaction
 with 5.11 and 5.12").
 Decisions this plan relies on: [ADR 0003](../adr/0003-worldgen.md) (W1 district starts,
