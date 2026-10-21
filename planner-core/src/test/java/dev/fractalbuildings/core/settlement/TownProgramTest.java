@@ -16,7 +16,6 @@ import org.junit.jupiter.api.Test;
 /** The town program (D2): radial roads, the wall ring, its gates and its lots. */
 class TownProgramTest {
 	private static final String[] TERRAINS = {"flat:64", "noise:3:70:10:300", "noise:5:75:25:200+river:-120:24:6"};
-	private static final Set<String> KNOWN = Set.of("roads-connected", "road-grade", "lot-frontage");
 
 	record Town(CityPlannerTest.Setup setup, CityPlanner.City city) {
 		SettlementPlan plan() { return city.plan(); }
@@ -159,7 +158,7 @@ class TownProgramTest {
 			int notes = (int) t.city().notes().stream().filter(n -> n.contains("wall lot")).count();
 			dropped += notes;
 			assertEquals(pieces.size(), ids.size() + notes, "ring pieces " + pieces.size() + " = lots " + ids.size() + " + dropped " + notes + " (town " + t.setup().seed() + ")");
-			for (Violation v : CityPlanner.check(t.city())) if (!KNOWN.contains(v.invariant())) { other.merge(v.invariant(), 1, Integer::sum); }
+			for (Violation v : CityPlanner.check(t.city())) { other.merge(v.invariant(), 1, Integer::sum); }
 		}
 		System.out.println("rings " + rings + " ring lots " + lotsTotal + " dropped " + dropped + " other violations " + other);
 		assertTrue(rings >= 6);
@@ -177,7 +176,7 @@ class TownProgramTest {
 				DistrictScenes.Built b = CityPlanner.scene(t.city(), d.district().id(), t.setup().p().terrain(), t.setup().p().biome(), true);
 				List<String> bad = new ArrayList<>();
 				for (Violation v : b.scene().violations()) bad.add(v.invariant() + ": " + v.message());
-				for (Violation v : b.plan().violations()) if (!KNOWN.contains(v.invariant())) bad.add(v.invariant() + ": " + v.message());
+				for (Violation v : b.plan().violations()) bad.add(v.invariant() + ": " + v.message());
 				assertEquals(List.of(), bad, "town " + t.setup().seed() + " " + d.district().id());
 				assertTrue(b.fallbacks().stream().noneMatch(WallRing::isRingLotId), "a ring lot fell back: " + b.fallbacks());
 				scenes++;

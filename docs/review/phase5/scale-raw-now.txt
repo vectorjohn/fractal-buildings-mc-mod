@@ -1,0 +1,671 @@
+commit: a38e329
+=== synthetic 512^2 city r256  (load before: 7.29 5.82 6.47)
+city-bench syn-512: sm1_0 city r256, 1 cells, 11 districts planned (155 lots), 25 timed reps after 15 warm-up, cache skeleton=64 region=8192
+region decision (cold, one cell)   n=25    median      2.78  mean      3.12  p95      5.31  max      5.33
+skeleton per cell                  n=25    median      2.94  mean      3.40  p95      5.40  max      6.56
+assemble                           n=25    median      1.48  mean      1.47  p95      2.46  max      2.69
+Districts.plan per district        n=275   median      2.74  mean      2.88  p95      7.05  max     13.52
+Briefs.fill per district           n=275   median      0.12  mean      0.40  p95      1.23  max      2.43
+district plan+brief                n=275   median      2.83  mean      3.28  p95      8.83  max     13.54
+CityPlanner.plan total             n=25    median     43.68  mean     49.57  p95     80.51  max     97.33
+scene per district (sampled)       n=100   median     47.11  mean     43.72  p95    103.69  max    129.06
+lots per district                  n=275   median      8.00  mean     14.09  p95     45.00  max     45.00
+exact probes per district plan     n=275   median   3375.00  mean   5672.55  p95  14873.00  max  14873.00
+coarse probes per district plan    n=275   median   1536.00  mean   2782.27  p95  10110.00  max  10110.00
+biome probes per district plan     n=275   median    232.00  mean    408.64  p95   1305.00  max   1305.00
+exact probes per scene             n=100   median 160490.00  mean 149308.75  p95 226995.00  max 226995.00
+biome probes per scene             n=100   median      0.00  mean      0.00  p95      0.00  max      0.00
+allocated by CityPlanner.plan: 52.7 MiB (4904 KiB per district); retained heap of City (noisy, GC dependent): 0.1 MiB; json: settlement 13 KiB, districts 49 KiB total, scene 1167 KiB avg
+peak RSS 735 MiB, heap max 16008 MiB, load 6.35 5.74 6.43 5/4292 3858641
+SUMMARY	syn-512	city	256	1	11	2.83	8.83	2.94	43.7	3375	47.1	52.7	2.8	735	6.35 5.74 6.43 5/4292 3858641
+exit 0
+=== synthetic 2048^2 metropolis r1024  (load before: 6.35 5.74 6.43)
+city-bench syn-2048: sm1_0 metropolis r1024, 4 cells, 142 districts planned (3076 lots), 5 timed reps after 3 warm-up, cache skeleton=64 region=8192
+region decision (cold, one cell)   n=5     median      2.33  mean      2.59  p95      4.16  max      4.16
+skeleton per cell                  n=20    median      5.50  mean      6.94  p95     13.49  max     14.67
+assemble                           n=5     median     16.39  mean     16.53  p95     24.28  max     24.28
+Districts.plan per district        n=710   median      4.72  mean      4.82  p95     12.13  max     28.22
+Briefs.fill per district           n=710   median      0.60  mean      0.69  p95      2.32  max      5.80
+district plan+brief                n=710   median      5.34  mean      5.51  p95     14.17  max     34.02
+CityPlanner.plan total             n=5     median    771.00  mean    863.79  p95   1241.43  max   1241.43
+scene per district (sampled)       n=20    median     37.62  mean     98.40  p95    301.53  max    349.93
+lots per district                  n=710   median     21.00  mean     21.66  p95     56.00  max     70.00
+exact probes per district plan     n=710   median   8909.50  mean  10063.48  p95  24161.00  max  29009.00
+coarse probes per district plan    n=710   median   2649.00  mean   4555.13  p95  16224.00  max  49542.00
+biome probes per district plan     n=710   median    609.00  mean    628.20  p95   1624.00  max   2030.00
+exact probes per scene             n=20    median 195898.00  mean 329161.25  p95 876126.00  max 876126.00
+biome probes per scene             n=20    median      0.00  mean      0.00  p95      0.00  max      0.00
+allocated by CityPlanner.plan: 1102.8 MiB (7953 KiB per district); retained heap of City (noisy, GC dependent): 1.1 MiB; json: settlement 154 KiB, districts 960 KiB total, scene 3271 KiB avg
+peak RSS 1059 MiB, heap max 16008 MiB, load 8.00 6.16 6.55 3/4357 3859104
+SUMMARY	syn-2048	metropolis	1024	4	142	5.34	14.17	5.50	771.0	8910	37.6	1102.8	2.3	1059	8.00 6.16 6.55 3/4357 3859104
+exit 0
+=== synthetic 4096^2 metropolis r2048  (load before: 8.00 6.16 6.55)
+city-bench syn-4096: sm1_0 metropolis r2048, 4 cells, 506 districts planned (10793 lots), 3 timed reps after 2 warm-up, cache skeleton=64 region=8192
+region decision (cold, one cell)   n=3     median      0.91  mean      0.96  p95      1.21  max      1.21
+skeleton per cell                  n=12    median     18.11  mean     19.47  p95     24.79  max     24.79
+assemble                           n=3     median    218.90  mean    225.30  p95    274.51  max    274.51
+Districts.plan per district        n=1518  median      4.95  mean      4.82  p95     10.16  max     20.77
+Briefs.fill per district           n=1518  median      0.61  mean      0.64  p95      1.74  max      3.27
+district plan+brief                n=1518  median      5.65  mean      5.46  p95     11.88  max     22.83
+CityPlanner.plan total             n=3     median   3770.50  mean   4672.36  p95   6673.82  max   6673.82
+scene per district (sampled)       n=12    median     55.43  mean    162.87  p95    863.92  max    863.92
+lots per district                  n=1518  median     18.00  mean     21.33  p95     62.00  max     87.00
+exact probes per district plan     n=1518  median   9217.50  mean  10741.64  p95  26095.00  max  32533.00
+coarse probes per district plan    n=1518  median   2601.00  mean   3974.99  p95  14160.00  max  53478.00
+biome probes per district plan     n=1518  median    522.00  mean    618.57  p95   1798.00  max   2523.00
+exact probes per scene             n=12    median 139136.50  mean 304393.75  p95 840696.00  max 840696.00
+biome probes per scene             n=12    median      0.00  mean      0.00  p95      0.00  max      0.00
+allocated by CityPlanner.plan: 5282.9 MiB (10691 KiB per district); retained heap of City (noisy, GC dependent): 4.7 MiB; json: settlement 578 KiB, districts 3435 KiB total, scene 2867 KiB avg
+peak RSS 1350 MiB, heap max 16008 MiB, load 11.85 7.22 6.88 24/4169 3859717
+SUMMARY	syn-4096	metropolis	2048	4	506	5.65	11.88	18.11	3770.5	9218	55.4	5282.9	0.9	1350	11.85 7.22 6.88 24/4169 3859717
+exit 0
+=== gate gate-temperate-city  (load before: 11.85 7.22 6.88)
+city-bench gate-temperate-city: s1_m10 city r477, 1 cells, 33 districts planned (211 lots), 8 timed reps after 4 warm-up, cache skeleton=64 region=8192
+region decision (cold, one cell)   n=8     median      0.61  mean      0.63  p95      0.82  max      0.82
+skeleton per cell                  n=8     median    226.49  mean    228.97  p95    248.11  max    248.11
+assemble                           n=8     median      3.66  mean      4.99  p95     13.08  max     13.08
+Districts.plan per district        n=264   median      5.39  mean     12.74  p95     18.68  max    353.80
+Briefs.fill per district           n=264   median      0.01  mean      0.20  p95      0.94  max      2.77
+district plan+brief                n=264   median      5.52  mean     12.95  p95     18.96  max    353.81
+CityPlanner.plan total             n=8     median    685.71  mean    725.67  p95   1003.45  max   1003.45
+scene per district (sampled)       n=32    median     18.88  mean     31.82  p95    100.30  max    105.98
+lots per district                  n=264   median      0.00  mean      6.39  p95     33.00  max     37.00
+exact probes per district plan     n=264   median   5001.00  mean   6472.15  p95  19729.00  max  21496.00
+coarse probes per district plan    n=264   median   4370.00  mean 107850.64  p95  15766.00  max 3381241.00
+biome probes per district plan     n=264   median      0.00  mean    185.42  p95    957.00  max   1073.00
+exact probes per scene             n=32    median  74188.00  mean 142950.25  p95 389781.00  max 389781.00
+biome probes per scene             n=32    median      0.00  mean      0.00  p95      0.00  max      0.00
+allocated by CityPlanner.plan: 463.8 MiB (14392 KiB per district); retained heap of City (noisy, GC dependent): 0.5 MiB; json: settlement 39 KiB, districts 112 KiB total, scene 1108 KiB avg
+peak RSS 648 MiB, heap max 16008 MiB, load 10.74 7.40 6.95 4/4162 3860351
+SUMMARY	gate-temperate-city	city	477	1	33	5.52	18.96	226.49	685.7	5001	18.9	463.8	0.6	648	10.74 7.40 6.95 4/4162 3860351
+exit 0
+=== gate gate-desert-badlands  (load before: 10.74 7.40 6.95)
+city-bench gate-desert-badlands: s6_m7 city r827, 1 cells, 64 districts planned (429 lots), 8 timed reps after 4 warm-up, cache skeleton=64 region=8192
+region decision (cold, one cell)   n=8     median      0.68  mean      0.72  p95      0.90  max      0.90
+skeleton per cell                  n=8     median     86.44  mean     88.75  p95    100.52  max    100.52
+assemble                           n=8     median     33.01  mean     33.68  p95     40.15  max     40.15
+Districts.plan per district        n=512   median      6.93  mean      8.93  p95     12.30  max     80.54
+Briefs.fill per district           n=512   median      0.01  mean      0.16  p95      0.66  max      0.88
+district plan+brief                n=512   median      6.96  mean      9.09  p95     12.87  max     80.56
+CityPlanner.plan total             n=8     median    740.64  mean    746.72  p95    771.10  max    771.10
+scene per district (sampled)       n=32    median     22.24  mean     21.00  p95     32.35  max     42.62
+lots per district                  n=512   median      0.00  mean      6.70  p95     24.00  max     38.00
+exact probes per district plan     n=512   median   6687.00  mean   7720.77  p95  17699.00  max  21581.00
+coarse probes per district plan    n=512   median   6430.00  mean  24189.64  p95  18294.00  max 1098982.00
+biome probes per district plan     n=512   median      0.00  mean    194.39  p95    696.00  max   1102.00
+exact probes per scene             n=32    median 129362.00  mean 112318.50  p95 149770.00  max 149770.00
+biome probes per scene             n=32    median      0.00  mean      0.00  p95      0.00  max      0.00
+allocated by CityPlanner.plan: 477.3 MiB (7637 KiB per district); retained heap of City (noisy, GC dependent): 0.3 MiB; json: settlement 66 KiB, districts 217 KiB total, scene 678 KiB avg
+peak RSS 687 MiB, heap max 16008 MiB, load 7.97 7.02 6.83 1/4172 3861161
+SUMMARY	gate-desert-badlands	city	827	1	64	6.96	12.87	86.44	740.6	6687	22.2	477.3	0.7	687	7.97 7.02 6.83 1/4172 3861161
+exit 0
+=== gate gate-snow-city  (load before: 7.97 7.02 6.83)
+city-bench gate-snow-city: s4_0 city r478, 1 cells, 29 districts planned (103 lots), 8 timed reps after 4 warm-up, cache skeleton=64 region=8192
+region decision (cold, one cell)   n=8     median      0.61  mean      0.61  p95      0.66  max      0.66
+skeleton per cell                  n=8     median      5.60  mean      5.66  p95      6.18  max      6.18
+assemble                           n=8     median      8.50  mean      7.97  p95      8.62  max      8.62
+Districts.plan per district        n=232   median      6.91  mean      6.85  p95     11.05  max     12.39
+Briefs.fill per district           n=232   median      0.01  mean      0.07  p95      0.42  max      0.49
+district plan+brief                n=232   median      6.92  mean      6.92  p95     11.50  max     12.55
+CityPlanner.plan total             n=8     median    217.04  mean    217.39  p95    230.25  max    230.25
+scene per district (sampled)       n=32    median     10.80  mean     11.31  p95     24.31  max     25.79
+lots per district                  n=232   median      0.00  mean      3.55  p95     23.00  max     28.00
+exact probes per district plan     n=232   median   4865.00  mean   4636.31  p95  10428.00  max  12365.00
+coarse probes per district plan    n=232   median   4844.00  mean   5270.86  p95  11233.00  max  18123.00
+biome probes per district plan     n=232   median      0.00  mean    103.00  p95    667.00  max    812.00
+exact probes per scene             n=32    median  66127.00  mean  65106.75  p95  91220.00  max  91220.00
+biome probes per scene             n=32    median      0.00  mean      0.00  p95      0.00  max      0.00
+allocated by CityPlanner.plan: 192.9 MiB (6811 KiB per district); retained heap of City (noisy, GC dependent): 0.1 MiB; json: settlement 29 KiB, districts 59 KiB total, scene 467 KiB avg
+peak RSS 470 MiB, heap max 16008 MiB, load 6.84 6.82 6.77 6/4136 3861362
+SUMMARY	gate-snow-city	city	478	1	29	6.92	11.50	5.60	217.0	4865	10.8	192.9	0.6	470	6.84 6.82 6.77 6/4136 3861362
+exit 0
+=== gate gate-jungle-savanna  (load before: 6.84 6.82 6.77)
+city-bench gate-jungle-savanna: sm1_m4 city r790, 1 cells, 48 districts planned (372 lots), 8 timed reps after 4 warm-up, cache skeleton=64 region=8192
+region decision (cold, one cell)   n=8     median      0.68  mean      0.68  p95      0.76  max      0.76
+skeleton per cell                  n=8     median     10.54  mean     10.42  p95     11.05  max     11.05
+assemble                           n=8     median     18.69  mean     18.99  p95     21.44  max     21.44
+Districts.plan per district        n=384   median      7.10  mean      7.31  p95     13.89  max     18.32
+Briefs.fill per district           n=384   median      0.11  mean      0.20  p95      0.84  max      1.37
+district plan+brief                n=384   median      7.11  mean      7.51  p95     14.75  max     19.11
+CityPlanner.plan total             n=8     median    406.64  mean    406.81  p95    415.30  max    415.30
+scene per district (sampled)       n=32    median     10.97  mean     17.18  p95     37.86  max     38.71
+lots per district                  n=384   median      4.50  mean      7.75  p95     27.00  max     43.00
+exact probes per district plan     n=384   median   8355.50  mean   8435.02  p95  15939.00  max  23754.00
+coarse probes per district plan    n=384   median   5972.00  mean   6746.85  p95  18174.00  max  20946.00
+biome probes per district plan     n=384   median    130.50  mean    224.75  p95    783.00  max   1247.00
+exact probes per scene             n=32    median  63370.00  mean  84173.50  p95 154974.00  max 154974.00
+biome probes per scene             n=32    median      0.00  mean      0.00  p95      0.00  max      0.00
+allocated by CityPlanner.plan: 288.8 MiB (6162 KiB per district); retained heap of City (noisy, GC dependent): 0.6 MiB; json: settlement 51 KiB, districts 187 KiB total, scene 678 KiB avg
+peak RSS 636 MiB, heap max 16008 MiB, load 5.69 6.56 6.69 2/4157 3861599
+SUMMARY	gate-jungle-savanna	city	790	1	48	7.11	14.75	10.54	406.6	8356	11.0	288.8	0.7	636	5.69 6.56 6.69 2/4157 3861599
+exit 0
+=== gate gate-border-desert-jungle  (load before: 5.69 6.56 6.69)
+city-bench gate-border-desert-jungle: s7_m8 city r577, 1 cells, 45 districts planned (330 lots), 8 timed reps after 4 warm-up, cache skeleton=64 region=8192
+region decision (cold, one cell)   n=8     median      0.70  mean      0.76  p95      1.08  max      1.08
+skeleton per cell                  n=8     median      7.72  mean      7.92  p95      8.97  max      8.97
+assemble                           n=8     median     18.61  mean     18.60  p95     21.56  max     21.56
+Districts.plan per district        n=360   median      6.90  mean      7.29  p95     12.43  max     22.03
+Briefs.fill per district           n=360   median      0.01  mean      0.12  p95      0.49  max      1.00
+district plan+brief                n=360   median      6.98  mean      7.41  p95     12.70  max     22.50
+CityPlanner.plan total             n=8     median    412.07  mean    415.15  p95    440.26  max    440.26
+scene per district (sampled)       n=32    median     22.43  mean     24.77  p95     40.52  max     42.34
+lots per district                  n=360   median      0.00  mean      7.33  p95     29.00  max     40.00
+exact probes per district plan     n=360   median   6675.00  mean   7090.69  p95  16504.00  max  19678.00
+coarse probes per district plan    n=360   median   6105.00  mean   7680.33  p95  17136.00  max  23514.00
+biome probes per district plan     n=360   median      0.00  mean    212.67  p95    841.00  max   1160.00
+exact probes per scene             n=32    median 123459.00  mean 119855.00  p95 149735.00  max 149735.00
+biome probes per scene             n=32    median      0.00  mean      0.00  p95      0.00  max      0.00
+allocated by CityPlanner.plan: 358.3 MiB (8154 KiB per district); retained heap of City (noisy, GC dependent): -0.1 MiB; json: settlement 46 KiB, districts 147 KiB total, scene 858 KiB avg
+peak RSS 716 MiB, heap max 16008 MiB, load 4.65 6.29 6.60 6/4296 3862126
+SUMMARY	gate-border-desert-jungle	city	577	1	45	6.98	12.70	7.72	412.1	6675	22.4	358.3	0.7	716	4.65 6.29 6.60 6/4296 3862126
+exit 0
+=== gate gate-coast-city  (load before: 4.65 6.29 6.60)
+city-bench gate-coast-city: sm8_m4 city r740, 2 cells, 56 districts planned (369 lots), 8 timed reps after 4 warm-up, cache skeleton=64 region=8192
+region decision (cold, one cell)   n=8     median      0.63  mean      0.67  p95      0.94  max      0.94
+skeleton per cell                  n=16    median      6.64  mean      6.79  p95     10.47  max     10.47
+assemble                           n=8     median     14.47  mean     14.80  p95     17.08  max     17.08
+Districts.plan per district        n=448   median      5.94  mean      6.66  p95     12.94  max     23.65
+Briefs.fill per district           n=448   median      0.01  mean      0.19  p95      0.80  max      1.88
+district plan+brief                n=448   median      6.00  mean      6.86  p95     14.70  max     24.78
+CityPlanner.plan total             n=8     median    465.73  mean    474.58  p95    543.47  max    543.47
+scene per district (sampled)       n=32    median     11.55  mean     28.91  p95     85.94  max     93.03
+lots per district                  n=448   median      0.00  mean      6.59  p95     25.00  max     47.00
+exact probes per district plan     n=448   median   7137.50  mean   7744.96  p95  19061.00  max  26899.00
+coarse probes per district plan    n=448   median   5886.00  mean   7619.13  p95  21180.00  max  25950.00
+biome probes per district plan     n=448   median      0.00  mean    191.09  p95    725.00  max   1363.00
+exact probes per scene             n=32    median  70759.50  mean 135290.75  p95 345233.00  max 345233.00
+biome probes per scene             n=32    median      0.00  mean      0.00  p95      0.00  max      0.00
+allocated by CityPlanner.plan: 315.4 MiB (5766 KiB per district); retained heap of City (noisy, GC dependent): 0.3 MiB; json: settlement 58 KiB, districts 200 KiB total, scene 1155 KiB avg
+peak RSS 683 MiB, heap max 16008 MiB, load 4.22 6.09 6.53 2/4292 3862449
+SUMMARY	gate-coast-city	city	740	2	56	6.00	14.70	6.64	465.7	7138	11.5	315.4	0.6	683	4.22 6.09 6.53 2/4292 3862449
+exit 0
+=== gate gate-metropolis-temperate  (load before: 4.22 6.09 6.53)
+city-bench gate-metropolis-temperate: s2_m6 metropolis r1430, 8 cells, 220 districts planned (2353 lots), 8 timed reps after 4 warm-up, cache skeleton=64 region=8192
+region decision (cold, one cell)   n=8     median      0.66  mean      0.69  p95      0.87  max      0.87
+skeleton per cell                  n=64    median      4.81  mean      5.17  p95      9.15  max     14.63
+assemble                           n=8     median     25.72  mean     28.95  p95     53.14  max     53.14
+Districts.plan per district        n=1760  median      6.14  mean      6.49  p95     12.10  max     18.24
+Briefs.fill per district           n=1760  median      0.11  mean      0.30  p95      1.11  max      2.85
+district plan+brief                n=1760  median      6.40  mean      6.79  p95     13.07  max     19.54
+CityPlanner.plan total             n=8     median   1685.09  mean   1782.63  p95   2485.91  max   2485.91
+scene per district (sampled)       n=32    median     41.97  mean     44.24  p95     93.88  max     95.54
+lots per district                  n=1760  median      5.00  mean     10.70  p95     37.00  max     68.00
+exact probes per district plan     n=1760  median   8869.00  mean   9262.72  p95  20806.00  max  24939.00
+coarse probes per district plan    n=1760  median   6020.00  mean   7310.98  p95  20095.00  max  43116.00
+biome probes per district plan     n=1760  median    145.00  mean    310.17  p95   1073.00  max   1972.00
+exact probes per scene             n=32    median 201384.50  mean 190017.00  p95 324942.00  max 324942.00
+biome probes per scene             n=32    median      0.00  mean      0.00  p95      0.00  max      0.00
+allocated by CityPlanner.plan: 1518.8 MiB (7069 KiB per district); retained heap of City (noisy, GC dependent): 1.6 MiB; json: settlement 295 KiB, districts 1091 KiB total, scene 1547 KiB avg
+peak RSS 789 MiB, heap max 16008 MiB, load 3.68 5.72 6.38 4/4289 3862965
+SUMMARY	gate-metropolis-temperate	metropolis	1430	8	220	6.40	13.07	4.81	1685.1	8869	42.0	1518.8	0.7	789	3.68 5.72 6.38 4/4289 3862965
+exit 0
+=== gate gate-metropolis-mixed  (load before: 3.68 5.72 6.38)
+city-bench gate-metropolis-mixed: s2_m2 metropolis r1126, 4 cells, 114 districts planned (1019 lots), 8 timed reps after 4 warm-up, cache skeleton=64 region=8192
+region decision (cold, one cell)   n=8     median      0.76  mean      0.78  p95      1.02  max      1.02
+skeleton per cell                  n=32    median      6.52  mean      6.99  p95     10.30  max     10.54
+assemble                           n=8     median     47.45  mean     47.37  p95     51.67  max     51.67
+Districts.plan per district        n=912   median      5.37  mean      5.73  p95     10.25  max     15.57
+Briefs.fill per district           n=912   median      0.06  mean      0.18  p95      0.70  max      1.37
+district plan+brief                n=912   median      5.48  mean      5.91  p95     11.24  max     16.28
+CityPlanner.plan total             n=8     median    786.76  mean    785.46  p95    793.52  max    793.52
+scene per district (sampled)       n=32    median     10.18  mean     14.90  p95     33.74  max     35.57
+lots per district                  n=912   median      4.00  mean      8.94  p95     29.00  max     45.00
+exact probes per district plan     n=912   median   6506.00  mean   7561.72  p95  17565.00  max  21292.00
+coarse probes per district plan    n=912   median   5056.00  mean   6569.51  p95  17874.00  max  43432.00
+biome probes per district plan     n=912   median    116.00  mean    259.22  p95    841.00  max   1305.00
+exact probes per scene             n=32    median  59700.50  mean  83517.75  p95 171751.00  max 171751.00
+biome probes per scene             n=32    median      0.00  mean      0.00  p95      0.00  max      0.00
+allocated by CityPlanner.plan: 690.1 MiB (6199 KiB per district); retained heap of City (noisy, GC dependent): 0.4 MiB; json: settlement 131 KiB, districts 480 KiB total, scene 527 KiB avg
+peak RSS 697 MiB, heap max 16008 MiB, load 3.05 5.40 6.26 4/4264 3863236
+SUMMARY	gate-metropolis-mixed	metropolis	1126	4	114	5.48	11.24	6.52	786.8	6506	10.2	690.1	0.8	697	3.05 5.40 6.26 4/4264 3863236
+exit 0
+=== gate gate-joined-city  (load before: 3.05 5.40 6.26)
+city-bench gate-joined-city: s8_0 city r717, 2 cells, 61 districts planned (529 lots), 8 timed reps after 4 warm-up, cache skeleton=64 region=8192
+region decision (cold, one cell)   n=8     median      0.73  mean      0.74  p95      0.82  max      0.82
+skeleton per cell                  n=16    median    188.82  mean    189.59  p95    197.78  max    197.78
+assemble                           n=8     median      6.51  mean      8.44  p95     22.25  max     22.25
+Districts.plan per district        n=488   median      6.44  mean      8.95  p95     11.95  max    162.65
+Briefs.fill per district           n=488   median      0.09  mean      0.17  p95      0.69  max      0.84
+district plan+brief                n=488   median      6.55  mean      9.12  p95     12.68  max    162.67
+CityPlanner.plan total             n=8     median    987.33  mean    988.09  p95    998.43  max    998.43
+scene per district (sampled)       n=32    median     21.49  mean     23.94  p95     47.81  max     68.90
+lots per district                  n=488   median      5.00  mean      8.67  p95     29.00  max     36.00
+exact probes per district plan     n=488   median   8181.00  mean   8591.03  p95  18328.00  max  23476.00
+coarse probes per district plan    n=488   median   6522.00  mean  51544.05  p95  15862.00  max 2723870.00
+biome probes per district plan     n=488   median    145.00  mean    251.49  p95    841.00  max   1044.00
+exact probes per scene             n=32    median 117773.00  mean 117472.50  p95 196079.00  max 196079.00
+biome probes per scene             n=32    median      0.00  mean      0.00  p95      0.00  max      0.00
+allocated by CityPlanner.plan: 642.7 MiB (10789 KiB per district); retained heap of City (noisy, GC dependent): 0.4 MiB; json: settlement 64 KiB, districts 249 KiB total, scene 751 KiB avg
+peak RSS 698 MiB, heap max 16008 MiB, load 2.85 5.14 6.14 4/4260 3863667
+SUMMARY	gate-joined-city	city	717	2	61	6.55	12.68	188.82	987.3	8181	21.5	642.7	0.7	698	2.85 5.14 6.14 4/4260 3863667
+exit 0
+=== world dump 987654321 cell 2,-6 (8 cells, coarse dump)  (load before: 2.85 5.14 6.14)
+city-bench world-2,-6: s2_m6 metropolis r1430, 8 cells, 211 districts planned (2534 lots), 8 timed reps after 4 warm-up, cache skeleton=64 region=8192
+region decision (cold, one cell)   n=8     median      2.70  mean      2.79  p95      3.95  max      3.95
+skeleton per cell                  n=64    median      4.98  mean      5.50  p95      9.79  max     16.03
+assemble                           n=8     median     29.37  mean     33.09  p95     50.50  max     50.50
+Districts.plan per district        n=1688  median      5.32  mean      5.84  p95     11.33  max     18.73
+Briefs.fill per district           n=1688  median      0.07  mean      0.32  p95      1.22  max      3.10
+district plan+brief                n=1688  median      5.53  mean      6.17  p95     12.54  max     19.94
+CityPlanner.plan total             n=8     median   1457.16  mean   1471.07  p95   1565.91  max   1565.91
+scene per district (sampled)       n=32    median     44.77  mean     50.48  p95    131.47  max    178.47
+lots per district                  n=1688  median      4.00  mean     12.01  p95     41.00  max     69.00
+exact probes per district plan     n=1688  median   5568.00  mean   7740.86  p95  19480.00  max  28110.00
+coarse probes per district plan    n=1688  median   4578.00  mean   6033.52  p95  17340.00  max  48942.00
+biome probes per district plan     n=1688  median    116.00  mean    348.27  p95   1189.00  max   2001.00
+exact probes per scene             n=32    median 232528.50  mean 201826.25  p95 303231.00  max 303231.00
+biome probes per scene             n=32    median      0.00  mean      0.00  p95      0.00  max      0.00
+allocated by CityPlanner.plan: 1674.8 MiB (8128 KiB per district); retained heap of City (noisy, GC dependent): 1.5 MiB; json: settlement 295 KiB, districts 1067 KiB total, scene 1637 KiB avg
+peak RSS 790 MiB, heap max 16008 MiB, load 2.79 4.81 5.98 2/4262 3864121
+SUMMARY	world-2,-6	metropolis	1430	8	211	5.53	12.54	4.98	1457.2	5568	44.8	1674.8	2.7	790	2.79 4.81 5.98 2/4262 3864121
+exit 0
+=== NO SCENES synthetic 512^2  (load before: 2.79 4.81 5.98)
+city-bench syn-512-noscene: sm1_0 city r256, 1 cells, 11 districts planned (155 lots), 25 timed reps after 15 warm-up, cache skeleton=64 region=8192
+region decision (cold, one cell)   n=25    median      1.72  mean      1.78  p95      2.36  max      2.84
+skeleton per cell                  n=25    median      1.94  mean      2.00  p95      2.71  max      2.86
+assemble                           n=25    median      0.58  mean      0.60  p95      0.71  max      0.79
+Districts.plan per district        n=275   median      2.01  mean      2.85  p95      5.22  max      5.87
+Briefs.fill per district           n=275   median      0.19  mean      0.39  p95      1.09  max      1.34
+district plan+brief                n=275   median      2.11  mean      3.24  p95      6.01  max      6.94
+CityPlanner.plan total             n=25    median     37.85  mean     38.13  p95     41.42  max     44.06
+scene per district (sampled)       n=0
+lots per district                  n=275   median      8.00  mean     14.09  p95     45.00  max     45.00
+exact probes per district plan     n=275   median   3375.00  mean   5672.55  p95  14873.00  max  14873.00
+coarse probes per district plan    n=275   median   1536.00  mean   2782.27  p95  10110.00  max  10110.00
+biome probes per district plan     n=275   median    232.00  mean    408.64  p95   1305.00  max   1305.00
+exact probes per scene             n=0
+biome probes per scene             n=0
+allocated by CityPlanner.plan: 52.7 MiB (4903 KiB per district); retained heap of City (noisy, GC dependent): 0.1 MiB; json: settlement 13 KiB, districts 49 KiB total, scene 0 KiB avg
+peak RSS 211 MiB, heap max 16008 MiB, load 2.61 4.64 5.90 3/4280 3864323
+SUMMARY	syn-512-noscene	city	256	1	11	2.11	6.01	1.94	37.8	3375	NaN	52.7	1.7	211	2.61 4.64 5.90 3/4280 3864323
+exit 0
+=== NO SCENES synthetic 2048^2  (load before: 2.61 4.64 5.90)
+city-bench syn-2048-noscene: sm1_0 metropolis r1024, 4 cells, 142 districts planned (3076 lots), 5 timed reps after 3 warm-up, cache skeleton=64 region=8192
+region decision (cold, one cell)   n=5     median      2.38  mean      2.69  p95      4.02  max      4.02
+skeleton per cell                  n=20    median      9.71  mean      9.66  p95     13.07  max     13.20
+assemble                           n=5     median     41.51  mean     41.16  p95     45.17  max     45.17
+Districts.plan per district        n=710   median      4.86  mean      4.22  p95      8.54  max     11.76
+Briefs.fill per district           n=710   median      0.65  mean      0.65  p95      1.86  max      3.05
+district plan+brief                n=710   median      5.53  mean      4.87  p95     10.56  max     14.06
+CityPlanner.plan total             n=5     median    800.92  mean    798.69  p95    804.24  max    804.24
+scene per district (sampled)       n=0
+lots per district                  n=710   median     21.00  mean     21.66  p95     56.00  max     70.00
+exact probes per district plan     n=710   median   8909.50  mean  10063.48  p95  24161.00  max  29009.00
+coarse probes per district plan    n=710   median   2649.00  mean   4555.13  p95  16224.00  max  49542.00
+biome probes per district plan     n=710   median    609.00  mean    628.20  p95   1624.00  max   2030.00
+exact probes per scene             n=0
+biome probes per scene             n=0
+allocated by CityPlanner.plan: 1103.8 MiB (7960 KiB per district); retained heap of City (noisy, GC dependent): 1.1 MiB; json: settlement 154 KiB, districts 960 KiB total, scene 0 KiB avg
+peak RSS 694 MiB, heap max 16008 MiB, load 2.55 4.52 5.84 4/4249 3864519
+SUMMARY	syn-2048-noscene	metropolis	1024	4	142	5.53	10.56	9.71	800.9	8910	NaN	1103.8	2.4	694	2.55 4.52 5.84 4/4249 3864519
+exit 0
+=== NO SCENES synthetic 4096^2  (load before: 2.55 4.52 5.84)
+city-bench syn-4096-noscene: sm1_0 metropolis r2048, 4 cells, 506 districts planned (10793 lots), 3 timed reps after 2 warm-up, cache skeleton=64 region=8192
+region decision (cold, one cell)   n=3     median      1.05  mean      1.00  p95      1.11  max      1.11
+skeleton per cell                  n=12    median     29.22  mean     29.35  p95     43.94  max     43.94
+assemble                           n=3     median    244.11  mean    240.28  p95    257.01  max    257.01
+Districts.plan per district        n=1518  median      4.48  mean      4.54  p95      9.20  max     21.08
+Briefs.fill per district           n=1518  median      0.57  mean      0.60  p95      1.61  max      3.14
+district plan+brief                n=1518  median      5.19  mean      5.15  p95     10.52  max     22.80
+CityPlanner.plan total             n=3     median   3090.50  mean   3106.83  p95   3176.38  max   3176.38
+scene per district (sampled)       n=0
+lots per district                  n=1518  median     18.00  mean     21.33  p95     62.00  max     87.00
+exact probes per district plan     n=1518  median   9217.50  mean  10741.64  p95  26095.00  max  32533.00
+coarse probes per district plan    n=1518  median   2601.00  mean   3974.99  p95  14160.00  max  53478.00
+biome probes per district plan     n=1518  median    522.00  mean    618.57  p95   1798.00  max   2523.00
+exact probes per scene             n=0
+biome probes per scene             n=0
+allocated by CityPlanner.plan: 5282.4 MiB (10690 KiB per district); retained heap of City (noisy, GC dependent): 4.0 MiB; json: settlement 578 KiB, districts 3435 KiB total, scene 0 KiB avg
+peak RSS 1012 MiB, heap max 16008 MiB, load 3.11 4.45 5.76 3/4222 3864823
+SUMMARY	syn-4096-noscene	metropolis	2048	4	506	5.19	10.52	29.22	3090.5	9218	NaN	5282.4	1.0	1012	3.11 4.45 5.76 3/4222 3864823
+exit 0
+=== NO SCENES metropolis gate  (load before: 3.11 4.45 5.76)
+city-bench gate-metropolis-temperate-noscene: s2_m6 metropolis r1430, 8 cells, 220 districts planned (2353 lots), 8 timed reps after 4 warm-up, cache skeleton=64 region=8192
+region decision (cold, one cell)   n=8     median      0.76  mean      0.80  p95      1.09  max      1.09
+skeleton per cell                  n=64    median      6.38  mean      7.09  p95     13.98  max     15.16
+assemble                           n=8     median     81.54  mean     82.49  p95     95.18  max     95.18
+Districts.plan per district        n=1760  median      6.21  mean      6.49  p95     12.15  max     18.24
+Briefs.fill per district           n=1760  median      0.10  mean      0.25  p95      0.96  max      2.18
+district plan+brief                n=1760  median      6.43  mean      6.74  p95     13.08  max     19.28
+CityPlanner.plan total             n=8     median   1676.10  mean   1673.75  p95   1692.28  max   1692.28
+scene per district (sampled)       n=0
+lots per district                  n=1760  median      5.00  mean     10.70  p95     37.00  max     68.00
+exact probes per district plan     n=1760  median   8869.00  mean   9262.72  p95  20806.00  max  24939.00
+coarse probes per district plan    n=1760  median   6020.00  mean   7310.98  p95  20095.00  max  43116.00
+biome probes per district plan     n=1760  median    145.00  mean    310.17  p95   1073.00  max   1972.00
+exact probes per scene             n=0
+biome probes per scene             n=0
+allocated by CityPlanner.plan: 1518.3 MiB (7067 KiB per district); retained heap of City (noisy, GC dependent): 1.6 MiB; json: settlement 295 KiB, districts 1091 KiB total, scene 0 KiB avg
+peak RSS 777 MiB, heap max 16008 MiB, load 2.67 4.15 5.60 2/4270 3865356
+SUMMARY	gate-metropolis-temperate-noscene	metropolis	1430	8	220	6.43	13.08	6.38	1676.1	8869	NaN	1518.3	0.8	777	2.67 4.15 5.60 2/4270 3865356
+exit 0
+=== CACHE skeleton=1 synthetic 2048^2 (4 cells)  (load before: 2.67 4.15 5.60)
+city-bench cache-skel-1-syn-2048: sm1_0 metropolis r1024, 4 cells, 142 districts planned (3076 lots), 5 timed reps after 3 warm-up, cache skeleton=1 region=8192
+region decision (cold, one cell)   n=5     median      2.25  mean      2.45  p95      3.00  max      3.00
+skeleton per cell                  n=20    median      8.48  mean      8.24  p95     12.24  max     12.32
+assemble                           n=5     median     40.56  mean     40.71  p95     43.22  max     43.22
+Districts.plan per district        n=710   median     25.92  mean     26.03  p95     49.26  max     89.95
+Briefs.fill per district           n=710   median      0.63  mean      0.62  p95      1.62  max      3.06
+district plan+brief                n=710   median     26.65  mean     26.65  p95     49.92  max     89.98
+CityPlanner.plan total             n=5     median   3909.16  mean   3921.57  p95   3971.01  max   3971.01
+scene per district (sampled)       n=0
+lots per district                  n=710   median     21.00  mean     21.66  p95     56.00  max     70.00
+exact probes per district plan     n=710   median   8909.50  mean  10063.48  p95  24161.00  max  29009.00
+coarse probes per district plan    n=710   median  58720.00  mean  59417.71  p95 114141.00  max 153462.00
+biome probes per district plan     n=710   median    609.00  mean    628.20  p95   1624.00  max   2030.00
+exact probes per scene             n=0
+biome probes per scene             n=0
+allocated by CityPlanner.plan: 10025.1 MiB (72294 KiB per district); retained heap of City (noisy, GC dependent): 1.5 MiB; json: settlement 154 KiB, districts 960 KiB total, scene 0 KiB avg
+peak RSS 780 MiB, heap max 16008 MiB, load 2.35 3.78 5.37 3/4240 3866011
+SUMMARY	cache-skel-1-syn-2048	metropolis	1024	4	142	26.65	49.92	8.48	3909.2	8910	NaN	10025.1	2.2	780	2.35 3.78 5.37 3/4240 3866011
+exit 0
+=== CACHE skeleton=1 world 2,-6 (8 cells)  (load before: 2.35 3.78 5.37)
+city-bench cache-skel-1-world: s2_m6 metropolis r1430, 8 cells, 211 districts planned (2534 lots), 8 timed reps after 4 warm-up, cache skeleton=1 region=8192
+region decision (cold, one cell)   n=8     median      2.12  mean      2.83  p95      5.65  max      5.65
+skeleton per cell                  n=64    median      5.65  mean      7.85  p95     16.34  max     26.53
+assemble                           n=8     median     82.85  mean     86.39  p95    107.18  max    107.18
+Districts.plan per district        n=1688  median     36.40  mean     40.21  p95     69.45  max    196.74
+Briefs.fill per district           n=1688  median      0.08  mean      0.35  p95      1.30  max      3.51
+district plan+brief                n=1688  median     36.90  mean     40.57  p95     69.93  max    198.79
+CityPlanner.plan total             n=8     median   8287.89  mean   8867.77  p95  10692.55  max  10692.55
+scene per district (sampled)       n=0
+lots per district                  n=1688  median      4.00  mean     12.01  p95     41.00  max     69.00
+exact probes per district plan     n=1688  median   5568.00  mean   7740.86  p95  19480.00  max  28110.00
+coarse probes per district plan    n=1688  median 166290.00  mean 168029.07  p95 282536.00  max 393389.00
+biome probes per district plan     n=1688  median    116.00  mean    348.27  p95   1189.00  max   2001.00
+exact probes per scene             n=0
+biome probes per scene             n=0
+allocated by CityPlanner.plan: 16115.4 MiB (78209 KiB per district); retained heap of City (noisy, GC dependent): 1.5 MiB; json: settlement 295 KiB, districts 1067 KiB total, scene 0 KiB avg
+peak RSS 809 MiB, heap max 16008 MiB, load 5.05 4.59 5.35 6/4300 3869110
+SUMMARY	cache-skel-1-world	metropolis	1430	8	211	36.90	69.93	5.65	8287.9	5568	NaN	16115.4	2.1	809	5.05 4.59 5.35 6/4300 3869110
+exit 0
+=== CACHE skeleton=2 synthetic 2048^2 (4 cells)  (load before: 5.05 4.59 5.35)
+warning: Git tree '/home/agent/fractal-buildings-mc-mod/.claude/worktrees/p5-tidy' is dirty
+city-bench cache-skel-2-syn-2048: sm1_0 metropolis r1024, 4 cells, 142 districts planned (3076 lots), 5 timed reps after 3 warm-up, cache skeleton=2 region=8192
+region decision (cold, one cell)   n=5     median      2.26  mean      2.27  p95      2.75  max      2.75
+skeleton per cell                  n=20    median      7.44  mean      8.10  p95     12.75  max     12.97
+assemble                           n=5     median     40.82  mean     39.81  p95     42.40  max     42.40
+Districts.plan per district        n=710   median      5.97  mean     11.21  p95     40.74  max     93.68
+Briefs.fill per district           n=710   median      0.62  mean      0.61  p95      1.59  max      2.97
+district plan+brief                n=710   median      6.73  mean     11.82  p95     41.88  max     94.92
+CityPlanner.plan total             n=5     median   1741.44  mean   1774.62  p95   1915.76  max   1915.76
+scene per district (sampled)       n=0
+lots per district                  n=710   median     21.00  mean     21.66  p95     56.00  max     70.00
+exact probes per district plan     n=710   median   8909.50  mean  10063.48  p95  24161.00  max  29009.00
+coarse probes per district plan    n=710   median   2904.00  mean  20573.92  p95  81236.00  max 115620.00
+biome probes per district plan     n=710   median    609.00  mean    628.20  p95   1624.00  max   2030.00
+exact probes per scene             n=0
+biome probes per scene             n=0
+allocated by CityPlanner.plan: 3711.5 MiB (26764 KiB per district); retained heap of City (noisy, GC dependent): 0.8 MiB; json: settlement 154 KiB, districts 960 KiB total, scene 0 KiB avg
+peak RSS 789 MiB, heap max 16008 MiB, load 5.03 4.62 5.33 6/4294 3869432
+SUMMARY	cache-skel-2-syn-2048	metropolis	1024	4	142	6.73	41.88	7.44	1741.4	8910	NaN	3711.5	2.3	789	5.03 4.62 5.33 6/4294 3869432
+exit 0
+=== CACHE skeleton=2 world 2,-6 (8 cells)  (load before: 5.03 4.62 5.33)
+warning: Git tree '/home/agent/fractal-buildings-mc-mod/.claude/worktrees/p5-tidy' is dirty
+city-bench cache-skel-2-world: s2_m6 metropolis r1430, 8 cells, 211 districts planned (2534 lots), 8 timed reps after 4 warm-up, cache skeleton=2 region=8192
+region decision (cold, one cell)   n=8     median      2.04  mean      2.33  p95      3.95  max      3.95
+skeleton per cell                  n=64    median      5.46  mean      7.04  p95     13.76  max     14.07
+assemble                           n=8     median     83.15  mean     83.94  p95     88.11  max     88.11
+Districts.plan per district        n=1688  median      9.46  mean     17.77  p95     54.24  max     70.58
+Briefs.fill per district           n=1688  median      0.06  mean      0.28  p95      1.00  max      2.15
+district plan+brief                n=1688  median      9.86  mean     18.04  p95     54.24  max     71.02
+CityPlanner.plan total             n=8     median   4012.98  mean   4012.46  p95   4039.40  max   4039.40
+scene per district (sampled)       n=0
+lots per district                  n=1688  median      4.00  mean     12.01  p95     41.00  max     69.00
+exact probes per district plan     n=1688  median   5568.00  mean   7740.86  p95  19480.00  max  28110.00
+coarse probes per district plan    n=1688  median   9594.00  mean  65629.30  p95 245709.00  max 297729.00
+biome probes per district plan     n=1688  median    116.00  mean    348.27  p95   1189.00  max   2001.00
+exact probes per scene             n=0
+biome probes per scene             n=0
+allocated by CityPlanner.plan: 7110.9 MiB (34510 KiB per district); retained heap of City (noisy, GC dependent): 1.2 MiB; json: settlement 295 KiB, districts 1067 KiB total, scene 0 KiB avg
+peak RSS 807 MiB, heap max 16008 MiB, load 2.75 3.95 5.01 4/4274 3870154
+SUMMARY	cache-skel-2-world	metropolis	1430	8	211	9.86	54.24	5.46	4013.0	5568	NaN	7110.9	2.0	807	2.75 3.95 5.01 4/4274 3870154
+exit 0
+=== CACHE skeleton=4 synthetic 2048^2 (4 cells)  (load before: 2.75 3.95 5.01)
+warning: Git tree '/home/agent/fractal-buildings-mc-mod/.claude/worktrees/p5-tidy' is dirty
+city-bench cache-skel-4-syn-2048: sm1_0 metropolis r1024, 4 cells, 142 districts planned (3076 lots), 5 timed reps after 3 warm-up, cache skeleton=4 region=8192
+region decision (cold, one cell)   n=5     median      2.23  mean      2.17  p95      2.53  max      2.53
+skeleton per cell                  n=20    median     10.04  mean      9.71  p95     12.75  max     14.08
+assemble                           n=5     median     43.32  mean     42.71  p95     44.86  max     44.86
+Districts.plan per district        n=710   median      5.16  mean      4.48  p95      9.04  max     12.39
+Briefs.fill per district           n=710   median      0.62  mean      0.63  p95      1.75  max      3.08
+district plan+brief                n=710   median      5.78  mean      5.11  p95     10.73  max     14.25
+CityPlanner.plan total             n=5     median    840.88  mean    841.21  p95    862.14  max    862.14
+scene per district (sampled)       n=0
+lots per district                  n=710   median     21.00  mean     21.66  p95     56.00  max     70.00
+exact probes per district plan     n=710   median   8909.50  mean  10063.48  p95  24161.00  max  29009.00
+coarse probes per district plan    n=710   median   2649.00  mean   4555.13  p95  16224.00  max  49542.00
+biome probes per district plan     n=710   median    609.00  mean    628.20  p95   1624.00  max   2030.00
+exact probes per scene             n=0
+biome probes per scene             n=0
+allocated by CityPlanner.plan: 1104.1 MiB (7962 KiB per district); retained heap of City (noisy, GC dependent): 1.1 MiB; json: settlement 154 KiB, districts 960 KiB total, scene 0 KiB avg
+peak RSS 693 MiB, heap max 16008 MiB, load 2.97 3.92 4.98 3/4245 3870358
+SUMMARY	cache-skel-4-syn-2048	metropolis	1024	4	142	5.78	10.73	10.04	840.9	8910	NaN	1104.1	2.2	693	2.97 3.92 4.98 3/4245 3870358
+exit 0
+=== CACHE skeleton=4 world 2,-6 (8 cells)  (load before: 2.97 3.92 4.98)
+warning: Git tree '/home/agent/fractal-buildings-mc-mod/.claude/worktrees/p5-tidy' is dirty
+city-bench cache-skel-4-world: s2_m6 metropolis r1430, 8 cells, 211 districts planned (2534 lots), 8 timed reps after 4 warm-up, cache skeleton=4 region=8192
+region decision (cold, one cell)   n=8     median      2.03  mean      2.30  p95      3.07  max      3.07
+skeleton per cell                  n=64    median      7.00  mean      7.38  p95     13.92  max     14.26
+assemble                           n=8     median     80.50  mean     80.84  p95     86.89  max     86.89
+Districts.plan per district        n=1688  median      5.66  mean      6.17  p95     11.46  max     40.76
+Briefs.fill per district           n=1688  median      0.06  mean      0.26  p95      0.96  max      1.94
+district plan+brief                n=1688  median      5.76  mean      6.43  p95     12.26  max     40.77
+CityPlanner.plan total             n=8     median   1530.42  mean   1548.58  p95   1613.65  max   1613.65
+scene per district (sampled)       n=0
+lots per district                  n=1688  median      4.00  mean     12.01  p95     41.00  max     69.00
+exact probes per district plan     n=1688  median   5568.00  mean   7740.86  p95  19480.00  max  28110.00
+coarse probes per district plan    n=1688  median   5094.00  mean   8500.69  p95  26526.00  max 167104.00
+biome probes per district plan     n=1688  median    116.00  mean    348.27  p95   1189.00  max   2001.00
+exact probes per scene             n=0
+biome probes per scene             n=0
+allocated by CityPlanner.plan: 1924.9 MiB (9342 KiB per district); retained heap of City (noisy, GC dependent): 1.2 MiB; json: settlement 295 KiB, districts 1067 KiB total, scene 0 KiB avg
+peak RSS 784 MiB, heap max 16008 MiB, load 4.21 4.11 5.00 3/4281 3870760
+SUMMARY	cache-skel-4-world	metropolis	1430	8	211	5.76	12.26	7.00	1530.4	5568	NaN	1924.9	2.0	784	4.21 4.11 5.00 3/4281 3870760
+exit 0
+=== CACHE skeleton=64 synthetic 2048^2 (4 cells)  (load before: 4.21 4.11 5.00)
+warning: Git tree '/home/agent/fractal-buildings-mc-mod/.claude/worktrees/p5-tidy' is dirty
+city-bench cache-skel-64-syn-2048: sm1_0 metropolis r1024, 4 cells, 142 districts planned (3076 lots), 5 timed reps after 3 warm-up, cache skeleton=64 region=8192
+region decision (cold, one cell)   n=5     median      2.22  mean      2.12  p95      2.38  max      2.38
+skeleton per cell                  n=20    median      9.24  mean      9.26  p95     12.89  max     13.39
+assemble                           n=5     median     41.81  mean     40.77  p95     42.73  max     42.73
+Districts.plan per district        n=710   median      4.81  mean      4.16  p95      8.40  max     11.97
+Briefs.fill per district           n=710   median      0.62  mean      0.59  p95      1.63  max      3.05
+district plan+brief                n=710   median      5.44  mean      4.75  p95      9.80  max     13.86
+CityPlanner.plan total             n=5     median    792.03  mean    805.79  p95    867.37  max    867.37
+scene per district (sampled)       n=0
+lots per district                  n=710   median     21.00  mean     21.66  p95     56.00  max     70.00
+exact probes per district plan     n=710   median   8909.50  mean  10063.48  p95  24161.00  max  29009.00
+coarse probes per district plan    n=710   median   2649.00  mean   4555.13  p95  16224.00  max  49542.00
+biome probes per district plan     n=710   median    609.00  mean    628.20  p95   1624.00  max   2030.00
+exact probes per scene             n=0
+biome probes per scene             n=0
+allocated by CityPlanner.plan: 1102.5 MiB (7950 KiB per district); retained heap of City (noisy, GC dependent): 1.1 MiB; json: settlement 154 KiB, districts 960 KiB total, scene 0 KiB avg
+peak RSS 691 MiB, heap max 16008 MiB, load 4.36 4.16 5.00 3/4252 3870980
+SUMMARY	cache-skel-64-syn-2048	metropolis	1024	4	142	5.44	9.80	9.24	792.0	8910	NaN	1102.5	2.2	691	4.36 4.16 5.00 3/4252 3870980
+exit 0
+=== CACHE skeleton=64 world 2,-6 (8 cells)  (load before: 4.36 4.16 5.00)
+warning: Git tree '/home/agent/fractal-buildings-mc-mod/.claude/worktrees/p5-tidy' is dirty
+city-bench cache-skel-64-world: s2_m6 metropolis r1430, 8 cells, 211 districts planned (2534 lots), 8 timed reps after 4 warm-up, cache skeleton=64 region=8192
+region decision (cold, one cell)   n=8     median      2.02  mean      2.09  p95      2.40  max      2.40
+skeleton per cell                  n=64    median      6.46  mean      7.42  p95     14.24  max     17.14
+assemble                           n=8     median     81.66  mean     82.07  p95     85.06  max     85.06
+Districts.plan per district        n=1688  median      5.33  mean      5.90  p95     11.43  max     15.67
+Briefs.fill per district           n=1688  median      0.07  mean      0.32  p95      1.19  max      2.78
+district plan+brief                n=1688  median      5.60  mean      6.22  p95     12.61  max     16.97
+CityPlanner.plan total             n=8     median   1487.28  mean   1493.05  p95   1548.64  max   1548.64
+scene per district (sampled)       n=0
+lots per district                  n=1688  median      4.00  mean     12.01  p95     41.00  max     69.00
+exact probes per district plan     n=1688  median   5568.00  mean   7740.86  p95  19480.00  max  28110.00
+coarse probes per district plan    n=1688  median   4578.00  mean   6033.52  p95  17340.00  max  48942.00
+biome probes per district plan     n=1688  median    116.00  mean    348.27  p95   1189.00  max   2001.00
+exact probes per scene             n=0
+biome probes per scene             n=0
+allocated by CityPlanner.plan: 1674.8 MiB (8128 KiB per district); retained heap of City (noisy, GC dependent): 1.5 MiB; json: settlement 295 KiB, districts 1067 KiB total, scene 0 KiB avg
+peak RSS 773 MiB, heap max 16008 MiB, load 3.57 3.98 4.90 2/4257 3871391
+SUMMARY	cache-skel-64-world	metropolis	1430	8	211	5.60	12.61	6.46	1487.3	5568	NaN	1674.8	2.0	773	3.57 3.98 4.90 2/4257 3871391
+exit 0
+=== CACHE region=4 world 2,-6  (load before: 3.57 3.98 4.90)
+warning: Git tree '/home/agent/fractal-buildings-mc-mod/.claude/worktrees/p5-tidy' is dirty
+city-bench cache-region-4-world: s2_m6 metropolis r1430, 8 cells, 211 districts planned (2534 lots), 8 timed reps after 4 warm-up, cache skeleton=64 region=4
+region decision (cold, one cell)   n=8     median      3.70  mean      4.14  p95      7.05  max      7.05
+skeleton per cell                  n=64    median     13.95  mean     16.66  p95     29.63  max     47.07
+assemble                           n=8     median     68.25  mean     67.85  p95     75.89  max     75.89
+Districts.plan per district        n=1688  median      5.19  mean      5.70  p95     10.95  max     14.11
+Briefs.fill per district           n=1688  median      0.07  mean      0.32  p95      1.18  max      2.66
+district plan+brief                n=1688  median      5.38  mean      6.02  p95     11.93  max     15.95
+CityPlanner.plan total             n=8     median   1500.55  mean   1514.08  p95   1576.12  max   1576.12
+scene per district (sampled)       n=0
+lots per district                  n=1688  median      4.00  mean     12.01  p95     41.00  max     69.00
+exact probes per district plan     n=1688  median   5568.00  mean   7740.86  p95  19480.00  max  28110.00
+coarse probes per district plan    n=1688  median   4578.00  mean   6033.52  p95  17340.00  max  48942.00
+biome probes per district plan     n=1688  median    116.00  mean    348.27  p95   1189.00  max   2001.00
+exact probes per scene             n=0
+biome probes per scene             n=0
+allocated by CityPlanner.plan: 1768.7 MiB (8583 KiB per district); retained heap of City (noisy, GC dependent): 1.8 MiB; json: settlement 295 KiB, districts 1067 KiB total, scene 0 KiB avg
+peak RSS 775 MiB, heap max 16008 MiB, load 3.27 3.87 4.82 2/4143 3871882
+SUMMARY	cache-region-4-world	metropolis	1430	8	211	5.38	11.93	13.95	1500.6	5568	NaN	1768.7	3.7	775	3.27 3.87 4.82 2/4143 3871882
+exit 0
+=== CACHE region=64 world 2,-6  (load before: 3.27 3.87 4.82)
+warning: Git tree '/home/agent/fractal-buildings-mc-mod/.claude/worktrees/p5-tidy' is dirty
+city-bench cache-region-64-world: s2_m6 metropolis r1430, 8 cells, 211 districts planned (2534 lots), 8 timed reps after 4 warm-up, cache skeleton=64 region=64
+region decision (cold, one cell)   n=8     median      3.47  mean      3.50  p95      6.51  max      6.51
+skeleton per cell                  n=64    median      8.51  mean     11.00  p95     24.46  max     30.51
+assemble                           n=8     median    113.48  mean    115.66  p95    165.46  max    165.46
+Districts.plan per district        n=1688  median      7.19  mean      8.68  p95     19.51  max     51.50
+Briefs.fill per district           n=1688  median      0.13  mean      0.50  p95      1.90  max      5.78
+district plan+brief                n=1688  median      7.54  mean      9.18  p95     21.26  max     53.33
+CityPlanner.plan total             n=8     median   1499.66  mean   2046.32  p95   3206.04  max   3206.04
+scene per district (sampled)       n=0
+lots per district                  n=1688  median      4.00  mean     12.01  p95     41.00  max     69.00
+exact probes per district plan     n=1688  median   5568.00  mean   7740.86  p95  19480.00  max  28110.00
+coarse probes per district plan    n=1688  median   4578.00  mean   6033.52  p95  17340.00  max  48942.00
+biome probes per district plan     n=1688  median    116.00  mean    348.27  p95   1189.00  max   2001.00
+exact probes per scene             n=0
+biome probes per scene             n=0
+allocated by CityPlanner.plan: 1677.0 MiB (8139 KiB per district); retained heap of City (noisy, GC dependent): 1.5 MiB; json: settlement 295 KiB, districts 1067 KiB total, scene 0 KiB avg
+peak RSS 768 MiB, heap max 16008 MiB, load 10.07 5.58 5.35 1/4167 3872696
+SUMMARY	cache-region-64-world	metropolis	1430	8	211	7.54	21.26	8.51	1499.7	5568	NaN	1677.0	3.5	768	10.07 5.58 5.35 1/4167 3872696
+exit 0
+=== CACHE region=1024 world 2,-6  (load before: 10.07 5.58 5.35)
+warning: Git tree '/home/agent/fractal-buildings-mc-mod/.claude/worktrees/p5-tidy' is dirty
+city-bench cache-region-1024-world: s2_m6 metropolis r1430, 8 cells, 211 districts planned (2534 lots), 8 timed reps after 4 warm-up, cache skeleton=64 region=1024
+region decision (cold, one cell)   n=8     median      2.52  mean      2.68  p95      4.11  max      4.11
+skeleton per cell                  n=64    median      7.18  mean      7.51  p95     14.05  max     14.68
+assemble                           n=8     median     80.80  mean     82.13  p95     90.04  max     90.04
+Districts.plan per district        n=1688  median      5.27  mean      5.80  p95     11.09  max     16.99
+Briefs.fill per district           n=1688  median      0.07  mean      0.32  p95      1.19  max      2.74
+district plan+brief                n=1688  median      5.51  mean      6.12  p95     12.09  max     18.60
+CityPlanner.plan total             n=8     median   1459.58  mean   1458.04  p95   1488.32  max   1488.32
+scene per district (sampled)       n=0
+lots per district                  n=1688  median      4.00  mean     12.01  p95     41.00  max     69.00
+exact probes per district plan     n=1688  median   5568.00  mean   7740.86  p95  19480.00  max  28110.00
+coarse probes per district plan    n=1688  median   4578.00  mean   6033.52  p95  17340.00  max  48942.00
+biome probes per district plan     n=1688  median    116.00  mean    348.27  p95   1189.00  max   2001.00
+exact probes per scene             n=0
+biome probes per scene             n=0
+allocated by CityPlanner.plan: 1675.2 MiB (8130 KiB per district); retained heap of City (noisy, GC dependent): 1.5 MiB; json: settlement 295 KiB, districts 1067 KiB total, scene 0 KiB avg
+peak RSS 775 MiB, heap max 16008 MiB, load 6.73 5.28 5.26 3/4274 3873273
+SUMMARY	cache-region-1024-world	metropolis	1430	8	211	5.51	12.09	7.18	1459.6	5568	NaN	1675.2	2.5	775	6.73 5.28 5.26 3/4274 3873273
+exit 0
+=== CACHE region=8192 world 2,-6  (load before: 6.73 5.28 5.26)
+warning: Git tree '/home/agent/fractal-buildings-mc-mod/.claude/worktrees/p5-tidy' is dirty
+city-bench cache-region-8192-world: s2_m6 metropolis r1430, 8 cells, 211 districts planned (2534 lots), 8 timed reps after 4 warm-up, cache skeleton=64 region=8192
+region decision (cold, one cell)   n=8     median      2.06  mean      2.18  p95      2.70  max      2.70
+skeleton per cell                  n=64    median      6.66  mean      7.35  p95     13.74  max     14.19
+assemble                           n=8     median     80.72  mean     81.09  p95     85.57  max     85.57
+Districts.plan per district        n=1688  median      5.11  mean      5.61  p95     10.69  max     15.05
+Briefs.fill per district           n=1688  median      0.06  mean      0.25  p95      0.92  max      1.94
+district plan+brief                n=1688  median      5.28  mean      5.86  p95     11.56  max     15.58
+CityPlanner.plan total             n=8     median   1415.56  mean   1419.23  p95   1442.19  max   1442.19
+scene per district (sampled)       n=0
+lots per district                  n=1688  median      4.00  mean     12.01  p95     41.00  max     69.00
+exact probes per district plan     n=1688  median   5568.00  mean   7740.86  p95  19480.00  max  28110.00
+coarse probes per district plan    n=1688  median   4578.00  mean   6033.52  p95  17340.00  max  48942.00
+biome probes per district plan     n=1688  median    116.00  mean    348.27  p95   1189.00  max   2001.00
+exact probes per scene             n=0
+biome probes per scene             n=0
+allocated by CityPlanner.plan: 1676.7 MiB (8137 KiB per district); retained heap of City (noisy, GC dependent): 1.5 MiB; json: settlement 295 KiB, districts 1067 KiB total, scene 0 KiB avg
+peak RSS 767 MiB, heap max 16008 MiB, load 4.94 5.00 5.16 3/4242 3873591
+SUMMARY	cache-region-8192-world	metropolis	1430	8	211	5.28	11.56	6.66	1415.6	5568	NaN	1676.7	2.1	767	4.94 5.00 5.16 3/4242 3873591
+exit 0
+=== HEAP -Xmx64m synthetic 4096^2, no scenes
+warning: Git tree '/home/agent/fractal-buildings-mc-mod/.claude/worktrees/p5-tidy' is dirty
+city-bench heap-64m-syn-4096: sm1_0 metropolis r2048, 4 cells, 506 districts planned (10793 lots), 2 timed reps after 1 warm-up, cache skeleton=64 region=8192
+region decision (cold, one cell)   n=2     median      1.09  mean      1.09  p95      1.22  max      1.22
+skeleton per cell                  n=8     median     18.72  mean     20.21  p95     27.63  max     27.63
+assemble                           n=2     median    181.33  mean    181.33  p95    216.05  max    216.05
+Districts.plan per district        n=1012  median      4.72  mean      4.53  p95      9.12  max     18.84
+Briefs.fill per district           n=1012  median      0.56  mean      0.60  p95      1.63  max      2.48
+district plan+brief                n=1012  median      5.29  mean      5.13  p95     10.68  max     20.64
+CityPlanner.plan total             n=2     median   2973.07  mean   2973.07  p95   3045.53  max   3045.53
+scene per district (sampled)       n=0
+lots per district                  n=1012  median     18.00  mean     21.33  p95     62.00  max     87.00
+exact probes per district plan     n=1012  median   9217.50  mean  10741.64  p95  26095.00  max  32533.00
+coarse probes per district plan    n=1012  median   2601.00  mean   3974.99  p95  14160.00  max  53478.00
+biome probes per district plan     n=1012  median    522.00  mean    618.57  p95   1798.00  max   2523.00
+exact probes per scene             n=0
+biome probes per scene             n=0
+allocated by CityPlanner.plan: 5288.2 MiB (10702 KiB per district); retained heap of City (noisy, GC dependent): 4.2 MiB; json: settlement 578 KiB, districts 3435 KiB total, scene 0 KiB avg
+peak RSS 340 MiB, heap max 64 MiB, load 4.47 4.88 5.12 5/4239 3873798
+SUMMARY	heap-64m-syn-4096	metropolis	2048	4	506	5.29	10.68	18.72	2973.1	9218	NaN	5288.2	1.1	340	4.47 4.88 5.12 5/4239 3873798
+=== HEAP -Xmx128m synthetic 4096^2, no scenes
+warning: Git tree '/home/agent/fractal-buildings-mc-mod/.claude/worktrees/p5-tidy' is dirty
+city-bench heap-128m-syn-4096: sm1_0 metropolis r2048, 4 cells, 506 districts planned (10793 lots), 2 timed reps after 1 warm-up, cache skeleton=64 region=8192
+region decision (cold, one cell)   n=2     median      1.00  mean      1.00  p95      1.04  max      1.04
+skeleton per cell                  n=8     median     18.77  mean     19.77  p95     26.65  max     26.65
+assemble                           n=2     median    184.63  mean    184.63  p95    186.19  max    186.19
+Districts.plan per district        n=1012  median      4.56  mean      4.47  p95      9.07  max     17.18
+Briefs.fill per district           n=1012  median      0.56  mean      0.60  p95      1.59  max      2.51
+district plan+brief                n=1012  median      5.25  mean      5.07  p95     10.57  max     18.82
+CityPlanner.plan total             n=2     median   2982.85  mean   2982.85  p95   3023.51  max   3023.51
+scene per district (sampled)       n=0
+lots per district                  n=1012  median     18.00  mean     21.33  p95     62.00  max     87.00
+exact probes per district plan     n=1012  median   9217.50  mean  10741.64  p95  26095.00  max  32533.00
+coarse probes per district plan    n=1012  median   2601.00  mean   3974.99  p95  14160.00  max  53478.00
+biome probes per district plan     n=1012  median    522.00  mean    618.57  p95   1798.00  max   2523.00
+exact probes per scene             n=0
+biome probes per scene             n=0
+allocated by CityPlanner.plan: 5283.2 MiB (10692 KiB per district); retained heap of City (noisy, GC dependent): 4.2 MiB; json: settlement 578 KiB, districts 3435 KiB total, scene 0 KiB avg
+peak RSS 392 MiB, heap max 128 MiB, load 3.92 4.74 5.07 1/4138 3874034
+SUMMARY	heap-128m-syn-4096	metropolis	2048	4	506	5.25	10.57	18.77	2982.8	9218	NaN	5283.2	1.0	392	3.92 4.74 5.07 1/4138 3874034
+=== HEAP -Xmx256m synthetic 4096^2, no scenes
+warning: Git tree '/home/agent/fractal-buildings-mc-mod/.claude/worktrees/p5-tidy' is dirty
+city-bench heap-256m-syn-4096: sm1_0 metropolis r2048, 4 cells, 506 districts planned (10793 lots), 2 timed reps after 1 warm-up, cache skeleton=64 region=8192
+region decision (cold, one cell)   n=2     median      1.42  mean      1.42  p95      1.99  max      1.99
+skeleton per cell                  n=8     median     31.67  mean     31.75  p95     44.96  max     44.96
+assemble                           n=2     median    200.72  mean    200.72  p95    203.29  max    203.29
+Districts.plan per district        n=1012  median      5.02  mean      4.85  p95     10.16  max     19.40
+Briefs.fill per district           n=1012  median      0.61  mean      0.67  p95      1.83  max      2.99
+district plan+brief                n=1012  median      5.74  mean      5.51  p95     11.83  max     20.67
+CityPlanner.plan total             n=2     median   3378.55  mean   3378.55  p95   3507.77  max   3507.77
+scene per district (sampled)       n=0
+lots per district                  n=1012  median     18.00  mean     21.33  p95     62.00  max     87.00
+exact probes per district plan     n=1012  median   9217.50  mean  10741.64  p95  26095.00  max  32533.00
+coarse probes per district plan    n=1012  median   2601.00  mean   3974.99  p95  14160.00  max  53478.00
+biome probes per district plan     n=1012  median    522.00  mean    618.57  p95   1798.00  max   2523.00
+exact probes per scene             n=0
+biome probes per scene             n=0
+allocated by CityPlanner.plan: 5283.2 MiB (10692 KiB per district); retained heap of City (noisy, GC dependent): 4.2 MiB; json: settlement 578 KiB, districts 3435 KiB total, scene 0 KiB avg
+peak RSS 377 MiB, heap max 256 MiB, load 4.38 4.77 5.06 4/4333 3874738
+SUMMARY	heap-256m-syn-4096	metropolis	2048	4	506	5.74	11.83	31.67	3378.6	9218	NaN	5283.2	1.4	377	4.38 4.77 5.06 4/4333 3874738
+=== HEAP -Xmx512m synthetic 4096^2, no scenes
+warning: Git tree '/home/agent/fractal-buildings-mc-mod/.claude/worktrees/p5-tidy' is dirty
+city-bench heap-512m-syn-4096: sm1_0 metropolis r2048, 4 cells, 506 districts planned (10793 lots), 2 timed reps after 1 warm-up, cache skeleton=64 region=8192
+region decision (cold, one cell)   n=2     median      1.21  mean      1.21  p95      1.51  max      1.51
+skeleton per cell                  n=8     median     27.84  mean     30.00  p95     41.45  max     41.45
+assemble                           n=2     median    207.82  mean    207.82  p95    242.25  max    242.25
+Districts.plan per district        n=1012  median      4.77  mean      4.62  p95      9.52  max     24.17
+Briefs.fill per district           n=1012  median      0.58  mean      0.62  p95      1.70  max      2.99
+district plan+brief                n=1012  median      5.50  mean      5.24  p95     11.01  max     26.00
+CityPlanner.plan total             n=2     median   2933.03  mean   2933.03  p95   2970.84  max   2970.84
+scene per district (sampled)       n=0
+lots per district                  n=1012  median     18.00  mean     21.33  p95     62.00  max     87.00
+exact probes per district plan     n=1012  median   9217.50  mean  10741.64  p95  26095.00  max  32533.00
+coarse probes per district plan    n=1012  median   2601.00  mean   3974.99  p95  14160.00  max  53478.00
+biome probes per district plan     n=1012  median    522.00  mean    618.57  p95   1798.00  max   2523.00
+exact probes per scene             n=0
+biome probes per scene             n=0
+allocated by CityPlanner.plan: 5283.3 MiB (10692 KiB per district); retained heap of City (noisy, GC dependent): 4.2 MiB; json: settlement 578 KiB, districts 3435 KiB total, scene 0 KiB avg
+peak RSS 457 MiB, heap max 512 MiB, load 4.91 4.87 5.09 3/4139 3875038
+SUMMARY	heap-512m-syn-4096	metropolis	2048	4	506	5.50	11.01	27.84	2933.0	9218	NaN	5283.3	1.2	457	4.91 4.87 5.09 3/4139 3875038
