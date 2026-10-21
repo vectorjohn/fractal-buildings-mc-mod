@@ -30,6 +30,6 @@ public final class GeneratorV1 implements Generator {
 		PlacedBuilding b = InstancePassV1.place(shells.shell(spec), req);
 		var lot = req.lot();
 		TerrainPatch terrain = TerrainPatch.sample(req.terrain(), lot.x() - 2, lot.z() - 2, lot.w() + 4, lot.d() + 4);
-		return new SceneDoc(GEN_VERSION, req.worldSeed(), terrain, List.of(lot), List.of(b), List.of());
+		return new SceneDoc(GEN_VERSION, req.worldSeed(), terrain, List.of(spec.lead() > 0 ? lot.withAir(spec.lead() - Types.get(spec.type()).limits().front(), req.brief().frontY()) : lot), List.of(b), List.of());
 	}
 }

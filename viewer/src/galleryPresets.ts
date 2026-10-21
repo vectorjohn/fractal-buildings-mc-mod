@@ -15,6 +15,8 @@ export interface GalleryPreset {
   lot: string;
   terrain: string;
   front: string;
+  /** Air rights over the street in front of the lot, in blocks (the CLI's --air; 0 = no street brief). */
+  air: number;
   /** Inclusive seed range `A..B` (at most 16 cells); for `dump`, the fixture numbers. */
   seeds: [number, number];
   gen: string;
@@ -23,7 +25,7 @@ export interface GalleryPreset {
   cameras: CameraName[];
 }
 
-const KEYS = new Set(['kind', 'type', 'style', 'lot', 'terrain', 'front', 'seeds', 'gen', 'cutStorey', 'cameras']);
+const KEYS = new Set(['kind', 'type', 'style', 'lot', 'terrain', 'front', 'seeds', 'gen', 'cutStorey', 'cameras', 'air']);
 const FRONTS = ['north', 'east', 'south', 'west'];
 
 function bad(name: string, what: string): never {
@@ -58,6 +60,8 @@ export function parsePreset(name: string, json: unknown): GalleryPreset {
     seeds = [Number(m[1]), Number(m[2])];
     if (seeds[1] < seeds[0] || seeds[1] - seeds[0] + 1 > MAX_CELLS) bad(name, `"seeds" must span 1..${MAX_CELLS} seeds`);
   }
+  const air = o['air'] === undefined ? 0 : o['air'];
+  if (typeof air !== 'number' || !Number.isInteger(air) || air < 0 || air > 2) bad(name, '"air" must be an integer 0..2');
   const cutStorey = o['cutStorey'] === undefined ? 0 : o['cutStorey'];
   if (typeof cutStorey !== 'number' || !Number.isInteger(cutStorey) || cutStorey < 0) bad(name, '"cutStorey" must be an integer >= 0');
   let cameras: CameraName[] = [...DEFAULT_CAMERAS];
@@ -69,7 +73,7 @@ export function parsePreset(name: string, json: unknown): GalleryPreset {
     cameras = c as CameraName[];
   }
   return {
-    name, kind, type: str('type', 'house'), style, lot, terrain, front, seeds, gen: str('gen', 'v1'),
+    name, kind, type: str('type', 'house'), style, lot, terrain, front, air, seeds, gen: str('gen', 'v1'),
     cutStorey, cameras,
   };
 }
@@ -77,5 +81,5 @@ export function parsePreset(name: string, json: unknown): GalleryPreset {
 /** The `fractal-cli batch` arguments for a `cli` preset (output directory excluded). */
 export function batchArgs(p: GalleryPreset): string[] {
   return ['batch', '--seeds', `${p.seeds[0]}..${p.seeds[1]}`, '--lot', p.lot, '--style', p.style, '--terrain', p.terrain,
-    '--front', p.front, '--type', p.type, '--gen', p.gen];
+    '--front', p.front, '--type', p.type, '--gen', p.gen, ...(p.air > 0 ? ['--air', String(p.air)] : [])];
 }

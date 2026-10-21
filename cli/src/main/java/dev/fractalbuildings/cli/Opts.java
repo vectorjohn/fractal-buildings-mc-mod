@@ -39,6 +39,16 @@ final class Opts {
 
 	boolean has(String n) { return values.containsKey(n); }
 
+	/** An optional non-negative int option (default {@code def}). */
+	int intValue(String n, int def) {
+		if (!has(n)) return def;
+		try {
+			int v = Integer.parseInt(values.get(n));
+			if (v < 0) throw new NumberFormatException();
+			return v;
+		} catch (NumberFormatException e) { throw new UsageException("bad --" + n + ": " + values.get(n)); }
+	}
+
 	long longValue(String n) {
 		String v = require(n);
 		try { return Long.parseLong(v); } catch (NumberFormatException e) { throw new UsageException("bad --" + n + ": " + v); }

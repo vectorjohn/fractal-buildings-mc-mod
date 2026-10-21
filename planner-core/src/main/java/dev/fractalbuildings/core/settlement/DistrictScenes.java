@@ -77,7 +77,7 @@ public final class DistrictScenes {
 				}
 			}
 			PlacedBuilding b = one.buildings().get(0);
-			lots.add(lot);
+			lots.add(one.lots().get(0)); // the generated scene's lot: carries airRights and frontY when the building jetties over the street
 			buildings.add(new PlacedBuilding("b" + buildings.size(), b.lots(), b.ox(), b.oy(), b.oz(), b.rotation(), b.shell(), b.siteBoxes()));
 			newLots.add(used);
 		}

@@ -109,7 +109,8 @@ public final class Invariants {
 			for (String id : b.lots()) for (Lot l : scene.lots()) if (l.id().equals(id)) lots.add(l);
 			reportCells(Invariant.IN_LOT, "voxels outside the building's lot(s)", c -> {
 				int wx = g.worldX(c[0], c[2]), wz = g.worldZ(c[0], c[2]);
-				for (Lot l : lots) if (l.containsColumn(wx, wz)) return false;
+				int wy = g.worldY(c[1]);
+				for (Lot l : lots) if (l.allows(wx, wy, wz)) return false;
 				return true;
 			}, false);
 		}

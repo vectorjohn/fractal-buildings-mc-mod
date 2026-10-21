@@ -79,9 +79,18 @@ public final class MassingOps {
 	 * {@code max}, at least one side nonzero. Null if it leaves the envelope or an overhang is out of range.
 	 */
 	public static Mass jetty(String id, Mass parent, int[] over, int to, int max, int envW, int envD) {
+		return jetty(id, parent, over, to, max, envW, envD, 0);
+	}
+
+	/**
+	 * As above, but the front (north) overhang may be up to {@code frontMax} (air rights over the street: the
+	 * overhang is measured from the ground-floor wall, so it includes the yard between the wall and the lot edge).
+	 */
+	public static Mass jetty(String id, Mass parent, int[] over, int to, int max, int envW, int envD, int frontMax) {
 		boolean any = false;
-		for (int o : over) {
-			if (o < 0 || o > max || o > MassingCheck.JETTY_MAX) return null;
+		for (int i = 0; i < over.length; i++) {
+			int o = over[i], lim = i == N ? Math.max(max, frontMax) : max;
+			if (o < 0 || o > lim || o > (i == N ? Math.max(MassingCheck.JETTY_MAX, frontMax) : MassingCheck.JETTY_MAX)) return null;
 			any |= o > 0;
 		}
 		if (!any || to <= parent.to()) return null;

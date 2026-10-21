@@ -39,12 +39,13 @@ public final class InstancePassV1 {
 		boolean odd = (r & 1) == 1;
 		int lw = odd ? lot.d() : lot.w(), ld = odd ? lot.w() : lot.d();
 		int w = shell.bounds().maxX(), d = shell.bounds().maxZ();
-		if (w + 2 * lim.side() > lw || d + lim.front() + lim.back() > ld) {
+		int lead = shell.spec().lead(); // blocks of the shell in front of the usual envelope: they reach over the street (air rights)
+		if (w + 2 * lim.side() > lw || d - lead + lim.front() + lim.back() > ld) {
 			throw new IllegalArgumentException("envelope " + w + "x" + d + " does not fit lot " + lot.w() + "x" + lot.d() + " with the type's margins");
 		}
 		Placement lotFrame = new Placement(lot.x(), 0, lot.z(), r, lw, ld);
-		int ax = lotFrame.worldX(lim.side(), lim.front()), az = lotFrame.worldZ(lim.side(), lim.front());
-		int bx = lotFrame.worldX(lim.side() + w - 1, lim.front() + d - 1), bz = lotFrame.worldZ(lim.side() + w - 1, lim.front() + d - 1);
+		int ax = lotFrame.worldX(lim.side(), lim.front() - lead), az = lotFrame.worldZ(lim.side(), lim.front() - lead);
+		int bx = lotFrame.worldX(lim.side() + w - 1, lim.front() - lead + d - 1), bz = lotFrame.worldZ(lim.side() + w - 1, lim.front() - lead + d - 1);
 		int ox = Math.min(ax, bx), oz = Math.min(az, bz);
 		boolean[][] fp = footprint(shell);
 		Placement p0 = new Placement(ox, 0, oz, r, w, d);

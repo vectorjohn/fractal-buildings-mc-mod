@@ -74,6 +74,8 @@ final class Shopfront {
 		Mass jetty = null;
 		for (Mass a : m.masses()) if (a.kind().equals("jetty") && a.parent() != null && a.parent().equals(m.main().id())) jetty = a;
 		if (jetty == null || m.main().z() - jetty.z() < 2) return;
+		// a jetty over the street (air rights) has no posts: they would stand in the street
+		if (jetty.z() < c.spec().lead() - c.type().limits().front()) return;
 		int h = m.grid().y(1), z = jetty.z();
 		int[] xs = Posts.spaced(jetty.x(), jetty.maxX() - 1, 4, door.pos() - 1, door.pos() + door.width());
 		for (int i = 0; i < xs.length; i++) Posts.column(c, "post" + i, xs[i], z, h);

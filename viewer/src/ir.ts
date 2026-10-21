@@ -17,12 +17,14 @@ export interface Terrain { x0: number; z0: number; nx: number; nz: number; floor
   /** Water depth above floorY per column (district scenes); absent when the file has none. */
   water?: number[];
 }
-export interface Lot { id: string; x: number; z: number; w: number; d: number; front: Facing }
+export interface Lot { id: string; x: number; z: number; w: number; d: number; front: Facing;
+  /** Air rights over the street in front (blocks) and the street surface y; only when above 0 (docs/IR.md). */
+  airRights?: number; frontY?: number }
 export interface Spec {
   genVersion: number; specSeed: string; style: string; type: string;
   width: number; depth: number; storeys: number; roof: string;
   /** genVersion 2+: exclusive local y bound and street-side mask (docs/IR.md). */
-  maxHeight?: number; streets?: number;
+  maxHeight?: number; streets?: number; lead?: number;
 }
 export interface Storey { index: number; y: number; height: number }
 export interface Volume { id: string; min: Vec3; size: Vec3; parent: string | null }
@@ -118,6 +120,7 @@ const parseLot = (v: unknown, p: string): Lot => {
   return {
     id: str(o, 'id', p), x: int(o, 'x', p), z: int(o, 'z', p), w: int(o, 'w', p), d: int(o, 'd', p),
     front: oneOf(o, 'front', p, FACINGS),
+    ...('airRights' in o ? { airRights: int(o, 'airRights', p), frontY: int(o, 'frontY', p) } : {}),
   };
 };
 
@@ -132,6 +135,7 @@ function parseShell(v: unknown, p: string): Shell {
   };
   if ('maxHeight' in so) spec.maxHeight = int(so, 'maxHeight', sp);
   if ('streets' in so) spec.streets = int(so, 'streets', sp);
+  if ('lead' in so) spec.lead = int(so, 'lead', sp);
   const specHash = str(o, 'specHash', p);
   if (!/^[0-9a-f]{16}$/.test(specHash)) fail(at(p, 'specHash'), 'must be 16 lower-case hex digits');
   return {
