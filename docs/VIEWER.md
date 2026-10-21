@@ -151,6 +151,20 @@ shop, workshop, tower, temple, wall, highrise, hall and block (an unknown `--typ
 | `PLAYWRIGHT_BROWSERS_PATH`, `PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS` | Playwright | Set by the dev shell (`flake.nix`) to its Chromium. Leave alone. |
 | `DISPLAY` | Playwright config | Removed for the browser on purpose (software WebGL breaks with it). Nothing to set. |
 
+# Region map (Phase 5, V0)
+
+`region.html` draws a region dump (`fractal-cli region ... --out FILE`, `fb-region-dump/1` with
+`layers`) in 2D: biome colours and water, the cell grid, settlement disks by tier (hamlet, village,
+town, city, metropolis), rejected sites as dots by reason, and, when the dump has the keys,
+`waterDist` heat (R2) and `claimedBy` links (MC1). Files may be gzip (detected by magic).
+Open it in the dev server (`nix develop -c npm run dev`):
+`http://localhost:5173/region.html?region=/@fs/<abs path>/viewer/fixtures/region/world-12345.json.gz`
+Optional: `&terrain=<url>` (a finer terrain dump drawn underneath, e.g. `fixtures/terrain/w12345-river-s8.json.gz`),
+`&view=x0,z0,w,d` (blocks), `&scale=<px per block>`, `&layer=N`, and `&heat=0 &claims=0 &grid=0 &reasons=0`.
+Screenshots: `FB_PORT=N nix develop -c bash -c 'npx vite build && npx playwright test e2e/region.spec.ts'`
+writes `viewer/out/region/*.png`. The committed dumps in `viewer/fixtures/region/` come from
+`fractal-cli region --seed S --terrain recorded:fixtures/terrain/world-S-s64.json.gz --out ...` then `gzip -9n`.
+
 # Generated files (all gitignored)
 
 - `viewer/gallery-data/gen/<preset>/`: `index.json` plus `seed-N.json` per seed.

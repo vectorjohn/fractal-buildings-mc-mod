@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Region map</title>
+    <style>
+      html,body{margin:0;background:#1b1d22;color:#ddd;font:12px sans-serif}
+      #wrap{display:flex;gap:12px;padding:8px}
+      canvas{display:block;image-rendering:pixelated}
+      #info{white-space:pre;line-height:1.5}
+      .sw{display:inline-block;width:10px;height:10px;margin-right:4px}
+    </style>
+  </head>
+  <body>
+    <div id="wrap"><canvas id="c"></canvas><div id="info"></div></div>
+    <script type="module" src="/src/regionpage.ts"></script>
+  </body>
+</html>
