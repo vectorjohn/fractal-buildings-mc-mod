@@ -13,17 +13,17 @@ import java.util.Set;
  * {@code --lots}, v1 uses each type's own test lots (TypeLimits.testLots); v0 uses the Phase 3 four.
  */
 final class Matrix {
-	static final Set<String> OPTIONS = Set.of("lots", "styles", "terrains", "fronts", "types", "gen");
+	static final Set<String> OPTIONS = Set.of("lots", "styles", "terrains", "fronts", "types", "gen", "air");
 	static final String LOTS = "7x7,12x10,20x20,31x17";
 	static final String TERRAINS = "flat:64,plane:64:1:0:4,hill:64:20:24,noise:7:64:6:32";
 	/** Default terrains for types whose maxGrade is above 3 (city block: front steps cannot absorb a steep drop around a whole block). */
 	static final String GENTLE_TERRAINS = "flat:64,plane:64:1:0:24,hill:64:4:120,noise:7:64:1:48";
 	static final String FRONTS = "north,east,south,west";
 
-	record Cell(String label, String type, int[] lot, String style, ProbeSpecs.Probes probes, Facing front) {
+	record Cell(String label, String type, int[] lot, String style, ProbeSpecs.Probes probes, Facing front, int air) {
 		GenRequest request(long seed) {
 			int[] at = Scenes.origin(null, probes, lot[0], lot[1]);
-			return Scenes.request(seed, lot, at, front, type, style, probes);
+			return Scenes.request(seed, lot, at, front, type, style, probes, air);
 		}
 	}
 
@@ -46,7 +46,7 @@ final class Matrix {
 						for (String front : Opts.list(o.get("fronts", FRONTS))) {
 							Scenes.style(style, gen);
 							cells.add(new Cell(type + " " + lot + " " + style + " " + terrain + " " + front, type, own ? Types.get(type).limits().oriented(Opts.lot(lot), Opts.front(front)) : Opts.lot(lot), style,
-									Scenes.probes(terrain), Opts.front(front)));
+									Scenes.probes(terrain), Opts.front(front), o.intValue("air", 0)));
 						}
 		}
 	}

@@ -18,13 +18,19 @@ public final class MassingCheck {
 	/** Largest front overhang of a shop arcade (a jetty carrying the upper storeys over a walkway on posts), in blocks. */
 	public static final int ARCADE_MAX = 3;
 
-	/** Throws {@link IllegalStateException} listing every broken rule. */
-	public static void require(Massing m, int width, int depth, int maxHeight) {
-		List<String> p = check(m, width, depth, maxHeight);
+	/** Throws {@link IllegalStateException} listing every broken rule (front overhangs up to {@link #ARCADE_MAX}). */
+	public static void require(Massing m, int width, int depth, int maxHeight) { require(m, width, depth, maxHeight, ARCADE_MAX); }
+
+	/** As above with the largest front overhang a jetty may have: {@link #JETTY_MAX} for types without arcades or air rights over the street. */
+	public static void require(Massing m, int width, int depth, int maxHeight, int frontMax) {
+		List<String> p = check(m, width, depth, maxHeight, frontMax);
 		if (!p.isEmpty()) throw new IllegalStateException("massing breaks its contract: " + String.join("; ", p));
 	}
 
-	public static List<String> check(Massing m, int width, int depth, int maxHeight) {
+	public static List<String> check(Massing m, int width, int depth, int maxHeight) { return check(m, width, depth, maxHeight, ARCADE_MAX); }
+
+	/** {@code frontMax}: the largest front (north) overhang of a jetty over its parent, in blocks (M5). */
+	public static List<String> check(Massing m, int width, int depth, int maxHeight, int frontMax) {
 		List<String> out = new ArrayList<>();
 		StoreyGrid g = m.grid();
 		List<Mass> ms = m.masses();
@@ -67,7 +73,7 @@ public final class MassingCheck {
 					if (p.to() != a.from()) out.add("M5 " + a.id() + " must start at its parent's top (storey " + p.to() + ")");
 					boolean setback = a.x() >= p.x() && a.z() >= p.z() && a.maxX() <= p.maxX() && a.maxZ() <= p.maxZ();
 					boolean jetty = a.x() <= p.x() && a.z() <= p.z() && a.maxX() >= p.maxX() && a.maxZ() >= p.maxZ()
-							&& p.x() - a.x() <= JETTY_MAX && p.z() - a.z() <= ARCADE_MAX
+							&& p.x() - a.x() <= JETTY_MAX && p.z() - a.z() <= frontMax
 							&& a.maxX() - p.maxX() <= JETTY_MAX && a.maxZ() - p.maxZ() <= JETTY_MAX;
 					if (!setback && !jetty) out.add("M5 " + a.id() + " must lie inside its parent (setback) or contain it with at most " + JETTY_MAX + " overhang (jetty)");
 				}

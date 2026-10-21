@@ -41,7 +41,8 @@ public final class ShellGeneratorV1 {
 		BuildContext c = new BuildContext(spec, type, style);
 		Massing m = type.mass(c);
 		c.setMassing(m);
-		MassingCheck.require(m, spec.width(), spec.depth(), c.maxHeight());
+		// front overhangs: 2 blocks, 3 for shop arcades and for buildings with air rights over the street
+		MassingCheck.require(m, spec.width(), spec.depth(), c.maxHeight(), spec.lead() > 0 || spec.type().equals("shop") ? MassingCheck.ARCADE_MAX : MassingCheck.JETTY_MAX);
 		run(c, Phase.STRUCTURE, type.structure());
 		run(c, Phase.ROOF, type.roofs());
 		run(c, Phase.FACADE, type.facade());

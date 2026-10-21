@@ -23,14 +23,14 @@ scene    { format: "fb-scene/1", genVersion: int, seed: "<int64>",
            terrain: terrain | null, lots: [lot], buildings: [building],
            violations: [violation] }
 terrain  { x0, z0, nx, nz: int, floorY: [int; nx*nz] }   row-major, z outer
-lot      { id, x, z, w, d: int, front: facing }          world columns [x,x+w) x [z,z+d)
+lot      { id, x, z, w, d: int, front: facing, airRights?, frontY?: int }   airRights, frontY: only when airRights > 0          world columns [x,x+w) x [z,z+d)
 building { id, lots: [lot id], origin: [x,y,z], rotation: 0..3,
            shell: shell, siteBoxes: [box] }
 shell    { spec, specHash: "<16 hex>", bounds: {min,size}, storeys: [storey],
            volumes: [volume], rooms: [room], openings: [opening],
            roofs: [roof], boxes: [box], hooks: [hook] }   hooks: genVersion >= 2 only
 spec     { genVersion, specSeed: "<int64>", style, type, width, depth,
-           storeys, roof, maxHeight, streets }       maxHeight, streets: genVersion >= 2 only
+           storeys, roof, maxHeight, streets, lead? }   maxHeight, streets: genVersion >= 2 only; lead: only when > 0
 storey   { index, y, height }       y = local y of the slab; stand at y + 1
 volume   { id, min, size, parent: id | null }
 room     { id, storey, volume, use, parts: [{min,size}] }
@@ -98,6 +98,11 @@ byte-for-byte unchanged; readers treat them as absent for genVersion 1.
   building stays at or below world y 319 wherever the instance pass sets it down on the
   lot. **spec.streets**: bit mask of local sides facing a street (1 north = front,
   2 east, 4 south, 8 west); the front bit is always set. **spec.roof** is `"auto"`.
+  **spec.lead** (Phase 5 JT, written only when above 0): blocks the envelope extends in front of the type's usual
+  front edge (its front margin plus the air rights), so upper storeys can jetty over the street; local z = 0 is that
+  far in front of where it would be and ground masses start at z >= lead. **lot.airRights / lot.frontY** (written only
+  when airRights > 0): how far past the front edge, over the street, voxels are allowed, at world y >= frontY + 3;
+  the `in-lot` invariant accepts exactly that strip (front side only) and nothing else outside the lot.
 - **volume ids** are `<kind><n>` (`main0`, `wing1`, `jetty1`, `podium0`, `shaft1`,
   `crown2`, `hall0`...); a volume's box runs from its first storey's slab to its top
   slab inclusive. A volume whose `min` y is above 0 stands on its `parent` (inside it:
@@ -191,8 +196,7 @@ district { format: "fb-district/1", planVersion: 1, genVersion, seed: "<int64>",
   rejects a lot that lies outside its tile (invariant `lot-in-tile` checks the same on an in-memory plan).
 - **`streets` in a lot** is the mask of its sides facing a street in the **lot's local frame** (1 front, 2 east of the
   front, 4 back, 8 west of the front, as `BuildingSpec.streets`); the generator forces the front bit. `frontY` is the
-  street surface y in front of the front edge centre, or `-2147483648` (`Brief.NO_FRONT_Y`) if unknown. `airRights` is 0
-  until the jetty step.
+  street surface y in front of the front edge centre, or `-2147483648` (`Brief.NO_FRONT_Y`) if unknown. `airRights` is how far the building may overhang the street (0 to 2; JT).
 - **Skeleton output** (SK, `Skeletons.plan`, CLI `city`): `quarters` always lists all eight kinds in the order shown above
   (`id` = position), so merged cells need no renumbering. The coarse lattice is 32 blocks; `mask` and `density` are 0/0
   outside the urban part, `quarter` is -1 there. `districts` hold the tiles whose centre lies in a member cell and that
@@ -208,7 +212,11 @@ district { format: "fb-district/1", planVersion: 1, genVersion, seed: "<int64>",
 - **Brief** (`GenRequest.brief`, optional, `core/gen/Brief`): `{minStoreys, maxStoreys, streets, airRights, frontY}`
   from a lot of the plan. `SpecPolicyV1` draws storeys from the brief's range intersected with the type's (if they do
   not meet, the type's bound nearest the brief) and sets `spec.streets` from the brief (front forced, unless the type
-  has `allStreets`). Without a brief nothing changes.
+  has `allStreets`). With `airRights` > 0, a known `frontY`, a style with jetties (medieval), a house or shop of 2+
+  storeys and ground no lower than `frontY` across the lot, it sets `spec.lead`: the upper storeys of the main stack may
+  jetty over the street (front overhang 1 to `airRights` blocks past the lot edge; the front wall stays at the usual
+  front edge, so the strip over the street starts at storey 1, at least 4 blocks above the street). Without a brief
+  nothing changes.
 - **Checks** (`core/check/SettlementChecks`, separate from `Invariants`): `lot-in-tile`, `lots-disjoint` (lots overlap no
   other lot, street footprint, plaza or landmark). Later steps add rules there.
 

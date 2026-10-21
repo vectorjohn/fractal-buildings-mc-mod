@@ -29,6 +29,9 @@ public final class SpecPolicyV1 {
 		return lim.maxGrade() <= 3 || (long) relief * lim.maxGrade() <= w + d + lim.maxGrade();
 	}
 
+	/** Types whose massing programs use air rights over the street (houses and shops). */
+	public static boolean airType(String type) { return type.equals("house") || type.equals("shop"); }
+
 	public static BuildingSpec spec(GenRequest req) {
 		BuildingType t = Types.get(req.type());
 		TypeLimits lim = t.limits();
@@ -73,6 +76,12 @@ public final class SpecPolicyV1 {
 			if (!lim.allStreets()) streets = brief.streets() | BuildingSpec.STREET_FRONT;
 		}
 		int storeys = r.range(lo, hi);
-		return new BuildingSpec(GeneratorV1.GEN_VERSION, specSeed, style.id(), t.id(), w, d, storeys, "auto", maxHeight, streets);
+		int lead = 0;
+		if (brief != null && airType(t.id()) && storeys >= 2 && brief.airRights() > 0 && brief.frontY() != Brief.NO_FRONT_Y
+				&& style.massing().jetty() > 0 && minFloor >= brief.frontY()) {
+			// air rights: the envelope grows by the front margin plus the air in front, so upper storeys can jetty over the street (docs/plans/phase5.md "JT")
+			lead = lim.front() + Math.min(brief.airRights(), BuildingSpec.MAX_LEAD - lim.front());
+		}
+		return new BuildingSpec(GeneratorV1.GEN_VERSION, specSeed, style.id(), t.id(), w, d + lead, storeys, "auto", maxHeight, streets, lead);
 	}
 }

@@ -47,8 +47,10 @@ public final class IrJson {
 	}
 
 	private static String lot(Lot l) {
-		return JsonWriter.object().text("id", l.id()).num("x", l.x()).num("z", l.z()).num("w", l.w()).num("d", l.d())
-				.text("front", l.front().json()).build();
+		JsonWriter o = JsonWriter.object().text("id", l.id()).num("x", l.x()).num("z", l.z()).num("w", l.w()).num("d", l.d())
+				.text("front", l.front().json());
+		if (l.airRights() > 0) o.num("airRights", l.airRights()).num("frontY", l.frontY());
+		return o.build();
 	}
 
 	private static String min(Box3 b) { return ints(b.x(), b.y(), b.z()); }
