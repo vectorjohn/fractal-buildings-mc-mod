@@ -208,7 +208,7 @@ export function drawRegion(ctx: CanvasRenderingContext2D, region: Dump, terrain:
     ctx.stroke();
   }
   for (const c of L.cells) {
-    if (!c.city) continue;
+    if (!c.city || c.claimedBy) continue; // members are drawn by their winner's disk
     stats.settled++;
     const col = TIER_COLOUR[c.tier] ?? '#fff';
     ctx.strokeStyle = col;

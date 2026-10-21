@@ -22,7 +22,7 @@ final class RegionCommand {
 	private RegionCommand() {}
 
 	static int run(String[] args) throws IOException {
-		Opts o = new Opts(args, Set.of("seed", "terrain", "cell-size", "window", "max-radius", "out"), Set.of());
+		Opts o = new Opts(args, Set.of("seed", "terrain", "cell-size", "window", "max-radius", "policy", "out"), Set.of());
 		long seed = o.longValue("seed");
 		String spec = o.get("terrain", "flat:64");
 		int cell = intOpt(o, "cell-size", 1024);
@@ -47,7 +47,9 @@ final class RegionCommand {
 		RegionPlanner planner = new RegionPlanner(new RegionField(seed, cell), probe);
 		if (o.has("max-radius")) planner.maxRadius = intOpt(o, "max-radius", planner.maxRadius);
 		long t0 = System.nanoTime();
-		RegionMap.Layer layer = RegionMap.layer(planner, w);
+		String policy = o.get("policy", "join");
+		if (!policy.equals("join") && !policy.equals("grow")) throw new UsageException("--policy must be join or grow");
+		RegionMap.Layer layer = policy.equals("join") ? RegionMap.layer(planner, w) : RegionMap.growLayer(planner, w);
 		double ms = (System.nanoTime() - t0) / 1e6;
 		String json = RegionMap.toJson(seed, "cli", probe, w, List.of(layer));
 

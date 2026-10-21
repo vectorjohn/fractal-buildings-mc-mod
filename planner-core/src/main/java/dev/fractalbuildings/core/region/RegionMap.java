@@ -26,11 +26,24 @@ public final class RegionMap {
 		public int z1() { return z0 + (nz - 1) * RegionProbe.STRIDE; }
 	}
 
-	/** One field's decisions over the window. */
-	public record Layer(RegionPlanner planner, String policy, List<CellDecision> cells) {}
+	/** {@code claimedBy} is parallel to {@code cells}: the owner cell that claimed it, or null. */
+	public record Layer(RegionPlanner planner, String policy, List<CellDecision> cells, List<CellKey> claimedBy) {}
 
+	/** Grow policy: every cell decides alone, radius clamped to half a cell. */
+	public static Layer growLayer(RegionPlanner planner, Window w) {
+		List<CellDecision> cells = planner.decideWindow(w.x0(), w.z0(), w.x1(), w.z1());
+		return new Layer(planner, "grow", cells, java.util.Collections.nCopies(cells.size(), null));
+	}
+
+	/** Join policy (MC1): big settlements claim cells; see {@link FieldRegionView}. */
 	public static Layer layer(RegionPlanner planner, Window w) {
-		return new Layer(planner, "grow", planner.decideWindow(w.x0(), w.z0(), w.x1(), w.z1()));
+		List<CellDecision> cells = new ArrayList<>();
+		List<CellKey> claimedBy = new ArrayList<>();
+		for (FieldRegionView.Resolved r : new FieldRegionView(planner, w).resolveWindow(w.x0(), w.z0(), w.x1(), w.z1())) {
+			cells.add(r.decision());
+			claimedBy.add(r.claimedBy());
+		}
+		return new Layer(planner, "join", cells, claimedBy);
 	}
 
 	private static String f(double d) {
@@ -105,7 +118,10 @@ public final class RegionMap {
 					first = false;
 					sb.append('"').append(e.getKey()).append("\":").append(f(e.getValue()));
 				}
-				sb.append("}}");
+				sb.append('}');
+				CellKey by = l.claimedBy().get(i);
+				if (by != null) sb.append(",\"claimedBy\":[").append(by.cx()).append(',').append(by.cz()).append(']');
+				sb.append('}');
 			}
 			sb.append("],\"sites\":[");
 			int S = fld.cellSize;
