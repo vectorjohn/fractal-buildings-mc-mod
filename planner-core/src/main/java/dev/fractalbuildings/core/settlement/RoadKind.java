@@ -1,8 +1,8 @@
 package dev.fractalbuildings.core.settlement;
 
-/** Kind of road, widest first. JSON: the lower-case string shown. */
+/** Kind of road, widest first (a quay is the waterfront promenade, TR 5.3). JSON: the lower-case string shown. */
 public enum RoadKind {
-	ARTERIAL("arterial"), MAIN("main"), STREET("street"), LANE("lane"), PATH("path");
+	ARTERIAL("arterial"), MAIN("main"), STREET("street"), QUAY("quay"), LANE("lane"), PATH("path");
 
 	public final String json;
 

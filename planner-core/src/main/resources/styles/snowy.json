@@ -27,7 +27,8 @@
     "stair": ["minecraft:spruce_planks", "minecraft:dark_oak_planks"],
     "road": ["minecraft:gravel", "minecraft:spruce_planks"],
     "paving": ["minecraft:stone_bricks"],
-    "ground": ["minecraft:dirt"]
+    "ground": ["minecraft:dirt"],
+    "deck": ["minecraft:spruce_planks"]
   },
 
   "colours": {
@@ -43,6 +44,7 @@
     "stair": ["#7a5a34", "#4b3621"],
     "road": ["#8c8782", "#7a5a34"],
     "paving": ["#8a8a8a"],
-    "ground": ["#6b4f33"]
+    "ground": ["#6b4f33"],
+    "deck": ["#7a5a38"]
   }
 }

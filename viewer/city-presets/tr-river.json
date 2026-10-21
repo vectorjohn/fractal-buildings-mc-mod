@@ -1,0 +1,7 @@
+{
+  "seed": 987654321,
+  "terrain": "recorded:fixtures/terrain/gate-temperate-city.json.gz",
+  "site": {"at": [1280, -9600], "tier": "city", "radius": 477},
+  "scenes": ["d7_m59", "d8_m59"],
+  "camera": {"plan": {"layers": "+terrain", "x": 1250, "z": -9380, "zoom": 1.6}}
+}

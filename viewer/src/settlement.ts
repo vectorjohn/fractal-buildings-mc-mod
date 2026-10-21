@@ -6,7 +6,7 @@ export const SETTLEMENT_FORMAT = 'fb-settlement/1';
 export const DISTRICT_FORMAT = 'fb-district/1';
 export const PLAN_VERSION = 1;
 
-export const ROAD_KINDS = ['arterial', 'main', 'street', 'lane', 'path'] as const;
+export const ROAD_KINDS = ['arterial', 'main', 'street', 'quay', 'lane', 'path'] as const;
 export type RoadKind = (typeof ROAD_KINDS)[number];
 export const GATE_KINDS = ['cell', 'wall', 'exit'] as const;
 export const LANDMARK_KINDS = ['square', 'market', 'green', 'park', 'temple', 'hall', 'tower'] as const;

@@ -27,7 +27,8 @@
     "stair": ["minecraft:oak_planks", "minecraft:birch_planks"],
     "road": ["minecraft:dirt_path", "minecraft:gravel"],
     "paving": ["minecraft:stone_bricks", "minecraft:cobblestone"],
-    "ground": ["minecraft:dirt", "minecraft:coarse_dirt"]
+    "ground": ["minecraft:dirt", "minecraft:coarse_dirt"],
+    "deck": ["minecraft:oak_planks"]
   },
 
   "colours": {
@@ -43,6 +44,7 @@
     "stair": ["#b08a55", "#c8b077"],
     "road": ["#9a7f55", "#8c8782"],
     "paving": ["#8a8a8a", "#7f7f7f"],
-    "ground": ["#6b4f33", "#76593a"]
+    "ground": ["#6b4f33", "#76593a"],
+    "deck": ["#a07a48"]
   }
 }

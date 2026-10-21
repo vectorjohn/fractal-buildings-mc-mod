@@ -99,3 +99,21 @@ describe('rasters and hit tests', () => {
     expect(lotAt(d, l.x + l.w, l.z)?.id).not.toBe(l.id);
   });
 });
+
+describe('terrain response kinds and roles (TR)', () => {
+  it('draws a quay in its own colour and reads the kind', async () => {
+    const { ROAD_COLOUR } = await import('./planDraw');
+    const { ROAD_KINDS } = await import('./settlement');
+    expect(ROAD_KINDS).toContain('quay');
+    expect(ROAD_COLOUR.quay).not.toBe(ROAD_COLOUR.street);
+    const j = JSON.parse(readFileSync(`${dir}/districts/${s.districts.find((d) => d.detail !== null)!.id}.json`, 'utf8'));
+    j.streets[0].kind = 'quay';
+    expect(parseDistrict(JSON.stringify(j)).streets[0]!.kind).toBe('quay');
+  });
+
+  it('knows the deck role', async () => {
+    const { roleColour, UNKNOWN_COLOUR } = await import('./palettes');
+    expect(roleColour('deck')).not.toBe(UNKNOWN_COLOUR);
+    expect(roleColour('deck')).not.toBe(roleColour('ground'));
+  });
+});

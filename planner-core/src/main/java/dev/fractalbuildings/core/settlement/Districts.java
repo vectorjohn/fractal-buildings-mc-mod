@@ -267,6 +267,7 @@ public final class Districts {
 			ports();
 			plazaLanes();
 			if (!moved.isEmpty()) hallLots();
+			quays();
 			frontageLanes();
 			List<Raw> finals = new ArrayList<>();
 			for (Raw r : raws) if (r.street != null) finals.add(r);
@@ -713,6 +714,123 @@ public final class Districts {
 			if (a != b) p[Math.max(a, b)] = Math.min(a, b);
 		}
 
+		// ---- quays (TR 5.3)
+
+		/** A wet 4-lattice point within {@link Quays#OFFSET} blocks of (x, z). */
+		boolean nearWater(int x, int z) {
+			int r = Quays.OFFSET;
+			for (int pz = Math.floorDiv(z - r, 4) * 4; pz <= z + r; pz += 4) {
+				for (int px = Math.floorDiv(x - r, 4) * 4; px <= x + r; px += 4) {
+					long dx = px - x, dz = pz - z;
+					if (dx * dx + dz * dz <= (long) r * r && wt(px, pz)) return true;
+				}
+			}
+			return false;
+		}
+
+		/** Lowest water surface of the wet 4-lattice points within 12 blocks of (x, z), or MAX_VALUE when none. */
+		int waterLevel(int x, int z) {
+			int best = Integer.MAX_VALUE;
+			for (int pz = Math.floorDiv(z - 12, 4) * 4; pz <= z + 12; pz += 4) {
+				for (int px = Math.floorDiv(x - 12, 4) * 4; px <= x + 12; px += 4) if (wt(px, pz)) best = Math.min(best, exact.surfaceY(px, pz));
+			}
+			return best;
+		}
+
+		/** Some urban column of the tile lies in the waterfront quarter (a cheap screen before any exact probe). */
+		boolean hasWaterfront() {
+			for (int z = Math.floorDiv(tile.minZ(), 32) * 32; z <= tile.maxZ() + 32; z += 32) {
+				for (int x = Math.floorDiv(tile.minX(), 32) * 32; x <= tile.maxX() + 32; x += 32) {
+					if (den.urban(x, z) && qf.at(x, z, den.at(x, z)) == QuarterKind.WATERFRONT) return true;
+				}
+			}
+			return false;
+		}
+
+		/** No wet 4-lattice point within 3 blocks of (x, z) (what the WET flag marks, but defined for any column, not only the raster). */
+		boolean clearOfWater(int x, int z) {
+			for (int pz = Math.floorDiv(z - 3, 4) * 4; pz <= z + 3; pz += 4) for (int px = Math.floorDiv(x - 3, 4) * 4; px <= x + 3; px += 4) if (wt(px, pz)) return false;
+			return true;
+		}
+
+		/** A quay column: dry, clear of the water, in the waterfront quarter and on a low bank (pointwise: the same answer in every tile). */
+		boolean quayOk(int[] c) {
+			if (wt(c[0], c[1]) || !clearOfWater(c[0], c[1])) return false;
+			if (!den.urban(c[0], c[1])) return false;
+			int dens = den.at(c[0], c[1]);
+			if (dens < QuarterField.OUTSKIRTS_DENSITY || qf.at(c[0], c[1], dens) != QuarterKind.WATERFRONT) return false; // outskirts keep their bank
+			int rise = fl(c[0], c[1]) - waterLevel(c[0], c[1]);
+			return rise >= 0 && rise <= Quays.MAX_RISE;
+		}
+
+		/**
+		 * Promenades along the water of the waterfront quarter: the marching-squares contour of "water within 8 blocks" on the street
+		 * lattice, clipped to the dry columns on a low bank, each piece joined to the nearest road or street by a lane (so lots on it
+		 * can be reached). Pointwise, so neighbouring tiles list the same promenade near their border.
+		 */
+		void quays() {
+			if (!hasWaterfront()) return;
+			int pad = Quays.MIN_LEN + MARGIN + 2 * Quays.STEP; // a run seen through the window is as long as the whole run, or already past the minimum
+			List<Raw> base = new ArrayList<>(raws);
+			int cn = 0;
+			for (List<Pt> chain : Quays.contour(this::nearWater, tile.minX() - pad, tile.minZ() - pad, tile.maxX() + pad, tile.maxZ() + pad)) {
+				List<int[]> cols = StreetCols.columns(chain);
+				if (chain.get(0).equals(chain.get(chain.size() - 1))) cols = breakRing(cols);
+				for (List<int[]> whole : StreetCols.runs(cols, this::quayOk)) {
+					if (whole.size() < Quays.MIN_LEN) continue; // judged before clipping, so the neighbouring tile decides alike
+					for (List<int[]> run : StreetCols.runs(whole, c -> keep(c) && !hitsReserved(c, Quays.WIDTH))) {
+						Raw q = new Raw("quay" + Ids.n(run.get(0)[0]) + "_" + Ids.n(run.get(0)[1]), RoadKind.QUAY, Quays.WIDTH, run, false);
+						grade(q); // a steep stretch is the road's to bear (a promenade is never dropped: both tiles must list it)
+						raws.add(q);
+						paint(q);
+						Raw link = quayLink("k" + cn, run, base);
+						if (link != null) { cn++; raws.add(link); paint(link); }
+					}
+				}
+			}
+		}
+
+		/** A closed ring of columns, rotated to start just after a column that is no quay, so a run through the ring's start is not split (the start depends on the window). */
+		List<int[]> breakRing(List<int[]> ring) {
+			List<int[]> cols = new ArrayList<>(ring.subList(0, ring.size() - 1));
+			for (int k = 0; k < cols.size(); k++) {
+				if (quayOk(cols.get(k))) continue;
+				List<int[]> out = new ArrayList<>(cols.subList(k + 1, cols.size()));
+				out.addAll(cols.subList(0, k));
+				return out;
+			}
+			return ring; // every column is a quay: one closed promenade, cut where the ring starts
+		}
+
+		/** A lane from the column of a quay nearest to a road or street, to that street; null when none is within reach or the route is bad. */
+		Raw quayLink(String laneId, List<int[]> run, List<Raw> base) {
+			int m = StreetRules.NODE;
+			int[] from = null, to = null;
+			long best = 200L * 200L;
+			for (int i = 0; i < run.size(); i += 4) {
+				int[] c = run.get(i);
+				if (c[0] < tile.minX() + m || c[0] > tile.maxX() - m || c[1] < tile.minZ() + m || c[1] > tile.maxZ() - m) continue;
+				int[] near = nearest(base, c[0], c[1]);
+				if (near == null) continue;
+				long dx = near[0] - c[0], dz = near[1] - c[1], d = dx * dx + dz * dz;
+				if (d < best) { best = d; from = c; to = near; }
+			}
+			if (from == null) return null;
+			int qx = from[0], qz = from[1];
+			int gx = qx + Math.round((to[0] - qx) / (float) m) * m, gz = qz + Math.round((to[1] - qz) / (float) m) * m;
+			LatticePath.Bounds b = new LatticePath.Bounds(tile.minX() + m, tile.minZ() + m, tile.maxX() - m, tile.maxZ() - m);
+			if (!b.contains(gx, gz) || (gx == qx && gz == qz)) return null;
+			List<LatticePath.Pt> path = LatticePath.find(new LatticePath.Pt(qx, qz), new LatticePath.Pt(gx, gz), laneCost(qx, qz, 8), b, m, -1, 20_000, false);
+			if (path.size() < 2) return null;
+			List<Pt> routed = new ArrayList<>();
+			for (LatticePath.Pt q : path) routed.add(new Pt(q.x(), q.z()));
+			Pt last = routed.get(routed.size() - 1);
+			if (last.x() != to[0] && last.z() != to[1]) routed.add(new Pt(to[0], last.z()));
+			if (routed.get(routed.size() - 1).x() != to[0] || routed.get(routed.size() - 1).z() != to[1]) routed.add(new Pt(to[0], to[1]));
+			Raw lane = laneRaw(laneId, routed);
+			return lane != null && !hitsReservedAny(lane) && grade(lane) ? lane : null;
+		}
+
 		// ---- lanes
 
 		/** Is a lattice node of a lane search usable, and what does stepping to it cost? */
@@ -918,7 +1036,7 @@ public final class Districts {
 		void frontageLanes() {
 			if (!src.program().lanes()) return;
 			List<Raw> base = new ArrayList<>();
-			for (Raw r : raws) if (r.kind == RoadKind.MAIN || r.kind == RoadKind.PATH || (r.kind == RoadKind.STREET && !r.id.startsWith("s"))) base.add(r);
+			for (Raw r : raws) if (r.kind == RoadKind.MAIN || r.kind == RoadKind.PATH || r.kind == RoadKind.QUAY || (r.kind == RoadKind.STREET && !r.id.startsWith("s"))) base.add(r);
 			base.sort(Comparator.comparing(r -> r.id));
 			int m = StreetRules.NODE;
 			Rect inner = new Rect(tile.minX() + 14, tile.minZ() + 14, tile.widthX() - 28, tile.widthZ() - 28);

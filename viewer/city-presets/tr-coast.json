@@ -1,0 +1,7 @@
+{
+  "seed": 12345,
+  "terrain": "recorded:fixtures/terrain/gate-coast-city.json.gz",
+  "site": {"at": [-7360, -3712], "tier": "city", "radius": 740},
+  "scenes": ["dm47_m22", "dm45_m27"],
+  "camera": {"plan": {"layers": "+terrain", "x": -7400, "z": -3450, "zoom": 1.6}}
+}

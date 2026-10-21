@@ -60,7 +60,24 @@ public final class Arterials {
 		int mid = Math.floorDiv(s.from() + s.to(), 2);
 		double p = probability(density.base(ax(s, mid), az(s, mid)));
 		if (p <= 0 || Tiers.unit(s.hash(seed, "arterial")) >= p) return false;
-		return waterOk(s);
+		return waterOk(s) && gradeOk(s);
+	}
+
+	/**
+	 * Terrain response (TR 5.3): an arterial runs only where a road can be graded along it, so no two coarse samples 32 blocks apart
+	 * differ by more than {@link CoarseTerrain#ROAD_STEEP_PER_32} (1 in 2; the road grade limit is 1 in 3, but the cut and fill beside a
+	 * nine-wide road on steeper ground would shear the hill). Bridged spans are exempt. Pointwise.
+	 */
+	boolean gradeOk(DistrictGrid.Segment s) {
+		int limit = CoarseTerrain.ROAD_STEEP_PER_32 * terrain.step / 32;
+		int prev = Integer.MIN_VALUE;
+		for (int q = terrain.snap(s.from()); q <= terrain.snap(s.to()); q += terrain.step) {
+			if (terrain.water(ax(s, q), az(s, q))) { prev = Integer.MIN_VALUE; continue; }
+			int h = terrain.floorY(ax(s, q), az(s, q));
+			if (prev != Integer.MIN_VALUE && Math.abs(h - prev) > limit) return false;
+			prev = h;
+		}
+		return true;
 	}
 
 	/** The segment crosses no run of water wider than {@link #MAX_BRIDGE} (coarse lattice samples along it). Pointwise. */

@@ -141,8 +141,8 @@ lot of one district tile.
   plaza paving, fill, cuts (`air`), bridge decks and piers. Every ground box has `layer: "ground"` and `storey: -1`
   (`ir-valid` checks both). Boxes apply in list order; later wins. Road boxes sit at `y - 1` where `y` is the street's
   surface height (heightmap convention, the first free y).
-- **roles** `road`, `paving`, `ground` (fill earth): solid and closed. Every style's `palette` and `colours` carry them
-  (`road`: gravel/path gradient, `paving`: stone bricks, `ground`: dirt; desert uses sandstone and sand).
+- **roles** `road`, `paving`, `ground` (fill earth), `deck` (bridge decks and piers, TR 5.3: planks, sandstone in the desert): solid and closed. Every style's `palette` and `colours` carry them
+  (`road`: gravel/path gradient, `paving`: stone bricks, also a quay street's surface, `ground`: dirt, `deck`: planks; desert uses sandstone and sand).
 - **layer** `ground`.
 - `lots` and `buildings` list every built lot of the district; building ids are `b0`..`bN` in lot order.
 
@@ -173,7 +173,7 @@ settlement { format: "fb-settlement/1", planVersion: 1, genVersion, seed: "<int6
   cells:     [{ cx, cz, site: [x, z], polygon: [[x, z]] }],
   districts: [{ id, ix, iz, x, z, w, d, origin: [chunkX, chunkZ], quarter, density,
                 styles: [{ style, weight }], lots, detail: "<path>" | null }],
-  roads:     [{ id, kind, width, points: [[x, z]], bridges: [[i, j]] }],   kind: arterial|main|street|lane|path;
+  roads:     [{ id, kind, width, points: [[x, z]], bridges: [[i, j]] }],   kind: arterial|main|street|quay|lane|path (a `quay` is the waterfront promenade, width 4, TR 5.3);
                                                                            bridges: inclusive point-index ranges over water
   gates:     [{ id, kind, x, z, cells: [[cx, cz], [cx, cz]] | null, road: id | null }],   kind: cell|wall|exit
   landmarks: [{ id, kind, x, z, w, d, district }],   kind: square|market|green|park|temple|hall|tower
@@ -213,7 +213,7 @@ district { format: "fb-district/1", planVersion: 1, genVersion, seed: "<int64>",
   tile-border arterials and plain border streets, the grid lines shared along a row or column of tiles, hashed port lanes and
   frontage lanes, each clipped to the tile plus 8 blocks (so two tiles at a border list the same streets; a lot never lies outside the
   tile). Ids: the road's own (`r..`, a later piece of the same road gets `.1`...), `a<axis><line>_<from>` arterials, `b<axis><line>_<from>`
-  border streets, `sx<x>_<z>` / `sz<z>_<x>` grid lines, `t<n>` ports, `n<n>` lanes; sorted by id. `points` include a point at every 8th
+  border streets, `sx<x>_<z>` / `sz<z>_<x>` grid lines, `t<n>` ports, `n<n>` lanes, `quay<x>_<z>` waterfront promenades (kind `quay`, width 4: the marching-squares contour of "water within 8 blocks" on the 8-lattice, kept in the waterfront quarter, on a bank at most 4 above the water, runs of 40+ columns; `k<n>` lanes link them to the nearest street); sorted by id. `points` include a point at every 8th
   column and at water edges so `y` (the graded surface at each point, from `Grading.profile` on these very columns) interpolates to what
   `Grading.road` gives again. `lots`: `airRights` is the jetty reach over the front street (0 on a front under 4 wide or a plaza, 2
   from width 7, else 1), `frontY` the street surface at the front centre, `style` `auto` until the brief filler (`Briefs.fill`) runs.

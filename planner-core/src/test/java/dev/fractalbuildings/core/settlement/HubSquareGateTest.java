@@ -15,8 +15,8 @@ import org.junit.jupiter.api.Test;
 
 /** The hub's district on each real-terrain gate window (fixtures/terrain/gate-sites.tsv) gets its central square, a hall and a temple, within a bounded probe budget. */
 class HubSquareGateTest {
-	/** Windows where a hall or temple still finds no free dry ground beside the square (lake, tile edge, or the lane joining the moved square to the roads); everything else must have both. */
-	static final java.util.Set<String> NO_FACING = java.util.Set.of("gate-temperate-city:hall", "gate-temperate-city:temple", "gate-desert-badlands:hall", "gate-desert-badlands:temple", "gate-snow-city:temple", "gate-jungle-savanna:temple", "gate-border-desert-jungle:hall", "gate-border-desert-jungle:temple", "gate-coast-city:temple", "gate-metropolis-temperate:temple", "gate-metropolis-mixed:hall", "gate-metropolis-mixed:temple", "gate-joined-city:temple");
+	/** Windows where a hall or temple still finds no free dry ground beside the square (lake, tile edge, or the lane joining the moved square to the roads; metropolis-temperate:hall since TR changed the mask and arterials around its hub; joined-city:temple now finds a lot); everything else must have both. */
+	static final java.util.Set<String> NO_FACING = java.util.Set.of("gate-temperate-city:hall", "gate-temperate-city:temple", "gate-desert-badlands:hall", "gate-desert-badlands:temple", "gate-snow-city:temple", "gate-jungle-savanna:temple", "gate-border-desert-jungle:hall", "gate-border-desert-jungle:temple", "gate-coast-city:temple", "gate-metropolis-temperate:hall", "gate-metropolis-temperate:temple", "gate-metropolis-mixed:hall", "gate-metropolis-mixed:temple");
 
 	@Test
 	void everyGateWindowHasItsHubSquare() throws Exception {

@@ -27,7 +27,8 @@
     "stair": ["minecraft:jungle_planks", "minecraft:bamboo_planks"],
     "road": ["minecraft:dirt_path", "minecraft:mud_bricks"],
     "paving": ["minecraft:mossy_stone_bricks", "minecraft:stone_bricks"],
-    "ground": ["minecraft:podzol", "minecraft:dirt"]
+    "ground": ["minecraft:podzol", "minecraft:dirt"],
+    "deck": ["minecraft:jungle_planks", "minecraft:bamboo_planks"]
   },
 
   "colours": {
@@ -43,6 +44,7 @@
     "stair": ["#a07850", "#c8b05a"],
     "road": ["#9a7f55", "#6e5a4a"],
     "paving": ["#6f7f66", "#8a8a8a"],
-    "ground": ["#5a4a2e", "#6b4f33"]
+    "ground": ["#5a4a2e", "#6b4f33"],
+    "deck": ["#a0683e", "#c2b25a"]
   }
 }
