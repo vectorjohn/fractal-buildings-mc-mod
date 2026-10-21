@@ -16,7 +16,7 @@ person have built this town here?** All the questions are collected at the end a
   (`plan-district.jpg`), the skyline colours (`plan-height.jpg`, lots by top storey: pale yellow
   1, orange 5 to 10, red 20 to 30, violet 60), and 2 to 5 fly-through frames of the featured
   district (`fly-N.jpg`: two aerials, a street-level view along the street most lots front onto,
-  the square or green, and a low skyline view for big cities). 86 JPEGs, 7.3 MB.
+  the square or green, and a low skyline view for big cities). 86 JPEGs, 7.7 MB.
 - [city-check.md](city-check.md): `city-check` with no rule ignored over the 9 gate windows,
   200 synthetic sites and both world maps: **0 violations**.
 - [scale.md](scale.md): the scale check (5.9), re-measured by TIDY after TR, ROADS and D3.
@@ -29,10 +29,7 @@ person have built this town here?** All the questions are collected at the end a
 avenues, grey streets and lanes, blue quays; lots are filled by type (orange house, light blue
 shop, purple workshop, dark blue high-rise, pink hall, pale yellow temple, red city block) and
 labelled squares are landmarks. The overview of a big city draws each district tile by density
-instead of lots (below 0.5 px per block). The 3D frames use the palette colours of the
-**first building's style for the whole district** (a viewer limit: in a mixed district every
-building is drawn in one palette; the plan and the counts below give the real mix), and the 3D
-terrain is always grass-green, whatever the biome.
+instead of lots (below 0.5 px per block). The 3D frames colour each building in its own style's palette (jungle moss roofs, desert sandstone, plains red tiles, ...), and the ground (terrain and roads) takes the tint of the nearest building's style: green for plains and jungle (darker), sand for desert, white for snowy, dark green for taiga. Scenes carry no biome, so the terrain tint is a stand-in, not the real biome edge; the plan view and the counts below give the real mix. (Re-captured after the viewer fix `p5-viewer-palette`; earlier frames painted a whole district in the first building's palette.)
 
 **Interactive.** `cd viewer && nix develop -c npm run city -- <preset>` (or no names for all),
 then `nix develop -c npm run dev` and open
@@ -44,7 +41,7 @@ then `nix develop -c npm run dev` and open
 scene, list in `viewer/e2e/gate-pack-featured.json`), then
 `npx vite build && FB_PORT=<port> GATE_PACK=1 npx playwright test e2e/gate-pack.spec.ts`
 (about 5 minutes; PNGs in `viewer/out/gate-pack/<preset>/`; the committed JPEGs are a
-re-encoded subset).
+re-encoded subset: `node scripts/png-to-jpg.mjs src.png dst.jpg ...`, quality 0.82; `FB_CITIES=a,b` limits the capture).
 
 # The cities
 
@@ -128,8 +125,8 @@ lots, all jungle): [aerial](cities/gate-border-desert-jungle/fly-1.jpg),
 [skyline](cities/gate-border-desert-jungle/fly-5.jpg).
 Seen: jungle 230 and desert 102 lots; the blend is per lot (a hashed vote over 48 blocks, ST),
 so across the border lots of the two styles mix for a few tiles. The plan outlines lots by style
-but the difference is hard to see at overview scale; the 3D view cannot show a mixed district
-(one palette per scene). Green bamboo roofs on the jungle houses read as jungle.
+but the difference is hard to see at overview scale; the 3D view now draws each building in its own style
+(re-captured after p5-viewer-palette). Green bamboo roofs on the jungle houses read as jungle.
 
 ## 6. Larger than 512², on water (`gate-coast-city`, seed 12345)
 

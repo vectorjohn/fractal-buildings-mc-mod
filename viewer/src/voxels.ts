@@ -103,3 +103,31 @@ export function cutBounds(scene: Scene, maxStorey: number): { min: Vec3; max: Ve
   if (!isFinite(top)) return full;
   return { min: full.min, max: [full.max[0], Math.max(top, full.min[1] + 1), full.max[2]] };
 }
+
+/** World footprint centre (x, z) of a building (rotation 1 and 3 swap the extent). */
+export function buildingCentre(b: Building): [number, number] {
+  const [sx, , sz] = b.shell.bounds.size;
+  const odd = b.rotation % 2 === 1;
+  return [b.origin[0] + (odd ? sz : sx) / 2, b.origin[2] + (odd ? sx : sz) / 2];
+}
+
+/**
+ * Style of the building nearest (footprint centre) to a world column, so a mixed district takes each style's palette
+ * where its buildings are. `override` forces one style everywhere; one building (or none) is that building's style.
+ */
+export function styleLocator(scene: Scene, override?: string): (x: number, z: number) => string {
+  const bs = scene.buildings;
+  const fallback = override ?? bs[0]?.shell.spec.style ?? 'plain';
+  if (override || bs.length <= 1) return () => fallback;
+  const centres = bs.map(buildingCentre);
+  const styles = bs.map((b) => b.shell.spec.style);
+  if (styles.every((s) => s === styles[0])) return () => fallback;
+  return (x, z) => {
+    let best = 0, bd = Infinity;
+    for (let i = 0; i < centres.length; i++) {
+      const dx = centres[i]![0] - x - 0.5, dz = centres[i]![1] - z - 0.5, d = dx * dx + dz * dz;
+      if (d < bd) { bd = d; best = i; }
+    }
+    return styles[best]!;
+  };
+}

@@ -365,6 +365,7 @@ skeleton, then district detail built lazily (ARCHITECTURE.md, "City scale").
   of a chosen district; the plan view stays usable for cities of several
   thousand blocks (skeleton overview, district detail on demand).
   *V1 landed: the plan view (`viewer/plan.html`, see VIEWER.md "Plan view"). V2 landed: the district 3D view and fly-through (VIEWER.md "District 3D view"; face meshing, terrain heightfield, water, ground boxes, `?camera=fly&stops=`). Known issues: the storeys slider does nothing on the face-mesh path; hook markers are not drawn there.*
+  *p5-viewer-palette (2026-10-21): district 3D scenes colour each building by its own style's colour table (both mesh paths) and tint the terrain and ground by the nearest building's style (scenes carry no biome); an explicit `style` still forces one palette; gate-pack 3D frames re-captured ([log](log/2026-10-21-p5-viewer-palette.md)).*
 - [x] **5.6 Determinism**: the skeleton is built from the region cell alone and
   each district's detail from (cell, district), so every district start
   reproduces them identically in any order.
