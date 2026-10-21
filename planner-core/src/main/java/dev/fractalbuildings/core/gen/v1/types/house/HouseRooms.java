@@ -37,6 +37,38 @@ final class HouseRooms implements RoomProgram {
 		};
 	}
 
+	/** Chance in 100 that a spare room repeats a kitchen or living room instead of being another bedroom: the odd house. */
+	static final int REPEAT_PERCENT = 15;
+
+	/**
+	 * Spare rooms of a floor: first the missing kitchen (and living room, if the entry did not become one),
+	 * then bedrooms, so a house with room to spare gets a second and third bedroom before a second
+	 * living room. A one-storey house sleeps on its ground floor, so it takes a bedroom first. A seeded
+	 * few rooms repeat a type anyway.
+	 */
+	@Override
+	public void refine(Role[] roles, int[] areas, String[] uses, Where w, Draws d) {
+		if (w.storey() != 0) return;
+		if (roles.length == 1 && roles[0] == Role.ENTRY && w.storeys() == 1 && areas[0] < LIVING_MIN_AREA) { uses[0] = "bedroom"; return; } // a hut is one bedroom with a door (CIRC2)
+		List<Integer> spare = new ArrayList<>();
+		boolean kitchen = false, living = false;
+		for (int i = 0; i < roles.length; i++) {
+			if (roles[i] == Role.ROOM) spare.add(i);
+			else if (uses[i].equals("kitchen")) kitchen = true;
+			else if (uses[i].equals("living")) living = true;
+		}
+		for (int i = spare.size() - 1; i > 0; i--) java.util.Collections.swap(spare, i, d.below(i + 1)); // which room gets which use is seeded
+		List<String> order = new ArrayList<>();
+		if (w.storeys() == 1 && (spare.size() > 1 || d.chance(80, 100))) order.add("bedroom"); // a lone wing room is a bedroom 80 % of the time, so a house of wings still gets a kitchen
+		if (!kitchen) order.add("kitchen");
+		if (!living) order.add("living");
+		for (int k = 0; k < spare.size(); k++) {
+			String u = k < order.size() ? order.get(k) : "bedroom";
+			if (k >= order.size() && d.chance(REPEAT_PERCENT, 100)) u = d.chance(1, 2) ? "kitchen" : "living";
+			uses[spare.get(k)] = u;
+		}
+	}
+
 	@Override
 	public List<String> hooks(String use, int area, Where w, Draws d) {
 		List<String> h = new ArrayList<>();

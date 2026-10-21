@@ -61,13 +61,15 @@ record FloorPlan(int w, int d, List<Leaf> leaves, List<Cut> cuts, List<Door> doo
 	static FloorPlan plan(int w, int d, boolean[][] reserved, boolean[][] core, List<int[]> entry, InteriorStyle st, long seed) {
 		if (st.roomArea() <= 0) return single(w, d);
 		FloorPlan best = null;
-		int bestDeep = Integer.MAX_VALUE;
-		for (int attempt = 0; attempt < ATTEMPTS && bestDeep > 0; attempt++) {
+		int bestScore = Integer.MAX_VALUE;
+		for (int attempt = 0; attempt < ATTEMPTS && bestScore > 0; attempt++) {
 			Planner pl = new Planner(w, d, reserved, core, entry, st, Hash64.hash(seed, "attempt", attempt), SCALE[attempt]);
 			FloorPlan p = pl.plan();
-			if (p != null && pl.deep < bestDeep) {
+			if (p == null) continue;
+			int score = pl.deep * DEEP_COST + shapePenalty(p) + (SCALE[attempt] - 100) / SCALE_COST;
+			if (score < bestScore) {
 				best = p;
-				bestDeep = pl.deep;
+				bestScore = score;
 			}
 		}
 		return best != null ? best : single(w, d);
@@ -118,7 +120,28 @@ record FloorPlan(int w, int d, List<Leaf> leaves, List<Cut> cuts, List<Door> doo
 
 	private boolean partition(int x, int z) { return x >= 0 && z >= 0 && x < w && z < d && leafAt[x][z] < 0; }
 
-	/** Plans drawn per floor; the one with the fewest rooms three or more doors from the hub wins (circulation, 5.11). */
+	/** Score of a plan: a room three or more doors from the hub costs this much. */
+	private static final int DEEP_COST = 200;
+	/** Every this many percent of room-size growth costs one point: fewer, bigger rooms are the fallback, not the aim (CIRC2). */
+	private static final int SCALE_COST = 25;
+	/** Rooms up to this aspect ratio (percent) are square enough; beyond it each 10 % costs a point (corridors are meant to be long). */
+	private static final int SOFT_ASPECT = 200;
+	/** A room longer than this many tenths of its width is cut in two across its length where the style's minimum room size allows. */
+	private static final int LONG_TENTHS = 22;
+
+	/** Points for long thin rooms: each 10 % of aspect ratio beyond {@link #SOFT_ASPECT} costs 1; the corridor is exempt. */
+	static int shapePenalty(FloorPlan p) {
+		int pen = 0;
+		for (int i = 0; i < p.leaves().size(); i++) {
+			if (i == p.corridor()) continue;
+			Leaf l = p.leaves().get(i);
+			int a = 100 * Math.max(l.w(), l.d()) / Math.max(1, Math.min(l.w(), l.d()));
+			if (a > SOFT_ASPECT) pen += (a - SOFT_ASPECT) / 10;
+		}
+		return pen;
+	}
+
+	/** Plans drawn per floor; the lowest score wins: few rooms three or more doors from the hub (circulation, 5.11), no long thin rooms, not needlessly big ones (CIRC2). */
 	static final int ATTEMPTS = 8;
 	/** Room-size scale (percent) per attempt: when ordinary plans leave a chain of rooms, try fewer, bigger rooms. */
 	private static final int[] SCALE = {100, 100, 140, 140, 200, 200, 300, 450};
@@ -214,7 +237,8 @@ record FloorPlan(int w, int d, List<Leaf> leaves, List<Cut> cuts, List<Door> doo
 		void split(int rx, int rz, int rw, int rd) {
 			Draws dr = new Draws(Hash64.hash(seed, "split", rx, rz, rw, rd));
 			int target = Math.max(1, st.roomArea() * (70 + dr.below(61)) / 100 * scale / 100);
-			if (rw * rd > target) {
+			boolean thin = sideConstX == null && 10 * Math.max(rw, rd) > LONG_TENTHS * Math.min(rw, rd); // a long thin room is cut across its length even if it is small enough (CIRC2)
+			if (rw * rd > target || thin) {
 				boolean preferX = sideConstX != null ? sideConstX : rw > rd || (rw == rd && dr.chance(1, 2));
 				int pct = 35 + dr.below(31);
 				for (int pass = 0; pass < (sideConstX != null ? 1 : 2); pass++) {

@@ -171,6 +171,8 @@ public final class InteriorPass {
 		FloorPlan plan = a.open() ? FloorPlan.single(w, d) : FloorPlan.plan(w, d, info.reserved(), info.core(), arrivals(info), st, c.hash("interior/plan", idx, s));
 		int n = plan.leaves().size();
 		String[] uses = new String[n];
+		RoomProgram.Role[] roles = new RoomProgram.Role[n];
+		int[] areas = new int[n];
 		for (int l = 0; l < n; l++) {
 			FloorPlan.Leaf lf = plan.leaves().get(l);
 			StoreyGrid g = c.massing().grid();
@@ -180,8 +182,11 @@ public final class InteriorPass {
 			else if (l == plan.corridor()) role = RoomProgram.Role.CORRIDOR;
 			else if (hasCore(info, lf)) role = RoomProgram.Role.STAIR;
 			else if (n > 1 && doorsOf(plan, l) >= 1 && info.join().stream().anyMatch(e -> lf.contains(e[0], e[1]))) role = RoomProgram.Role.THROUGH; // the way through to another mass is a hall, not someone's room
+			roles[l] = role;
+			areas[l] = lf.area();
 			uses[l] = prog.use(role, a.kind(), lf.area(), new RoomProgram.Where(s, g.count()), c.draws("interior/use", idx, s, l));
 		}
+		prog.refine(roles, areas, uses, new RoomProgram.Where(s, c.massing().grid().count()), c.draws("interior/refine", idx, s));
 		plan = plan.withArches(prog::openPlan, uses, info.core(), ARCH_PERCENT, c.draws("interior/arch", idx, s));
 		List<Site> hooks = new ArrayList<>();
 		for (int l = 0; l < n; l++) hookSites(c, prog, plan, info, idx, s, l, uses[l], hooks);
