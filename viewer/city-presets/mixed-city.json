@@ -1,0 +1,7 @@
+{
+  "seed": 1,
+  "terrain": "recorded:fixtures/terrain/w1-mixed-s8.json.gz",
+  "site": {"at": [8500, -3300], "tier": "city", "radius": 450},
+  "scenes": "auto:2",
+  "camera": {"plan": {"layers": "+terrain"}}
+}

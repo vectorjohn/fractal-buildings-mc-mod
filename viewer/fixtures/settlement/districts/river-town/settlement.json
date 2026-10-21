@@ -3,7 +3,7 @@
   "planVersion": 1,
   "genVersion": 2,
   "seed": "12345",
-  "site": {"id": "s-1_-4", "tier": "town", "centre": [-900, -3500], "radius": 300, "claimant": [-1, -4], "cells": [[-1, -4]]},
+  "site": {"id": "sm1_m4", "tier": "town", "centre": [-900, -3500], "radius": 300, "claimant": [-1, -4], "cells": [[-1, -4]]},
   "bounds": {"x": -1216, "z": -3936, "w": 736, "d": 864},
   "coarse": {
     "x0": -1216, "z0": -3936, "step": 32, "nx": 23, "nz": 27,
@@ -35,12 +35,12 @@
     {"id": "dm7_m23", "ix": -7, "iz": -23, "x": -1120, "z": -3680, "w": 160, "d": 144, "origin": [-70, -230], "quarter": 4, "density": 58, "styles": [{"style": "plains", "weight": 22}], "lots": 23, "detail": "districts/dm7_m23.json"},
     {"id": "dm6_m23", "ix": -6, "iz": -23, "x": -960, "z": -3680, "w": 160, "d": 144, "origin": [-60, -230], "quarter": 5, "density": 64, "styles": [], "lots": 0, "detail": "districts/dm6_m23.json"},
     {"id": "dm5_m23", "ix": -5, "iz": -23, "x": -800, "z": -3680, "w": 176, "d": 144, "origin": [-50, -230], "quarter": 3, "density": 56, "styles": [{"style": "plains", "weight": 7}, {"style": "taiga", "weight": 1}], "lots": 10, "detail": "districts/dm5_m23.json"},
-    {"id": "dm7_m22", "ix": -7, "iz": -22, "x": -1120, "z": -3536, "w": 160, "d": 192, "origin": [-70, -221], "quarter": 5, "density": 60, "styles": [{"style": "plains", "weight": 9}], "lots": 9, "detail": "districts/dm7_m22.json"},
+    {"id": "dm7_m22", "ix": -7, "iz": -22, "x": -1120, "z": -3536, "w": 160, "d": 192, "origin": [-70, -221], "quarter": 5, "density": 60, "styles": [{"style": "plains", "weight": 8}], "lots": 8, "detail": "districts/dm7_m22.json"},
     {"id": "dm6_m22", "ix": -6, "iz": -22, "x": -960, "z": -3536, "w": 160, "d": 192, "origin": [-60, -221], "quarter": 3, "density": 65, "styles": [{"style": "plains", "weight": 18}], "lots": 21, "detail": "districts/dm6_m22.json"},
     {"id": "dm5_m22", "ix": -5, "iz": -22, "x": -800, "z": -3536, "w": 176, "d": 192, "origin": [-50, -221], "quarter": 3, "density": 59, "styles": [], "lots": 0, "detail": "districts/dm5_m22.json"},
     {"id": "dm4_m22", "ix": -4, "iz": -22, "x": -624, "z": -3536, "w": 144, "d": 192, "origin": [-39, -221], "quarter": 5, "density": 2, "styles": [], "lots": 0, "detail": "districts/dm4_m22.json"},
     {"id": "dm7_m21", "ix": -7, "iz": -21, "x": -1120, "z": -3344, "w": 160, "d": 160, "origin": [-70, -209], "quarter": 5, "density": 30, "styles": [{"style": "plains", "weight": 25}], "lots": 25, "detail": "districts/dm7_m21.json"},
-    {"id": "dm6_m21", "ix": -6, "iz": -21, "x": -960, "z": -3344, "w": 160, "d": 160, "origin": [-60, -209], "quarter": 5, "density": 48, "styles": [{"style": "plains", "weight": 2}], "lots": 2, "detail": "districts/dm6_m21.json"},
+    {"id": "dm6_m21", "ix": -6, "iz": -21, "x": -960, "z": -3344, "w": 160, "d": 160, "origin": [-60, -209], "quarter": 5, "density": 48, "styles": [], "lots": 0, "detail": "districts/dm6_m21.json"},
     {"id": "dm5_m21", "ix": -5, "iz": -21, "x": -800, "z": -3344, "w": 176, "d": 160, "origin": [-50, -209], "quarter": 5, "density": 46, "styles": [], "lots": 0, "detail": "districts/dm5_m21.json"}
   ],
   "roads": [

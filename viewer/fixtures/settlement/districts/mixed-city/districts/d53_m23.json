@@ -13,8 +13,7 @@
   ],
   "plazas": [],
   "lots": [
-    {"id": "d53_m23.l0", "x": 8488, "z": -3557, "w": 9, "d": 17, "front": "south", "type": "shop", "style": "plains", "storeys": [2, 4], "streets": 1, "airRights": 2, "frontY": 71, "density": 63, "status": "build"},
-    {"id": "d53_m23.l1", "x": 8615, "z": -3626, "w": 9, "d": 17, "front": "south", "type": "shop", "style": "desert", "storeys": [2, 3], "streets": 1, "airRights": 0, "frontY": 78, "density": 40, "status": "build"}
+    {"id": "d53_m23.l0", "x": 8488, "z": -3557, "w": 9, "d": 17, "front": "south", "type": "shop", "style": "plains", "storeys": [2, 4], "streets": 1, "airRights": 2, "frontY": 71, "density": 63, "status": "build"}
   ],
   "scene": null,
   "violations": []

@@ -32,12 +32,23 @@ public final class Briefs {
 	 * @param exact exact terrain, for the relief of each lot
 	 */
 	public static DistrictPlan fill(DistrictPlan plan, QuarterKind quarter, StyleField styles, TerrainProbe exact) {
+		return fill(plan, (x, z, density) -> quarter, styles, exact);
+	}
+
+	/** The quarter kind at a column and density (the settlement's {@link QuarterField}). */
+	@FunctionalInterface
+	public interface QuarterAt {
+		QuarterKind at(int x, int z, int density);
+	}
+
+	/** As above, with each lot taking the quarter kind at its own centre instead of its district's. */
+	public static DistrictPlan fill(DistrictPlan plan, QuarterAt quarters, StyleField styles, TerrainProbe exact) {
 		List<Rect> plazas = new ArrayList<>();
 		for (Plaza p : plan.plazas()) plazas.add(new Rect(p.x(), p.z(), p.w(), p.d()));
 		List<List<Rect>> streetRects = new ArrayList<>();
 		for (Street s : plan.streets()) streetRects.add(SettlementChecks.footprint(s));
 		List<LotBrief> out = new ArrayList<>();
-		for (LotBrief l : plan.lots()) out.add(fillLot(plan, l, quarter, styles, exact, streetRects, plazas));
+		for (LotBrief l : plan.lots()) out.add(fillLot(plan, l, quarters.at(l.x() + l.w() / 2, l.z() + l.d() / 2, l.density()), styles, exact, streetRects, plazas));
 		return new DistrictPlan(plan.genVersion(), plan.seed(), plan.district(), plan.streets(), plan.plazas(), out, plan.scene(), plan.violations());
 	}
 

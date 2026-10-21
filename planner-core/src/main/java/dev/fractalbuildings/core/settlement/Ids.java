@@ -12,5 +12,8 @@ public final class Ids {
 	/** Arterial segment: {@code a<axis><line>_<from>} (axis 0 = a line of constant x, 1 = constant z). */
 	public static String arterial(int axis, int line, int from) { return "a" + axis + n(line) + "_" + n(from); }
 
+	/** Settlement site id {@code s<cx>_<cz>} of its claimant cell; the same for {@code --cell} and {@code --site}. */
+	public static String site(int cx, int cz) { return "s" + n(cx) + "_" + n(cz); }
+
 	static String n(int v) { return v < 0 ? "m" + -(long) v : Integer.toString(v); }
 }

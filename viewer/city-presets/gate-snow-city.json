@@ -1,0 +1,7 @@
+{
+  "seed": 987654321,
+  "terrain": "recorded:fixtures/terrain/gate-snow-city.json.gz",
+  "site": {"at": [4288, 448], "tier": "city", "radius": 478},
+  "scenes": "auto:2",
+  "camera": {"plan": {"layers": "+terrain"}}
+}

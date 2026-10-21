@@ -1,0 +1,7 @@
+{
+  "seed": 12345,
+  "terrain": "recorded:fixtures/terrain/w12345-river-s8.json.gz",
+  "site": {"at": [-900, -3500], "tier": "town", "radius": 300},
+  "scenes": "auto:2",
+  "camera": {"plan": {"layers": "+terrain", "zoom": 0.7}}
+}

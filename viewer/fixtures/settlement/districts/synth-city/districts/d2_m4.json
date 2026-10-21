@@ -11,14 +11,7 @@
     {"id": "t2", "kind": "lane", "width": 3, "points": [[432, -472], [432, -480], [432, -488]], "y": [67, 67, 67]}
   ],
   "plazas": [],
-  "lots": [
-    {"id": "d2_m4.l0", "x": 320, "z": -587, "w": 10, "d": 10, "front": "south", "type": "house", "style": "plains", "storeys": [1, 2], "streets": 1, "airRights": 0, "frontY": 69, "density": 10, "status": "build"},
-    {"id": "d2_m4.l1", "x": 320, "z": -574, "w": 10, "d": 11, "front": "north", "type": "workshop", "style": "plains", "storeys": [1, 2], "streets": 1, "airRights": 0, "frontY": 69, "density": 10, "status": "build"},
-    {"id": "d2_m4.l2", "x": 320, "z": -553, "w": 10, "d": 8, "front": "south", "type": "house", "style": "plains", "storeys": [1, 2], "streets": 1, "airRights": 0, "frontY": 69, "density": 15, "status": "build"},
-    {"id": "d2_m4.l3", "x": 320, "z": -542, "w": 10, "d": 11, "front": "north", "type": "workshop", "style": "plains", "storeys": [1, 2], "streets": 1, "airRights": 0, "frontY": 69, "density": 15, "status": "build"},
-    {"id": "d2_m4.l4", "x": 421, "z": -489, "w": 10, "d": 9, "front": "east", "type": "house", "style": "plains", "storeys": [1, 2], "streets": 1, "airRights": 0, "frontY": 67, "density": 10, "status": "build"},
-    {"id": "d2_m4.l5", "x": 434, "z": -489, "w": 15, "d": 9, "front": "west", "type": "shop", "style": "plains", "storeys": [2, 2], "streets": 1, "airRights": 0, "frontY": 67, "density": 5, "status": "build"}
-  ],
+  "lots": [],
   "scene": null,
   "violations": []
 }

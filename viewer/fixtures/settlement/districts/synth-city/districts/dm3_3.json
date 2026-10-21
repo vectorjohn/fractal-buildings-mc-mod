@@ -10,12 +10,7 @@
     {"id": "t1", "kind": "lane", "width": 3, "points": [[-416, 488], [-416, 496], [-416, 504]], "y": [73, 73, 73]}
   ],
   "plazas": [],
-  "lots": [
-    {"id": "dm3_3.l0", "x": -363, "z": 496, "w": 10, "d": 10, "front": "east", "type": "house", "style": "plains", "storeys": [1, 2], "streets": 1, "airRights": 0, "frontY": 73, "density": 18, "status": "build"},
-    {"id": "dm3_3.l1", "x": -350, "z": 496, "w": 7, "d": 10, "front": "west", "type": "house", "style": "plains", "storeys": [1, 2], "streets": 1, "airRights": 0, "frontY": 73, "density": 18, "status": "build"},
-    {"id": "dm3_3.l2", "x": -424, "z": 496, "w": 7, "d": 10, "front": "east", "type": "house", "style": "plains", "storeys": [1, 2], "streets": 1, "airRights": 0, "frontY": 73, "density": 6, "status": "build"},
-    {"id": "dm3_3.l3", "x": -414, "z": 496, "w": 7, "d": 10, "front": "west", "type": "house", "style": "plains", "storeys": [1, 2], "streets": 1, "airRights": 0, "frontY": 73, "density": 6, "status": "build"}
-  ],
+  "lots": [],
   "scene": null,
   "violations": []
 }

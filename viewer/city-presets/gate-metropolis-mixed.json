@@ -1,0 +1,7 @@
+{
+  "seed": 987654321,
+  "terrain": "recorded:fixtures/terrain/gate-metropolis-mixed.json.gz",
+  "site": {"at": [2304, -1920], "tier": "metropolis", "radius": 1126},
+  "scenes": "auto:2",
+  "camera": {"plan": {"layers": "+terrain", "x": 2304, "z": -1920, "zoom": 0.55}}
+}

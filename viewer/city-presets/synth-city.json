@@ -1,0 +1,8 @@
+{
+  "seed": 1001,
+  "terrain": "noise:1:70:7:220+river:-120:24:6",
+  "site": {"at": [0, 0], "tier": "city", "radius": 700},
+  "cellSize": 512,
+  "scenes": "auto:2",
+  "camera": {"plan": {"zoom": 0.6}}
+}

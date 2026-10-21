@@ -1,0 +1,7 @@
+{
+  "seed": 987654321,
+  "terrain": "recorded:fixtures/terrain/gate-metropolis-temperate.json.gz",
+  "site": {"at": [2432, -5696], "tier": "metropolis", "radius": 1430},
+  "scenes": "auto:2",
+  "camera": {"plan": {"layers": "+terrain", "x": 2432, "z": -5696, "zoom": 0.55}}
+}
