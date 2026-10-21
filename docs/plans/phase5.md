@@ -1074,6 +1074,7 @@ in game):
   skeletons) and leave it out, and arterials on those four border segments are
   switched off. Cost: an SK landmark rule, a DL carve-out, and a second kind of start in
   6.x. Recommended only if the gate shows that cities miss such buildings.
+- @John 2026-10-21: #question are bigger tiles something that has to be set for the whole plan, or can you have the _occasional_ bigger tile? From your wording it sounds like always, we choose the tile size up front. Either way, I think we just need to leave this issue as a possible option if we need it but we’ll see if it looks like we do. We fit some fairly large buildings, especially if you go up!
 
 **Grid streets and tile borders** (proposed for DL; the plan text is silent on both):
 - *Shared lines.* The inner grid streets on an axis come from (seed, axis, interval
@@ -1092,6 +1093,7 @@ in game):
   nearest street. Lanes then continue across tile borders, and `roads-connected` and
   `tile-border-agree` hold by construction instead of only being checked. Cost: small,
   in DL.
+- @John 2026-10-21: Yes, I think we should do these.
 
 **Irregular cities, costed:**
 - *Quarter choice* (hook exists; SK's `QuarterField` already draws `OLD_TOWN` near the
@@ -1112,3 +1114,5 @@ in game):
   generator work); streets run at 0, 45 or 90 degrees; and lots never cross tile
   borders. That leaves a straight line where back lot lines meet, every 128 to 192
   blocks, unless a lane or wall runs along it.
+
+  - @John 2026-10-21: I like these options, I think we should integrate them into the plan. Subdividing and some diagonal paths. 
