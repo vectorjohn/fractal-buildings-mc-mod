@@ -58,6 +58,14 @@ public final class CityPlanner {
 		Pt hub = site.centre();
 		Cell centreCell = CellGeometry.owner(src.view().field(), hub.x(), hub.z());
 		if (site.cells().contains(centreCell) && src.skeleton(centreCell).hub() != null) hub = src.skeleton(centreCell).hub();
+		// The hub square may have moved off the skeleton's hub column (exact terrain did not grade there): the hub is then the square's centre.
+		for (DistrictPlan dp : districts.values()) {
+			Rect t = dp.district().rect();
+			if (hub.x() < t.x() || hub.x() >= t.x() + t.w() || hub.z() < t.z() || hub.z() >= t.z() + t.d() || dp.plazas().isEmpty()) continue;
+			Plaza hp = dp.plazas().get(0);
+			hub = new Pt(hp.x() + hp.w() / 2, hp.z() + hp.d() / 2);
+			break;
+		}
 		List<Violation> v = new ArrayList<>(plan.violations());
 		SettlementChecks.CityRoads cr = SettlementChecks.cityRoads(districts.values(), hub);
 		v.addAll(cr.violations());
