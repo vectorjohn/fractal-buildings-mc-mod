@@ -1,4 +1,4 @@
-# Phase 4 gate pack
+  # Phase 4 gate pack
 
 What John looks at for the Phase 4 gate (ROADMAP 4.10): generator v1, with massing (wings,
 jetties, setbacks), roofs, facades, interiors, front steps, nine building types (house, shop,
@@ -42,6 +42,10 @@ Each line: the first pictures to open, what to judge, and what the agent saw (pi
   and heights (seeds 6, 7, 14), jetties and tall timber houses (2, 5), courtyard (15); the
   cutaway shows the room partitions and furnishing hooks on the ground floor. Seen: clearly more varied than v0; the dark medieval
   timber frames dominate the walls.
+    - @John 2026-10-19:
+      - Overall I like it.
+      - Some houses, like phase4/gallery/house/house-medieval-cutaway.png seed 7, have floor plans that don’t make sense I think. This has the entrance come into a small room (could be a mud room, that’s ok) but then some other rooms seem to be only reachable by traversing many other rooms. I feel like usually there would be a hall or a central room, so you could get from one area to another without going through someone’s room. Maybe we need a concept of “room purpose” (if there isn’t one already). I could see a bedroom with a master bathroom attached (although probably not in a medieval house), but not a series of 4 rooms you have to walk through. That said, weirdness is good in moderation so layouts like this make sense to have sometimes.
+      - Consider the possibility of connecting rooms without doors. More open plans in some cases, open “arch” ways. 
 - **Shop** ([shop-medieval-front-left](gallery/shop/shop-medieval-front-left.png),
   [shop-plain-front](gallery/shop/shop-plain-front.png)). Narrow, 2-4 storeys, a centred door
   between 2-3 wide display windows and a fascia. Seen: reads as a narrow town house with big
@@ -99,7 +103,11 @@ that asked them first:
 3. Wall: does half-timbering on a stone town wall look odd (and windows in a wall)?
 4. Tower: does a timber tower read as pre-modern?
 5. Workshop: does it read as a tall cottage with a barn door?
+    - @John 2026-10-19: Similar to shops, there could be a bit more covered outdoor area on the bottom.
 6. Shop: does the shopfront read as a shop?
+    - @John 2026-10-19:
+      - Agreed on comments about the window at the top of stairs. Might be that shops only make sense when their window can be ground level.
+      - Consider a covered area outside, e.g. much of the ground level being open / no walls with space for a more bazaar like shopping area.
 7. Temple: bell towers read as tall houses. Acceptable for now?
 8. City block: only on gentle ground (up to 1 in 16) and lots of 52x52 or more until per-wing
    ground levels in 6.3. OK?
@@ -143,6 +151,8 @@ that asked them first:
       is a look, not a place.
 
 The storey slider and roof toggle (REVIEW 3.6) are settled and not asked again.
+
+@John 2026-10-21: Overall, I like the progress. I think we should consider this gate passed and move on (after accounting for the feedback I've given). My feeling is we can move forward with phases without being perfect. Once we start getting settlements, and then Minecraft integration, it will be a lot easier to see and feel how these buildings play, and we may at that point want to iterate on building generation in the viewer, etc. It seems to me the value of the viewer step is you can quickly generate many variations and compare and contrast, once we see a real problem or polish we want to achieve.
 
 # Timing
 
