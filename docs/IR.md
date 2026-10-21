@@ -122,3 +122,80 @@ keys is fine. `genVersion` changes whenever generated output changes on purpose
 ## Stilts and window holes (tower watchtowers, genVersion 2)
 
 No new keys. A building on stilts (tower type, stilted lookout) has **storey 0 = the open leg zone**: `y` 0, `height` = the leg height, no rooms and no walls; the room above is storey 1 and later. Its volumes start at `y` = the leg height (parent `null`), and four extra 1 x 1 volumes `leg0`..`leg3` (north-west, north-east, south-west, south-east) stand on the ground under its corners, each with a `beam` column from y 0; a `stair` flight (each step on a block) climbs along the front wall to the entrance door, whose `y` is above storey 0. An **unglazed window** is an opening of kind `window` whose cells are `air` (no `window` voxels); `shell-closed` and `roof-closed` count air inside a declared `window` opening as closed.
+
+## District scenes (Phase 5, additive to `fb-scene/1`)
+
+Added keys only, written only when present, so every existing file and digest is unchanged
+(plan: [plans/phase5.md](plans/phase5.md)). A district scene is an ordinary `fb-scene/1` file holding every built
+lot of one district tile.
+
+- **`terrain.water`**: optional `[int; nx*nz]`, water depth above `floorY` per column (0 on land), same layout as
+  `floorY`. Absent means no water. Reader: non-negative, length `nx*nz`.
+- **`ground`**: optional top-level list of boxes, after `buildings` and before `violations`, one per line, same shape as
+  a shell box (`{min, size, role, layer, storey}`) but in **world** coordinates, not shell-local. For road surfaces,
+  plaza paving, fill, cuts (`air`), bridge decks and piers. Every ground box has `layer: "ground"` and `storey: -1`
+  (`ir-valid` checks both). Boxes apply in list order; later wins. Road boxes sit at `y - 1` where `y` is the street's
+  surface height (heightmap convention, the first free y).
+- **roles** `road`, `paving`, `ground` (fill earth): solid and closed. Every style's `palette` and `colours` carry them
+  (`road`: gravel/path gradient, `paving`: stone bricks, `ground`: dirt; desert uses sandstone and sand).
+- **layer** `ground`.
+- `lots` and `buildings` list every built lot of the district; building ids are `b0`..`bN` in lot order.
+
+## Settlement plans (Phase 5): `fb-settlement/1` and `fb-district/1`
+
+Settlement plans do not carry voxels, so they get their own formats beside `fb-scene/1` (plan decision 4).
+Code: `core/settlement/` (`SettlementPlan`, `DistrictPlan` and the records they hold; `SettlementJson`,
+`DistrictJson`). Same conventions as above: integers only, 64-bit seeds as decimal strings, keys in the order shown,
+list elements one per line, trailing newline, strict readers (errors start with the JSON path `$.lots[3].front`,
+unknown keys ignored). `planVersion` is 1 for all of Phase 5; a reader rejects any other. Sample files, written by
+`fractal-cli sample-city` and byte-compared in `SampleSettlementTest`: `viewer/fixtures/settlement/sample/`.
+
+Points are world `[x, z]` columns. A road's `points` are its centre line; every segment is axis-aligned or at 45
+degrees. A road of width `w` covers the columns `p - w/2 .. p - w/2 + w - 1` around each point of the line.
+**Paths** (`detail`, `scene`) are relative to the directory of `settlement.json`.
+
+```
+settlement { format: "fb-settlement/1", planVersion: 1, genVersion, seed: "<int64>",
+  site:      { id, tier, centre: [x, z], radius, claimant: [cx, cz], cells: [[cx, cz]] },
+  bounds:    { x, z, w, d },
+  coarse:    { x0, z0, step, nx, nz,               row-major, z outer, lattice columns x0 + i*step
+               floorY: [int], water: [int],        water depth above floorY
+               biome: [int], biomes: [string],     index into biomes
+               mask: [int],     0 wild, 1 urban, 2 water, 3 steep, 4 open (park, green)
+               density: [int],  0..100
+               quarter: [int] },  index into quarters, -1 none
+  quarters:  [{ id, kind }],    id = position; kind: downtown|old-town|market|residential|workshop|waterfront|park|outskirts
+  cells:     [{ cx, cz, site: [x, z], polygon: [[x, z]] }],
+  districts: [{ id, ix, iz, x, z, w, d, origin: [chunkX, chunkZ], quarter, density,
+                styles: [{ style, weight }], lots, detail: "<path>" | null }],
+  roads:     [{ id, kind, width, points: [[x, z]], bridges: [[i, j]] }],   kind: arterial|main|street|lane|path;
+                                                                           bridges: inclusive point-index ranges over water
+  gates:     [{ id, kind, x, z, cells: [[cx, cz], [cx, cz]] | null, road: id | null }],   kind: cell|wall|exit
+  landmarks: [{ id, kind, x, z, w, d, district }],   kind: square|market|green|park|temple|hall|tower
+  walls:     [{ id, points: [[x, z]], closed: bool }],
+  violations: [violation] }                           violation as in fb-scene/1
+
+district { format: "fb-district/1", planVersion: 1, genVersion, seed: "<int64>",
+  district: { id, ix, iz, x, z, w, d, quarter, density },
+  streets:  [{ id, kind, width, points: [[x, z]], y: [int] }],   y per point: road surface (first free y)
+  plazas:   [{ id, kind, x, z, w, d, y }],
+  lots:     [{ id, x, z, w, d, front, type, style, storeys: [min, max], streets, airRights, frontY,
+               density, status }],       front: north|east|south|west; status: "build" | "empty:<reason>"
+  scene:    "<path to the fb-scene file>" | null,
+  violations: [violation] }
+```
+
+- **Ids**: districts `d<ix>_<iz>`, a negative index written with `m` (`d3_m2`); the id must match `ix`, `iz`.
+  Ids are unique within each list.
+- **Tiles** are chunk aligned: `x`, `z`, `w`, `d` multiples of 16, `origin` = `[x/16, z/16]`. The district reader
+  rejects a lot that lies outside its tile (invariant `lot-in-tile` checks the same on an in-memory plan).
+- **`streets` in a lot** is the mask of its sides facing a street in the **lot's local frame** (1 front, 2 east of the
+  front, 4 back, 8 west of the front, as `BuildingSpec.streets`); the generator forces the front bit. `frontY` is the
+  street surface y in front of the front edge centre, or `-2147483648` (`Brief.NO_FRONT_Y`) if unknown. `airRights` is 0
+  until the jetty step.
+- **Brief** (`GenRequest.brief`, optional, `core/gen/Brief`): `{minStoreys, maxStoreys, streets, airRights, frontY}`
+  from a lot of the plan. `SpecPolicyV1` draws storeys from the brief's range intersected with the type's (if they do
+  not meet, the type's bound nearest the brief) and sets `spec.streets` from the brief (front forced, unless the type
+  has `allStreets`). Without a brief nothing changes.
+- **Checks** (`core/check/SettlementChecks`, separate from `Invariants`): `lot-in-tile`, `lots-disjoint` (lots overlap no
+  other lot, street footprint, plaza or landmark). Later steps add rules there.

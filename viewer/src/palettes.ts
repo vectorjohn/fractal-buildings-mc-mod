@@ -12,6 +12,9 @@ export const ROLE_COLOURS: Record<string, Rgb> = {
   stair: 0x9ad04a,
   beam: 0x5a3a1a,
   fence: 0xb0b0b0,
+  road: 0x9a7f55,
+  paving: 0x8a8a8a,
+  ground: 0x6b4f33,
 };
 export const UNKNOWN_COLOUR: Rgb = 0xff00ff;
 export const TERRAIN_COLOUR: Rgb = 0x5c7a3c;

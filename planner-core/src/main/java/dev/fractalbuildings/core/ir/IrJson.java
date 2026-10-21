@@ -25,6 +25,7 @@ public final class IrJson {
 		sb.append("  \"terrain\": ").append(d.terrain() == null ? "null" : terrain(d.terrain())).append(",\n");
 		sb.append("  \"lots\": ").append(lines(d.lots(), IrJson::lot, 2)).append(",\n");
 		sb.append("  \"buildings\": ").append(lines(d.buildings(), IrJson::building, 2)).append(",\n");
+		if (!d.ground().isEmpty()) sb.append("  \"ground\": ").append(lines(d.ground(), IrJson::box, 2)).append(",\n");
 		sb.append("  \"violations\": ").append(lines(d.violations(), IrJson::violation, 2)).append("\n}\n");
 		return sb.toString();
 	}
@@ -39,8 +40,10 @@ public final class IrJson {
 	}
 
 	private static String terrain(TerrainPatch t) {
-		return JsonWriter.object().num("x0", t.x0()).num("z0", t.z0()).num("nx", t.nx()).num("nz", t.nz())
-				.raw("floorY", ints(t.floorYs())).build();
+		JsonWriter o = JsonWriter.object().num("x0", t.x0()).num("z0", t.z0()).num("nx", t.nx()).num("nz", t.nz())
+				.raw("floorY", ints(t.floorYs()));
+		if (t.waters() != null) o.raw("water", ints(t.waters()));
+		return o.build();
 	}
 
 	private static String lot(Lot l) {

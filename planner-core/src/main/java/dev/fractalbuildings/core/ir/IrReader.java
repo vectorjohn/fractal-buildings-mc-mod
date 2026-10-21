@@ -29,6 +29,7 @@ final class IrReader {
 				o.get("terrain") == null ? null : terrain(obj(o.get("terrain"), "$.terrain"), "$.terrain"),
 				list(o, "$", "lots", IrReader::lot),
 				list(o, "$", "buildings", IrReader::building),
+				o.containsKey("ground") ? list(o, "$", "ground", IrReader::box) : List.of(),
 				list(o, "$", "violations", IrReader::violation)));
 	}
 
@@ -146,7 +147,8 @@ final class IrReader {
 
 	private static TerrainPatch terrain(Map<String, Object> o, String p) {
 		int[] h = ints(o, p, "floorY", -1);
-		return guard(p, () -> new TerrainPatch(integer(o, p, "x0"), integer(o, p, "z0"), integer(o, p, "nx"), integer(o, p, "nz"), h));
+		int[] w = o.containsKey("water") ? ints(o, p, "water", -1) : null;
+		return guard(p, () -> new TerrainPatch(integer(o, p, "x0"), integer(o, p, "z0"), integer(o, p, "nx"), integer(o, p, "nz"), h, w));
 	}
 
 	private static Lot lot(Map<String, Object> o, String p) {

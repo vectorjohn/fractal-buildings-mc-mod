@@ -1,6 +1,7 @@
 package dev.fractalbuildings.core.gen.v1;
 
 import dev.fractalbuildings.core.check.Invariants;
+import dev.fractalbuildings.core.gen.Brief;
 import dev.fractalbuildings.core.gen.GenRequest;
 import dev.fractalbuildings.core.gen.v1.style.StyleLibrary;
 import dev.fractalbuildings.core.gen.v1.style.StyleRules;
@@ -22,6 +23,11 @@ public final class SpecPolicyV1 {
 
 	/** Smallest {@code maxHeight} the policy accepts: one 4-high storey, its top slab and a roof layer. */
 	public static final int MIN_HEIGHT = 6;
+
+	/** False if the ground relief over a w x d lot is too steep for a type that needs gentle ground (maxGrade > 3). */
+	public static boolean reliefOk(TypeLimits lim, int relief, int w, int d) {
+		return lim.maxGrade() <= 3 || (long) relief * lim.maxGrade() <= w + d + lim.maxGrade();
+	}
 
 	public static BuildingSpec spec(GenRequest req) {
 		BuildingType t = Types.get(req.type());
@@ -46,15 +52,27 @@ public final class SpecPolicyV1 {
 				minFloor = Math.min(minFloor, fy);
 			}
 		// types that need gentle ground (maxGrade > 3: the city block) reject a lot steeper than 1 in maxGrade; others adapt with foundations and steps
-		if (lim.maxGrade() > 3 && (long) (maxFloor - minFloor) * lim.maxGrade() > lot.w() + lot.d() + lim.maxGrade()) {
+		if (!reliefOk(lim, maxFloor - minFloor, lot.w(), lot.d())) {
 			throw new IllegalArgumentException("lot ground relief " + (maxFloor - minFloor) + " over " + lot.w() + "x" + lot.d() + " is steeper than 1 in " + lim.maxGrade() + ", too steep for a " + t.id());
 		}
 		int maxHeight = Invariants.WORLD_MAX_Y + 1 - maxFloor;
 		if (maxHeight < MIN_HEIGHT) throw new IllegalArgumentException("lot ground at y " + maxFloor + " leaves no room under the world ceiling");
 		long specSeed = Hash64.hash(req.worldSeed(), "building", lot.x(), lot.z());
 		Draws r = new Draws(Hash64.hash(specSeed, "spec-v1"));
-		int storeys = r.range(lim.minStoreys(), lim.maxStoreys());
+		int lo = lim.minStoreys(), hi = lim.maxStoreys();
 		int streets = lim.allStreets() ? 15 : BuildingSpec.STREET_FRONT;
+		Brief brief = req.brief();
+		if (brief != null) {
+			// the brief's storey range, intersected with the type's; if disjoint, the type's bound nearest the brief
+			if (brief.maxStoreys() < lo) hi = lo;
+			else if (brief.minStoreys() > hi) lo = hi;
+			else {
+				lo = Math.max(lo, brief.minStoreys());
+				hi = Math.min(hi, brief.maxStoreys());
+			}
+			if (!lim.allStreets()) streets = brief.streets() | BuildingSpec.STREET_FRONT;
+		}
+		int storeys = r.range(lo, hi);
 		return new BuildingSpec(GeneratorV1.GEN_VERSION, specSeed, style.id(), t.id(), w, d, storeys, "auto", maxHeight, streets);
 	}
 }

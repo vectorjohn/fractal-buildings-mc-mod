@@ -1,6 +1,6 @@
 package dev.fractalbuildings.cli;
 
-/** CLI entry: {@code gen | batch | check | bench}; see {@link #USAGE}. */
+/** CLI entry: {@code gen | batch | check | bench | diversity | sample-city}; see {@link #USAGE}. */
 public final class Main {
 	private Main() {}
 
@@ -13,7 +13,8 @@ public final class Main {
 			  bench --n N [--lots ..] [--styles ..] [--terrains ..] [--fronts ..]
 			  diversity --seeds A..B [--lot WxD] [--style S] [--terrain SPEC] [--json] [--out FILE]
 			  region --seed N --terrain SPEC [--cell-size 1024] [--window X0,Z0,W,D] [--max-radius 4096] [--out FILE]  (region map, fb-region-dump/1)
-			terrain SPEC: flat:Y | plane:Y0:RISEX:RISEZ:RUN | hill:BASE:PEAK:RADIUS | noise:SEED:BASE:AMP:WAVELEN | recorded:FILE
+  sample-city --out-dir DIR [--big N]   (sample settlement plan + districts + one scene; --big: synthetic N x N grid)
+			terrain SPEC: flat:Y | plane:Y0:RISEX:RISEZ:RUN | hill:BASE:PEAK:RADIUS | noise:SEED:BASE:AMP:WAVELEN | recorded:FILE (join with +: river:X0:W:DEPTH, biomes:split:X:A:B)
 			""";
 
 	public static void main(String[] args) {
@@ -33,6 +34,7 @@ public final class Main {
 				case "check" -> { return CheckCommand.run(rest); }
 				case "bench" -> { return BenchCommand.run(rest); }
 				case "diversity" -> { return DiversityCommand.run(rest); }
+				case "sample-city" -> { return SampleCityCommand.run(rest); }
 				case "region" -> { return RegionCommand.run(rest); }
 				default -> {
 					System.err.println("unknown command '" + args[0] + "'");
