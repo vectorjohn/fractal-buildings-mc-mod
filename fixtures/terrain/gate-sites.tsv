@@ -1,0 +1,10 @@
+name	seed	x	z	tier	radius	cells
+gate-temperate-city	987654321	1280	-9600	city	477	1
+gate-desert-badlands	987654321	6720	-6784	city	827	1
+gate-snow-city	987654321	4288	448	city	478	1
+gate-jungle-savanna	987654321	-640	-3712	city	790	1
+gate-border-desert-jungle	987654321	7872	-7744	city	577	1
+gate-coast-city	12345	-7360	-3712	city	740	2
+gate-metropolis-temperate	987654321	2432	-5696	metropolis	1430	8
+gate-metropolis-mixed	987654321	2304	-1920	metropolis	1126	4
+gate-joined-city	987654321	8832	192	city	717	2
