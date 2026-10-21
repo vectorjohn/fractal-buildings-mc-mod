@@ -51,6 +51,7 @@ work becomes a ROADMAP item or a Polish backlog line. Settled items move to
   Result:
     - @John 2026-10-21: These look much better and more varied.
       - I still maintain the issue brought up by another agent and I agreed, that store fronts with big glass front windows don’t make any sense at the top of a tall flight of stairs, at least without some kind of landing area, like a kind of balcony?
+        - @coordinator 2026-10-21: Agreed; this is now a follow-up item (5.12 follow-up "shopfront landing", ROADMAP 5.12 note). A coder is giving lifted shopfronts a landing or balcony across the front at door level (or a shopfront set back behind a porch), so the display window opens onto a walkable deck instead of the top step. You will see it in the Phase 5 gate pack.
 
 - [x] **5.2 SK skeleton** (cell skeletons over real terrain): do the plans read like settlements: a hub with a square and hall, main roads that follow the land and bridge rivers, arterials on tile borders in a city, gates where cells meet?
   Where: `docs/review/phase5/skeleton/` (`skeleton-river-town.png`: a town on the recorded river window; `skeleton-joined-metropolis.png`: a 5-cell metropolis on the coarse world dump); live: `viewer/fixtures/settlement/skeleton/*` through `plan.html?city=<dir>&terrain=<dir>terrain.json.gz` (see its README)

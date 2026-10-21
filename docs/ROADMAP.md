@@ -411,6 +411,7 @@ Updated: 2026-10-16
 
 Wire the proven core into worldgen using the approach fixed in the Phase 2 ADR.
 
+  *Follow-up (John, REVIEW 2026-10-21):* a shopfront lifted above the street needs a landing or balcony at door level so the display window does not sit at the top of a flight of steps (item SHOPLAND).
 - [ ] **6.1 Adapter**: palette roles to block states; IR to structure pieces,
   clipped per chunk.
 - [ ] **6.2 Registration**: structure type, structure set with data-driven
