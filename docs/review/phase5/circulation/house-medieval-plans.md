@@ -236,3 +236,49 @@ l=living
                   
                   
 ```
+
+# After CIRC2 (squarer rooms, bedrooms first)
+
+Same lot and seeds (house-medieval, 20x20, `noise:7:64:6:32`), ground floor, generated with `claude/p5-circ2`. Seed 9 had a long skinny living room and one small bedroom (the "after" above); now the main living room is a 4x8 block and there are five bedrooms and a kitchen. Seed 7 keeps its row of wing bedrooms (each wing is planned on its own and 80 % of lone wing rooms become bedrooms, a seeded 20 % become the kitchen or living room instead). Cutaway galleries: `house-*-cutaway-after-circ2.png`.
+
+### seed 9
+
+Ground floor:
+```
+k=kitchen b=bedroom l=living
+           D  
+ kkk#llllllll 
+ kkk#llllllll 
+ kkkDllllllll 
+ kkk#llllllll 
+ #D# #D# ###D 
+ bbb#bbb#bbbb 
+ bbb#bbb#bbbb 
+ bbbDbbb#bbbb 
+ bbb#bbb#bbbb 
+              
+```
+
+### seed 7
+
+Ground floor:
+```
+l=living b=bedroom
+              D   
+ llllll#bbbb#llll 
+ llllll#bbbbDllll 
+ llllll#bbbb#llll 
+ llllllDbbbb#llll 
+ llllll#bbbb#llll 
+ #D##        #D## 
+ bbbb       bbbbb 
+ bbbb       bbbbb 
+ bbbb       bbbbb 
+ bbbb#bbbbb#bbbbb 
+ bbbbDbbbbbDbbbbb 
+ bbbb#bbbbb#bbbbb 
+ bbbb#bbbbb#bbbbb 
+                  
+```
+
+

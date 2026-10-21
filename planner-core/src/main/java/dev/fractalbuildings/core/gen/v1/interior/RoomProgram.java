@@ -31,6 +31,13 @@ public interface RoomProgram {
 	/** As {@link #hooks(String, int, Draws)}, with the room's place in the building. */
 	default List<String> hooks(String use, int area, Where where, Draws d) { return hooks(use, area, d); }
 
+	/**
+	 * A chance to revise the uses of a whole floor of one mass once each room has its own (a house gives the
+	 * spare rooms of a floor to bedrooms before it repeats a kitchen or living room). Arrays are indexed by
+	 * room; change {@code uses} in place. Default: no change.
+	 */
+	default void refine(Role[] roles, int[] areas, String[] uses, Where where, Draws d) {}
+
 	/** True if a floor plan must not be shared between storey {@code storey - 1} and {@code storey} of a mass (a type whose ground floor differs in use from the upper ones). */
 	default boolean newBand(int storey) { return false; }
 
