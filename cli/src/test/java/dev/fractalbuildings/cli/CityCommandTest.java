@@ -144,4 +144,13 @@ class CityCommandTest {
 		assertEquals(2, run("city", "--seed", "7", "--site", "0,0,castle,300", "--out-dir", out));
 		assertEquals(2, run("city", "--seed", "7", "--site", "0,0,city,30000", "--out-dir", out)); // too many cells
 	}
+
+	/** The cell cap is a typo guard: a maxRadius-4096 metropolis at S=1024 (well over 16 cells) is accepted, a 30000 radius is not. */
+	@Test
+	void sitesAsBigAsTheMaxRadiusSpanManyCellsButAreAccepted() {
+		var field = new dev.fractalbuildings.core.region.RegionField(21, 1024);
+		var site = CityCommand.fromSite(field, "0,0,metropolis,4096");
+		assertTrue(site.cells().size() > 16 && site.cells().size() <= CityCommand.MAX_CELLS, "cells " + site.cells().size());
+		assertThrows(Main.UsageException.class, () -> CityCommand.fromSite(field, "0,0,metropolis,30000"));
+	}
 }

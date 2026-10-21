@@ -54,7 +54,8 @@ final class CityCommand {
 	private CityCommand() {}
 
 	/** Cells a {@code --site} may span (the join rule bounds real ones; this is a safety net for a mistyped radius). */
-	static final int MAX_CELLS = 16;
+	/** A typo guard, not a resource limit (plan memory is bounded by the skeleton and region BoundedCaches): 64 cells is a maxRadius-4096 metropolis at S=1024 (plan Decision 3). */
+	static final int MAX_CELLS = 64;
 
 	static int run(String[] args) throws IOException {
 		Opts o = new Opts(args, Set.of("seed", "terrain", "cell", "site", "cell-size", "out-dir", "scene", "scenes"), Set.of("districts", "exterior", "interiors", "check"));

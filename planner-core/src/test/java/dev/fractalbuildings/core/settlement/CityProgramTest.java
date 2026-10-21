@@ -15,7 +15,6 @@ import org.junit.jupiter.api.Test;
 class CityProgramTest {
 	private static final String[] TERRAINS = {"flat:64", "noise:3:70:10:300", "noise:2:70:5:500"};
 	/** Rules the whole-city check still reports on real and synthetic ground (the ROADS item removes them); nothing else may appear. */
-	private static final Set<String> KNOWN = Set.of("roads-connected", "road-grade", "lot-frontage");
 
 	record Planned(CityPlannerTest.Setup setup, CityPlanner.City city) {
 		SettlementPlan plan() { return city.plan(); }
@@ -94,11 +93,11 @@ class CityProgramTest {
 	}
 
 	@Test
-	void everyCityAndMetropolisPlansWithOnlyTheKnownRules() {
+	void everyCityAndMetropolisPlansWithoutViolations() {
 		for (Planned p : concat()) {
-			for (var v : p.plan().violations()) assertTrue(KNOWN.contains(v.invariant()), "seed " + p.setup().seed() + " " + p.plan().site().tier() + ": " + v.invariant() + ": " + v.message());
+			for (var v : p.plan().violations()) org.junit.jupiter.api.Assertions.fail("seed " + p.setup().seed() + " " + p.plan().site().tier() + ": " + v.invariant() + ": " + v.message());
 			// the hub's piece of the street network is most of it (a few fragments aside)
-			assertTrue(p.city().hubPiece() * 10 >= p.city().streetColumns() * 7 || p.plan().violations().stream().anyMatch(v -> v.invariant().equals("roads-connected")), "hub piece " + p.city().hubPiece() + " of " + p.city().streetColumns());
+			assertTrue(p.city().hubPiece() * 10 >= p.city().streetColumns() * 7, "hub piece " + p.city().hubPiece() + " of " + p.city().streetColumns());
 		}
 	}
 
