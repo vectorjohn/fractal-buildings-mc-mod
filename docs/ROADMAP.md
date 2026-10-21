@@ -400,6 +400,7 @@ skeleton, then district detail built lazily (ARCHITECTURE.md, "City scale").
   steps). Evidence: shop and workshop galleries before and after; invariants
   still 0 failing.
   *Done 2026-10-21* (log `docs/log/2026-10-21-p5-open-ground.md`): shop arcade 30 %, market hall on posts 20 %, enclosed ~50 %; workshop covered porch 40 %; shops reject lots steeper than 1 in 12 (level frontage). *Known issues:* the market hall floor is empty (no stalls); a city planner must catch the shop slope rejection.
+  *Follow-up (John, REVIEW 2026-10-21):* a shopfront lifted above the street needs a landing or balcony at door level so the display window does not sit at the top of a flight of steps (item SHOPLAND).
 
 **Gate:** John reviews cities in at least five biome mixes, including one
 straddling a border, one larger than 512 × 512, and one with a high-rise
@@ -411,7 +412,6 @@ Updated: 2026-10-16
 
 Wire the proven core into worldgen using the approach fixed in the Phase 2 ADR.
 
-  *Follow-up (John, REVIEW 2026-10-21):* a shopfront lifted above the street needs a landing or balcony at door level so the display window does not sit at the top of a flight of steps (item SHOPLAND).
 - [ ] **6.1 Adapter**: palette roles to block states; IR to structure pieces,
   clipped per chunk.
 - [ ] **6.2 Registration**: structure type, structure set with data-driven
