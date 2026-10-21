@@ -4,7 +4,7 @@ import dev.fractalbuildings.core.rand.Hash64;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
+import dev.fractalbuildings.core.cache.BoundedCache;
 
 /**
  * The join rule (ADR 0003 R2, ROADMAP 5.8) over a {@link RegionPlanner}: big settlements claim the cells
@@ -33,10 +33,13 @@ public final class FieldRegionView {
 	private final RegionField field;
 	private final int S, R, slack;
 
-	private final ConcurrentHashMap<CellKey, CellDecision> decisions = new ConcurrentHashMap<>();
-	private final ConcurrentHashMap<CellKey, Claim> claims = new ConcurrentHashMap<>();
-	private final ConcurrentHashMap<CellKey, Boolean> survives = new ConcurrentHashMap<>();
-	private final ConcurrentHashMap<CellKey, Resolved> resolved = new ConcurrentHashMap<>();
+	/** Default entries per memo (decisions, claims, survival, resolved cells): one claim read touches a few hundred cells at most. */
+	public static final int DEFAULT_CACHE = 8192;
+
+	private final BoundedCache<CellKey, CellDecision> decisions;
+	private final BoundedCache<CellKey, Claim> claims;
+	private final BoundedCache<CellKey, Boolean> survives;
+	private final BoundedCache<CellKey, Resolved> resolved;
 
 	private record Claim(CellDecision d, long priority, int radius, List<CellKey> cells) {}
 
@@ -54,6 +57,15 @@ public final class FieldRegionView {
 	}
 
 	public FieldRegionView(RegionPlanner planner, RegionMap.Window window) {
+		this(planner, window, DEFAULT_CACHE);
+	}
+
+	/** {@code cacheCapacity} bounds each memo (LRU); results never depend on it, only how often they are recomputed. */
+	public FieldRegionView(RegionPlanner planner, RegionMap.Window window, int cacheCapacity) {
+		this.decisions = new BoundedCache<>(cacheCapacity);
+		this.claims = new BoundedCache<>(cacheCapacity);
+		this.survives = new BoundedCache<>(cacheCapacity);
+		this.resolved = new BoundedCache<>(cacheCapacity);
 		this.planner = planner;
 		this.window = window;
 		this.field = planner.field;
@@ -70,6 +82,27 @@ public final class FieldRegionView {
 		return 3 * R + slack + (int) (0.3 * S) + Math.min(R, (int) (planner.clampFrac * S)) + 2 * RegionProbe.STRIDE;
 	}
 
+	/** True when the cell's own decision can be made from the window (always without one). */
+	public boolean decidable(int cx, int cz) {
+		return available(new CellKey(cx, cz));
+	}
+
+	/**
+	 * True when no cell within the join rule's read radius that could claim (large tier) is out of reach of the window (always without one).
+	 * When false the answer comes from what the window holds and can differ from the unbounded world.
+	 */
+	public boolean covers(int cx, int cz) {
+		if (window == null) return true;
+		// only a potential claimant the window cannot answer for (it is then treated as none) can change the result
+		int r = readRadius(), sx = field.siteX(cx, cz), sz = field.siteZ(cx, cz);
+		for (int z = Math.floorDiv(sz - r, S); z <= Math.floorDiv(sz + r, S); z++) {
+			for (int x = Math.floorDiv(sx - r, S); x <= Math.floorDiv(sx + r, S); x++) {
+				if (Tiers.radius(field.seed, x, z, Tiers.tier(field.seed, x, z), R) > claimFrac * S && !available(new CellKey(x, z))) return false;
+			}
+		}
+		return true;
+	}
+
 	private boolean available(CellKey k) {
 		if (window == null) return true;
 		int reach = planner.probeReach(k.cx(), k.cz()), sx = field.siteX(k.cx(), k.cz()), sz = field.siteZ(k.cx(), k.cz());
@@ -77,12 +110,7 @@ public final class FieldRegionView {
 	}
 
 	public CellDecision decision(CellKey k) {
-		CellDecision d = decisions.get(k);
-		if (d == null) {
-			d = planner.decide(k.cx(), k.cz());
-			decisions.putIfAbsent(k, d);
-		}
-		return d;
+		return decisions.get(k, c -> planner.decide(c.cx(), c.cz()));
 	}
 
 	private static boolean before(CellKey a, long pa, CellKey b, long pb) {
@@ -96,11 +124,7 @@ public final class FieldRegionView {
 	}
 
 	private Claim claim(CellKey k) {
-		Claim c = claims.get(k);
-		if (c != null) return c;
-		c = computeClaim(k);
-		Claim prev = claims.putIfAbsent(k, c);
-		return prev != null ? prev : c;
+		return claims.get(k, this::computeClaim);
 	}
 
 	private Claim computeClaim(CellKey k) {
@@ -150,8 +174,10 @@ public final class FieldRegionView {
 	}
 
 	private boolean survives(CellKey a) {
-		Boolean s = survives.get(a);
-		if (s != null) return s;
+		return survives.get(a, this::computeSurvives);
+	}
+
+	private boolean computeSurvives(CellKey a) {
 		Claim ca = claim(a);
 		boolean ok = true;
 		for (CellKey b : claimantsNear(ca.d().centreX(), ca.d().centreZ(), ca.radius() + R)) {
@@ -165,18 +191,13 @@ public final class FieldRegionView {
 				break;
 			}
 		}
-		survives.putIfAbsent(a, ok);
 		return ok;
 	}
 
 	/** The cell's final result; the same value whatever was asked before. */
 	public Resolved cell(int cx, int cz) {
 		CellKey k = new CellKey(cx, cz);
-		Resolved r = resolved.get(k);
-		if (r != null) return r;
-		r = compute(k);
-		Resolved prev = resolved.putIfAbsent(k, r);
-		return prev != null ? prev : r;
+		return resolved.get(k, this::compute);
 	}
 
 	private Resolved compute(CellKey k) {

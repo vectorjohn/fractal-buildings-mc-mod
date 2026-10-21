@@ -343,6 +343,7 @@ skeleton, then district detail built lazily (ARCHITECTURE.md, "City scale").
   no step has a fixed size cap.
   - R1 (2026-10-21): the tier ladder (`Tiers`), region field and planner, and `fractal-cli region` are in `core/region/`; the per-tier programs (D1-D3) are still to do, so this stays open.
   - D0 (2026-10-21, log `docs/log/2026-10-21-p5-d0-pipeline.md`): the city pipeline `CityPlanner` (skeleton, every district, briefs, scenes), `fractal-cli city --scenes ... --check`, `city-check` (markdown report over cells, random or gate-window sites), the whole-city rules `roads-connected` (lots reach the hub) and `tile-border-agree`, `viewer/city-presets/` (one per T2 gate window, T1 river-town and mixed-city, a synthetic city), `npm run city` / `npm run city-gallery`, `e2e/city.spec.ts`. Tests: `CityPlannerTest`, `SettlementChecksTest` (city rules and mutants), `CityCheckTest`. *Known issues (upstream, found by `city-check`):* hub squares dropped on rough ground leave gaps in the main roads and hall lots without frontage, so `roads-connected` flags 6 of 9 gate cities (12 pieces) and about a third of random synthetic sites; scene roads differ by 1-2 blocks in y at some tile borders (`road-grade`, 4 in 9 gate cities with 2 scenes each); a hub hall lot can overlap a port stub (`lots-disjoint`, 4 of 400 sites). `CityCheckTest` ignores `roads-connected,road-grade,lot-frontage` until those are fixed (drop the ignore then).
+  - D1 (2026-10-21, log `docs/log/2026-10-21-p5-d1-villages.md`): hamlet and village programs (`core/settlement/tiers/`, selected by `TierPrograms`): straight axis-aligned main street through the hub on the gentler axis, hamlet 3 to 8 buildings on a 22 to 40 block track with no square, lanes or ports; village 10 to 60 buildings with a width-4 main street, a cross street on half, a green and a temple (70 %) or hall (30 %) facing it, lanes; presets `hamlet-river`, `village-river`, `hamlet-mixed`, `village-mixed`. *Known issues:* on very rugged ground (about 1 in 400 villages) district detail moves an ungradable green sideways off the street, so its hall is a separate street piece (`roads-connected`, already in the suppressed set).
 - [x] **5.2 Layout**: road network (primary and secondary), lot subdivision,
   plazas and landmarks, gates. Split into the city skeleton (arterials on
   position-hashed lines, district borders drawn around big lots, coarse
@@ -367,10 +368,11 @@ skeleton, then district detail built lazily (ARCHITECTURE.md, "City scale").
 - [ ] **5.7 Density and skyline**: building class and height follow distance
   to the centre and to arterials (downtown high-rises and blocks, halls on
   squares, houses at the edge).
-- [ ] **5.8 Cities across cells**: neighbouring settled cells meet at hashed
+- [x] **5.8 Cities across cells**: neighbouring settled cells meet at hashed
   gates on their shared border, so roads join without either plan reading
   the other; grow cells or join cells per the worldgen ADR (2.10).
   *SK: cell gates agree from the cell pair alone (`cell-gate-agree` over 200 synthetic sites of 2 to 6 cells, also under a ±20 height error); MC2 ticks this item.*
+  *MC2 done 2026-10-21* (log `docs/log/2026-10-21-p5-mc2-cells.md`): `city --cell` plans every settled cell (solo hamlets/villages/towns and dropped claimants get a one-cell site), joined cities from any member cell with identical bytes, cell by cell, shuffled and on 8 threads with evicting caches (`MultiCellCityTest`); the join view and the skeleton source use bounded pure LRU caches (`BoundedCache`); on a fine window `--cell` says what the window cannot answer and points at `--site`. *Known issues:* the T2 fine windows still need `--site` (the join rule reads up to ~3 x max radius around a cell); `--cell` on a recorded world dump prints a "cannot see outside the dump" note for every city-or-larger cell.
 - [ ] **5.9 Scale check**: plan time and memory per district, measured outside
   the game at 512², 2048² and a multi-cell city; flat per-district cost is the
   bar (feeds 6.5 and 6.7).

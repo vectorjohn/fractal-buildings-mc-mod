@@ -186,14 +186,15 @@ public class DefaultProgram implements TierProgram {
 		int lo = kind == LandmarkKind.GREEN ? 16 : kind == LandmarkKind.SQUARE ? 24 : 32, hi = kind == LandmarkKind.GREEN ? 28 : kind == LandmarkKind.SQUARE ? 40 : 48;
 		int w = Hash64.range(Hash64.hash(hs, "w"), lo, hi), d = Hash64.range(Hash64.hash(hs, "d"), lo, hi);
 		DistrictGrid.Tile tile = c.grid.tileAt(hub.x(), hub.z());
-		Rect r = new Rect(clamp(hub.x() - w / 2, tile.minX() + TILE_MARGIN, tile.maxX() - TILE_MARGIN - w),
-				clamp(hub.z() - d / 2, tile.minZ() + TILE_MARGIN, tile.maxZ() - TILE_MARGIN - d), w, d);
+		int margin = landmarkMargin();
+		Rect r = new Rect(clamp(hub.x() - w / 2, tile.minX() + margin, tile.maxX() - margin - w),
+				clamp(hub.z() - d / 2, tile.minZ() + margin, tile.maxZ() - margin - d), w, d);
 		String district = Ids.district(tile.ix(), tile.iz());
 		List<Rect> taken = new ArrayList<>(List.of(r));
 		out.add(new Landmark("l?", kind, r.x(), r.z(), r.w(), r.d(), district));
 		// buildings facing the square: village a temple or a hall, town a hall, city and up a hall and a temple
 		List<LandmarkKind> faces = new ArrayList<>();
-		if (tier == Tier.VILLAGE) faces.add(Hash64.below(Hash64.hash(hs, "face"), 2) == 0 ? LandmarkKind.TEMPLE : LandmarkKind.HALL);
+		if (tier == Tier.VILLAGE) faces.add(villageFace(Hash64.hash(hs, "face")));
 		else if (tier == Tier.TOWN) faces.add(LandmarkKind.HALL);
 		else { faces.add(LandmarkKind.HALL); faces.add(LandmarkKind.TEMPLE); }
 		int side0 = Hash64.below(Hash64.hash(hs, "side"), 4);
@@ -201,7 +202,7 @@ public class DefaultProgram implements TierProgram {
 		for (LandmarkKind fk : faces) {
 			boolean hall = fk == LandmarkKind.HALL;
 			for (int q = 0; q < 4; q++) {
-				int side = (side0 + k + q) % 4; // 0 north (-z), 1 east, 2 south, 3 west
+				int side = sideAt(c, hub, side0, k, q); // 0 north (-z), 1 east, 2 south, 3 west
 				int bw = hall ? 28 : 20, bd = hall ? 18 : 20;
 				if (side == 1 || side == 3) { int t = bw; bw = bd; bd = t; }
 				int bx, bz;
@@ -212,7 +213,7 @@ public class DefaultProgram implements TierProgram {
 					bz = r.z() + r.d() / 2 - bd / 2;
 					bx = side == 3 ? r.x() - FACING_GAP - bw : r.x() + r.w() + FACING_GAP;
 				}
-				boolean fits = bx >= tile.minX() + TILE_MARGIN && bz >= tile.minZ() + TILE_MARGIN && bx + bw <= tile.maxX() - TILE_MARGIN && bz + bd <= tile.maxZ() - TILE_MARGIN;
+				boolean fits = bx >= tile.minX() + margin && bz >= tile.minZ() + margin && bx + bw <= tile.maxX() - margin && bz + bd <= tile.maxZ() - margin;
 				for (Rect o : taken) if (Rect.overlap(bx, bz, bw, bd, o.x(), o.z(), o.w(), o.d())) fits = false;
 				if (!fits) continue;
 				taken.add(new Rect(bx, bz, bw, bd));
@@ -223,6 +224,15 @@ public class DefaultProgram implements TierProgram {
 		}
 		return out;
 	}
+
+	/** The building that faces a village green, from the hash of the site. */
+	protected LandmarkKind villageFace(long h) { return Hash64.below(h, 2) == 0 ? LandmarkKind.TEMPLE : LandmarkKind.HALL; }
+
+	/** Distance kept between the hub square and its facing building and the tile border. */
+	protected int landmarkMargin() { return TILE_MARGIN; }
+
+	/** Which side of the square (0 north (-z), 1 east, 2 south, 3 west) the {@code q}th try of the {@code k}th facing building takes. */
+	protected int sideAt(SkeletonContext c, Pt hub, int side0, int k, int q) { return (side0 + k + q) % 4; }
 
 	private static int clamp(int v, int lo, int hi) { return Math.max(lo, Math.min(hi, v)); }
 

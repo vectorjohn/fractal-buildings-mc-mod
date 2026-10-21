@@ -72,8 +72,12 @@ final class CityCommand {
 		RegionView view;
 		if (o.has("cell")) {
 			int[] a = ints(o.get("cell", null), 2, "--cell CX,CZ");
-			view = cellView(field, p);
-			site = view.siteOf(new Cell(a[0], a[1])).orElseThrow(() -> new UsageException("cell " + a[0] + "," + a[1] + " belongs to no settlement"));
+			FieldRegionView fv = fieldView(field, p);
+			view = new FieldSiteView(fv, field);
+			if (!fv.decidable(a[0], a[1])) throw new UsageException("cell " + a[0] + "," + a[1] + " cannot be decided from this terrain window (its probe reach leaves the recorded area); " + WINDOW_HINT);
+			site = view.siteOf(new Cell(a[0], a[1])).orElseThrow(() -> new UsageException("cell " + a[0] + "," + a[1] + " belongs to no settlement"
+					+ (fv.covers(a[0], a[1]) ? "" : " (the terrain window is smaller than the join rule reads around the cell, so a neighbour that would claim it may be out of view; " + WINDOW_HINT + ")")));
+			if (!fv.covers(a[0], a[1]) && (site.cells().size() > 1 || site.tier().atLeast(Tier.CITY))) System.err.println("city: note: a large settlement just outside the recorded terrain cannot be seen from cell " + a[0] + "," + a[1] + ", so its join with the neighbours is only as exact as the window (" + WINDOW_HINT + ")");
 		} else {
 			site = fromSite(field, o.get("site", null));
 			view = new FixedSiteView(site, field);
@@ -151,8 +155,14 @@ final class CityCommand {
 		return ids;
 	}
 
+	static final String WINDOW_HINT = "give --site X,Z,TIER,RADIUS for a fine window, or --cell on a coarse world dump or the live world";
+
 	/** The region field with its join rule, limited to the recorded window when the terrain is a dump. */
 	static RegionView cellView(RegionField field, ProbeSpecs.Probes p) {
+		return new FieldSiteView(fieldView(field, p), field);
+	}
+
+	static FieldRegionView fieldView(RegionField field, ProbeSpecs.Probes p) {
 		RegionPlanner planner = new RegionPlanner(field, RegionProbe.of(p.terrain(), p.biome()));
 		RegionMap.Window w = null;
 		if (p.terrain() instanceof RecordedProbe r) {
@@ -161,7 +171,7 @@ final class CityCommand {
 			if (x1 < x0 || z1 < z0) throw new UsageException("recorded terrain is smaller than one region lattice step");
 			w = new RegionMap.Window(x0, z0, (x1 - x0) / s + 1, (z1 - z0) / s + 1);
 		}
-		return new FieldSiteView(new FieldRegionView(planner, w), field);
+		return new FieldRegionView(planner, w);
 	}
 
 	static SettlementSite fromSite(RegionField field, String arg) {

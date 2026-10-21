@@ -1,5 +1,6 @@
 package dev.fractalbuildings.core.settlement;
 
+import dev.fractalbuildings.core.region.CellDecision;
 import dev.fractalbuildings.core.region.CellKey;
 import dev.fractalbuildings.core.region.FieldRegionView;
 import dev.fractalbuildings.core.region.RegionField;
@@ -9,7 +10,7 @@ import java.util.Optional;
 
 /**
  * The region field's join rule ({@link FieldRegionView}) seen through {@link RegionView}: a cell belongs to the settlement
- * that claimed it (or that it claimed), with the owner's tier. Site ids are {@code s<cx>_<cz>} of the claimant, so every
+ * that claimed it (or that it claimed), with the owner's tier; a settled cell nobody claimed is a one-cell settlement of its own. Site ids are {@code s<cx>_<cz>} of the claimant, so every
  * member cell answers with the same site.
  */
 public final class FieldSiteView implements RegionView {
@@ -25,7 +26,13 @@ public final class FieldSiteView implements RegionView {
 
 	@Override public Optional<SettlementSite> siteOf(Cell cell) {
 		FieldRegionView.Resolved r = view.cell(cell.cx(), cell.cz());
-		if (r.site() == null) return Optional.empty();
+		if (r.site() == null) {
+			// decides alone: a settled hamlet, village or town (or a dropped claimant) is its own one-cell settlement
+			CellDecision d = r.decision();
+			if (!d.settled()) return Optional.empty();
+			Cell self = new Cell(cell.cx(), cell.cz());
+			return Optional.of(new SettlementSite(Ids.site(cell.cx(), cell.cz()), d.tier(), new Pt(d.centreX(), d.centreZ()), Math.max(1, d.radius()), self, List.of(self)));
+		}
 		CellKey owner = r.site().owner();
 		List<Cell> cells = new ArrayList<>();
 		for (CellKey k : r.site().cells()) cells.add(new Cell(k.cx(), k.cz()));

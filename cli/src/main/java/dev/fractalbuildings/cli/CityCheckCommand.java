@@ -98,7 +98,8 @@ final class CityCheckCommand {
 	private static void addCells(List<Job> jobs, long seed, String terrain, int cellSize) {
 		ProbeSpecs.Probes p = Scenes.probes(terrain);
 		RegionField field = new RegionField(seed, cellSize);
-		RegionView view = CityCommand.cellView(field, p);
+		dev.fractalbuildings.core.region.FieldRegionView fv = CityCommand.fieldView(field, p);
+		RegionView view = new dev.fractalbuildings.core.settlement.FieldSiteView(fv, field);
 		int c0x = -4, c0z = -4, c1x = 4, c1z = 4;
 		if (p.terrain() instanceof RecordedProbe r) {
 			c0x = Math.floorDiv(r.x0(), cellSize);
@@ -109,6 +110,7 @@ final class CityCheckCommand {
 		Set<String> seen = new java.util.TreeSet<>();
 		for (int cz = c0z; cz <= c1z; cz++) {
 			for (int cx = c0x; cx <= c1x; cx++) {
+				if (!fv.decidable(cx, cz)) continue; // the window cannot answer for this cell
 				try {
 					var s = view.siteOf(new Cell(cx, cz));
 					if (s.isPresent() && seen.add(s.get().id())) {

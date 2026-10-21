@@ -32,7 +32,7 @@ public final class Skeletons {
 	public static final int GATE_TRIES = 5;
 
 	public static CellSkeleton build(long seed, RegionView view, Cell cell, CoarseProbe probe, DistrictGrid grid) {
-		return build(seed, view, cell, probe, grid, new DefaultProgram());
+		return build(seed, view, cell, probe, grid, TierPrograms.of(view.siteOf(cell).orElseThrow(() -> new IllegalArgumentException("cell " + cell + " belongs to no settlement")).tier()));
 	}
 
 	public static CellSkeleton build(long seed, RegionView view, Cell cell, CoarseProbe probe, DistrictGrid grid, TierProgram program) {
@@ -284,7 +284,7 @@ public final class Skeletons {
 
 	/** Builds every member cell and merges them. */
 	public static SettlementPlan plan(long seed, RegionView view, SettlementSite site, CoarseProbe probe, int genVersion) {
-		return plan(seed, view, site, probe, genVersion, new DefaultProgram());
+		return plan(seed, view, site, probe, genVersion, TierPrograms.of(site.tier()));
 	}
 
 	public static SettlementPlan plan(long seed, RegionView view, SettlementSite site, CoarseProbe probe, int genVersion, TierProgram program) {
