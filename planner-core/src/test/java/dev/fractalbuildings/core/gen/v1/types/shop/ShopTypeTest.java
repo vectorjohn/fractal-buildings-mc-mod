@@ -34,13 +34,15 @@ class ShopTypeTest {
 	static List<String> problems(BuildingIr b) {
 		List<String> p = new ArrayList<>();
 		int w = b.spec().width();
+		int low = b.rooms().stream().mapToInt(Room::storey).min().orElse(0); // 1 on a market hall (the open floor under it is storey 0)
+		int floorY = b.storeys().get(low).y();
 		Opening door = null;
 		for (Opening o : b.openings()) if (o.kind() == OpeningKind.DOOR && Opening.OUTSIDE.equals(o.to())) door = o;
 		if (door == null) return List.of("no entrance");
 		if (Math.abs(door.box().x() - (w - 1) / 2) > 1) p.add("door at x " + door.box().x() + " is not centred in " + w);
 		int wins = 0;
 		for (Opening o : b.openings()) {
-			if (o.kind() != OpeningKind.WINDOW || o.facing() != Facing.NORTH || o.box().z() != door.box().z() || o.box().y() > 4) continue;
+			if (o.kind() != OpeningKind.WINDOW || o.facing() != Facing.NORTH || o.box().z() != door.box().z() || o.box().y() > floorY + 4) continue;
 			wins++;
 			if (o.box().sx() < 2) p.add("shopfront window " + o.id() + " is " + o.box().sx() + " wide");
 		}
@@ -50,11 +52,11 @@ class ShopTypeTest {
 		if (counter == null) return append(p, "no counter hook");
 		Room front = null;
 		for (Room r : b.rooms()) if (r.id().equals(counter.room())) front = r;
-		if (front == null || front.storey() != 0) return append(p, "counter is not in a ground room");
+		if (front == null || front.storey() != low) return append(p, "counter is not in a ground room");
 		Box3 part = front.parts().get(0);
 		if (part.x() != 1 || part.sx() != w - 2) p.add("front room spans x " + part.x() + ".." + (part.maxX() - 1) + ", not the whole front of " + w);
 		if (part.z() != door.box().z() + 1) p.add("front room does not start behind the front wall");
-		if (b.storeys().get(0).height() != 5) p.add("ground storey is " + b.storeys().get(0).height() + " high");
+		if (b.storeys().get(low).height() != 5) p.add("ground storey is " + b.storeys().get(low).height() + " high");
 		if (b.spec().storeys() >= 2 && b.hooks().stream().noneMatch(h -> h.kind().equals("bed"))) p.add("no bed upstairs");
 		return p;
 	}

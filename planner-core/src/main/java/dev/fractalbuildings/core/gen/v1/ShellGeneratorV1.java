@@ -88,6 +88,7 @@ public final class ShellGeneratorV1 {
 		for (Roof r : c.roofs()) roofs.add(stilts == null ? r : new Roof(r.form(), r.volume(), r.ridgeAxis(), r.baseY() + lift, r.rise(), r.run()));
 		List<Hook> hooks = new ArrayList<>();
 		for (Hook h : c.hooks()) hooks.add(stilts == null ? h : new Hook(h.id(), h.kind(), h.room(), h.x(), h.y() + lift, h.z(), h.facing()));
+		for (Volume v : c.extraVolumes()) volumes.add(new Volume(v.id(), up(v.box(), lift), v.parent()));
 		if (stilts != null) {
 			boxes.addAll(stilts.boxes(m.main()));
 			volumes.addAll(stilts.volumes(m.main()));

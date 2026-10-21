@@ -2,7 +2,7 @@
   "type": "shop",
   "style": "plain",
   "lot": "11x18",
-  "terrain": "noise:7:64:6:32",
+  "terrain": "noise:7:64:2:48",
   "front": "north",
   "seeds": "0..15",
   "gen": "v1",
