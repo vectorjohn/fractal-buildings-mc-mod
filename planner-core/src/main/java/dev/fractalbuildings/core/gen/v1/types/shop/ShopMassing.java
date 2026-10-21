@@ -47,6 +47,8 @@ final class ShopMassing {
 		int lift = ShopType.legHeight(c);
 		int W = sp.width(), D = sp.depth() - sp.lead();
 		if (lift == 0 || D < 9) return null;
+		int deck = D >= 11 ? 2 : D >= 10 ? 1 : 0; // rows left in front of the hall for the landing the front steps rise to (see InstancePassV1 stoops)
+		D -= deck;
 		for (int n = Math.min(Math.min(sp.storeys(), maxStoreys), 3); n >= 1; n--) {
 			Draws r = c.draws("massing/market", n);
 			StoreyGrid g = StoreyGrid.of(n, ShopType.GROUND, Math.max(4, c.style().massing().typical()));
@@ -59,7 +61,7 @@ final class ShopMassing {
 				if (k == null) continue;
 				cores.add(k);
 			}
-			Massing m = new Massing(g, List.of(main), cores).shiftedZ(sp.lead());
+			Massing m = new Massing(g, List.of(main), cores).shiftedZ(sp.lead() + deck);
 			if (MassingCheck.check(m, W, sp.depth(), sp.maxHeight() - lift).isEmpty()) return m;
 		}
 		return null;
