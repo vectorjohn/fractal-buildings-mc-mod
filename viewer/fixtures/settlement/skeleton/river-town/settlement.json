@@ -3,7 +3,7 @@
   "planVersion": 1,
   "genVersion": 2,
   "seed": "12345",
-  "site": {"id": "s-1_-4", "tier": "town", "centre": [-900, -3500], "radius": 300, "claimant": [-1, -4], "cells": [[-1, -4]]},
+  "site": {"id": "sm1_m4", "tier": "town", "centre": [-900, -3500], "radius": 300, "claimant": [-1, -4], "cells": [[-1, -4]]},
   "bounds": {"x": -1216, "z": -3936, "w": 736, "d": 864},
   "coarse": {
     "x0": -1216, "z0": -3936, "step": 32, "nx": 23, "nz": 27,

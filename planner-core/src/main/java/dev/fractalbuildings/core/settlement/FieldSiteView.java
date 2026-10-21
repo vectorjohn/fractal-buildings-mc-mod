@@ -31,7 +31,7 @@ public final class FieldSiteView implements RegionView {
 		for (CellKey k : r.site().cells()) cells.add(new Cell(k.cx(), k.cz()));
 		cells.sort(CellGeometry::compare);
 		Tier tier = view.decision(owner).tier();
-		return Optional.of(new SettlementSite("s" + Ids.n(owner.cx()) + "_" + Ids.n(owner.cz()), tier, new Pt(r.site().centreX(), r.site().centreZ()),
+		return Optional.of(new SettlementSite(Ids.site(owner.cx(), owner.cz()), tier, new Pt(r.site().centreX(), r.site().centreZ()),
 				r.site().radius(), new Cell(owner.cx(), owner.cz()), cells));
 	}
 }

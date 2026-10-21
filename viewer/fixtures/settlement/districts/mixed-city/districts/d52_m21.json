@@ -15,7 +15,7 @@
   ],
   "plazas": [],
   "lots": [
-    {"id": "d52_m21.l0", "x": 8309, "z": -3344, "w": 31, "d": 31, "front": "west", "type": "highrise", "style": "plains", "storeys": [20, 60], "streets": 1, "airRights": 2, "frontY": 75, "density": 78, "status": "build"},
+    {"id": "d52_m21.l0", "x": 8309, "z": -3344, "w": 31, "d": 31, "front": "west", "type": "highrise", "style": "plains", "storeys": [20, 30], "streets": 1, "airRights": 2, "frontY": 75, "density": 78, "status": "build"},
     {"id": "d52_m21.l1", "x": 8309, "z": -3311, "w": 22, "d": 15, "front": "west", "type": "shop", "style": "plains", "storeys": [3, 4], "streets": 1, "airRights": 2, "frontY": 73, "density": 78, "status": "build"},
     {"id": "d52_m21.l2", "x": 8309, "z": -3270, "w": 14, "d": 10, "front": "west", "type": "shop", "style": "plains", "storeys": [3, 4], "streets": 3, "airRights": 2, "frontY": 64, "density": 79, "status": "build"},
     {"id": "d52_m21.l3", "x": 8309, "z": -3256, "w": 25, "d": 12, "front": "west", "type": "shop", "style": "plains", "storeys": [3, 4], "streets": 1, "airRights": 2, "frontY": 64, "density": 79, "status": "build"},

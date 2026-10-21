@@ -12,7 +12,7 @@ import dev.fractalbuildings.core.region.RegionPlanner;
 import dev.fractalbuildings.core.region.RegionProbe;
 import dev.fractalbuildings.core.ir.IrJson;
 import dev.fractalbuildings.core.ir.Violation;
-import dev.fractalbuildings.core.settlement.Briefs;
+import dev.fractalbuildings.core.settlement.CityPlanner;
 import dev.fractalbuildings.core.settlement.Cell;
 import dev.fractalbuildings.core.settlement.DistrictJson;
 import dev.fractalbuildings.core.settlement.DistrictPlan;
@@ -57,7 +57,7 @@ final class CityCommand {
 	static final int MAX_CELLS = 16;
 
 	static int run(String[] args) throws IOException {
-		Opts o = new Opts(args, Set.of("seed", "terrain", "cell", "site", "cell-size", "out-dir", "scene"), Set.of("districts"));
+		Opts o = new Opts(args, Set.of("seed", "terrain", "cell", "site", "cell-size", "out-dir", "scene", "scenes"), Set.of("districts", "exterior", "interiors", "check"));
 		long seed = o.longValue("seed");
 		Path dir = Path.of(o.require("out-dir"));
 		if (o.has("cell") == o.has("site")) throw new UsageException("give exactly one of --cell CX,CZ and --site X,Z,TIER,RADIUS");
@@ -80,21 +80,49 @@ final class CityCommand {
 		}
 		CoarseProbe coarse = CoarseProbe.of(p.terrain(), p.biome(), 32);
 
+		boolean wantDistricts = o.flag("districts") || o.has("scene") || o.has("scenes") || o.flag("check");
 		long t0 = System.nanoTime();
 		SettlementPlan plan;
+		CityPlanner.City city = null;
 		try {
-			plan = Skeletons.plan(seed, view, site, coarse, GeneratorV1.GEN_VERSION);
+			if (wantDistricts) {
+				city = CityPlanner.plan(new SkeletonSource.Direct(seed, view, site, coarse), coarse, p.terrain(), p.biome(), GeneratorV1.GEN_VERSION);
+				plan = city.plan();
+			} else {
+				plan = Skeletons.plan(seed, view, site, coarse, GeneratorV1.GEN_VERSION);
+			}
 		} catch (IllegalArgumentException e) {
 			throw new UsageException("cannot plan " + site.id() + ": " + e.getMessage() + " (does the terrain window cover the settlement?)");
 		}
 		double ms = (System.nanoTime() - t0) / 1e6;
-		int districtViolations = 0;
-		if (o.flag("districts") || o.has("scene")) {
-			Set<String> scenes = new java.util.TreeSet<>();
-			if (o.has("scene")) scenes.addAll(List.of(o.get("scene", null).split(",")));
-			DistrictsResult r = planDistricts(seed, view, site, coarse, p, plan, scenes, dir);
-			plan = r.plan();
-			districtViolations = r.violations();
+		List<Violation> all = new ArrayList<>();
+		if (city != null) {
+			for (String n : city.notes()) System.err.println("city: note: " + n);
+			String sel = o.has("scenes") ? o.get("scenes", null) : o.get("scene", "none");
+			List<String> sceneIds = sceneIds(sel, city);
+			for (String id : sceneIds) {
+				DistrictScenes.Built b = CityPlanner.scene(city, id, p.terrain(), p.biome(), !o.flag("interiors"));
+				String scenePath = "scenes/" + id + ".json";
+				DistrictPlan old = b.plan();
+				city.districts().put(id, new DistrictPlan(old.genVersion(), old.seed(), old.district(), old.streets(), old.plazas(), old.lots(), scenePath, old.violations()));
+				GenCommand.write(dir.resolve(scenePath), IrJson.write(b.scene()).getBytes(StandardCharsets.UTF_8));
+				for (Violation v : b.scene().violations()) all.add(new Violation(v.invariant(), v.building(), id + " scene: " + v.message(), v.cells()));
+			}
+			int lots = 0;
+			for (var e : city.districts().entrySet()) {
+				GenCommand.write(dir.resolve("districts/" + e.getKey() + ".json"), DistrictJson.write(e.getValue()).getBytes(StandardCharsets.UTF_8));
+				lots += e.getValue().lots().size();
+			}
+			all.addAll(CityPlanner.check(city));
+			System.err.printf(java.util.Locale.ROOT, "districts: %d planned, %d lots, %d scenes%n", city.districts().size(), lots, sceneIds.size());
+			plan = city.plan();
+		} else {
+			all.addAll(plan.violations());
+		}
+		for (Violation v : all) {
+			String line = v.invariant() + ": " + v.message();
+			System.err.println("city: " + line);
+			if (o.flag("check")) System.out.println(line);
 		}
 		GenCommand.write(dir.resolve("settlement.json"), SettlementJson.write(plan).getBytes(StandardCharsets.UTF_8));
 		ByteArrayOutputStream bos = new ByteArrayOutputStream();
@@ -104,61 +132,27 @@ final class CityCommand {
 		GenCommand.write(dir.resolve("terrain.json.gz"), bos.toByteArray());
 		System.err.printf(java.util.Locale.ROOT, "city: %s %s r%d at %d,%d, %d cells, %d districts, %d roads, %d gates, %d landmarks, %d violations, %.0f ms%n",
 				site.id(), site.tier().json, site.radius(), site.centre().x(), site.centre().z(), site.cells().size(), plan.districts().size(),
-				plan.roads().size(), plan.gates().size(), plan.landmarks().size(), plan.violations().size() + districtViolations, ms);
-		return plan.violations().isEmpty() && districtViolations == 0 ? 0 : 1;
+				plan.roads().size(), plan.gates().size(), plan.landmarks().size(), all.size(), ms);
+		return all.isEmpty() ? 0 : 1;
 	}
 
-	record DistrictsResult(SettlementPlan plan, int violations) {}
-
-	/**
-	 * District detail (DL) for every district the settlement lists that it owns: {@code districts/<id>.json}, filled by the brief step
-	 * (style from the biome field, storeys, street mask, front height), with an optional scene ({@code scenes/<id>.json}, exterior) for the
-	 * districts named in {@code --scene}. The settlement's district list gets the lot counts, style weights and detail paths.
-	 */
-	private static DistrictsResult planDistricts(long seed, RegionView view, SettlementSite site, CoarseProbe coarse, ProbeSpecs.Probes p, SettlementPlan plan,
-			Set<String> sceneIds, Path dir) throws IOException {
-		SkeletonSource src = new SkeletonSource.Direct(seed, view, site, coarse);
-		StyleField styles = new StyleField(p.biome(), seed);
-		List<DistrictSummary> out = new ArrayList<>();
-		int violations = 0, planned = 0, lots = 0;
-		long t0 = System.nanoTime();
-		for (DistrictSummary d : plan.districts()) {
-			Optional<Districts.Detail> det;
-			try {
-				det = Districts.plan(src, d.ix(), d.iz(), p.terrain());
-			} catch (IllegalArgumentException e) {
-				throw new UsageException("cannot plan district " + d.id() + ": " + e.getMessage() + " (does the terrain window cover it?)");
-			}
-			if (det.isEmpty()) { out.add(d); continue; }
-			DistrictPlan dp = Briefs.fill(det.get().plan(), QuarterKind.values()[det.get().plan().district().quarter()], styles, p.terrain());
-			String scenePath = null;
-			if (sceneIds.contains(d.id())) {
-				DistrictScenes.Built b = DistrictScenes.build(dp, det.get().landmarks(), p.terrain(), p.biome(), true);
-				scenePath = "scenes/" + d.id() + ".json";
-				dp = new DistrictPlan(b.plan().genVersion(), b.plan().seed(), b.plan().district(), b.plan().streets(), b.plan().plazas(), b.plan().lots(), scenePath, b.plan().violations());
-				GenCommand.write(dir.resolve(scenePath), IrJson.write(b.scene()).getBytes(StandardCharsets.UTF_8));
-				violations += b.scene().violations().size();
-			}
-			violations += dp.violations().size();
-			for (Violation v : dp.violations()) System.err.println("city: " + d.id() + " " + v.invariant() + ": " + v.message());
-			for (String n : det.get().notes()) System.err.println("city: " + d.id() + " note: " + n);
-			GenCommand.write(dir.resolve("districts/" + d.id() + ".json"), DistrictJson.write(dp).getBytes(StandardCharsets.UTF_8));
-			java.util.TreeMap<String, Integer> tally = new java.util.TreeMap<>();
-			int built = 0;
-			for (LotBrief l : dp.lots()) if (l.builds()) { tally.merge(l.style(), 1, Integer::sum); built++; }
-			List<StyleWeight> sw = new ArrayList<>();
-			for (var e : tally.entrySet()) sw.add(new StyleWeight(e.getKey(), e.getValue()));
-			out.add(new DistrictSummary(d.id(), d.ix(), d.iz(), d.x(), d.z(), d.w(), d.d(), d.originChunkX(), d.originChunkZ(), d.quarter(), d.density(), sw, dp.lots().size(), "districts/" + d.id() + ".json"));
-			planned++;
-			lots += dp.lots().size();
+	/** Resolves {@code --scenes}: none, all, auto:N, or district ids. */
+	private static List<String> sceneIds(String sel, CityPlanner.City city) {
+		if (sel.equals("none") || sel.isEmpty()) return List.of();
+		if (sel.equals("all")) return new ArrayList<>(city.districts().keySet());
+		if (sel.startsWith("auto:")) {
+			try { return CityPlanner.autoScenes(city, Integer.parseInt(sel.substring(5))); } catch (NumberFormatException e) { throw new UsageException("bad --scenes " + sel); }
 		}
-		System.err.printf(java.util.Locale.ROOT, "districts: %d planned, %d lots, %d violations, %.0f ms%n", planned, lots, violations, (System.nanoTime() - t0) / 1e6);
-		return new DistrictsResult(plan.withDistricts(out), violations);
+		List<String> ids = new ArrayList<>();
+		for (String id : sel.split(",")) {
+			if (!city.districts().containsKey(id)) throw new UsageException("no planned district " + id + " (have " + city.districts().size() + " from " + city.districts().firstKey() + ")");
+			ids.add(id);
+		}
+		return ids;
 	}
-
 
 	/** The region field with its join rule, limited to the recorded window when the terrain is a dump. */
-	private static RegionView cellView(RegionField field, ProbeSpecs.Probes p) {
+	static RegionView cellView(RegionField field, ProbeSpecs.Probes p) {
 		RegionPlanner planner = new RegionPlanner(field, RegionProbe.of(p.terrain(), p.biome()));
 		RegionMap.Window w = null;
 		if (p.terrain() instanceof RecordedProbe r) {
@@ -170,7 +164,7 @@ final class CityCommand {
 		return new FieldSiteView(new FieldRegionView(planner, w), field);
 	}
 
-	private static SettlementSite fromSite(RegionField field, String arg) {
+	static SettlementSite fromSite(RegionField field, String arg) {
 		String[] f = arg.split(",", -1);
 		if (f.length != 4) throw new UsageException("expected --site X,Z,TIER,RADIUS");
 		int x, z, r;
@@ -195,7 +189,7 @@ final class CityCommand {
 		}
 		cells.sort(CellGeometry::compare);
 		if (cells.size() > MAX_CELLS) throw new UsageException("--site spans " + cells.size() + " cells (max " + MAX_CELLS + "); use a smaller radius or a larger --cell-size");
-		return new SettlementSite("s" + claimant.cx() + "_" + claimant.cz(), tier, new Pt(x, z), r, claimant, cells);
+		return new SettlementSite(dev.fractalbuildings.core.settlement.Ids.site(claimant.cx(), claimant.cz()), tier, new Pt(x, z), r, claimant, cells);
 	}
 
 	private static int[] ints(String s, int n, String form) {

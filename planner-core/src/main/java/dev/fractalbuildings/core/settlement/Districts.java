@@ -86,6 +86,8 @@ public final class Districts {
 		final List<int[]> cols;
 		final boolean fixed;
 		Street street;
+		/** Lots may front this street: its piece within the tile (plus margin) holds a skeleton road, so it is not a fragment that only reaches a tile border. */
+		boolean lotOk = true;
 
 		Raw(String id, RoadKind kind, int width, List<int[]> cols, boolean fixed) {
 			this.id = id;
@@ -212,6 +214,44 @@ public final class Districts {
 			for (int z = r.z(); z < r.z() + r.d(); z++) for (int x = r.x(); x < r.x() + r.w(); x++) or(x, z, f);
 		}
 
+		/**
+		 * Flags the streets whose piece (streets that overlap or touch, in this tile and its margin) holds no skeleton road: a fragment
+		 * kept only because it reaches the tile border may be dead on the far side, and a lot on it would front a street that leads
+		 * nowhere (the whole-city {@code roads-connected} rule). Such streets stay in the plan but get no lots.
+		 */
+		void markLotEligible(List<Raw> finals) {
+			int n = finals.size();
+			int[] parent = new int[n];
+			for (int i = 0; i < n; i++) parent[i] = i;
+			short[] tmp = new short[rw * rd];
+			for (int i = 0; i < n; i++) {
+				Raw r = finals.get(i);
+				int h = r.width / 2;
+				for (int[] c : r.cols) {
+					for (int dz = 0; dz < r.width; dz++) {
+						for (int dx = 0; dx < r.width; dx++) {
+							int x = c[0] - h + dx, z = c[1] - h + dz;
+							if (!inR(x, z)) continue;
+							int p = (z - rz0) * rw + (x - rx0);
+							if (tmp[p] == 0) tmp[p] = (short) (i + 1);
+							else union(parent, tmp[p] - 1, i);
+						}
+					}
+				}
+			}
+			for (int z = 0; z < rd; z++) {
+				for (int x = 0; x < rw; x++) {
+					int a = tmp[z * rw + x];
+					if (a == 0) continue;
+					if (x + 1 < rw && tmp[z * rw + x + 1] != 0) union(parent, a - 1, tmp[z * rw + x + 1] - 1);
+					if (z + 1 < rd && tmp[(z + 1) * rw + x] != 0) union(parent, a - 1, tmp[(z + 1) * rw + x] - 1);
+				}
+			}
+			boolean[] good = new boolean[n];
+			for (int i = 0; i < n; i++) if (finals.get(i).skeletonish()) good[find(parent, i)] = true;
+			for (int i = 0; i < n; i++) finals.get(i).lotOk = good[find(parent, i)];
+		}
+
 		// ---- the plan
 
 		Detail run() {
@@ -225,6 +265,7 @@ public final class Districts {
 			List<Raw> finals = new ArrayList<>();
 			for (Raw r : raws) if (r.street != null) finals.add(r);
 			finals.sort(Comparator.comparing(r -> r.id));
+			markLotEligible(finals);
 			ownerList.clear();
 			java.util.Arrays.fill(owner, (short) 0);
 			for (Raw r : finals) paint(r);
@@ -765,6 +806,7 @@ public final class Districts {
 
 		void frontageLots(List<Raw> finals) {
 			for (Raw r : finals) {
+				if (!r.lotOk) continue;
 				List<int[]> cols = r.cols;
 				int i = 0;
 				while (i + 1 < cols.size()) {
@@ -922,6 +964,8 @@ public final class Districts {
 					int mid = Math.max(1, ((front.dx != 0 ? r.d() : r.w()) - 1) / 2);
 					int fx = front == Facing.EAST ? r.x() + r.w() : front == Facing.WEST ? r.x() - 1 : r.x() + mid;
 					int fz = front == Facing.SOUTH ? r.z() + r.d() : front == Facing.NORTH ? r.z() - 1 : r.z() + mid;
+					Raw fs0 = streetAt(fx, fz);
+					if (fs0 != null && !fs0.lotOk) continue;
 					paintRect(r, LOT);
 					Raw fs = streetAt(fx, fz);
 					addLot(r, front, "block", p.get().minStoreys(), p.get().maxStoreys(), dens, fs);

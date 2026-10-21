@@ -8,10 +8,7 @@
     {"id": "t0", "kind": "lane", "width": 3, "points": [[-968, -3232], [-960, -3232], [-952, -3232]], "y": [68, 68, 68]}
   ],
   "plazas": [],
-  "lots": [
-    {"id": "dm6_m21.l0", "x": -960, "z": -3241, "w": 10, "d": 8, "front": "south", "type": "house", "style": "plains", "storeys": [1, 2], "streets": 1, "airRights": 0, "frontY": 68, "density": 12, "status": "build"},
-    {"id": "dm6_m21.l1", "x": -960, "z": -3230, "w": 10, "d": 9, "front": "north", "type": "workshop", "style": "plains", "storeys": [1, 2], "streets": 1, "airRights": 0, "frontY": 68, "density": 12, "status": "build"}
-  ],
+  "lots": [],
   "scene": null,
   "violations": []
 }

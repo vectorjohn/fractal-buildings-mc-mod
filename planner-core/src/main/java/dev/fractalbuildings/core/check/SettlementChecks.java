@@ -383,6 +383,170 @@ public final class SettlementChecks {
 		return out;
 	}
 
+	/** Longest distance from the hub to the nearest street or plaza column that the whole-city connectivity check accepts as "on the hub". */
+	public static final int HUB_REACH = 24;
+
+	/** At most this many unreachable pieces are listed individually. */
+	static final int MAX_LISTED = 8;
+
+	/**
+	 * Result of {@link #cityRoads}: the violations, and the number of stray pieces (street fragments that reach neither the hub
+	 * nor anything that matters: no skeleton road and no building lot on them).
+	 */
+	public record CityRoads(List<Violation> violations, int strays, int hubPiece, int total) {}
+
+	/** {@link #cityRoads} violations only. */
+	public static List<Violation> cityRoadsConnected(java.util.Collection<DistrictPlan> plans, Pt hub) {
+		return cityRoads(plans, hub).violations();
+	}
+
+	/**
+	 * {@code roads-connected} (city part, D0). The street and plaza columns of every planned district, taken together, split into
+	 * 4-connected pieces (bridges are street points, so they join their banks); the piece nearest the hub (within
+	 * {@link #HUB_REACH} blocks) is the hub's. Every other piece that holds the front
+	 * of a lot that builds is one violation (its size, box and first lot): that building cannot be reached along streets. A hub
+	 * with no street near it is one too. A piece without a lot front (a port, a grid line or an outlying arterial whose far end is
+	 * dead) is a stray fragment, harmless to reachability, and only counted.
+	 */
+	public static CityRoads cityRoads(java.util.Collection<DistrictPlan> plans, Pt hub) {
+		List<Violation> out = new ArrayList<>();
+		if (plans.isEmpty()) return new CityRoads(out, 0, 0, 0);
+		int x0 = Integer.MAX_VALUE, z0 = Integer.MAX_VALUE, x1 = Integer.MIN_VALUE, z1 = Integer.MIN_VALUE;
+		for (DistrictPlan p : plans) {
+			Rect t = p.district().rect();
+			x0 = Math.min(x0, t.x() - COVER_PAD);
+			z0 = Math.min(z0, t.z() - COVER_PAD);
+			x1 = Math.max(x1, t.x() + t.w() + COVER_PAD);
+			z1 = Math.max(z1, t.z() + t.d() + COVER_PAD);
+		}
+		int w = x1 - x0, d = z1 - z0;
+		byte[] kind = new byte[w * d]; // 0 none, 1 street or plaza, 2 skeleton road
+		boolean[] seen = new boolean[w * d];
+		for (DistrictPlan p : plans) {
+			for (Street s : p.streets()) {
+				boolean sk = s.kind() == RoadKind.ARTERIAL || s.kind() == RoadKind.MAIN || s.kind() == RoadKind.PATH;
+				for (Rect r : footprint(s)) paint(kind, r, x0, z0, w, d, sk ? 2 : 1);
+			}
+			for (Plaza pz : p.plazas()) paint(kind, new Rect(pz.x(), pz.z(), pz.w(), pz.d()), x0, z0, w, d, 1);
+		}
+		java.util.Map<Integer, String> frontOf = new java.util.TreeMap<>();
+		for (DistrictPlan p : plans) {
+			for (LotBrief l : p.lots()) {
+				if (!l.builds()) continue;
+				int n = l.front().dx != 0 ? l.d() : l.w();
+				for (int k = 0; k < n; k++) {
+					int x = (switch (l.front()) { case EAST -> l.x() + l.w(); case WEST -> l.x() - 1; default -> l.x() + k; }) - x0;
+					int z = (switch (l.front()) { case SOUTH -> l.z() + l.d(); case NORTH -> l.z() - 1; default -> l.z() + k; }) - z0;
+					if (x >= 0 && z >= 0 && x < w && z < d && kind[z * w + x] != 0) frontOf.putIfAbsent(z * w + x, l.id());
+				}
+			}
+		}
+		int start = -1, best = Integer.MAX_VALUE;
+		if (hub != null) {
+			for (int dz = -HUB_REACH; dz <= HUB_REACH; dz++) {
+				for (int dx = -HUB_REACH; dx <= HUB_REACH; dx++) {
+					int x = hub.x() + dx - x0, z = hub.z() + dz - z0;
+					if (x < 0 || z < 0 || x >= w || z >= d || kind[z * w + x] == 0) continue;
+					int dist = dx * dx + dz * dz;
+					if (dist < best) { best = dist; start = z * w + x; }
+				}
+			}
+			if (start < 0) out.add(v(ROADS_CONNECTED, "no street or plaza within " + HUB_REACH + " blocks of the hub", hub.x(), hub.z(), 1, 1));
+		}
+		Piece pc = new Piece(kind, seen, w, d, frontOf);
+		int hubSize = 0, total = 0;
+		if (start >= 0) { pc.flood(start); hubSize = pc.size; }
+		int listed = 0, pieces = 0, strays = 0;
+		for (int i = 0; i < kind.length; i++) {
+			if (kind[i] == 0 || seen[i]) continue;
+			pc.flood(i);
+			if (start < 0) continue;
+			if (pc.lot == null) { strays++; continue; }
+			pieces++;
+			if (listed++ < MAX_LISTED) {
+				out.add(v(ROADS_CONNECTED, "a piece of " + pc.size + " street columns (x " + (x0 + pc.minX) + ".." + (x0 + pc.maxX) + ", z " + (z0 + pc.minZ) + ".." + (z0 + pc.maxZ) + ") with the front of lot " + pc.lot + (pc.skeleton ? " and a skeleton road" : "") + " does not reach the hub",
+						x0 + i % w, z0 + i / w, 1, 1));
+			}
+		}
+		if (start >= 0 && pieces > MAX_LISTED) out.add(v(ROADS_CONNECTED, (pieces - MAX_LISTED) + " more pieces do not reach the hub", hub.x(), hub.z(), 1, 1));
+		for (byte b : kind) if (b != 0) total++;
+		return new CityRoads(out, strays, hubSize, total);
+	}
+
+	private static void paint(byte[] kind, Rect r, int x0, int z0, int w, int d, int k) {
+		for (int z = Math.max(r.z(), z0); z < Math.min(r.z() + r.d(), z0 + d); z++)
+			for (int x = Math.max(r.x(), x0); x < Math.min(r.x() + r.w(), x0 + w); x++) {
+				int i = (z - z0) * w + x - x0;
+				if (kind[i] < k) kind[i] = (byte) k;
+			}
+	}
+
+	/** A 4-connected piece being flooded: its size, box, whether it holds a skeleton road, and the first lot front on it. */
+	private static final class Piece {
+		final byte[] kind;
+		final boolean[] seen;
+		final int w, d;
+		final java.util.Map<Integer, String> frontOf;
+		int[] stack = new int[1024];
+		int size, minX, minZ, maxX, maxZ;
+		boolean skeleton;
+		String lot;
+
+		Piece(byte[] kind, boolean[] seen, int w, int d, java.util.Map<Integer, String> frontOf) {
+			this.kind = kind;
+			this.seen = seen;
+			this.w = w;
+			this.d = d;
+			this.frontOf = frontOf;
+		}
+
+		void flood(int from) {
+			size = 0;
+			minX = minZ = Integer.MAX_VALUE;
+			maxX = maxZ = Integer.MIN_VALUE;
+			skeleton = false;
+			lot = null;
+			int sp = 0;
+			stack[sp++] = from;
+			seen[from] = true;
+			while (sp > 0) {
+				int c = stack[--sp];
+				size++;
+				int x = c % w, z = c / w;
+				minX = Math.min(minX, x); maxX = Math.max(maxX, x); minZ = Math.min(minZ, z); maxZ = Math.max(maxZ, z);
+				if (kind[c] == 2) skeleton = true;
+				if (lot == null) lot = frontOf.get(c);
+				if (sp + 4 > stack.length) stack = java.util.Arrays.copyOf(stack, stack.length * 2);
+				if (x > 0 && kind[c - 1] != 0 && !seen[c - 1]) { seen[c - 1] = true; stack[sp++] = c - 1; }
+				if (x + 1 < w && kind[c + 1] != 0 && !seen[c + 1]) { seen[c + 1] = true; stack[sp++] = c + 1; }
+				if (z > 0 && kind[c - w] != 0 && !seen[c - w]) { seen[c - w] = true; stack[sp++] = c - w; }
+				if (z + 1 < d && kind[c + w] != 0 && !seen[c + w]) { seen[c + w] = true; stack[sp++] = c + w; }
+			}
+		}
+	}
+
+	/**
+	 * {@code tile-border-agree} over a whole settlement: every pair of tiles that share a border (by tile index, east and south
+	 * neighbours) agrees along it.
+	 */
+	public static List<Violation> cityTileBorders(java.util.Collection<DistrictPlan> plans) {
+		java.util.Map<Long, DistrictPlan> by = new java.util.TreeMap<>();
+		for (DistrictPlan p : plans) by.put(key(p.district().ix(), p.district().iz()), p);
+		List<DistrictPlan> sorted = new ArrayList<>(plans);
+		sorted.sort(java.util.Comparator.comparing((DistrictPlan p) -> p.district().id()));
+		List<Violation> out = new ArrayList<>();
+		for (DistrictPlan p : sorted) {
+			DistrictPlan e = by.get(key(p.district().ix() + 1, p.district().iz()));
+			if (e != null) out.addAll(tileBorderAgree(p, e));
+			DistrictPlan s = by.get(key(p.district().ix(), p.district().iz() + 1));
+			if (s != null) out.addAll(tileBorderAgree(p, s));
+		}
+		return out;
+	}
+
+	private static long key(int ix, int iz) { return ((long) ix << 32) ^ (iz & 0xffffffffL); }
+
+
 	private static Violation v(String id, String msg, int x, int z, int w, int d) {
 		return new Violation(id, null, msg, List.of(new Box3(x, 0, z, w, 1, d)));
 	}

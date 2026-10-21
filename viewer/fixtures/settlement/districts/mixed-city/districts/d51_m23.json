@@ -10,9 +10,7 @@
     {"id": "t0", "kind": "lane", "width": 3, "points": [[8312, -3624], [8304, -3624], [8296, -3624]], "y": [70, 68, 67]}
   ],
   "plazas": [],
-  "lots": [
-    {"id": "d51_m23.l0", "x": 8295, "z": -3622, "w": 9, "d": 10, "front": "north", "type": "house", "style": "desert", "storeys": [1, 2], "streets": 1, "airRights": 0, "frontY": 67, "density": 12, "status": "build"}
-  ],
+  "lots": [],
   "scene": null,
   "violations": []
 }

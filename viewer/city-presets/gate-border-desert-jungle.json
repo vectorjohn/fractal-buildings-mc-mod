@@ -1,0 +1,7 @@
+{
+  "seed": 987654321,
+  "terrain": "recorded:fixtures/terrain/gate-border-desert-jungle.json.gz",
+  "site": {"at": [7872, -7744], "tier": "city", "radius": 577},
+  "scenes": "auto:2",
+  "camera": {"plan": {"layers": "+terrain"}}
+}

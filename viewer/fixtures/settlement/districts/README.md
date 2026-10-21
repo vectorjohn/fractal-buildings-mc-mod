@@ -1,3 +1,5 @@
+
+Site ids use the `m` form for negative cells (`s-1_-4` became `sm1_m4` when D0 made `--cell` and `--site` agree); `--scene` is the old spelling of `--scenes`. Whole-city presets for the gate windows live in `viewer/city-presets/`.
 # District fixtures
 
 Settlements with district detail written by `fractal-cli city --districts` over recorded or synthetic terrain, for the plan view

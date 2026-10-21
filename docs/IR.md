@@ -219,6 +219,15 @@ district { format: "fb-district/1", planVersion: 1, genVersion, seed: "<int64>",
   from width 7, else 1), `frontY` the street surface at the front centre, `style` `auto` until the brief filler (`Briefs.fill`) runs.
   Hall and temple landmarks of the skeleton are lots (`hall`, `temple`) flush against the hub square. Rules added to `SettlementChecks`:
   `lot-frontage`, `lot-dry`, `lot-grade`, `roads-connected` (per tile), `tile-border-agree` (two plans).
+- **City pipeline** (D0, `CityPlanner`, CLI `city --districts [--scenes all|none|auto:N|ID,ID] [--interiors] [--check]` and `city-check`): one
+  shared source builds every member cell once, then each owned tile is planned and briefed (`Briefs.fill` takes the quarter at each lot's
+  centre, not its district's); `--scenes` builds exterior scenes (`scenes/<id>.json`, the district file's `scene` is set) for all, none, `N` chosen
+  ones (the hub tile, then one per quarter kind, in a hash order) or named districts. The settlement's `violations` also hold the two
+  whole-city rules: **`tile-border-agree`** for every pair of neighbouring tiles, and **`roads-connected`** (city part): the street and plaza columns of
+  all tiles form 4-connected pieces; every piece that holds the front of a lot that builds must be the piece of the hub (bridges are street
+  points). A piece without a lot front (a port, grid line or outlying arterial that dead-ends) is a *stray*, counted by `city-check`, not a
+  violation. To keep lots off such fragments, `Districts` gives no lots to streets whose piece within the tile and its margin holds no skeleton
+  road. The site id is `s<cx>_<cz>` of the claimant cell with negative parts written `m` (`Ids.site`), for `--cell` and `--site` alike.
 - **Brief** (`GenRequest.brief`, optional, `core/gen/Brief`): `{minStoreys, maxStoreys, streets, airRights, frontY}`
   from a lot of the plan. `SpecPolicyV1` draws storeys from the brief's range intersected with the type's (if they do
   not meet, the type's bound nearest the brief) and sets `spec.streets` from the brief (front forced, unless the type
