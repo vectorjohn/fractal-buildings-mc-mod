@@ -25,6 +25,46 @@ class CityCommandTest {
 		}
 	}
 
+	/** MC2: `--cell` plans a settled cell that decides alone (a hamlet, a village) as a one-cell settlement, and a joined city from any of its cells alike. */
+	@Test
+	void cellPlansSoloSettlementsAndJoinedCitiesFromAnyMemberCell(@TempDir Path dir) throws Exception {
+		String world = "recorded:../fixtures/terrain/world-987654321-s64.json.gz";
+		assertEquals(0, run("city", "--seed", "987654321", "--terrain", world, "--cell", "0,0", "--out-dir", dir.resolve("hamlet").toString()));
+		SettlementPlan h = SettlementJson.read(Files.readString(dir.resolve("hamlet/settlement.json")));
+		assertEquals("hamlet", h.site().tier().json);
+		assertEquals(1, h.site().cells().size());
+		assertEquals(0, run("city", "--seed", "987654321", "--terrain", world, "--cell", "0,1", "--out-dir", dir.resolve("village").toString()));
+		assertEquals("village", SettlementJson.read(Files.readString(dir.resolve("village/settlement.json"))).site().tier().json);
+		// the 4-cell metropolis of gate-metropolis-mixed (owner 2,-2), reached from the owner and from a member cell: same bytes
+		SettlementPlan owner = null;
+		for (String c : new String[] {"2,-2", "1,-3", "2,-3", "1,-2"}) {
+			int code = run("city", "--seed", "987654321", "--terrain", world, "--cell", c, "--out-dir", dir.resolve("m" + c).toString());
+			assertTrue(code == 0 || code == 1, c + " exit " + code);
+			SettlementPlan p = SettlementJson.read(Files.readString(dir.resolve("m" + c + "/settlement.json")));
+			if (owner == null) owner = p;
+			assertEquals(4, p.site().cells().size(), c);
+			assertEquals(Files.readString(dir.resolve("m2,-2/settlement.json")), Files.readString(dir.resolve("m" + c + "/settlement.json")), c + " names the same city");
+		}
+	}
+
+	/** MC2: a fine (windowed) dump cannot answer the join rule for a cell near its edge; `--cell` says so and points at `--site`, never a vague error. */
+	@Test
+	void cellOnAFineWindowReportsWhatTheWindowCannotAnswer(@TempDir Path dir) throws Exception {
+		PrintStream se = System.err;
+		ByteArrayOutputStream err = new ByteArrayOutputStream();
+		System.setErr(new PrintStream(err, true, StandardCharsets.UTF_8));
+		int code;
+		try {
+			code = Main.run(new String[] {"city", "--seed", "987654321", "--terrain", "recorded:../fixtures/terrain/gate-joined-city.json.gz", "--cell", "8,0", "--out-dir", dir.toString()});
+		} finally {
+			System.setErr(se);
+		}
+		String msg = err.toString(StandardCharsets.UTF_8);
+		assertEquals(2, code, msg);
+		assertTrue(msg.contains("--site"), msg);
+		assertTrue(msg.contains("window"), msg);
+	}
+
 	@Test
 	void writesASkeletonAndATerrainCropAndIsByteStable(@TempDir Path dir) throws Exception {
 		for (String d : new String[] {"a", "b"}) {

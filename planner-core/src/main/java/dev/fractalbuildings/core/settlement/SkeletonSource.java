@@ -34,13 +34,22 @@ public interface SkeletonSource {
 		private final TierProgram program;
 		private final DensityField density;
 		private final QuarterField quarters;
-		private final java.util.TreeMap<Cell, CellSkeleton> memo = new java.util.TreeMap<>(CellGeometry::compare);
+		private final dev.fractalbuildings.core.cache.BoundedCache<Cell, CellSkeleton> memo;
 
 		public Direct(long seed, RegionView view, SettlementSite site, dev.fractalbuildings.core.probe.CoarseProbe probe) {
 			this(seed, view, site, probe, new DefaultProgram());
 		}
 
+		/** Skeletons kept per source (LRU): a site spans a handful of cells, so this keeps them all; pass less to bound memory or to test eviction. */
+		public static final int DEFAULT_CACHE = 64;
+
 		public Direct(long seed, RegionView view, SettlementSite site, dev.fractalbuildings.core.probe.CoarseProbe probe, TierProgram program) {
+			this(seed, view, site, probe, program, DEFAULT_CACHE);
+		}
+
+		/** {@code cacheCapacity} cell skeletons are kept; an evicted one is rebuilt (skeletons are pure), so it changes speed only. */
+		public Direct(long seed, RegionView view, SettlementSite site, dev.fractalbuildings.core.probe.CoarseProbe probe, TierProgram program, int cacheCapacity) {
+			this.memo = new dev.fractalbuildings.core.cache.BoundedCache<>(cacheCapacity);
 			this.seed = seed;
 			this.view = view;
 			this.site = site;
@@ -68,7 +77,7 @@ public interface SkeletonSource {
 
 		@Override public CellSkeleton skeleton(Cell cell) {
 			if (!site.cells().contains(cell)) throw new IllegalArgumentException("cell " + cell + " is not part of " + site.id());
-			return memo.computeIfAbsent(cell, c -> Skeletons.build(seed, view, c, probe, grid, program));
+			return memo.get(cell, c -> Skeletons.build(seed, view, c, probe, grid, program));
 		}
 	}
 }

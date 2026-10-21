@@ -1,0 +1,7 @@
+{
+  "seed": 987654321,
+  "terrain": "recorded:fixtures/terrain/world-987654321-s64.json.gz",
+  "site": {"cell": [8, 0]},
+  "scenes": "auto:1",
+  "camera": {"plan": {"layers": "+terrain"}}
+}
