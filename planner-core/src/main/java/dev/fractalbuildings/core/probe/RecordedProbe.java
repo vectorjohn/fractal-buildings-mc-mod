@@ -26,8 +26,15 @@ public final class RecordedProbe implements TerrainProbe, BiomeProbe {
 		this.surface = surface; this.water = water; this.biomeNames = biomeNames; this.biome = biome;
 	}
 
+	/** Reads a plain or gzipped dump (detected by the 1f 8b magic, not the file name). */
 	public static RecordedProbe read(Path file) throws IOException {
-		return parse(Files.readString(file, StandardCharsets.UTF_8));
+		byte[] b = Files.readAllBytes(file);
+		if (b.length > 2 && (b[0] & 0xff) == 0x1f && (b[1] & 0xff) == 0x8b) {
+			try (java.util.zip.GZIPInputStream in = new java.util.zip.GZIPInputStream(new java.io.ByteArrayInputStream(b))) {
+				b = in.readAllBytes();
+			}
+		}
+		return parse(new String(b, StandardCharsets.UTF_8));
 	}
 
 	@SuppressWarnings("unchecked")
