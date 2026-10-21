@@ -2,7 +2,15 @@ package dev.fractalbuildings.core.check;
 
 import dev.fractalbuildings.core.ir.Box3;
 import dev.fractalbuildings.core.ir.Violation;
+import dev.fractalbuildings.core.region.RegionField;
+import dev.fractalbuildings.core.settlement.Cell;
+import dev.fractalbuildings.core.settlement.CellGeometry;
+import dev.fractalbuildings.core.settlement.CellSkeleton;
 import dev.fractalbuildings.core.settlement.DistrictPlan;
+import dev.fractalbuildings.core.settlement.Gate;
+import dev.fractalbuildings.core.settlement.GateKind;
+import dev.fractalbuildings.core.settlement.Road;
+import dev.fractalbuildings.core.settlement.RoadKind;
 import dev.fractalbuildings.core.settlement.Landmark;
 import dev.fractalbuildings.core.settlement.LotBrief;
 import dev.fractalbuildings.core.settlement.Plaza;
@@ -22,6 +30,8 @@ public final class SettlementChecks {
 
 	public static final String LOT_IN_TILE = "lot-in-tile";
 	public static final String LOTS_DISJOINT = "lots-disjoint";
+	public static final String SKELETON_IN_CELL = "skeleton-in-cell";
+	public static final String CELL_GATE_AGREE = "cell-gate-agree";
 	public static final String ROAD_GRADE = "road-grade";
 
 	/** Every rule that needs only a district plan and the landmarks inside it. */
@@ -94,6 +104,56 @@ public final class SettlementChecks {
 			} else {
 				int n = Math.abs(b.x() - a.x()), sx = Integer.signum(b.x() - a.x()), sz = Integer.signum(b.z() - a.z());
 				for (int k = 0; k <= n; k++) out.add(new Rect(a.x() + sx * k - h, a.z() + sz * k - h, w, w));
+			}
+		}
+		return out;
+	}
+
+	/**
+	 * {@code skeleton-in-cell}: every road point of a cell skeleton is a lattice column or segment end the cell owns (nearest
+	 * region site), or one of its own gate columns, which sit on the border and may belong to the neighbour.
+	 */
+	public static List<Violation> skeletonInCell(List<CellSkeleton> cells, RegionField field) {
+		List<Violation> out = new ArrayList<>();
+		for (CellSkeleton s : cells) {
+			for (Road r : s.roads()) {
+				for (Pt p : r.points()) {
+					boolean gate = false;
+					for (Gate g : s.gates()) if (g.x() == p.x() && g.z() == p.z()) gate = true;
+					if (!gate && !CellGeometry.owns(field, s.cell(), p.x(), p.z())) {
+						out.add(v(SKELETON_IN_CELL, "road " + r.id() + " of cell " + s.cell().cx() + "," + s.cell().cz() + " leaves the cell at " + p.x() + "," + p.z(), p.x(), p.z(), 1, 1));
+						break;
+					}
+				}
+			}
+		}
+		return out;
+	}
+
+	/**
+	 * {@code cell-gate-agree}: every cell gate of a skeleton is also a gate of the neighbour it names, at the same column, and
+	 * every main road that ends outside its cell ends on a cell gate.
+	 */
+	public static List<Violation> cellGateAgree(List<CellSkeleton> cells) {
+		List<Violation> out = new ArrayList<>();
+		for (CellSkeleton s : cells) {
+			for (Gate g : s.gates()) {
+				if (g.kind() != GateKind.CELL) continue;
+				Cell other = g.cells().get(0).equals(s.cell()) ? g.cells().get(1) : g.cells().get(0);
+				boolean found = false, known = false;
+				for (CellSkeleton o : cells) {
+					if (!o.cell().equals(other)) continue;
+					known = true;
+					for (Gate og : o.gates()) if (og.kind() == GateKind.CELL && og.x() == g.x() && og.z() == g.z() && og.cells().equals(g.cells())) found = true;
+				}
+				if (known && !found) out.add(v(CELL_GATE_AGREE, "gate at " + g.x() + "," + g.z() + " of cell " + s.cell().cx() + "," + s.cell().cz() + " is missing in " + other.cx() + "," + other.cz(), g.x(), g.z(), 1, 1));
+			}
+			for (Road r : s.roads()) {
+				if (r.kind() != RoadKind.MAIN && r.kind() != RoadKind.PATH) continue;
+				Pt end = r.points().get(r.points().size() - 1);
+				boolean ends = false;
+				for (Gate g : s.gates()) if (g.x() == end.x() && g.z() == end.z()) ends = true;
+				if (!ends) out.add(v(CELL_GATE_AGREE, "road " + r.id() + " ends at " + end.x() + "," + end.z() + " on no gate", end.x(), end.z(), 1, 1));
 			}
 		}
 		return out;

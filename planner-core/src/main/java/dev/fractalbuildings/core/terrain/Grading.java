@@ -1,6 +1,7 @@
 package dev.fractalbuildings.core.terrain;
 
 import dev.fractalbuildings.core.probe.TerrainProbe;
+import dev.fractalbuildings.core.settlement.Rect;
 import dev.fractalbuildings.core.terrain.BoxMerge.Item;
 import dev.fractalbuildings.core.terrain.GroundBox.Kind;
 import java.util.ArrayList;
@@ -34,7 +35,10 @@ public final class Grading {
 	/** Inclusive centre-line column range whose cut or fill exceeds {@link #MAX_CUT_FILL}. */
 	public record Steep(int from, int to) {}
 
-	public record RoadGrade(Profile profile, List<Steep> steep, List<GroundBox> boxes) {}
+	public record RoadGrade(Profile profile, List<Steep> steep, List<GroundBox> boxes) {
+		/** No column needs more than {@link #MAX_CUT_FILL} of cut or fill. When false the boxes still cover the steep columns: reroute or reject the road. */
+		public boolean ok() { return steep.isEmpty(); }
+	}
 
 	public record PlazaGrade(int level, List<GroundBox> boxes) {}
 

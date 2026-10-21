@@ -91,7 +91,7 @@ public final class DistrictScenes {
 			settlement.addAll(SettlementChecks.roadGrade(s.id(), g.profile().x(), g.profile().z(), g.profile().y()));
 		}
 		for (Plaza p : plan.plazas()) {
-			Optional<Grading.PlazaGrade> g = Grading.plaza(new dev.fractalbuildings.core.terrain.Rect(p.x(), p.z(), p.w(), p.d()), exact);
+			Optional<Grading.PlazaGrade> g = Grading.plaza(new Rect(p.x(), p.z(), p.w(), p.d()), exact);
 			if (g.isPresent()) addBoxes(g.get().boxes(), ground);
 			else settlement.add(new Violation("plaza-grade", null, "plaza " + p.id() + " cannot be graded (too rough or wet)", List.of(new Box3(p.x(), p.y() - 1, p.z(), p.w(), 1, p.d()))));
 		}

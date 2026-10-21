@@ -1,6 +1,7 @@
 package dev.fractalbuildings.core.region;
 
 import dev.fractalbuildings.core.rand.Hash64;
+import dev.fractalbuildings.core.settlement.Tier;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -91,7 +92,7 @@ public final class RegionPlanner {
 		long seed = field.seed;
 		int sx = field.siteX(cx, cz), sz = field.siteZ(cx, cz);
 		double roll = Tiers.unit(Hash64.hash(seed, "region/roll", cx, cz));
-		Tiers.Tier tier = Tiers.tier(seed, cx, cz);
+		Tier tier = Tiers.tier(seed, cx, cz);
 		int drawn = Tiers.radius(seed, cx, cz, tier, maxRadius);
 		int radius = Math.min(drawn, (int) (clampFrac * field.cellSize));
 

@@ -346,6 +346,7 @@ skeleton, then district detail built lazily (ARCHITECTURE.md, "City scale").
   plazas and landmarks, gates. Split into the city skeleton (arterials on
   position-hashed lines, district borders drawn around big lots, coarse
   height screen) and lazy per-district detail (lots, briefs, exact heights).
+  *SK landed (2026-10-21, log `docs/log/2026-10-21-p5-sk-skeleton.md`): `Skeletons` builds a cell skeleton (mask, density, quarters, hub, gates, A* main roads, arterials, hub landmarks, district tiles) and merges a settlement into `fb-settlement/1`; `fractal-cli city`; DL ticks this item.*
 - [ ] **5.3 Terrain**: respond to slope, rivers and coast; choose where to level
   ground and where to step buildings.
   *TA groundwork landed (`core/terrain/`: `WaterField`, `LatticePath`, `Grading`, `LotGround`); TR ticks this item.*
@@ -359,12 +360,14 @@ skeleton, then district detail built lazily (ARCHITECTURE.md, "City scale").
 - [ ] **5.6 Determinism**: the skeleton is built from the region cell alone and
   each district's detail from (cell, district), so every district start
   reproduces them identically in any order.
+  *SK: the skeleton is a pure function of the region cell (built in shuffled order with fresh probes it gives byte-identical plans, `SkeletonsTest`; goldens `golden/settlement/`); DT ticks this item.*
 - [ ] **5.7 Density and skyline**: building class and height follow distance
   to the centre and to arterials (downtown high-rises and blocks, halls on
   squares, houses at the edge).
 - [ ] **5.8 Cities across cells**: neighbouring settled cells meet at hashed
   gates on their shared border, so roads join without either plan reading
   the other; grow cells or join cells per the worldgen ADR (2.10).
+  *SK: cell gates agree from the cell pair alone (`cell-gate-agree` over 200 synthetic sites of 2 to 6 cells, also under a ±20 height error); MC2 ticks this item.*
 - [ ] **5.9 Scale check**: plan time and memory per district, measured outside
   the game at 512², 2048² and a multi-cell city; flat per-district cost is the
   bar (feeds 6.5 and 6.7).
