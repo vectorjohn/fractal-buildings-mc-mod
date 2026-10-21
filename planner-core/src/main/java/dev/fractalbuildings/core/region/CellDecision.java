@@ -13,7 +13,9 @@ public record CellDecision(
 	boolean settled, String reason, Tier tier,
 	int centreX, int centreZ, int radiusDrawn, int radius, int radiusFit, int edgeDist,
 	double roll, double chance, double suitability, double siteSuitability, int candidate,
-	double waterFrac, double peakFrac, Map<String, Double> groups) {
+	double waterFrac, double peakFrac, Map<String, Double> groups,
+	/** Distance from the centre to the nearest water, capped at {@link Tiers#WATER_REACH}; -1 when the tier has no water bias. */
+	double waterDist) {
 
 	/** True when two palette groups each cover at least a fifth of the footprint. */
 	public boolean straddles() {
@@ -29,6 +31,6 @@ public record CellDecision(
 	/** The same decision with another radius (a join winner takes its drawn radius, past the cell's fit). */
 	public CellDecision withRadius(int r) {
 		return new CellDecision(cx, cz, siteX, siteZ, settled, reason, tier, centreX, centreZ, radiusDrawn, r, radiusFit, edgeDist,
-			roll, chance, suitability, siteSuitability, candidate, waterFrac, peakFrac, groups);
+			roll, chance, suitability, siteSuitability, candidate, waterFrac, peakFrac, groups, waterDist);
 	}
 }

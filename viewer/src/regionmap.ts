@@ -72,7 +72,7 @@ export function parseDump(text: string): Dump {
         city: c['city'] === true, reason: String(c['reason']), tier: String(c['tier'] ?? ''),
         centreX: num(c, 'centreX', 'cell'), centreZ: num(c, 'centreZ', 'cell'), radius: num(c, 'radius', 'cell'),
       };
-      if (typeof c['waterDist'] === 'number') cell.waterDist = c['waterDist'];
+      if (typeof c['waterDist'] === 'number' && c['waterDist'] >= 0) cell.waterDist = c['waterDist'];
       const claim = parseClaim(c['claimedBy']);
       if (claim) cell.claimedBy = claim;
       return cell;

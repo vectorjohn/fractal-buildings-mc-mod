@@ -111,7 +111,7 @@ public final class RegionMap {
 					.append(",\"roll\":").append(f(c.roll())).append(",\"chance\":").append(f(c.chance()))
 					.append(",\"suitability\":").append(f(c.suitability())).append(",\"siteSuitability\":").append(f(c.siteSuitability()))
 					.append(",\"candidate\":").append(c.candidate()).append(",\"water\":").append(f(c.waterFrac()))
-					.append(",\"peak\":").append(f(c.peakFrac())).append(",\"groups\":{");
+					.append(",\"peak\":").append(f(c.peakFrac())).append(",\"waterDist\":").append(Math.round(c.waterDist())).append(",\"groups\":{");
 				boolean first = true;
 				for (var e : c.groups().entrySet()) {
 					if (!first) sb.append(',');

@@ -47,7 +47,7 @@ class RegionPlannerTest {
 				assertTrue(c.radius() <= c.radiusFit() && c.radius() <= 512 && c.radius() <= c.radiusDrawn(), "radius " + c);
 				assertEquals(0, c.centreX() % 64);
 				assertEquals(0, c.centreZ() % 64);
-				assertTrue(c.waterFrac() <= p.maxWaterFrac && c.peakFrac() <= p.maxPeakFrac);
+				assertTrue(c.waterFrac() <= (Tiers.waterBias(c.tier()) > 0 ? Tiers.WATER_CAP_BIASED : p.maxWaterFrac) && c.peakFrac() <= p.maxPeakFrac);
 			}
 			assertTrue(settled > 100, "seed " + seed + " settled " + settled + " of 625");
 		}
@@ -113,6 +113,7 @@ class RegionPlannerTest {
 		RecordedProbe r = RecordedProbe.read(Path.of(CROP));
 		RegionProbe probe = RegionProbe.of(r, r);
 		RegionPlanner p = new RegionPlanner(new RegionField(12345L, 1024), probe);
+		p.waterBias = false; // the bias widens the reach beyond what this small crop holds
 		int x1 = r.x0() + (r.nx() - 1) * r.step(), z1 = r.z0() + (r.nz() - 1) * r.step();
 		List<CellDecision> ds = p.decideWindow(r.x0(), r.z0(), x1, z1);
 		assertFalse(ds.isEmpty(), "the crop should cover at least one cell");

@@ -46,4 +46,26 @@ public final class Tiers {
 		}
 		return (int) Math.min((long) maxRadius, Math.round(r));
 	}
+
+	// ---- water bias (5.10) ----
+
+	/** Reach of the water search, in blocks; the bias weight falls linearly to 0 there. */
+	public static final int WATER_REACH = 768;
+	/** Spacing of the sparse lattice the water search samples (a multiple of the probe stride). */
+	public static final int WATER_STEP = 192;
+	/** Footprint water cap for tiers with a bias (the disk may hold coast; the urban mask keeps buildings dry). */
+	public static final double WATER_CAP_BIASED = 0.4;
+	/** Roll-chance factor for a biased tier whose footprint holds more water than the plain cap: coast sites are admitted but not at the cost of a different settlement count. */
+	public static final double COASTAL_CHANCE = 0.5;
+	/** Footprint water plus peak share at most this much (land share at least 0.5). */
+	public static final double WATER_PLUS_PEAK_MAX = 0.5;
+
+	/** Score gain B at zero distance to water: score' = score x (1 + B x w). */
+	public static double waterBias(Tier t) {
+		return switch (t) {
+			case CITY, METROPOLIS -> 0.6;
+			case TOWN -> 0.3;
+			default -> 0;
+		};
+	}
 }

@@ -42,7 +42,7 @@ for (const seed of worlds) {
     expect(r.error).toBeUndefined();
     expect(r.cells).toBeGreaterThan(300);
     expect(r.settled).toBeGreaterThan(50);
-    expect(r.heat).toBe(false); // no waterDist in the dump yet: drawn without it
+    expect(r.heat).toBe(true); // waterDist is in the dump (R2)
     expect(r.claims).toBeGreaterThan(5); // MC1: big cities claim neighbouring cells
     // a world map: both water and land colours are present
     expect(await colourFraction(page, [40, 90, 160], 60)).toBeGreaterThan(0.05);

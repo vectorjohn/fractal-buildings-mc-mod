@@ -31,6 +31,8 @@ public final class RegionPlanner {
 	/** Grow policy: radius capped at this fraction of the cell size. */
 	public double clampFrac = 0.5;
 	public int maxRadius = Tiers.DEFAULT_MAX_RADIUS;
+	/** Water bias (5.10): off gives the pre-R2 decisions for every tier (A/B tests, evidence). */
+	public boolean waterBias = true;
 
 	public RegionPlanner(RegionField field, RegionProbe probe) {
 		this.field = field;
@@ -49,10 +51,16 @@ public final class RegionPlanner {
 
 	/** How far from the cell's site the probe may be read (candidates, footprint and snapping). */
 	public int probeReach(int cx, int cz) {
-		return (int) (0.3 * field.cellSize) + Math.min(plannedRadius(cx, cz), footprintCap) + 2 * STRIDE;
+		int r = Math.min(plannedRadius(cx, cz), footprintCap);
+		if (biasOf(cx, cz) > 0) r = Math.max(r, Tiers.WATER_REACH) + Tiers.WATER_STEP;
+		return (int) (0.3 * field.cellSize) + r + 2 * STRIDE;
 	}
 
-	private record Foot(double suit, double water, double peak, boolean centreBad, Map<String, Double> groups) {}
+	private double biasOf(int cx, int cz) {
+		return waterBias ? Tiers.waterBias(Tiers.tier(field.seed, cx, cz)) : 0;
+	}
+
+	private record Foot(double suit, double water, double peak, boolean centreBad, double waterDist, Map<String, Double> groups) {}
 
 	/** Sample the footprint disk on the stride lattice. */
 	private Foot footprint(int cx, int cz, int radius) {
@@ -61,6 +69,7 @@ public final class RegionPlanner {
 		int n = Math.max(1, r / step);
 		double sum = 0, water = 0, peak = 0;
 		boolean centreBad = false;
+		long nearest = Long.MAX_VALUE;
 		int count = 0;
 		TreeMap<String, Integer> g = new TreeMap<>();
 		for (int j = -n; j <= n; j++) {
@@ -73,6 +82,7 @@ public final class RegionPlanner {
 				boolean p = BiomeClass.isPeak(b) || probe.floorY(x, z) + probe.waterDepth(x, z) >= PEAK_Y;
 				count++;
 				if (dx == 0 && dz == 0) centreBad = w || p;
+				if (w) nearest = Math.min(nearest, (long) dx * dx + (long) dz * dz);
 				if (w) water++;
 				else if (p) peak++;
 				else sum += BiomeClass.multiplier(b);
@@ -81,11 +91,56 @@ public final class RegionPlanner {
 		}
 		TreeMap<String, Double> gf = new TreeMap<>();
 		for (var e : g.entrySet()) gf.put(e.getKey(), e.getValue() / (double) count);
-		return new Foot(sum / count, water / count, peak / count, centreBad, gf);
+		return new Foot(sum / count, water / count, peak / count, centreBad,
+			nearest == Long.MAX_VALUE ? Double.MAX_VALUE : StrictMath.sqrt((double) nearest), gf);
 	}
 
-	private double score(Foot f) {
-		return f.centreBad || f.water > maxWaterFrac || f.peak > maxPeakFrac ? 0 : f.suit;
+	/** Unboosted suitability; the water cap is looser for tiers with a water bias. */
+	private double score(Foot f, boolean biased) {
+		double cap = biased ? Tiers.WATER_CAP_BIASED : maxWaterFrac;
+		if (f.centreBad || f.water > cap || f.peak > maxPeakFrac) return 0;
+		if (biased && f.water + f.peak > Tiers.WATER_PLUS_PEAK_MAX) return 0;
+		return f.suit;
+	}
+
+	/** Distance (capped at WATER_REACH) from a centre to the nearest water: footprint samples and a sparse lattice. */
+	private double waterDist(int x, int z, Foot f, WaterCache cache) {
+		int reach = Tiers.WATER_REACH, step = Tiers.WATER_STEP;
+		long best = (long) reach * reach;
+		if (f.waterDist < reach) best = Math.min(best, (long) (f.waterDist * f.waterDist));
+		for (int gz = Math.floorDiv(z - reach + step - 1, step); gz <= Math.floorDiv(z + reach, step); gz++) {
+			for (int gx = Math.floorDiv(x - reach + step - 1, step); gx <= Math.floorDiv(x + reach, step); gx++) {
+				long dx = (long) gx * step - x, dz = (long) gz * step - z, d2 = dx * dx + dz * dz;
+				if (d2 >= best) continue;
+				int k = cache.index(gx, gz);
+				if (cache.state[k] == 0) cache.state[k] = (byte) (probe.water(gx * step, gz * step) ? 2 : 1);
+				if (cache.state[k] == 2) best = d2;
+			}
+		}
+		return StrictMath.sqrt((double) best);
+	}
+
+	/** Water lattice samples already probed for one decision: a flat array over every point a candidate can reach. */
+	private final class WaterCache {
+		final int gx0, gz0, n;
+		final byte[] state;
+
+		WaterCache(int sx, int sz) {
+			int step = Tiers.WATER_STEP, span = (int) (0.3 * field.cellSize) + STRIDE + Tiers.WATER_REACH + step;
+			gx0 = Math.floorDiv(sx - span, step);
+			gz0 = Math.floorDiv(sz - span, step);
+			n = 2 * span / step + 3;
+			state = new byte[n * n];
+		}
+
+		int index(int gx, int gz) {
+			return (gz - gz0) * n + (gx - gx0);
+		}
+	}
+
+	private static double boost(double score, double bias, double dw) {
+		double w = Math.max(0, Math.min(1, 1 - dw / Tiers.WATER_REACH));
+		return score * (1 + bias * w);
 	}
 
 	public CellDecision decide(int cx, int cz) {
@@ -95,12 +150,21 @@ public final class RegionPlanner {
 		Tier tier = Tiers.tier(seed, cx, cz);
 		int drawn = Tiers.radius(seed, cx, cz, tier, maxRadius);
 		int radius = Math.min(drawn, (int) (clampFrac * field.cellSize));
+		double bias = biasOf(cx, cz);
+		boolean biased = bias > 0;
+		WaterCache wcache = new WaterCache(sx, sz);
 
 		int siteX = snap(sx), siteZ = snap(sz);
 		Foot siteFoot = footprint(siteX, siteZ, radius);
+		double siteBase = score(siteFoot, biased), siteScore = siteBase;
+		double siteDw = -1;
+		if (biased) {
+			siteDw = waterDist(siteX, siteZ, siteFoot, wcache);
+			siteScore = boost(siteBase, bias, siteDw);
+		}
 		int bestX = siteX, bestZ = siteZ, bestK = 0;
 		Foot best = siteFoot;
-		double bestScore = score(siteFoot);
+		double bestScore = siteScore, bestBase = siteBase, bestDw = siteDw;
 		for (int k = 1; k < candidates; k++) {
 			double a = Tiers.unit(Hash64.hash(seed, "region/cand", cx, cz, k, 0)) * (2 * Math.PI);
 			double d = StrictMath.sqrt(Tiers.unit(Hash64.hash(seed, "region/cand", cx, cz, k, 1))) * 0.3 * field.cellSize;
@@ -109,21 +173,29 @@ public final class RegionPlanner {
 			if (hit.cx() != cx || hit.cz() != cz) continue;
 			if (field.edgeDistance(x, z) < edgeMarginFrac * field.cellSize) continue;
 			Foot f = footprint(x, z, radius);
-			double s = score(f);
+			double base = score(f, biased), s = base, dw = -1;
+			if (biased && s > 0) {
+				dw = waterDist(x, z, f, wcache);
+				s = boost(base, bias, dw);
+			}
 			if (s > bestScore) {
 				bestScore = s;
+				bestBase = base;
 				best = f;
 				bestX = x;
 				bestZ = z;
 				bestK = k;
+				bestDw = dw;
 			}
 		}
-		double chance = baseChance * bestScore;
+		double chance = baseChance * bestBase;
+		if (biased && best.water > maxWaterFrac) chance *= Tiers.COASTAL_CHANCE;
 		String reason;
 		boolean settled = false;
-		if (best.water > maxWaterFrac) reason = "water";
+		double cap = biased ? Tiers.WATER_CAP_BIASED : maxWaterFrac;
+		if (best.water > cap) reason = "water";
 		else if (best.peak > maxPeakFrac) reason = "peak";
-		else if (bestScore < minSuitability) reason = "unsuitable";
+		else if (bestBase < minSuitability) reason = "unsuitable";
 		else if (roll >= chance) reason = "roll";
 		else {
 			reason = "settled";
@@ -133,7 +205,7 @@ public final class RegionPlanner {
 		int fit = (int) Math.floor(0.95 * edge);
 		radius = Math.min(radius, fit);
 		return new CellDecision(cx, cz, siteX, siteZ, settled, reason, tier, bestX, bestZ, drawn, radius, fit, edge,
-			roll, chance, bestScore, score(siteFoot), bestK, best.water, best.peak, best.groups);
+			roll, chance, bestScore, siteScore, bestK, best.water, best.peak, best.groups, bestDw);
 	}
 
 	/**

@@ -22,7 +22,7 @@ final class RegionCommand {
 	private RegionCommand() {}
 
 	static int run(String[] args) throws IOException {
-		Opts o = new Opts(args, Set.of("seed", "terrain", "cell-size", "window", "max-radius", "policy", "out"), Set.of());
+		Opts o = new Opts(args, Set.of("seed", "terrain", "cell-size", "window", "max-radius", "policy", "out"), Set.of("no-water-bias"));
 		long seed = o.longValue("seed");
 		String spec = o.get("terrain", "flat:64");
 		int cell = intOpt(o, "cell-size", 1024);
@@ -45,6 +45,7 @@ final class RegionCommand {
 		}
 
 		RegionPlanner planner = new RegionPlanner(new RegionField(seed, cell), probe);
+		if (o.flag("no-water-bias")) planner.waterBias = false;
 		if (o.has("max-radius")) planner.maxRadius = intOpt(o, "max-radius", planner.maxRadius);
 		long t0 = System.nanoTime();
 		String policy = o.get("policy", "join");
