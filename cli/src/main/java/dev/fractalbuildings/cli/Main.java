@@ -12,6 +12,7 @@ public final class Main {
 			  check --seeds A..B [--lots L,..] [--styles S,..] [--terrains T,..] [--fronts F,..] [--out FILE.md]
 			  bench --n N [--lots ..] [--styles ..] [--terrains ..] [--fronts ..]
 			  diversity --seeds A..B [--lot WxD] [--style S] [--terrain SPEC] [--json] [--out FILE]
+			  region --seed N --terrain SPEC [--cell-size 1024] [--window X0,Z0,W,D] [--max-radius 4096] [--out FILE]  (region map, fb-region-dump/1)
 			terrain SPEC: flat:Y | plane:Y0:RISEX:RISEZ:RUN | hill:BASE:PEAK:RADIUS | noise:SEED:BASE:AMP:WAVELEN | recorded:FILE
 			""";
 
@@ -32,6 +33,7 @@ public final class Main {
 				case "check" -> { return CheckCommand.run(rest); }
 				case "bench" -> { return BenchCommand.run(rest); }
 				case "diversity" -> { return DiversityCommand.run(rest); }
+				case "region" -> { return RegionCommand.run(rest); }
 				default -> {
 					System.err.println("unknown command '" + args[0] + "'");
 					System.err.print(USAGE);
