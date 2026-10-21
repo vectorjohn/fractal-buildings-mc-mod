@@ -1,0 +1,7 @@
+{
+  "seed": 2,
+  "terrain": "recorded:fixtures/terrain/world-12345-s64.json.gz",
+  "site": {"at": [-797, -3872], "tier": "town", "radius": 300},
+  "scenes": ["dm6_m24", "dm6_m25"],
+  "camera": {"plan": {"layers": "+terrain", "zoom": 1.2}}
+}

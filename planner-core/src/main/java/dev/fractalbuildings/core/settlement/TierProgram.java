@@ -26,8 +26,19 @@ public interface TierProgram {
 	/** Landmarks around the hub (provisional ids), only called for the cell that holds the site centre. */
 	List<Landmark> landmarks(SkeletonContext c, Pt hub);
 
-	/** Wall lines; none until the town program (D2). */
+	/** Wall lines; none by default. */
 	default List<Wall> walls(SkeletonContext c, Pt hub) { return List.of(); }
+
+	/** Walls and the gates in them. */
+	record WallPlan(List<Wall> walls, List<Gate> gates) {
+		public WallPlan {
+			walls = List.copyOf(walls);
+			gates = List.copyOf(gates);
+		}
+	}
+
+	/** Walls and their gates, given the roads the cell's skeleton made (the town ring needs the gates its roads cross). */
+	default WallPlan walls(SkeletonContext c, Pt hub, List<Road> roads) { return new WallPlan(walls(c, hub), List.of()); }
 
 	/** Does district detail branch lanes off the main roads and carry ports across tile borders (false: the main road is the only street)? */
 	default boolean lanes() { return true; }

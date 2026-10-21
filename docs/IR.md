@@ -238,6 +238,7 @@ district { format: "fb-district/1", planVersion: 1, genVersion, seed: "<int64>",
   nothing changes.
 - **Checks** (`core/check/SettlementChecks`, separate from `Invariants`): `lot-in-tile`, `lots-disjoint` (lots overlap no
   other lot, street footprint, plaza or landmark). Later steps add rules there.
+- **Town walls (D2, `settlement/tiers/WallRing`)**: a settlement's `walls` entry is a closed, clockwise, axis-aligned rectangle (4 corners, NW first). Its lots are `wall` lots (24 to 64 long, 7 to 11 deep, front outward) and 12 x 12 `tower` lots at the corners, ids `<district>.w<n>` (n = position along the ring, the same in every tile). A gate is a `kind: wall` gate on the ring line at the column where a main road crosses; its lot is a `wall` lot exactly 23 long, whose passage is the 5 columns round the gate column, and the road runs straight and perpendicular for 14 blocks either side. `lots-disjoint` lets a street cross a gate lot inside that passage only; ring lots are exempt from `lot-frontage` (they face the field), and are never swapped for another type. No lot straddles a tile line: the ring's coordinates keep 30 blocks from them.
 
 # Archways (5.11)
 

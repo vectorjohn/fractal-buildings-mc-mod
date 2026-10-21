@@ -136,7 +136,9 @@ public final class Skeletons {
 
 		// 6. landmarks, districts
 		List<Landmark> landmarks = hub == null || !c.holdsCentre() ? List.of() : program.landmarks(c, hub);
-		List<Wall> walls = hub == null ? List.of() : program.walls(c, hub);
+		TierProgram.WallPlan wallPlan = hub == null ? new TierProgram.WallPlan(List.of(), List.of()) : program.walls(c, hub, roads);
+		List<Wall> walls = wallPlan.walls();
+		gates.addAll(wallPlan.gates());
 		List<DistrictSummary> districts = districts(c, hub);
 
 		CoarseRaster raster = new CoarseRaster(x0, z0, step, nx, nz, floor, water, biome, palette, c.mask, dens, quarter);

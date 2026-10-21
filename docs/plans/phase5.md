@@ -872,6 +872,7 @@ urban mask, cut into `wall`-type lots (24–64 long, 7–11 deep) clockwise; a g
 every main road crosses, as a `wall` lot whose gate passage sits on the road; ring
 corners are tower lots. Tests: the ring is closed except at gates; every main road
 crossing the ring has a gate; wall lots obey every invariant; preset.
+- *Deviation (D2, 2026-10-21):* the ring is a rectangle whose sides each pull in on their own where water or cliffs are (down to 0.3 of the nominal distance, at least 100 across), not a mask-following outline; a gate lot is a `wall` lot exactly 23 long (the only length where the generator puts the passage in the middle); only the centre cell builds the ring (see ASSUMPTIONS). Roads to targets outside the ring are routed hub - gate - target so they cross it straight.
 
 ### D3. City and metropolis programs, density and skyline (5.1, 5.7) — size L
 

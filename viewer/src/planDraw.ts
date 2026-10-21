@@ -75,7 +75,7 @@ export const layersParam = (l: Set<LayerId>): string => LAYER_IDS.filter((x) => 
 export const ROAD_COLOUR: Record<RoadKind, string> = { arterial: '#f4d35e', main: '#f2f2f2', street: '#d6d0c4', lane: '#a89f8c', path: '#8a7a5c' };
 export const LOT_COLOUR: Record<string, string> = {
   house: '#c9805a', cottage: '#d49a6a', shop: '#4aa3d8', workshop: '#8a6bbf', tower: '#c8c8d8', inn: '#e0a030', hall: '#d05a8a',
-  temple: '#f0e68c', barn: '#9a8a3a', warehouse: '#7a8a96', block: '#b23a3a', highrise: '#3a4ab2',
+  wall: '#8b5a3c', temple: '#f0e68c', barn: '#9a8a3a', warehouse: '#7a8a96', block: '#b23a3a', highrise: '#3a4ab2',
 };
 const QUARTER_COLOUR: Record<string, RGB> = {
   downtown: [220, 60, 60], 'old-town': [200, 140, 60], market: [240, 200, 40], residential: [90, 170, 90], workshop: [140, 100, 190],
