@@ -17,9 +17,16 @@ import java.util.List;
  * @param propertySeeds cases per lot size in the property test (fewer for big types)
  * @param maxGrade steepest ground the property matrix gives this type, as the run of a 1-in-run slope
  *     (1 = 45 degrees). Large types on steeper ground need per-wing ground levels (ADR 0003 W5, Phase 6.3).
+ * @param stoop a door above the ground gets a landing at door level across the front (a shopfront stoop) before the flight down
  */
 public record TypeLimits(int minWidth, int minDepth, int minStoreys, int maxStoreys, int side, int front, int back,
-		boolean allStreets, List<int[]> testLots, int propertySeeds, int maxGrade) {
+		boolean allStreets, List<int[]> testLots, int propertySeeds, int maxGrade, boolean stoop) {
+	/** Limits without a stoop. */
+	public TypeLimits(int minWidth, int minDepth, int minStoreys, int maxStoreys, int side, int front, int back,
+			boolean allStreets, List<int[]> testLots, int propertySeeds, int maxGrade) {
+		this(minWidth, minDepth, minStoreys, maxStoreys, side, front, back, allStreets, testLots, propertySeeds, maxGrade, false);
+	}
+
 	public TypeLimits {
 		testLots = List.copyOf(testLots);
 		if (minStoreys < 1 || maxStoreys < minStoreys) throw new IllegalArgumentException("storeys " + minStoreys + ".." + maxStoreys);

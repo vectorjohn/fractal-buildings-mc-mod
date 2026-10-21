@@ -401,6 +401,7 @@ skeleton, then district detail built lazily (ARCHITECTURE.md, "City scale").
   still 0 failing.
   *Done 2026-10-21* (log `docs/log/2026-10-21-p5-open-ground.md`): shop arcade 30 %, market hall on posts 20 %, enclosed ~50 %; workshop covered porch 40 %; shops reject lots steeper than 1 in 12 (level frontage). *Known issues:* the market hall floor is empty (no stalls); a city planner must catch the shop slope rejection.
   *Follow-up (John, REVIEW 2026-10-21):* a shopfront lifted above the street needs a landing or balcony at door level so the display window does not sit at the top of a flight of steps (item SHOPLAND).
+  *SHOPLAND done 2026-10-21* (log `docs/log/2026-10-21-p5-shopland.md`): lifted shopfronts (door more than 1 above the ground) get a landing at door level across the front, the flight down at one end and its foot on the lot front row (r2); market halls are set back for a 2-deep deck on posts (open floor stays open). *Known issues:* no railing; enclosed-shop landings are solid; a market hall on ground that also falls away by more than 1 (lift over 5) may keep the plain flight.
 
 **Gate:** John reviews cities in at least five biome mixes, including one
 straddling a border, one larger than 512 × 512, and one with a high-rise

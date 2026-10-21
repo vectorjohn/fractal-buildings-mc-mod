@@ -61,7 +61,7 @@ public final class ShopType implements BuildingType {
 	// shops want a level frontage: a lot whose relief exceeds 1 in SHOP_GRADE is rejected by the spec policy (as the city block's), so the display floor is at most about 3 above the street
 	private static final int SHOP_GRADE = 12;
 	private static final TypeLimits LIMITS = new TypeLimits(7, 11, 2, 4, 1, 1, 1, false,
-			List.of(new int[] {9, 14}, new int[] {11, 17}, new int[] {14, 22}, new int[] {12, 25}), 400, SHOP_GRADE);
+			List.of(new int[] {9, 14}, new int[] {11, 17}, new int[] {14, 22}, new int[] {12, 25}), 400, SHOP_GRADE, true);
 
 	@Override
 	public String id() { return ID; }
