@@ -127,6 +127,8 @@ public final class InstancePassV1 {
 				ground[i] = t.floorY(p.worldX(x, z), p.worldZ(x, z));
 				blocked[i] = x >= 0 && z >= 0 && x < fp.length && z < fp[0].length && fp[x][z];
 			}
+		int[] flightTop = new int[nx * nz]; // highest solid of a placed flight's cell, MIN_VALUE where there is none
+		java.util.Arrays.fill(flightTop, Integer.MIN_VALUE);
 		for (Opening o : doors) { // keep every door's own outside cell free of other flights
 			Facing f = outward(o);
 			int x = o.box().x() + f.dx, z = o.box().z() + f.dz;
@@ -138,40 +140,56 @@ public final class InstancePassV1 {
 			if (sx < x0 || sx > x1 || sz < z0 || sz > z1) continue;
 			blocked[(sz - z0) * nx + (sx - x0)] = false;
 			int[] parent = new int[nx * nz], depth = new int[nx * nz];
-			java.util.Arrays.fill(parent, -2);
-			int[] queue = new int[nx * nz];
-			int head = 0, tail = 0, found = -1;
-			int s = (sz - z0) * nx + (sx - x0);
-			parent[s] = -1;
-			queue[tail++] = s;
-			Facing[] dirs = {out, out.rotate(1), out.rotate(3), out.rotate(2)};
-			while (head < tail && found < 0) {
-				int c = queue[head++];
-				int cx = x0 + c % nx, cz = z0 + c / nx, d = depth[c];
-				int g = ground[c];
-				int h = oy - d;
-				boolean ends = d == 0 ? g >= oy - 1 : g >= h;
-				int top = ends ? g : h; // highest solid under the feet
-				// the cells the walker occupies (and the step block itself) must be free of the building
-				boolean free = true;
-				for (int y = top - base; y <= top + 3 - base && free; y++) free = grid.get(cx, y, cz) == Role.AIR;
-				if (!free) continue;
-				if (ends) { found = c; break; }
-				if (g > h + 2) continue;
-				for (Facing f : dirs) {
-					int nxx = cx + f.dx, nzz = cz + f.dz;
-					if (nxx < x0 || nxx > x1 || nzz < z0 || nzz > z1) continue;
-					int ni = (nzz - z0) * nx + (nxx - x0);
-					if (parent[ni] != -2 || blocked[ni]) continue;
-					parent[ni] = c;
-					depth[ni] = d + 1;
-					queue[tail++] = ni;
+			int found = -1;
+			boolean merged = false;
+			// pass 1: a flight of its own to the terrain. Pass 2 (only if pass 1 found none, e.g. earlier flights wall
+			// the margin off on a steep slope): the flight may also end by stepping onto an earlier flight, one block
+			// down or level, and share the rest of its way down.
+			for (int pass = 0; pass < 2 && found < 0; pass++) {
+				java.util.Arrays.fill(parent, -2);
+				int[] queue = new int[nx * nz];
+				int head = 0, tail = 0;
+				int s = (sz - z0) * nx + (sx - x0);
+				parent[s] = -1;
+				queue[tail++] = s;
+				Facing[] dirs = {out, out.rotate(1), out.rotate(3), out.rotate(2)};
+				while (head < tail && found < 0) {
+					int c = queue[head++];
+					int cx = x0 + c % nx, cz = z0 + c / nx, d = depth[c];
+					int g = ground[c];
+					int h = oy - d;
+					boolean ends = d == 0 ? g >= oy - 1 : g >= h;
+					int top = ends ? g : h; // highest solid under the feet
+					// the cells the walker occupies (and the step block itself) must be free of the building
+					boolean free = true;
+					for (int y = top - base; y <= top + 3 - base && free; y++) free = grid.get(cx, y, cz) == Role.AIR;
+					if (!free) continue;
+					if (ends) { found = c; break; }
+					if (g > h + 2) continue;
+					for (Facing f : dirs) {
+						int nxx = cx + f.dx, nzz = cz + f.dz;
+						if (nxx < x0 || nxx > x1 || nzz < z0 || nzz > z1) continue;
+						int ni = (nzz - z0) * nx + (nxx - x0);
+						if (parent[ni] != -2) continue;
+						if (blocked[ni]) {
+							if (pass == 1 && flightTop[ni] != Integer.MIN_VALUE && (flightTop[ni] == h - 1 || flightTop[ni] == h)) {
+								found = c; // c is a step; its neighbour is an earlier flight at the right height
+								merged = true;
+								break;
+							}
+							continue;
+						}
+						parent[ni] = c;
+						depth[ni] = d + 1;
+						queue[tail++] = ni;
+					}
 				}
 			}
 			if (found < 0) continue;
 			for (int c = found; c >= 0; c = parent[c]) {
 				blocked[c] = true; // other doors' flights keep off this one
-				if (c == found) continue; // ends on the terrain itself
+				flightTop[c] = c == found && !merged ? ground[c] : oy - depth[c];
+				if (c == found && !merged) continue; // ends on the terrain itself
 				int cx = x0 + c % nx, cz = z0 + c / nx, h = oy - depth[c], g = ground[c];
 				if (h > g) {
 					site.add(new Box(Box3.of(cx, g - base, cz, 1, h - g, 1), Role.FOUNDATION, Layer.FOUNDATION, Box.NO_STOREY));
