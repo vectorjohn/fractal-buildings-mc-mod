@@ -359,10 +359,11 @@ skeleton, then district detail built lazily (ARCHITECTURE.md, "City scale").
   of a chosen district; the plan view stays usable for cities of several
   thousand blocks (skeleton overview, district detail on demand).
   *V1 landed: the plan view (`viewer/plan.html`, see VIEWER.md "Plan view"). V2 landed: the district 3D view and fly-through (VIEWER.md "District 3D view"; face meshing, terrain heightfield, water, ground boxes, `?camera=fly&stops=`). Known issues: the storeys slider does nothing on the face-mesh path; hook markers are not drawn there.*
-- [ ] **5.6 Determinism**: the skeleton is built from the region cell alone and
+- [x] **5.6 Determinism**: the skeleton is built from the region cell alone and
   each district's detail from (cell, district), so every district start
   reproduces them identically in any order.
   *SK: the skeleton is a pure function of the region cell (built in shuffled order with fresh probes it gives byte-identical plans, `SkeletonsTest`; goldens `golden/settlement/`); DT ticks this item.*
+  *DT landed: `SettlementDeterminismTest` plans every `viewer/city-presets` preset in order, with shuffled cells and districts, on 8 threads over a 2-cell evicting skeleton cache, and each district alone in a new source, and compares settlement, district and scene bytes; three mutant sources (hidden counter, neighbour-reading skeleton, hash-order) must be caught. Knobs: `-Dfb.det.presets=a,b`, `-Dfb.det.full=true`. Lint covers all of `main`, with a check that settlement/region/probe/style are in it.*
 - [ ] **5.7 Density and skyline**: building class and height follow distance
   to the centre and to arterials (downtown high-rises and blocks, halls on
   squares, houses at the edge).
