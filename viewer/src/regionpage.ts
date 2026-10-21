@@ -28,7 +28,7 @@ async function main(): Promise<void> {
   document.getElementById('info')!.innerHTML =
     `<b>seed ${region.seed}</b>\ncell ${L?.cellSize ?? '-'} ${L?.policy ?? ''}\ncells ${stats.cells}, settled ${stats.settled}\n` +
     `1 px = ${(1 / v.scale).toFixed(1)} blocks\nterrain step ${base.grid.step}\n` +
-    `water heat: ${stats.heat ? 'shown' : 'not in dump'}\nclaims: ${stats.claims}\n\n<b>settlements</b>\n` +
+    `water heat: ${stats.heat ? 'shown' : 'off (no waterDist in the dump, or heat=0)'}\nclaims: ${stats.claims}\n\n<b>settlements</b>\n` +
     Object.entries(TIER_COLOUR).map(([k, c]) => `${sw(c)}${k}`).join('\n') + '\n\n<b>rejected (site dot)</b>\n' +
     Object.entries(REASON_COLOUR).map(([k, c]) => `${sw(c)}${k}`).join('\n');
   window.__regionReady = { ok: true, settled: stats.settled, cells: stats.cells, claims: stats.claims, heat: stats.heat };

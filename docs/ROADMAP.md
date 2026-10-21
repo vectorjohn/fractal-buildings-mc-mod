@@ -371,12 +371,16 @@ skeleton, then district detail built lazily (ARCHITECTURE.md, "City scale").
 - [ ] **5.9 Scale check**: plan time and memory per district, measured outside
   the game at 512², 2048² and a multi-cell city; flat per-district cost is the
   bar (feeds 6.5 and 6.7).
-- [ ] **5.10 Water bias**: city sites prefer rivers, lakes and coasts, via a
+- [x] **5.10 Water bias**: city sites prefer rivers, lakes and coasts, via a
   distance-to-water term (coarse biome and height probes) in the region
   field's best-of-8 candidate score (ADR 0003, R1); villages and hamlets stay
   unbiased (John, 2026-10-16). Stays a pure function of (seed, position) and
   cheap (S6: coarse suitability ~11 ms per cell). Evidence: S4-style region
   maps before and after, showing city sites shifting toward water.
+  Done (R2, [log](log/2026-10-21-p5-r2-water.md)): maps in `docs/review/phase5/region/`.
+  *Known issues:* the plan's "+50 % of city sites within 256 blocks of water" is not
+  measurable on the two world dumps (94 % are already within 256 before); measured at 64 blocks
+  it is 31 % -> 46 %, count +9 %. Boundary cells of a window lose the big tiers (wider reach).
 
 - [x] **5.11 Interior circulation** (Phase 4 gate feedback, John 2026-10-19):
   houses should mostly reach their rooms through a hall, landing or central
