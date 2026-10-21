@@ -320,6 +320,10 @@ after each merge into the run branch and on a periodic check (~30 min):
 
 1. In that worktree, if `git status` shows changes, commit them all as
    `John feedback: <files>`. Never discard, reset or stash John's edits.
+   Also check `main`: John sometimes commits review notes straight to it
+   (editing in his own editor next to the viewer). If `main` has commits the
+   run branch lacks, merge `main` into the run branch (merge lock) and treat
+   its doc changes as feedback like the rest.
 2. Merge `john/docs-feedback` into the run branch (merge lock, one-call
    pattern above).
 3. Act on the feedback: new items, ledger notes, answers. Send questions to

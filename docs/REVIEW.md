@@ -99,7 +99,8 @@ work becomes a ROADMAP item or a Polish backlog line. Settled items move to
 
 ## 4.10 Phase 4 gate
 
-- [ ] **4.10 Phase 4 gate**: per building type, would you believe a person built this? Generator v1: nine types, seven styles.
+- [x] **4.10 Phase 4 gate**: per building type, would you believe a person built this? Generator v1: nine types, seven styles.
+  Result (John, 2026-10-21, in the pack README): passed; "we can move forward with phases without being perfect". His notes on house floor plans, archways and covered ground floors for shops and workshops became ROADMAP 5.11 and 5.12.
   Where: [the pack's README](review/phase4/README.md) (what to look at per type, with seeds); a subset of PNGs in `docs/review/phase4/gallery/<type>/` and the style sheet in `gallery/styles/` (full set: `npm run gallery` in `viewer/`, then `viewer/out/gallery/`); [invariants.md](review/phase4/invariants.md) (168,000 cases, 0 failures), [diversity.md](review/phase4/diversity.md).
   Look for, per type (answer here or on the type's own entry): house (4.6 house below), shop (4.6 shop below), workshop, tower, temple, wall and gate, high-rise, hall, city block (entries above). Questions collected during the phase, each also in its own entry:
   1. Facades: is the medieval half-timbering too dark or heavy? (4.4 facades below)

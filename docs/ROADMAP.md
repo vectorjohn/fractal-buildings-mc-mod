@@ -51,8 +51,8 @@ item. Per-item work logs are in [log/](log/); run ledgers in [runs/](runs/).
 | 1. Prior art research | done; gate passed 2026-10-16 (John signed off in synthesis.md; wants effectively unbounded cities) | John picks building-generation direction and the integration approach to spike |
 | 2. Worldgen spikes | done; gate passed 2026-10-16 (John accepted ADR 0003; S6 figures being re-measured) | worldgen ADR (approach, size limits, determinism rules) |
 | 3. Planner core and three.js viewer | done 2026-10-16; gate passed 2026-10-18 (John, REVIEW 3.12: "These all look good"; follow-ups: top view tilted, Phase 4 4.2 wings/jetties) | John reviews seed gallery and invariant report |
-| 4. Building generator depth | done 2026-10-19; gate awaiting John (pack: docs/review/phase4/README.md, REVIEW 4.10) | per building type, "would I believe a person built this?" |
-| 5. Settlements and cities | not started | cities in ≥5 biome mixes, one straddling a border |
+| 4. Building generator depth | done 2026-10-19; gate passed 2026-10-21 (John, phase4 README: "consider this gate passed and move on"; feedback → 5.11, 5.12) | per building type, "would I believe a person built this?" |
+| 5. Settlements and cities | in progress (run 2026-10-21-phase5) | cities in ≥5 biome mixes, one straddling a border |
 | 6. Minecraft integration and release | not started | fresh world on three seeds plays well for an hour; first release |
 
 Unscheduled ideas: add them to the Polish backlog or a new phase item via the
@@ -292,7 +292,7 @@ via the CLI (3.4).
 **Gate:** John reviews the seed gallery and the invariant report. *Passed
 2026-10-18* (REVIEW.md 3.12; no ADR settled by this gate).
 
-## Phase 4: Building generator depth (done 2026-10-19; gate: awaiting John)
+## Phase 4: Building generator depth (done 2026-10-19; gate passed 2026-10-21)
 
 Updated: 2026-10-19
 
@@ -322,11 +322,13 @@ Open known issues that matter later (details in the Polish backlog, 4.x lines):
 
 **Gate:** per building type, a gallery passes John's "would I believe a person
 built this?" review, including the high-rise, city-block and hall classes.
-*Awaiting John* (REVIEW 4.10).
+*Passed 2026-10-21* (John: move on without being perfect; iterate on buildings
+again once settlements and the game show real problems). His gate feedback
+became items 5.11 and 5.12.
 
 ## Phase 5: Settlements and cities
 
-Updated: 2026-10-16
+Updated: 2026-10-21
 
 Compose buildings into places, still entirely outside Minecraft, using real
 terrain and biome dumps from S4. Cities have no fixed size cap; 512 × 512 is
@@ -365,6 +367,23 @@ skeleton, then district detail built lazily (ARCHITECTURE.md, "City scale").
   unbiased (John, 2026-10-16). Stays a pure function of (seed, position) and
   cheap (S6: coarse suitability ~11 ms per cell). Evidence: S4-style region
   maps before and after, showing city sites shifting toward water.
+
+- [ ] **5.11 Interior circulation** (Phase 4 gate feedback, John 2026-10-19):
+  houses should mostly reach their rooms through a hall, landing or central
+  room rather than through a chain of other rooms (house-medieval seed 7: a
+  row of rooms walked through one after another). Rooms get a purpose that
+  drives adjacency (public rooms off the entry or hall, private rooms off a
+  hall; walk-through only where it makes sense), keeping some oddness in
+  moderation. Also open connections: archways or open plan between some
+  public rooms instead of doors. Evidence: a "rooms reached only through two
+  or more other rooms" measure before and after, and cutaway galleries.
+- [ ] **5.12 Open ground storeys** (Phase 4 gate feedback, John 2026-10-19):
+  shops and workshops may have a covered outdoor area at street level (an
+  arcade, a ground floor open on posts, a bazaar-like market floor); shop
+  display windows sit at street level (prefer level frontages, or step the
+  shopfront down to the street, rather than a window at the top of the front
+  steps). Evidence: shop and workshop galleries before and after; invariants
+  still 0 failing.
 
 **Gate:** John reviews cities in at least five biome mixes, including one
 straddling a border, one larger than 512 × 512, and one with a high-rise
