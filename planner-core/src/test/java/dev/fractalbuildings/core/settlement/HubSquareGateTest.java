@@ -44,7 +44,7 @@ class HubSquareGateTest {
 			var view = new FixedSiteView(site, field);
 			var coarse = CoarseProbe.of(r, r, 32);
 			SettlementPlan sk = Skeletons.plan(seed, view, site, coarse, SkeletonsTest.GEN);
-			Landmark hub = sk.landmarks().stream().filter(l -> l.kind() == LandmarkKind.SQUARE).findFirst().orElseThrow();
+			Landmark hub = sk.landmarks().stream().filter(l -> l.kind() == LandmarkKind.SQUARE).min(java.util.Comparator.comparingLong(l -> (long) (l.x() - x) * (l.x() - x) + (long) (l.z() - z) * (l.z() - z))).orElseThrow(); // the square nearest the site centre (cities also have squares at arterial crossings)
 			DistrictSummary tile = sk.districts().stream().filter(d -> d.id().equals(hub.district())).findFirst().orElseThrow();
 			AtomicInteger calls = new AtomicInteger();
 			TerrainProbe counting = new TerrainProbe() {

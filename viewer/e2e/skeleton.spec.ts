@@ -40,12 +40,12 @@ async function ready(page: Page): Promise<NonNullable<Window['__planReady']>> {
 const settlement = (name: string): { site: { tier: string }; violations: unknown[]; roads: { kind: string; bridges: number[][] }[]; gates: { kind: string }[]; landmarks: unknown[] } =>
   JSON.parse(readFileSync(join(ROOT, name, 'settlement.json'), 'utf8'));
 
-test('town on the recorded river window: skeleton over terrain, a bridge, no violations', async ({ page }) => {
+test('town on the recorded river window: skeleton over terrain, no violations', async ({ page }) => {
   const errors: string[] = [];
   page.on('pageerror', (e) => errors.push(String(e)));
   const s = settlement('river-town');
   expect(s.violations).toEqual([]);
-  expect(s.roads.some((r) => r.bridges.length > 0)).toBe(true);
+  // (the main roads route round the river since TR widened the urban mask; bridges are checked on the joined metropolis below)
   const dir = await serve(page, 'river-town');
   await page.goto(`/plan.html?city=${dir}&terrain=${dir}terrain.json.gz&layers=+terrain&x=-900&z=-3500&zoom=0.6`);
   const r = await ready(page);
@@ -65,6 +65,7 @@ test('joined metropolis over five cells: arterials, gates between cells, no viol
   expect(s.violations).toEqual([]);
   expect(s.roads.filter((r) => r.kind === 'arterial').length).toBeGreaterThan(20);
   expect(s.gates.filter((g) => g.kind === 'cell').length).toBeGreaterThanOrEqual(4);
+  expect(s.roads.some((r) => r.bridges.length > 0)).toBe(true);
   const dir = await serve(page, 'joined-metropolis');
   await page.goto(`/plan.html?city=${dir}&terrain=${dir}terrain.json.gz&layers=+terrain&x=6400&z=6528&zoom=0.25`);
   const r = await ready(page);

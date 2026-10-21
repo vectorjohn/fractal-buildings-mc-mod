@@ -23,6 +23,7 @@ public final class DensityField {
 	private final SettlementSite site;
 	private final CoarseTerrain terrain;
 	private final Arterials arterials;
+	private final OldTown oldTown;
 	private final double[] amp = new double[HARMONICS], phase = new double[HARMONICS];
 	private final double ampSum;
 
@@ -37,6 +38,7 @@ public final class DensityField {
 			sum += amp[k];
 		}
 		this.ampSum = sum;
+		this.oldTown = new OldTown(seed, site, terrain, grid, this);
 		this.arterials = new Arterials(seed, site.tier(), this, terrain, grid);
 	}
 
@@ -45,6 +47,9 @@ public final class DensityField {
 	public CoarseTerrain terrain() { return terrain; }
 
 	public Arterials arterials() { return arterials; }
+
+	/** The walled old town of a city (no ring for other tiers). */
+	public OldTown oldTown() { return oldTown; }
 
 	/** Disk radius at an angle (radians), wobbled. */
 	public double radiusAt(double theta) {

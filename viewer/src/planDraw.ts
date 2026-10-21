@@ -50,7 +50,7 @@ export function districtsToLoad(s: Settlement, v: PlanView, size: Size): Distric
 // ---- layers ----------------------------------------------------------------------------------------------
 
 export const LAYER_IDS = [
-  'terrain', 'water', 'biome', 'mask', 'density', 'quarters', 'cells', 'tiles', 'roads', 'gates', 'landmarks', 'walls', 'lots', 'violations',
+  'terrain', 'water', 'biome', 'mask', 'density', 'quarters', 'cells', 'tiles', 'roads', 'gates', 'landmarks', 'walls', 'lots', 'height', 'violations',
 ] as const;
 export type LayerId = (typeof LAYER_IDS)[number];
 export const DEFAULT_LAYERS: readonly LayerId[] = ['terrain', 'water', 'tiles', 'roads', 'gates', 'landmarks', 'walls', 'lots', 'violations'];
@@ -201,11 +201,20 @@ function drawRoadSet(ctx: CanvasRenderingContext2D, v: PlanView, roads: readonly
   return n;
 }
 
-function drawLot(ctx: CanvasRenderingContext2D, v: PlanView, l: PlanLot, hover: boolean): void {
+/** Fill of a lot in the `height` layer: pale yellow at 1 storey through orange and red to dark violet at 60 (square-root ramp, so low rise and towers both read). */
+export function heightColour(storeys: number): string {
+  const t = Math.sqrt(Math.max(0, Math.min(1, (storeys - 1) / 59)));
+  const stops: [number, number, number][] = [[255, 245, 190], [250, 170, 60], [215, 50, 40], [90, 20, 120]];
+  const f = t * (stops.length - 1), i = Math.min(stops.length - 2, Math.floor(f)), k = f - i;
+  const c = stops[i]!.map((a, j) => Math.round(a + (stops[i + 1]![j]! - a) * k));
+  return `rgb(${c[0]},${c[1]},${c[2]})`;
+}
+
+function drawLot(ctx: CanvasRenderingContext2D, v: PlanView, l: PlanLot, hover: boolean, byHeight = false): void {
   const [px, py] = toScreen(v, l.x, l.z), w = l.w * v.scale, h = l.d * v.scale;
   const built = l.status === 'build';
   ctx.globalAlpha = built ? 1 : 0.35;
-  ctx.fillStyle = lotColour(l.type);
+  ctx.fillStyle = byHeight ? heightColour(l.storeys[1]) : lotColour(l.type);
   ctx.fillRect(px, py, w, h);
   ctx.globalAlpha = 1;
   ctx.strokeStyle = hover ? '#ffffff' : styleColour(l.style);
@@ -288,7 +297,7 @@ export function drawPlan(ctx: CanvasRenderingContext2D, st: PlanState): DrawStat
   if (showLots(v.scale) && layers.has('lots')) {
     for (const d of loaded) for (const l of d.lots) {
       if (!overlaps(viewRect(v, size), l)) continue;
-      drawLot(ctx, v, l, st.hover?.lot === l.id);
+      drawLot(ctx, v, l, st.hover?.lot === l.id, layers.has('height'));
       stats.lots++;
     }
   }

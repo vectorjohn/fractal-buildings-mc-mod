@@ -23,8 +23,14 @@ public interface TierProgram {
 
 	int mainWidth(Tier tier);
 
+	/** Width of this cell's main roads: the tier's, unless the program narrows it (a walled city's avenues pass 5-wide gates). */
+	default int mainWidth(SkeletonContext c) { return mainWidth(c.site.tier()); }
+
 	/** Landmarks around the hub (provisional ids), only called for the cell that holds the site centre. */
 	List<Landmark> landmarks(SkeletonContext c, Pt hub);
+
+	/** Landmarks that every cell lists for the columns it owns, not tied to the hub (D3: squares at arterial crossings); none by default. */
+	default List<Landmark> cellLandmarks(SkeletonContext c) { return List.of(); }
 
 	/** Wall lines; none by default. */
 	default List<Wall> walls(SkeletonContext c, Pt hub) { return List.of(); }

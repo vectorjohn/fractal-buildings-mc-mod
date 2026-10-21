@@ -17,17 +17,46 @@ public final class QuarterField {
 	private final long seed;
 	private final SettlementSite site;
 	private final CoarseTerrain terrain;
+	private final DistrictGrid grid;
+	private final DensityField density;
 
-	public QuarterField(long seed, SettlementSite site, CoarseTerrain terrain) {
+	public QuarterField(long seed, SettlementSite site, CoarseTerrain terrain) { this(seed, site, terrain, null); }
+
+	/**
+	 * With the settlement's density field: the area inside a city's old-town walls is the old town whatever the hashed quarters say, and a
+	 * metropolis's park tiles are the downtown tiles (centre density at least {@value #DOWNTOWN_DENSITY}) that a hash picks.
+	 */
+	public QuarterField(long seed, SettlementSite site, CoarseTerrain terrain, DensityField density) {
 		this.seed = seed;
 		this.site = site;
 		this.terrain = terrain;
+		this.grid = site.tier() == Tier.METROPOLIS ? new DistrictGrid(seed) : null;
+		this.density = density;
 	}
+
+	/** Share of downtown tiles that are parks: one in {@value #PARK_ONE_IN}. */
+	public static final int PARK_ONE_IN = 8;
+
+	/** Is the tile round the column a downtown park: one tile in {@value #PARK_ONE_IN} of those whose centre is downtown (the whole tile is then open ground)? */
+	boolean parkTile(int x, int z) {
+		if (density == null) return false;
+		DistrictGrid.TileId id = grid.tileOf(x, z);
+		return parks.get(((long) id.ix() << 32) ^ (id.iz() & 0xffffffffL), k -> {
+			DistrictGrid.Tile t = grid.tile(id.ix(), id.iz());
+			if (t.contains(terrain.snap(site.centre().x()), terrain.snap(site.centre().z()))) return false; // the hub's tile has the hub square and its hall and temple
+			if (Hash64.below(Hash64.hash(seed, "downtown-park", t.ix(), t.iz()), PARK_ONE_IN) != 0) return false;
+			return density.at((t.minX() + t.maxX()) / 2, (t.minZ() + t.maxZ()) / 2) >= DOWNTOWN_DENSITY;
+		});
+	}
+
+	private final dev.fractalbuildings.core.cache.BoundedCache<Long, Boolean> parks = new dev.fractalbuildings.core.cache.BoundedCache<>(1024); // pure memo
 
 	public QuarterKind at(int x, int z, int density) {
 		Tier tier = site.tier();
+		if (tier == Tier.METROPOLIS && parkTile(x, z)) return QuarterKind.PARK;
 		if (tier == Tier.METROPOLIS && density >= DOWNTOWN_DENSITY) return QuarterKind.DOWNTOWN;
 		if (tier.atLeast(Tier.TOWN) && terrain.waterWithin(x, z, WATERFRONT_DIST)) return QuarterKind.WATERFRONT;
+		if (this.density != null && this.density.oldTown().contains(x, z)) return QuarterKind.OLD_TOWN;
 		if (density < OUTSKIRTS_DENSITY) return QuarterKind.OUTSKIRTS;
 		return seeded(x, z);
 	}

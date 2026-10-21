@@ -44,7 +44,7 @@ class HighriseTypeTest {
 		for (int[] e : ENVELOPES)
 			for (long seed = 0; seed < SEEDS; seed++) {
 				Draws r = new Draws(seed * 977 + e[0]);
-				int storeys = r.range(20, 60), maxH = r.range(minMaxHeight, maxMaxHeight);
+				int storeys = r.range(10, 60), maxH = r.range(minMaxHeight, maxMaxHeight);
 				BuildingSpec sp = spec(seed, e[0], e[1], storeys, maxH);
 				each.at(sp, mass(sp));
 			}
@@ -72,7 +72,7 @@ class HighriseTypeTest {
 	void tallWhenTheCapAllows() {
 		int[] tall = {0};
 		sweep(100, 320, (sp, m) -> {
-			assertTrue(m.grid().count() >= 20, "maxHeight " + sp.maxHeight() + " gives " + m.grid().count() + " storeys, spec " + sp.storeys());
+			assertTrue(m.grid().count() >= 10, "maxHeight " + sp.maxHeight() + " gives " + m.grid().count() + " storeys, spec " + sp.storeys());
 			tall[0]++;
 		});
 		assertTrue(tall[0] > 1000);

@@ -41,7 +41,7 @@ public final class Skeletons {
 		CoarseTerrain terrain = new CoarseTerrain(probe);
 		int step = terrain.step;
 		DensityField density = new DensityField(seed, site, terrain, grid);
-		QuarterField quarters = new QuarterField(seed, site, terrain);
+		QuarterField quarters = new QuarterField(seed, site, terrain, density);
 		List<Pt> poly = CellGeometry.polygon(field, cell);
 
 		// 1. gates on the edges shared with the settlement's other cells
@@ -122,7 +122,7 @@ public final class Skeletons {
 			String roadId = null;
 			if (r != null && r.points().size() >= 2) {
 				roadId = Ids.road(cell.cx(), cell.cz(), n++);
-				roads.add(new Road(roadId, program.mainKind(site.tier()), program.mainWidth(site.tier()), r.points(), r.bridges()));
+				roads.add(new Road(roadId, program.mainKind(site.tier()), program.mainWidth(c), r.points(), r.bridges()));
 			}
 			if (t < cellGates.size()) {
 				Gate g = cellGates.get(t);
@@ -135,7 +135,8 @@ public final class Skeletons {
 		roads.addAll(arterialParts(c));
 
 		// 6. landmarks, districts
-		List<Landmark> landmarks = hub == null || !c.holdsCentre() ? List.of() : program.landmarks(c, hub);
+		List<Landmark> landmarks = new ArrayList<>(hub == null || !c.holdsCentre() ? List.of() : program.landmarks(c, hub));
+		landmarks.addAll(program.cellLandmarks(c));
 		TierProgram.WallPlan wallPlan = hub == null ? new TierProgram.WallPlan(List.of(), List.of()) : program.walls(c, hub, roads);
 		List<Wall> walls = wallPlan.walls();
 		gates.addAll(wallPlan.gates());

@@ -66,6 +66,41 @@ class ClassTableTest {
 		assertTrue(high.min() > low.min() && high.max() >= 48 && low.min() >= 20, low + " " + high);
 	}
 
+	/** D3: mean top storeys per density band rise monotonically; no high-rise below density 70; the mid-rise fills the gap between 5 and 20 storeys. */
+	@Test
+	void skylineRisesWithDensityAndTheMidRiseFillsTheGap() {
+		double prev = 0;
+		for (int d : new int[] {10, 35, 60, 75, 80, 85, 90, 95, 100}) {
+			long sum = 0;
+			int n = 4000;
+			for (int i = 0; i < n; i++) sum += ClassTable.pick(11, i * 3, i * 5, d, QuarterKind.RESIDENTIAL, 0, 100, 44).orElseThrow().maxStoreys();
+			double mean = sum / (double) n;
+			assertTrue(mean > prev, "mean storeys at density " + d + " is " + mean + ", not above " + prev);
+			prev = mean;
+		}
+		for (int d = 0; d < 70; d++) {
+			for (int i = 0; i < 200; i++) assertTrue(!ClassTable.pick(2, i, d, d, QuarterKind.DOWNTOWN, 0, 100, 44).orElseThrow().type().equals("highrise"), "high-rise below 70 at " + d);
+		}
+		int mid = 0;
+		for (int d = 70; d < 100; d++) {
+			int[] s = ClassTable.highriseStoreys(d);
+			assertTrue(s[0] <= s[1] && s[0] >= 10 && (d < 85 ? s[1] <= 19 : s[0] >= 20), d + " " + s[0] + ".." + s[1]);
+			if (d < 85) mid++;
+			assertTrue(d == 70 || s[0] >= ClassTable.highriseStoreys(d - 1)[0], "the lowest top never falls with density at " + d);
+		}
+		assertEquals(15, mid);
+	}
+
+	@Test
+	void oldTownHasNeitherBlocksNorHighrises() {
+		for (int d = 0; d <= 100; d += 5) {
+			for (int i = 0; i < 300; i++) {
+				var p = ClassTable.pick(4, i * 7, i * 3 + d, d, QuarterKind.OLD_TOWN, 0, 100, 44).orElseThrow();
+				assertTrue(!p.type().equals("block") && !p.type().equals("highrise") && p.maxStoreys() <= ClassTable.OLD_TOWN_CAP, d + " " + p);
+			}
+		}
+	}
+
 	@Test
 	void smallOrSteepLotsSkipTypesTheyCannotTake() {
 		// 7x7 only fits a house; a 30x30 lot is too small for a block (52) or highrise (20 fits!)

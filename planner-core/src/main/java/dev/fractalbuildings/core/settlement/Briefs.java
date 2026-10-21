@@ -97,11 +97,25 @@ public final class Briefs {
 	static int[] storeys(String type, int density, QuarterKind quarter) {
 		TypeLimits lim = Types.get(type).limits();
 		int min = lim.minStoreys(), max = lim.maxStoreys();
+		boolean found = false;
 		for (ClassTable.Entry e : ClassTable.entries(density, quarter)) {
 			if (!e.type().equals(type)) continue;
 			int a = Math.max(e.min(), lim.minStoreys()), b = Math.min(e.max(), lim.maxStoreys());
 			if (a <= b) { min = a; max = b; }
+			found = true;
 			break;
+		}
+		if (!found) {
+			// The quarter at the lot's centre drops the type (a high-rise in an old town or on a waterfront), but the lot was drawn under the
+			// quarter at its sample point beside it: take the row's range, within the quarter's storey cap when that leaves one.
+			for (ClassTable.Entry e : ClassTable.entries(density, QuarterKind.RESIDENTIAL)) {
+				if (!e.type().equals(type)) continue;
+				int cap = quarter == QuarterKind.OLD_TOWN ? ClassTable.OLD_TOWN_CAP : quarter == QuarterKind.WATERFRONT ? ClassTable.WATERFRONT_CAP : Integer.MAX_VALUE;
+				int a = Math.max(e.min(), lim.minStoreys()), b = Math.min(e.max(), lim.maxStoreys());
+				if (a <= b) { min = a; max = b; }
+				if (cap >= min) max = Math.min(max, cap);
+				break;
+			}
 		}
 		return new int[] {min, max};
 	}

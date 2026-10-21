@@ -14,7 +14,7 @@ import java.util.List;
 public final class HighriseType implements BuildingType {
 	public static final String ID = "highrise";
 
-	private static final TypeLimits LIMITS = new TypeLimits(18, 18, 20, 60, 1, 1, 1, false,
+	private static final TypeLimits LIMITS = new TypeLimits(18, 18, 10, 60, 1, 1, 1, false,
 			List.of(new int[] {20, 20}, new int[] {28, 28}, new int[] {36, 36}, new int[] {44, 44}), 12, 3);
 
 	@Override
