@@ -36,6 +36,23 @@ class RecordedProbeTest {
 	}
 
 	@Test
+	void gzipEqualsPlainTwin() throws Exception {
+		Path plain = Path.of("../fixtures/terrain/s4-12345-crop32.json");
+		Path gz = java.nio.file.Files.createTempFile("crop", ".bin"); // name must not matter
+		try (var o = new java.util.zip.GZIPOutputStream(java.nio.file.Files.newOutputStream(gz))) {
+			o.write(java.nio.file.Files.readAllBytes(plain));
+		}
+		RecordedProbe a = RecordedProbe.read(plain), b = RecordedProbe.read(gz);
+		for (int x = -1408; x < -1408 + 31 * 64; x += 37) {
+			for (int z = -4160; z < -4160 + 31 * 64; z += 41) {
+				assertEquals(a.surfaceY(x, z), b.surfaceY(x, z));
+				assertEquals(a.floorY(x, z), b.floorY(x, z));
+				assertEquals(a.biome(x, z), b.biome(x, z));
+			}
+		}
+	}
+
+	@Test
 	void outsideGridThrows() throws Exception {
 		RecordedProbe p = load();
 		var e = assertThrows(IllegalArgumentException.class, () -> p.floorY(-1409, -4160));

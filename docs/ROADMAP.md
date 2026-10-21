@@ -81,6 +81,9 @@ Notes:
   deliberately broken rule fails.
 - Shared test infrastructure (synthetic probes, terrain dumps, seed lists,
   gallery presets) is listed here as it's added.
+- Added in Phase 5 (T1): gzipped terrain dumps in `fixtures/terrain/` (see its README) made by
+  `TerrainDumpTool` (`mod/src/test`, run with `-Dfb.dump=...`, no server); `RecordedProbe`
+  reads gzip.
 - Added in Phase 3: `SampleScenes.house()` + `viewer/fixtures/sample-house.json`;
   recorded terrain `fixtures/terrain/s4-12345-crop32.json` and `RecordedProbe`;
   `ProbeSpecs` strings (`flat:`, `plane:`, `hill:`, `noise:`, `recorded:`)
