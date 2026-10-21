@@ -347,6 +347,7 @@ skeleton, then district detail built lazily (ARCHITECTURE.md, "City scale").
   height screen) and lazy per-district detail (lots, briefs, exact heights).
 - [ ] **5.3 Terrain**: respond to slope, rivers and coast; choose where to level
   ground and where to step buildings.
+  *TA groundwork landed (`core/terrain/`: `WaterField`, `LatticePath`, `Grading`, `LotGround`); TR ticks this item.*
 - [ ] **5.4 Biome-aware style**: each district takes its palette from the biomes
   underneath, blended across borders.
 - [ ] **5.5 Viewer**: a 2D plan view over the terrain dump, plus a 3D fly-through
