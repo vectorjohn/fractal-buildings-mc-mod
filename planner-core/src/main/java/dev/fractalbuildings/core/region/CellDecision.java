@@ -1,5 +1,7 @@
 package dev.fractalbuildings.core.region;
 
+import dev.fractalbuildings.core.settlement.Tier;
+
 import java.util.Map;
 
 /**
@@ -8,7 +10,7 @@ import java.util.Map;
  */
 public record CellDecision(
 	int cx, int cz, int siteX, int siteZ,
-	boolean settled, String reason, Tiers.Tier tier,
+	boolean settled, String reason, Tier tier,
 	int centreX, int centreZ, int radiusDrawn, int radius, int radiusFit, int edgeDist,
 	double roll, double chance, double suitability, double siteSuitability, int candidate,
 	double waterFrac, double peakFrac, Map<String, Double> groups) {

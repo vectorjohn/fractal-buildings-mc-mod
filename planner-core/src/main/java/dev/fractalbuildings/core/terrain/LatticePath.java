@@ -48,7 +48,12 @@ public final class LatticePath {
 	 * entered (a bridge), all x10.
 	 */
 	public static Cost defaultCost(TerrainProbe exact, WaterSamples water) {
-		int stride = water.stride();
+		return defaultCost(exact, water, water.stride());
+	}
+
+	/** As above for a search on a lattice of {@code step} blocks (which need not equal the water samples' stride). */
+	public static Cost defaultCost(TerrainProbe exact, WaterSamples water, int step) {
+		int stride = step;
 		return new Cost() {
 			@Override public long step(int x, int z, int nx, int nz) {
 				long len10 = (x != nx && z != nz ? 14L : 10L) * stride;

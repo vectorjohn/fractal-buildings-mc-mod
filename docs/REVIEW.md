@@ -50,6 +50,11 @@ work becomes a ROADMAP item or a Polish backlog line. Settled items move to
   Look for: market hall floors that read as an empty box on sticks (no stalls yet; hooks need a room); arcades only 2 to 3 deep with one post row; porch canopy stepping up towards the wall; the shop window sitting 1 to 3 blocks above the street on a slope (lots steeper than 1 in 12 are now rejected for shops).
   Result:
 
+- [ ] **5.2 SK skeleton** (cell skeletons over real terrain): do the plans read like settlements: a hub with a square and hall, main roads that follow the land and bridge rivers, arterials on tile borders in a city, gates where cells meet?
+  Where: `docs/review/phase5/skeleton/` (`skeleton-river-town.png`: a town on the recorded river window; `skeleton-joined-metropolis.png`: a 5-cell metropolis on the coarse world dump); live: `viewer/fixtures/settlement/skeleton/*` through `plan.html?city=<dir>&terrain=<dir>terrain.json.gz` (see its README)
+  Look for: the urban mask (layer `mask`) being too patchy on hilly ground (the 1-in-2 slope rule is strict); main roads that wander or zigzag at 45 degrees; arterial grids that look too regular or too dense in a metropolis; hub squares placed off the road they should sit on; exits that go nowhere.
+  Result:
+
 ## Done
 
 - [x] **3.6 storey slider**: in the viewer, lowering "storeys up to N" below the top storey hides the roof together with the upper storeys (roofs are storey −1, shown only at the top setting, per the Phase 3 plan). Does that feel right, or should the roof stay or hide on its own toggle?

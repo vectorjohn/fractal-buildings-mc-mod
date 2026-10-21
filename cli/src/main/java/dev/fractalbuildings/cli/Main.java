@@ -13,6 +13,7 @@ public final class Main {
 			  bench --n N [--lots ..] [--styles ..] [--terrains ..] [--fronts ..]
 			  diversity --seeds A..B [--lot WxD] [--style S] [--terrain SPEC] [--json] [--out FILE]
 			  region --seed N --terrain SPEC [--cell-size 1024] [--window X0,Z0,W,D] [--max-radius 4096] [--out FILE]  (region map, fb-region-dump/1)
+  city --seed N --terrain SPEC (--cell CX,CZ | --site X,Z,TIER,RADIUS) [--cell-size 1024] --out-dir DIR  (skeleton: settlement.json + terrain.json.gz)
   sample-city --out-dir DIR [--big N]   (sample settlement plan + districts + one scene; --big: synthetic N x N grid)
 			terrain SPEC: flat:Y | plane:Y0:RISEX:RISEZ:RUN | hill:BASE:PEAK:RADIUS | noise:SEED:BASE:AMP:WAVELEN | recorded:FILE (join with +: river:X0:W:DEPTH, biomes:split:X:A:B)
 			""";
@@ -36,6 +37,7 @@ public final class Main {
 				case "diversity" -> { return DiversityCommand.run(rest); }
 				case "sample-city" -> { return SampleCityCommand.run(rest); }
 				case "region" -> { return RegionCommand.run(rest); }
+				case "city" -> { return CityCommand.run(rest); }
 				default -> {
 					System.err.println("unknown command '" + args[0] + "'");
 					System.err.print(USAGE);

@@ -2,7 +2,7 @@ package dev.fractalbuildings.core.region;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import dev.fractalbuildings.core.region.Tiers.Tier;
+import dev.fractalbuildings.core.settlement.Tier;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumMap;
@@ -23,7 +23,7 @@ class TiersTest {
 		for (int cx = 0; cx < 200; cx++) for (int cz = 0; cz < 100; cz++) n.merge(Tiers.tier(12345L, cx - 100, cz - 50), 1, Integer::sum);
 		for (Tier t : Tier.values()) {
 			double freq = n.getOrDefault(t, 0) / 20000.0;
-			assertEquals(t.weight, freq, 0.02, t.id);
+			assertEquals(t.weight, freq, 0.02, t.json);
 		}
 	}
 
@@ -40,7 +40,7 @@ class TiersTest {
 						metro.add(r);
 						if (r == 4096) clipped++;
 					} else {
-						assertTrue(r >= t.minRadius && r <= t.maxRadius, t.id + " " + r);
+						assertTrue(r >= t.minRadius && r <= t.maxRadius, t.json + " " + r);
 					}
 				}
 			}
@@ -55,6 +55,6 @@ class TiersTest {
 	@Test
 	void bandsOverlapSoTheLadderHasNoHardSteps() {
 		Tier[] t = Tier.values();
-		for (int i = 0; i + 1 < t.length; i++) assertTrue(t[i].maxRadius > t[i + 1].minRadius, t[i].id);
+		for (int i = 0; i + 1 < t.length; i++) assertTrue(t[i].maxRadius > t[i + 1].minRadius, t[i].json);
 	}
 }

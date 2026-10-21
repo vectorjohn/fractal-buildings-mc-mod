@@ -39,6 +39,8 @@ public final class DistrictGrid {
 		public int widthX() { return maxX - minX; }
 		public int widthZ() { return maxZ - minZ; }
 		public boolean contains(int x, int z) { return x >= minX && x < maxX && z >= minZ && z < maxZ; }
+		/** The tile as a plan rectangle (blocks). */
+		public Rect rect() { return new Rect(minX, minZ, widthX(), widthZ()); }
 		public TileId id() { return new TileId(ix, iz); }
 	}
 

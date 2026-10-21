@@ -193,6 +193,18 @@ district { format: "fb-district/1", planVersion: 1, genVersion, seed: "<int64>",
   front, 4 back, 8 west of the front, as `BuildingSpec.streets`); the generator forces the front bit. `frontY` is the
   street surface y in front of the front edge centre, or `-2147483648` (`Brief.NO_FRONT_Y`) if unknown. `airRights` is 0
   until the jetty step.
+- **Skeleton output** (SK, `Skeletons.plan`, CLI `city`): `quarters` always lists all eight kinds in the order shown above
+  (`id` = position), so merged cells need no renumbering. The coarse lattice is 32 blocks; `mask` and `density` are 0/0
+  outside the urban part, `quarter` is -1 there. `districts` hold the tiles whose centre lies in a member cell and that
+  contain an urban column, `quarter` the mode and `density` the maximum over the tile, `styles` empty, `lots` 0, `detail`
+  null. Roads: `r<cx>_<cz>_<n>` per cell (gate routes first, then exits; `main`, or `path` for a hamlet), arterials
+  `a<axis><line>_<from>` (axis 0 is a line of constant x; one road per tile-border segment, the parts of the cells it crosses
+  laid end to end, so two consecutive points may be 1 block apart at a cell border). Gates `g<n>` sorted by (x, z): `cell`
+  gates (listed by both cells, `cells` = the pair in (cz, cx) order, `road` = the lower cell's road if it has one), `exit`
+  gates at the end of an exit road. A gate column is the 32-lattice column nearest the shared border, which may belong to
+  either neighbour. Landmarks `l<n>`: hub square (`green` village, `market` town, `square` city and up) with a hall or
+  temple facing it, all inside one tile. `fractal-cli city` also writes `terrain.json.gz`, the plan raster as a terrain-only
+  `fb-region-dump/1` (step 32) for the plan view background. Fixtures: `viewer/fixtures/settlement/skeleton/`.
 - **Brief** (`GenRequest.brief`, optional, `core/gen/Brief`): `{minStoreys, maxStoreys, streets, airRights, frontY}`
   from a lot of the plan. `SpecPolicyV1` draws storeys from the brief's range intersected with the type's (if they do
   not meet, the type's bound nearest the brief) and sets `spec.streets` from the brief (front forced, unless the type

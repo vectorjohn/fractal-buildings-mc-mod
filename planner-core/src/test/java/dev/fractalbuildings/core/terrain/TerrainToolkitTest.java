@@ -7,6 +7,7 @@ import dev.fractalbuildings.core.ir.Facing;
 import dev.fractalbuildings.core.ir.Lot;
 import dev.fractalbuildings.core.probe.SyntheticTerrain;
 import dev.fractalbuildings.core.probe.TerrainProbe;
+import dev.fractalbuildings.core.settlement.Rect;
 import dev.fractalbuildings.core.terrain.GroundBox.Kind;
 import dev.fractalbuildings.core.terrain.LatticePath.Bounds;
 import dev.fractalbuildings.core.terrain.LatticePath.Pt;

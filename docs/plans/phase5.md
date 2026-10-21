@@ -1031,6 +1031,9 @@ Each with the assumption made if nobody answers.
 
 (Steps add one line each when they change a contract above.)
 
+- SK (2026-10-21): gates are the 32-lattice column nearest the hashed point on the shared edge (not exactly on the border), rejected for water or peaks only (not slope); `skeleton-in-cell` is "every road column is owned by the cell (nearest region site) or is one of its gate columns". The ±20 test probe is hashed per column, so it is asserted on cell gates (which depend on water and peaks only), not on exits.
+- SK (2026-10-21): arterials and district lists use the pointwise urban test (footprint, dry, not a peak, not steep), not the hub-reachability mask, so every cell and tile agrees; the plan's `quarters` list always has all eight kinds (id = ordinal); `origin` is the tile's corner chunk (P0's reader), not DG's centre chunk; the tier enum is now one (`settlement.Tier`, carrying the ladder's weights, bands and density caps; `Tiers.Tier` is gone); `FixedSiteView(site, RegionField)` takes the field (R1 exists); `FieldSiteView` adapts MC1's `FieldRegionView` to `RegionView`; `fractal-cli city --cell` goes through the join rule.
+
 # Answers: city layout (John 2026-10-21)
 
 Background for the three replies under "Decisions for John" and "Lots". Nothing
