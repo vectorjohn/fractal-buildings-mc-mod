@@ -25,7 +25,8 @@ describe('parseDump', () => {
     const cells = d.layers[0]!.cells;
     expect(cells.length).toBeGreaterThan(100);
     expect(cells.some((c) => c.city)).toBe(true);
-    expect(cells.every((c) => c.waterDist === undefined && c.claimedBy === undefined)).toBe(true); // keys are optional
+    expect(cells.every((c) => c.waterDist === undefined)).toBe(true); // optional, R2 not in the dump
+    expect(cells.some((c) => c.claimedBy !== undefined)).toBe(true); // MC1 joins
   });
 
   it('picks up waterDist and claimedBy when present, rejects other formats', () => {

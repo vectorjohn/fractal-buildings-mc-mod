@@ -23,4 +23,10 @@ public record CellDecision(
 	public boolean fits() {
 		return radius <= radiusFit;
 	}
+
+	/** The same decision with another radius (a join winner takes its drawn radius, past the cell's fit). */
+	public CellDecision withRadius(int r) {
+		return new CellDecision(cx, cz, siteX, siteZ, settled, reason, tier, centreX, centreZ, radiusDrawn, r, radiusFit, edgeDist,
+			roll, chance, suitability, siteSuitability, candidate, waterFrac, peakFrac, groups);
+	}
 }

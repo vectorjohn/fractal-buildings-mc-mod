@@ -43,6 +43,7 @@ for (const seed of worlds) {
     expect(r.cells).toBeGreaterThan(300);
     expect(r.settled).toBeGreaterThan(50);
     expect(r.heat).toBe(false); // no waterDist in the dump yet: drawn without it
+    expect(r.claims).toBeGreaterThan(5); // MC1: big cities claim neighbouring cells
     // a world map: both water and land colours are present
     expect(await colourFraction(page, [40, 90, 160], 60)).toBeGreaterThan(0.05);
     expect(await colourFraction(page, [110, 180, 80], 60)).toBeGreaterThan(0.02);
@@ -70,13 +71,13 @@ test('waterDist heat and claimedBy links appear when the dump has them', async (
   cells.forEach((c, i) => { c['waterDist'] = (i * 37) % 900; });
   const settled = cells.filter((c) => c['city'] === true);
   const loser = cells.find((c) => c['city'] === false)!;
-  loser['claimedBy'] = [settled[0]!['cx'], settled[0]!['cz']];
+  loser["claimedBy"] = [settled[0]!["cx"], settled[0]!["cz"]];
   const url = await serve(page, 'claims.json.gz', gzipSync(JSON.stringify(d)));
   await page.goto(`/region.html?region=${url}`);
   const r = await ready(page);
   expect(r.error).toBeUndefined();
   expect(r.heat).toBe(true);
-  expect(r.claims).toBe(1);
+  expect(r.claims).toBeGreaterThanOrEqual(1); // the injected link, on top of the real ones
   mkdirSync('out/region', { recursive: true });
   writeFileSync('out/region/world-12345-heat-claims.png', await page.screenshot({ fullPage: true }));
   // and off by switch
