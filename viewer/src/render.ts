@@ -4,13 +4,13 @@ import type { Scene } from './ir';
 import type { Voxel } from './voxels';
 import { LAYERS } from './ir';
 import { buildViolationOverlay } from './overlay';
-import { BED_COLOUR, hookColour, roleColour, TERRAIN_COLOUR, WATER_COLOUR } from './palettes';
+import { BED_COLOUR, groundTint, hookColour, roleColour, TERRAIN_COLOUR, WATER_COLOUR } from './palettes';
 import { FACE_MESH_THRESHOLD, Occupancy, maxOf, minOf, exposedFaces, groundCells, terrainMesh, terrainTops, waterMesh } from './mesh';
 import type { MeshData } from './mesh';
 import { cellHash } from './styles';
 import { roofShades } from './shading';
 import { styleColour } from './styles';
-import { placeColumn, sceneBounds, sceneVoxels, terrainVoxels } from './voxels';
+import { placeColumn, sceneBounds, sceneVoxels, styleLocator, terrainVoxels } from './voxels';
 
 export interface RenderOptions {
   colour: 'role' | 'palette';
@@ -81,7 +81,7 @@ const faceMaterial = (): THREE.MeshLambertMaterial => new THREE.MeshLambertMater
 
 /** Group with named children terrain, water, foundation, shell, interior, roof, ground, violations. Instanced cubes for small scenes, merged exposed faces for big ones. */
 export function buildSceneObject(scene: Scene, opts: RenderOptions): THREE.Group {
-  const style = opts.style ?? scene.buildings[0]?.shell.spec.style ?? 'plain';
+  const locate = styleLocator(scene, opts.style);
   const root = new THREE.Group();
   root.name = 'scene';
   for (const name of GROUP_NAMES) {
@@ -98,7 +98,8 @@ export function buildSceneObject(scene: Scene, opts: RenderOptions): THREE.Group
   const ground = groundCells(scene.ground);
   let triangles = 0;
   let waterQuads = 0;
-  const colourOf = (v: { role: string; x: number; y: number; z: number }, shade: number): number => {
+  const colourOf = (v: { role: string; x: number; y: number; z: number; building?: number }, shade: number): number => {
+    const style = v.building !== undefined ? (opts.style ?? scene.buildings[v.building]?.shell.spec.style ?? 'plain') : locate(v.x, v.z);
     const base = opts.colour === 'palette' ? styleColour(style, v.role, v.x, v.y, v.z) : roleColour(v.role);
     return shadeColour(base, shade);
   };
@@ -167,7 +168,7 @@ export function buildSceneObject(scene: Scene, opts: RenderOptions): THREE.Group
     const groundTop = new Set(ground.map((g) => `${g.x},${g.y},${g.z}`));
     const m = terrainMesh(scene, tops, (x, z) => {
       const wet = (t.water?.[(z - t.z0) * t.nx + (x - t.x0)] ?? 0) > 0;
-      const base = wet ? BED_COLOUR : TERRAIN_COLOUR;
+      const base = wet ? BED_COLOUR : opts.colour === 'palette' ? groundTint(locate(x, z)) : TERRAIN_COLOUR;
       return shadeColour(base, 0.94 + (cellHash(x, 0, z) % 13) / 100);
     }, (x, y, z) => groundTop.has(`${x},${y},${z}`));
     triangles += m.quads * 2;

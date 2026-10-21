@@ -146,7 +146,7 @@ function disposeContent(): void {
 function buildContent(): void {
   if (!current) return;
   disposeContent();
-  content = buildSceneObject(current, { colour: state.colour, style: effectiveStyle(), mesh: state.mesh, exterior: state.exterior });
+  content = buildSceneObject(current, { colour: state.colour, style: state.style ?? undefined, mesh: state.mesh, exterior: state.exterior });
   scene.add(content);
   mountViolationPanel(document.body, current); // V3: remounts (or clears) the panel on every scene change; the red overlay is the render.ts violations group
   top = topStorey(content);

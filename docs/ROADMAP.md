@@ -52,7 +52,7 @@ item. Per-item work logs are in [log/](log/); run ledgers in [runs/](runs/).
 | 2. Worldgen spikes | done; gate passed 2026-10-16 (John accepted ADR 0003; S6 figures being re-measured) | worldgen ADR (approach, size limits, determinism rules) |
 | 3. Planner core and three.js viewer | done 2026-10-16; gate passed 2026-10-18 (John, REVIEW 3.12: "These all look good"; follow-ups: top view tilted, Phase 4 4.2 wings/jetties) | John reviews seed gallery and invariant report |
 | 4. Building generator depth | done 2026-10-19; gate passed 2026-10-21 (John, phase4 README: "consider this gate passed and move on"; feedback → 5.11, 5.12) | per building type, "would I believe a person built this?" |
-| 5. Settlements and cities | in progress (run 2026-10-21-phase5) | cities in ≥5 biome mixes, one straddling a border |
+| 5. Settlements and cities | done 2026-10-21 (5.9 partial: probe bar not met); gate awaiting John (pack: docs/review/phase5/README.md, REVIEW "Phase 5 gate") | cities in ≥5 biome mixes, one straddling a border |
 | 6. Minecraft integration and release | not started | fresh world on three seeds plays well for an hour; first release |
 
 Unscheduled ideas: add them to the Polish backlog or a new phase item via the
@@ -338,7 +338,7 @@ terrain and biome dumps from S4. Cities have no fixed size cap; 512 × 512 is
 the first size to prove (ADR 0002, I6). The plan has two levels: a cheap city
 skeleton, then district detail built lazily (ARCHITECTURE.md, "City scale").
 
-- [ ] **5.1 Scale ladder**: hamlet, village, town, city, metropolis. Each step
+- [x] **5.1 Scale ladder**: hamlet, village, town, city, metropolis. Each step
   adds structure (a square, a main street, districts, walls, a downtown);
   no step has a fixed size cap.
   - R1 (2026-10-21): the tier ladder (`Tiers`), region field and planner, and `fractal-cli region` are in `core/region/`; the per-tier programs (D1-D3) are still to do, so this stays open.
@@ -365,6 +365,7 @@ skeleton, then district detail built lazily (ARCHITECTURE.md, "City scale").
   of a chosen district; the plan view stays usable for cities of several
   thousand blocks (skeleton overview, district detail on demand).
   *V1 landed: the plan view (`viewer/plan.html`, see VIEWER.md "Plan view"). V2 landed: the district 3D view and fly-through (VIEWER.md "District 3D view"; face meshing, terrain heightfield, water, ground boxes, `?camera=fly&stops=`). Known issues: the storeys slider does nothing on the face-mesh path; hook markers are not drawn there.*
+  *p5-viewer-palette (2026-10-21): district 3D scenes colour each building by its own style's colour table (both mesh paths) and tint the terrain and ground by the nearest building's style (scenes carry no biome); an explicit `style` still forces one palette; gate-pack 3D frames re-captured ([log](log/2026-10-21-p5-viewer-palette.md)).*
 - [x] **5.6 Determinism**: the skeleton is built from the region cell alone and
   each district's detail from (cell, district), so every district start
   reproduces them identically in any order.
