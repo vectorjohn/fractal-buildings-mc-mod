@@ -187,6 +187,34 @@ does not serve `fixtures/`; use `/@fs/<abs path>/viewer/fixtures/settlement/samp
   Tests: `settlement.test.ts`, `planDraw.test.ts`, `e2e/plan.spec.ts` (writes `out/plan/*.png`; generates `out/city-big/` with `sample-city --big 4096`,
   installing the CLI first if needed): `FB_PORT=N nix develop -c bash -c 'npx vite build && npx playwright test e2e/plan.spec.ts'`.
 
+# District 3D view and fly-through (Phase 5, V2)
+
+A district scene (`fb-scene/1` with `ground` boxes and `terrain.water`, written by D0/`DistrictScenes`, sample:
+`viewer/fixtures/settlement/sample/scenes/d0_0.json`) opens in the ordinary viewer page: `index.html?ir=<scene url>&camera=fly`
+(the plan view's district link does exactly this).
+
+| Parameter | Meaning |
+|---|---|
+| `?camera=fly` | three.js `FlyControls` instead of orbit: **W A S D** move, **R / F** up / down, **Q / E** roll, drag the mouse to look, speed scales with the scene size. |
+| `?stops=x,y,z,yaw,pitch;...` | Camera stops (degrees; yaw 0 looks toward -z, 90 toward -x; pitch > 0 looks up). The first is applied on load; **]** / **[** step through them (for screenshots). `window.__viewer.pose()` prints the current pose in this format. |
+| `?mesh=faces` / `instanced` | Force the mesher. Default `auto`: merged exposed faces (one `BufferGeometry` per layer, vertex colours, only faces between a solid cell and a non-solid one; terrain counts as solid) above 200,000 building voxels, instanced cubes below. |
+| `?exterior=1` | Drop the `interior` layer and the hook markers (what district scenes of a big city carry anyway). |
+
+What is drawn: **terrain** as a heightfield (a top quad per column, side faces where a neighbour is lower, a 3-block skirt at the edge),
+cut by `air` ground boxes (the column drops to the cut's lowest y); river-bed columns are sand-coloured; **water** as a flat translucent
+surface at `floorY + depth` (layer `water`); **ground** boxes (roads, paving, fill; layer `ground`, world coordinates, later wins,
+`air` clears), and a terrain column whose top block is a road voxel loses its own top face (no z-fighting). The 1-block grid is hidden for
+district scenes. The `storeys up to N` slider acts only on the instanced path (the face mesh has no per-storey data; known limit).
+The layer boxes gain `water` and `ground`.
+
+Test hooks: `window.__viewerReady` gains `stats` ({mode, voxels, triangles, district}) and `stop`; `window.__viewer` = `{goStop(i), stops, pose(),
+measure(n)}` (mean ms per render, synced by readPixels, plus triangles and draw calls per frame). Code: `src/mesh.ts` (pure meshing, tested in
+`mesh.test.ts`), `src/fly.ts` (stops), `src/render.ts`, `src/main.ts`. Test: `e2e/district.spec.ts` (sample district at three stops, layer switches,
+a 6 x 6 tiled synthetic district; writes `out/district/*.png`; `FB_TILES=N` changes the tiling).
+
+Performance (SwiftShader, loaded host): 36 tiles of the sample (432 buildings, 365k voxels, `?exterior=1`): page ready in ~7 s, 3.06 M mesh
+triangles, 1.4 draw calls per frame. SwiftShader frame times are not meaningful as a GPU number (see the log); the triangle count is.
+
 # Generated files (all gitignored)
 
 - `viewer/gallery-data/gen/<preset>/`: `index.json` plus `seed-N.json` per seed.

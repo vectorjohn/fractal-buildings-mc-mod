@@ -117,7 +117,7 @@ export function createUi(h: UiHandlers): Ui {
       storey.max = String(top);
       storey.value = String(m.state.maxStorey ?? top);
       storey.disabled = top === 0;
-      storeyLabel.textContent = `storeys up to ${m.state.maxStorey ?? top}`;
+      storeyLabel.textContent = top === 0 ? 'storeys: all' : `storeys up to ${m.state.maxStorey ?? top}`;
       status.textContent = m.status;
     },
   };

@@ -352,10 +352,10 @@ skeleton, then district detail built lazily (ARCHITECTURE.md, "City scale").
 - [x] **5.4 Biome-aware style**: each district takes its palette from the biomes
   underneath, blended across borders.
   *Done (ST `StyleField` + DB `Briefs.fill`, log `docs/log/2026-10-21-p5-db-briefs.md`): per-lot style by a hashed vote over a 48-block disk; on the split sample 27/28 plains-side and 12/12 desert-side lots follow their side; on the w1-mixed dump 8 % of lots differ from their own biome (border blend).*
-- [ ] **5.5 Viewer**: a 2D plan view over the terrain dump, plus a 3D fly-through
+- [x] **5.5 Viewer**: a 2D plan view over the terrain dump, plus a 3D fly-through
   of a chosen district; the plan view stays usable for cities of several
   thousand blocks (skeleton overview, district detail on demand).
-  *V1 landed: the plan view (`viewer/plan.html`, see VIEWER.md "Plan view"); the later of V1/V2 ticks this item (V2 = district 3D view).*
+  *V1 landed: the plan view (`viewer/plan.html`, see VIEWER.md "Plan view"). V2 landed: the district 3D view and fly-through (VIEWER.md "District 3D view"; face meshing, terrain heightfield, water, ground boxes, `?camera=fly&stops=`). Known issues: the storeys slider does nothing on the face-mesh path; hook markers are not drawn there.*
 - [ ] **5.6 Determinism**: the skeleton is built from the region cell alone and
   each district's detail from (cell, district), so every district start
   reproduces them identically in any order.

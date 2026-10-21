@@ -80,3 +80,10 @@ describe('parseScene, district scene keys', () => {
     expect(s.terrain!.water!.some((w) => w > 0)).toBe(true);
   });
 });
+
+describe('opening kinds', () => {
+  it('accepts arch (5.11)', async () => {
+    const { OPENING_KINDS } = await import('./ir');
+    expect(OPENING_KINDS).toContain('arch');
+  });
+});
