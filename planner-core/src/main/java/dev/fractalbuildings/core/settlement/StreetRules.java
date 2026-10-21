@@ -66,6 +66,17 @@ final class StreetRules {
 		return d > 0 && q != QuarterKind.PARK && program.streetLayout(tier, q, d) == StreetLayout.FRONTAGE;
 	}
 
+	/** Urban and laid out as a recursively subdivided old-town tile (IRR1; never a park). */
+	boolean subdivideAt(int x, int z) {
+		if (!density.urban(x, z)) return false;
+		int d = density.at(x, z);
+		QuarterKind q = quarters.at(x, z, d);
+		return d > 0 && q != QuarterKind.PARK && program.streetLayout(tier, q, d) == StreetLayout.SUBDIVIDE;
+	}
+
+	/** Organic land where lanes may cross a tile border: frontage or subdivided. */
+	boolean organicAt(int x, int z) { return frontageAt(x, z) || subdivideAt(x, z); }
+
 	/** {@link RoadKind#ARTERIAL}, {@link RoadKind#STREET} or null (no street) for a tile-border segment. */
 	RoadKind borderKind(DistrictGrid.Segment s) {
 		String key = s.axis() + ":" + s.line() + ":" + s.index();
@@ -138,7 +149,7 @@ final class StreetRules {
 			int ax = Arterials.ax(s, p), az = Arterials.az(s, p);
 			boolean xAxis = s.axis() == DistrictGrid.AXIS_X; // a line of constant x: sides are x -/+ 12
 			int lx = xAxis ? ax - 12 : ax, lz = xAxis ? az : az - 12, rx = xAxis ? ax + 12 : ax, rz = xAxis ? az : az + 12;
-			if (frontageAt(lx, lz) && frontageAt(rx, rz)) out.add(p);
+			if (organicAt(lx, lz) && organicAt(rx, rz)) out.add(p);
 		}
 		return out;
 	}

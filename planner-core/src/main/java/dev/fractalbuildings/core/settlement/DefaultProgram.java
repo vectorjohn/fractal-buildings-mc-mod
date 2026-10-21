@@ -238,6 +238,9 @@ public class DefaultProgram implements TierProgram {
 
 	@Override public StreetLayout streetLayout(Tier tier, QuarterKind quarter, int density) {
 		boolean dense = tier.atLeast(Tier.CITY) && quarter != QuarterKind.OLD_TOWN && (density >= 50 || quarter == QuarterKind.DOWNTOWN);
-		return dense ? StreetLayout.GRID : StreetLayout.FRONTAGE;
+		if (dense) return StreetLayout.GRID;
+		// IRR1: the old town and market quarters of cities and metropolises are cut into different-size blocks, not a grid
+		if (tier.atLeast(Tier.CITY) && (quarter == QuarterKind.OLD_TOWN || quarter == QuarterKind.MARKET)) return StreetLayout.SUBDIVIDE;
+		return StreetLayout.FRONTAGE;
 	}
 }

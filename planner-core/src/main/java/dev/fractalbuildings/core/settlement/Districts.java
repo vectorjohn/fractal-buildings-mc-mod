@@ -119,6 +119,25 @@ public final class Districts {
 		return Optional.of(new Build(src, ix, iz, exact).run());
 	}
 
+	/** Spacing of the cut lanes along a 45-degree run, and the shortest run that gets any. */
+	static final int AVE_GAP_MIN = 20, AVE_GAP_VAR = 17, AVE_MIN_RUN = 20;
+	/** Longest cut lane, and the shortest that is kept (a lane needs a straight run of lot-width on each side). */
+	static final int AVE_LANE_MAX = 56, AVE_LANE_MIN = 14;
+
+	/** Index ranges {first, last} of the maximal runs of a street's columns that step one block in x and one in z each time. */
+	static List<int[]> diagonalRuns(List<int[]> cols) {
+		List<int[]> out = new ArrayList<>();
+		int i = 0;
+		while (i + 1 < cols.size()) {
+			int dx = cols.get(i + 1)[0] - cols.get(i)[0], dz = cols.get(i + 1)[1] - cols.get(i)[1];
+			int j = i + 1;
+			while (j + 1 < cols.size() && cols.get(j + 1)[0] - cols.get(j)[0] == dx && cols.get(j + 1)[1] - cols.get(j)[1] == dz) j++;
+			if (dx != 0 && dz != 0) out.add(new int[] {i, j});
+			i = j;
+		}
+		return out;
+	}
+
 	/** A street under construction: its centre-line columns, in order. {@code fixed} streets are never dropped. */
 	static final class Raw {
 		final String id;
@@ -506,11 +525,13 @@ public final class Districts {
 			borderStreets();
 			gridStreets();
 			finishBase();
+			subdivide();
 			ports();
 			plazaLanes();
 			hallLots();
 			quays();
 			frontageLanes();
+			avenueLanes();
 			List<Raw> finals = new ArrayList<>();
 			for (Raw r : raws) if (r.street != null) finals.add(r);
 			finals.sort(Comparator.comparing(r -> r.id));
@@ -523,6 +544,7 @@ public final class Districts {
 			blockLots();
 			frontageLots(finals);
 			landmarkFallback();
+			avenueGreens(finals);
 			return assemble(finals);
 		}
 
@@ -1115,6 +1137,130 @@ public final class Districts {
 			if (a != b) p[Math.max(a, b)] = Math.min(a, b);
 		}
 
+		// ---- old-town subdivision (IRR1; the splitter itself is Subdivision)
+
+		/** Distance the subdivided area keeps from the tile border (streets there are the neighbour's business; ports carry lanes across). */
+		static final int SUB_INSET = 14;
+		/** Keep subdivision streets this far from a square, so the hall and temple lots flush against it still fit. */
+		static final int SUB_SQUARE_ROOM = 22;
+
+		List<Rect> subLeaves = List.of();
+		int subCount, subLink;
+
+		/** A skeleton road or arterial footprint covers the column. */
+		boolean skel(int x, int z) { return (fg(x, z) & SKEL) != 0; }
+
+		boolean nearSquare(int x, int z) {
+			for (Rect s : squares) if (x >= s.x() - SUB_SQUARE_ROOM && x < s.x() + s.w() + SUB_SQUARE_ROOM && z >= s.z() - SUB_SQUARE_ROOM && z < s.z() + s.d() + SUB_SQUARE_ROOM) return true;
+			return false;
+		}
+
+		/**
+		 * Cuts the tile's urban rectangle (inset from the border) into blocks with {@link Subdivision}, keyed by (seed, tile) only, so
+		 * tile order does not matter. Each street run is kept only where it is old-town land, dry, clear of squares and gradeable, and
+		 * only if it joins a street that is already there (else a lane is routed to the nearest one).
+		 */
+		void subdivide() {
+			Rect inner = new Rect(tile.minX() + SUB_INSET, tile.minZ() + SUB_INSET, tile.widthX() - 2 * SUB_INSET, tile.widthZ() - 2 * SUB_INSET);
+			int hits = 0;
+			for (int z = inner.z(); z < inner.z() + inner.d(); z += 16) for (int x = inner.x(); x < inner.x() + inner.w(); x += 16) if (rules.subdivideAt(x, z)) hits++;
+			if (hits < 6) return;
+			Subdivision sd = Subdivision.of(inner, Hash64.hash(seed, "subdivide", ix, iz), this::skel);
+			subLeaves = sd.leaves;
+			for (Subdivision.Line l : sd.lines) addSubStreet(l.constX(), l.c(), l.from(), l.to(), l.width(), l.level());
+			if (subCount > 0) notes.add("old-town subdivision: " + subCount + " streets, " + subLeaves.size() + " blocks");
+			smallSquare();
+		}
+
+		/**
+		 * How far past an end of a subdivision street (on the line of constant {@code c}, end at {@code at}, outward {@code sgn}) the
+		 * street must run to reach a street that is there already (an arterial or border street on the tile border): 0 when its end is
+		 * on one, else the distance to the first one within the inset and a little more; 0 again when none (the end is then a dead end).
+		 */
+		int reachOut(boolean lineOfConstantX, int c, int at, int sgn, int width) {
+			int h = width / 2;
+			for (int k = 0; k <= SUB_INSET + 4; k++) {
+				int p = at + sgn * k, x = lineOfConstantX ? c : p, z = lineOfConstantX ? p : c;
+				if ((fg(x, z) & (RESERVED | PLAZA | WET)) != 0) return 0;
+				// a footprint cell in the 3 columns beside the tile border that is no street cell would be missing in the neighbour tile (tile-border-agree)
+				for (int dz = 0; dz < width; dz++) for (int dx = 0; dx < width; dx++) {
+					int fx = x - h + dx, fz = z - h + dz;
+					if (inBorderBand(fx, fz) && (fg(fx, fz) & STREET) == 0) return 0;
+				}
+				if ((fg(x, z) & STREET) != 0) return k;
+			}
+			return 0;
+		}
+
+		/** The column lies in the 3 columns each side of a tile border that {@code tile-border-agree} compares. */
+		boolean inBorderBand(int x, int z) { return x < tile.minX() + 3 || x >= tile.maxX() - 3 || z < tile.minZ() + 3 || z >= tile.maxZ() - 3; }
+
+		/** One street of the subdivision: the line of constant {@code c} from {@code from} to {@code to} on the other axis, kept in its good runs. */
+		void addSubStreet(boolean lineOfConstantX, int c, int from, int to, int width, int level) {
+			from -= reachOut(lineOfConstantX, c, from, -1, width);
+			to += reachOut(lineOfConstantX, c, to, 1, width);
+			List<Pt> pts = lineOfConstantX ? List.of(new Pt(c, from), new Pt(c, to)) : List.of(new Pt(from, c), new Pt(to, c));
+			for (List<int[]> run : StreetCols.runs(StreetCols.columns(pts), col -> keep(col) && !hitsReserved(col, width) && rules.subdivideAt(col[0], col[1]) && clearOfWater(col[0], col[1]) && !nearSquare(col[0], col[1]))) {
+				Raw r = new Raw("sd" + subCount, level == 0 ? RoadKind.STREET : RoadKind.LANE, width, run, false);
+				if (!grade(r)) continue; // too steep: this run is dropped (a child that then joins nothing is dropped too)
+				if (!joinsStreet(r)) {
+					List<Raw> base = new ArrayList<>(raws);
+					Raw link = quayLink("sdk" + subLink, run, base);
+					if (link == null) continue;
+					subLink++;
+					raws.add(link);
+					paint(link);
+				}
+				subCount++;
+				raws.add(r);
+				paint(r);
+			}
+		}
+
+		/** Some column of the street's footprint lies on a street already there (so the street is joined to the network). */
+		boolean joinsStreet(Raw r) {
+			int h = r.width / 2;
+			for (int[] c : r.cols) {
+				for (int dz = 0; dz < r.width; dz++) for (int dx = 0; dx < r.width; dx++) if ((fg(c[0] - h + dx, c[1] - h + dz) & STREET) != 0) return true;
+			}
+			return false;
+		}
+
+		/** Half the subdivided tiles get a small square (16 to 24 across) in the corner of a block, flush with the streets round it. */
+		void smallSquare() {
+			if (subLeaves.isEmpty() || Hash64.below(Hash64.hash(seed, "sub-square", ix, iz), 100) >= 50) return;
+			long h = Hash64.hash(seed, "sub-square-at", ix, iz);
+			int n = subLeaves.size(), first = Hash64.below(h, n);
+			for (int t = 0; t < n; t++) {
+				Rect b = subLeaves.get((first + t) % n);
+				int s = 16 + 4 * Hash64.below(Hash64.hash(h, "size", t), 3);
+				if (b.w() < s + 12 || b.d() < s + 12) continue;
+				int corner = Hash64.below(Hash64.hash(h, "corner", t), 4);
+				for (int k = 0; k < 4; k++) {
+					int q = (corner + k) % 4;
+					Rect sq = new Rect((q & 1) == 0 ? b.x() : b.x() + b.w() - s, (q & 2) == 0 ? b.z() : b.z() + b.d() - s, s, s);
+					if (!rectFree(sq, false) || !dry(sq) || streetsAround(sq) < 2 * s) continue;
+					Optional<Grading.PlazaGrade> g = Grading.plaza(sq, exact);
+					if (g.isEmpty()) continue;
+					boolean green = Hash64.below(Hash64.hash(h, "green", t), 3) == 0;
+					plazas.add(new Plaza("p" + plazas.size(), green ? "green" : "square", sq.x(), sq.z(), sq.w(), sq.d(), g.get().level()));
+					squares.add(sq);
+					reserved.add(sq);
+					paintRect(sq, PLAZA | RESERVED);
+					notes.add("old-town small " + (green ? "green" : "square") + " " + sq.w() + "x" + sq.d() + " at " + sq.x() + "," + sq.z());
+					return;
+				}
+			}
+		}
+
+		/** Street columns on the ring just outside the rectangle (up to 4 sides). */
+		int streetsAround(Rect r) {
+			int n = 0;
+			for (int x = r.x(); x < r.x() + r.w(); x++) { if ((fg(x, r.z() - 1) & STREET) != 0) n++; if ((fg(x, r.z() + r.d()) & STREET) != 0) n++; }
+			for (int z = r.z(); z < r.z() + r.d(); z++) { if ((fg(r.x() - 1, z) & STREET) != 0) n++; if ((fg(r.x() + r.w(), z) & STREET) != 0) n++; }
+			return n;
+		}
+
 		// ---- quays (TR 5.3)
 
 		/** A wet 4-lattice point within {@link Quays#OFFSET} blocks of (x, z). */
@@ -1531,6 +1677,122 @@ public final class Districts {
 					paint(lane);
 				}
 			}
+		}
+
+		// ---- diagonal avenues (IRR1, the DL half of 5.13)
+
+		/**
+		 * Frontage for a diagonal avenue. A rectangle meets a 45-degree band in a corner, so no lot can front it; instead axis-aligned
+		 * cut lanes leave it every 22 to 38 blocks, one way or the other, and run on until a street stops them (the grid street the avenue
+		 * cuts across) or at most {@value #AVE_LANE_MAX} blocks. Lots then front the lane on both sides, which fills the triangles the avenue
+		 * cuts out of its blocks. Organic frontage land is left to {@link #frontageLanes}, which already branches lanes off every road.
+		 */
+		void avenueLanes() {
+			Rect inner = new Rect(tile.minX() + 14, tile.minZ() + 14, tile.widthX() - 28, tile.widthZ() - 28);
+			List<Raw> base = new ArrayList<>();
+			for (Raw r : raws) if ((r.kind == RoadKind.MAIN || r.kind == RoadKind.PATH) && r.street != null) base.add(r);
+			base.sort(Comparator.comparing(r -> r.id));
+			int n = 0;
+			for (Raw r : base) {
+				for (int[] run : diagonalRuns(r.cols)) {
+					if (run[1] - run[0] < AVE_MIN_RUN) continue;
+					long h = Hash64.hash(seed, "avenue-lane", ix, iz, Hash64.of(r.id), run[0]);
+					int i = run[0] + 6 + Hash64.below(Hash64.hash(h, "k", 0), AVE_GAP_VAR), k = 1;
+					while (i < run[1] - 4) {
+						int[] c = r.cols.get(i);
+						int[] a = r.cols.get(i - 1), z = r.cols.get(i + 1);
+						int dx = Integer.signum(z[0] - a[0]), dz = Integer.signum(z[1] - a[1]);
+						long hk = Hash64.hash(h, "lane", k);
+						i += AVE_GAP_MIN + Hash64.below(Hash64.hash(h, "k", k++), AVE_GAP_VAR);
+						if (!inner.contains(c[0], c[1]) || !den.urban(c[0], c[1]) || rules.frontageAt(c[0], c[1])) continue;
+						int[] u = switch (Hash64.below(hk, 4)) { case 0 -> new int[] {dx, 0}; case 1 -> new int[] {0, dz}; case 2 -> new int[] {-dx, 0}; default -> new int[] {0, -dz}; };
+						Raw lane = cutLane("av" + n, c, u[0], u[1], inner);
+						if (lane == null) continue;
+						n++;
+						raws.add(lane);
+						paint(lane);
+					}
+				}
+			}
+		}
+
+		/**
+		 * What is left of the triangles a diagonal avenue cuts out of its blocks once the lots are packed: a free dry square of 16 to 20
+		 * blocks flush with a street, within 30 blocks of the avenue, becomes a small green (at most 2 per tile). Slivers under 16
+		 * across stay empty.
+		 */
+		void avenueGreens(List<Raw> finals) {
+			int placed = 0;
+			for (Raw r : finals) {
+				if (r.kind != RoadKind.MAIN && r.kind != RoadKind.PATH) continue;
+				for (int[] run : diagonalRuns(r.cols)) {
+					if (run[1] - run[0] < AVE_MIN_RUN) continue;
+					for (int i = run[0] + 4; i < run[1] && placed < 2; i += 12) {
+						int[] c = r.cols.get(i);
+						Rect best = null;
+						long bestD = Long.MAX_VALUE;
+						for (int s = 20; s >= 16 && best == null; s -= 4) {
+							for (int z0 = c[1] - 30 - s; z0 <= c[1] + 30; z0++) {
+								for (int x0 = c[0] - 30 - s; x0 <= c[0] + 30; x0++) {
+									long dx = x0 + s / 2 - c[0], dz = z0 + s / 2 - c[1], d = dx * dx + dz * dz;
+									if (d >= bestD || !free(x0 + s / 2, z0 + s / 2) || streetsAround(new Rect(x0, z0, s, s)) < s) continue;
+									Rect q = new Rect(x0, z0, s, s);
+									if (!tr.containsRect(x0 - 14, z0 - 14, s + 28, s + 28) || !rectFree(q, false) || !dry(q) || streetsAround(q) < s || !den.urban(x0 + s / 2, z0 + s / 2)) continue;
+									bestD = d;
+									best = q;
+								}
+							}
+						}
+						if (best == null) continue;
+						Optional<Grading.PlazaGrade> g = Grading.plaza(best, exact);
+						if (g.isEmpty()) continue;
+						plazas.add(new Plaza("p" + plazas.size(), "green", best.x(), best.z(), best.w(), best.d(), g.get().level()));
+						squares.add(best);
+						reserved.add(best);
+						paintRect(best, PLAZA | RESERVED);
+						notes.add("avenue green " + best.w() + "x" + best.d() + " at " + best.x() + "," + best.z());
+						placed++;
+					}
+				}
+			}
+		}
+
+		/** A lane from the avenue column {@code c} along (ux, uz): over the avenue's own band, then free dry urban ground up to the first street (kept: it joins it) or {@value #AVE_LANE_MAX} blocks. */
+		Raw cutLane(String laneId, int[] c, int ux, int uz, Rect inner) {
+			int h = StreetRules.LANE_WIDTH / 2;
+			int k = 0;
+			while (k < 16 && (fg(c[0] + ux * k, c[1] + uz * k) & STREET) != 0) k++; // out of the avenue's band
+			int start = Math.max(0, k - 1), end = -1;
+			for (; k <= AVE_LANE_MAX; k++) {
+				int x = c[0] + ux * k, z = c[1] + uz * k;
+				if (!inner.contains(x, z) || !den.urban(x, z)) break;
+				if ((fg(x, z) & STREET) != 0) { end = k; break; }
+				for (int o = -h; o <= h; o++) {
+					int fx = x + (ux == 0 ? o : 0), fz = z + (uz == 0 ? o : 0);
+					if ((fg(fx, fz) & (PLAZA | LOT | RESERVED | WET)) != 0 || !inR(fx, fz) || wt(fx, fz)) { k = AVE_LANE_MAX + 1; break; }
+				}
+				if (k > AVE_LANE_MAX) break;
+			}
+			if (end < 0) { // no street to run into: a dead-end lane of a hashed length that stopped at the limit or short of an obstacle
+				int len = 0;
+				for (int t = start + 1; t <= AVE_LANE_MAX; t++) {
+					int x = c[0] + ux * t, z = c[1] + uz * t;
+					boolean bad = !inner.contains(x, z) || !den.urban(x, z) || (fg(x, z) & (STREET | PLAZA | LOT | RESERVED | WET)) != 0 || wt(x, z);
+					for (int o = -h; o <= h && !bad; o++) {
+						int fx = x + (ux == 0 ? o : 0), fz = z + (uz == 0 ? o : 0);
+						if ((fg(fx, fz) & (PLAZA | LOT | RESERVED | WET)) != 0 || !inR(fx, fz) || wt(fx, fz)) bad = true;
+					}
+					if (bad) break;
+					len = t - start;
+				}
+				if (len < AVE_LANE_MIN) return null;
+				end = start + len;
+			}
+			if (end - start < AVE_LANE_MIN) return null;
+			List<Pt> pts = List.of(new Pt(c[0] + ux * start, c[1] + uz * start), new Pt(c[0] + ux * end, c[1] + uz * end));
+			Raw lane = laneRaw(laneId, pts);
+			if (lane == null || hitsReservedAny(lane) || !grade(lane)) return null;
+			return lane;
 		}
 
 		// ---- lots

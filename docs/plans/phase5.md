@@ -851,6 +851,7 @@ frontage lots; tile ports carry the streets across borders. Tests: every split b
 is 30 to 90 across and reached by a street; no four-way crossings inside a subdivided
 tile; `roads-connected` and `tile-border-agree` hold; determinism (same seed, same
 splits); plan PNG of an old town beside a grid quarter in the log (open it).
+- *Deviation (IRR1, 2026-10-21):* the splitter is `Subdivision` (pure) driven by `Districts.subdivide`, inset 14 from the tile border, stops at 66 across or (to 90) 55 %, jog 6 between streets meeting a street from opposite sides; `market` quarters are subdivided too; `QuarterField` draws an old town column by column within 0.3 radius; diagonal avenues get axis-aligned cut lanes plus greens, not lots fronting the 45-degree band. Log `docs/log/2026-10-21-p5-irr1-oldtown.md`.
 
 ### D1. Hamlet and village programs (5.1) — size M
 
