@@ -19,6 +19,10 @@ public final class IrValidator {
 			for (String l : b.lots()) if (!lotIds.contains(l)) bad(out, b.id(), "building references unknown lot " + l, null);
 			building(out, b);
 		}
+		for (Box b : d.ground()) {
+			if (b.layer() != Layer.GROUND) bad(out, null, "ground box (" + b.role().json() + ") has layer " + b.layer().json() + ", expected ground", b.box());
+			if (b.storey() != Box.NO_STOREY) bad(out, null, "ground box has storey " + b.storey() + ", expected -1", b.box());
+		}
 		return out;
 	}
 

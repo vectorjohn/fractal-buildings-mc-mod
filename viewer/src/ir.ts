@@ -4,16 +4,19 @@ export const SCENE_FORMAT = 'fb-scene/1';
 export type Vec3 = [number, number, number];
 export const FACINGS = ['north', 'east', 'south', 'west'] as const;
 export type Facing = (typeof FACINGS)[number];
-export const ROLES = ['air', 'foundation', 'floor', 'wall', 'trim', 'window', 'door', 'roof', 'stair', 'beam', 'fence'] as const;
+export const ROLES = ['air', 'foundation', 'floor', 'wall', 'trim', 'window', 'door', 'roof', 'stair', 'beam', 'fence', 'road', 'paving', 'ground'] as const;
 export type Role = (typeof ROLES)[number];
-export const LAYERS = ['foundation', 'shell', 'interior', 'roof'] as const;
+export const LAYERS = ['foundation', 'shell', 'interior', 'roof', 'ground'] as const;
 export type Layer = (typeof LAYERS)[number];
 export const OPENING_KINDS = ['door', 'window', 'stair'] as const;
 export type OpeningKind = (typeof OPENING_KINDS)[number];
 
 export interface Box { min: Vec3; size: Vec3; role: Role; layer: Layer; storey: number }
 export interface Part { min: Vec3; size: Vec3 }
-export interface Terrain { x0: number; z0: number; nx: number; nz: number; floorY: number[] }
+export interface Terrain { x0: number; z0: number; nx: number; nz: number; floorY: number[];
+  /** Water depth above floorY per column (district scenes); absent when the file has none. */
+  water?: number[];
+}
 export interface Lot { id: string; x: number; z: number; w: number; d: number; front: Facing }
 export interface Spec {
   genVersion: number; specSeed: string; style: string; type: string;
@@ -42,7 +45,9 @@ export interface Building {
 export interface Violation { invariant: string; building: string | null; message: string; cells: Part[] }
 export interface Scene {
   format: typeof SCENE_FORMAT; genVersion: number; seed: string;
-  terrain: Terrain | null; lots: Lot[]; buildings: Building[]; violations: Violation[];
+  terrain: Terrain | null; lots: Lot[]; buildings: Building[];
+  /** World-frame ground boxes (roads, paving, fill; layer ground); empty when the file has none. */
+  ground: Box[]; violations: Violation[];
 }
 
 // ---- validation: every failure throws with a path such as `buildings[0].shell.boxes[3].role` ----
@@ -194,6 +199,14 @@ export function parseScene(json: unknown): Scene {
     });
     if (floorY.length !== nx * nz) fail('terrain.floorY', `length ${floorY.length} != nx*nz ${nx * nz}`);
     terrain = { x0: int(to, 'x0', 'terrain'), z0: int(to, 'z0', 'terrain'), nx, nz, floorY };
+    if ('water' in to) {
+      const water = list(to, 'water', 'terrain', (x, q) => {
+        if (typeof x !== 'number' || !Number.isInteger(x) || x < 0) fail(q, 'must be a non-negative integer');
+        return x;
+      });
+      if (water.length !== nx * nz) fail('terrain.water', `length ${water.length} != nx*nz ${nx * nz}`);
+      terrain.water = water;
+    }
   }
 
   const lots = list(o, 'lots', '', parseLot);
@@ -222,6 +235,6 @@ export function parseScene(json: unknown): Scene {
   });
   return {
     format: SCENE_FORMAT, genVersion: int(o, 'genVersion', ''), seed: seedStr(o, 'seed', ''),
-    terrain, lots, buildings, violations,
+    terrain, lots, buildings, ground: 'ground' in o ? list(o, 'ground', '', parseBox) : [], violations,
   };
 }

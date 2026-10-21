@@ -1,0 +1,15 @@
+package dev.fractalbuildings.core.settlement;
+
+/** Kind of road, widest first. JSON: the lower-case string shown. */
+public enum RoadKind {
+	ARTERIAL("arterial"), MAIN("main"), STREET("street"), LANE("lane"), PATH("path");
+
+	public final String json;
+
+	RoadKind(String json) { this.json = json; }
+
+	public static RoadKind of(String s) {
+		for (RoadKind v : values()) if (v.json.equals(s)) return v;
+		throw new IllegalArgumentException("unknown RoadKind '" + s + "'");
+	}
+}

@@ -1,0 +1,28 @@
+{
+  "format": "fb-district/1",
+  "planVersion": 1,
+  "genVersion": 2,
+  "seed": "4242",
+  "district": {"id": "d1_0", "ix": 1, "iz": 0, "x": 144, "z": 0, "w": 128, "d": 160, "quarter": 1, "density": 33},
+  "streets": [
+    {"id": "r0_0_0", "kind": "main", "width": 7, "points": [[144, 140], [271, 140]], "y": [64, 65]},
+    {"id": "r0_0_1", "kind": "street", "width": 5, "points": [[200, 0], [200, 159]], "y": [64, 62]}
+  ],
+  "plazas": [
+    {"id": "p0", "kind": "market", "x": 216, "z": 90, "w": 32, "d": 28, "y": 64}
+  ],
+  "lots": [
+    {"id": "d1_0.l0", "x": 152, "z": 123, "w": 16, "d": 14, "front": "south", "type": "shop", "style": "desert", "storeys": [2, 4], "streets": 1, "airRights": 0, "frontY": 63, "density": 56, "status": "build"},
+    {"id": "d1_0.l1", "x": 152, "z": 144, "w": 16, "d": 14, "front": "north", "type": "house", "style": "desert", "storeys": [2, 3], "streets": 1, "airRights": 0, "frontY": 63, "density": 56, "status": "build"},
+    {"id": "d1_0.l2", "x": 172, "z": 123, "w": 16, "d": 14, "front": "south", "type": "shop", "style": "desert", "storeys": [2, 4], "streets": 1, "airRights": 0, "frontY": 62, "density": 50, "status": "build"},
+    {"id": "d1_0.l3", "x": 172, "z": 144, "w": 16, "d": 14, "front": "north", "type": "house", "style": "desert", "storeys": [2, 3], "streets": 1, "airRights": 0, "frontY": 62, "density": 50, "status": "build"},
+    {"id": "d1_0.l4", "x": 208, "z": 123, "w": 16, "d": 14, "front": "south", "type": "house", "style": "desert", "storeys": [1, 3], "streets": 1, "airRights": 0, "frontY": 62, "density": 38, "status": "build"},
+    {"id": "d1_0.l5", "x": 208, "z": 144, "w": 16, "d": 14, "front": "north", "type": "tower", "style": "desert", "storeys": [4, 8], "streets": 1, "airRights": 0, "frontY": 62, "density": 39, "status": "build"},
+    {"id": "d1_0.l6", "x": 228, "z": 123, "w": 16, "d": 14, "front": "south", "type": "workshop", "style": "desert", "storeys": [1, 2], "streets": 1, "airRights": 0, "frontY": 64, "density": 32, "status": "build"},
+    {"id": "d1_0.l7", "x": 228, "z": 144, "w": 16, "d": 14, "front": "north", "type": "house", "style": "desert", "storeys": [1, 3], "streets": 1, "airRights": 0, "frontY": 63, "density": 32, "status": "build"},
+    {"id": "d1_0.l8", "x": 248, "z": 123, "w": 16, "d": 14, "front": "south", "type": "house", "style": "desert", "storeys": [1, 3], "streets": 1, "airRights": 0, "frontY": 65, "density": 26, "status": "build"},
+    {"id": "d1_0.l9", "x": 248, "z": 144, "w": 16, "d": 14, "front": "north", "type": "shop", "style": "desert", "storeys": [2, 3], "streets": 1, "airRights": 0, "frontY": 64, "density": 26, "status": "build"}
+  ],
+  "scene": null,
+  "violations": []
+}

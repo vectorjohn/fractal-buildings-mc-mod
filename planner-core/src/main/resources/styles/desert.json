@@ -24,7 +24,10 @@
     "window": ["minecraft:glass_pane"],
     "door": ["minecraft:acacia_door", "minecraft:jungle_door"],
     "roof": ["minecraft:smooth_sandstone", "minecraft:cut_sandstone", "minecraft:sandstone", "minecraft:terracotta"],
-    "stair": ["minecraft:smooth_sandstone", "minecraft:cut_sandstone"]
+    "stair": ["minecraft:smooth_sandstone", "minecraft:cut_sandstone"],
+    "road": ["minecraft:sandstone", "minecraft:smooth_sandstone", "minecraft:sand"],
+    "paving": ["minecraft:cut_sandstone"],
+    "ground": ["minecraft:sand"]
   },
 
   "colours": {
@@ -37,6 +40,9 @@
     "window": ["#a8d4f0"],
     "door": ["#a85a32", "#9c6a44"],
     "roof": ["#e0d3a2", "#d9c58f", "#dccb94", "#985e43"],
-    "stair": ["#e0d3a2", "#d9c58f"]
+    "stair": ["#e0d3a2", "#d9c58f"],
+    "road": ["#d9c58f", "#dccb94", "#e0d3a2"],
+    "paving": ["#d6c288"],
+    "ground": ["#e0d3a2"]
   }
 }
