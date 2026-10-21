@@ -393,6 +393,7 @@ skeleton, then district detail built lazily (ARCHITECTURE.md, "City scale").
   public rooms instead of doors. Evidence: a "rooms reached only through two
   or more other rooms" measure before and after, and cutaway galleries.
   *Done 2026-10-21* (log `docs/log/2026-10-21-p5-circulation.md`): rooms hang off a hub (entry, stair or corridor room) in 85 % of plans, 15 % keep the random chain; floors are planned up to 8 times for fewer, bigger rooms when a chain would result; the room a wing opens into is a hall/landing; new IR opening kind `arch` (40 % of doors between public rooms; 1-3 wide, trim lintel). Rooms behind two ordinary rooms (1500 houses per style): 1.5-5.2 % -> 0.12-0.27 %. Tests: `CirculationTest` (metric, archways, oddness, determinism). GEN_VERSION not bumped; goldens regenerated. *Known issues:* shops still 2-3 % (shop -> back room -> stair); remaining house chains cross masses (strip door positions are fixed before the plan).
+  *Follow-up (John, REVIEW 2026-10-21):* some houses lost bedrooms and gained long skinny rooms (seed 9); keep rooms nearer square and give houses more bedrooms before a second room of any other kind, not always (item CIRC2: room aspect limit, bedroom-first program, bedrooms per house before and after).
 - [x] **5.12 Open ground storeys** (Phase 4 gate feedback, John 2026-10-19):
   shops and workshops may have a covered outdoor area at street level (an
   arcade, a ground floor open on posts, a bazaar-like market floor); shop
@@ -403,6 +404,7 @@ skeleton, then district detail built lazily (ARCHITECTURE.md, "City scale").
   *Done 2026-10-21* (log `docs/log/2026-10-21-p5-open-ground.md`): shop arcade 30 %, market hall on posts 20 %, enclosed ~50 %; workshop covered porch 40 %; shops reject lots steeper than 1 in 12 (level frontage). *Known issues:* the market hall floor is empty (no stalls); a city planner must catch the shop slope rejection.
   *Follow-up (John, REVIEW 2026-10-21):* a shopfront lifted above the street needs a landing or balcony at door level so the display window does not sit at the top of a flight of steps (item SHOPLAND).
   *SHOPLAND done 2026-10-21* (log `docs/log/2026-10-21-p5-shopland.md`): lifted shopfronts (door more than 1 above the ground) get a landing at door level across the front, the flight down at one end and its foot on the lot front row (r2); market halls are set back for a 2-deep deck on posts (open floor stays open). *Known issues:* no railing; enclosed-shop landings are solid; a market hall on ground that also falls away by more than 1 (lift over 5) may keep the plain flight.
+- [ ] **5.13 Irregular cities** (John 2026-10-21): old-town subdivision and diagonal avenues; plan steps IRR1 and D3.
 
 **Gate:** John reviews cities in at least five biome mixes, including one
 straddling a border, one larger than 512 × 512, and one with a high-rise
@@ -410,7 +412,7 @@ downtown.
 
 ## Phase 6: Minecraft integration and release
 
-Updated: 2026-10-16
+Updated: 2026-10-21
 
 Wire the proven core into worldgen using the approach fixed in the Phase 2 ADR.
 
@@ -427,6 +429,7 @@ Wire the proven core into worldgen using the approach fixed in the Phase 2 ADR.
 - [ ] **6.7 Performance budget**: worldgen time per chunk and save size per
   city, checked in CI.
 - [ ] **6.8 Client tests**: fly-through screenshots of fixed seeds.
+- [ ] **6.9 Railings on stairs, landings and balconies** (John 2026-10-21): a `rail` IR role on stair flights, landings, balconies and lookouts (front steps up to houses and shops first), mapped to fence or wall blocks per style in the palette; the viewer draws it.
 
 **Gate:** a fresh world on three seeds plays well for an hour; then a first
 public release.
@@ -484,6 +487,8 @@ Fixed opportunistically or scheduled as items.
 - 4 (docs): NOTES has the "Facades (4.4)" line twice; ASSUMPTIONS has the wall-margins and workshop rows twice; commit a72a23f's subject says T-workshop but holds the T-wall squash.
 - 4.7 medieval: a style chosen only by name (plains took its biomes; still requestable with `--style medieval`); keep, rename or give it biomes back (gate pack question 15).
 - FLK (viewer): a superseded rebuild still assigns `source`/`sourceKey`; stale errors still publish (check `isLatest` in the catch).
+- 4.7 plains (John, REVIEW 2026-10-21): plains palette: smoother, more similar wall blocks (less speckle); subtle shading instead of dark and light scatter.
+- 5 (John, REVIEW 2026-10-21, later phase): biome-specific building forms beyond palette and roof pitch (desert courtyard and flat roofs, jungle raised floors and verandas, snowy steep roofs and small windows).
 
 ## Open questions and risks
 
