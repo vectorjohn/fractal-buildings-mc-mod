@@ -341,6 +341,7 @@ skeleton, then district detail built lazily (ARCHITECTURE.md, "City scale").
 - [ ] **5.1 Scale ladder**: hamlet, village, town, city, metropolis. Each step
   adds structure (a square, a main street, districts, walls, a downtown);
   no step has a fixed size cap.
+  - R1 (2026-10-21): the tier ladder (`Tiers`), region field and planner, and `fractal-cli region` are in `core/region/`; the per-tier programs (D1-D3) are still to do, so this stays open.
 - [ ] **5.2 Layout**: road network (primary and secondary), lot subdivision,
   plazas and landmarks, gates. Split into the city skeleton (arterials on
   position-hashed lines, district borders drawn around big lots, coarse
