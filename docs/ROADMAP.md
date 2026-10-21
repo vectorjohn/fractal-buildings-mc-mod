@@ -354,6 +354,7 @@ skeleton, then district detail built lazily (ARCHITECTURE.md, "City scale").
 - [ ] **5.5 Viewer**: a 2D plan view over the terrain dump, plus a 3D fly-through
   of a chosen district; the plan view stays usable for cities of several
   thousand blocks (skeleton overview, district detail on demand).
+  *V1 landed: the plan view (`viewer/plan.html`, see VIEWER.md "Plan view"); the later of V1/V2 ticks this item (V2 = district 3D view).*
 - [ ] **5.6 Determinism**: the skeleton is built from the region cell alone and
   each district's detail from (cell, district), so every district start
   reproduces them identically in any order.
