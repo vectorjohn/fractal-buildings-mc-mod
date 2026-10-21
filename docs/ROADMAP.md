@@ -375,7 +375,7 @@ skeleton, then district detail built lazily (ARCHITECTURE.md, "City scale").
   cheap (S6: coarse suitability ~11 ms per cell). Evidence: S4-style region
   maps before and after, showing city sites shifting toward water.
 
-- [ ] **5.11 Interior circulation** (Phase 4 gate feedback, John 2026-10-19):
+- [x] **5.11 Interior circulation** (Phase 4 gate feedback, John 2026-10-19):
   houses should mostly reach their rooms through a hall, landing or central
   room rather than through a chain of other rooms (house-medieval seed 7: a
   row of rooms walked through one after another). Rooms get a purpose that
@@ -384,6 +384,7 @@ skeleton, then district detail built lazily (ARCHITECTURE.md, "City scale").
   moderation. Also open connections: archways or open plan between some
   public rooms instead of doors. Evidence: a "rooms reached only through two
   or more other rooms" measure before and after, and cutaway galleries.
+  *Done 2026-10-21* (log `docs/log/2026-10-21-p5-circulation.md`): rooms hang off a hub (entry, stair or corridor room) in 85 % of plans, 15 % keep the random chain; floors are planned up to 8 times for fewer, bigger rooms when a chain would result; the room a wing opens into is a hall/landing; new IR opening kind `arch` (40 % of doors between public rooms; 1-3 wide, trim lintel). Rooms behind two ordinary rooms (1500 houses per style): 1.5-5.2 % -> 0.12-0.27 %. Tests: `CirculationTest` (metric, archways, oddness, determinism). GEN_VERSION not bumped; goldens regenerated. *Known issues:* shops still 2-3 % (shop -> back room -> stair); remaining house chains cross masses (strip door positions are fixed before the plan).
 - [x] **5.12 Open ground storeys** (Phase 4 gate feedback, John 2026-10-19):
   shops and workshops may have a covered outdoor area at street level (an
   arcade, a ground floor open on posts, a bazaar-like market floor); shop

@@ -32,11 +32,14 @@ public final class InteriorPass {
 	private InteriorPass() {}
 
 	/** What constrains the plan of one mass on one storey; cells relative to the mass's interior. */
-	private record Info(int h, boolean[][] reserved, boolean[][] clear, boolean[][] core, List<int[]> entry) {
+	private record Info(int h, boolean[][] reserved, boolean[][] clear, boolean[][] core, List<int[]> entry, List<int[]> join) {
 		boolean same(Info o) {
 			return h == o.h && Arrays.deepEquals(reserved, o.reserved) && Arrays.deepEquals(clear, o.clear) && Arrays.deepEquals(core, o.core);
 		}
 	}
+
+	/** Chance (percent) that a door between two open-plan rooms becomes an archway. */
+	static final int ARCH_PERCENT = 40;
 
 	private record Site(String kind, int leaf, int x, int z, Facing facing) {}
 
@@ -112,7 +115,7 @@ public final class InteriorPass {
 	private static Info info(BuildContext c, Massing m, int idx, Mass a, int s) {
 		int w = a.sx() - 2, d = a.sz() - 2, ox = a.x() + 1, oz = a.z() + 1;
 		boolean[][] reserved = new boolean[w][d], clear = new boolean[w][d], core = new boolean[w][d];
-		List<int[]> entry = new ArrayList<>();
+		List<int[]> entry = new ArrayList<>(), join = new ArrayList<>();
 		FacadePlan fp = c.facadePlan();
 		for (FacadePlan.Layout l : fp.layouts()) {
 			Face f = l.face();
@@ -150,8 +153,9 @@ public final class InteriorPass {
 			int[] in = insideOf(a, sp, pos);
 			mark(reserved, in[0] - ox, in[1] - oz);
 			mark(clear, in[0] - ox, in[1] - oz);
+			join.add(new int[] {in[0] - ox, in[1] - oz});
 		}
-		return new Info(c.massing().grid().height(s), reserved, clear, core, entry);
+		return new Info(c.massing().grid().height(s), reserved, clear, core, entry, join);
 	}
 
 	/** The cell inside {@code a} next to the strip cell {@code pos}. */
@@ -164,7 +168,7 @@ public final class InteriorPass {
 
 	private static Band band(BuildContext c, RoomProgram prog, InteriorStyle st, int idx, Mass a, int s, Info info) {
 		int w = a.sx() - 2, d = a.sz() - 2;
-		FloorPlan plan = a.open() ? FloorPlan.single(w, d) : FloorPlan.plan(w, d, info.reserved(), info.core(), st, c.hash("interior/plan", idx, s));
+		FloorPlan plan = a.open() ? FloorPlan.single(w, d) : FloorPlan.plan(w, d, info.reserved(), info.core(), arrivals(info), st, c.hash("interior/plan", idx, s));
 		int n = plan.leaves().size();
 		String[] uses = new String[n];
 		for (int l = 0; l < n; l++) {
@@ -175,11 +179,25 @@ public final class InteriorPass {
 			else if (info.entry().stream().anyMatch(e -> lf.contains(e[0], e[1]))) role = RoomProgram.Role.ENTRY;
 			else if (l == plan.corridor()) role = RoomProgram.Role.CORRIDOR;
 			else if (hasCore(info, lf)) role = RoomProgram.Role.STAIR;
+			else if (n > 1 && doorsOf(plan, l) >= 1 && info.join().stream().anyMatch(e -> lf.contains(e[0], e[1]))) role = RoomProgram.Role.THROUGH; // the way through to another mass is a hall, not someone's room
 			uses[l] = prog.use(role, a.kind(), lf.area(), new RoomProgram.Where(s, g.count()), c.draws("interior/use", idx, s, l));
 		}
+		plan = plan.withArches(prog::openPlan, uses, info.core(), ARCH_PERCENT, c.draws("interior/arch", idx, s));
 		List<Site> hooks = new ArrayList<>();
 		for (int l = 0; l < n; l++) hookSites(c, prog, plan, info, idx, s, l, uses[l], hooks);
 		return new Band(s, info, plan, uses, hooks);
+	}
+
+	/** Where people arrive on this floor of a mass: the entrance cells, else the cells inside the doors from other masses. */
+	private static List<int[]> arrivals(Info info) {
+		return info.entry().isEmpty() ? info.join() : info.entry(); // a mass with the entrance is walked into from there; the others from the mass they hang off
+	}
+
+	/** How many doors and archways of the plan lead into or out of room {@code l}. */
+	private static int doorsOf(FloorPlan plan, int l) {
+		int n = 0;
+		for (FloorPlan.Door d : plan.doors()) if (d.from() == l || d.to() == l) n++;
+		return n;
 	}
 
 	private static boolean hasCore(Info info, FloorPlan.Leaf lf) {
@@ -197,7 +215,8 @@ public final class InteriorPass {
 			for (int z = lf.z(); z < lf.z() + lf.d(); z++) {
 				if (near(info.clear(), x, z, plan.w(), plan.d())) continue;
 				boolean door = false;
-				for (FloorPlan.Door dd : plan.doors()) if (Math.abs(dd.x() - x) <= 1 && Math.abs(dd.z() - z) <= 1) door = true;
+				for (FloorPlan.Door dd : plan.doors())
+					for (int k = 0; k < dd.span(); k++) if (Math.abs(dd.cellX(k) - x) <= 1 && Math.abs(dd.cellZ(k) - z) <= 1) door = true;
 				if (door) continue;
 				Facing[] fs = Facing.values();
 				for (int f = 0; f < 4; f++) {
@@ -232,7 +251,14 @@ public final class InteriorPass {
 			else c.box(Role.WALL, Layer.INTERIOR, s, p.ox() + cut.lo(), y, p.oz() + cut.c(), cut.len(), h, 1);
 		}
 		for (FloorPlan.Door dr : plan.doors()) {
-			Box3 box = Box3.of(p.ox() + dr.x(), y, p.oz() + dr.z(), 1, 2, 1);
+			int sx = dr.alongZ() ? 1 : dr.span(), sz = dr.alongZ() ? dr.span() : 1;
+			Box3 box = Box3.of(p.ox() + dr.x(), y, p.oz() + dr.z(), sx, 2, sz);
+			if (dr.arch()) {
+				c.box(Role.AIR, Layer.INTERIOR, s, box.x(), box.y(), box.z(), sx, 2, sz);
+				if (h >= 3 && dr.span() >= 2) c.box(Role.TRIM, Layer.INTERIOR, s, box.x(), y + 2, box.z(), sx, 1, sz); // lintel
+				c.opening(OpeningKind.ARCH, box, dr.facing(), p.ids()[dr.from()], p.ids()[dr.to()]);
+				continue;
+			}
 			c.box(Role.DOOR, Layer.INTERIOR, s, box.x(), box.y(), box.z(), 1, 2, 1);
 			c.opening(OpeningKind.DOOR, box, dr.facing(), p.ids()[dr.from()], p.ids()[dr.to()]);
 		}

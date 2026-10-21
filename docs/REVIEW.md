@@ -147,3 +147,8 @@ work becomes a ROADMAP item or a Polish backlog line. Settled items move to
   Where: `docs/review/phase4/gallery/tower/tower-medieval-front-left.png` (seeds 4 and 11 stilted, 6 and 10 top-heavy; seeds 1, 3, 5 have window holes)
   Look for: legs too thin or too dark; the stair (no rail) climbing the front wall; the lookout small against its legs; holes dark and unframed.
   Result:
+
+- [ ] **5.11 House circulation and archways**: do house floor plans now make sense (hall or central room, wings reached through a passage not a bedroom, a bedroom never a walk-through), and do the archways read as open plan?
+  Where: `docs/review/phase5/circulation/house-medieval-plans.md` (ground-floor plans, before and after), `house-medieval-cutaway-after.png`, `house-plains-cutaway-after.png`, `house-desert-cutaway-after.png`; compare `docs/review/phase4/gallery/house/house-medieval-cutaway.png`
+  Look for: any remaining chain of rooms you would not build (15 % of plans keep one on purpose: too many, too few?); archways too common (40 % of doors between public rooms) or too wide (1-3); halls that are too small to be a hall.
+  Result:

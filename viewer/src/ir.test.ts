@@ -14,6 +14,10 @@ describe('parseScene', () => {
     expect(s.buildings[0]!.shell.boxes).toHaveLength(22);
     expect(s.terrain!.floorY).toHaveLength(99);
   });
+  it('accepts the arch opening kind (5.11) and rejects an unknown one', () => {
+    expect(parseScene(mutate((j) => { j.buildings[0].shell.openings[0].kind = 'arch'; })).buildings[0]!.shell.openings[0]!.kind).toBe('arch');
+    expect(() => parseScene(mutate((j) => { j.buildings[0].shell.openings[0].kind = 'gate'; }))).toThrow(/openings\[0\]\.kind/);
+  });
   it('accepts terrain null', () => {
     expect(parseScene(mutate((j) => { j.terrain = null; })).terrain).toBeNull();
   });
