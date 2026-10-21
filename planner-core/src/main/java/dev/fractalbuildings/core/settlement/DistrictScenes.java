@@ -86,7 +86,7 @@ public final class DistrictScenes {
 		for (Street s : plan.streets()) {
 			List<LatticePath.Pt> pts = new ArrayList<>();
 			for (Pt p : s.points()) pts.add(new LatticePath.Pt(p.x(), p.z()));
-			Grading.RoadGrade g = Grading.road(pts, s.width(), exact);
+			Grading.RoadGrade g = Grading.road(pts, s.y(), s.width(), exact); // the plan's heights, so both tiles at a border build the same road
 			addBoxes(g.boxes(), ground, s.kind() == RoadKind.QUAY);
 			settlement.addAll(SettlementChecks.roadGrade(s.id(), g.profile().x(), g.profile().z(), g.profile().y()));
 		}

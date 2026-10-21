@@ -1,0 +1,20 @@
+{
+  "format": "fb-district/1",
+  "planVersion": 1,
+  "genVersion": 2,
+  "seed": "1001",
+  "district": {"id": "dm4_m2", "ix": -4, "iz": -2, "x": -656, "z": -320, "w": 192, "d": 176, "quarter": 7, "density": 37},
+  "streets": [
+    {"id": "a0m3_m144", "kind": "arterial", "width": 9, "points": [[-464, -144], [-464, -136]], "y": [63, 63]},
+    {"id": "a1m2_m464", "kind": "arterial", "width": 9, "points": [[-464, -320], [-463, -320], [-456, -320]], "y": [64, 63, 63]},
+    {"id": "b1m1_m464", "kind": "street", "width": 5, "points": [[-464, -144], [-456, -144]], "y": [63, 63]},
+    {"id": "t0", "kind": "lane", "width": 3, "points": [[-456, -288], [-463, -288], [-464, -288], [-472, -288]], "y": [63, 63, 64, 64]},
+    {"id": "t1", "kind": "lane", "width": 3, "points": [[-536, -328], [-536, -312]], "y": [67, 67]},
+    {"id": "t2", "kind": "lane", "width": 3, "points": [[-592, -328], [-592, -320], [-592, -319], [-592, -312]], "y": [70, 70, 69, 69]},
+    {"id": "t3", "kind": "lane", "width": 3, "points": [[-520, -136], [-520, -152]], "y": [65, 65]}
+  ],
+  "plazas": [],
+  "lots": [],
+  "scene": null,
+  "violations": []
+}

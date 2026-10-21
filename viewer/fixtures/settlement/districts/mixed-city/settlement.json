@@ -33,20 +33,24 @@
     {"id": "d54_m24", "ix": 54, "iz": -24, "x": 8624, "z": -3824, "w": 160, "d": 144, "origin": [539, -239], "quarter": 7, "density": 13, "styles": [], "lots": 0, "detail": "districts/d54_m24.json"},
     {"id": "d51_m23", "ix": 51, "iz": -23, "x": 8160, "z": -3680, "w": 144, "d": 144, "origin": [510, -230], "quarter": 7, "density": 28, "styles": [], "lots": 0, "detail": "districts/d51_m23.json"},
     {"id": "d52_m23", "ix": 52, "iz": -23, "x": 8304, "z": -3680, "w": 160, "d": 144, "origin": [519, -230], "quarter": 5, "density": 50, "styles": [{"style": "desert", "weight": 10}, {"style": "plains", "weight": 9}], "lots": 19, "detail": "districts/d52_m23.json"},
-    {"id": "d53_m23", "ix": 53, "iz": -23, "x": 8464, "z": -3680, "w": 160, "d": 144, "origin": [529, -230], "quarter": 3, "density": 63, "styles": [{"style": "plains", "weight": 1}], "lots": 3, "detail": "districts/d53_m23.json"},
-    {"id": "d54_m23", "ix": 54, "iz": -23, "x": 8624, "z": -3680, "w": 160, "d": 144, "origin": [539, -230], "quarter": 6, "density": 55, "styles": [{"style": "desert", "weight": 20}], "lots": 20, "detail": "districts/d54_m23.json"},
+    {"id": "d53_m23", "ix": 53, "iz": -23, "x": 8464, "z": -3680, "w": 160, "d": 144, "origin": [529, -230], "quarter": 3, "density": 63, "styles": [], "lots": 0, "detail": "districts/d53_m23.json"},
+    {"id": "d54_m23", "ix": 54, "iz": -23, "x": 8624, "z": -3680, "w": 160, "d": 144, "origin": [539, -230], "quarter": 6, "density": 55, "styles": [], "lots": 0, "detail": "districts/d54_m23.json"},
     {"id": "d55_m23", "ix": 55, "iz": -23, "x": 8784, "z": -3680, "w": 160, "d": 144, "origin": [549, -230], "quarter": 5, "density": 26, "styles": [], "lots": 0, "detail": "districts/d55_m23.json"},
+    {"id": "d51_m22", "ix": 51, "iz": -22, "x": 8160, "z": -3536, "w": 144, "d": 192, "origin": [510, -221], "quarter": 3, "density": 71, "styles": [{"style": "desert", "weight": 10}, {"style": "plains", "weight": 9}], "lots": 20, "detail": "districts/d51_m22.json"},
     {"id": "d52_m22", "ix": 52, "iz": -22, "x": 8304, "z": -3536, "w": 160, "d": 192, "origin": [519, -221], "quarter": 3, "density": 85, "styles": [{"style": "desert", "weight": 2}, {"style": "plains", "weight": 33}], "lots": 35, "detail": "districts/d52_m22.json"},
-    {"id": "d53_m22", "ix": 53, "iz": -22, "x": 8464, "z": -3536, "w": 160, "d": 192, "origin": [529, -221], "quarter": 5, "density": 85, "styles": [{"style": "plains", "weight": 8}], "lots": 10, "detail": "districts/d53_m22.json"},
-    {"id": "d54_m22", "ix": 54, "iz": -22, "x": 8624, "z": -3536, "w": 160, "d": 192, "origin": [539, -221], "quarter": 3, "density": 85, "styles": [{"style": "desert", "weight": 7}, {"style": "plains", "weight": 26}], "lots": 35, "detail": "districts/d54_m22.json"},
+    {"id": "d53_m22", "ix": 53, "iz": -22, "x": 8464, "z": -3536, "w": 160, "d": 192, "origin": [529, -221], "quarter": 5, "density": 85, "styles": [{"style": "plains", "weight": 1}], "lots": 1, "detail": "districts/d53_m22.json"},
+    {"id": "d54_m22", "ix": 54, "iz": -22, "x": 8624, "z": -3536, "w": 160, "d": 192, "origin": [539, -221], "quarter": 3, "density": 85, "styles": [], "lots": 0, "detail": "districts/d54_m22.json"},
     {"id": "d55_m22", "ix": 55, "iz": -22, "x": 8784, "z": -3536, "w": 160, "d": 192, "origin": [549, -221], "quarter": 3, "density": 59, "styles": [], "lots": 0, "detail": "districts/d55_m22.json"},
     {"id": "d56_m22", "ix": 56, "iz": -22, "x": 8944, "z": -3536, "w": 160, "d": 192, "origin": [559, -221], "quarter": 7, "density": 10, "styles": [], "lots": 0, "detail": "districts/d56_m22.json"},
     {"id": "d52_m21", "ix": 52, "iz": -21, "x": 8304, "z": -3344, "w": 160, "d": 144, "origin": [519, -209], "quarter": 5, "density": 85, "styles": [{"style": "plains", "weight": 13}], "lots": 13, "detail": "districts/d52_m21.json"},
-    {"id": "d53_m21", "ix": 53, "iz": -21, "x": 8464, "z": -3344, "w": 160, "d": 144, "origin": [529, -209], "quarter": 5, "density": 85, "styles": [{"style": "plains", "weight": 11}], "lots": 11, "detail": "districts/d53_m21.json"},
+    {"id": "d53_m21", "ix": 53, "iz": -21, "x": 8464, "z": -3344, "w": 160, "d": 144, "origin": [529, -209], "quarter": 5, "density": 85, "styles": [{"style": "plains", "weight": 7}], "lots": 7, "detail": "districts/d53_m21.json"},
     {"id": "d54_m21", "ix": 54, "iz": -21, "x": 8624, "z": -3344, "w": 160, "d": 144, "origin": [539, -209], "quarter": 3, "density": 80, "styles": [{"style": "plains", "weight": 10}], "lots": 12, "detail": "districts/d54_m21.json"},
     {"id": "d55_m21", "ix": 55, "iz": -21, "x": 8784, "z": -3344, "w": 160, "d": 144, "origin": [549, -209], "quarter": 3, "density": 54, "styles": [{"style": "jungle", "weight": 8}, {"style": "plains", "weight": 9}], "lots": 19, "detail": "districts/d55_m21.json"},
+    {"id": "d56_m21", "ix": 56, "iz": -21, "x": 8944, "z": -3344, "w": 160, "d": 144, "origin": [559, -209], "quarter": 7, "density": 6, "styles": [{"style": "jungle", "weight": 1}], "lots": 2, "detail": "districts/d56_m21.json"},
     {"id": "d52_m20", "ix": 52, "iz": -20, "x": 8304, "z": -3200, "w": 160, "d": 160, "origin": [519, -200], "quarter": 3, "density": 85, "styles": [{"style": "desert", "weight": 29}, {"style": "plains", "weight": 5}], "lots": 34, "detail": "districts/d52_m20.json"},
-    {"id": "d53_m20", "ix": 53, "iz": -20, "x": 8464, "z": -3200, "w": 160, "d": 160, "origin": [529, -200], "quarter": 3, "density": 84, "styles": [{"style": "desert", "weight": 5}, {"style": "plains", "weight": 27}], "lots": 32, "detail": "districts/d53_m20.json"}
+    {"id": "d53_m20", "ix": 53, "iz": -20, "x": 8464, "z": -3200, "w": 160, "d": 160, "origin": [529, -200], "quarter": 3, "density": 84, "styles": [{"style": "desert", "weight": 5}, {"style": "plains", "weight": 27}], "lots": 32, "detail": "districts/d53_m20.json"},
+    {"id": "d54_m20", "ix": 54, "iz": -20, "x": 8624, "z": -3200, "w": 160, "d": 160, "origin": [539, -200], "quarter": 5, "density": 64, "styles": [{"style": "desert", "weight": 1}, {"style": "plains", "weight": 27}], "lots": 29, "detail": "districts/d54_m20.json"},
+    {"id": "d52_m19", "ix": 52, "iz": -19, "x": 8304, "z": -3040, "w": 160, "d": 160, "origin": [519, -190], "quarter": 5, "density": 56, "styles": [{"style": "desert", "weight": 38}], "lots": 40, "detail": "districts/d52_m19.json"}
   ],
   "roads": [
     {"id": "r8_m4_0", "kind": "main", "width": 7, "points": [[8512, -3296], [8352, -3136], [8352, -3104]], "bridges": []},
@@ -67,12 +71,10 @@
     {"id": "g2", "kind": "exit", "x": 8960, "z": -3296, "cells": null, "road": "r8_m4_2"}
   ],
   "landmarks": [
-    {"id": "l0", "kind": "square", "x": 8496, "z": -3314, "w": 32, "d": 36, "district": "d53_m21"},
-    {"id": "l1", "kind": "temple", "x": 8502, "z": -3272, "w": 20, "d": 20, "district": "d53_m21"},
-    {"id": "l2", "kind": "hall", "x": 8534, "z": -3310, "w": 18, "d": 28, "district": "d53_m21"}
+    {"id": "l0", "kind": "square", "x": 8560, "z": -3282, "w": 32, "d": 36, "district": "d53_m21"},
+    {"id": "l1", "kind": "temple", "x": 8568, "z": -3307, "w": 20, "d": 25, "district": "d53_m21"},
+    {"id": "l2", "kind": "hall", "x": 8544, "z": -3310, "w": 24, "d": 28, "district": "d53_m21"}
   ],
   "walls": [],
-  "violations": [
-    {"invariant": "roads-connected", "building": null, "message": "a piece of 3197 street columns (x 8661..8955, z -3305..-3189) with the front of lot d55_m21.l15 and a skeleton road does not reach the hub", "cells": [{"min": [8935, 0, -3305], "size": [1, 1, 1]}]}
-  ]
+  "violations": []
 }

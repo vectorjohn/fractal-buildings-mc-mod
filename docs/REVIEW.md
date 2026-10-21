@@ -64,6 +64,11 @@ work becomes a ROADMAP item or a Polish backlog line. Settled items move to
   Look for: a hamlet is a short track with a handful of houses and a workshop each side, no square; a village has a straight main street, a cross street on about half, a green at the hub with a temple or hall facing it from the side, lanes, and the houses lining the streets. Bad: a ruler-straight street feels too artificial, the green sits oddly, a village that is all one street.
   Result:
 
+- [ ] **Whole-city roads (p5-roads)**: are the hall and temple placements, and the cities with no unreachable buildings, believable? Is it acceptable that arterial blocks with no link to a main road stay empty (snow city lost 27 lots)?
+  Where: `docs/review/phase5/roads/` (plan views of gate-snow-city, gate-temperate-city, gate-metropolis-temperate); `npm run city -- gate-snow-city` then the plan view for any other gate city; numbers in `docs/log/2026-10-21-p5-roads.md`.
+  Look for: hall and temple labels on lots beside or near the square (some now a street away from it); yellow arterials without lots at the edges; road-only tiles at the edge of a town (a main road now continues through them).
+  Result:
+
 ## Done
 
 - [x] **3.6 storey slider**: in the viewer, lowering "storeys up to N" below the top storey hides the roof together with the upper storeys (roofs are storey −1, shown only at the top setting, per the Phase 3 plan). Does that feel right, or should the roof stay or hide on its own toggle?

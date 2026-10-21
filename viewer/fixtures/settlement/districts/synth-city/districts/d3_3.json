@@ -5,7 +5,7 @@
   "seed": "1001",
   "district": {"id": "d3_3", "ix": 3, "iz": 3, "x": 480, "z": 496, "w": 160, "d": 144, "quarter": 7, "density": 13},
   "streets": [
-    {"id": "t0", "kind": "lane", "width": 3, "points": [[520, 488], [520, 496], [520, 504]], "y": [71, 71, 71]}
+    {"id": "t0", "kind": "lane", "width": 3, "points": [[520, 488], [520, 504]], "y": [71, 71]}
   ],
   "plazas": [],
   "lots": [],

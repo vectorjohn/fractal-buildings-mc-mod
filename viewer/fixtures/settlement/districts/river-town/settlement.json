@@ -32,11 +32,13 @@
     {"id": "dm7_m24", "ix": -7, "iz": -24, "x": -1120, "z": -3856, "w": 160, "d": 176, "origin": [-70, -241], "quarter": 5, "density": 22, "styles": [{"style": "plains", "weight": 2}], "lots": 3, "detail": "districts/dm7_m24.json"},
     {"id": "dm6_m24", "ix": -6, "iz": -24, "x": -960, "z": -3856, "w": 160, "d": 176, "origin": [-60, -241], "quarter": 3, "density": 34, "styles": [], "lots": 0, "detail": "districts/dm6_m24.json"},
     {"id": "dm5_m24", "ix": -5, "iz": -24, "x": -800, "z": -3856, "w": 176, "d": 176, "origin": [-50, -241], "quarter": 7, "density": 28, "styles": [], "lots": 0, "detail": "districts/dm5_m24.json"},
+    {"id": "dm8_m23", "ix": -8, "iz": -23, "x": -1280, "z": -3680, "w": 160, "d": 144, "origin": [-80, -230], "quarter": 7, "density": 10, "styles": [], "lots": 0, "detail": "districts/dm8_m23.json"},
     {"id": "dm7_m23", "ix": -7, "iz": -23, "x": -1120, "z": -3680, "w": 160, "d": 144, "origin": [-70, -230], "quarter": 4, "density": 58, "styles": [{"style": "plains", "weight": 20}], "lots": 22, "detail": "districts/dm7_m23.json"},
     {"id": "dm6_m23", "ix": -6, "iz": -23, "x": -960, "z": -3680, "w": 160, "d": 144, "origin": [-60, -230], "quarter": 3, "density": 64, "styles": [], "lots": 0, "detail": "districts/dm6_m23.json"},
     {"id": "dm5_m23", "ix": -5, "iz": -23, "x": -800, "z": -3680, "w": 176, "d": 144, "origin": [-50, -230], "quarter": 3, "density": 56, "styles": [{"style": "plains", "weight": 7}], "lots": 9, "detail": "districts/dm5_m23.json"},
+    {"id": "dm8_m22", "ix": -8, "iz": -22, "x": -1280, "z": -3536, "w": 160, "d": 192, "origin": [-80, -221], "quarter": 5, "density": 12, "styles": [{"style": "plains", "weight": 10}], "lots": 10, "detail": "districts/dm8_m22.json"},
     {"id": "dm7_m22", "ix": -7, "iz": -22, "x": -1120, "z": -3536, "w": 160, "d": 192, "origin": [-70, -221], "quarter": 5, "density": 60, "styles": [{"style": "plains", "weight": 43}], "lots": 43, "detail": "districts/dm7_m22.json"},
-    {"id": "dm6_m22", "ix": -6, "iz": -22, "x": -960, "z": -3536, "w": 160, "d": 192, "origin": [-60, -221], "quarter": 3, "density": 65, "styles": [{"style": "plains", "weight": 21}], "lots": 23, "detail": "districts/dm6_m22.json"},
+    {"id": "dm6_m22", "ix": -6, "iz": -22, "x": -960, "z": -3536, "w": 160, "d": 192, "origin": [-60, -221], "quarter": 3, "density": 65, "styles": [{"style": "plains", "weight": 17}], "lots": 19, "detail": "districts/dm6_m22.json"},
     {"id": "dm5_m22", "ix": -5, "iz": -22, "x": -800, "z": -3536, "w": 176, "d": 192, "origin": [-50, -221], "quarter": 3, "density": 59, "styles": [], "lots": 0, "detail": "districts/dm5_m22.json"},
     {"id": "dm4_m22", "ix": -4, "iz": -22, "x": -624, "z": -3536, "w": 144, "d": 192, "origin": [-39, -221], "quarter": 7, "density": 5, "styles": [], "lots": 0, "detail": "districts/dm4_m22.json"},
     {"id": "dm7_m21", "ix": -7, "iz": -21, "x": -1120, "z": -3344, "w": 160, "d": 160, "origin": [-70, -209], "quarter": 5, "density": 30, "styles": [], "lots": 0, "detail": "districts/dm7_m21.json"},
@@ -56,8 +58,8 @@
     {"id": "g3", "kind": "exit", "x": -608, "z": -3520, "cells": null, "road": "rm1_m4_0"}
   ],
   "landmarks": [
-    {"id": "l0", "kind": "market", "x": -915, "z": -3508, "w": 39, "d": 41, "district": "dm6_m22"},
-    {"id": "l1", "kind": "hall", "x": -870, "z": -3502, "w": 18, "d": 28, "district": "dm6_m22"}
+    {"id": "l0", "kind": "market", "x": -927, "z": -3504, "w": 31, "d": 33, "district": "dm6_m22"},
+    {"id": "l1", "kind": "hall", "x": -892, "z": -3422, "w": 26, "d": 26, "district": "dm6_m22"}
   ],
   "walls": [],
   "violations": []

@@ -47,30 +47,70 @@ public final class Districts {
 	/** Frontage lots stay shallower than the {@code block} type's smallest lot (52), so only whole street blocks take blocks. */
 	public static final int MAX_DEPTH = 44;
 	static final int PAD = 16, MIN_W = 7, MIN_DEPTH_ANY = 7;
-	static final int STREET = 1, PLAZA = 2, LOT = 4, RESERVED = 8, WET = 16;
+	static final int STREET = 1, PLAZA = 2, LOT = 4, RESERVED = 8, WET = 16, SKEL = 32;
 	/** Densest rows only get whole-block lots. */
 	static final int BLOCK_DENSITY = 70;
 
 	/**
 	 * A planned district: the plan, the landmarks that still reserve ground (open squares, and hall or temple landmarks that
-	 * got no lot; moved squares carry their new position) and notes on what was dropped or moved.
+	 * got no lot; moved squares carry their new position), notes on what was dropped or moved, and whether the first plaza (the
+	 * hub square in the hub tile) is joined to a road that reaches the hub.
 	 */
-	public record Detail(DistrictPlan plan, List<Landmark> landmarks, List<String> notes) {}
+	public record Detail(DistrictPlan plan, List<Landmark> landmarks, List<String> notes, boolean firstPlazaReached) {}
 
 	/**
 	 * Is the tile planned by this settlement? A tile belongs to the settlement of the cell that owns its centre; a tile holding
 	 * the hub whose centre is owned by a cell of no settlement is the hub's. Exactly one settlement plans each tile.
 	 */
 	public static boolean owns(SkeletonSource src, int ix, int iz) {
-		DistrictGrid.Tile t = src.grid().tile(ix, iz);
 		RegionField f = src.view().field();
-		Cell c = CellGeometry.owner(f, (t.minX() + t.maxX()) / 2, (t.minZ() + t.maxZ()) / 2);
-		if (src.site().cells().contains(c)) return true;
-		if (src.view().siteOf(c).isPresent()) return false;
 		Cell centreCell = CellGeometry.owner(f, src.site().centre().x(), src.site().centre().z());
-		if (!src.site().cells().contains(centreCell)) return false;
-		Pt hub = src.skeleton(centreCell).hub();
-		return hub != null && src.grid().tileOf(hub.x(), hub.z()).equals(new DistrictGrid.TileId(ix, iz));
+		DistrictGrid.TileId hubTile = null;
+		if (src.site().cells().contains(centreCell)) {
+			Pt hub = src.skeleton(centreCell).hub();
+			if (hub != null) hubTile = src.grid().tileOf(hub.x(), hub.z());
+		}
+		return owns(src.view(), src.site(), src.grid(), hubTile, ix, iz);
+	}
+
+	/** Sample spacing of the tile-claim rule for tiles whose centre lies in a cell without a settlement. */
+	static final int CLAIM_STEP = 32;
+
+	/**
+	 * Tile ownership from the view alone ({@code hubTile} is the tile of the centre cell's hub, or null): the settlement of the cell
+	 * owning the tile's centre; else, when that cell has no settlement, the hub's own tile, or the settlement whose cells own the
+	 * most of the tile's {@value #CLAIM_STEP}-block lattice columns (ties to the smaller site id). The last case lets a settlement
+	 * plan the edge tiles its streets and main roads run through although their centre lies across a cell border (ROADS: a main
+	 * road crossing an unplanned tile left a gap). Every settlement computes the same answer, so a tile is planned at most once.
+	 */
+	/** The id of the settlement a cell belongs to, "" for none (or a cell the view cannot decide, at the edge of a recorded window). */
+	private static String siteId(RegionView view, Cell c) {
+		try {
+			return view.siteOf(c).map(SettlementSite::id).orElse("");
+		} catch (RuntimeException e) {
+			return "";
+		}
+	}
+
+	public static boolean owns(RegionView view, SettlementSite site, DistrictGrid grid, DistrictGrid.TileId hubTile, int ix, int iz) {
+		DistrictGrid.Tile t = grid.tile(ix, iz);
+		RegionField f = view.field();
+		Cell c = CellGeometry.owner(f, (t.minX() + t.maxX()) / 2, (t.minZ() + t.maxZ()) / 2);
+		if (site.cells().contains(c)) return true;
+		if (view.siteOf(c).isPresent()) return false;
+		if (hubTile != null && hubTile.ix() == ix && hubTile.iz() == iz) return true;
+		TreeMap<String, Integer> count = new TreeMap<>();
+		TreeMap<Cell, String> seen = new TreeMap<>(CellGeometry::compare);
+		for (int z = Math.floorDiv(t.minZ() + CLAIM_STEP - 1, CLAIM_STEP) * CLAIM_STEP; z < t.maxZ(); z += CLAIM_STEP) {
+			for (int x = Math.floorDiv(t.minX() + CLAIM_STEP - 1, CLAIM_STEP) * CLAIM_STEP; x < t.maxX(); x += CLAIM_STEP) {
+				Cell o = CellGeometry.owner(f, x, z);
+				String s = seen.computeIfAbsent(o, k -> site.cells().contains(k) ? site.id() : siteId(view, k));
+				if (!s.isEmpty()) count.merge(s, 1, Integer::sum);
+			}
+		}
+		String best = null;
+		for (var e : count.entrySet()) if (best == null || e.getValue() > count.get(best)) best = e.getKey();
+		return site.id().equals(best);
 	}
 
 	/** Plans one tile, or nothing if another settlement owns it. */
@@ -96,6 +136,16 @@ public final class Districts {
 			this.width = width;
 			this.cols = cols;
 			this.fixed = fixed;
+		}
+
+		/** For a piece of a whole street: its slice of the whole profile and which columns need more cut or fill than allowed (null otherwise). */
+		int[] wholeY;
+		boolean[] steep;
+
+		Raw withWhole(Raw from) {
+			wholeY = from.wholeY;
+			steep = from.steep;
+			return this;
 		}
 
 		boolean skeletonish() { return kind == RoadKind.ARTERIAL || kind == RoadKind.MAIN || kind == RoadKind.PATH; }
@@ -217,15 +267,21 @@ public final class Districts {
 			for (int z = r.z(); z < r.z() + r.d(); z++) for (int x = r.x(); x < r.x() + r.w(); x++) or(x, z, f);
 		}
 
+		/** Per plaza (index into {@link #plazas}): its piece reaches a live road, so a hall or temple facing it can be reached. */
+		boolean[] plazaOk = new boolean[0];
+
 		/**
-		 * Flags the streets whose piece (streets that overlap or touch, in this tile and its margin) holds no skeleton road: a fragment
-		 * kept only because it reaches the tile border may be dead on the far side, and a lot on it would front a street that leads
-		 * nowhere (the whole-city {@code roads-connected} rule). Such streets stay in the plan but get no lots.
+		 * Which streets may carry lots (ROADS). Streets and plazas that overlap or touch, in this tile and its margin, form pieces;
+		 * a piece may carry lots only when it holds a column of a live root: a main road, path or arterial column of the
+		 * settlement's {@link RoadNetwork} that reaches the hub. A fragment kept because it reaches the tile border, an arterial
+		 * chain that never meets a main road, or the main road of a cell whose own routes failed stay in the plan but get no lots.
+		 * Every tile reads the same network, so the answer does not depend on which tiles were planned before.
 		 */
 		void markLotEligible(List<Raw> finals) {
-			int n = finals.size();
-			int[] parent = new int[n];
-			for (int i = 0; i < n; i++) parent[i] = i;
+			RoadNetwork net = src.network();
+			int n = finals.size(), np = plazas.size();
+			int[] parent = new int[n + np];
+			for (int i = 0; i < n + np; i++) parent[i] = i;
 			short[] tmp = new short[rw * rd];
 			for (int i = 0; i < n; i++) {
 				Raw r = finals.get(i);
@@ -242,6 +298,17 @@ public final class Districts {
 					}
 				}
 			}
+			for (int j = 0; j < np; j++) {
+				Plaza pz = plazas.get(j);
+				for (int z = pz.z(); z < pz.z() + pz.d(); z++) {
+					for (int x = pz.x(); x < pz.x() + pz.w(); x++) {
+						if (!inR(x, z)) continue;
+						int p = (z - rz0) * rw + (x - rx0);
+						if (tmp[p] == 0) tmp[p] = (short) (n + j + 1);
+						else union(parent, tmp[p] - 1, n + j);
+					}
+				}
+			}
 			for (int z = 0; z < rd; z++) {
 				for (int x = 0; x < rw; x++) {
 					int a = tmp[z * rw + x];
@@ -250,9 +317,184 @@ public final class Districts {
 					if (z + 1 < rd && tmp[(z + 1) * rw + x] != 0) union(parent, a - 1, tmp[(z + 1) * rw + x] - 1);
 				}
 			}
-			boolean[] good = new boolean[n];
-			for (int i = 0; i < n; i++) if (finals.get(i).skeletonish()) good[find(parent, i)] = true;
+			boolean[] good = new boolean[n + np];
+			for (int i = 0; i < n; i++) {
+				Raw r = finals.get(i);
+				if (!r.skeletonish()) continue;
+				for (int[] c : r.cols) if (net.live(c[0], c[1])) { good[find(parent, i)] = true; break; }
+			}
 			for (int i = 0; i < n; i++) finals.get(i).lotOk = good[find(parent, i)];
+			plazaOk = new boolean[np];
+			for (int j = 0; j < np; j++) plazaOk[j] = good[find(parent, n + j)];
+		}
+
+		/** Hall and temple lots placed on a square, with the square they face. */
+		final List<Object[]> onSquare = new ArrayList<>();
+
+		/**
+		 * A hall or temple lot faces its square only; when the square's piece reaches no live road (a square joined to no street, or to
+		 * a cut-off fragment) the lot is taken back, so {@link #landmarkFallback} can put the building on a reachable street.
+		 */
+		void dropCutOffHallLots() {
+			boolean dropped = false;
+			for (Object[] o : onSquare) {
+				LotBrief lot = (LotBrief) o[0];
+				Rect sq = (Rect) o[1];
+				int j = -1;
+				for (int k = 0; k < plazas.size(); k++) if (plazas.get(k).x() == sq.x() && plazas.get(k).z() == sq.z() && plazas.get(k).w() == sq.w() && plazas.get(k).d() == sq.d()) j = k;
+				if (j >= 0 && plazaOk[j]) continue;
+				int idx = lots.indexOf(lot);
+				lots.remove(idx);
+				lotAir.remove(idx);
+				reserved.remove(lot.rect());
+				clearRect(lot.rect(), LOT | RESERVED);
+				notes.add(lot.type() + " lot " + lot.id() + " taken back: its square reaches no road");
+				unplaced.add((Landmark) o[2]);
+				dropped = true;
+			}
+			if (!dropped) return;
+			for (Rect r : reserved) paintRect(r, RESERVED);
+			for (LotBrief l : lots) paintRect(l.rect(), LOT);
+			renumberLots();
+		}
+
+		void clearRect(Rect r, int f) {
+			for (int z = r.z(); z < r.z() + r.d(); z++) for (int x = r.x(); x < r.x() + r.w(); x++) if (inR(x, z)) flags[(z - rz0) * rw + (x - rx0)] &= (byte) ~f;
+		}
+
+		/** Lot ids follow the list order ({@code <district>.l<index>}). */
+		void renumberLots() {
+			for (int i = 0; i < lots.size(); i++) {
+				LotBrief l = lots.get(i);
+				String nid = id + ".l" + i;
+				if (!l.id().contains(WallRing.MARK) && !l.id().equals(nid)) lots.set(i, new LotBrief(nid, l.x(), l.z(), l.w(), l.d(), l.front(), l.type(), l.style(), l.minStoreys(), l.maxStoreys(), l.streets(), l.airRights(), l.frontY(), l.density(), l.status()));
+			}
+		}
+
+		/** Hall and temple landmarks of this tile that got no lot facing a square. */
+		final List<Landmark> unplaced = new ArrayList<>();
+
+		/**
+		 * A hall or temple that found no room facing its square takes the street-front lot nearest the square (or its own spot when
+		 * there is no square) that can hold the type: a town hall or temple a street away from the square rather than none. The
+		 * landmark's reservation is dropped once its building has a lot.
+		 */
+		void landmarkFallback() {
+			for (Landmark l : unplaced) {
+				String type = l.kind() == LandmarkKind.HALL ? "hall" : "temple";
+				int cx = l.x() + l.w() / 2, cz = l.z() + l.d() / 2;
+				if (!squares.isEmpty()) {
+					long best = Long.MAX_VALUE;
+					for (Rect s : squares) {
+						long dx = s.x() + s.w() / 2 - cx, dz = s.z() + s.d() / 2 - cz;
+						if (dx * dx + dz * dz < best) { best = dx * dx + dz * dz; cx = s.x() + s.w() / 2; cz = s.z() + s.d() / 2; }
+					}
+				}
+				int pick = -1;
+				long best = Long.MAX_VALUE;
+				for (int i = 0; i < lots.size(); i++) {
+					LotBrief o = lots.get(i);
+					if (!o.builds() || o.type().equals("hall") || o.type().equals("temple") || o.type().equals("block")) continue;
+					long dx = o.x() + o.w() / 2 - cx, dz = o.z() + o.d() / 2 - cz, dd = dx * dx + dz * dz;
+					if (dd >= best || !Briefs.buildable(type, o, exactRelief(o.rect()))) continue;
+					best = dd;
+					pick = i;
+				}
+				if (pick < 0) { notes.add(type + " got no lot anywhere in the tile"); continue; }
+				LotBrief o = lots.get(pick);
+				TypeLimits lim = Types.get(type).limits();
+				lots.set(pick, new LotBrief(o.id(), o.x(), o.z(), o.w(), o.d(), o.front(), type, o.style(), lim.minStoreys(), lim.maxStoreys(), o.streets(), o.airRights(), o.frontY(), o.density(), o.status()));
+				landmarks.removeIf(m -> m == l); // skeleton landmark ids are not unique yet ("l?"): remove this one only
+				notes.add(type + " placed on lot " + o.id() + " (no room facing the square)");
+			}
+		}
+
+		/**
+		 * A hall or temple that found no room facing its square gets its own lot on a reachable street of the tile, before the
+		 * frontage lots take the ground: the type's smallest lot (a few blocks deeper when there is room), on the straight run of a
+		 * lot-eligible street whose front column is nearest the square (or the landmark's spot without one), on dry ground the type
+		 * accepts. Candidates every 2 columns along every run, both sides.
+		 */
+		void landmarkLots(List<Raw> finals) {
+			List<Landmark> placed = new ArrayList<>();
+			unplaced.sort(Comparator.comparing((Landmark m) -> m.kind() == LandmarkKind.HALL ? 0 : 1)); // the hall first: it is the one a town cannot do without
+			for (Landmark l : unplaced) {
+				String type = l.kind() == LandmarkKind.HALL ? "hall" : "temple";
+				TypeLimits lim = Types.get(type).limits();
+				int cx = l.x() + l.w() / 2, cz = l.z() + l.d() / 2;
+				long sb = Long.MAX_VALUE;
+				for (Rect s : squares) {
+					long dx = s.x() + s.w() / 2 - (l.x() + l.w() / 2), dz = s.z() + s.d() / 2 - (l.z() + l.d() / 2);
+					if (dx * dx + dz * dz < sb) { sb = dx * dx + dz * dz; cx = s.x() + s.w() / 2; cz = s.z() + s.d() / 2; }
+				}
+				Rect best = null;
+				Facing bestFront = null;
+				Raw bestStreet = null;
+				long bestD = Long.MAX_VALUE;
+				for (int slack = 2; slack >= 0 && best == null; slack -= 2) {
+				int along = lim.minLotWidth() + slack, deep = lim.minLotDepth() + slack;
+				for (Raw r : finals) {
+					if (!r.lotOk) continue;
+					for (Frame f : frames(r)) {
+						for (int u = f.uLo; u + along - 1 <= f.uHi; u += 2) {
+							Rect c = f.rect(u, along, deep);
+							long dx = c.x() + c.w() / 2 - cx, dz = c.z() + c.d() / 2 - cz, dd = dx * dx + dz * dz;
+							if (dd >= bestD) continue;
+							boolean ok = true;
+							for (int k = u; k < u + along && ok; k++) if (f.depth(k) < deep) ok = false;
+							if (!ok || !dry(c) || onKeptLandmark(c)) continue;
+							LotBrief probe = new LotBrief("probe", c.x(), c.z(), c.w(), c.d(), f.front, type, StyleLibrary.AUTO, lim.minStoreys(), lim.maxStoreys(), 1, 0, Brief.NO_FRONT_Y, 0, LotBrief.BUILD);
+							if (!Briefs.buildable(type, probe, exactRelief(c))) continue;
+							bestD = dd;
+							best = c;
+							bestFront = f.front;
+							bestStreet = r;
+						}
+					}
+				}
+				}
+				if (best == null) continue;
+				paintRect(best, LOT);
+				LotBrief lot = addLot(best, bestFront, type, lim.minStoreys(), lim.maxStoreys(), den.at(best.x() + best.w() / 2, best.z() + best.d() / 2), bestStreet);
+				landmarks.removeIf(m -> m == l); // skeleton landmark ids are not unique yet ("l?"): remove this one only
+				notes.add(type + " got lot " + lot.id() + " on street " + bestStreet.id + " (no room facing the square)");
+				placed.add(l);
+			}
+			unplaced.removeAll(placed);
+		}
+
+		/** The lot frames of a street's straight axis runs (both sides), as {@link #frontageLots} lays them. */
+		List<Frame> frames(Raw r) {
+			List<Frame> out = new ArrayList<>();
+			List<int[]> cols = r.cols;
+			int i = 0;
+			while (i + 1 < cols.size()) {
+				int dx = cols.get(i + 1)[0] - cols.get(i)[0], dz = cols.get(i + 1)[1] - cols.get(i)[1];
+				int j = i + 1;
+				while (j + 1 < cols.size() && cols.get(j + 1)[0] - cols.get(j)[0] == dx && cols.get(j + 1)[1] - cols.get(j)[1] == dz) j++;
+				if ((dx == 0) != (dz == 0) && j - i >= MIN_W) {
+					int[] a = cols.get(i), b = cols.get(j);
+					int h = r.width / 2, w = r.width;
+					if (dz == 0) {
+						int z = a[1], x0 = Math.min(a[0], b[0]), x1 = Math.max(a[0], b[0]);
+						out.add(new Frame(0, z - h - 1, 1, 0, 0, -1, x0 - h, x1 - h + w - 1, Facing.SOUTH));
+						out.add(new Frame(0, z - h + w, 1, 0, 0, 1, x0 - h, x1 - h + w - 1, Facing.NORTH));
+					} else {
+						int x = a[0], z0 = Math.min(a[1], b[1]), z1 = Math.max(a[1], b[1]);
+						out.add(new Frame(x - h - 1, 0, 0, 1, -1, 0, z0 - h, z1 - h + w - 1, Facing.EAST));
+						out.add(new Frame(x - h + w, 0, 0, 1, 1, 0, z0 - h, z1 - h + w - 1, Facing.WEST));
+					}
+				}
+				i = j;
+			}
+			return out;
+		}
+
+		/** Highest minus lowest exact ground over every column (what {@link Briefs#fill} measures). */
+		int exactRelief(Rect r) {
+			int lo = Integer.MAX_VALUE, hi = Integer.MIN_VALUE;
+			for (int z = r.z(); z < r.z() + r.d(); z++) for (int x = r.x(); x < r.x() + r.w(); x++) { int y = fl(x, z); lo = Math.min(lo, y); hi = Math.max(hi, y); }
+			return hi - lo;
 		}
 
 		// ---- the plan
@@ -266,18 +508,21 @@ public final class Districts {
 			finishBase();
 			ports();
 			plazaLanes();
-			if (!moved.isEmpty()) hallLots();
+			hallLots();
 			quays();
 			frontageLanes();
 			List<Raw> finals = new ArrayList<>();
 			for (Raw r : raws) if (r.street != null) finals.add(r);
 			finals.sort(Comparator.comparing(r -> r.id));
 			markLotEligible(finals);
+			dropCutOffHallLots();
 			ownerList.clear();
 			java.util.Arrays.fill(owner, (short) 0);
 			for (Raw r : finals) paint(r);
+			landmarkLots(finals);
 			blockLots();
 			frontageLots(finals);
+			landmarkFallback();
 			return assemble(finals);
 		}
 
@@ -287,6 +532,7 @@ public final class Districts {
 		List<Rect> all, squares;
 
 		void landmarksAndPlazas() {
+			paintSkeletonRoads();
 			Cell centreCell = CellGeometry.owner(src.view().field(), src.site().centre().x(), src.site().centre().z());
 			found = new ArrayList<>();
 			if (src.site().cells().contains(centreCell)) for (Landmark l : src.skeleton(centreCell).landmarks()) if (l.district().equals(id)) found.add(l);
@@ -309,7 +555,7 @@ public final class Districts {
 					for (int shrink = 0; shrink <= SQUARE_SHRINK_STEPS; shrink++) {
 						Rect base = shrink == 0 ? from : new Rect(from.x() + 4 * shrink, from.z() + 4 * shrink, from.w() - 8 * shrink, from.d() - 8 * shrink);
 						if (base.w() < MIN_SQUARE || base.d() < MIN_SQUARE) break;
-						for (Rect c : shifts(base, shrink > 0, reach)) {
+						for (Rect c : roadSideFirst(shifts(base, shrink > 0, reach))) {
 							boolean clash = false;
 							for (int j = 0; j < all.size(); j++) if (j != i && open(found.get(j).kind()) && overlaps(c, all.get(j))) clash = true;
 							if (clash || !dry(c) || (room > 0 && !dry(new Rect(c.x() - room, c.z() - room, c.w() + 2 * room, c.d() + 2 * room)))) continue;
@@ -328,6 +574,8 @@ public final class Districts {
 					all.set(i, r);
 					continue;
 				}
+				// a square clear of every skeleton road (the skeleton clamped it into the tile away from the hub) is joined by lanes like a moved one
+				if (!moved.contains(r) && !touchesSkeleton(r)) moved.add(r);
 				all.set(i, r);
 				plazas.add(new Plaza("p" + pk++, l.kind().json, r.x(), r.z(), r.w(), r.d(), g.get().level()));
 				squares.add(r);
@@ -335,7 +583,6 @@ public final class Districts {
 				reserved.add(r);
 				paintRect(r, PLAZA | RESERVED);
 			}
-			if (moved.isEmpty()) hallLots();
 		}
 
 		/** Hall and temple lots beside the squares; after the lanes joining a moved square to the roads, so they do not cut them off. */
@@ -347,6 +594,7 @@ public final class Districts {
 				LotBrief lot = l.kind() == LandmarkKind.HALL || l.kind() == LandmarkKind.TEMPLE ? hallLot(l, r, squares) : null;
 				if (lot == null) {
 					notes.add(l.kind().json + " at " + r.x() + "," + r.z() + " got no lot");
+					if (l.kind() == LandmarkKind.HALL || l.kind() == LandmarkKind.TEMPLE) unplaced.add(l);
 					boolean covered = false; // a lot or square placed meanwhile covers the landmark's spot: keep no reservation there
 					for (LotBrief o : lots) if (overlaps(o.rect(), r)) covered = true;
 					for (Rect q : squares) if (overlaps(q, r)) covered = true;
@@ -358,6 +606,7 @@ public final class Districts {
 				}
 				lots.add(lot);
 				lotAir.add(0);
+				onSquare.add(new Object[] {lot, lastSquare, l});
 				Rect lr = lot.rect();
 				reserved.add(lr);
 				paintRect(lr, LOT | RESERVED);
@@ -438,6 +687,15 @@ public final class Districts {
 			return out;
 		}
 
+		/** Overlaps a hall or temple landmark that got no lot and still reserves its spot. */
+		boolean onKeptLandmark(Rect r) {
+			for (Landmark m : landmarks) if (!open(m.kind()) && overlaps(r, new Rect(m.x(), m.z(), m.w(), m.d()))) return true;
+			return false;
+		}
+
+		/** The square the last {@link #hallLot} faced. */
+		Rect lastSquare;
+
 		/** The lot of a hall or temple landmark: flush against the nearest square, grown backwards to the type's smallest lot. */
 		LotBrief hallLot(Landmark l, Rect r, List<Rect> squares) {
 			String type = l.kind() == LandmarkKind.HALL ? "hall" : "temple";
@@ -450,6 +708,7 @@ public final class Districts {
 				if (d < best) { best = d; sq = s; }
 			}
 			if (sq == null) return null;
+			lastSquare = sq;
 			int dx = sq.x() + sq.w() / 2 - lcx, dz = sq.z() + sq.d() / 2 - lcz;
 			Facing first = Math.abs(dx) > Math.abs(dz) ? (dx > 0 ? Facing.EAST : Facing.WEST) : (dz > 0 ? Facing.SOUTH : Facing.NORTH);
 			// The preferred side first, then the others; on each side slide along the square (nearest the landmark first) until the lot fits.
@@ -475,8 +734,8 @@ public final class Districts {
 							default -> { x = sq.x() + sq.w(); z = start; }
 						}
 						Rect lot = new Rect(x, z, w, d);
-						if (!tr.containsRect(x, z, w, d)) continue;
-						if (!rectFreeExactWet(lot) || !dry(lot)) continue;
+						if (!tr.containsRect(x - MARGIN, z - MARGIN, w + 2 * MARGIN, d + 2 * MARGIN)) continue; // off the border band, where its reservation would clip a street the neighbour tile keeps
+						if (!rectFreeExactWet(lot) || !dry(lot) || onKeptLandmark(lot)) continue;
 						if ((!moved.isEmpty() && relief(lot) > HALL_MAX_RELIEF) || !SpecPolicyV1.reliefOk(lim, relief(lot), alongX ? along : deep, alongX ? deep : along)) continue;
 						int dens = den.at(x + w / 2, z + d / 2);
 						return new LotBrief(id + ".l" + lots.size(), x, z, w, d, front, type, StyleLibrary.AUTO, lim.minStoreys(), lim.maxStoreys(), 1, 0, Brief.NO_FRONT_Y, dens, LotBrief.BUILD);
@@ -540,13 +799,94 @@ public final class Districts {
 		/** Clips a street's columns to the tile and its margin and the reserved rectangles; each remaining run is a street. */
 		void addPieces(String base, RoadKind kind, int width, List<int[]> cols, boolean fixed) {
 			int n = 0;
-			for (List<int[]> run : StreetCols.runs(cols, c -> keep(c) && !hitsReserved(c, width))) {
-				raws.add(new Raw(n == 0 ? base : base + "." + n, kind, width, run, fixed));
+			for (Raw r : pieces(cols, width, kind, fixed)) {
+				raws.add(new Raw(n == 0 ? base : base + "." + n, kind, width, r.cols, fixed).withWhole(r));
 				n++;
 			}
 		}
 
-		void skeletonStreets() {
+		/**
+		 * The pieces of a whole street (a skeleton road, an arterial or border segment, a grid line's run or a quay run: the same
+		 * columns in every tile that draws it) kept by this tile: clipped to the tile and its margin and to the reserved squares. The
+		 * whole street is graded once and each piece keeps its slice of that profile, so the tiles on both sides of a border build the
+		 * road at the same height (ROADS; before, each tile graded its own clipped piece and the two disagreed by up to 14 blocks).
+		 * Ids are the caller's; the returned Raws carry only columns and the slice.
+		 */
+		List<Raw> pieces(List<int[]> cols, int width, RoadKind kind, boolean fixed) {
+			List<Raw> out = new ArrayList<>();
+			Grading.RoadGrade wg = null;
+			for (List<int[]> run0 : StreetCols.runs(cols, c -> keep(c) && !hitsReserved(c, width))) {
+				if (wg == null) wg = Grading.profile(lattice(StreetCols.vertices(cols)), memo);
+				int s = indexOf(cols, run0.get(0)), e = s + run0.size() - 1;
+				List<int[]> run = new ArrayList<>(run0);
+				int off = 0;
+				if (s > 0) { int[] j = joinSquare(run.get(0), cols.get(s - 1), width); if (j != null) { run.add(0, j); off = 1; } }
+				if (e + 1 < cols.size()) { int[] j = joinSquare(run.get(run.size() - 1), cols.get(e + 1), width); if (j != null) run.add(j); }
+				Raw r = new Raw("piece", kind, width, run, fixed);
+				r.wholeY = new int[run.size()];
+				r.steep = new boolean[run.size()];
+				for (int i = 0; i < run.size(); i++) {
+					int w = Math.max(s, Math.min(e, s + i - off)); // a join step takes its neighbour's height
+					r.wholeY[i] = wg.profile().y()[w];
+					for (Grading.Steep st : wg.steep()) if (w >= st.from() && w <= st.to()) r.steep[i] = true;
+				}
+				out.add(r);
+			}
+			return out;
+		}
+
+		static List<LatticePath.Pt> lattice(List<Pt> pts) {
+			List<LatticePath.Pt> out = new ArrayList<>();
+			for (Pt p : pts) out.add(new LatticePath.Pt(p.x(), p.z()));
+			return out;
+		}
+
+		/** The exact probe through this tile's memo (whole streets are graded once per tile, often over the same columns). */
+		final TerrainProbe memo = new TerrainProbe() {
+			@Override public int floorY(int x, int z) { return fl(x, z); }
+			@Override public int waterDepth(int x, int z) {
+				Integer v = waterMemo.get(key(x, z));
+				if (v == null) { v = exact.waterDepth(x, z); waterMemo.put(key(x, z), v); }
+				return v;
+			}
+			@Override public int surfaceY(int x, int z) { return exact.surfaceY(x, z); }
+		};
+		final TreeMap<Long, Integer> waterMemo = new TreeMap<>();
+
+		static int indexOf(List<int[]> cols, int[] c) {
+			for (int i = 0; i < cols.size(); i++) if (cols.get(i) == c) return i;
+			return -1;
+		}
+
+		/**
+		 * A street cut where its footprint would run onto a square ends on a footprint that may touch the square only at a corner (a
+		 * road leaving it at 45 degrees), which does not join it. Then one axis step from the end towards the cut column gives a
+		 * footprint that shares an edge with the square without covering it; null when the end already shares an edge or no step does.
+		 */
+		int[] joinSquare(int[] endCol, int[] cut, int width) {
+			if (!hitsReserved(cut, width) || !keep(cut)) return null;
+			if (edgeTouchesReserved(endCol, width)) return null;
+			int dx = cut[0] - endCol[0], dz = cut[1] - endCol[1];
+			for (int[] c : new int[][] {{endCol[0] + dx, endCol[1]}, {endCol[0], endCol[1] + dz}}) {
+				if ((c[0] == endCol[0] && c[1] == endCol[1]) || !keep(c) || hitsReserved(c, width)) continue;
+				if (edgeTouchesReserved(c, width)) return c;
+			}
+			return null;
+		}
+
+		/** The column's footprint shares an edge (not just a corner) with a reserved rectangle. */
+		boolean edgeTouchesReserved(int[] c, int width) {
+			int h = width / 2, x0 = c[0] - h, z0 = c[1] - h, x1 = x0 + width, z1 = z0 + width;
+			for (Rect r : reserved) {
+				boolean zOver = z0 < r.z() + r.d() && r.z() < z1, xOver = x0 < r.x() + r.w() && r.x() < x1;
+				if (zOver && (x1 == r.x() || r.x() + r.w() == x0)) return true;
+				if (xOver && (z1 == r.z() || r.z() + r.d() == z0)) return true;
+			}
+			return false;
+		}
+
+		/** Main roads and paths of the member cells near the tile (arterials come from the pointwise rule instead). */
+		List<Road> nearbyRoads() {
 			TreeMap<Cell, Boolean> cells = new TreeMap<>(CellGeometry::compare);
 			RegionField f = src.view().field();
 			for (int z = Math.floorDiv(tile.minZ() - 64, 32) * 32; z <= tile.maxZ() + 64; z += 32) {
@@ -555,12 +895,46 @@ public final class Districts {
 					if (src.site().cells().contains(c)) cells.put(c, true);
 				}
 			}
-			for (Cell c : cells.keySet()) {
-				for (Road r : src.skeleton(c).roads()) {
-					if (r.kind() == RoadKind.ARTERIAL) continue;
-					addPieces(r.id(), r.kind(), r.width(), StreetCols.columns(r.points()), true);
+			List<Road> out = new ArrayList<>();
+			for (Cell c : cells.keySet()) for (Road r : src.skeleton(c).roads()) if (r.kind() != RoadKind.ARTERIAL) out.add(r);
+			return out;
+		}
+
+		void skeletonStreets() {
+			for (Road r : nearbyRoads()) addPieces(r.id(), r.kind(), r.width(), StreetCols.columns(r.points()), true);
+		}
+
+		/** Flags {@link #SKEL} under the skeleton roads and arterials of the tile (unclipped), so a moved square can prefer a spot beside one. */
+		void paintSkeletonRoads() {
+			List<Object[]> roads = new ArrayList<>();
+			for (Road r : nearbyRoads()) roads.add(new Object[] {StreetCols.columns(r.points()), r.width()});
+			Arterials art = rules.arterials();
+			for (DistrictGrid.Segment s : art.segmentsIn(tile.minX() - MARGIN, tile.minZ() - MARGIN, tile.maxX() + MARGIN, tile.maxZ() + MARGIN)) {
+				if (rules.borderKind(s) == RoadKind.ARTERIAL) roads.add(new Object[] {StreetCols.columns(art.points(s, s.from(), s.to())), art.width()});
+			}
+			for (Object[] o : roads) {
+				@SuppressWarnings("unchecked") List<int[]> cols = (List<int[]>) o[0];
+				int w = (Integer) o[1], h = w / 2;
+				for (int[] c : cols) {
+					if (!inR(c[0], c[1])) continue;
+					for (int dz = 0; dz < w; dz++) for (int dx = 0; dx < w; dx++) or(c[0] - h + dx, c[1] - h + dz, SKEL);
 				}
 			}
+		}
+
+		/** The candidates beside or over a skeleton road first (a square there is on the street network without a lane), each group in its given order. */
+		List<Rect> roadSideFirst(List<Rect> cands) {
+			List<Rect> on = new ArrayList<>(), off = new ArrayList<>();
+			for (Rect c : cands) (touchesSkeleton(c) ? on : off).add(c);
+			on.addAll(off);
+			return on;
+		}
+
+		/** A skeleton road's footprint covers a column of the ring just outside the rectangle (so it reaches the rectangle's edge or runs through it). */
+		boolean touchesSkeleton(Rect r) {
+			for (int x = r.x() - 1; x <= r.x() + r.w(); x++) if ((fg(x, r.z() - 1) & SKEL) != 0 || (fg(x, r.z() + r.d()) & SKEL) != 0) return true;
+			for (int z = r.z(); z < r.z() + r.d(); z++) if ((fg(r.x() - 1, z) & SKEL) != 0 || (fg(r.x() + r.w(), z) & SKEL) != 0) return true;
+			return false;
 		}
 
 		/** Arterials and plain border streets of the tile's four segments and of the neighbouring segments reaching into its margin. */
@@ -605,6 +979,9 @@ public final class Districts {
 		}
 
 		/** Grid lines: the shared lines of this tile's row and column of tiles, as runs of ok edges over the tile and its margin. */
+		/** How far beyond the tile a grid line's runs are followed (a multiple of {@link StreetRules#NODE}). */
+		static final int GRID_REACH = 256;
+
 		void gridStreets() {
 			int lo, hi;
 			for (int axis = 0; axis < 2; axis++) {
@@ -612,8 +989,12 @@ public final class Districts {
 				for (int pos : rules.gridLines(axis, vertical ? ix : iz)) {
 					lo = Math.floorDiv(vertical ? tile.minZ() : tile.minX(), StreetRules.NODE) * StreetRules.NODE - StreetRules.NODE;
 					hi = (vertical ? tile.maxZ() : tile.maxX()) + StreetRules.NODE;
+					// the run is followed GRID_REACH beyond the tile, so it starts and ends where it does for every tile on the line (its id
+					// and its profile are then the same on both sides of a border)
+					lo -= GRID_REACH;
+					hi += GRID_REACH;
 					DistrictGrid.Segment s = new DistrictGrid.Segment(axis, 0, 0, pos, lo, hi);
-					for (List<Pt> run : nodeRuns(lo, hi, (a, b) -> rules.gridEdgeOk(exact, Arterials.ax(s, a), Arterials.az(s, a), Arterials.ax(s, b), Arterials.az(s, b)), s)) {
+					for (List<Pt> run : nodeRuns(lo, hi, (a, b) -> rules.gridEdgeOk(memo, Arterials.ax(s, a), Arterials.az(s, a), Arterials.ax(s, b), Arterials.az(s, b)), s)) {
 						addPieces("s" + (vertical ? "x" : "z") + Ids.n(pos) + "_" + Ids.n(axisCoord(s, run.get(0))), RoadKind.STREET, StreetRules.GRID_WIDTH, StreetCols.columns(run), false);
 					}
 				}
@@ -629,27 +1010,39 @@ public final class Districts {
 
 		/** Grades a street (the profile the scene will compute from the same columns); false when it needs more cut or fill than allowed. */
 		boolean grade(Raw r) {
-			List<Pt> verts = StreetCols.vertices(r.cols);
-			List<LatticePath.Pt> lp = new ArrayList<>();
-			for (Pt p : verts) lp.add(new LatticePath.Pt(p.x(), p.z()));
-			Grading.RoadGrade g = Grading.profile(lp, exact);
-			Grading.Profile pr = g.profile();
-			if (pr.size() != r.cols.size()) throw new IllegalStateException("street " + r.id + ": profile has " + pr.size() + " columns for " + r.cols.size());
-			TreeSet<Integer> idx = new TreeSet<>(StreetCols.vertexIndices(r.cols));
 			int n = r.cols.size();
-			for (int i = 0; i < n; i += Grading.SAMPLE_EVERY) idx.add(i);
-			idx.add(n - 1);
-			boolean[] wet = pr.bridge();
-			for (int i = 0; i < n; i++) if (wet[i] && (i == 0 || !wet[i - 1] || i == n - 1 || !wet[i + 1])) idx.add(i);
+			int[] y;
+			boolean ok = true;
+			if (r.wholeY != null) {
+				y = r.wholeY;
+				for (int i = 0; i < n; i++) ok &= !r.steep[i];
+			} else {
+				Grading.RoadGrade g = Grading.profile(lattice(StreetCols.vertices(r.cols)), memo);
+				if (g.profile().size() != n) throw new IllegalStateException("street " + r.id + ": profile has " + g.profile().size() + " columns for " + n);
+				y = g.profile().y();
+				ok = g.ok();
+			}
+			r.street = street(r, y);
+			return ok;
+		}
+
+		/**
+		 * The street as stored: its vertices, both ends, and both columns of every change of height, with their heights. Between two
+		 * stored points the height is then constant or steps once at the second, so the floor interpolation the scene and the brief
+		 * filler use ({@code Grading.road(points, ys, ...)}, {@code Briefs.nearest}) gives back every column's height exactly.
+		 */
+		static Street street(Raw r, int[] y) {
+			int n = r.cols.size();
+			TreeSet<Integer> idx = new TreeSet<>(StreetCols.vertexIndices(r.cols));
+			for (int i = 1; i < n; i++) if (y[i] != y[i - 1]) { idx.add(i - 1); idx.add(i); }
 			List<Pt> pts = new ArrayList<>();
 			int[] ys = new int[idx.size()];
 			int k = 0;
 			for (int i : idx) {
 				pts.add(new Pt(r.cols.get(i)[0], r.cols.get(i)[1]));
-				ys[k++] = pr.y()[i];
+				ys[k++] = y[i];
 			}
-			r.street = new Street(r.id, r.kind, r.width, pts, ys);
-			return g.ok();
+			return new Street(r.id, r.kind, r.width, pts, ys);
 		}
 
 		/** Grades the base streets (dropping grid streets that are too steep and do not touch the border) and keeps connected ones. */
@@ -778,8 +1171,9 @@ public final class Districts {
 				if (chain.get(0).equals(chain.get(chain.size() - 1))) cols = breakRing(cols);
 				for (List<int[]> whole : StreetCols.runs(cols, this::quayOk)) {
 					if (whole.size() < Quays.MIN_LEN) continue; // judged before clipping, so the neighbouring tile decides alike
-					for (List<int[]> run : StreetCols.runs(whole, c -> keep(c) && !hitsReserved(c, Quays.WIDTH))) {
-						Raw q = new Raw("quay" + Ids.n(run.get(0)[0]) + "_" + Ids.n(run.get(0)[1]), RoadKind.QUAY, Quays.WIDTH, run, false);
+					for (Raw piece : pieces(whole, Quays.WIDTH, RoadKind.QUAY, false)) {
+						List<int[]> run = piece.cols;
+						Raw q = new Raw("quay" + Ids.n(run.get(0)[0]) + "_" + Ids.n(run.get(0)[1]), RoadKind.QUAY, Quays.WIDTH, run, false).withWhole(piece);
 						grade(q); // a steep stretch is the road's to bear (a promenade is never dropped: both tiles must list it)
 						raws.add(q);
 						paint(q);
@@ -959,12 +1353,62 @@ public final class Districts {
 		final List<Rect> moved = new ArrayList<>();
 
 		/** A lane from each moved square to the nearest street, so the square is part of the road network. */
+		/** Longest straight lane {@link #stubLane} lays from a square's edge to a street. */
+		static final int STUB_REACH = 24;
+
+		/**
+		 * A short straight lane from the middle (then points 4 apart either side) of one of the square's sides to the first street
+		 * column within {@value #STUB_REACH} blocks straight out, over free dry ground. Joins a square that sits just beside a road
+		 * on the tile border, where the lattice lanes (kept a node inside the tile) cannot reach. Shortest stub wins; false if none.
+		 */
+		boolean stubLane(Rect sq, String laneId) {
+			Raw best = null;
+			int bestLen = Integer.MAX_VALUE;
+			int h = StreetRules.LANE_WIDTH / 2;
+			for (Facing side : new Facing[] {Facing.NORTH, Facing.SOUTH, Facing.WEST, Facing.EAST}) {
+				boolean alongX = side == Facing.NORTH || side == Facing.SOUTH;
+				int len = alongX ? sq.w() : sq.d(), lo = (alongX ? sq.x() : sq.z()) + h + 1, mid = (alongX ? sq.x() : sq.z()) + len / 2;
+				for (int k = 0; k <= len / 2; k += 4) {
+					for (int sgn = -1; sgn <= 1; sgn += 2) {
+						if (k == 0 && sgn > 0) continue;
+						int a = mid + sgn * k;
+						if (a < lo || a > (alongX ? sq.x() + sq.w() : sq.z() + sq.d()) - h - 2) continue;
+						int sx = alongX ? a : side == Facing.WEST ? sq.x() - 1 - h : sq.x() + sq.w() + h;
+						int sz = alongX ? (side == Facing.NORTH ? sq.z() - 1 - h : sq.z() + sq.d() + h) : a; // the lane's footprint ends on the square's edge
+						int ux = side.dx, uz = side.dz;
+						int hit = -1;
+						for (int s = 0; s < STUB_REACH && s < bestLen; s++) {
+							int x = sx + ux * s, z = sz + uz * s;
+							if (x - h < tile.minX() + 3 || x + h > tile.maxX() - 4 || z - h < tile.minZ() + 3 || z + h > tile.maxZ() - 4) break; // clear of the columns tile-border-agree compares
+							if ((fg(x, z) & STREET) != 0) { hit = s; break; }
+							boolean bad = false;
+							for (int o = -h; o <= h; o++) {
+								int fx = x + (alongX ? o : 0), fz = z + (alongX ? 0 : o);
+								if ((fg(fx, fz) & (PLAZA | LOT | RESERVED | WET)) != 0 || !inR(fx, fz)) bad = true;
+							}
+							if (bad) break;
+						}
+						if (hit < 0 || hit >= bestLen) continue;
+						Raw lane = new Raw(laneId, RoadKind.LANE, StreetRules.LANE_WIDTH, StreetCols.columns(List.of(new Pt(sx, sz), new Pt(sx + ux * Math.max(1, hit), sz + uz * Math.max(1, hit)))), false);
+						if (lane.cols.size() < 2 || !grade(lane)) continue;
+						best = lane;
+						bestLen = hit;
+					}
+				}
+			}
+			if (best == null) return false;
+			raws.add(best);
+			paint(best);
+			return true;
+		}
+
 		void plazaLanes() {
 			if (moved.isEmpty()) return;
 			List<Raw> base = new ArrayList<>(raws);
 			int m = StreetRules.NODE, n = 0;
 			LatticePath.Bounds b = new LatticePath.Bounds(tile.minX() + m, tile.minZ() + m, tile.maxX() - m, tile.maxZ() - m);
 			for (Rect pr : moved) {
+				if (stubLane(pr, "q" + n)) { n++; continue; }
 				int cx = pr.x() + pr.w() / 2, cz = pr.z() + pr.d() / 2;
 				// the nearest column of each street run (a skeleton road the square cut in two has a piece on each side), up to 3 within 64 blocks of the nearest
 				List<long[]> cand = new ArrayList<>();
@@ -1330,7 +1774,7 @@ public final class Districts {
 			List<Violation> v = new ArrayList<>(SettlementChecks.detail(plan, landmarks));
 			v.addAll(SettlementChecks.lotDry(plan, exact));
 			plan = new DistrictPlan(GEN_VERSION, seed, info, streets, plazas, out, null, v);
-			return new Detail(plan, landmarks, notes);
+			return new Detail(plan, landmarks, notes, plazaOk.length > 0 && plazaOk[0]);
 		}
 
 		static final int GEN_VERSION = dev.fractalbuildings.core.gen.v1.GeneratorV1.GEN_VERSION;

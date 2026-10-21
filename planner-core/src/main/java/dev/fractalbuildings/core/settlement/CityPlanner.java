@@ -44,6 +44,7 @@ public final class CityPlanner {
 		StyleField styles = new StyleField(biome, src.seed());
 		TreeMap<String, DistrictPlan> districts = new TreeMap<>();
 		TreeMap<String, List<Landmark>> landmarks = new TreeMap<>();
+		TreeMap<String, Boolean> squareReached = new TreeMap<>();
 		List<String> notes = new ArrayList<>();
 		List<DistrictSummary> out = new ArrayList<>();
 		for (DistrictSummary d : plan.districts()) {
@@ -52,25 +53,55 @@ public final class CityPlanner {
 			DistrictPlan dp = Briefs.fill(det.get().plan(), src.quarters()::at, styles, exact);
 			districts.put(d.id(), dp);
 			landmarks.put(d.id(), det.get().landmarks());
+			squareReached.put(d.id(), det.get().firstPlazaReached());
 			for (String n : det.get().notes()) notes.add(d.id() + ": " + n);
 			out.add(summary(d, dp));
 		}
 		Pt hub = site.centre();
 		Cell centreCell = CellGeometry.owner(src.view().field(), hub.x(), hub.z());
-		if (site.cells().contains(centreCell) && src.skeleton(centreCell).hub() != null) hub = src.skeleton(centreCell).hub();
+		if (site.cells().contains(centreCell) && RoadNetwork.roadHub(src.skeleton(centreCell)) != null) hub = RoadNetwork.roadHub(src.skeleton(centreCell));
 		// The hub square may have moved off the skeleton's hub column (exact terrain did not grade there): the hub is then the square's centre.
 		for (DistrictPlan dp : districts.values()) {
 			Rect t = dp.district().rect();
-			if (hub.x() < t.x() || hub.x() >= t.x() + t.w() || hub.z() < t.z() || hub.z() >= t.z() + t.d() || dp.plazas().isEmpty()) continue;
+			if (hub.x() < t.x() || hub.x() >= t.x() + t.w() || hub.z() < t.z() || hub.z() >= t.z() + t.d() || dp.plazas().isEmpty() || !squareReached.get(dp.district().id())) continue;
 			Plaza hp = dp.plazas().get(0);
 			hub = new Pt(hp.x() + hp.w() / 2, hp.z() + hp.d() / 2);
 			break;
 		}
+		plan = plan.withLandmarks(placedLandmarks(plan.landmarks(), districts, landmarks));
 		List<Violation> v = new ArrayList<>(plan.violations());
 		SettlementChecks.CityRoads cr = SettlementChecks.cityRoads(districts.values(), hub);
 		v.addAll(cr.violations());
 		v.addAll(SettlementChecks.cityTileBorders(districts.values()));
 		return new City(plan.withDistricts(out).withViolations(v), districts, landmarks, notes, hub, cr.strays(), cr.hubPiece(), cr.total());
+	}
+
+	/**
+	 * The skeleton's landmarks where district detail put them, so the plan view outlines the real square, hall and temple and not
+	 * the skeleton's first guess: an open square or green takes its (possibly moved) plaza's rectangle, a hall or temple the rectangle
+	 * of the district's lot of that type (the one nearest the skeleton's spot); one that got neither keeps its spot. Landmarks of
+	 * districts that were not planned are unchanged.
+	 */
+	static List<Landmark> placedLandmarks(List<Landmark> sk, SortedMap<String, DistrictPlan> districts, SortedMap<String, List<Landmark>> kept) {
+		List<Landmark> out = new ArrayList<>();
+		for (Landmark l : sk) {
+			DistrictPlan dp = districts.get(l.district());
+			Rect r = null;
+			if (dp != null) {
+				for (Landmark k : kept.getOrDefault(l.district(), List.of())) if (k.kind() == l.kind() && r == null) r = new Rect(k.x(), k.z(), k.w(), k.d());
+				if (r == null && (l.kind() == LandmarkKind.HALL || l.kind() == LandmarkKind.TEMPLE)) {
+					String type = l.kind() == LandmarkKind.HALL ? "hall" : "temple";
+					long best = Long.MAX_VALUE;
+					for (LotBrief lot : dp.lots()) {
+						if (!lot.type().equals(type)) continue;
+						long dx = lot.x() + lot.w() / 2 - (l.x() + l.w() / 2), dz = lot.z() + lot.d() / 2 - (l.z() + l.d() / 2), dd = dx * dx + dz * dz;
+						if (dd < best) { best = dd; r = lot.rect(); }
+					}
+				}
+			}
+			out.add(r == null ? l : new Landmark(l.id(), l.kind(), r.x(), r.z(), r.w(), r.d(), l.district()));
+		}
+		return out;
 	}
 
 	private static DistrictSummary summary(DistrictSummary d, DistrictPlan dp) {

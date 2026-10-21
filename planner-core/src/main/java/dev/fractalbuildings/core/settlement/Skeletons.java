@@ -139,7 +139,7 @@ public final class Skeletons {
 		TierProgram.WallPlan wallPlan = hub == null ? new TierProgram.WallPlan(List.of(), List.of()) : program.walls(c, hub, roads);
 		List<Wall> walls = wallPlan.walls();
 		gates.addAll(wallPlan.gates());
-		List<DistrictSummary> districts = districts(c, hub);
+		List<DistrictSummary> districts = districts(c, hub, view, roads);
 
 		CoarseRaster raster = new CoarseRaster(x0, z0, step, nx, nz, floor, water, biome, palette, c.mask, dens, quarter);
 		return new CellSkeleton(cell, new CellOutline(cell.cx(), cell.cz(), new Pt(field.siteX(cell.cx(), cell.cz()), field.siteZ(cell.cx(), cell.cz())), poly),
@@ -241,22 +241,57 @@ public final class Skeletons {
 		return out;
 	}
 
-	/** Tiles whose centre this cell owns (plus the hub tile) that hold an urban column. */
-	private static List<DistrictSummary> districts(SkeletonContext c, Pt hub) {
+	/**
+	 * The tiles this cell lists: those in its window that the settlement owns ({@link Districts#owns}: centre in this cell, the hub
+	 * tile, or an edge tile whose centre lies in a cell without a settlement) and that hold an urban column; plus the tiles a main
+	 * road of the cell crosses on its way from the hub to the last such tile along it (ROADS: a main road through a tile nobody
+	 * plans leaves a gap, so the buildings beyond it could not reach the hub). Those road tiles may hold no urban column; they are
+	 * listed with the outskirts quarter and density 0, and district detail gives them streets but no lots. Other member cells list
+	 * the same tile alike, so the merge keeps one.
+	 */
+	private static List<DistrictSummary> districts(SkeletonContext c, Pt hub, RegionView view, List<Road> roads) {
 		TreeMap<String, DistrictSummary> out = new TreeMap<>();
+		DistrictGrid.TileId hubTile = hub == null ? null : c.grid.tileOf(hub.x(), hub.z());
+		DistrictGrid.TileId siteHubTile = c.holdsCentre() ? hubTile : null;
 		int reach = c.density.maxRadius() + MARGIN + 2 * 192;
 		int minX = Math.max(c.x0, c.site.centre().x() - reach), maxX = Math.min(c.x0 + (c.nx - 1) * c.step, c.site.centre().x() + reach);
 		int minZ = Math.max(c.z0, c.site.centre().z() - reach), maxZ = Math.min(c.z0 + (c.nz - 1) * c.step, c.site.centre().z() + reach);
 		if (minX > maxX || minZ > maxZ) return List.of();
 		DistrictGrid.TileId a = c.grid.tileOf(minX - 192, minZ - 192), b = c.grid.tileOf(maxX + 192, maxZ + 192);
-		DistrictGrid.TileId hubTile = hub == null ? null : c.grid.tileOf(hub.x(), hub.z());
 		for (int iz = a.iz(); iz <= b.iz(); iz++) {
 			for (int ix = a.ix(); ix <= b.ix(); ix++) {
 				DistrictGrid.Tile t = c.grid.tile(ix, iz);
 				boolean isHub = hubTile != null && hubTile.ix() == ix && hubTile.iz() == iz;
-				if (!isHub && !CellGeometry.owns(c.field, c.cell, (t.minX() + t.maxX()) / 2, (t.minZ() + t.maxZ()) / 2)) continue;
+				Cell centre = CellGeometry.owner(c.field, (t.minX() + t.maxX()) / 2, (t.minZ() + t.maxZ()) / 2);
+				if (!isHub && !centre.equals(c.cell) && (c.site.cells().contains(centre) || !Districts.owns(view, c.site, c.grid, siteHubTile, ix, iz))) continue;
 				DistrictSummary d = summary(c, t);
 				if (d != null) out.put(d.id(), d);
+			}
+		}
+		// road tiles: from the hub along each main road up to the last tile with an urban column the settlement owns
+		TreeMap<String, Boolean> owned = new TreeMap<>();
+		for (Road r : roads) {
+			if (r.kind() != RoadKind.MAIN && r.kind() != RoadKind.PATH) continue;
+			List<DistrictGrid.Tile> seq = new ArrayList<>();
+			for (int[] col : StreetCols.columns(r.points())) {
+				DistrictGrid.Tile t = c.grid.tileAt(col[0], col[1]);
+				if (seq.isEmpty() || seq.get(seq.size() - 1).ix() != t.ix() || seq.get(seq.size() - 1).iz() != t.iz()) seq.add(t);
+			}
+			int last = -1;
+			boolean[] own = new boolean[seq.size()];
+			for (int k = 0; k < seq.size(); k++) {
+				DistrictGrid.Tile t = seq.get(k);
+				String id = Ids.district(t.ix(), t.iz());
+				own[k] = owned.computeIfAbsent(id, x -> Districts.owns(view, c.site, c.grid, siteHubTile, t.ix(), t.iz()));
+				if (own[k] && (out.containsKey(id) || summary(c, t) != null)) last = k;
+			}
+			for (int k = 0; k <= last; k++) {
+				DistrictGrid.Tile t = seq.get(k);
+				String id = Ids.district(t.ix(), t.iz());
+				if (!own[k] || out.containsKey(id)) continue;
+				DistrictSummary d = summary(c, t);
+				out.put(id, d != null ? d : new DistrictSummary(id, t.ix(), t.iz(), t.minX(), t.minZ(), t.widthX(), t.widthZ(), t.minX() / 16, t.minZ() / 16,
+						QuarterKind.OUTSKIRTS.ordinal(), 0, List.of(), 0, null));
 			}
 		}
 		return new ArrayList<>(out.values());

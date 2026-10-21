@@ -62,6 +62,11 @@ public record SettlementPlan(int genVersion, long seed, SettlementSite site, Rec
 
 
 	/** A copy with the given violations (for checkers that annotate a plan). */
+	/** The same plan with other landmarks (CityPlanner puts them where district detail placed them). */
+	public SettlementPlan withLandmarks(List<Landmark> l) {
+		return new SettlementPlan(genVersion, seed, site, bounds, coarse, quarters, cells, districts, roads, gates, new ArrayList<>(l), walls, violations);
+	}
+
 	public SettlementPlan withViolations(List<Violation> v) {
 		return new SettlementPlan(genVersion, seed, site, bounds, coarse, quarters, cells, districts, roads, gates, landmarks, walls, new ArrayList<>(v));
 	}

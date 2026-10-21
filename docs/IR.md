@@ -213,11 +213,13 @@ district { format: "fb-district/1", planVersion: 1, genVersion, seed: "<int64>",
   tile-border arterials and plain border streets, the grid lines shared along a row or column of tiles, hashed port lanes and
   frontage lanes, each clipped to the tile plus 8 blocks (so two tiles at a border list the same streets; a lot never lies outside the
   tile). Ids: the road's own (`r..`, a later piece of the same road gets `.1`...), `a<axis><line>_<from>` arterials, `b<axis><line>_<from>`
-  border streets, `sx<x>_<z>` / `sz<z>_<x>` grid lines, `t<n>` ports, `n<n>` lanes, `quay<x>_<z>` waterfront promenades (kind `quay`, width 4: the marching-squares contour of "water within 8 blocks" on the 8-lattice, kept in the waterfront quarter, on a bank at most 4 above the water, runs of 40+ columns; `k<n>` lanes link them to the nearest street); sorted by id. `points` include a point at every 8th
-  column and at water edges so `y` (the graded surface at each point, from `Grading.profile` on these very columns) interpolates to what
-  `Grading.road` gives again. `lots`: `airRights` is the jetty reach over the front street (0 on a front under 4 wide or a plaza, 2
+  border streets, `sx<x>_<z>` / `sz<z>_<x>` grid lines, `t<n>` ports, `n<n>` lanes, `quay<x>_<z>` waterfront promenades (kind `quay`, width 4: the marching-squares contour of "water within 8 blocks" on the 8-lattice, kept in the waterfront quarter, on a bank at most 4 above the water, runs of 40+ columns; `k<n>` lanes link them to the nearest street); sorted by id. `points` are the vertices plus both columns of every change of height (ROADS), so floor
+  interpolation of `y` between consecutive points (`Grading.road(points, ys, width, exact)`, `Briefs.frontY`) gives every column's height
+  exactly; a road two tiles share (skeleton road, arterial or border segment, grid run, quay run) is graded once as a whole, so both tiles
+  store the same heights. A tile may be road-only (outskirts, density 0, no lots): one a main road crosses on its way to an urban tile. `lots`: `airRights` is the jetty reach over the front street (0 on a front under 4 wide or a plaza, 2
   from width 7, else 1), `frontY` the street surface at the front centre, `style` `auto` until the brief filler (`Briefs.fill`) runs.
-  Hall and temple landmarks of the skeleton are lots (`hall`, `temple`) flush against the hub square. Rules added to `SettlementChecks`:
+  Hall and temple landmarks of the skeleton are lots (`hall`, `temple`) flush against the hub square, or (no room there) on the nearest
+  street of the hub tile that reaches the hub; `CityPlanner` moves the settlement's landmarks to those lots and to the (possibly moved) square. Rules added to `SettlementChecks`:
   `lot-frontage`, `lot-dry`, `lot-grade`, `roads-connected` (per tile), `tile-border-agree` (two plans).
 - **City pipeline** (D0, `CityPlanner`, CLI `city --districts [--scenes all|none|auto:N|ID,ID] [--interiors] [--check]` and `city-check`): one
   shared source builds every member cell once, then each owned tile is planned and briefed (`Briefs.fill` takes the quarter at each lot's

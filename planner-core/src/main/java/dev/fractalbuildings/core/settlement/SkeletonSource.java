@@ -24,6 +24,12 @@ public interface SkeletonSource {
 	/** The skeleton of a member cell; throws for a cell the site does not span. */
 	CellSkeleton skeleton(Cell cell);
 
+	/**
+	 * The settlement's skeleton road network ({@link RoadNetwork}): which planned tiles there are and which road columns reach the hub.
+	 * Built from {@link #skeleton} of every member cell; this default builds it on every call, so sources that serve many tiles memoise it.
+	 */
+	default RoadNetwork network() { return RoadNetwork.build(this); }
+
 	/** Builds skeletons directly from a coarse probe, once per cell. */
 	final class Direct implements SkeletonSource {
 		private final long seed;
@@ -78,6 +84,15 @@ public interface SkeletonSource {
 		@Override public CellSkeleton skeleton(Cell cell) {
 			if (!site.cells().contains(cell)) throw new IllegalArgumentException("cell " + cell + " is not part of " + site.id());
 			return memo.get(cell, c -> Skeletons.build(seed, view, c, probe, grid, program));
+		}
+
+		private volatile RoadNetwork network;
+
+		/** Built once (a pure function of the skeletons, so two threads building it at once get equal networks). */
+		@Override public RoadNetwork network() {
+			RoadNetwork n = network;
+			if (n == null) network = n = RoadNetwork.build(this);
+			return n;
 		}
 	}
 }
