@@ -261,6 +261,8 @@ public final class Districts {
 			gridStreets();
 			finishBase();
 			ports();
+			plazaLanes();
+			if (!moved.isEmpty()) hallLots();
 			frontageLanes();
 			List<Raw> finals = new ArrayList<>();
 			for (Raw r : raws) if (r.street != null) finals.add(r);
@@ -276,34 +278,48 @@ public final class Districts {
 
 		// ---- landmarks, plazas, hall and temple lots
 
+		List<Landmark> found;
+		List<Rect> all, squares;
+
 		void landmarksAndPlazas() {
 			Cell centreCell = CellGeometry.owner(src.view().field(), src.site().centre().x(), src.site().centre().z());
-			List<Landmark> found = new ArrayList<>();
+			found = new ArrayList<>();
 			if (src.site().cells().contains(centreCell)) for (Landmark l : src.skeleton(centreCell).landmarks()) if (l.district().equals(id)) found.add(l);
-			List<Rect> all = new ArrayList<>();
+			all = new ArrayList<>();
 			for (Landmark l : found) all.add(new Rect(l.x(), l.z(), l.w(), l.d()));
-			List<Rect> squares = new ArrayList<>();
+			squares = new ArrayList<>();
 			int pk = 0;
 			for (int i = 0; i < found.size(); i++) {
 				Landmark l = found.get(i);
 				if (!open(l.kind())) continue;
 				Rect r = all.get(i);
-				Optional<Grading.PlazaGrade> g = Grading.plaza(r, exact);
+				Optional<Grading.PlazaGrade> g = dry(r) ? Grading.plaza(r, exact) : Optional.empty();
 				if (g.isEmpty()) {
-					for (Rect c : shifts(r)) {
-						boolean clash = false;
-						for (int j = 0; j < all.size(); j++) if (j != i && overlaps(c, all.get(j))) clash = true;
-						if (clash) continue;
-						g = Grading.plaza(c, exact);
-						if (g.isPresent()) {
-							notes.add("plaza " + l.kind().json + " moved from " + r.x() + "," + r.z() + " to " + c.x() + "," + c.z() + " (rough or wet ground)");
-							r = c;
-							break;
+					// Exact terrain disagrees with the coarse probe the skeleton was placed on: search nearby for a spot that grades,
+					// within NEAR_RINGS full size then shrunk (never below MIN_SQUARE), then the same out to SHIFT_RINGS; nearest shifts first. A first round wants dry ground HALL_ROOM blocks all round (room for the hall and temple facing it), a second round takes any grading spot.
+					Rect from = r;
+					search:
+					for (int room = l.kind() == LandmarkKind.SQUARE ? HALL_ROOM : 0; room >= 0; room -= HALL_ROOM)
+					for (int reach = NEAR_RINGS; reach <= (l.kind() == LandmarkKind.SQUARE ? SHIFT_RINGS : NEAR_RINGS); reach += SHIFT_RINGS - NEAR_RINGS)
+					for (int shrink = 0; shrink <= SQUARE_SHRINK_STEPS; shrink++) {
+						Rect base = shrink == 0 ? from : new Rect(from.x() + 4 * shrink, from.z() + 4 * shrink, from.w() - 8 * shrink, from.d() - 8 * shrink);
+						if (base.w() < MIN_SQUARE || base.d() < MIN_SQUARE) break;
+						for (Rect c : shifts(base, shrink > 0, reach)) {
+							boolean clash = false;
+							for (int j = 0; j < all.size(); j++) if (j != i && open(found.get(j).kind()) && overlaps(c, all.get(j))) clash = true;
+							if (clash || !dry(c) || (room > 0 && !dry(new Rect(c.x() - room, c.z() - room, c.w() + 2 * room, c.d() + 2 * room)))) continue;
+							g = Grading.plaza(c, exact);
+							if (g.isPresent()) {
+								notes.add("plaza " + l.kind().json + " moved from " + from.x() + "," + from.z() + " " + from.w() + "x" + from.d() + " to " + c.x() + "," + c.z() + " " + c.w() + "x" + c.d() + " (rough or wet ground)");
+								r = c;
+								moved.add(c);
+								break search;
+							}
 						}
 					}
 				}
 				if (g.isEmpty()) {
-					notes.add("plaza " + l.kind().json + " at " + r.x() + "," + r.z() + " dropped (rough or wet ground, no better spot within 48 blocks)");
+					notes.add("plaza " + l.kind().json + " at " + r.x() + "," + r.z() + " dropped (rough or wet ground, no better spot within " + 16 * SHIFT_RINGS + " blocks)");
 					all.set(i, r);
 					continue;
 				}
@@ -314,6 +330,11 @@ public final class Districts {
 				reserved.add(r);
 				paintRect(r, PLAZA | RESERVED);
 			}
+			if (moved.isEmpty()) hallLots();
+		}
+
+		/** Hall and temple lots beside the squares; after the lanes joining a moved square to the roads, so they do not cut them off. */
+		void hallLots() {
 			for (int i = 0; i < found.size(); i++) {
 				Landmark l = found.get(i);
 				if (open(l.kind())) continue;
@@ -321,6 +342,10 @@ public final class Districts {
 				LotBrief lot = l.kind() == LandmarkKind.HALL || l.kind() == LandmarkKind.TEMPLE ? hallLot(l, r, squares) : null;
 				if (lot == null) {
 					notes.add(l.kind().json + " at " + r.x() + "," + r.z() + " got no lot");
+					boolean covered = false; // a lot or square placed meanwhile covers the landmark's spot: keep no reservation there
+					for (LotBrief o : lots) if (overlaps(o.rect(), r)) covered = true;
+					for (Rect q : squares) if (overlaps(q, r)) covered = true;
+					if (covered) continue;
 					landmarks.add(l);
 					reserved.add(r);
 					paintRect(r, RESERVED);
@@ -334,14 +359,17 @@ public final class Districts {
 			}
 		}
 
+		/** How far (in 16-block steps) a square that does not grade may move, and how often it may shrink (4 blocks a side per step) before it is dropped. */
+		static final int SHIFT_RINGS = 10, NEAR_RINGS = 4, HALL_ROOM = 22, HALL_MAX_RELIEF = 3, SQUARE_SHRINK_STEPS = 3, MIN_SQUARE = 16;
+
 		static boolean open(LandmarkKind k) { return k == LandmarkKind.SQUARE || k == LandmarkKind.MARKET || k == LandmarkKind.GREEN || k == LandmarkKind.PARK; }
 
 		static boolean overlaps(Rect a, Rect b) { return Rect.overlap(a.x(), a.z(), a.w(), a.d(), b.x(), b.z(), b.w(), b.d()); }
 
 		/** Shifted copies of a rectangle on the 16-lattice, nearest first (ring order, then z, then x), inside the tile with a margin. */
-		List<Rect> shifts(Rect r) {
+		List<Rect> shifts(Rect r, boolean includeSelf, int reach) {
 			List<int[]> offs = new ArrayList<>();
-			for (int dz = -3; dz <= 3; dz++) for (int dx = -3; dx <= 3; dx++) if (dx != 0 || dz != 0) offs.add(new int[] {dx, dz});
+			for (int dz = -reach; dz <= reach; dz++) for (int dx = -reach; dx <= reach; dx++) if (includeSelf || dx != 0 || dz != 0) offs.add(new int[] {dx, dz});
 			offs.sort(Comparator.<int[]>comparingInt(o -> o[0] * o[0] + o[1] * o[1]).thenComparingInt(o -> o[1]).thenComparingInt(o -> o[0]));
 			List<Rect> out = new ArrayList<>();
 			int m = DefaultProgram.TILE_MARGIN;
@@ -365,29 +393,51 @@ public final class Districts {
 			}
 			if (sq == null) return null;
 			int dx = sq.x() + sq.w() / 2 - lcx, dz = sq.z() + sq.d() / 2 - lcz;
-			Facing front = Math.abs(dx) > Math.abs(dz) ? (dx > 0 ? Facing.EAST : Facing.WEST) : (dz > 0 ? Facing.SOUTH : Facing.NORTH);
-			boolean alongX = front == Facing.NORTH || front == Facing.SOUTH;
-			int along = Math.max(alongX ? r.w() : r.d(), lim.minLotWidth()), deep = Math.max(alongX ? r.d() : r.w(), lim.minLotDepth());
-			int w = alongX ? along : deep, d = alongX ? deep : along;
-			int x, z;
-			switch (front) {
-				case SOUTH -> { x = lcx - w / 2; z = sq.z() - d; }
-				case NORTH -> { x = lcx - w / 2; z = sq.z() + sq.d(); }
-				case EAST -> { x = sq.x() - w; z = lcz - d / 2; }
-				default -> { x = sq.x() + sq.w(); z = lcz - d / 2; }
+			Facing first = Math.abs(dx) > Math.abs(dz) ? (dx > 0 ? Facing.EAST : Facing.WEST) : (dz > 0 ? Facing.SOUTH : Facing.NORTH);
+			// The preferred side first, then the others; on each side slide along the square (nearest the landmark first) until the lot fits.
+			List<Facing> sides = new ArrayList<>(List.of(first));
+			for (Facing f : new Facing[] {Facing.SOUTH, Facing.NORTH, Facing.EAST, Facing.WEST}) if (f != first) sides.add(f);
+			for (Facing front : sides) {
+				boolean alongX = front == Facing.NORTH || front == Facing.SOUTH;
+				int along = Math.max(alongX ? r.w() : r.d(), lim.minLotWidth()), deep = Math.max(alongX ? r.d() : r.w(), lim.minLotDepth());
+				int w = alongX ? along : deep, d = alongX ? deep : along;
+				int sqLo = alongX ? sq.x() : sq.z(), sqLen = alongX ? sq.w() : sq.d();
+				int want = (alongX ? lcx : lcz) - along / 2;
+				int minStart = sqLo - along + Math.min(8, sqLen), maxStart = sqLo + sqLen - Math.min(8, sqLen);
+				int pref = Math.max(minStart, Math.min(maxStart, want));
+				for (int k = 0; k <= maxStart - minStart; k += 4) {
+					for (int sgn = (k == 0 ? 1 : -1); sgn <= 1; sgn += 2) {
+						int start = pref + sgn * k;
+						if (start < minStart || start > maxStart) continue;
+						int x, z;
+						switch (front) {
+							case SOUTH -> { x = start; z = sq.z() - d; }
+							case NORTH -> { x = start; z = sq.z() + sq.d(); }
+							case EAST -> { x = sq.x() - w; z = start; }
+							default -> { x = sq.x() + sq.w(); z = start; }
+						}
+						Rect lot = new Rect(x, z, w, d);
+						if (!tr.containsRect(x, z, w, d)) continue;
+						if (!rectFreeExactWet(lot) || !dry(lot)) continue;
+						if ((!moved.isEmpty() && relief(lot) > HALL_MAX_RELIEF) || !SpecPolicyV1.reliefOk(lim, relief(lot), alongX ? along : deep, alongX ? deep : along)) continue;
+						int dens = den.at(x + w / 2, z + d / 2);
+						return new LotBrief(id + ".l" + lots.size(), x, z, w, d, front, type, StyleLibrary.AUTO, lim.minStoreys(), lim.maxStoreys(), 1, 0, Brief.NO_FRONT_Y, dens, LotBrief.BUILD);
+					}
+				}
 			}
-			Rect lot = new Rect(x, z, w, d);
-			if (!tr.containsRect(x, z, w, d)) return null;
-			if (!rectFree(lot, true) || !dry(lot)) return null;
-			if (!SpecPolicyV1.reliefOk(lim, relief(lot), alongX ? along : deep, alongX ? deep : along)) return null;
-			int dens = den.at(x + w / 2, z + d / 2);
-			return new LotBrief(id + ".l" + lots.size(), x, z, w, d, front, type, StyleLibrary.AUTO, lim.minStoreys(), lim.maxStoreys(), 1, 0, Brief.NO_FRONT_Y, dens, LotBrief.BUILD);
+			return null;
 		}
 
 		/** Nothing on any column (a landmark's own reservation does not count when {@code ignoreReserved}). */
 		/** Every column of the rectangle is dry (exact probes, memoised): the 4-lattice flags are a conservative first screen only. */
 		boolean dry(Rect r) {
 			for (int z = r.z(); z < r.z() + r.d(); z++) for (int x = r.x(); x < r.x() + r.w(); x++) if (wt(x, z)) return false;
+			return true;
+		}
+
+		/** Free of streets, plazas and lots; wet columns are judged by the exact probes (the caller checks {@link #dry}), not the conservative WET flags. */
+		boolean rectFreeExactWet(Rect r) {
+			for (int z = r.z(); z < r.z() + r.d(); z++) for (int x = r.x(); x < r.x() + r.w(); x++) if ((fg(x, z) & (STREET | PLAZA | LOT)) != 0) return false;
 			return true;
 		}
 
@@ -717,6 +767,83 @@ public final class Districts {
 				}
 			}
 			return out;
+		}
+
+		/** Squares moved off the skeleton's spot (exact terrain would not grade it): the skeleton roads no longer reach them. */
+		final List<Rect> moved = new ArrayList<>();
+
+		/** A lane from each moved square to the nearest street, so the square is part of the road network. */
+		void plazaLanes() {
+			if (moved.isEmpty()) return;
+			List<Raw> base = new ArrayList<>(raws);
+			int m = StreetRules.NODE, n = 0;
+			LatticePath.Bounds b = new LatticePath.Bounds(tile.minX() + m, tile.minZ() + m, tile.maxX() - m, tile.maxZ() - m);
+			for (Rect pr : moved) {
+				int cx = pr.x() + pr.w() / 2, cz = pr.z() + pr.d() / 2;
+				// the nearest column of each street run (a skeleton road the square cut in two has a piece on each side), up to 3 within 64 blocks of the nearest
+				List<long[]> cand = new ArrayList<>();
+				List<int[]> targets = new ArrayList<>();
+				for (Raw r : base) {
+					int[] best = null;
+					long bd = 200L * 200L;
+					for (int[] c : r.cols) {
+						if (c[0] < tile.minX() + m || c[0] > tile.maxX() - m || c[1] < tile.minZ() + m || c[1] > tile.maxZ() - m) continue;
+						if (c[0] >= pr.x() - 2 && c[0] < pr.x() + pr.w() + 2 && c[1] >= pr.z() - 2 && c[1] < pr.z() + pr.d() + 2) continue; // under or against the square: nothing joins it there
+						long ddx = c[0] - cx, ddz = c[1] - cz, dd = ddx * ddx + ddz * ddz;
+						if (dd < bd) { bd = dd; best = c; }
+					}
+					if (best != null) { cand.add(new long[] {bd, targets.size()}); targets.add(best); }
+				}
+				cand.sort((p, q) -> p[0] != q[0] ? Long.compare(p[0], q[0]) : Long.compare(p[1], q[1]));
+				List<int[]> chosen = new ArrayList<>();
+				for (long[] c : cand) {
+					if (chosen.size() >= 3 || (!chosen.isEmpty() && c[0] > (long) 64 * 64)) break;
+					int[] t = targets.get((int) c[1]);
+					boolean dup = false;
+					for (int[] o : chosen) if (Math.abs(o[0] - t[0]) + Math.abs(o[1] - t[1]) < 12) dup = true;
+					if (!dup) chosen.add(t);
+				}
+				for (int[] near : chosen) {
+				int dx = near[0] - cx, dz = near[1] - cz;
+				int ex, ez, qx, qz;
+				if (Math.abs(dx) * pr.d() > Math.abs(dz) * pr.w()) {
+					int sgn = dx > 0 ? 1 : -1;
+					ex = sgn > 0 ? pr.x() + pr.w() + 1 : pr.x() - 2;
+					qx = ex + sgn * m;
+					ez = qz = cz;
+				} else {
+					int sgn = dz > 0 ? 1 : -1;
+					ez = sgn > 0 ? pr.z() + pr.d() + 1 : pr.z() - 2;
+					qz = ez + sgn * m;
+					ex = qx = cx;
+				}
+				int gx = qx + Math.round((near[0] - qx) / (float) m) * m, gz = qz + Math.round((near[1] - qz) / (float) m) * m;
+				if (!b.contains(qx, qz) || !b.contains(gx, gz)) continue;
+				List<List<Pt>> variants = new ArrayList<>();
+				if (gx != qx || gz != qz) {
+					List<LatticePath.Pt> path = LatticePath.find(new LatticePath.Pt(qx, qz), new LatticePath.Pt(gx, gz), laneCost(qx, qz, 0), b, m, -1, 40_000, false);
+					if (!path.isEmpty()) {
+						List<Pt> v = new ArrayList<>();
+						for (LatticePath.Pt q : path) v.add(new Pt(q.x(), q.z()));
+						variants.add(v);
+					}
+				}
+				variants.add(List.of(new Pt(near[0], qz))); // no lattice route: an L either way round, taken only if it hits nothing
+				variants.add(List.of(new Pt(qx, near[1])));
+				for (List<Pt> mid : variants) {
+					List<Pt> routed = new ArrayList<>(List.of(new Pt(ex, ez), new Pt(qx, qz)));
+					routed.addAll(mid);
+					Pt last = routed.get(routed.size() - 1);
+					if (last.x() != near[0] && last.z() != near[1]) routed.add(new Pt(near[0], last.z()));
+					if (routed.get(routed.size() - 1).x() != near[0] || routed.get(routed.size() - 1).z() != near[1]) routed.add(new Pt(near[0], near[1]));
+					Raw lane = laneRaw("q" + n++, routed);
+					if (lane == null || hitsReservedAny(lane) || !grade(lane)) continue;
+					raws.add(lane);
+					paint(lane);
+					break;
+				}
+				}
+			}
 		}
 
 		/** Lanes branching from the roads and streets of organic areas every 40 to 70 blocks, 24 to 56 long. */
