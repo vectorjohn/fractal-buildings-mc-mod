@@ -224,6 +224,35 @@ class TerrainToolkitTest {
 		assertTrue(g.steep().isEmpty(), g.steep().toString());
 	}
 
+	/**
+	 * Two small water spans five blocks apart at different heights (ROADS: a puddle on a rise beside a pond): decks are lower
+	 * bounds, so the road rises over both and keeps the grade everywhere, bridges included (the old fixed decks made a 2-block step).
+	 */
+	@Test
+	void closeSpansAtDifferentHeightsKeepTheGrade() {
+		TerrainProbe t = new TerrainProbe() {
+			@Override public int floorY(int x, int z) { return x >= 30 ? 65 : x >= 20 ? 60 : 63; }
+			@Override public int waterDepth(int x, int z) { return x >= 20 && x <= 24 ? 2 : x == 30 ? 1 : 0; }
+		};
+		var g = Grading.road(line(0, 0, 64, 0, 8), 3, t);
+		var p = g.profile();
+		for (int i = 1; i < p.size(); i++) {
+			assertTrue(Math.abs(p.y()[i] - p.y()[i - 1]) <= 1, "step at " + i);
+			if (i >= 3) assertTrue(Math.abs(p.y()[i] - p.y()[i - 3]) <= 1, "3-block grade at " + i + ": " + java.util.Arrays.toString(p.y()));
+		}
+		for (int i = 0; i < p.size(); i++) if (p.bridge()[i]) assertTrue(p.y()[i] >= t.surfaceY(p.x()[i], p.z()[i]) + Grading.BRIDGE_CLEARANCE, "deck clearance at " + i);
+	}
+
+	/** Heights given at the points come back exactly at the points, and the columns between follow the floor interpolation. */
+	@Test
+	void roadWithGivenHeightsInterpolatesBetweenItsPoints() {
+		var t = SyntheticTerrain.flat(64);
+		var pts = List.of(new Pt(0, 0), new Pt(4, 0), new Pt(5, 0), new Pt(9, 4));
+		var p = Grading.road(pts, new int[] {64, 64, 65, 65}, 3, t).profile();
+		assertEquals(10, p.size());
+		assertEquals(List.of(64, 64, 64, 64, 64, 65, 65, 65, 65, 65), java.util.Arrays.stream(p.y()).boxed().toList());
+	}
+
 	// ---- Grading.plaza
 
 	@Test

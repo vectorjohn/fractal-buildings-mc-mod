@@ -19,9 +19,6 @@ import org.junit.jupiter.api.io.TempDir;
 
 /** The city pipeline through the CLI (D0): `city --scenes/--check`, `city-check`, site ids, byte-stable output. */
 class CityCheckTest {
-	/** Rules that real-terrain plans still break (hub squares dropped on rough ground leave gaps and hall lots without frontage, road heights differ across tile borders); see the D0 log. */
-	private static final String KNOWN = "roads-connected,road-grade,lot-frontage";
-
 	private static int run(String... args) {
 		PrintStream se = System.err;
 		System.setErr(new PrintStream(new ByteArrayOutputStream(), true, StandardCharsets.UTF_8));
@@ -33,30 +30,71 @@ class CityCheckTest {
 	}
 
 	@Test
-	void cityCheckOverTheGateWindowsHasNoViolationsOtherThanTheKnownOnes(@TempDir Path dir) throws Exception {
+	void cityCheckOverTheGateWindowsHasNoViolations(@TempDir Path dir) throws Exception {
 		Path md = dir.resolve("gates.md");
-		assertEquals(0, run("city-check", "--seeds", "1", "--sites", "gates:../fixtures/terrain/gate-sites.tsv", "--scenes", "auto:2", "--ignore", KNOWN, "--out", md.toString()));
+		assertEquals(0, run("city-check", "--seeds", "1", "--sites", "gates:../fixtures/terrain/gate-sites.tsv", "--scenes", "auto:2", "--out", md.toString()));
 		String r = Files.readString(md);
-		assertTrue(r.contains("9 sites (scenes: auto:2), 0 failing"), r.substring(0, Math.min(300, r.length())));
+		assertTrue(r.contains("9 sites (scenes: auto:2), 0 failing, 0 violations"), r.substring(0, Math.min(300, r.length()))); // ROADS: no rule is ignored any more
 		for (String name : List.of("gate-temperate-city", "gate-coast-city", "gate-metropolis-temperate", "gate-joined-city")) assertTrue(r.contains("| " + name + " |"), name);
-		// without --ignore the same run exits 1: the known rules are really reported, so the flag is not what makes it pass
-		assertEquals(1, run("city-check", "--seeds", "1", "--sites", "gates:../fixtures/terrain/gate-sites.tsv", "--scenes", "auto:2", "--out", md.toString()));
 	}
 
 	@Test
-	void cityCheckOverSyntheticSitesHasNoViolationsOtherThanTheKnownOnes(@TempDir Path dir) throws Exception {
+	void cityCheckOverSyntheticSitesHasNoViolations(@TempDir Path dir) throws Exception {
 		Path md = dir.resolve("synthetic.md");
-		assertEquals(0, run("city-check", "--seeds", "1..2", "--sites", "random:10", "--terrain", "noise:3:70:10:300,noise:5:75:25:200+river:-120:24:6", "--scenes", "auto:1", "--ignore", KNOWN, "--out", md.toString()));
+		assertEquals(0, run("city-check", "--seeds", "1..2", "--sites", "random:10", "--terrain", "noise:3:70:10:300,noise:5:75:25:200+river:-120:24:6", "--scenes", "auto:1", "--out", md.toString()));
 		assertTrue(Files.readString(md).contains("40 sites"));
 	}
 
 	@Test
 	void cityCheckFindsTheCellSettlementsOfARecordedWorldMap(@TempDir Path dir) throws Exception {
 		Path md = dir.resolve("cells.md");
-		assertEquals(0, run("city-check", "--seeds", "12345", "--sites", "cells", "--terrain", "recorded:../fixtures/terrain/world-12345-s64.json.gz", "--ignore", KNOWN, "--out", md.toString()));
+		assertEquals(0, run("city-check", "--seeds", "12345", "--sites", "cells", "--terrain", "recorded:../fixtures/terrain/world-12345-s64.json.gz", "--out", md.toString()));
 		String r = Files.readString(md);
 		assertTrue(r.contains("| sm3_m9 |"), "the region planner's city at cell -3,-9 is found: " + r.substring(0, 400));
 		assertFalse(r.contains("| error |"), r);
+	}
+
+	/**
+	 * ROADS lets a settlement plan an edge tile whose centre lies in a cell without a settlement (a claim by the most lattice
+	 * columns): over both recorded world maps every tile any settlement plans is planned by exactly one, and the 987654321 map's
+	 * settlements (where solo-site villages and towns were cut off before) check clean.
+	 */
+	@Test
+	void everyTileIsPlannedByOneSettlementOnTheWorldMaps(@TempDir Path dir) throws Exception {
+		int tiles = 0, skipped = 0;
+		for (String[] w : new String[][] {{"12345", "world-12345-s64"}, {"987654321", "world-987654321-s64"}}) {
+			long seed = Long.parseLong(w[0]);
+			ProbeSpecs.Probes p = Scenes.probes("recorded:../fixtures/terrain/" + w[1] + ".json.gz");
+			RegionField field = new RegionField(seed, 1024);
+			RegionView view = CityCommand.cellView(field, p);
+			var fv = CityCommand.fieldView(field, p);
+			var coarse = dev.fractalbuildings.core.probe.CoarseProbe.of(p.terrain(), p.biome(), 32);
+			java.util.TreeMap<String, String> owner = new java.util.TreeMap<>();
+			java.util.TreeSet<String> seen = new java.util.TreeSet<>();
+			for (int cz = -12; cz <= 12; cz++) {
+				for (int cx = -12; cx <= 12; cx++) {
+					if (!fv.decidable(cx, cz)) continue;
+					var s = view.siteOf(new Cell(cx, cz));
+					if (s.isEmpty() || !seen.add(s.get().id())) continue;
+					var src = new dev.fractalbuildings.core.settlement.SkeletonSource.Direct(seed, view, s.get(), coarse);
+					try {
+					for (Cell c : s.get().cells()) {
+						for (var d : src.skeleton(c).districts()) {
+							if (!dev.fractalbuildings.core.settlement.Districts.owns(src, d.ix(), d.iz())) continue;
+							String prev = owner.putIfAbsent(d.id(), s.get().id());
+							assertTrue(prev == null || prev.equals(s.get().id()), d.id() + " is planned by " + prev + " and " + s.get().id());
+						}
+					}
+					} catch (IllegalArgumentException e) {
+						skipped++; // a settlement reaching past the recorded window
+					}
+				}
+			}
+			tiles += owner.size();
+		}
+		assertTrue(tiles > 500 && skipped < 30, tiles + " tiles, " + skipped + " settlements past the window");
+		Path md = dir.resolve("w987.md");
+		assertEquals(0, run("city-check", "--seeds", "987654321", "--sites", "cells", "--terrain", "recorded:../fixtures/terrain/world-987654321-s64.json.gz", "--out", md.toString()), Files.readString(md).substring(0, 400));
 	}
 
 	@Test

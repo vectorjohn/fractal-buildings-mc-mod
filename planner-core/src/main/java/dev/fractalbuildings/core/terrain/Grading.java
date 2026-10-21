@@ -35,7 +35,8 @@ public final class Grading {
 	/** Inclusive centre-line column range whose cut or fill exceeds {@link #MAX_CUT_FILL}. */
 	public record Steep(int from, int to) {}
 
-	public record RoadGrade(Profile profile, List<Steep> steep, List<GroundBox> boxes) {
+	/** @param anchors the column indices whose heights were fixed first; the profile is the floor interpolation between consecutive anchors, so the same anchors and heights give the same profile anywhere (they include every point of the centre line) */
+	public record RoadGrade(Profile profile, List<Steep> steep, List<GroundBox> boxes, int[] anchors) {
 		/** No column needs more than {@link #MAX_CUT_FILL} of cut or fill. When false the boxes still cover the steep columns: reroute or reject the road. */
 		public boolean ok() { return steep.isEmpty(); }
 	}
@@ -44,17 +45,28 @@ public final class Grading {
 
 	/** @param points centre line; consecutive points are joined by straight column runs */
 	public static RoadGrade road(List<LatticePath.Pt> points, int width, TerrainProbe exact) {
-		return grade(points, width, exact, true);
+		return grade(points, null, width, exact, true);
+	}
+
+	/**
+	 * A road whose heights are already decided: {@code ys[k]} at {@code points.get(k)}, every point an anchor, the columns between
+	 * two points interpolated as {@link #road} interpolates between its anchors (so a street stored as its anchors and their heights
+	 * gives back exactly the profile it was graded with, in any tile). Steep runs and boxes as {@link #road}.
+	 */
+	public static RoadGrade road(List<LatticePath.Pt> points, int[] ys, int width, TerrainProbe exact) {
+		if (ys.length != points.size()) throw new IllegalArgumentException(ys.length + " heights for " + points.size() + " points");
+		return grade(points, ys, width, exact, true);
 	}
 
 	/** The height profile and steep runs of a road without building its boxes (the boxes list is empty); same profile as {@link #road}. */
 	public static RoadGrade profile(List<LatticePath.Pt> points, TerrainProbe exact) {
-		return grade(points, 1, exact, false);
+		return grade(points, null, 1, exact, false);
 	}
 
-	private static RoadGrade grade(List<LatticePath.Pt> points, int width, TerrainProbe exact, boolean withBoxes) {
+	private static RoadGrade grade(List<LatticePath.Pt> points, int[] given, int width, TerrainProbe exact, boolean withBoxes) {
 		if (points.isEmpty() || width <= 0) throw new IllegalArgumentException("road needs points and a width");
 		// 1. centre-line columns
+		List<Integer> pointAt = new ArrayList<>(List.of(0));
 		ArrayList<int[]> cols = new ArrayList<>();
 		cols.add(new int[] {points.get(0).x(), points.get(0).z()});
 		for (int p = 1; p < points.size(); p++) {
@@ -66,6 +78,7 @@ public final class Grading {
 				cols.add(new int[] {a.x() + (int) Math.floorDiv(2L * dx * k + n, 2L * n),
 						a.z() + (int) Math.floorDiv(2L * dz * k + n, 2L * n)});
 			}
+			pointAt.add(cols.size() - 1);
 		}
 		int n = cols.size();
 		int[] x = new int[n], z = new int[n], g = new int[n], y = new int[n];
@@ -88,34 +101,41 @@ public final class Grading {
 			spanLast[j - 1] = true;
 			i = j;
 		}
-		// 3. anchors every 8 columns, plus ends and span ends
-		int[] anchors = java.util.stream.IntStream.range(0, n)
+		// 3. anchors every 8 columns, plus ends and span ends (or, with given heights, the points)
+		int[] anchors = given != null ? pointAt.stream().mapToInt(Integer::intValue).toArray() : java.util.stream.IntStream.range(0, n)
 				.filter(i -> i % SAMPLE_EVERY == 0 || i == n - 1 || spanFirst[i] || spanLast[i]).toArray();
 		int m = anchors.length;
-		int[] r = new int[m];
-		boolean[] fixed = new boolean[m];
+		int[] r = new int[m], floor = new int[m];
+		if (given != null) System.arraycopy(given, 0, r, 0, m);
+		else {
 		for (int a = 0; a < m; a++) {
 			int i = anchors[a];
-			if (wet[i]) { r[a] = deck[i]; fixed[a] = true; continue; }
+			floor[a] = Integer.MIN_VALUE / 2;
+			if (wet[i]) { r[a] = deck[i]; floor[a] = deck[i]; continue; }
 			if (a == 0 || a == m - 1) { r[a] = g[i]; continue; }
 			r[a] = median(g[anchors[a - 1]], g[i], g[anchors[a + 1]]);
 		}
-		// 4. clamp the grade between anchors, bridge anchors fixed
+		// 4. bridge decks are lower bounds (clearance over the water), not fixed levels: two spans close together over water at
+		// different heights would otherwise force a grade steeper than the limit between them. The bounds first raise each other
+		// by the grade limit (two sweeps give the envelope), so the clamp below always has a solution.
+		for (int a = 1; a < m; a++) floor[a] = Math.max(floor[a], floor[a - 1] - (anchors[a] - anchors[a - 1]) / GRADE_RUN);
+		for (int a = m - 2; a >= 0; a--) floor[a] = Math.max(floor[a], floor[a + 1] - (anchors[a + 1] - anchors[a]) / GRADE_RUN);
+		for (int a = 0; a < m; a++) r[a] = Math.max(r[a], floor[a]);
+		// clamp the grade between anchors, never below an anchor's bound
 		for (int pass = 0; pass < 200; pass++) {
 			boolean changed = false;
 			for (int a = 1; a < m; a++) {
-				if (fixed[a]) continue;
 				int mx = (anchors[a] - anchors[a - 1]) / GRADE_RUN;
-				int v = Math.max(r[a - 1] - mx, Math.min(r[a - 1] + mx, r[a]));
+				int v = Math.max(floor[a], Math.max(r[a - 1] - mx, Math.min(r[a - 1] + mx, r[a])));
 				if (v != r[a]) { r[a] = v; changed = true; }
 			}
 			for (int a = m - 2; a >= 0; a--) {
-				if (fixed[a]) continue;
 				int mx = (anchors[a + 1] - anchors[a]) / GRADE_RUN;
-				int v = Math.max(r[a + 1] - mx, Math.min(r[a + 1] + mx, r[a]));
+				int v = Math.max(floor[a], Math.max(r[a + 1] - mx, Math.min(r[a + 1] + mx, r[a])));
 				if (v != r[a]) { r[a] = v; changed = true; }
 			}
 			if (!changed) break;
+		}
 		}
 		// 5. interpolate between anchors
 		if (m == 1) y[0] = r[0];
@@ -132,7 +152,7 @@ public final class Grading {
 			steep.add(new Steep(i, j));
 			i = j + 1;
 		}
-		if (!withBoxes) return new RoadGrade(new Profile(x, z, y, Arrays.copyOf(wet, n)), steep, List.of());
+		if (!withBoxes) return new RoadGrade(new Profile(x, z, y, Arrays.copyOf(wet, n)), steep, List.of(), anchors);
 		// 7. footprint cells, first column to claim a cell wins
 		int half = width / 2;
 		TreeMap<Long, int[]> cells = new TreeMap<>(); // key (z, x) -> {x, z, level, bridge}
@@ -164,7 +184,7 @@ public final class Grading {
 			}
 			k++;
 		}
-		return new RoadGrade(new Profile(x, z, y, Arrays.copyOf(wet, n)), steep, BoxMerge.merge(items));
+		return new RoadGrade(new Profile(x, z, y, Arrays.copyOf(wet, n)), steep, BoxMerge.merge(items), anchors);
 	}
 
 	/** Levels a rectangle at the median of a 4-block lattice of exact heights; empty if it is too rough or wet. */

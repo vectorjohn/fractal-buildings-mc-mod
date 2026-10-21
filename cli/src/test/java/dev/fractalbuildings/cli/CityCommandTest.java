@@ -123,11 +123,7 @@ class CityCommandTest {
 			String[] all = java.util.Arrays.copyOf(args, c.length + 5);
 			all[c.length + 4] = out.toString();
 			int rc = run(all);
-			if (rc != 0) { // known roads-connected gap (mixed-city main road crosses tile d54_m20, which no district plans; ROADS item) is the only violation allowed
-				String json = Files.readString(out.resolve("settlement.json"));
-				assertEquals(1, rc, c[0]);
-				assertEquals(json.split("\"invariant\"", -1).length, json.split("\"invariant\"\\s*:\\s*\"roads-connected\"", -1).length, c[0] + ": only roads-connected may remain");
-			}
+			assertEquals(0, rc, c[0] + ": the fixture cities plan without a violation (ROADS closed the mixed-city gap at d54_m20)");
 			Path fixtures = Path.of("../viewer/fixtures/settlement/districts").resolve(c[0]);
 			try (var files = Files.walk(fixtures)) {
 				for (Path f : (Iterable<Path>) files.filter(Files::isRegularFile)::iterator) {

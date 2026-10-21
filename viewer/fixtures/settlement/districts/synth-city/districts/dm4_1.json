@@ -6,7 +6,7 @@
   "district": {"id": "dm4_1", "ix": -4, "iz": 1, "x": -656, "z": 144, "w": 192, "d": 176, "quarter": 7, "density": 30},
   "streets": [
     {"id": "a12_m464", "kind": "arterial", "width": 9, "points": [[-464, 320], [-456, 320]], "y": [70, 70]},
-    {"id": "t0", "kind": "lane", "width": 3, "points": [[-568, 328], [-568, 320], [-568, 312]], "y": [70, 70, 70]}
+    {"id": "t0", "kind": "lane", "width": 3, "points": [[-568, 328], [-568, 312]], "y": [70, 70]}
   ],
   "plazas": [],
   "lots": [],

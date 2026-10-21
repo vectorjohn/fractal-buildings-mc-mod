@@ -40,7 +40,7 @@ public record TerrainStats(int urban, int steep, int lots, int emptySteep, long 
 			for (Street s : d.streets()) {
 				List<LatticePath.Pt> pts = new ArrayList<>();
 				for (Pt p : s.points()) pts.add(new LatticePath.Pt(p.x(), p.z()));
-				Grading.RoadGrade g = Grading.road(pts, s.width(), exact);
+				Grading.RoadGrade g = Grading.road(pts, s.y(), s.width(), exact); // the plan's heights, so both tiles at a border build the same road
 				if (!g.ok()) steepRoads++;
 				boolean deck = false;
 				for (boolean b : g.profile().bridge()) deck |= b;
