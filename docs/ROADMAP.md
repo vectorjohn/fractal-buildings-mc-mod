@@ -378,6 +378,7 @@ skeleton, then district detail built lazily (ARCHITECTURE.md, "City scale").
 - [ ] **5.9 Scale check**: plan time and memory per district, measured outside
   the game at 512², 2048² and a multi-cell city; flat per-district cost is the
   bar (feeds 6.5 and 6.7).
+  *SC partial 2026-10-21* (log `docs/log/2026-10-21-p5-sc-scale.md`, tables `docs/review/phase5/scale.md`; `fractal-cli city-bench` + `scripts/city-bench.sh`): per-district time flat and skeleton < 50 ms met; probe bar (< 1,000 exact probes per district plan) not met (1.5k–3k on big gate cities, 5.9k–11.7k synthetic; scenes 70k–990k exact columns) — carried to 6.5/6.7. Median district plan+brief 0.7 to 2 ms on the recorded gate windows from a 477-radius city to the 8-cell metropolis (flat per lot, 0.2 to 0.3 ms), skeleton 2 to 11 ms per cell, a 484-district 4096^2 city plans in 2.8 s in a 64 MiB heap. *Known issues:* the 1.5 x time bar holds on recorded terrain and without scenes (synthetic 512^2 to 2048^2 1.1 x), but is 1.8 x on synthetic terrain with scenes in the JVM; "exact probes" count `floorY` only (`waterDepth` uncounted), so live cost may be underestimated; skeleton cache capacity below 4 costs 1.5 to 4.8 x.
 - [x] **5.10 Water bias**: city sites prefer rivers, lakes and coasts, via a
   distance-to-water term (coarse biome and height probes) in the region
   field's best-of-8 candidate score (ADR 0003, R1); villages and hamlets stay
