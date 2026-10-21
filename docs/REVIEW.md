@@ -232,3 +232,23 @@ work becomes a ROADMAP item or a Polish backlog line. Settled items move to
   Where: `docs/review/phase5/irregular/old-town-plan.png` (synthetic city seed 1001: the hub tile and the old-town tiles round it, beside grid quarters) and `avenues-plan.png` (the D3 avenue city after, compare `docs/review/phase5/d3/city-avenues-plan.png` before); regenerate with `npm run city -- irr1-old-town d3-city-avenues`, then `FB_CITIES=irr1-old-town,d3-city-avenues CITY_GALLERY=1 npx playwright test e2e/city.spec.ts -g "plan view"`; 3D is not captured for these (plan only).
   Look for: blocks of different sizes meeting in T junctions with lanes and a small square or green now and then (good); old-town streets that stop short or run straight through everything (bad: they dead-end 14 blocks from the tile border unless an arterial is there, and tiles join mostly by ports); lots stepping along a diagonal avenue on its cut lanes rather than on the avenue itself; empty wedges beside the avenue (known: under 16 across stay empty); whether the old town should be bigger, smaller, or walled-in only.
   Result:
+
+## Phase 5 gate
+
+- [ ] **Phase 5 gate**: cities in at least five biome mixes (one straddling a border, one larger than 512 x 512, one with a high-rise downtown); would a person have built each town there?
+  Where: [the pack's README](review/phase5/README.md) (per city: plan, zoomed district with lots, skyline colours, fly-through frames, built lots by type and style); pictures in `docs/review/phase5/cities/<preset>/` (86 JPEGs; regenerate with `npm run city`, `node scripts/gate-pack-scenes.mjs` and `GATE_PACK=1 npx playwright test e2e/gate-pack.spec.ts` in `viewer/`); [city-check.md](review/phase5/city-check.md) (9 gate windows, 200 synthetic sites, both world maps, no rule ignored: 0 violations); [scale.md](review/phase5/scale.md); region maps before and after the water bias in `docs/review/phase5/region/`.
+  Look for: does each biome mix read right (temperate/taiga, desert/badlands, snow, jungle/savanna, coast), does the desert/jungle border blend, does the metropolis downtown read as a downtown, do the hamlet, village and walled town read as such. Questions collected during the phase, each also in its own entry above where one exists:
+  1. Villages too gridded (one straight street, houses lined up)? (D1 hamlet and village)
+  2. Walls: every wall lot is a gatehouse, and no gate city has a wall ring; want curtain-wall segments and more walls? (D2 town walls)
+  3. Downtown: 60-storey plateau over about 0.3 of the radius, almost no city blocks (2 of 2355 lots)? (Downtown skyline and avenues)
+  4. Old town round the hub in every city (a city's mid-rise centre becomes old town)? (IRR1)
+  5. Lots along diagonal avenues face cut lanes, not the avenue; small wedges stay empty? (IRR1)
+  6. Arterial blocks with no main-road link stay empty (snow city reads as a ribbon, 103 lots)? (Whole-city roads)
+  7. Hub squares moved up to 160 blocks or shrunk; hall and temple sometimes a street away? (Whole-city roads)
+  8. Quays and plank bridges read as a waterfront? (Waterfront quays and bridges)
+  9. Bedrooms per house down about 0.14 after the kitchen rule; seed 9's living room exactly 2:1? (House kitchen and living room; CIRC2)
+  10. Savanna takes the desert style; keep or give it its own later?
+  11. 5.9 scale check: probe bar (under 1,000 exact probes per district) not met, 4,900 to 8,900 now; close the phase with 5.9 unticked and carry it to 6.5 / 6.7?
+  12. Build and flake changes this phase (README, "What changed"): `mod/build.gradle` JUnit deps and test heap, `cli/build.gradle` test inputs, `viewer/vite.config.ts` page inputs, `viewer/package.json` scripts `city` and `city-gallery`, `flake.nix` `SB_SPACE_IGNORE`. OK?
+  Agent notes: pictures looked at 2026-10-21. Plans read as settlements on their terrain (cores on dry land between water, main roads following shores); the metropolis downtown is one block of equal 60-storey towers; desert walls look speckled; the village is one street. The 3D frames paint a whole district in its first building's palette, so mixed districts cannot be judged in 3D (use the plan and the counts).
+  Result:
