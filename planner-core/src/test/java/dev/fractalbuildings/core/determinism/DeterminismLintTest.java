@@ -44,6 +44,16 @@ class DeterminismLintTest {
 		assertTrue(bad.isEmpty(), "non-deterministic constructs:\n" + String.join("\n", bad));
 	}
 
+	/** The settlement, region, terrain-facing and style packages are inside the scanned tree (the walk covers all of main). */
+	@Test
+	void scanCoversThePhase5Packages() throws IOException {
+		for (String pkg : List.of("settlement", "region", "probe", "style", "check", "gen/v1")) {
+			Path d = mainSources().resolve("dev/fractalbuildings/core").resolve(pkg);
+			assertTrue(Files.isDirectory(d), pkg + " moved; update the lint list");
+			try (Stream<Path> files = Files.walk(d)) { assertTrue(files.anyMatch(x -> x.toString().endsWith(".java")), pkg + " has no sources"); }
+		}
+	}
+
 	@Test
 	void patternsMatchWhatTheyShouldAndNotMore() {
 		assertEquals(1, scan(List.of("Map<Integer,String> m = new HashMap<>();"), "x").size());
