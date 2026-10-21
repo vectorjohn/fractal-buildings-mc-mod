@@ -163,6 +163,10 @@ final class CityCommand {
 	}
 
 	static FieldRegionView fieldView(RegionField field, ProbeSpecs.Probes p) {
+		return fieldView(field, p, FieldRegionView.DEFAULT_CACHE);
+	}
+
+	static FieldRegionView fieldView(RegionField field, ProbeSpecs.Probes p, int cacheCapacity) {
 		RegionPlanner planner = new RegionPlanner(field, RegionProbe.of(p.terrain(), p.biome()));
 		RegionMap.Window w = null;
 		if (p.terrain() instanceof RecordedProbe r) {
@@ -171,7 +175,7 @@ final class CityCommand {
 			if (x1 < x0 || z1 < z0) throw new UsageException("recorded terrain is smaller than one region lattice step");
 			w = new RegionMap.Window(x0, z0, (x1 - x0) / s + 1, (z1 - z0) / s + 1);
 		}
-		return new FieldRegionView(planner, w);
+		return new FieldRegionView(planner, w, cacheCapacity);
 	}
 
 	static SettlementSite fromSite(RegionField field, String arg) {
