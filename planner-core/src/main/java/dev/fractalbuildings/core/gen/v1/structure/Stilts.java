@@ -24,13 +24,16 @@ import java.util.List;
  *
  * @param lift height of the leg zone: the raised part's floor slab is at y {@code lift}
  * @param braced cross braces in every face between the posts (the top ring under the floor is always there)
+ * @param every 0 for the four corner posts only; otherwise extra posts along each edge about this far apart (a market hall on a row of posts)
  */
-public record Stilts(int lift, boolean braced) {
+public record Stilts(int lift, boolean braced, int every) {
 	public static final int MIN_LIFT = 4;
 
 	public Stilts {
 		if (lift < MIN_LIFT) throw new IllegalArgumentException("lift " + lift);
 	}
+
+	public Stilts(int lift, boolean braced) { this(lift, braced, 0); }
 
 	/** The four leg volumes (ids leg0..leg3: north-west, north-east, south-west, south-east). */
 	public List<Volume> volumes(Mass part) {
@@ -40,8 +43,21 @@ public record Stilts(int lift, boolean braced) {
 		return out;
 	}
 
-	private static int[][] posts(Mass m) {
-		return new int[][] {{m.x(), m.z()}, {m.maxX() - 1, m.z()}, {m.x(), m.maxZ() - 1}, {m.maxX() - 1, m.maxZ() - 1}};
+	private int[][] posts(Mass m) {
+		List<int[]> out = new ArrayList<>(List.of(new int[] {m.x(), m.z()}, new int[] {m.maxX() - 1, m.z()}, new int[] {m.x(), m.maxZ() - 1}, new int[] {m.maxX() - 1, m.maxZ() - 1}));
+		if (every > 0) {
+			for (int x : Posts.spaced(m.x(), m.maxX() - 1, every, 1, 0)) {
+				if (x == m.x() || x == m.maxX() - 1) continue;
+				out.add(new int[] {x, m.z()});
+				out.add(new int[] {x, m.maxZ() - 1});
+			}
+			for (int z : Posts.spaced(m.z(), m.maxZ() - 1, every, 1, 0)) {
+				if (z == m.z() || z == m.maxZ() - 1) continue;
+				out.add(new int[] {m.x(), z});
+				out.add(new int[] {m.maxX() - 1, z});
+			}
+		}
+		return out.toArray(new int[0][]);
 	}
 
 	/**

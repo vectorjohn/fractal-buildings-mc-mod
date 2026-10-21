@@ -17,6 +17,7 @@ import dev.fractalbuildings.core.ir.OpeningKind;
 import dev.fractalbuildings.core.ir.Role;
 import dev.fractalbuildings.core.ir.Roof;
 import dev.fractalbuildings.core.ir.Room;
+import dev.fractalbuildings.core.ir.Volume;
 import dev.fractalbuildings.core.rand.Draws;
 import dev.fractalbuildings.core.rand.Hash64;
 import java.util.ArrayList;
@@ -52,6 +53,7 @@ public final class BuildContext {
 	private final List<Room> rooms = new ArrayList<>();
 	private final List<Opening> openings = new ArrayList<>();
 	private final List<Hook> hooks = new ArrayList<>();
+	private final List<Volume> extraVolumes = new ArrayList<>();
 	private Canvas canvas;
 
 	public BuildContext(BuildingSpec spec, BuildingType type, StyleRules style) {
@@ -110,6 +112,9 @@ public final class BuildContext {
 
 	public List<Hook> hooks() { return Collections.unmodifiableList(hooks); }
 
+	/** Free-standing volumes added by passes (posts of an arcade or a porch), listed after the massing volumes in the IR. */
+	public List<Volume> extraVolumes() { return Collections.unmodifiableList(extraVolumes); }
+
 	/** Boxes emitted so far by one phase. */
 	public List<Box> boxes(Phase p) { return Collections.unmodifiableList(boxes.get(p)); }
 
@@ -139,6 +144,12 @@ public final class BuildContext {
 
 	public void box(Role role, Layer layer, int storey, int x, int y, int z, int sx, int sy, int sz) {
 		box(new Box(Box3.of(x, y, z, sx, sy, sz), role, layer, storey));
+	}
+
+	/** Adds a volume that is not a mass: a post standing from the ground (ids must be unique). */
+	public void volume(Volume v) {
+		if (phase == Phase.MASSING || phase == Phase.DONE) throw new IllegalStateException("volume added in phase " + phase);
+		extraVolumes.add(Objects.requireNonNull(v));
 	}
 
 	public void roof(Roof r) { roofs.add(Objects.requireNonNull(r)); }

@@ -24,9 +24,14 @@ final class ShopMassing {
 
 	static Massing build(BuildContext c, int maxStoreys) {
 		BuildingSpec sp = c.spec();
+		int mode = ShopType.groundMode(c);
+		if (mode == ShopType.MARKET) {
+			Massing m = market(c, maxStoreys);
+			if (m != null) return m;
+		}
 		for (int n = Math.min(sp.storeys(), maxStoreys); n >= 1; n--) {
 			for (int variant = 0; variant < 3; variant++) {
-				Massing m = attempt(c, n, variant);
+				Massing m = attempt(c, n, variant, mode == ShopType.ARCADE);
 				if (m != null) return m;
 			}
 		}
@@ -35,8 +40,32 @@ final class ShopMassing {
 		return new Massing(StoreyGrid.of(1, sp.maxHeight() >= ShopType.GROUND + 2 ? ShopType.GROUND : 4, 4), List.of(main), List.of());
 	}
 
-	/** variant 0: as drawn (rear wing, jetty); 1: no jetty; 2: plain block. */
-	static Massing attempt(BuildContext c, int n, int variant) {
+	/** The market hall: one mass on a row of posts ({@link ShopType#stilts}), storeys up a stair from the entrance flight; null if it does not fit. */
+	private static Massing market(BuildContext c, int maxStoreys) {
+		BuildingSpec sp = c.spec();
+		int lift = ShopType.legHeight(c);
+		int W = sp.width(), D = sp.depth();
+		if (lift == 0 || D < 9) return null;
+		for (int n = Math.min(Math.min(sp.storeys(), maxStoreys), 3); n >= 1; n--) {
+			Draws r = c.draws("massing/market", n);
+			StoreyGrid g = StoreyGrid.of(n, ShopType.GROUND, Math.max(4, c.style().massing().typical()));
+			if (g.y(n) + 2 > sp.maxHeight() - lift) continue;
+			Mass main = new Mass("main0", ShopType.MARKET_KIND, 0, 0, W, r.range(Math.min(D, 10), Math.min(D, 14)), 0, n, null, false);
+			List<Core> cores = new ArrayList<>();
+			if (n >= 2) {
+				Core k = MassingOps.core(g, List.of(main), List.of(), 0, n, r);
+				if (k == null) k = sideCore(g, List.of(main), List.of(), n, r);
+				if (k == null) continue;
+				cores.add(k);
+			}
+			Massing m = new Massing(g, List.of(main), cores);
+			if (MassingCheck.check(m, W, D, sp.maxHeight() - lift).isEmpty()) return m;
+		}
+		return null;
+	}
+
+	/** variant 0: as drawn (rear wing, jetty or arcade); 1: no jetty; 2: plain block. */
+	static Massing attempt(BuildContext c, int n, int variant, boolean arcade) {
 		BuildingSpec sp = c.spec();
 		MassingStyle st = c.style().massing();
 		int W = sp.width(), D = sp.depth();
@@ -44,9 +73,11 @@ final class ShopMassing {
 		StoreyGrid g = StoreyGrid.of(n, ShopType.GROUND, Math.max(4, st.typical()));
 		if (g.y(n) + 2 > sp.maxHeight()) return null;
 
-		boolean jetty = variant == 0 && n >= 2 && st.jetty() > 0 && D >= 9 && r.below(100) < st.jettyChance();
-		boolean rear = variant < 2 && D >= 15 && W >= 7 && r.chance(2, 5);
-		int z0 = jetty ? 1 : 0;
+		boolean arcadeHere = arcade && variant == 0 && n >= 2 && D >= 12;
+		int over = arcadeHere ? r.range(2, MassingCheck.ARCADE_MAX) : 0; // the walkway's depth, in front of the shop
+		boolean jetty = !arcadeHere && variant == 0 && n >= 2 && st.jetty() > 0 && D >= 9 && r.below(100) < st.jettyChance();
+		int z0 = arcadeHere ? over : jetty ? 1 : 0;
+		boolean rear = variant < 2 && D >= 15 && D - z0 >= 14 && W >= 7 && r.chance(2, 5);
 		int md, wingW = 0, wingD = 0;
 		if (rear) {
 			md = r.range(10, Math.min(13, D - z0 - 4));
@@ -58,7 +89,11 @@ final class ShopMassing {
 		Mass base = Mass.ground("main0", "main", 0, z0, W, md, n);
 		List<Mass> stack = new ArrayList<>();
 		List<Mass> wings = new ArrayList<>();
-		if (jetty) {
+		if (arcadeHere) { // the upper storeys carry on over the walkway; the posts come with the facade
+			Mass m0 = new Mass("main0", "main", 0, z0, W, md, 0, 1, null, false);
+			stack.add(m0);
+			stack.add(new Mass("jetty1", "jetty", 0, 0, W, md + over, 1, n, "main0", false));
+		} else if (jetty) {
 			Mass m0 = new Mass("main0", "main", 0, z0, W, md, 0, 1, null, false);
 			Mass j = MassingOps.jetty("jetty1", m0, new int[] {r.range(1, Math.min(st.jetty(), MassingCheck.JETTY_MAX)), 0, 0, 0}, n, st.jetty(), W, D);
 			if (j == null) return null;

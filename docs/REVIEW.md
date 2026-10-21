@@ -45,6 +45,11 @@ work becomes a ROADMAP item or a Polish backlog line. Settled items move to
    5. Using the same patch is find for now.
 
 
+- [ ] **5.12 Open ground storeys** (John's phase 4 shop and workshop comments): do the three shop forms read as a shop (arcade: upper storeys on posts over a walkway; market hall: the whole building on a row of posts, open floor under it, steps up the front; enclosed as before) and does the workshop's covered porch (a lean-to canopy on posts in front of the hall) read as a work yard?
+  Where: `docs/review/phase5/` (`shop-open-flat-front-left.png` seeds 6, 13 arcade, 5, 14 market; `shop-open-flat-back-right.png` shows the posts; `shop-open-slope-front-left.png` on a 1 in 12 slope; `workshop-open-front-left.png` seeds 1, 3, 4, 6, 7, 11, 12 have a porch)
+  Look for: market hall floors that read as an empty box on sticks (no stalls yet; hooks need a room); arcades only 2 to 3 deep with one post row; porch canopy stepping up towards the wall; the shop window sitting 1 to 3 blocks above the street on a slope (lots steeper than 1 in 12 are now rejected for shops).
+  Result:
+
 ## Done
 
 - [x] **3.6 storey slider**: in the viewer, lowering "storeys up to N" below the top storey hides the roof together with the upper storeys (roofs are storey −1, shown only at the top setting, per the Phase 3 plan). Does that feel right, or should the roof stay or hide on its own toggle?

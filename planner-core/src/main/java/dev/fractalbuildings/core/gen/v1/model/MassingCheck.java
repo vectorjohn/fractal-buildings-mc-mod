@@ -15,6 +15,8 @@ public final class MassingCheck {
 
 	/** Largest jetty overhang per side, in blocks (John, REVIEW 3.12: "wider with an overhang on top"). */
 	public static final int JETTY_MAX = 2;
+	/** Largest front overhang of a shop arcade (a jetty carrying the upper storeys over a walkway on posts), in blocks. */
+	public static final int ARCADE_MAX = 3;
 
 	/** Throws {@link IllegalStateException} listing every broken rule. */
 	public static void require(Massing m, int width, int depth, int maxHeight) {
@@ -65,7 +67,7 @@ public final class MassingCheck {
 					if (p.to() != a.from()) out.add("M5 " + a.id() + " must start at its parent's top (storey " + p.to() + ")");
 					boolean setback = a.x() >= p.x() && a.z() >= p.z() && a.maxX() <= p.maxX() && a.maxZ() <= p.maxZ();
 					boolean jetty = a.x() <= p.x() && a.z() <= p.z() && a.maxX() >= p.maxX() && a.maxZ() >= p.maxZ()
-							&& p.x() - a.x() <= JETTY_MAX && p.z() - a.z() <= JETTY_MAX
+							&& p.x() - a.x() <= JETTY_MAX && p.z() - a.z() <= ARCADE_MAX
 							&& a.maxX() - p.maxX() <= JETTY_MAX && a.maxZ() - p.maxZ() <= JETTY_MAX;
 					if (!setback && !jetty) out.add("M5 " + a.id() + " must lie inside its parent (setback) or contain it with at most " + JETTY_MAX + " overhang (jetty)");
 				}

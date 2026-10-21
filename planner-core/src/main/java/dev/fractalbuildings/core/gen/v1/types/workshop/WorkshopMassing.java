@@ -33,21 +33,45 @@ final class WorkshopMassing {
 		int hallH = Math.max(4, Math.min(5 + r.below(2), sp.maxHeight() - 2)); // 5 or 6, less under a low ceiling
 		int plan = r.below(99); // < 50 wing behind, else wing beside; 99 (hall + lean-to only) is the last fallback
 		boolean leanTo = r.chance(1, 3);
+		int porch = porch(c);
+		for (int pc = porch; pc >= 0; pc = pc > 0 ? 0 : -1) {
+			Massing m = search(c, plan, leanTo, hallH, pc);
+			if (m != null) return m;
+		}
+		return fallback(c, hallH);
+	}
+
+	/** Depth of the covered porch (work yard) in front of the hall, or 0 for none: drawn per seed, 2 or 3 blocks. */
+	static int porch(BuildContext c) {
+		Draws r = c.draws("workshop/porch");
+		return r.below(100) < PORCH_PCT ? r.range(2, 3) : 0;
+	}
+
+	/** Chance in 100 of a porch; a lot too shallow for it gets none. */
+	static final int PORCH_PCT = 40;
+
+	private static Massing search(BuildContext c, int plan, boolean leanTo, int hallH, int porch) {
+		BuildingSpec sp = c.spec();
 		for (int n = sp.storeys(); n >= 1; n--) {
 			for (int variant = 0; variant < 2; variant++) {
 				int p = variant == 0 ? plan : plan < 50 ? 60 : 10;
 				for (int t = 0; t < 4; t++) {
-					Massing m = attempt(c, p, n, hallH, leanTo && variant < 2, t);
+					Massing m = attempt(c, p, n, hallH, leanTo && variant < 2, t, porch);
 					if (m != null) return m;
-					m = attempt(c, p, n, hallH, false, t);
+					m = attempt(c, p, n, hallH, false, t, porch);
 					if (m != null) return m;
 				}
 			}
 		}
 		for (int t = 0; t < 4; t++) {
-			Massing m = attempt(c, 99, 1, hallH, true, t);
+			Massing m = attempt(c, 99, 1, hallH, true, t, porch);
 			if (m != null) return m;
 		}
+		return null;
+	}
+
+	private static Massing fallback(BuildContext c, int hallH) {
+		BuildingSpec sp = c.spec();
 		Mass hall = hall(ORIGIN, ORIGIN, Math.min(sp.width(), 8), Math.min(sp.depth(), 6));
 		return new Massing(new StoreyGrid(hallH), List.of(shift(hall, -ORIGIN, -ORIGIN)), List.of());
 	}
@@ -61,7 +85,7 @@ final class WorkshopMassing {
 	private static int rng(Draws r, int lo, int hi) { return hi < lo ? -1 : r.range(lo, hi); }
 
 	/** One try: {@code plan} picks wing behind / beside / none; the wing has {@code n} storeys. Null if it doesn't fit. */
-	static Massing attempt(BuildContext c, int plan, int n, int hallH, boolean leanTo, int t) {
+	static Massing attempt(BuildContext c, int plan, int n, int hallH, boolean leanTo, int t, int porch) {
 		BuildingSpec sp = c.spec();
 		int W = sp.width(), D = sp.depth();
 		Draws r = c.draws("massing/workshop/try", plan, n, leanTo ? 1 : 0, t);
@@ -111,9 +135,9 @@ final class WorkshopMassing {
 			x1 = Math.max(x1, m.maxX());
 			z1 = Math.max(z1, m.maxZ());
 		}
-		if (x1 - x0 > W || z1 - z0 > D) return null;
-		// the hall stays at z 0 (its front on the lot's front margin); only x moves
-		int dx = r.range(0, W - (x1 - x0)) - x0, dz = -z0;
+		if (x1 - x0 > W || z1 - z0 + porch > D) return null;
+		// the hall stays at the front (z 0, or behind its porch); only x moves
+		int dx = r.range(0, W - (x1 - x0)) - x0, dz = porch - z0;
 		List<Mass> placed = new ArrayList<>();
 		for (Mass m : lay) placed.add(shift(m, dx, dz));
 		int top = 1;

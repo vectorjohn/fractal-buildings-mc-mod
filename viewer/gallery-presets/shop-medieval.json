@@ -2,7 +2,7 @@
   "type": "shop",
   "style": "medieval",
   "lot": "11x18",
-  "terrain": "noise:7:64:6:32",
+  "terrain": "plane:64:0:1:12",
   "front": "north",
   "seeds": "0..15",
   "gen": "v1",

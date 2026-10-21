@@ -380,13 +380,14 @@ skeleton, then district detail built lazily (ARCHITECTURE.md, "City scale").
   moderation. Also open connections: archways or open plan between some
   public rooms instead of doors. Evidence: a "rooms reached only through two
   or more other rooms" measure before and after, and cutaway galleries.
-- [ ] **5.12 Open ground storeys** (Phase 4 gate feedback, John 2026-10-19):
+- [x] **5.12 Open ground storeys** (Phase 4 gate feedback, John 2026-10-19):
   shops and workshops may have a covered outdoor area at street level (an
   arcade, a ground floor open on posts, a bazaar-like market floor); shop
   display windows sit at street level (prefer level frontages, or step the
   shopfront down to the street, rather than a window at the top of the front
   steps). Evidence: shop and workshop galleries before and after; invariants
   still 0 failing.
+  *Done 2026-10-21* (log `docs/log/2026-10-21-p5-open-ground.md`): shop arcade 30 %, market hall on posts 20 %, enclosed ~50 %; workshop covered porch 40 %; shops reject lots steeper than 1 in 12 (level frontage). *Known issues:* the market hall floor is empty (no stalls); a city planner must catch the shop slope rejection.
 
 **Gate:** John reviews cities in at least five biome mixes, including one
 straddling a border, one larger than 512 × 512, and one with a high-rise
