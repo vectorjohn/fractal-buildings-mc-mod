@@ -12,9 +12,16 @@ export const ROLE_COLOURS: Record<string, Rgb> = {
   stair: 0x9ad04a,
   beam: 0x5a3a1a,
   fence: 0xb0b0b0,
+  road: 0x9a7f55,
+  paving: 0x8a8a8a,
+  ground: 0x6b4f33,
+  deck: 0xa07a48,
 };
 export const UNKNOWN_COLOUR: Rgb = 0xff00ff;
 export const TERRAIN_COLOUR: Rgb = 0x5c7a3c;
+/** District view: river bed under water, and the water surface. */
+export const BED_COLOUR: Rgb = 0x8a7a55;
+export const WATER_COLOUR: Rgb = 0x3a78c8;
 
 export function roleColour(role: string): Rgb {
   return ROLE_COLOURS[role] ?? UNKNOWN_COLOUR;
@@ -33,4 +40,13 @@ export function hookColour(kind: string): Rgb {
   const hue = ((h >>> 0) % 360) / 360;
   const f = (n: number) => { const k = (n + hue * 12) % 12; return 0.5 - 0.5 * Math.max(-1, Math.min(k - 3, 9 - k, 1)); };
   return (Math.round(f(0) * 255) << 16) | (Math.round(f(8) * 255) << 8) | Math.round(f(4) * 255);
+}
+
+/** District terrain tint per style (no biome in a scene, so the nearest building's style stands in for it). Unknown styles keep TERRAIN_COLOUR. */
+export const STYLE_GROUND_TINT: Record<string, Rgb> = {
+  plains: 0x5c7a3c, plain: 0x5c7a3c, medieval: 0x5c7a3c,
+  jungle: 0x2f6a2a, desert: 0xd8c58a, snowy: 0xeef2f5, taiga: 0x48684a,
+};
+export function groundTint(style: string): Rgb {
+  return STYLE_GROUND_TINT[style] ?? TERRAIN_COLOUR;
 }

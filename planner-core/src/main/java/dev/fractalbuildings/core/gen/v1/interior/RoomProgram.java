@@ -11,7 +11,7 @@ import java.util.List;
  */
 public interface RoomProgram {
 	/** Where a room sits in its floor plan. */
-	enum Role { ENTRY, CORRIDOR, STAIR, HALL, ROOM }
+	enum Role { ENTRY, CORRIDOR, STAIR, HALL, ROOM, /** the room that opens onto another mass of the building: a passage, not someone's room */ THROUGH }
 
 	/** The room's {@code use} tag. */
 	String use(Role role, int area, Draws d);
@@ -31,8 +31,44 @@ public interface RoomProgram {
 	/** As {@link #hooks(String, int, Draws)}, with the room's place in the building. */
 	default List<String> hooks(String use, int area, Where where, Draws d) { return hooks(use, area, d); }
 
+	/**
+	 * A chance to revise the uses of a whole floor of one mass once each room has its own (a house gives the
+	 * spare rooms of a floor to bedrooms before it repeats a kitchen or living room). Arrays are indexed by
+	 * room; change {@code uses} in place. Default: no change.
+	 */
+	default void refine(Role[] roles, int[] areas, String[] uses, Where where, Draws d) {}
+
+	/** A room of the whole building as the building-wide program sees it; {@code use} may be changed. {@code storey} is the first storey of its band and {@code span} how many storeys share it. */
+	final class Slot {
+		public final int mass, storey, area, span;
+		public final Role role;
+		public String use;
+		private final List<Slot> next = new java.util.ArrayList<>();
+
+		public Slot(int mass, int storey, int span, Role role, int area, String use) {
+			this.mass = mass; this.storey = storey; this.span = span; this.role = role; this.area = area; this.use = use;
+		}
+
+		/** Rooms joined to this one by a door of the same floor plan. */
+		public List<Slot> next() { return next; }
+	}
+
+	/**
+	 * A chance to revise the uses of every room of the building at once, after each floor plan has its own
+	 * (a house gives itself one kitchen and one living room across its wings). Default: no change.
+	 */
+	default void refineBuilding(List<Slot> rooms, Where where, Draws d) {}
+
 	/** True if a floor plan must not be shared between storey {@code storey - 1} and {@code storey} of a mass (a type whose ground floor differs in use from the upper ones). */
 	default boolean newBand(int storey) { return false; }
+
+	/** True if rooms of this use may be joined by an archway or open plan instead of a door (public rooms, never a bedroom). */
+	default boolean openPlan(String use) {
+		return switch (use) {
+			case "entry", "hall", "living", "kitchen", "landing", "dining", "porch" -> true;
+			default -> false;
+		};
+	}
 
 	/** Uses {@code entry, corridor, stair, hall, room}; a bed, table, chest and workstation per room. */
 	RoomProgram DEFAULT = new RoomProgram() {
@@ -42,7 +78,7 @@ public interface RoomProgram {
 				case ENTRY -> "entry";
 				case CORRIDOR -> "corridor";
 				case STAIR -> "stair";
-				case HALL -> "hall";
+				case HALL, THROUGH -> "hall";
 				case ROOM -> "room";
 			};
 		}

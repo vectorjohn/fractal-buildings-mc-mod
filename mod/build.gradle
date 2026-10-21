@@ -34,6 +34,11 @@ dependencies {
 	// planner-core is pure Java; it is bundled into the mod jar as jar-in-jar.
 	implementation project(':planner-core')
 	include project(':planner-core')
+
+	// Plain JUnit tests that bootstrap vanilla worldgen without a server (TerrainDumpTool).
+	testImplementation platform("org.junit:junit-bom:${junit_version}")
+	testImplementation "org.junit.jupiter:junit-jupiter"
+	testRuntimeOnly "org.junit.platform:junit-platform-launcher"
 }
 
 processResources {
@@ -63,4 +68,12 @@ tasks.named('runClientGameTest') {
 			rename { it.replaceFirst(/^\d+_/, '') }
 		}
 	}
+}
+
+// Forward -Dfb.* options to the test JVM (e.g. -Dfb.dump=12345:0:0:64:384:384:name).
+tasks.named('test') {
+	useJUnitPlatform()
+	maxHeapSize = '2g'
+	systemProperties System.properties.findAll { it.key.toString().startsWith('fb.') }
+	testLogging { showStandardStreams = true }
 }

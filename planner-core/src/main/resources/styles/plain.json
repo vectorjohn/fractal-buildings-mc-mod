@@ -21,7 +21,11 @@
     "window": ["minecraft:glass_pane"],
     "door": ["minecraft:oak_door"],
     "roof": ["minecraft:stone_bricks"],
-    "stair": ["minecraft:oak_planks"]
+    "stair": ["minecraft:oak_planks"],
+    "road": ["minecraft:dirt_path", "minecraft:gravel"],
+    "paving": ["minecraft:stone_bricks"],
+    "ground": ["minecraft:dirt"],
+    "deck": ["minecraft:oak_planks"]
   },
 
   "colours": {
@@ -34,6 +38,10 @@
     "window": ["#a8d4f0"],
     "door": ["#9c7a46"],
     "roof": ["#8a8a8a"],
-    "stair": ["#9c7a46"]
+    "stair": ["#9c7a46"],
+    "road": ["#9a7f55", "#8c8782"],
+    "paving": ["#8a8a8a"],
+    "ground": ["#6b4f33"],
+    "deck": ["#a07a48"]
   }
 }

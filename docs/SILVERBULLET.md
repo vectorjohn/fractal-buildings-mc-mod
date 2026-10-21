@@ -3,9 +3,13 @@
 John reads this repo's markdown in [SilverBullet](https://silverbullet.md)
 2.11.0 (pinned in `flake.nix`; run `silverbullet .` from the repo root in the dev
 shell). The space root is the repo root (`CONFIG.md` and `Library/` live
-there). `SB_SPACE_IGNORE` in the flake (gitignore patterns, one per line) hides
-`node_modules/`, `build/`, `run/`, `out/`, `.claude/` (agent worktrees, reports,
-locks), `.gradle/`, `dist/`, `playwright-report/` and `test-results/`.
+there). `SB_SPACE_IGNORE` in the flake (gitignore patterns, one per line,
+read once at server start) hides build output and agent state (`node_modules/`,
+`build/`, `run/`, `out/`, `.claude/`, `.gradle/`, `dist/`, ...), source code
+(`*.java`, `*.ts`, `*.js` except `*.plug.js`, `*.py`, `*.sh`, `src/` trees ...),
+build config (`*.gradle`, `*.nix`, `*.lock`, ...) and generator data (`*.json`,
+`*.gz`, `*.tsv`, `*.log`). Hidden files are not listed, indexed or offered in
+the pickers; markdown, images, SVG, CSV and text attached to docs stay.
 The same files are also read on GitHub, in plain editors, and as an EPUB
 (`scripts/research-epub.lua`), so **everything must still read well as plain
 markdown**. This page is the convention; CLAUDE.md has the short version.
@@ -120,8 +124,10 @@ a link list. What we kept: `docs/adr/NNNN-<slug>.md` file names (shell- and
 GitHub-friendly), our Options section, `author`/`approvedBy` instead of
 `deciders`/`owner` (John decides every ADR), no `lastReviewed`.
 
-Optional, for John's `CONFIG.md` (his file, not edited by agents), to get the
+In John's `CONFIG.md` (his file; added at his request on 2026-10-21), to get the
 schema check, status dots and tag click-through:
+- @John 2026-10-21: @assistant yes, can you please add this config? Also while you're there, can you set up the SB config to ignore or at least not index source files (java, ts, Python, etc)? It's not of much use in SB. I can review those separately.
+  - @assistant 2026-10-21: Done, both. (1) The block below is now in `CONFIG.md`, in its own "ADR tag" section above the Configuration Manager block. (2) SB 2.11 has no CONFIG option that hides files from the space (`sync.ignore` only affects what the browser caches offline, and non-markdown files aren't cached by default), so I extended `SB_SPACE_IGNORE` in `flake.nix`: source (`*.java`, `*.ts`, `*.js` but not `*.plug.js`, `*.py`, `*.sh`, `*.lua`, `*.html`, every `src/` tree), build config (`*.gradle`, `*.properties`, `*.nix`, `*.lock`, `gradlew`) and generator data (`*.json`, `*.gz`, `*.tsv`, `*.log`). Docs' images, SVG, CSV and the spike `.txt` results stay. Hidden files drop out of the page and document pickers, the tree and `index.documents()`; a direct URL still opens them. On a scratch instance the space now lists 396 files (270 markdown; the rest are doc images, CSV/SVG, spike `.txt` results and SB plugs), the Documents picker finds nothing for "java", and the ADRs show their status dots. What you need to do: SB reads `SB_SPACE_IGNORE` only at startup, so the review instance on :3000 needs a restart (the coordinator does this after merging), then reload the browser tab; for the CONFIG change alone, "System: Reload" is enough. Your own instance needs `silverbullet .` started from inside `nix develop` to pick up the patterns. The flake change is yours to review.
 
 ```lua
 tag.define {

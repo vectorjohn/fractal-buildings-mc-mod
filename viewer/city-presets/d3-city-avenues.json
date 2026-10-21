@@ -1,0 +1,7 @@
+{
+  "seed": 7,
+  "terrain": "noise:2:70:5:500",
+  "site": {"at": [633, 474], "tier": "city", "radius": 700},
+  "scenes": "auto:2",
+  "camera": {"plan": {"x": 633, "z": 474, "zoom": 0.8}}
+}

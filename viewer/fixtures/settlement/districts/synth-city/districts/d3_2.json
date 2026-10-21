@@ -1,0 +1,17 @@
+{
+  "format": "fb-district/1",
+  "planVersion": 1,
+  "genVersion": 2,
+  "seed": "1001",
+  "district": {"id": "d3_2", "ix": 3, "iz": 2, "x": 480, "z": 320, "w": 160, "d": 176, "quarter": 7, "density": 25},
+  "streets": [
+    {"id": "t0", "kind": "lane", "width": 3, "points": [[472, 352], [488, 352]], "y": [72, 72]},
+    {"id": "t1", "kind": "lane", "width": 3, "points": [[576, 312], [576, 320], [576, 321], [576, 328]], "y": [72, 72, 71, 71]},
+    {"id": "t2", "kind": "lane", "width": 3, "points": [[536, 312], [536, 328]], "y": [72, 72]},
+    {"id": "t3", "kind": "lane", "width": 3, "points": [[520, 504], [520, 488]], "y": [71, 71]}
+  ],
+  "plazas": [],
+  "lots": [],
+  "scene": null,
+  "violations": []
+}

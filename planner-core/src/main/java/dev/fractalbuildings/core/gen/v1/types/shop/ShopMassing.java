@@ -1,6 +1,7 @@
 package dev.fractalbuildings.core.gen.v1.types.shop;
 
 import dev.fractalbuildings.core.gen.v1.BuildContext;
+import dev.fractalbuildings.core.gen.v1.mass.HouseMassing;
 import dev.fractalbuildings.core.gen.v1.mass.MassingOps;
 import dev.fractalbuildings.core.gen.v1.model.Core;
 import dev.fractalbuildings.core.gen.v1.model.Mass;
@@ -24,29 +25,65 @@ final class ShopMassing {
 
 	static Massing build(BuildContext c, int maxStoreys) {
 		BuildingSpec sp = c.spec();
+		int mode = ShopType.groundMode(c);
+		if (mode == ShopType.MARKET) {
+			Massing m = market(c, maxStoreys);
+			if (m != null) return m;
+		}
 		for (int n = Math.min(sp.storeys(), maxStoreys); n >= 1; n--) {
 			for (int variant = 0; variant < 3; variant++) {
-				Massing m = attempt(c, n, variant);
+				Massing m = attempt(c, n, variant, mode == ShopType.ARCADE);
 				if (m != null) return m;
 			}
 		}
-		Mass main = Mass.ground("main0", "main", 0, 0, sp.width(), Math.min(sp.depth(), 11), 1);
+		Mass main = Mass.ground("main0", "main", 0, sp.lead(), sp.width(), Math.min(sp.depth() - sp.lead(), 11), 1);
 		// under a low ceiling (maxHeight 6) the ground storey is 4 high
 		return new Massing(StoreyGrid.of(1, sp.maxHeight() >= ShopType.GROUND + 2 ? ShopType.GROUND : 4, 4), List.of(main), List.of());
 	}
 
-	/** variant 0: as drawn (rear wing, jetty); 1: no jetty; 2: plain block. */
-	static Massing attempt(BuildContext c, int n, int variant) {
+	/** The market hall: one mass on a row of posts ({@link ShopType#stilts}), storeys up a stair from the entrance flight; null if it does not fit. */
+	private static Massing market(BuildContext c, int maxStoreys) {
+		BuildingSpec sp = c.spec();
+		int lift = ShopType.legHeight(c);
+		int W = sp.width(), D = sp.depth() - sp.lead();
+		if (lift == 0 || D < 9) return null;
+		int deck = D >= 11 ? 2 : D >= 10 ? 1 : 0; // rows left in front of the hall for the landing the front steps rise to (see InstancePassV1 stoops)
+		D -= deck;
+		for (int n = Math.min(Math.min(sp.storeys(), maxStoreys), 3); n >= 1; n--) {
+			Draws r = c.draws("massing/market", n);
+			StoreyGrid g = StoreyGrid.of(n, ShopType.GROUND, Math.max(4, c.style().massing().typical()));
+			if (g.y(n) + 2 > sp.maxHeight() - lift) continue;
+			Mass main = new Mass("main0", ShopType.MARKET_KIND, 0, 0, W, r.range(Math.min(D, 10), Math.min(D, 14)), 0, n, null, false);
+			List<Core> cores = new ArrayList<>();
+			if (n >= 2) {
+				Core k = MassingOps.core(g, List.of(main), List.of(), 0, n, r);
+				if (k == null) k = sideCore(g, List.of(main), List.of(), n, r);
+				if (k == null) continue;
+				cores.add(k);
+			}
+			Massing m = new Massing(g, List.of(main), cores).shiftedZ(sp.lead() + deck);
+			if (MassingCheck.check(m, W, sp.depth(), sp.maxHeight() - lift).isEmpty()) return m;
+		}
+		return null;
+	}
+
+	/** variant 0: as drawn (rear wing, jetty or arcade); 1: no jetty; 2: plain block. */
+	static Massing attempt(BuildContext c, int n, int variant, boolean arcade) {
 		BuildingSpec sp = c.spec();
 		MassingStyle st = c.style().massing();
-		int W = sp.width(), D = sp.depth();
+		int W = sp.width(), D = sp.depth() - sp.lead(); // lead: rows in front of the usual envelope (air rights), masses are shifted back by it at the end
 		Draws r = c.draws("massing/shop", n);
 		StoreyGrid g = StoreyGrid.of(n, ShopType.GROUND, Math.max(4, st.typical()));
 		if (g.y(n) + 2 > sp.maxHeight()) return null;
 
-		boolean jetty = variant == 0 && n >= 2 && st.jetty() > 0 && D >= 9 && r.below(100) < st.jettyChance();
-		boolean rear = variant < 2 && D >= 15 && W >= 7 && r.chance(2, 5);
-		int z0 = jetty ? 1 : 0;
+		boolean arcadeHere = arcade && variant == 0 && n >= 2 && D >= 12;
+		int over = arcadeHere ? r.range(2, MassingCheck.ARCADE_MAX) : 0; // the walkway's depth, in front of the shop
+		int air = sp.lead() == 0 ? 0 : sp.lead() - c.type().limits().front(); // blocks of air rights over the street
+		int jc = air > 0 ? Math.max(st.jettyChance(), HouseMassing.AIR_JETTY_PCT) : st.jettyChance(); // a street with air rights invites jetties
+		boolean jetty = !arcadeHere && variant == 0 && n >= 2 && st.jetty() > 0 && D >= 9 && r.below(100) < jc;
+		boolean airJetty = jetty && air > 0; // the front wall stands at the usual front edge and the upper storeys reach out past the lot
+		int z0 = arcadeHere ? over : jetty && !airJetty ? 1 : 0;
+		boolean rear = variant < 2 && D >= 15 && D - z0 >= 14 && W >= 7 && r.chance(2, 5);
 		int md, wingW = 0, wingD = 0;
 		if (rear) {
 			md = r.range(10, Math.min(13, D - z0 - 4));
@@ -58,12 +95,22 @@ final class ShopMassing {
 		Mass base = Mass.ground("main0", "main", 0, z0, W, md, n);
 		List<Mass> stack = new ArrayList<>();
 		List<Mass> wings = new ArrayList<>();
-		if (jetty) {
+		if (arcadeHere) { // the upper storeys carry on over the walkway; the posts come with the facade
 			Mass m0 = new Mass("main0", "main", 0, z0, W, md, 0, 1, null, false);
-			Mass j = MassingOps.jetty("jetty1", m0, new int[] {r.range(1, Math.min(st.jetty(), MassingCheck.JETTY_MAX)), 0, 0, 0}, n, st.jetty(), W, D);
-			if (j == null) return null;
 			stack.add(m0);
-			stack.add(j);
+			stack.add(new Mass("jetty1", "jetty", 0, 0, W, md + over, 1, n, "main0", false));
+		} else if (jetty) {
+			Mass m0 = new Mass("main0", "main", 0, z0, W, md, 0, 1, null, false);
+			if (airJetty) { // front overhang from the wall: the yard plus 1..air past the lot edge
+				int out = c.type().limits().front() + r.range(1, air);
+				stack.add(m0);
+				stack.add(new Mass("jetty1", "jetty", 0, z0 - out, W, md + out, 1, n, "main0", false));
+			} else {
+				Mass j = MassingOps.jetty("jetty1", m0, new int[] {r.range(1, Math.min(st.jetty(), MassingCheck.JETTY_MAX)), 0, 0, 0}, n, st.jetty(), W, D);
+				if (j == null) return null;
+				stack.add(m0);
+				stack.add(j);
+			}
 		} else {
 			stack.add(base);
 		}
@@ -85,8 +132,8 @@ final class ShopMassing {
 			if (k == null) return null;
 			cores.add(k);
 		}
-		Massing m = new Massing(g, ordered, cores);
-		return MassingCheck.check(m, W, D, sp.maxHeight()).isEmpty() ? m : null;
+		Massing m = new Massing(g, ordered, cores).shiftedZ(sp.lead());
+		return MassingCheck.check(m, W, sp.depth(), sp.maxHeight()).isEmpty() ? m : null;
 	}
 
 	/**

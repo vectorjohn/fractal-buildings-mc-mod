@@ -24,7 +24,11 @@
     "window": ["minecraft:glass_pane"],
     "door": ["minecraft:spruce_door"],
     "roof": ["minecraft:spruce_planks", "minecraft:dark_oak_planks", "minecraft:stone_bricks", "minecraft:snow_block"],
-    "stair": ["minecraft:spruce_planks", "minecraft:dark_oak_planks"]
+    "stair": ["minecraft:spruce_planks", "minecraft:dark_oak_planks"],
+    "road": ["minecraft:gravel", "minecraft:spruce_planks"],
+    "paving": ["minecraft:stone_bricks"],
+    "ground": ["minecraft:dirt"],
+    "deck": ["minecraft:spruce_planks"]
   },
 
   "colours": {
@@ -37,6 +41,10 @@
     "window": ["#a8d4f0"],
     "door": ["#7a5a34"],
     "roof": ["#6a4a2c", "#4b3621", "#6f6f6f", "#f4f8fa"],
-    "stair": ["#7a5a34", "#4b3621"]
+    "stair": ["#7a5a34", "#4b3621"],
+    "road": ["#8c8782", "#7a5a34"],
+    "paving": ["#8a8a8a"],
+    "ground": ["#6b4f33"],
+    "deck": ["#7a5a38"]
   }
 }

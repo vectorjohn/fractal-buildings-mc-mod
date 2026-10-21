@@ -24,28 +24,51 @@ export function placeColumn(
 
 /** World voxels of one building: shell boxes then site boxes, later wins, `air` clears. Sorted (y, z, x). */
 export function buildingVoxels(b: Building, index: number): Voxel[] {
-  const cells = new Map<string, Voxel>();
+  const boxes = [...b.shell.boxes, ...b.siteBoxes];
+  if (boxes.length === 0) return [];
   const [ox, oy, oz] = b.origin;
   const [sx, , sz] = b.shell.bounds.size;
-  for (const box of [...b.shell.boxes, ...b.siteBoxes]) {
+  // World bounds of all boxes, from the two corner columns of each (rotation maps boxes to boxes).
+  let x0 = Infinity, z0 = Infinity, y0 = Infinity, x1 = -Infinity, z1 = -Infinity, y1 = -Infinity;
+  for (const box of boxes) {
+    if (box.size[0] <= 0 || box.size[1] <= 0 || box.size[2] <= 0) continue;
+    const [ax, az] = placeColumn(b.rotation, ox, oz, sx, sz, box.min[0], box.min[2]);
+    const [bx, bz] = placeColumn(b.rotation, ox, oz, sx, sz, box.min[0] + box.size[0] - 1, box.min[2] + box.size[2] - 1);
+    x0 = Math.min(x0, ax, bx); x1 = Math.max(x1, ax, bx); z0 = Math.min(z0, az, bz); z1 = Math.max(z1, az, bz);
+    y0 = Math.min(y0, oy + box.min[1]); y1 = Math.max(y1, oy + box.min[1] + box.size[1] - 1);
+  }
+  if (!isFinite(x0)) return [];
+  const W = x1 - x0 + 1, D = z1 - z0 + 1, H = y1 - y0 + 1;
+  const grid = new Int32Array(W * D * H); // box index + 1; 0 = empty
+  boxes.forEach((box, bi) => {
     const [mx, my, mz] = box.min;
     const [bx, by, bz] = box.size;
-    for (let y = 0; y < by; y++)
-      for (let z = 0; z < bz; z++)
-        for (let x = 0; x < bx; x++) {
-          const [wx, wz] = placeColumn(b.rotation, ox, oz, sx, sz, mx + x, mz + z);
-          const wy = oy + my + y;
-          const key = `${wx},${wy},${wz}`;
-          if (box.role === 'air') cells.delete(key);
-          else cells.set(key, { x: wx, y: wy, z: wz, role: box.role, layer: box.layer, storey: box.storey, building: index });
-        }
-  }
-  return [...cells.values()].sort((a, b2) => a.y - b2.y || a.z - b2.z || a.x - b2.x);
+    const val = box.role === 'air' ? 0 : bi + 1;
+    for (let z = 0; z < bz; z++)
+      for (let x = 0; x < bx; x++) {
+        const [wx, wz] = placeColumn(b.rotation, ox, oz, sx, sz, mx + x, mz + z);
+        const col = (wz - z0) * W + (wx - x0);
+        for (let y = 0; y < by; y++) grid[(oy + my + y - y0) * W * D + col] = val;
+      }
+  });
+  const out: Voxel[] = [];
+  for (let y = 0; y < H; y++)
+    for (let z = 0; z < D; z++)
+      for (let x = 0; x < W; x++) {
+        const v = grid[(y * D + z) * W + x]!;
+        if (v === 0) continue;
+        const box = boxes[v - 1]!;
+        out.push({ x: x0 + x, y: y0 + y, z: z0 + z, role: box.role, layer: box.layer, storey: box.storey, building: index });
+      }
+  return out;
 }
 
-/** All building voxels, sorted (building, y, z, x). */
+const voxelCache = new WeakMap<Scene, Voxel[]>();
+/** All building voxels, sorted (building, y, z, x). Cached per scene object: do not mutate the result or the scene's boxes afterwards. */
 export function sceneVoxels(scene: Scene): Voxel[] {
-  return scene.buildings.flatMap((b, i) => buildingVoxels(b, i));
+  let vs = voxelCache.get(scene);
+  if (!vs) { vs = scene.buildings.flatMap((b, i) => buildingVoxels(b, i)); voxelCache.set(scene, vs); }
+  return vs;
 }
 
 /** The top block of each terrain column (y = floorY - 1). */
@@ -79,4 +102,32 @@ export function cutBounds(scene: Scene, maxStorey: number): { min: Vec3; max: Ve
   for (const v of sceneVoxels(scene)) if (v.storey >= 0 && v.storey <= maxStorey) top = Math.max(top, v.y + 1);
   if (!isFinite(top)) return full;
   return { min: full.min, max: [full.max[0], Math.max(top, full.min[1] + 1), full.max[2]] };
+}
+
+/** World footprint centre (x, z) of a building (rotation 1 and 3 swap the extent). */
+export function buildingCentre(b: Building): [number, number] {
+  const [sx, , sz] = b.shell.bounds.size;
+  const odd = b.rotation % 2 === 1;
+  return [b.origin[0] + (odd ? sz : sx) / 2, b.origin[2] + (odd ? sx : sz) / 2];
+}
+
+/**
+ * Style of the building nearest (footprint centre) to a world column, so a mixed district takes each style's palette
+ * where its buildings are. `override` forces one style everywhere; one building (or none) is that building's style.
+ */
+export function styleLocator(scene: Scene, override?: string): (x: number, z: number) => string {
+  const bs = scene.buildings;
+  const fallback = override ?? bs[0]?.shell.spec.style ?? 'plain';
+  if (override || bs.length <= 1) return () => fallback;
+  const centres = bs.map(buildingCentre);
+  const styles = bs.map((b) => b.shell.spec.style);
+  if (styles.every((s) => s === styles[0])) return () => fallback;
+  return (x, z) => {
+    let best = 0, bd = Infinity;
+    for (let i = 0; i < centres.length; i++) {
+      const dx = centres[i]![0] - x - 0.5, dz = centres[i]![1] - z - 0.5, d = dx * dx + dz * dz;
+      if (d < bd) { bd = d; best = i; }
+    }
+    return styles[best]!;
+  };
 }

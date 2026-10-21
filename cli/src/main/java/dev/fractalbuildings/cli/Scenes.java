@@ -71,6 +71,19 @@ final class Scenes {
 		return new GenRequest(seed, new Lot("lot0", at[0], at[1], lotWd[0], lotWd[1], front), type, style, p.terrain(), p.biome());
 	}
 
+	/**
+	 * With a street brief: the lot has air rights of {@code air} blocks over the street in front (0: no brief), the street surface being
+	 * the ground in the column just outside the middle of the front edge. Storeys: two or more (a street with air rights is an urban one), within the type's range.
+	 */
+	static GenRequest request(long seed, int[] lotWd, int[] at, Facing front, String type, String style, ProbeSpecs.Probes p, int air) {
+		if (air <= 0) return request(seed, lotWd, at, front, type, style, p);
+		Lot lot = new Lot("lot0", at[0], at[1], lotWd[0], lotWd[1], front);
+		int cx = lot.x() + lot.w() / 2, cz = lot.z() + lot.d() / 2;
+		int fx = front.dx == 0 ? cx : front.dx < 0 ? lot.x() - 1 : lot.x() + lot.w(), fz = front.dz == 0 ? cz : front.dz < 0 ? lot.z() - 1 : lot.z() + lot.d();
+		dev.fractalbuildings.core.gen.Brief brief = new dev.fractalbuildings.core.gen.Brief(2, 99, 1, air, p.terrain().floorY(fx, fz));
+		return new GenRequest(seed, lot, type, style, p.terrain(), p.biome(), brief);
+	}
+
 	/** Generates the scene; with {@code check}, runs the invariants against the real probe and embeds the violations. */
 	static SceneDoc generate(GenRequest req, boolean check, String gen) {
 		SceneDoc s;

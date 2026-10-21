@@ -29,6 +29,7 @@ final class IrReader {
 				o.get("terrain") == null ? null : terrain(obj(o.get("terrain"), "$.terrain"), "$.terrain"),
 				list(o, "$", "lots", IrReader::lot),
 				list(o, "$", "buildings", IrReader::building),
+				o.containsKey("ground") ? list(o, "$", "ground", IrReader::box) : List.of(),
 				list(o, "$", "violations", IrReader::violation)));
 	}
 
@@ -146,12 +147,14 @@ final class IrReader {
 
 	private static TerrainPatch terrain(Map<String, Object> o, String p) {
 		int[] h = ints(o, p, "floorY", -1);
-		return guard(p, () -> new TerrainPatch(integer(o, p, "x0"), integer(o, p, "z0"), integer(o, p, "nx"), integer(o, p, "nz"), h));
+		int[] w = o.containsKey("water") ? ints(o, p, "water", -1) : null;
+		return guard(p, () -> new TerrainPatch(integer(o, p, "x0"), integer(o, p, "z0"), integer(o, p, "nx"), integer(o, p, "nz"), h, w));
 	}
 
 	private static Lot lot(Map<String, Object> o, String p) {
 		return guard(p, () -> new Lot(string(o, p, "id"), integer(o, p, "x"), integer(o, p, "z"), integer(o, p, "w"), integer(o, p, "d"),
-				enumOf(o, p, "front", Facing.class)));
+				enumOf(o, p, "front", Facing.class),
+				o.containsKey("airRights") ? integer(o, p, "airRights") : 0, o.containsKey("frontY") ? integer(o, p, "frontY") : 0));
 	}
 
 	/** A box from "min" and "size" arrays at the given keys of {@code o}. */
@@ -185,9 +188,10 @@ final class IrReader {
 		int gv = integer(so, spp, "genVersion");
 		int maxHeight = gv >= 2 ? integer(so, spp, "maxHeight") : BuildingSpec.DEFAULT_MAX_HEIGHT;
 		int streets = gv >= 2 ? integer(so, spp, "streets") : BuildingSpec.STREET_FRONT;
+		int lead = so.containsKey("lead") ? integer(so, spp, "lead") : 0;
 		BuildingSpec spec = guard(spp, () -> new BuildingSpec(gv, seed(so, spp, "specSeed"), string(so, spp, "style"),
 				string(so, spp, "type"), integer(so, spp, "width"), integer(so, spp, "depth"), integer(so, spp, "storeys"), string(so, spp, "roof"),
-				maxHeight, streets));
+				maxHeight, streets, lead));
 		String hash = string(o, p, "specHash");
 		if (!hash.equals(SpecHash.of(spec))) {
 			throw new IllegalArgumentException(p + ".specHash: '" + hash + "' does not match the spec (expected '" + SpecHash.of(spec) + "')");

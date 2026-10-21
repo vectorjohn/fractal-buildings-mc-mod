@@ -1,6 +1,6 @@
 /** View state <-> URL query. Pure; no DOM. */
 
-export const ALL_LAYERS = ['terrain', 'foundation', 'shell', 'interior', 'roof', 'violations'] as const;
+export const ALL_LAYERS = ['terrain', 'water', 'foundation', 'shell', 'interior', 'roof', 'ground', 'violations'] as const;
 export type LayerName = (typeof ALL_LAYERS)[number];
 
 export interface ViewState {
@@ -15,10 +15,18 @@ export interface ViewState {
   /** Source overrides, passed through untouched: `?ir=<url>`, `?fixture=<name>`. */
   ir: string | null;
   fixture: string | null;
+  /** `?mesh=faces|instanced`: force the mesher; auto = faces above FACE_MESH_THRESHOLD voxels. */
+  mesh: 'auto' | 'faces' | 'instanced';
+  /** `?exterior=1`: drop the interior layer (and hook markers). */
+  exterior: boolean;
+  /** `?camera=fly`: FlyControls instead of orbit. */
+  camera: 'orbit' | 'fly';
+  /** `?stops=x,y,z,yaw,pitch;...` raw; parsed by fly.ts. */
+  stops: string | null;
 }
 
 export function defaultState(): ViewState {
-  return { style: null, seed: null, layers: new Set(ALL_LAYERS), colour: 'role', maxStorey: null, ir: null, fixture: null };
+  return { style: null, seed: null, layers: new Set(ALL_LAYERS), colour: 'role', maxStorey: null, ir: null, fixture: null, mesh: 'auto', exterior: false, camera: 'orbit', stops: null };
 }
 
 function intParam(v: string | null): number | null {
@@ -39,6 +47,11 @@ export function parseState(query: string): ViewState {
   s.maxStorey = ms !== null && ms >= 0 ? ms : null;
   s.ir = p.get('ir') || null;
   s.fixture = p.get('fixture') || null;
+  const mesh = p.get('mesh');
+  s.mesh = mesh === 'faces' || mesh === 'instanced' ? mesh : 'auto';
+  s.exterior = p.get('exterior') === '1';
+  s.camera = p.get('camera') === 'fly' ? 'fly' : 'orbit';
+  s.stops = p.get('stops') || null;
   return s;
 }
 
@@ -52,7 +65,11 @@ export function serializeState(s: ViewState): string {
   if (s.layers.size !== ALL_LAYERS.length) p.set('layers', ALL_LAYERS.filter((l) => s.layers.has(l)).join(','));
   if (s.colour !== 'role') p.set('colour', s.colour);
   if (s.maxStorey !== null) p.set('storeys', String(s.maxStorey));
-  return p.toString().replace(/%2C/g, ',');
+  if (s.mesh !== 'auto') p.set('mesh', s.mesh);
+  if (s.exterior) p.set('exterior', '1');
+  if (s.camera === 'fly') p.set('camera', 'fly');
+  if (s.stops) p.set('stops', s.stops);
+  return p.toString().replace(/%2C/g, ',').replace(/%3B/g, ';');
 }
 
 /** The seed `delta` places along `seeds` from `current` (clamped, not wrapped); the first seed if `current` is absent or unknown. */

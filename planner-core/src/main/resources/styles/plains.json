@@ -15,28 +15,36 @@
   "interior": {"roomMin": 3, "roomArea": 28, "corridorAbove": 8, "loopPercent": 25},
 
   "palette": {
-    "foundation": ["minecraft:cobblestone", "minecraft:stone", "minecraft:andesite", "minecraft:mossy_cobblestone"],
-    "floor": ["minecraft:oak_planks", "minecraft:birch_planks", "minecraft:spruce_planks"],
-    "wall": ["minecraft:birch_planks", "minecraft:oak_planks", "minecraft:white_terracotta", "minecraft:smooth_stone"],
+    "foundation": ["minecraft:cobblestone", "minecraft:stone", "minecraft:andesite"],
+    "floor": ["minecraft:oak_planks", "minecraft:birch_planks", "minecraft:bamboo_planks"],
+    "wall": ["minecraft:birch_planks", "minecraft:bamboo_planks", "minecraft:smooth_sandstone"],
     "trim": ["minecraft:stripped_oak_log", "minecraft:stripped_birch_log"],
-    "beam": ["minecraft:oak_log", "minecraft:birch_log"],
+    "beam": ["minecraft:oak_log", "minecraft:spruce_log"],
     "fence": ["minecraft:oak_fence", "minecraft:birch_fence"],
     "window": ["minecraft:glass_pane"],
     "door": ["minecraft:oak_door", "minecraft:birch_door"],
-    "roof": ["minecraft:bricks", "minecraft:terracotta", "minecraft:brown_terracotta"],
-    "stair": ["minecraft:oak_planks", "minecraft:birch_planks"]
+    "roof": ["minecraft:bricks", "minecraft:red_terracotta", "minecraft:terracotta"],
+    "stair": ["minecraft:oak_planks", "minecraft:birch_planks"],
+    "road": ["minecraft:dirt_path", "minecraft:gravel"],
+    "paving": ["minecraft:stone_bricks", "minecraft:cobblestone"],
+    "ground": ["minecraft:dirt", "minecraft:coarse_dirt"],
+    "deck": ["minecraft:oak_planks"]
   },
 
   "colours": {
-    "foundation": ["#7f7f7f", "#8a8a8a", "#8c8c8c", "#6f7a62"],
-    "floor": ["#b08a55", "#c8b077", "#7a5a36"],
-    "wall": ["#c8b077", "#b08a55", "#d4ccc0", "#9a9a9a"],
+    "foundation": ["#7f7f7f", "#868686", "#8c8c8c"],
+    "floor": ["#b08a55", "#c8b077", "#c2ad58"],
+    "wall": ["#c8b077", "#c2ad58", "#d9cea0"],
     "trim": ["#a58a55", "#c8b890"],
-    "beam": ["#6b5030", "#d7d3c8"],
+    "beam": ["#6b5030", "#5a4325"],
     "fence": ["#b08a55", "#c8b077"],
     "window": ["#a8d4f0"],
     "door": ["#9c7a46", "#c8b077"],
-    "roof": ["#9a4a3a", "#985f46", "#4d3324"],
-    "stair": ["#b08a55", "#c8b077"]
+    "roof": ["#9a4a3a", "#8f3d2e", "#985f46"],
+    "stair": ["#b08a55", "#c8b077"],
+    "road": ["#9a7f55", "#8c8782"],
+    "paving": ["#8a8a8a", "#7f7f7f"],
+    "ground": ["#6b4f33", "#76593a"],
+    "deck": ["#a07a48"]
   }
 }

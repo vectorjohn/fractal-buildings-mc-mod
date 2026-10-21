@@ -30,25 +30,66 @@ steps below implement; changing one later costs the steps named.
    *Cost:* a big lot must fit inside one tile (at most about 180 blocks across after
    arterial half-widths; the hall's 200 x 200 test lot does not fit, its 120 x 80
    does). Steps hit if changed: DG, SK, DL.
-2. **Roads: a hybrid of a hashed arterial grid and organic main roads.** In cities,
+   - @John 2026-10-21: #question @lead-coder does this mean that, e.g. the city block from the last phase, if you wanted to make a grid of them, they would have to basically snap to a grid of 200 blocks? I don't see how that will work, maybe that “block” building doesn't make sense. Or it can happen in isolation, but have infill around it of other buildings, and there isn't really a way to tile large structures. For Hall that seems fine because you wouldn't see multiple city blocks filled up with halls. 
+     - @lead-coder 2026-10-21: No, `block` buildings don't snap to a 200-block grid. A
+       tile is not a city block. It is a superblock 128 to 192 blocks across, and DL cuts
+       its urban part into street blocks with streets every 44 to 90 blocks. A `block`
+       lot is one whole street block, at least 52 x 52 and tested up to 100 x 80, so a
+       typical 160-block tile holds 2 x 2 of them with streets between. A grid of `block`
+       buildings is the normal downtown case. What the tiles do impose is that no lot
+       crosses a tile border. So in grid quarters every tile border needs a street, and
+       the inner streets should line up from one tile to the next. The plan doesn't say
+       either yet; both are cheap to add to DL. You're right about the limit: nothing
+       larger than a tile can be built in a city, and large structures can't be tiled
+       across tiles. A lot about 116 across fits in every tile, and one about 180 fits
+       only in the widest. The hall's 120 x 80 fits nearly everywhere; its 200 x 200 never
+       fits. For palaces or giant complexes in cities there are two ways: bigger tiles,
+       or extra structure starts at tile corners for a few big lots. I'd add neither
+       until the gate shows a need. The numbers and options are in the section "Answers:
+       city layout (John 2026-10-21)" at the end of this plan.
+3. **Roads: a hybrid of a hashed arterial grid and organic main roads.** In cities,
    arterials run on tile borders (so they are straight, axis-aligned and continue
    across cells for free); main roads in every tier are paths found on the coarse
    lattice (slope- and water-aware A*) from the settlement's hub to gates and exits,
    so villages and towns are organic and cities are part grid, part organic.
    *Rejected:* all-organic (cross-cell joins need gates for every road, no free
    continuity) and all-grid (every town looks like Manhattan). Steps hit: SK, D3.
-3. **"No size cap" means a configured maximum radius, not a design limit.** The join
+   - @John 2026-10-21: #question @lead-coder how much continuity are we getting for free here? It sounds like it's possible to do cross cell joins, right? Because the organic ones cross. Or do the side roads stay in their cell? Or, are you saying organic roads only in settlements/villages?
+     - @lead-coder 2026-10-21: Some of the continuity is free, and some is agreed through
+       gates.
+       - **Free (pointwise, nothing coordinates): arterials.** They lie on tile borders
+         and are switched on by a hash of the border segment and the density at its
+         midpoint. So they run straight across tiles and cell borders for the whole joined
+         city. Cities and metropolises only.
+       - **Organic main roads cross cells, but only at gates.** Each edge shared by two
+         member cells of the same settlement has one hashed gate. Each cell runs A* from
+         its own hub to the gate, inside its own columns, and the two halves meet at the
+         gate. So a joined city gets one organic road per shared cell edge, plus the
+         arterials. That is what "cross-cell join" means here: an agreement through the
+         gate, not free continuity.
+       - **Side streets are per tile, not per cell.** A tile on a cell border reads both
+         cells' skeletons, so cell borders don't matter to its streets. As the plan is
+         written, though, side streets don't cross tile borders. Lanes branch from main
+         roads inside the tile and stop at its edge, which gives dead ends every 128 to
+         192 blocks. I recommend fixing that in DL with "tile ports" (the gate idea one
+         level down) and with grid lines shared along a whole column of tiles (details in
+         the section at the end).
+       - **Organic roads are in every tier.** Villages and towns are all organic. Cities
+         are an arterial grid plus organic main roads, with grid streets in dense quarters
+         and organic lanes elsewhere. There are no roads between separate settlements in
+         Phase 5: exits stop at the town's edge.
+5. **"No size cap" means a configured maximum radius, not a design limit.** The join
    rule (R2) must read a bounded neighbourhood (about 3 x the largest radius), so the
    radius distribution's tail is clipped at `maxRadius`, a config value
    (default **4096**, cities up to about 8192², matching ADR 0003's "soft warning
    above 8192²"). 6.5 exposes it. Steps hit: R1, MC1.
-4. **Settlement plans get their own formats beside `fb-scene/1`.** The 2026-10-16
+6. **Settlement plans get their own formats beside `fb-scene/1`.** The 2026-10-16
    assumption was "one document format for every scale". A plan view of a 4096²
    city cannot carry voxel shells, so the plan is `fb-settlement/1` (skeleton,
    districts, roads) plus one `fb-district/1` per district (streets, lots, briefs);
    a district's 3D view stays `fb-scene/1` with two additive keys. Steps hit: P0,
    V1, V2.
-5. **Jetties over streets** (John said yes, Phase 4): a building may overhang a
+7. **Jetties over streets** (John said yes, Phase 4): a building may overhang a
    street by at most 1 block (2 on streets at least 7 wide), from storey 1 up, with
    at least 3 blocks of clearance over the street surface, never over an arterial's
    carriageway centre or a lane narrower than 4. Step JT.
@@ -101,6 +142,33 @@ world seed
   frontage** (lots packed along both sides of every organic road). Lots are
   axis-aligned rectangles (the IR's `Lot`), front facing the street. Rejected:
   polygon parcels (no IR, no generator support, Minecraft is axis-aligned anyway).
+  - @John 2026-10-21: #ideas @lead-coder can you think of any ways a city can be mostly grid based with exceptions? Real cities often have an odd diagonal road cutting through in some places. Similarly, can you envision any way the architecture as it stands now could support non-grid based cities? It's Minecraft so it's always rectangles but it could be different size rectangles that don't line up. Even grids are a modern American more planned city thing, but old cities are a lot less regular. Just want to understand what is possible.
+    - @lead-coder 2026-10-21: Yes to both, mostly within the current architecture. The
+      hard limits are that lots stay axis-aligned rectangles inside one tile, and roads
+      run at 0, 45 or 90 degrees (A* moves on an 8-neighbour lattice). Ideas, cheapest
+      first:
+      - **A different layout per quarter.** The hook exists
+        (`TierProgram.streetLayout(tier, quarter, density)`). An irregular old town
+        around the hub and a grid in the newer dense quarters, like Barcelona's old city
+        and the Eixample.
+      - **An irregular "subdivide" layout for old towns.** Cut each tile's urban part by
+        recursive hashed splits, alternating axes at uneven positions, until blocks are
+        30 to 90 across. Each cut becomes a street or lane that ends in a T. That gives
+        rectangles of different sizes that don't line up: a split grammar, like the ones
+        the buildings use. It would be a third `StreetLayout` value in DL.
+      - **A grid with exceptions.** Diagonal avenues: some of a city's main roads drawn
+        straight at 45 degrees from the hub to gates or landmarks, cutting through the
+        grid. The leftover triangles become squares or small lots, as Broadway makes
+        Times Square and Madison Square. Skipped grid lines merge blocks for a hall or a
+        park. A different spacing per quarter makes the grids jog where quarters meet.
+      - **Not possible without bigger work:** rotated buildings, streets at angles other
+        than 45 degrees (the IR's lots are axis-aligned, and so is Minecraft), and lots
+        crossing tile borders. Lots on both sides of a tile border back onto each other,
+        which leaves a straight seam every 128 to 192 blocks, mostly hidden behind the
+        buildings.
+      - **Recommendation:** the first two (quarter choice plus an old-town subdivide
+        layout) in DL and D3, and diagonal avenues in D3. Costs and details are in the
+        section "Answers: city layout (John 2026-10-21)" at the end of this plan.
 - **Type and height by density** (5.7): a pointwise density 0–100 (distance to the
   centre over the radius, a bonus near arterials, hashed low-frequency noise, capped
   by tier) and the quarter pick the type and storey range through one table,
@@ -770,6 +838,21 @@ Tests: `city-check` over the T1 windows and 200 synthetic sites: 0 violations;
 `tile-border-agree` mutant (shift one district's street) fails; gallery spec writes
 plan PNG plus fly frames per preset (open them).
 
+### IRR1. Old-town subdivision layout (5.13) — size S to M
+
+Needs: D0. Owns `StreetLayout.SUBDIVIDE` and its splitter in DL's `Districts` (+
+tests, a preset); ticks **5.13** with D3's avenues. Added 2026-10-21 (John, "Irregular
+cities, costed" below). D3 picks `SUBDIVIDE` for `OLD_TOWN` quarters (and `MARKET`
+where not grid). The tile's urban rectangle minus skeleton roads is split recursively:
+the longer side at a hashed 35 to 65 % (snapped to 4), keyed by (seed, tile, split
+path), a street 5 wide at the first level and lanes 3 wide deeper, stopping at 30 to
+90 blocks. The result is different-size rectangles meeting in T junctions, packed with
+frontage lots; tile ports carry the streets across borders. Tests: every split block
+is 30 to 90 across and reached by a street; no four-way crossings inside a subdivided
+tile; `roads-connected` and `tile-border-agree` hold; determinism (same seed, same
+splits); plan PNG of an old town beside a grid quarter in the log (open it).
+- *Deviation (IRR1, 2026-10-21):* the splitter is `Subdivision` (pure) driven by `Districts.subdivide`, inset 14 from the tile border, stops at 66 across or (to 90) 55 %, jog 6 between streets meeting a street from opposite sides; `market` quarters are subdivided too; `QuarterField` draws an old town column by column within 0.3 radius; diagonal avenues get axis-aligned cut lanes plus greens, not lots fronting the 45-degree band. Log `docs/log/2026-10-21-p5-irr1-oldtown.md`.
+
 ### D1. Hamlet and village programs (5.1) — size M
 
 Needs: D0. Owns `tiers/HamletProgram`, `tiers/VillageProgram` (+ tests, presets).
@@ -790,6 +873,7 @@ urban mask, cut into `wall`-type lots (24–64 long, 7–11 deep) clockwise; a g
 every main road crosses, as a `wall` lot whose gate passage sits on the road; ring
 corners are tower lots. Tests: the ring is closed except at gates; every main road
 crossing the ring has a gate; wall lots obey every invariant; preset.
+- *Deviation (D2, 2026-10-21):* the ring is a rectangle whose sides each pull in on their own where water or cliffs are (down to 0.3 of the nominal distance, at least 100 across), not a mask-following outline; a gate lot is a `wall` lot exactly 23 long (the only length where the generator puts the passage in the middle); only the centre cell builds the ring (see ASSUMPTIONS). Roads to targets outside the ring are routed hub - gate - target so they cross it straight.
 
 ### D3. City and metropolis programs, density and skyline (5.1, 5.7) — size L
 
@@ -805,6 +889,14 @@ property matrix, add a `briefMinStoreys` 10 to its limits and use it at 70 ≤ d
 Tests: mean storeys by density band rise monotonically; tallest building within
 0.3 radius of the centre in 90 % of metropolises; no highrise below d 70; skyline
 profile PNG (max height along a transect) in the log.
+- *Diagonal avenues* (5.13, added 2026-10-21 for John): 45-degree avenues cutting
+  through grid quarters in `CityProgram.mainRoads` (a turn penalty in the A* cost, or
+  a straight 45-degree raster checked with `Grading.road`), from the hub to gates and
+  landmarks. DL handles the cut blocks: it subtracts skeleton roads from grid blocks,
+  packs frontage lots along the cut, and makes the leftover triangle a plaza or green
+  (at least 16 across) or park or empty. Tests: avenues stay at 45 degrees, no lot
+  overlaps an avenue, `roads-connected` holds; a plan PNG with an avenue in the log.
+  Size M in D3, S in DL.
 
 ### MC2. Cities across cells (5.8) — size M
 
@@ -889,6 +981,7 @@ here). How to open the interactive views: `npm run city-gallery` then the plan U
 | T2 | R2, T1 (MC1 for window 8) | DL, DB, JT | S |
 | JT | P0, 5.12 | DL, T2, wave D | M |
 | D0 | DL, DB | – | M |
+| IRR1 | D0 | D1, D2, D3 (D3 picks the layout; IRR1 owns the splitter in `Districts`), MC2, DT, TR | S–M |
 | D1, D2, D3 | D0 (D3: D2 for walls) | each other, MC2, DT, TR | M, M, L |
 | MC2 | D0, MC1 | D1–D3, DT, TR | M |
 | DT | D0 | D1–D3, MC2, TR | S |
@@ -911,6 +1004,8 @@ Shared files and who edits them:
 - `SettlementChecks`: each step adds its own rule methods at the end.
 - `Invariants.java`: JT only (`in-lot`); 5.11/5.12 may also edit it.
 - `ClassTable`: P0, then D3 only.
+- DL's `Districts`: IRR1 (the `SUBDIVIDE` splitter) and D3 (cut blocks along diagonal
+  avenues); on a conflict keep both sides' logic.
 - `Tiers`: R1, then R2 (water constants) and MC1 (priority); one block each.
 - CLI `CityCommand`: SK → DL → D0 → MC2 in sequence; `RegionCommand`: R1 → R2 → MC1.
 - `viewer/**`: V0, V1, V2 own their new files; `render.ts` is V2's; D0 adds
@@ -919,7 +1014,8 @@ Shared files and who edits them:
 - Goldens (`golden/settlement`, `golden/region`, `golden/v1`): generated, never
   hand-merged.
 - ROADMAP: owners tick 5.2 DL, 5.3 TR, 5.4 ST/DB, 5.5 later of V1/V2, 5.6 DT, 5.7 D3,
-  5.8 MC2, 5.9 SC, 5.10 R2; 5.1 is ticked by the coordinator when D1–D3 have merged.
+  5.8 MC2, 5.9 SC, 5.10 R2, 5.13 the later of IRR1/D3; 5.1 is ticked by the coordinator
+  when D1–D3 have merged.
 
 # Interaction with 5.11 and 5.12
 
@@ -962,3 +1058,95 @@ Each with the assumption made if nobody answers.
 # Deviations
 
 (Steps add one line each when they change a contract above.)
+
+*JT deviations (2026-10-21, p5-jt-jetties):* the envelope does not grow "by a at the front" but by the type's front margin plus the air rights (`BuildingSpec.lead`), because the house and shop front wall must stand at the usual front edge for a jetty to reach past the lot edge within the 2-block `JETTY_MAX` (overhang is measured from the wall, so it includes the 1-block yard). Only house and shop massing use it; only styles with `massing.jetty > 0` (medieval; plains has none). `Lot` gained `airRights`/`frontY` (JSON only when > 0). `MassingCheck.require` now takes the front overhang limit (2, or 3 for shops and air-rights buildings) so M5 is no longer 3 for everyone.
+- SK (2026-10-21): gates are the 32-lattice column nearest the hashed point on the shared edge (not exactly on the border), rejected for water or peaks only (not slope); `skeleton-in-cell` is "every road column is owned by the cell (nearest region site) or is one of its gate columns". The ±20 test probe is hashed per column, so it is asserted on cell gates (which depend on water and peaks only), not on exits.
+- SK (2026-10-21): arterials and district lists use the pointwise urban test (footprint, dry, not a peak, not steep), not the hub-reachability mask, so every cell and tile agrees; the plan's `quarters` list always has all eight kinds (id = ordinal); `origin` is the tile's corner chunk (P0's reader), not DG's centre chunk; the tier enum is now one (`settlement.Tier`, carrying the ladder's weights, bands and density caps; `Tiers.Tier` is gone); `FixedSiteView(site, RegionField)` takes the field (R1 exists); `FieldSiteView` adapts MC1's `FieldRegionView` to `RegionView`; `fractal-cli city --cell` goes through the join rule.
+
+# Answers: city layout (John 2026-10-21)
+
+Background for the three replies under "Decisions for John" and "Lots". Nothing
+here changes a step; the proposals at the end wait for John.
+
+**Tiles and the lot-size ceiling.** `DistrictGrid` (merged) puts line k of each axis
+at chunk 10k + o(k), o in {-1, 0, 1}, so a tile is 128, 144, 160, 176 or 192 blocks
+wide with odds 1, 2, 3, 2, 1 in 9, independently per axis. In cities an arterial may
+lie on each border: width 9 (11 in a metropolis, SK's `Arterials.width()`; the plan
+text said 7), split along the line, so up to 6 blocks per side. A lot of width W fits
+on an axis if the tile is at least W + 12 there:
+
+| Lot width (one axis) | Tiles it fits (that axis) |
+|---|---|
+| up to 116 | all |
+| 132 | 8 in 9 |
+| 148 | 2 in 3 |
+| 164 | 1 in 3 |
+| 180 | 1 in 9 (1 in 81 for a square lot) |
+
+Phase 4 lots against that: `block` 52 x 52 to 100 x 80 and `highrise` up to 44 x 44
+fit everywhere; `hall` 120 x 80 fits about 8 tiles in 9; `hall` 200 x 200 never fits.
+The ceiling comes from the structure start, not from the grid. A start's blocks must
+lie within 8 chunks of its start chunk (NOTES, 1.4; ARCHITECTURE "City scale": at most
+14 x 14 chunks, 224 blocks, with the beard), and the start sits at the tile centre.
+
+**Two ways to get bigger structures into cities** (not in the plan; inference, untested
+in game):
+- *Bigger tiles.* `PERIOD` 12 gives tiles of 10 to 14 chunks (160 to 224 blocks), a
+  ceiling of about 210, and only one chunk of slack for the beard (DG's test asks for
+  two). Cost: two constants, DG's reach test, the regenerated settlement goldens, and
+  districts about 1.4 times larger (plan time, scene size and the 3D view all grow with
+  them). Every city gets coarser to serve a rare building, so I don't recommend it.
+- *Corner starts.* Tile corners (line crossings) are pure geometry too, so W1's
+  placement test can also accept a corner chunk without probes. The skeleton puts a
+  rare big lot (palace, cathedral close, stadium) centred on a corner, up to about
+  220 across. The four tiles around it read it from the skeleton (they already read
+  skeletons) and leave it out, and arterials on those four border segments are
+  switched off. Cost: an SK landmark rule, a DL carve-out, and a second kind of start in
+  6.x. Recommended only if the gate shows that cities miss such buildings.
+- @John 2026-10-21: #question are bigger tiles something that has to be set for the whole plan, or can you have the _occasional_ bigger tile? From your wording it sounds like always, we choose the tile size up front. Either way, I think we just need to leave this issue as a possible option if we need it but we’ll see if it looks like we do. We fit some fairly large buildings, especially if you go up!
+  - @assistant 2026-10-21: The tile size is fixed world-wide: `DistrictGrid` puts every line at chunk `PERIOD` x k plus a hashed jitter of at most `JITTER` (10 and 1 chunks), so tiles are 8 to 12 chunks everywhere and one tile cannot be made larger on its own. The occasional bigger plot is still possible two ways, both on top of the fixed grid: the corner start above (a rare big lot, up to about 220 across, centred on a hashed tile corner and spanning the four tiles around it), or merging two neighbouring tiles where a hash on their shared border says so (both skip their own detail there and one big lot straddles the border; it is still limited to about 220 along that axis by how far one structure start reaches). Either costs an SK rule, a DL carve-out and a second kind of start in 6.x. Parked as an option, as you say; the gate will show whether cities miss such buildings.
+
+**Grid streets and tile borders** (proposed for DL; the plan text is silent on both):
+- *Shared lines.* The inner grid streets on an axis come from (seed, axis, interval
+  k) only, where interval k lies between DG lines k and k + 1. That interval is shared
+  by a whole column (or row) of tiles, so every grid tile in the column uses the same
+  street positions and streets run straight across tile borders. One or two lines per
+  interval give street blocks of about 52 to 100. As it stands, "hashed street lines
+  across the tile" keyed by tile would jog at every border that has no arterial.
+- *Border streets.* In grid areas a border segment that is not arterial gets a plain
+  street (width 5, split along the line as D5 says) when the density at its midpoint
+  is at least 50. That is the same pointwise rule shape as `Arterials`, so both tiles
+  agree. Without it, a `block` lot next to a bare border has no street on that side.
+- *Tile ports* (organic layouts). Each non-arterial border segment gets 0 to 2 hashed
+  port points keyed by the segment, the same way cells get gates. A port is used when
+  both sides are urban, and each tile routes a lane from every used port to its
+  nearest street. Lanes then continue across tile borders, and `roads-connected` and
+  `tile-border-agree` hold by construction instead of only being checked. Cost: small,
+  in DL.
+- @John 2026-10-21: Yes, I think we should do these.
+  - @coordinator 2026-10-21: Done in DL (merged 9aceea1): shared grid street lines, border streets and tile ports.
+
+**Irregular cities, costed:**
+- *Quarter choice* (hook exists; SK's `QuarterField` already draws `OLD_TOWN` near the
+  hub in cities): D3 returns a non-grid layout for `OLD_TOWN` and `MARKET` and the
+  grid elsewhere when dense. Cost: none beyond the next item.
+- *Subdivide layout* (a new `StreetLayout.SUBDIVIDE`, in DL): take the tile's urban
+  rectangle minus skeleton roads and split the longer side at a hashed 35 to 65 %
+  (snapped to 4), keyed by (seed, tile, split path), with a street 5 wide at the first
+  level and lanes 3 wide deeper. Stop at 30 to 90 blocks. The streets then meet in T
+  junctions and the blocks are rectangles that don't line up, packed with frontage
+  lots. Ports carry it across tile borders. Cost: S to M.
+- *Diagonal avenues* (D3 `CityProgram.mainRoads`): a turn penalty in the A* cost, or a
+  straight 45-degree raster checked with `Grading.road`, from the hub to gates and
+  landmarks. DL subtracts skeleton roads from grid blocks. A cut block then becomes
+  frontage lots plus a leftover triangle, which is a plaza or green if at least 16
+  across and park or empty otherwise. Cost: M in D3, S in DL.
+- *Limits that stay:* lots are axis-aligned rectangles (rotating them needs IR and
+  generator work); streets run at 0, 45 or 90 degrees; and lots never cross tile
+  borders. That leaves a straight line where back lot lines meet, every 128 to 192
+  blocks, unless a lane or wall runs along it.
+
+  - @John 2026-10-21: I like these options, I think we should integrate them into the plan. Subdividing and some diagonal paths. 
+    - @coordinator 2026-10-21: Yes. They are in the plan: step IRR1 (old-town subdivision, after D0) and a diagonal-avenues bullet in D3, both in the parallelism table; ROADMAP item 5.13.
+
+- DL (2026-10-21): streets of a tile are clipped to the tile plus 8 blocks, not to the tile (both tiles at a border then list the same streets, `tile-border-agree` holds by construction); `Districts.plan(SkeletonSource, ix, iz, exact)` replaces the plan's `(seed, tileKey, SkeletonSource, TerrainProbe, BiomeProbe)` (the style comes from `Briefs.fill`); lots are packed along axis-aligned street runs only, with lanes branching off 45 degree roads; hall and temple landmarks become lots flush against the hub square; arterials come from the pointwise `Arterials` rule, not from the cell skeletons' road parts; `Grading.profile` added (the profile without boxes). No `SUBDIVIDE` layout, no diagonal avenues (John decides; D3).

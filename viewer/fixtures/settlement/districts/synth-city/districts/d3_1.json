@@ -1,0 +1,20 @@
+{
+  "format": "fb-district/1",
+  "planVersion": 1,
+  "genVersion": 2,
+  "seed": "1001",
+  "district": {"id": "d3_1", "ix": 3, "iz": 1, "x": 480, "z": 144, "w": 160, "d": 176, "quarter": 3, "density": 52},
+  "streets": [
+    {"id": "a03_16", "kind": "arterial", "width": 9, "points": [[480, 136], [480, 144]], "y": [68, 68]},
+    {"id": "b11_320", "kind": "street", "width": 5, "points": [[472, 144], [480, 144]], "y": [68, 68]},
+    {"id": "t0", "kind": "lane", "width": 3, "points": [[472, 216], [479, 216], [480, 216], [488, 216]], "y": [70, 70, 71, 71]},
+    {"id": "t1", "kind": "lane", "width": 3, "points": [[600, 136], [600, 151], [600, 152]], "y": [70, 70, 71]},
+    {"id": "t2", "kind": "lane", "width": 3, "points": [[536, 136], [536, 152]], "y": [69, 69]},
+    {"id": "t3", "kind": "lane", "width": 3, "points": [[576, 328], [576, 321], [576, 320], [576, 312]], "y": [71, 71, 72, 72]},
+    {"id": "t4", "kind": "lane", "width": 3, "points": [[536, 328], [536, 312]], "y": [72, 72]}
+  ],
+  "plazas": [],
+  "lots": [],
+  "scene": null,
+  "violations": []
+}

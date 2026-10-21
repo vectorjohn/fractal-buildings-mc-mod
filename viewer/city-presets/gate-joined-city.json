@@ -1,0 +1,7 @@
+{
+  "seed": 987654321,
+  "terrain": "recorded:fixtures/terrain/gate-joined-city.json.gz",
+  "site": {"at": [8832, 192], "tier": "city", "radius": 717},
+  "scenes": "auto:2",
+  "camera": {"plan": {"layers": "+terrain"}}
+}

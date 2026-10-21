@@ -8,9 +8,14 @@ import dev.fractalbuildings.core.gen.v1.facade.FacadePass;
 import dev.fractalbuildings.core.gen.v1.facade.FacadePlan;
 import dev.fractalbuildings.core.gen.v1.interior.RoomProgram;
 import dev.fractalbuildings.core.gen.v1.model.Face;
+import dev.fractalbuildings.core.gen.v1.model.Mass;
 import dev.fractalbuildings.core.gen.v1.model.Massing;
+import dev.fractalbuildings.core.gen.v1.structure.Posts;
 import dev.fractalbuildings.core.gen.v1.style.FacadeStyle;
+import dev.fractalbuildings.core.ir.Box;
 import dev.fractalbuildings.core.ir.Facing;
+import dev.fractalbuildings.core.ir.Layer;
+import dev.fractalbuildings.core.ir.Role;
 import dev.fractalbuildings.core.rand.Draws;
 import java.util.ArrayList;
 import java.util.List;
@@ -89,6 +94,27 @@ public final class WorkshopType implements BuildingType {
 		FacadePlan plan = new FacadePlan(layouts, door, others);
 		c.setFacadePlan(plan);
 		FacadePass.decorate(c, plan);
+		porch(c, door);
+	}
+
+	/**
+	 * The covered work yard: when the hall stands back from the front of the envelope (its {@code z} is the porch
+	 * depth, 2 or 3), a lean-to canopy along the hall's front wall on a row of posts at the front edge (corner to
+	 * corner, none in front of the cart door). The canopy is one ROOF block thick, rising towards the wall under the
+	 * eaves as far as the hall is high; it touches the wall and the posts, so nothing floats, and it is not a
+	 * volume, so no room lies under a roof that is open at the sides.
+	 */
+	private static void porch(BuildContext c, FacadePlan.Entrance door) {
+		Mass hall = c.massing().main();
+		int a = hall.z();
+		if (a < 2) return;
+		int hallH = c.massing().grid().y(1), low = Math.min(4, hallH - 1);
+		int[] xs = Posts.spaced(hall.x(), hall.maxX() - 1, 4, door.pos() - 1, door.pos() + door.width());
+		for (int i = 0; i < xs.length; i++) Posts.column(c, "post" + i, xs[i], 0, low);
+		for (int z = 0; z < a; z++) {
+			int y = Math.max(low, hallH - 1 - (a - 1 - z));
+			c.box(Role.ROOF, Layer.ROOF, Box.NO_STOREY, hall.x(), y, z, hall.sx(), 1, 1);
+		}
 	}
 
 	private static void side(List<Integer> bays, List<String> kinds, int len, FacadeStyle st) {

@@ -25,7 +25,15 @@ public enum Role {
 	/** Structural frame on show: posts, beams, columns, half-timbering, jetty bressumers (Phase 4). */
 	BEAM(true, true),
 	/** Thin barrier: railings, balustrades, grilles. Blocks movement and closes the shell. */
-	FENCE(true, true);
+	FENCE(true, true),
+	/** Street and road surface (Phase 5 district scenes). */
+	ROAD(true, true),
+	/** Plaza and square paving (Phase 5). */
+	PAVING(true, true),
+	/** Fill earth in district scenes (Phase 5). */
+	GROUND(true, true),
+	/** Bridge decks and piers (TR 5.3): timber, or stone in the desert. */
+	DECK(true, true);
 
 	public final boolean solid;
 	public final boolean closesShell;

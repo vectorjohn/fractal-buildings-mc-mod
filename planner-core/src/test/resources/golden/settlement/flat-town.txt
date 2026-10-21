@@ -1,0 +1,2 @@
+8b9bf843bac4d3b64313dcc5e6858053eaa095b754d393e197c3a74e344d6628
+flat-town: town, 1 cells, 23 districts, 5 roads, 0 bridges, 5 gates, 2 landmarks, 24011 bytes

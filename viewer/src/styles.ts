@@ -20,6 +20,7 @@ export function parseStyles(raw: Record<string, string>): Map<string, StyleColou
   const docs = new Map<string, Doc>();
   for (const path of Object.keys(raw).sort()) {
     const d = JSON.parse(raw[path]!) as Doc;
+    if ((d as { format?: string }).format === 'fb-biome-fallback/1') continue; // the biome map beside the style files, not a style
     if (typeof d.id !== 'string') throw new Error(`style ${path}: no id`);
     docs.set(d.id, d);
   }

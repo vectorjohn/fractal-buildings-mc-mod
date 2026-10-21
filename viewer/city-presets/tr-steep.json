@@ -1,0 +1,7 @@
+{
+  "seed": 987654321,
+  "terrain": "recorded:fixtures/terrain/gate-desert-badlands.json.gz",
+  "site": {"at": [6720, -6784], "tier": "city", "radius": 827},
+  "scenes": ["d42_m47", "d41_m46"],
+  "camera": {"plan": {"layers": "+terrain", "x": 6700, "z": -7350, "zoom": 1.4}}
+}

@@ -1,0 +1,7 @@
+{
+  "seed": 987654321,
+  "terrain": "recorded:fixtures/terrain/gate-jungle-savanna.json.gz",
+  "site": {"at": [-640, -3712], "tier": "city", "radius": 790},
+  "scenes": "auto:2",
+  "camera": {"plan": {"layers": "+terrain"}}
+}

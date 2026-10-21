@@ -5,6 +5,7 @@ import dev.fractalbuildings.core.gen.v1.facade.FacadePass;
 import dev.fractalbuildings.core.gen.v1.facade.FacadePlan;
 import dev.fractalbuildings.core.gen.v1.facade.OpeningPass;
 import dev.fractalbuildings.core.gen.v1.interior.InteriorPass;
+import dev.fractalbuildings.core.gen.v1.structure.Posts;
 import dev.fractalbuildings.core.gen.v1.model.Mass;
 import dev.fractalbuildings.core.gen.v1.model.Massing;
 import dev.fractalbuildings.core.gen.v1.model.Face;
@@ -60,6 +61,25 @@ final class Shopfront {
 		FacadePlan plan = new FacadePlan(layouts, new FacadePlan.Entrance(f, door, dw), others);
 		c.setFacadePlan(plan);
 		FacadePass.decorate(c, plan);
+		arcade(c, f, plan.entrance());
+	}
+
+	/**
+	 * The posts of an arcade (a front jetty of 2 or more blocks): a row along the jetty's front edge, from corner to
+	 * corner, about 3-4 apart and none in front of the door, carrying the upper storeys over the walkway, with a beam
+	 * between them under the floor edge. The ground floor behind it keeps its shopfront.
+	 */
+	private static void arcade(BuildContext c, Face front, FacadePlan.Entrance door) {
+		Massing m = c.massing();
+		Mass jetty = null;
+		for (Mass a : m.masses()) if (a.kind().equals("jetty") && a.parent() != null && a.parent().equals(m.main().id())) jetty = a;
+		if (jetty == null || m.main().z() - jetty.z() < 2) return;
+		// a jetty over the street (air rights) has no posts: they would stand in the street
+		if (jetty.z() < c.spec().lead() - c.type().limits().front()) return;
+		int h = m.grid().y(1), z = jetty.z();
+		int[] xs = Posts.spaced(jetty.x(), jetty.maxX() - 1, 4, door.pos() - 1, door.pos() + door.width());
+		for (int i = 0; i < xs.length; i++) Posts.column(c, "post" + i, xs[i], z, h);
+		c.box(Role.BEAM, Layer.SHELL, 0, jetty.x(), h - 1, z, jetty.sx(), 1, 1);
 	}
 
 	/**
@@ -169,12 +189,15 @@ final class Shopfront {
 		}
 		if (up == null) return;
 		int y1 = m.grid().y(1) + 1;
-		for (int[] p : new int[][] {{up.x() + 1, up.z() + 1}, {up.maxX() - 2, up.z() + 1}, {up.x() + 1, up.z() + 2}, {up.maxX() - 2, up.z() + 2}}) {
-			if (hook(c, m, "bed", 1, y1, p[0], p[1], Facing.SOUTH, 2)) break;
-		}
-		for (int[] p : new int[][] {{up.maxX() - 2, up.z() + 1}, {up.x() + 1, up.z() + 1}, {up.maxX() - 2, up.z() + 2}, {up.x() + 1, up.z() + 2}}) {
-			if (hook(c, m, "table", 1, y1, p[0], p[1], Facing.SOUTH, 2)) break;
-		}
+		// two cells clear of the stair core if the floor has room, else one (a 7-wide market hall)
+		int[][] bedAt = {{up.x() + 1, up.z() + 1}, {up.maxX() - 2, up.z() + 1}, {up.x() + 1, up.z() + 2}, {up.maxX() - 2, up.z() + 2}};
+		int[][] tableAt = {{up.maxX() - 2, up.z() + 1}, {up.x() + 1, up.z() + 1}, {up.maxX() - 2, up.z() + 2}, {up.x() + 1, up.z() + 2}};
+		place:
+		for (int clear = 2; clear >= 1; clear--)
+			for (int[] p : bedAt) if (hook(c, m, "bed", 1, y1, p[0], p[1], Facing.SOUTH, clear)) break place;
+		place:
+		for (int clear = 2; clear >= 1; clear--)
+			for (int[] p : tableAt) if (hook(c, m, "table", 1, y1, p[0], p[1], Facing.SOUTH, clear)) break place;
 	}
 
 	/** A hook on a free standing cell at least {@code clear} cells from every core and from the other hooks; false if the cell is unsuitable. */

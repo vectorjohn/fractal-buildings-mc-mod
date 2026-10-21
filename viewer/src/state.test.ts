@@ -40,6 +40,23 @@ describe('state <-> URL', () => {
   });
 });
 
+describe('district view parameters', () => {
+  it('round-trips mesh, exterior, camera and stops', () => {
+    const q = 'fixture=d0_0&mesh=faces&exterior=1&camera=fly&stops=1,2,3,0,-10;4,5,6,90,0';
+    expect(serializeState(parseState(q))).toBe(q);
+    const s = parseState(q);
+    expect([s.mesh, s.exterior, s.camera]).toEqual(['faces', true, 'fly']);
+  });
+  it('junk values fall back to the defaults', () => {
+    const s = parseState('mesh=voxels&exterior=yes&camera=drone');
+    expect([s.mesh, s.exterior, s.camera, s.stops]).toEqual(['auto', false, 'orbit', null]);
+  });
+  it('ground and water are layers', () => {
+    expect(ALL_LAYERS).toContain('ground');
+    expect(ALL_LAYERS).toContain('water');
+  });
+});
+
 describe('seed stepping', () => {
   const seeds = [4, 7, 9];
   it('steps and clamps', () => {

@@ -52,7 +52,7 @@ item. Per-item work logs are in [log/](log/); run ledgers in [runs/](runs/).
 | 2. Worldgen spikes | done; gate passed 2026-10-16 (John accepted ADR 0003; S6 figures being re-measured) | worldgen ADR (approach, size limits, determinism rules) |
 | 3. Planner core and three.js viewer | done 2026-10-16; gate passed 2026-10-18 (John, REVIEW 3.12: "These all look good"; follow-ups: top view tilted, Phase 4 4.2 wings/jetties) | John reviews seed gallery and invariant report |
 | 4. Building generator depth | done 2026-10-19; gate passed 2026-10-21 (John, phase4 README: "consider this gate passed and move on"; feedback → 5.11, 5.12) | per building type, "would I believe a person built this?" |
-| 5. Settlements and cities | in progress (run 2026-10-21-phase5) | cities in ≥5 biome mixes, one straddling a border |
+| 5. Settlements and cities | done 2026-10-21 (5.9 partial: probe bar not met); gate awaiting John (pack: docs/review/phase5/README.md, REVIEW "Phase 5 gate") | cities in ≥5 biome mixes, one straddling a border |
 | 6. Minecraft integration and release | not started | fresh world on three seeds plays well for an hour; first release |
 
 Unscheduled ideas: add them to the Polish backlog or a new phase item via the
@@ -81,6 +81,9 @@ Notes:
   deliberately broken rule fails.
 - Shared test infrastructure (synthetic probes, terrain dumps, seed lists,
   gallery presets) is listed here as it's added.
+- Added in Phase 5 (T1): gzipped terrain dumps in `fixtures/terrain/` (see its README) made by
+  `TerrainDumpTool` (`mod/src/test`, run with `-Dfb.dump=...`, no server); `RecordedProbe`
+  reads gzip.
 - Added in Phase 3: `SampleScenes.house()` + `viewer/fixtures/sample-house.json`;
   recorded terrain `fixtures/terrain/s4-12345-crop32.json` and `RecordedProbe`;
   `ProbeSpecs` strings (`flat:`, `plane:`, `hill:`, `noise:`, `recorded:`)
@@ -338,37 +341,62 @@ skeleton, then district detail built lazily (ARCHITECTURE.md, "City scale").
 - [ ] **5.1 Scale ladder**: hamlet, village, town, city, metropolis. Each step
   adds structure (a square, a main street, districts, walls, a downtown);
   no step has a fixed size cap.
-- [ ] **5.2 Layout**: road network (primary and secondary), lot subdivision,
+  - R1 (2026-10-21): the tier ladder (`Tiers`), region field and planner, and `fractal-cli region` are in `core/region/`; the per-tier programs (D1-D3) are still to do, so this stays open.
+  - D0 (2026-10-21, log `docs/log/2026-10-21-p5-d0-pipeline.md`): the city pipeline `CityPlanner` (skeleton, every district, briefs, scenes), `fractal-cli city --scenes ... --check`, `city-check` (markdown report over cells, random or gate-window sites), the whole-city rules `roads-connected` (lots reach the hub) and `tile-border-agree`, `viewer/city-presets/` (one per T2 gate window, T1 river-town and mixed-city, a synthetic city), `npm run city` / `npm run city-gallery`, `e2e/city.spec.ts`. Tests: `CityPlannerTest`, `SettlementChecksTest` (city rules and mutants), `CityCheckTest`. *Known issues (upstream, found by `city-check`):* hub squares dropped on rough ground leave gaps in the main roads and hall lots without frontage, so `roads-connected` flags 6 of 9 gate cities (12 pieces) and about a third of random synthetic sites; scene roads differ by 1-2 blocks in y at some tile borders (`road-grade`, 4 in 9 gate cities with 2 scenes each); a hub hall lot can overlap a port stub (`lots-disjoint`, 4 of 400 sites). `CityCheckTest` ignores `roads-connected,road-grade,lot-frontage` until those are fixed (drop the ignore then).
+  - D1 (2026-10-21, log `docs/log/2026-10-21-p5-d1-villages.md`): hamlet and village programs (`core/settlement/tiers/`, selected by `TierPrograms`): straight axis-aligned main street through the hub on the gentler axis, hamlet 3 to 8 buildings on a 22 to 40 block track with no square, lanes or ports; village 10 to 60 buildings with a width-4 main street, a cross street on half, a green and a temple (70 %) or hall (30 %) facing it, lanes; presets `hamlet-river`, `village-river`, `hamlet-mixed`, `village-mixed`. *Known issues:* on very rugged ground (about 1 in 400 villages) district detail moves an ungradable green sideways off the street, so its hall is a separate street piece (`roads-connected`, already in the suppressed set).
+  - D2 (2026-10-21, log `docs/log/2026-10-21-p5-d2-town.md`): town program (`TownProgram`: 3 to 5 radial main roads, market square and hall from the default hub landmarks, frontage streets) and the wall ring `WallRing` (D3 reuses it for old towns): on 40 % of towns a closed axis-aligned ring at 0.5 to 0.7 of the radius (each side pulled in on its own where water or cliffs are), cut into `wall` lots (24 to 64 long, 7 to 11 deep) and corner `tower` lots, a `wall` gate lot (23 long, passage on the road) wherever a main road crosses. Tests: `TownProgramTest` (60 towns: every crossing has a gate, ring pieces inside one tile and all present as lots, district scenes build with no violations, passage columns lie on the road). *Known issues:* where the ground is wet or steep a town gets no ring (region-planner towns about 1 in 5, none on the nine T2 gate windows in 40 seeds each, the river window) and a ring that is found can lose 0 to 2 lots to ponds or streams that the 32-block coarse lattice misses (`wall lot ... dropped` notes), leaving gaps; the ring is built only by the cell that holds the centre and only over columns that cell owns (cities of joined cells need the ring by D3); a gate for roads wider than 5 (arterials) would need a wider passage than the wall type has.
+  - D3 (2026-10-21, log `docs/log/2026-10-21-p5-d3-city.md`): city and metropolis programs (see 5.7); the ladder is now complete in code (hamlet to metropolis, one program each); 5.1 stays for the coordinator to tick.
+- [x] **5.2 Layout**: road network (primary and secondary), lot subdivision,
   plazas and landmarks, gates. Split into the city skeleton (arterials on
   position-hashed lines, district borders drawn around big lots, coarse
   height screen) and lazy per-district detail (lots, briefs, exact heights).
-- [ ] **5.3 Terrain**: respond to slope, rivers and coast; choose where to level
+  *SK landed (2026-10-21, log `docs/log/2026-10-21-p5-sk-skeleton.md`): `Skeletons` builds a cell skeleton (mask, density, quarters, hub, gates, A* main roads, arterials, hub landmarks, district tiles) and merges a settlement into `fb-settlement/1`; `fractal-cli city`; DL ticks this item.*
+  *DL done (2026-10-21, log `docs/log/2026-10-21-p5-dl-layout.md`): `Districts.plan` plans a tile from the skeletons and exact terrain: skeleton roads, pointwise arterials and plain border streets, grid lines shared along rows of tiles, ports and lanes, plazas, hall and temple lots, whole-block and frontage lots with briefs (`airRights`, `frontY`); `fractal-cli city --districts [--scene]`. Tests: `DistrictsTest` (150 synthetic sites, 6873 tiles, 183k lots, 11k border pairs: every DL rule holds; shuffled order and fresh sources give the same JSON; recorded river window; mutants), `SettlementChecksTest`, `CityCommandTest.districtFixturesAreCurrent`, `viewer/e2e/districts.spec.ts`. *Known issues:* skeleton roads over steep ground keep their cut and fill (noted, not rerouted); road y can differ a block at a tile border; lots only along axis-aligned runs; the lake-rich real-terrain city has few lots (patchy skeleton mask, SK); brief storeys use the district quarter, not the lot's.*
+  *Hub square on real terrain (2026-10-21, log `docs/log/2026-10-21-p5-hub-square.md`): a hub square that does not grade on exact terrain now moves (nearest first, up to 160 blocks inside its tile) or shrinks to 16 blocks, preferring spots with dry room for the hall and temple; all nine gate windows get their square (was 3 of 9), 0 violations. A moved square gets a lane to each nearby road piece (`plazaLanes`), the hub for the roads-connected check is the square itself (`CityPlanner`), and hall and temple lots are placed after those lanes with relief <= 3; so hall and temple still miss on 8 of the 9 gate windows (hall on 4). Test: `HubSquareGateTest`.*
+  *ROADS (2026-10-21, log `docs/log/2026-10-21-p5-roads.md`): the whole-city defects D0 exposed are fixed and `CityCheckTest` ignores no rule: lots only on street pieces that reach a live skeleton road (`RoadNetwork`, from every member skeleton), edge tiles in cells without a settlement claimed by majority and main roads planned through every tile up to the last urban one, hall and temple placed after the streets (else on the nearest reachable street of the hub tile), squares joined to their roads, bridge decks as lower bounds, and every road shared by two tiles graded once so both build it at the same height. `city-check` with no ignore: 0 violations on the 9 gate windows, 1120 synthetic sites and both world maps. Tests: `CityRoadsTest`, `HubSquareGateTest`, `CityCheckTest`, `TerrainToolkitTest`. *Known issues:* port-stub lanes graded per tile (1 block at 27 columns); arterial chains with no main-road link stay empty; metropolis-mixed has no hall (lake hub tile); earthwork up about 40 % on the gate windows.*
+- [x] **5.3 Terrain**: respond to slope, rivers and coast; choose where to level
   ground and where to step buildings.
-- [ ] **5.4 Biome-aware style**: each district takes its palette from the biomes
+  *TA groundwork landed (`core/terrain/`: `WaterField`, `LatticePath`, `Grading`, `LotGround`).*
+  *TR done (2026-10-21, log `docs/log/2026-10-21-p5-tr-terrain.md`): (1) the urban mask takes ground up to 3 in 4 (was 1 in 2; roads keep 1 in 2 for their cost), so real hills are less patchy; (2) arterials run only where coarse samples 32 blocks apart differ by at most 1 in 2; (3) waterfront quays: `RoadKind.QUAY` promenades (width 4, stone paving in scenes) along the water of the waterfront quarter, on low banks only, with link lanes, pointwise so tiles agree (`Quays` marching squares + `Districts.quays`); (4) role `deck` for bridge decks and piers (palettes, viewer); (5) `city-check` prints a terrain-response table (`TerrainStats`: urban %, lots, `empty:steep`, cut and fill k blocks, steep roads, bridge and quay pieces, quay lots). On the 9 gate windows lots rose from 185..2248 to 207..2459 (+5 to +24 %; the badlands +24 %), the urban mask share from 55..91 % to 70..97 %, and the badlands cut and fill fell from 134k/159k to 72k/49k blocks (elsewhere about level). Tests: `QuaysTest`, `WaterfrontTest` (4 gate cities: 192 quay pieces, none wet, 0..4 blocks over the water, 84 quay-front lots of 1301, tile borders agree; scene paving and deck roles), `PlanDraw` unit tests, three presets with 3D frames. *Known issues:* no stairs (steep lanes route around or are dropped; main roads and arterials keep their cut and fill where the fine terrain is steeper than the coarse lattice shows, 7 to 90 street pieces per city); quays hug every waterfront bank in the quarter, so some run past no lots (quay-front lots are 4 to 12 % of a city's lots on the gate windows; 15 of 207 in the temperate one); a road crossing a tile no district plans leaves a gap (ROADS).*
+- [x] **5.4 Biome-aware style**: each district takes its palette from the biomes
   underneath, blended across borders.
-- [ ] **5.5 Viewer**: a 2D plan view over the terrain dump, plus a 3D fly-through
+  *Done (ST `StyleField` + DB `Briefs.fill`, log `docs/log/2026-10-21-p5-db-briefs.md`): per-lot style by a hashed vote over a 48-block disk; on the split sample 27/28 plains-side and 12/12 desert-side lots follow their side; on the w1-mixed dump 8 % of lots differ from their own biome (border blend).*
+- [x] **5.5 Viewer**: a 2D plan view over the terrain dump, plus a 3D fly-through
   of a chosen district; the plan view stays usable for cities of several
   thousand blocks (skeleton overview, district detail on demand).
-- [ ] **5.6 Determinism**: the skeleton is built from the region cell alone and
+  *V1 landed: the plan view (`viewer/plan.html`, see VIEWER.md "Plan view"). V2 landed: the district 3D view and fly-through (VIEWER.md "District 3D view"; face meshing, terrain heightfield, water, ground boxes, `?camera=fly&stops=`). Known issues: the storeys slider does nothing on the face-mesh path; hook markers are not drawn there.*
+  *p5-viewer-palette (2026-10-21): district 3D scenes colour each building by its own style's colour table (both mesh paths) and tint the terrain and ground by the nearest building's style (scenes carry no biome); an explicit `style` still forces one palette; gate-pack 3D frames re-captured ([log](log/2026-10-21-p5-viewer-palette.md)).*
+- [x] **5.6 Determinism**: the skeleton is built from the region cell alone and
   each district's detail from (cell, district), so every district start
   reproduces them identically in any order.
-- [ ] **5.7 Density and skyline**: building class and height follow distance
+  *SK: the skeleton is a pure function of the region cell (built in shuffled order with fresh probes it gives byte-identical plans, `SkeletonsTest`; goldens `golden/settlement/`); DT ticks this item.*
+  *DT landed: `SettlementDeterminismTest` plans every `viewer/city-presets` preset in order, with shuffled cells and districts, on 8 threads over a 2-cell evicting skeleton cache, and each district alone in a new source, and compares settlement, district and scene bytes; three mutant sources (hidden counter, neighbour-reading skeleton, hash-order) must be caught. Knobs: `-Dfb.det.presets=a,b`, `-Dfb.det.full=true`. Lint covers all of `main`, with a check that settlement/region/probe/style are in it.*
+- [x] **5.7 Density and skyline**: building class and height follow distance
   to the centre and to arterials (downtown high-rises and blocks, halls on
   squares, houses at the edge).
-- [ ] **5.8 Cities across cells**: neighbouring settled cells meet at hashed
+  *D3 done 2026-10-21* (log `docs/log/2026-10-21-p5-d3-city.md`, pictures `docs/review/phase5/d3/`): `ClassTable` tuned: the 70 to 84 row is a mid-rise of 10 to 19 storeys (the high-rise type's floor is now 10; 20 storeys at density 85, 60 at 100, spread 12 %), the 85 row is 70 % high-rise, an old town builds no blocks or high-rises (weight to shops, 5 storeys). `CityProgram` / `MetropolisProgram` (`tiers/`): 3 to 4 avenues from the hub (8 in a metropolis), diagonal 45-degree rays on 75 % of cities, squares (24 to 36 blocks, a hall on half) at about 1 in 4 arterial crossings, an old-town wall on 60 % of cities (`OldTown` + `WallRing`; no arterial enters the ring, avenues are 5 wide to pass the 5-wide gates), a metropolis outer ring of arterials at 0.62 of the radius and a park in 1 downtown tile in 8. Tests: `ClassTableTest` (mean storeys per density band rise, no high-rise below 70, mid-rise range, old town), `CityProgramTest` (18 cities and 10 metropolises: 45-degree avenues, no lot on a main road, ring gates and mutants, squares at crossings, closed outer ring, parks, skyline: tallest within 0.3 radius in >= 9 of 10, bands fall monotonically, highrise storeys follow density), mutants for each. *Known issues:* the diagonal avenue's frontage is empty (district detail packs lots along straight runs only, so the cut blocks keep leftover triangles; DL); a wall lot per gate and 5-wide gates mean cities with a wall have narrower avenues (5 vs 7); old-town walls only where the centre cell owns the whole ring (joined cities usually get none, but still no arterials inside); the metropolis downtown plateaus at 60 storeys within about 0.3 of the radius (skyline picture in the log) and half of its lots in the core are 4-storey shops filling slots narrower than a high-rise lot.
+- [x] **5.8 Cities across cells**: neighbouring settled cells meet at hashed
   gates on their shared border, so roads join without either plan reading
   the other; grow cells or join cells per the worldgen ADR (2.10).
+  *SK: cell gates agree from the cell pair alone (`cell-gate-agree` over 200 synthetic sites of 2 to 6 cells, also under a ±20 height error); MC2 ticks this item.*
+  *MC2 done 2026-10-21* (log `docs/log/2026-10-21-p5-mc2-cells.md`): `city --cell` plans every settled cell (solo hamlets/villages/towns and dropped claimants get a one-cell site), joined cities from any member cell with identical bytes, cell by cell, shuffled and on 8 threads with evicting caches (`MultiCellCityTest`); the join view and the skeleton source use bounded pure LRU caches (`BoundedCache`); on a fine window `--cell` says what the window cannot answer and points at `--site`. *Known issues:* the T2 fine windows still need `--site` (the join rule reads up to ~3 x max radius around a cell); `--cell` on a recorded world dump prints a "cannot see outside the dump" note for every city-or-larger cell.
 - [ ] **5.9 Scale check**: plan time and memory per district, measured outside
   the game at 512², 2048² and a multi-cell city; flat per-district cost is the
   bar (feeds 6.5 and 6.7).
-- [ ] **5.10 Water bias**: city sites prefer rivers, lakes and coasts, via a
+  *p5-tidy re-run 2026-10-21 (after TR, ROADS, D3; `docs/review/phase5/scale.md` "Now", log `docs/log/2026-10-21-p5-tidy.md`): median district plan+brief 5.5 to 7.1 ms on the gate windows (was 0.7 to 2.0), exact probes per district 4.9k to 8.9k (was 235 to 2,950), so the probe bar now fails on every gate city; the jump is in TR (`e64024c`: 493 to 5,636 on the temperate city), not ROADS or D3. Skeleton time and memory unchanged. Still partial, still carried to 6.5/6.7.*
+  *SC partial 2026-10-21* (log `docs/log/2026-10-21-p5-sc-scale.md`, tables `docs/review/phase5/scale.md`; `fractal-cli city-bench` + `scripts/city-bench.sh`): per-district time flat and skeleton < 50 ms met; probe bar (< 1,000 exact probes per district plan) not met (1.5k–3k on big gate cities, 5.9k–11.7k synthetic; scenes 70k–990k exact columns) — carried to 6.5/6.7. Median district plan+brief 0.7 to 2 ms on the recorded gate windows from a 477-radius city to the 8-cell metropolis (flat per lot, 0.2 to 0.3 ms), skeleton 2 to 11 ms per cell, a 484-district 4096^2 city plans in 2.8 s in a 64 MiB heap. *Known issues:* the 1.5 x time bar holds on recorded terrain and without scenes (synthetic 512^2 to 2048^2 1.1 x), but is 1.8 x on synthetic terrain with scenes in the JVM; "exact probes" count `floorY` only (`waterDepth` uncounted), so live cost may be underestimated; skeleton cache capacity below 4 costs 1.5 to 4.8 x.
+- [x] **5.10 Water bias**: city sites prefer rivers, lakes and coasts, via a
   distance-to-water term (coarse biome and height probes) in the region
   field's best-of-8 candidate score (ADR 0003, R1); villages and hamlets stay
   unbiased (John, 2026-10-16). Stays a pure function of (seed, position) and
   cheap (S6: coarse suitability ~11 ms per cell). Evidence: S4-style region
   maps before and after, showing city sites shifting toward water.
+  Done (R2, [log](log/2026-10-21-p5-r2-water.md)): maps in `docs/review/phase5/region/`.
+  *Known issues:* the plan's "+50 % of city sites within 256 blocks of water" is not
+  measurable on the two world dumps (94 % are already within 256 before); measured at 64 blocks
+  it is 31 % -> 46 %, count +9 %. Boundary cells of a window lose the big tiers (wider reach).
 
-- [ ] **5.11 Interior circulation** (Phase 4 gate feedback, John 2026-10-19):
+- [x] **5.11 Interior circulation** (Phase 4 gate feedback, John 2026-10-19):
   houses should mostly reach their rooms through a hall, landing or central
   room rather than through a chain of other rooms (house-medieval seed 7: a
   row of rooms walked through one after another). Rooms get a purpose that
@@ -377,13 +405,23 @@ skeleton, then district detail built lazily (ARCHITECTURE.md, "City scale").
   moderation. Also open connections: archways or open plan between some
   public rooms instead of doors. Evidence: a "rooms reached only through two
   or more other rooms" measure before and after, and cutaway galleries.
-- [ ] **5.12 Open ground storeys** (Phase 4 gate feedback, John 2026-10-19):
+  *Done 2026-10-21* (log `docs/log/2026-10-21-p5-circulation.md`): rooms hang off a hub (entry, stair or corridor room) in 85 % of plans, 15 % keep the random chain; floors are planned up to 8 times for fewer, bigger rooms when a chain would result; the room a wing opens into is a hall/landing; new IR opening kind `arch` (40 % of doors between public rooms; 1-3 wide, trim lintel). Rooms behind two ordinary rooms (1500 houses per style): 1.5-5.2 % -> 0.12-0.27 %. Tests: `CirculationTest` (metric, archways, oddness, determinism). GEN_VERSION not bumped; goldens regenerated. *Known issues:* shops still 2-3 % (shop -> back room -> stair); remaining house chains cross masses (strip door positions are fixed before the plan).
+  *Follow-up (John, REVIEW 2026-10-21):* some houses lost bedrooms and gained long skinny rooms (seed 9); keep rooms nearer square and give houses more bedrooms before a second room of any other kind, not always (item CIRC2: room aspect limit, bedroom-first program, bedrooms per house before and after).
+  *CIRC2 done 2026-10-21* (log `docs/log/2026-10-21-p5-circ2.md`): re-plan attempts are scored (deep rooms, long thin rooms, needlessly big rooms), long thin rooms are cut across their length, and a house floor gives its spare rooms to a missing kitchen/living room first and then to bedrooms (15 % seeded repeats). Houses (medieval, 1500): bedrooms/house 1.35 -> 1.81, rooms with aspect > 2:1 11.8 % -> 5.8 %, rooms behind >= 2 rooms 0.20 % -> 0.31 %. *Known issues:* the deep-room share crept up slightly (highrise 3.6 -> 4.9 %, shop 3.2 -> 3.9 %); 5-8 % of house rooms still exceed 2:1 where the mass is a narrow wing and cannot be cut.
+  *House program done 2026-10-21* (log `docs/log/2026-10-21-p5-house-program.md`): a whole-house pass across masses and storeys (`RoomProgram.refineBuilding`) gives every house of 2+ rooms one ground-floor kitchen and, with 2+ ground rooms, one living room; houses without a kitchen 48-57 % -> 0 % (3+ rooms: <= 3.8 %, huts with a loft), bedrooms/house -0.14.
+- [x] **5.12 Open ground storeys** (Phase 4 gate feedback, John 2026-10-19):
   shops and workshops may have a covered outdoor area at street level (an
   arcade, a ground floor open on posts, a bazaar-like market floor); shop
   display windows sit at street level (prefer level frontages, or step the
   shopfront down to the street, rather than a window at the top of the front
   steps). Evidence: shop and workshop galleries before and after; invariants
   still 0 failing.
+  *Done 2026-10-21* (log `docs/log/2026-10-21-p5-open-ground.md`): shop arcade 30 %, market hall on posts 20 %, enclosed ~50 %; workshop covered porch 40 %; shops reject lots steeper than 1 in 12 (level frontage). *Known issues:* the market hall floor is empty (no stalls); a city planner must catch the shop slope rejection.
+  *Follow-up (John, REVIEW 2026-10-21):* a shopfront lifted above the street needs a landing or balcony at door level so the display window does not sit at the top of a flight of steps (item SHOPLAND).
+  *SHOPLAND done 2026-10-21* (log `docs/log/2026-10-21-p5-shopland.md`): lifted shopfronts (door more than 1 above the ground) get a landing at door level across the front, the flight down at one end and its foot on the lot front row (r2); market halls are set back for a 2-deep deck on posts (open floor stays open). *Known issues:* no railing; enclosed-shop landings are solid; a market hall on ground that also falls away by more than 1 (lift over 5) may keep the plain flight.
+- [x] **5.13 Irregular cities** (John 2026-10-21): old-town subdivision and diagonal avenues; plan steps IRR1 and D3.
+  *Done 2026-10-21* (D3: the avenues, log `docs/log/2026-10-21-p5-d3-city.md`; IRR1: log `docs/log/2026-10-21-p5-irr1-oldtown.md`, pictures `docs/review/phase5/irregular/`): `StreetLayout.SUBDIVIDE` for old-town and market quarters (`Subdivision` splitter: 30 to 90 blocks, T junctions, lanes, small squares), `QuarterField` draws an old town round the hub far more often, cut lanes and greens along 45-degree avenues (`Districts.avenueLanes`). Tests: `SubdivisionTest`, `OldTownDistrictsTest`, `AvenueDistrictsTest`; `city-check` 0 violations on the 9 gate windows and 400 synthetic sites. *Known issues:* old-town streets stop 14 blocks short of a tile border (tiles join through ports and arterials); no lot fronts a diagonal avenue itself, lots front the cut lanes; wedges under 16 across stay empty; only the hub quarter is old town in unwalled cities.
+  *D3 half done 2026-10-21*: diagonal avenues (45-degree rays and octilinear doglegs from the hub, `CityProgram`; picture `docs/review/phase5/d3/city-avenues-plan.png`); IRR1 (old-town subdivision) still open, so this stays unticked.
 
 **Gate:** John reviews cities in at least five biome mixes, including one
 straddling a border, one larger than 512 × 512, and one with a high-rise
@@ -391,7 +429,7 @@ downtown.
 
 ## Phase 6: Minecraft integration and release
 
-Updated: 2026-10-16
+Updated: 2026-10-21
 
 Wire the proven core into worldgen using the approach fixed in the Phase 2 ADR.
 
@@ -408,6 +446,7 @@ Wire the proven core into worldgen using the approach fixed in the Phase 2 ADR.
 - [ ] **6.7 Performance budget**: worldgen time per chunk and save size per
   city, checked in CI.
 - [ ] **6.8 Client tests**: fly-through screenshots of fixed seeds.
+- [ ] **6.9 Railings on stairs, landings and balconies** (John 2026-10-21): a `rail` IR role on stair flights, landings, balconies and lookouts (front steps up to houses and shops first), mapped to fence or wall blocks per style in the palette; the viewer draws it.
 
 **Gate:** a fresh world on three seeds plays well for an hour; then a first
 public release.
@@ -465,6 +504,20 @@ Fixed opportunistically or scheduled as items.
 - 4 (docs): NOTES has the "Facades (4.4)" line twice; ASSUMPTIONS has the wall-margins and workshop rows twice; commit a72a23f's subject says T-workshop but holds the T-wall squash.
 - 4.7 medieval: a style chosen only by name (plains took its biomes; still requestable with `--style medieval`); keep, rename or give it biomes back (gate pack question 15).
 - FLK (viewer): a superseded rebuild still assigns `source`/`sourceKey`; stale errors still publish (check `isLatest` in the catch).
+- 4.7 plains (John, REVIEW 2026-10-21): plains palette: smoother, more similar wall blocks (less speckle); subtle shading instead of dark and light scatter.
+- 5 (John, REVIEW 2026-10-21, later phase): biome-specific building forms beyond palette and roof pitch (desert courtyard and flat roofs, jungle raised floors and verandas, snowy steep roofs and small windows).
+- Balconies on residential and commercial buildings, including high-rises (John, REVIEW 2026-10-21, 5.11 entry); later iteration.
+- 5.1 D1: on very rugged ground (about 1 in 400 villages) district detail moves an ungradable green sideways, so its hall is a separate street piece.
+- 5.1 D2: no town ring where the ground is wet or steep (about 1 in 5 region towns); a ring can lose 0 to 2 lots to ponds the 32-block lattice misses; ring built only by the cell holding the centre; no gate wider than 5.
+- 5.2 DL: skeleton roads over steep ground keep cut and fill; road y can differ a block at a tile border; lots only along axis-aligned runs; lake-rich real-terrain city has few lots; brief storeys use the district quarter.
+- 5.2 DL r2: port-stub lanes graded per tile; arterial chains with no main-road link stay empty; metropolis-mixed has no hall (lake hub tile); earthwork up about 40 % on the gate windows.
+- 5.3 TR: no stairs (steep lanes route around or drop; 7 to 90 street pieces per city keep cut and fill); quays run past no lots on some banks; a road crossing an unplanned tile leaves a gap.
+- 5.7 D3: diagonal avenue frontage is empty; walled cities have 5-wide avenues; old-town walls only where the centre cell owns the ring; metropolis core plateaus at 60 storeys and half its core lots are 4-storey shops.
+- 5.8 MC2: T2 fine windows still need `--site`; `--cell` on a recorded world dump prints a "cannot see outside the dump" note for each city-or-larger cell.
+- 5.9 SC: 1.5x time bar fails on synthetic terrain with scenes (1.8x); "exact probes" count `floorY` only; probe bar (under 1,000 per district) not met; skeleton cache below 4 costs 1.5 to 4.8x.
+- 5.10 R2: "+50 % of city sites within 256 blocks of water" unmeasurable on the world dumps; boundary cells of a window lose the big tiers.
+- 5.11 CIRC: shops still 2-3 % chain through a back room; deep-room share crept up (highrise 4.9 %, shop 3.9 %); 5-8 % of house rooms exceed 2:1 on narrow wings.
+- 5.12: market hall floor is empty (no stalls); a city planner must catch the shop slope rejection; no railing; enclosed-shop landings are solid.
 
 ## Open questions and risks
 

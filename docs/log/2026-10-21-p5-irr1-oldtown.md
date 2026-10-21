@@ -1,0 +1,25 @@
+# IRR1: old-town subdivision and diagonal-avenue frontage (5.13)
+
+Branch `claude/p5-irr1-oldtown`, base `claude/run-phase5` (D3 merged, da6d904). Pictures: `docs/review/phase5/irregular/`.
+
+## What changed
+
+- **`StreetLayout.SUBDIVIDE`**: `DefaultProgram.streetLayout` returns it for `old-town` and `market` quarters of cities and metropolises (dense grid still wins for market). `StreetRules.subdivideAt` / `organicAt` (ports cross borders into it; `frontageAt` stays false there, so no random frontage lanes cut the blocks).
+- **`Subdivision`** (new, pure geometry, unit-tested): the tile's inner rectangle (14 off the border) is split recursively, longer side at a hashed 35 to 65 % snapped to 4, 5-wide street first, 3-wide lanes deeper, stop below 66 across or (up to 90) 55 % of the time, so blocks are 30 to 90. A straight skeleton road across the block is used as the split (nothing drawn). Streets end on the street that bounds the block (T junctions); two streets meeting a street from opposite sides keep 6 blocks of jog (no four-way crossing), else the block is left whole.
+- **`Districts.subdivide`** lays the lines as `sd<n>` streets/lanes after the base streets (before ports): each run is kept where old-town, dry (`clearOfWater`), clear of the hub square's 22-block room (so hall and temple lots still fit), gradeable, and only if it overlaps a street already there (else a lane `sdk<n>` is routed to the nearest street, else the run is dropped). Ends reach an arterial or border street when one is within 18 blocks (`reachOut`, which also keeps every footprint cell in the 3 border columns on a street both tiles list: a 5-wide border street is not enough, that was a `tile-border-agree` failure in 6 of 150 cases). Half the subdivided tiles get a small square or green (16 to 24) flush with a block corner.
+- **`QuarterField`**: a residential quarter within 0.3 radius of the hub is `old-town` column by column. Before, only when the hashed seed point of its Voronoi cell was that close, so 1 city in 8 had an old town and the layout never showed.
+- **Diagonal avenues (D3's leftover)**: `Districts.avenueLanes` branches an axis-aligned 3-wide `av<n>` lane off every 45-degree run of a main road or path (every 20 to 36 columns, 14 to 56 long, run on to the first street), in grid and subdivided land (frontage land has its own lanes). Lots then front the lane on both sides, which fills the triangles the avenue cuts out of grid blocks. `avenueGreens` turns a free 16 to 20 square flush with a street within 30 blocks of the avenue into a `green` plaza (max 2 per tile).
+- Presets `viewer/city-presets/irr1-old-town.json`; regenerated `golden/settlement/synthetic-city.txt` and the three district fixtures.
+
+## Verification
+
+- `:planner-core:test` (529 + new) and `:cli:test` (29) pass; `SettlementDeterminismTest` passes (its presets now include old towns). New: `SubdivisionTest` (2000 hashes: every block 30 to 90 across, disjoint, inside, sizes vary (more than 100 distinct); every street end on another street or the edge; no head-on crossing; same hash same splits; a skeleton road is used as the split; mutants broken then restored: no jog check fails the crossing test, `MIN_SIDE` 20 fails the size test), `OldTownDistrictsTest` (40 cities/metropolises: 204 of 2271 tiles subdivided, 10.2k lots, 661 streets of which 509 lanes, 69 small squares, 0 violations; shuffled order and fresh sources give identical JSON for subdivided tiles; layout by quarter), `AvenueDistrictsTest` (424 tiles with 935 cut lanes, 17.2k lots there, 89 greens, 0 violations; shuffled order identical; `diagonalRuns`). Mutants: `subdivide()` or `avenueLanes()` commented out fail their tests.
+- `city-check`, no `--ignore`: the 9 gate windows (scenes auto:3) 0 violations (lots 203/395/98/356/325/356/2325/998/501 before, 208/457/103/368/336/388/.../ after; hub-piece % within 3 points of before); 400 synthetic sites (seeds 1..20, random:10, two terrains, auto:1) 0 violations, 14 s.
+- Looked at: `old-town-plan.png` (hub tile of the synthetic city: lanes at different offsets, hall and squares at the hub, grid quarters beside it) and `avenues-plan.png` against D3's `city-avenues-plan.png`: before, big empty triangles round the hub and beside both avenues; after, lots and short lanes fill them. Not captured in 3D.
+
+## Decisions, surprises
+
+- Subdivision streets stay 14 blocks inside the tile so neighbour tiles never have to agree about them; tiles join through ports and arterials. The cost is dead ends at the inner edge where no arterial is near (ROADMAP known issue).
+- Not done as the plan wrote it: lots do not front the diagonal itself (frontage needs 3 street columns, a rectangle meets a 45-degree band with 1); cut lanes stand in for it (plan said "stepped lots"). Leftover wedges under 16 across stay empty.
+- `QuarterField` change is outside the brief but without it the layout almost never triggered (assumption row).
+- Gradle `:planner-core:test` takes 4 to 6 minutes here (load from other agents); `npm run city` regenerates through `installDist`, never run it beside a Gradle test run.

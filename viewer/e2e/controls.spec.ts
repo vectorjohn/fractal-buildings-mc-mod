@@ -51,7 +51,7 @@ test('layers in the URL and checkboxes hide groups without reloading', async ({ 
   expect(all.reddish).toBeGreaterThan(shellOnly.reddish * 2);
 
   await page.locator('#layer-roof').uncheck();
-  await expect(page).toHaveURL(/layers=terrain,foundation,shell,interior,violations/);
+  await expect(page).toHaveURL(/layers=terrain,water,foundation,shell,interior,ground,violations/);
   await page.waitForTimeout(300);
   const noRoof = await shot(page, 'controls-roof-off');
   expect(noRoof.reddish).toBeLessThan(0.004);

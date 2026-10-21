@@ -35,6 +35,9 @@ public final class HouseMassing {
 	/** Wall-side interior cells a mass must keep clear of its stair core and its margin. */
 	static final int MIN_FREE = 5;
 
+	/** Chance in 100 of a jetty on a house whose lot has air rights over the street (when its style has jetties at all). */
+	public static final int AIR_JETTY_PCT = 75;
+
 	/** The massing for the context's spec: its storeys unless the lot or height cap can't hold them. */
 	public static Massing build(BuildContext c, int maxStoreys) {
 		BuildingSpec sp = c.spec();
@@ -71,7 +74,7 @@ public final class HouseMassing {
 	static Massing attempt(BuildContext c, Plan plan, int n, int maxStoreys) {
 		BuildingSpec sp = c.spec();
 		MassingStyle st = c.style().massing();
-		int W = sp.width(), D = sp.depth();
+		int lead = sp.lead(), W = sp.width(), D = sp.depth() - lead; // lead: envelope rows in front of the usual one (air rights); the ground masses keep the usual envelope
 		Draws r = c.draws("massing/house", plan.ordinal(), n);
 		List<Mass> lay = layout(plan, r, W, D, n, maxStoreys);
 		if (lay == null) return null;
@@ -85,7 +88,7 @@ public final class HouseMassing {
 			top = Math.max(top, m.to());
 		}
 		if (x1 - x0 > W || z1 - z0 > D) return null;
-		int dx = r.range(0, W - (x1 - x0)) - x0, dz = r.range(Math.min(1, D - (z1 - z0)), Math.min(2, D - (z1 - z0))) - z0;
+		int dx = r.range(0, W - (x1 - x0)) - x0, dz = (lead > 0 ? lead : r.range(Math.min(1, D - (z1 - z0)), Math.min(2, D - (z1 - z0)))) - z0; // with air rights the front wall stands at the usual front edge, so the jetty can reach past the lot
 		List<Mass> ground = new ArrayList<>();
 		for (Mass m : lay) ground.add(new Mass(m.id(), m.kind(), m.x() + dx, m.z() + dz, m.sx(), m.sz(), m.from(), m.to(), m.parent(), m.open()));
 		StoreyGrid g = MassingOps.grid(st, top, r);
@@ -195,18 +198,30 @@ public final class HouseMassing {
 			this.r = r;
 		}
 
+		/** Blocks of air rights over the street in front of the lot (0: none). */
+		int air() { return sp.lead() == 0 ? 0 : sp.lead() - yard(); }
+
+		/** The front margin: blocks between the lot edge and the usual envelope. */
+		int yard() { return c.type().limits().front(); }
+
 		/** Jetty or setback or neither, per style chances, backing off to simpler shapes when a draw doesn't fit. */
 		Massing best() {
 			if (n >= 2) {
 				int x = r.below(100);
-				if (st.jetty() > 0 && x < st.jettyChance()) {
+				int jc = air() > 0 ? Math.max(st.jettyChance(), AIR_JETTY_PCT) : st.jettyChance(); // a street with air rights invites jetties
+				if (st.jetty() > 0 && x < jc) {
 					int mx = Math.min(st.jetty(), MassingCheck.JETTY_MAX);
 					int[] v = {r.chance(4, 5) ? r.range(1, mx) : 0, r.chance(1, 2) ? r.range(1, mx) : 0, r.chance(1, 3) ? r.range(1, mx) : 0, r.chance(1, 2) ? r.range(1, mx) : 0};
 					if (v[N] + v[E] + v[S] + v[W] == 0) v[N] = 1;
 					boolean step2 = n == 3 && r.chance(1, 2);
+					if (air() > 0) { // over the street: front overhang measured from the wall (yard plus 1..air past the lot edge); a single jetty storey run
+						step2 = false;
+						int b = r.range(1, air());
+						v[N] = r.chance(3, 4) ? yard() + b : v[N];
+					}
 					Massing m = backOff(v, step2, true);
 					if (m != null) return m;
-				} else if (x < st.jettyChance() + st.setbackChance()) {
+				} else if (x < jc + st.setbackChance()) {
 					int k = r.range(1, 2);
 					int[] v = r.chance(1, 2) ? new int[] {k, k, k, k}
 							: new int[] {r.range(0, k), r.range(0, k), r.range(0, k), r.range(0, k)};
@@ -240,7 +255,7 @@ public final class HouseMassing {
 			} else if (jetty) {
 				Mass m0 = new Mass(base.id(), base.kind(), base.x(), base.z(), base.sx(), base.sz(), 0, 1, null, false);
 				stack.add(m0);
-				Mass j1 = MassingOps.jetty("jetty1", m0, v, step2 ? 2 : n, st.jetty(), sp.width(), sp.depth());
+				Mass j1 = MassingOps.jetty("jetty1", m0, v, step2 ? 2 : n, st.jetty(), sp.width(), sp.depth(), air() > 0 ? sp.lead() : 0);
 				if (j1 == null) return null;
 				stack.add(j1);
 				if (step2) {

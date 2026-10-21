@@ -27,3 +27,10 @@ application {
 tasks.named('test') {
 	inputs.file('../viewer/fixtures/v0-seed1.json')
 }
+
+// CityCommandTest and CityCheckTest read the recorded terrain windows and the gate-site table; without these inputs Gradle would
+// not rerun the tests when a dump or a site row changes.
+tasks.named('test') {
+	inputs.dir('../fixtures/terrain').withPropertyName('terrainFixtures')
+	inputs.dir('../viewer/fixtures/settlement').withPropertyName('settlementFixtures')
+}

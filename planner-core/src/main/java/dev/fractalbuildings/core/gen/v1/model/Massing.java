@@ -38,6 +38,16 @@ public record Massing(StoreyGrid grid, List<Mass> masses, List<Core> cores, List
 		this(grid, masses, cores, List.of(masses.get(0).id()), List.of());
 	}
 
+	/** The same massing {@code dz} blocks further back (all masses and cores), for shells whose envelope grew at the front (air rights). */
+	public Massing shiftedZ(int dz) {
+		if (dz == 0) return this;
+		List<Mass> ms = new java.util.ArrayList<>();
+		for (Mass m : masses) ms.add(new Mass(m.id(), m.kind(), m.x(), m.z() + dz, m.sx(), m.sz(), m.from(), m.to(), m.parent(), m.open()));
+		List<Core> cs = new java.util.ArrayList<>();
+		for (Core k : cores) cs.add(new Core(k.x(), k.z() + dz, k.sx(), k.sz(), k.from(), k.to()));
+		return new Massing(grid, ms, cs, entrances, partyWalls);
+	}
+
 	public Mass main() { return masses.get(0); }
 
 	public Mass mass(String id) {

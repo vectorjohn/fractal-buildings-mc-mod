@@ -1,0 +1,2 @@
+79a3310c9cce2029218d6043192fe04df298e83598c9edf744a0f877b71b3558
+recorded-river-town: town, 1 cells, 15 districts, 4 roads, 0 bridges, 4 gates, 2 landmarks, 17731 bytes
