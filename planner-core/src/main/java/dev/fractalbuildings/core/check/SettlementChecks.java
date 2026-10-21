@@ -1,7 +1,12 @@
 package dev.fractalbuildings.core.check;
 
+import dev.fractalbuildings.core.gen.v1.SpecPolicyV1;
+import dev.fractalbuildings.core.gen.v1.TypeLimits;
+import dev.fractalbuildings.core.gen.v1.Types;
 import dev.fractalbuildings.core.ir.Box3;
+import dev.fractalbuildings.core.ir.Facing;
 import dev.fractalbuildings.core.ir.Violation;
+import dev.fractalbuildings.core.probe.TerrainProbe;
 import dev.fractalbuildings.core.region.RegionField;
 import dev.fractalbuildings.core.settlement.Cell;
 import dev.fractalbuildings.core.settlement.CellGeometry;
@@ -170,6 +175,210 @@ public final class SettlementChecks {
 				out.add(v(ROAD_GRADE, "street " + streetId + " is too steep at column " + i + " (y " + y[i - 1] + " to " + y[i] + ")", x[i], z[i], 1, 1));
 				break;
 			}
+		}
+		return out;
+	}
+
+
+	// ---- district detail (plan step DL)
+
+	public static final String LOT_FRONTAGE = "lot-frontage";
+	public static final String LOT_DRY = "lot-dry";
+	public static final String LOT_GRADE = "lot-grade";
+	public static final String ROADS_CONNECTED = "roads-connected";
+	public static final String TILE_BORDER_AGREE = "tile-border-agree";
+	/** Blocks of the plan's own coverage raster round the tile (streets reach this far over the border). */
+	public static final int COVER_PAD = 16;
+
+	/** The rules that need only the plan: the basic ones plus {@code lot-frontage} and {@code roads-connected}. */
+	public static List<Violation> detail(DistrictPlan d, List<Landmark> landmarks) {
+		List<Violation> out = new ArrayList<>(district(d, landmarks));
+		out.addAll(lotFrontage(d));
+		out.addAll(roadsConnected(d));
+		return out;
+	}
+
+	/** Street and plaza coverage of a plan over its tile plus {@link #COVER_PAD} blocks; streets also carry their index (+1) for component tests. */
+	public static final class Cover {
+		public final int x0, z0, w, d;
+		final boolean[] street, plaza;
+		final short[] label;
+
+		Cover(DistrictPlan p) {
+			Rect t = p.district().rect();
+			x0 = t.x() - COVER_PAD;
+			z0 = t.z() - COVER_PAD;
+			w = t.w() + 2 * COVER_PAD;
+			d = t.d() + 2 * COVER_PAD;
+			street = new boolean[w * d];
+			plaza = new boolean[w * d];
+			label = new short[w * d];
+			for (int i = 0; i < p.streets().size(); i++) {
+				for (Rect r : footprint(p.streets().get(i))) {
+					for (int z = Math.max(r.z(), z0); z < Math.min(r.z() + r.d(), z0 + d); z++) {
+						for (int x = Math.max(r.x(), x0); x < Math.min(r.x() + r.w(), x0 + w); x++) {
+							street[(z - z0) * w + (x - x0)] = true;
+							if (label[(z - z0) * w + (x - x0)] == 0) label[(z - z0) * w + (x - x0)] = (short) (i + 1);
+						}
+					}
+				}
+			}
+			for (Plaza pz : p.plazas()) {
+				for (int z = Math.max(pz.z(), z0); z < Math.min(pz.z() + pz.d(), z0 + d); z++) {
+					for (int x = Math.max(pz.x(), x0); x < Math.min(pz.x() + pz.w(), x0 + w); x++) plaza[(z - z0) * w + (x - x0)] = true;
+				}
+			}
+		}
+
+		boolean in(int x, int z) { return x >= x0 && z >= z0 && x < x0 + w && z < z0 + d; }
+
+		/** A street covers the column. */
+		public boolean street(int x, int z) { return in(x, z) && street[(z - z0) * w + (x - x0)]; }
+
+		/** A street or plaza covers the column. */
+		public boolean open(int x, int z) { return in(x, z) && (street[(z - z0) * w + (x - x0)] || plaza[(z - z0) * w + (x - x0)]); }
+	}
+
+	/**
+	 * {@code lot-frontage}: the columns just outside a lot's front edge are street or plaza along at least 3 of them (all, for a
+	 * front shorter than 3).
+	 */
+	public static List<Violation> lotFrontage(DistrictPlan d) {
+		List<Violation> out = new ArrayList<>();
+		Cover c = new Cover(d);
+		for (LotBrief l : d.lots()) {
+			int n = l.front().dx != 0 ? l.d() : l.w(), hit = 0;
+			for (int k = 0; k < n; k++) {
+				int x = switch (l.front()) { case EAST -> l.x() + l.w(); case WEST -> l.x() - 1; default -> l.x() + k; };
+				int z = switch (l.front()) { case SOUTH -> l.z() + l.d(); case NORTH -> l.z() - 1; default -> l.z() + k; };
+				if (c.open(x, z)) hit++;
+			}
+			if (hit < Math.min(3, n)) out.add(v(LOT_FRONTAGE, "lot " + l.id() + " has street or plaza along only " + hit + " columns of its " + l.front().json() + " front", l.x(), l.z(), l.w(), l.d()));
+		}
+		return out;
+	}
+
+	/** {@code lot-dry}: no column of a lot has water above its floor. */
+	public static List<Violation> lotDry(DistrictPlan d, TerrainProbe exact) {
+		List<Violation> out = new ArrayList<>();
+		for (LotBrief l : d.lots()) {
+			outer:
+			for (int z = l.z(); z < l.z() + l.d(); z++) {
+				for (int x = l.x(); x < l.x() + l.w(); x++) {
+					if (exact.waterDepth(x, z) > 0) {
+						out.add(v(LOT_DRY, "lot " + l.id() + " has water at " + x + "," + z, l.x(), l.z(), l.w(), l.d()));
+						break outer;
+					}
+				}
+			}
+		}
+		return out;
+	}
+
+	/** {@code lot-grade}: every built lot's type exists, fits the lot's size along its front and accepts its relief (so the spec policy never throws). */
+	public static List<Violation> lotGrade(DistrictPlan d, TerrainProbe exact) {
+		List<Violation> out = new ArrayList<>();
+		for (LotBrief l : d.lots()) {
+			if (!l.builds()) continue;
+			if (!Types.ids().contains(l.type())) { out.add(v(LOT_GRADE, "lot " + l.id() + " has unknown type " + l.type(), l.x(), l.z(), l.w(), l.d())); continue; }
+			TypeLimits lim = Types.get(l.type()).limits();
+			boolean alongX = l.front() == Facing.NORTH || l.front() == Facing.SOUTH;
+			int lw = alongX ? l.w() : l.d(), ld = alongX ? l.d() : l.w();
+			int lo = Integer.MAX_VALUE, hi = Integer.MIN_VALUE;
+			for (int z = l.z(); z < l.z() + l.d(); z++) for (int x = l.x(); x < l.x() + l.w(); x++) { int y = exact.floorY(x, z); lo = Math.min(lo, y); hi = Math.max(hi, y); }
+			if (lw < lim.minLotWidth() || ld < lim.minLotDepth()) out.add(v(LOT_GRADE, "lot " + l.id() + " (" + lw + "x" + ld + ") is too small for a " + l.type(), l.x(), l.z(), l.w(), l.d()));
+			else if (!SpecPolicyV1.reliefOk(lim, hi - lo, l.w(), l.d())) out.add(v(LOT_GRADE, "lot " + l.id() + " has relief " + (hi - lo) + ", too steep for a " + l.type(), l.x(), l.z(), l.w(), l.d()));
+		}
+		return out;
+	}
+
+	/**
+	 * {@code roads-connected} (district part): every group of streets whose footprints overlap or touch reaches a skeleton road (arterial,
+	 * main road or path) or the tile border (a street point on or beyond the tile's outermost columns), where a neighbour's street
+	 * continues. The whole-city rule (every street reaches the hub) is D0's.
+	 */
+	public static List<Violation> roadsConnected(DistrictPlan d) {
+		List<Violation> out = new ArrayList<>();
+		int n = d.streets().size();
+		if (n == 0) return out;
+		Cover c = new Cover(d);
+		int[] parent = new int[n];
+		for (int i = 0; i < n; i++) parent[i] = i;
+		for (int i = 0; i < n; i++) {
+			for (Rect r : footprint(d.streets().get(i))) {
+				for (int z = Math.max(r.z(), c.z0); z < Math.min(r.z() + r.d(), c.z0 + c.d); z++) {
+					for (int x = Math.max(r.x(), c.x0); x < Math.min(r.x() + r.w(), c.x0 + c.w); x++) {
+						int l = c.label[(z - c.z0) * c.w + (x - c.x0)] - 1;
+						if (l != i) union(parent, l, i);
+					}
+				}
+			}
+		}
+		for (int z = 0; z < c.d; z++) {
+			for (int x = 0; x < c.w; x++) {
+				int a = c.label[z * c.w + x] - 1;
+				if (a < 0) continue;
+				if (x + 1 < c.w && c.label[z * c.w + x + 1] != 0) union(parent, a, c.label[z * c.w + x + 1] - 1);
+				if (z + 1 < c.d && c.label[(z + 1) * c.w + x] != 0) union(parent, a, c.label[(z + 1) * c.w + x] - 1);
+			}
+		}
+		Rect t = d.district().rect();
+		boolean[] good = new boolean[n];
+		for (int i = 0; i < n; i++) {
+			Street s = d.streets().get(i);
+			boolean root = s.kind() == RoadKind.ARTERIAL || s.kind() == RoadKind.MAIN || s.kind() == RoadKind.PATH;
+			for (Pt p : s.points()) if (p.x() <= t.x() || p.x() >= t.x() + t.w() - 1 || p.z() <= t.z() || p.z() >= t.z() + t.d() - 1) root = true;
+			if (root) good[find(parent, i)] = true;
+		}
+		java.util.TreeMap<Integer, List<String>> bad = new java.util.TreeMap<>();
+		for (int i = 0; i < n; i++) if (!good[find(parent, i)]) bad.computeIfAbsent(find(parent, i), k -> new ArrayList<>()).add(d.streets().get(i).id());
+		for (List<String> ids : bad.values()) {
+			Pt p = d.streets().get(d.streets().stream().map(Street::id).toList().indexOf(ids.get(0))).points().get(0);
+			out.add(v(ROADS_CONNECTED, "streets " + ids + " reach no skeleton road and not the tile border", p.x(), p.z(), 1, 1));
+		}
+		return out;
+	}
+
+	private static int find(int[] p, int a) {
+		while (p[a] != a) { p[a] = p[p[a]]; a = p[a]; }
+		return a;
+	}
+
+	private static void union(int[] p, int a, int b) {
+		a = find(p, a);
+		b = find(p, b);
+		if (a != b) p[Math.max(a, b)] = Math.min(a, b);
+	}
+
+	/**
+	 * {@code tile-border-agree}: for two plans of neighbouring tiles, the street and plaza coverage of the columns within 3 of their
+	 * shared border is the same in both. Returns nothing for tiles that do not share a border.
+	 */
+	public static List<Violation> tileBorderAgree(DistrictPlan a, DistrictPlan b) {
+		Rect ra = a.district().rect(), rb = b.district().rect();
+		DistrictPlan west = a, east = b;
+		boolean vertical;
+		if (ra.x() + ra.w() == rb.x()) vertical = true;
+		else if (rb.x() + rb.w() == ra.x()) { west = b; east = a; vertical = true; }
+		else if (ra.z() + ra.d() == rb.z()) vertical = false;
+		else if (rb.z() + rb.d() == ra.z()) { west = b; east = a; vertical = false; }
+		else return List.of();
+		Rect rw = west.district().rect(), re = east.district().rect();
+		int line = vertical ? rw.x() + rw.w() : rw.z() + rw.d();
+		int lo = vertical ? Math.max(rw.z(), re.z()) : Math.max(rw.x(), re.x()), hi = vertical ? Math.min(rw.z() + rw.d(), re.z() + re.d()) : Math.min(rw.x() + rw.w(), re.x() + re.w());
+		if (lo >= hi) return List.of();
+		Cover cw = new Cover(west), ce = new Cover(east);
+		List<Violation> out = new ArrayList<>();
+		int bad = 0, first = Integer.MIN_VALUE;
+		for (int t = lo; t < hi; t++) {
+			for (int off = -3; off < 3; off++) {
+				int x = vertical ? line + off : t, z = vertical ? t : line + off;
+				if (cw.open(x, z) != ce.open(x, z)) { if (bad++ == 0) first = t; }
+			}
+		}
+		if (bad > 0) {
+			int x = vertical ? line - 3 : first, z = vertical ? first : line - 3;
+			out.add(v(TILE_BORDER_AGREE, bad + " columns beside the border of " + west.district().id() + " and " + east.district().id() + " differ (first at " + (vertical ? "z " : "x ") + first + ")", x, z, vertical ? 6 : 1, vertical ? 1 : 6));
 		}
 		return out;
 	}

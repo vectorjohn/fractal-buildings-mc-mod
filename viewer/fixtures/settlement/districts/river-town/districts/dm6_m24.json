@@ -1,0 +1,12 @@
+{
+  "format": "fb-district/1",
+  "planVersion": 1,
+  "genVersion": 2,
+  "seed": "12345",
+  "district": {"id": "dm6_m24", "ix": -6, "iz": -24, "x": -960, "z": -3856, "w": 160, "d": 176, "quarter": 7, "density": 22},
+  "streets": [],
+  "plazas": [],
+  "lots": [],
+  "scene": null,
+  "violations": []
+}

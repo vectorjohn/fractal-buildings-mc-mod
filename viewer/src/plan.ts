@@ -120,7 +120,7 @@ async function main(): Promise<void> {
   document.getElementById('title')!.textContent = `${s.site.id} (${s.site.tier}), seed ${s.seed}`;
   const sw = (col: string): string => `<span class="sw" style="background:${col}"></span>`;
   document.getElementById('legend')!.innerHTML = '<br><b>roads</b><br>' + Object.entries(ROAD_COLOUR).map(([k, col]) => `${sw(col)}${k}`).join('<br>') +
-    '<br><br><b>lots</b><br>' + ['house', 'shop', 'workshop', 'tower'].map((t) => `${sw(lotColour(t))}${t}`).join('<br>') +
+    '<br><br><b>lots</b><br>' + ['house', 'shop', 'workshop', 'tower', 'block', 'highrise', 'hall', 'temple'].map((t) => `${sw(lotColour(t))}${t}`).join('<br>') +
     `<br><br>lots show from ${LOT_SCALE} px/block`;
 
   const info = document.getElementById('info')!;

@@ -1,0 +1,31 @@
+{
+  "format": "fb-district/1",
+  "planVersion": 1,
+  "genVersion": 2,
+  "seed": "1",
+  "district": {"id": "d52_m21", "ix": 52, "iz": -21, "x": 8304, "z": -3344, "w": 160, "d": 144, "quarter": 5, "density": 85},
+  "streets": [
+    {"id": "a052_m3344", "kind": "arterial", "width": 9, "points": [[8304, -3344], [8304, -3336], [8304, -3328], [8304, -3320], [8304, -3312], [8304, -3304], [8304, -3296], [8304, -3288], [8304, -3280], [8304, -3272], [8304, -3264], [8304, -3256], [8304, -3248], [8304, -3240], [8304, -3232], [8304, -3224], [8304, -3216], [8304, -3208], [8304, -3200]], "y": [75, 75, 75, 74, 74, 73, 71, 69, 67, 65, 64, 64, 64, 64, 65, 65, 63, 63, 63]},
+    {"id": "a052_m3536", "kind": "arterial", "width": 9, "points": [[8304, -3352], [8304, -3344]], "y": [74, 75]},
+    {"id": "a053_m3200", "kind": "arterial", "width": 9, "points": [[8464, -3200], [8464, -3192]], "y": [69, 68]},
+    {"id": "a1m20_8304", "kind": "arterial", "width": 9, "points": [[8304, -3200], [8312, -3200], [8320, -3200], [8328, -3200], [8336, -3200], [8337, -3200], [8344, -3200], [8352, -3200], [8360, -3200], [8368, -3200], [8376, -3200], [8384, -3200], [8392, -3200], [8399, -3200], [8400, -3200], [8408, -3200], [8416, -3200], [8424, -3200], [8432, -3200], [8440, -3200], [8448, -3200], [8456, -3200], [8464, -3200]], "y": [63, 63, 63, 64, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 64, 64, 64, 66, 68, 69, 69, 69]},
+    {"id": "r8_m4_0", "kind": "main", "width": 7, "points": [[8472, -3256], [8471, -3255], [8465, -3249], [8464, -3248], [8463, -3247], [8457, -3241], [8456, -3240], [8448, -3232], [8440, -3224], [8432, -3216], [8424, -3208], [8416, -3200], [8408, -3192]], "y": [66, 66, 66, 66, 66, 66, 66, 64, 64, 64, 64, 64, 64]},
+    {"id": "szm3275_8296", "kind": "street", "width": 5, "points": [[8296, -3275], [8304, -3275], [8312, -3275]], "y": [63, 64, 64]},
+    {"id": "t0", "kind": "lane", "width": 3, "points": [[8368, -3352], [8368, -3344], [8368, -3336], [8368, -3328], [8360, -3320], [8352, -3312], [8344, -3304], [8352, -3296], [8344, -3288], [8336, -3280], [8328, -3280], [8320, -3272], [8312, -3272], [8312, -3275]], "y": [68, 67, 66, 66, 68, 68, 68, 68, 68, 68, 68, 66, 64, 64]}
+  ],
+  "plazas": [],
+  "lots": [
+    {"id": "d52_m21.l0", "x": 8309, "z": -3344, "w": 31, "d": 31, "front": "west", "type": "highrise", "style": "plains", "storeys": [20, 60], "streets": 1, "airRights": 2, "frontY": 75, "density": 78, "status": "build"},
+    {"id": "d52_m21.l1", "x": 8309, "z": -3311, "w": 22, "d": 15, "front": "west", "type": "shop", "style": "plains", "storeys": [3, 4], "streets": 1, "airRights": 2, "frontY": 73, "density": 78, "status": "build"},
+    {"id": "d52_m21.l2", "x": 8309, "z": -3270, "w": 14, "d": 10, "front": "west", "type": "shop", "style": "plains", "storeys": [3, 4], "streets": 3, "airRights": 2, "frontY": 64, "density": 79, "status": "build"},
+    {"id": "d52_m21.l3", "x": 8309, "z": -3256, "w": 25, "d": 12, "front": "west", "type": "shop", "style": "plains", "storeys": [3, 4], "streets": 1, "airRights": 2, "frontY": 64, "density": 79, "status": "build"},
+    {"id": "d52_m21.l4", "x": 8309, "z": -3241, "w": 26, "d": 16, "front": "west", "type": "shop", "style": "plains", "storeys": [3, 4], "streets": 1, "airRights": 2, "frontY": 64, "density": 79, "status": "build"},
+    {"id": "d52_m21.l5", "x": 8309, "z": -3225, "w": 15, "d": 13, "front": "west", "type": "shop", "style": "plains", "storeys": [3, 4], "streets": 1, "airRights": 2, "frontY": 64, "density": 77, "status": "build"},
+    {"id": "d52_m21.l6", "x": 8325, "z": -3221, "w": 12, "d": 17, "front": "south", "type": "shop", "style": "plains", "storeys": [3, 4], "streets": 1, "airRights": 2, "frontY": 63, "density": 77, "status": "build"},
+    {"id": "d52_m21.l7", "x": 8352, "z": -3344, "w": 15, "d": 16, "front": "east", "type": "shop", "style": "plains", "storeys": [3, 4], "streets": 1, "airRights": 0, "frontY": 66, "density": 75, "status": "build"},
+    {"id": "d52_m21.l8", "x": 8370, "z": -3344, "w": 17, "d": 11, "front": "west", "type": "shop", "style": "plains", "storeys": [3, 4], "streets": 1, "airRights": 0, "frontY": 66, "density": 80, "status": "build"},
+    {"id": "d52_m21.l9", "x": 8327, "z": -3296, "w": 9, "d": 15, "front": "south", "type": "shop", "style": "plains", "storeys": [3, 4], "streets": 1, "airRights": 0, "frontY": 68, "density": 78, "status": "build"}
+  ],
+  "scene": null,
+  "violations": []
+}

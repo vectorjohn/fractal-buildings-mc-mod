@@ -342,11 +342,12 @@ skeleton, then district detail built lazily (ARCHITECTURE.md, "City scale").
   adds structure (a square, a main street, districts, walls, a downtown);
   no step has a fixed size cap.
   - R1 (2026-10-21): the tier ladder (`Tiers`), region field and planner, and `fractal-cli region` are in `core/region/`; the per-tier programs (D1-D3) are still to do, so this stays open.
-- [ ] **5.2 Layout**: road network (primary and secondary), lot subdivision,
+- [x] **5.2 Layout**: road network (primary and secondary), lot subdivision,
   plazas and landmarks, gates. Split into the city skeleton (arterials on
   position-hashed lines, district borders drawn around big lots, coarse
   height screen) and lazy per-district detail (lots, briefs, exact heights).
   *SK landed (2026-10-21, log `docs/log/2026-10-21-p5-sk-skeleton.md`): `Skeletons` builds a cell skeleton (mask, density, quarters, hub, gates, A* main roads, arterials, hub landmarks, district tiles) and merges a settlement into `fb-settlement/1`; `fractal-cli city`; DL ticks this item.*
+  *DL done (2026-10-21, log `docs/log/2026-10-21-p5-dl-layout.md`): `Districts.plan` plans a tile from the skeletons and exact terrain: skeleton roads, pointwise arterials and plain border streets, grid lines shared along rows of tiles, ports and lanes, plazas, hall and temple lots, whole-block and frontage lots with briefs (`airRights`, `frontY`); `fractal-cli city --districts [--scene]`. Tests: `DistrictsTest` (150 synthetic sites, 6873 tiles, 183k lots, 11k border pairs: every DL rule holds; shuffled order and fresh sources give the same JSON; recorded river window; mutants), `SettlementChecksTest`, `CityCommandTest.districtFixturesAreCurrent`, `viewer/e2e/districts.spec.ts`. *Known issues:* skeleton roads over steep ground keep their cut and fill (noted, not rerouted); road y can differ a block at a tile border; lots only along axis-aligned runs; the lake-rich real-terrain city has few lots (patchy skeleton mask, SK); brief storeys use the district quarter, not the lot's.*
 - [ ] **5.3 Terrain**: respond to slope, rivers and coast; choose where to level
   ground and where to step buildings.
   *TA groundwork landed (`core/terrain/`: `WaterField`, `LatticePath`, `Grading`, `LotGround`); TR ticks this item.*

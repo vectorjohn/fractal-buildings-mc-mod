@@ -65,6 +65,36 @@ class CityCommandTest {
 		}
 	}
 
+
+	/** The committed district fixtures are what `city --districts` writes (regenerate with viewer/fixtures/settlement/districts/README.md). */
+	@Test
+	void districtFixturesAreCurrent(@TempDir Path dir) throws Exception {
+		String[][] cases = {
+			{"river-town", "12345", "recorded:../fixtures/terrain/w12345-river-s8.json.gz", "--site", "-900,-3500,town,300"},
+			{"mixed-city", "1", "recorded:../fixtures/terrain/w1-mixed-s8.json.gz", "--site", "8500,-3300,city,450"},
+			{"synth-city", "1001", "noise:1:70:7:220+river:-120:24:6", "--site", "0,0,city,700", "--cell-size", "512"}};
+		for (String[] c : cases) {
+			Path out = dir.resolve(c[0]);
+			String[] args = new String[c.length + 4];
+			args[0] = "city"; args[1] = "--seed"; args[2] = c[1]; args[3] = "--terrain"; args[4] = c[2];
+			System.arraycopy(c, 3, args, 5, c.length - 3);
+			args[c.length + 2] = "--districts";
+			args[c.length + 3] = "--out-dir";
+			String[] all = java.util.Arrays.copyOf(args, c.length + 5);
+			all[c.length + 4] = out.toString();
+			assertEquals(0, run(all), c[0]);
+			Path fixtures = Path.of("../viewer/fixtures/settlement/districts").resolve(c[0]);
+			try (var files = Files.walk(fixtures)) {
+				for (Path f : (Iterable<Path>) files.filter(Files::isRegularFile)::iterator) {
+					if (f.getFileName().toString().equals("README.md")) continue;
+					Path rel = fixtures.relativize(f);
+					assertArrayEquals(Files.readAllBytes(f), Files.readAllBytes(out.resolve(rel)), f + " is stale: regenerate it (viewer/fixtures/settlement/districts/README.md)");
+				}
+			}
+			try (var files = Files.walk(out)) { assertEquals(files.filter(Files::isRegularFile).count(), Files.walk(fixtures).filter(Files::isRegularFile).count(), c[0] + ": file sets differ"); }
+		}
+	}
+
 	@Test
 	void rejectsBadArguments(@TempDir Path dir) {
 		String out = dir.toString();

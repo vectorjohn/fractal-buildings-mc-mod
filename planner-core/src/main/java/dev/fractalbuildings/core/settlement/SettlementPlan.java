@@ -55,6 +55,12 @@ public record SettlementPlan(int genVersion, long seed, SettlementSite site, Rec
 		throw new IllegalArgumentException("no district " + id);
 	}
 
+	/** A copy with the given district list (detail paths, lot counts and style weights filled in by the district step). */
+	public SettlementPlan withDistricts(List<DistrictSummary> d) {
+		return new SettlementPlan(genVersion, seed, site, bounds, coarse, quarters, cells, d, roads, gates, landmarks, walls, violations);
+	}
+
+
 	/** A copy with the given violations (for checkers that annotate a plan). */
 	public SettlementPlan withViolations(List<Violation> v) {
 		return new SettlementPlan(genVersion, seed, site, bounds, coarse, quarters, cells, districts, roads, gates, landmarks, walls, new ArrayList<>(v));

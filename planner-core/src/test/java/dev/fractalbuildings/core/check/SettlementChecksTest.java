@@ -67,4 +67,68 @@ class SettlementChecksTest {
 		assertEquals(List.of("lots-disjoint"), ids(SettlementChecks.district(plan(List.of(), List.of(), lot("a", 85, 85, 20, 20)), List.of(lm))));
 		assertEquals(List.of(), SettlementChecks.district(plan(List.of(), List.of(), lot("a", 90, 90, 20, 20)), List.of(lm)));
 	}
+
+	// ---- district detail rules (DL): each fails on a deliberately broken plan
+
+	private static Street street(String id, RoadKind k, int w, Pt... pts) {
+		int[] y = new int[pts.length];
+		java.util.Arrays.fill(y, 64);
+		return new Street(id, k, w, List.of(pts), y);
+	}
+
+	@Test
+	void lotFrontageNeedsStreetAlongTheFront() {
+		Street st = street("s", RoadKind.STREET, 5, new Pt(0, 30), new Pt(100, 30)); // rows 28..32
+		LotBrief ok = new LotBrief("a", 10, 8, 20, 20, Facing.SOUTH, "house", "plain", 1, 2, 1, 0, 64, 20, "build"); // bottom edge z 28 touches
+		assertEquals(List.of(), SettlementChecks.lotFrontage(plan(List.of(st), List.of(), ok)));
+		LotBrief gap = new LotBrief("b", 10, 4, 20, 20, Facing.SOUTH, "house", "plain", 1, 2, 1, 0, 64, 20, "build"); // two rows short of the street
+		assertEquals(List.of("lot-frontage"), ids(SettlementChecks.lotFrontage(plan(List.of(st), List.of(), gap))));
+		LotBrief wrongSide = new LotBrief("c", 10, 8, 20, 20, Facing.NORTH, "house", "plain", 1, 2, 1, 0, 64, 20, "build");
+		assertEquals(List.of("lot-frontage"), ids(SettlementChecks.lotFrontage(plan(List.of(st), List.of(), wrongSide))));
+		// a plaza counts
+		Plaza pz = new Plaza("p", "market", 0, 30, 40, 10, 64);
+		LotBrief onPlaza = new LotBrief("d", 10, 10, 20, 20, Facing.SOUTH, "house", "plain", 1, 2, 1, 0, 64, 20, "build");
+		assertEquals(List.of(), SettlementChecks.lotFrontage(plan(List.of(), List.of(pz), onPlaza)));
+	}
+
+	@Test
+	void lotDryAndLotGradeFail() {
+		LotBrief l = new LotBrief("a", 10, 10, 20, 20, Facing.SOUTH, "house", "plain", 1, 2, 1, 0, 64, 20, "build");
+		DistrictPlan p = plan(List.of(), List.of(), l);
+		assertEquals(List.of(), SettlementChecks.lotDry(p, (x, z) -> 64));
+		dev.fractalbuildings.core.probe.TerrainProbe wet = new dev.fractalbuildings.core.probe.TerrainProbe() {
+			@Override public int floorY(int x, int z) { return 60; }
+			@Override public int waterDepth(int x, int z) { return x == 15 && z == 15 ? 3 : 0; }
+		};
+		assertEquals(List.of("lot-dry"), ids(SettlementChecks.lotDry(p, wet)));
+		// a block on a 1:1 slope, and a tower that is too big for its lot
+		LotBrief block = new LotBrief("b", 10, 10, 60, 60, Facing.SOUTH, "block", "plain", 2, 4, 15, 0, 64, 80, "build");
+		assertEquals(List.of("lot-grade"), ids(SettlementChecks.lotGrade(plan(List.of(), List.of(), block), (x, z) -> 64 + x)));
+		assertEquals(List.of(), SettlementChecks.lotGrade(plan(List.of(), List.of(), block), (x, z) -> 64));
+		LotBrief tiny = new LotBrief("c", 10, 10, 6, 6, Facing.SOUTH, "tower", "plain", 4, 6, 1, 0, 64, 20, "build");
+		assertEquals(List.of("lot-grade"), ids(SettlementChecks.lotGrade(plan(List.of(), List.of(), tiny), (x, z) -> 64)));
+	}
+
+	@Test
+	void roadsConnectedFailsForAnIslandStreet() {
+		Street border = street("a", RoadKind.STREET, 5, new Pt(0, 64), new Pt(40, 64)); // reaches the tile's west edge
+		Street joined = street("b", RoadKind.LANE, 3, new Pt(40, 64), new Pt(40, 90));
+		Street island = street("i", RoadKind.LANE, 3, new Pt(80, 100), new Pt(80, 120));
+		assertEquals(List.of(), SettlementChecks.roadsConnected(plan(List.of(border, joined), List.of())));
+		assertEquals(List.of("roads-connected"), ids(SettlementChecks.roadsConnected(plan(List.of(border, joined, island), List.of()))));
+		Street road = street("r", RoadKind.MAIN, 5, new Pt(77, 100), new Pt(77, 110)); // a skeleton road anchors what touches it
+		assertEquals(List.of(), SettlementChecks.roadsConnected(plan(List.of(border, joined, island, road), List.of())));
+	}
+
+	@Test
+	void tileBorderAgreeFailsWhenOnlyOneSideHasTheStreet() {
+		DistrictPlan west = new DistrictPlan(2, 1, new DistrictInfo("d0_0", 0, 0, 0, 0, 128, 128, 0, 20), List.of(street("s", RoadKind.LANE, 3, new Pt(100, 50), new Pt(140, 50))), List.of(), List.of(), null, List.of());
+		DistrictPlan eastSame = new DistrictPlan(2, 1, new DistrictInfo("d1_0", 1, 0, 128, 0, 128, 128, 0, 20), List.of(street("s", RoadKind.LANE, 3, new Pt(100, 50), new Pt(140, 50))), List.of(), List.of(), null, List.of());
+		DistrictPlan eastNone = new DistrictPlan(2, 1, new DistrictInfo("d1_0", 1, 0, 128, 0, 128, 128, 0, 20), List.of(), List.of(), List.of(), null, List.of());
+		assertEquals(List.of(), SettlementChecks.tileBorderAgree(west, eastSame));
+		assertEquals(List.of("tile-border-agree"), ids(SettlementChecks.tileBorderAgree(west, eastNone)));
+		assertEquals(List.of(), SettlementChecks.tileBorderAgree(west, west)); // not neighbours: nothing to compare
+	}
+
+	private static DistrictPlan plan(List<Street> streets, List<Plaza> plazas) { return plan(streets, plazas, new LotBrief[0]); }
 }

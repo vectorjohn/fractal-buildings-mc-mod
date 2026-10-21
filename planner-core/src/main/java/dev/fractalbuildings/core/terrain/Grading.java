@@ -44,6 +44,15 @@ public final class Grading {
 
 	/** @param points centre line; consecutive points are joined by straight column runs */
 	public static RoadGrade road(List<LatticePath.Pt> points, int width, TerrainProbe exact) {
+		return grade(points, width, exact, true);
+	}
+
+	/** The height profile and steep runs of a road without building its boxes (the boxes list is empty); same profile as {@link #road}. */
+	public static RoadGrade profile(List<LatticePath.Pt> points, TerrainProbe exact) {
+		return grade(points, 1, exact, false);
+	}
+
+	private static RoadGrade grade(List<LatticePath.Pt> points, int width, TerrainProbe exact, boolean withBoxes) {
 		if (points.isEmpty() || width <= 0) throw new IllegalArgumentException("road needs points and a width");
 		// 1. centre-line columns
 		ArrayList<int[]> cols = new ArrayList<>();
@@ -123,6 +132,7 @@ public final class Grading {
 			steep.add(new Steep(i, j));
 			i = j + 1;
 		}
+		if (!withBoxes) return new RoadGrade(new Profile(x, z, y, Arrays.copyOf(wet, n)), steep, List.of());
 		// 7. footprint cells, first column to claim a cell wins
 		int half = width / 2;
 		TreeMap<Long, int[]> cells = new TreeMap<>(); // key (z, x) -> {x, z, level, bridge}

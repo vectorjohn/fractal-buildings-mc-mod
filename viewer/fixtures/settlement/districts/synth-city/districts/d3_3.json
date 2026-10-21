@@ -1,0 +1,16 @@
+{
+  "format": "fb-district/1",
+  "planVersion": 1,
+  "genVersion": 2,
+  "seed": "1001",
+  "district": {"id": "d3_3", "ix": 3, "iz": 3, "x": 480, "z": 496, "w": 160, "d": 144, "quarter": 7, "density": 13},
+  "streets": [
+    {"id": "t0", "kind": "lane", "width": 3, "points": [[520, 488], [520, 496], [520, 504]], "y": [71, 71, 71]}
+  ],
+  "plazas": [],
+  "lots": [
+    {"id": "d3_3.l0", "x": 511, "z": 496, "w": 8, "d": 10, "front": "east", "type": "house", "style": "plains", "storeys": [1, 2], "streets": 1, "airRights": 0, "frontY": 71, "density": 7, "status": "build"}
+  ],
+  "scene": null,
+  "violations": []
+}

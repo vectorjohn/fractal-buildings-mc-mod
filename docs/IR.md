@@ -209,6 +209,16 @@ district { format: "fb-district/1", planVersion: 1, genVersion, seed: "<int64>",
   either neighbour. Landmarks `l<n>`: hub square (`green` village, `market` town, `square` city and up) with a hall or
   temple facing it, all inside one tile. `fractal-cli city` also writes `terrain.json.gz`, the plan raster as a terrain-only
   `fb-region-dump/1` (step 32) for the plan view background. Fixtures: `viewer/fixtures/settlement/skeleton/`.
+- **District detail** (DL, `Districts.plan`, CLI `city --districts`): `streets` are the skeleton's main roads and paths, the
+  tile-border arterials and plain border streets, the grid lines shared along a row or column of tiles, hashed port lanes and
+  frontage lanes, each clipped to the tile plus 8 blocks (so two tiles at a border list the same streets; a lot never lies outside the
+  tile). Ids: the road's own (`r..`, a later piece of the same road gets `.1`...), `a<axis><line>_<from>` arterials, `b<axis><line>_<from>`
+  border streets, `sx<x>_<z>` / `sz<z>_<x>` grid lines, `t<n>` ports, `n<n>` lanes; sorted by id. `points` include a point at every 8th
+  column and at water edges so `y` (the graded surface at each point, from `Grading.profile` on these very columns) interpolates to what
+  `Grading.road` gives again. `lots`: `airRights` is the jetty reach over the front street (0 on a front under 4 wide or a plaza, 2
+  from width 7, else 1), `frontY` the street surface at the front centre, `style` `auto` until the brief filler (`Briefs.fill`) runs.
+  Hall and temple landmarks of the skeleton are lots (`hall`, `temple`) flush against the hub square. Rules added to `SettlementChecks`:
+  `lot-frontage`, `lot-dry`, `lot-grade`, `roads-connected` (per tile), `tile-border-agree` (two plans).
 - **Brief** (`GenRequest.brief`, optional, `core/gen/Brief`): `{minStoreys, maxStoreys, streets, airRights, frontY}`
   from a lot of the plan. `SpecPolicyV1` draws storeys from the brief's range intersected with the type's (if they do
   not meet, the type's bound nearest the brief) and sets `spec.streets` from the brief (front forced, unless the type

@@ -10,7 +10,21 @@ import dev.fractalbuildings.core.region.RegionMap;
 import dev.fractalbuildings.core.region.RegionField;
 import dev.fractalbuildings.core.region.RegionPlanner;
 import dev.fractalbuildings.core.region.RegionProbe;
+import dev.fractalbuildings.core.ir.IrJson;
+import dev.fractalbuildings.core.ir.Violation;
+import dev.fractalbuildings.core.settlement.Briefs;
 import dev.fractalbuildings.core.settlement.Cell;
+import dev.fractalbuildings.core.settlement.DistrictJson;
+import dev.fractalbuildings.core.settlement.DistrictPlan;
+import dev.fractalbuildings.core.settlement.DistrictScenes;
+import dev.fractalbuildings.core.settlement.DistrictSummary;
+import dev.fractalbuildings.core.settlement.Districts;
+import dev.fractalbuildings.core.settlement.LotBrief;
+import dev.fractalbuildings.core.settlement.QuarterKind;
+import dev.fractalbuildings.core.settlement.SkeletonSource;
+import dev.fractalbuildings.core.settlement.StyleWeight;
+import dev.fractalbuildings.core.style.StyleField;
+import java.util.Optional;
 import dev.fractalbuildings.core.settlement.CellGeometry;
 import dev.fractalbuildings.core.settlement.FieldSiteView;
 import dev.fractalbuildings.core.settlement.FixedSiteView;
@@ -43,7 +57,7 @@ final class CityCommand {
 	static final int MAX_CELLS = 16;
 
 	static int run(String[] args) throws IOException {
-		Opts o = new Opts(args, Set.of("seed", "terrain", "cell", "site", "cell-size", "out-dir"), Set.of());
+		Opts o = new Opts(args, Set.of("seed", "terrain", "cell", "site", "cell-size", "out-dir", "scene"), Set.of("districts"));
 		long seed = o.longValue("seed");
 		Path dir = Path.of(o.require("out-dir"));
 		if (o.has("cell") == o.has("site")) throw new UsageException("give exactly one of --cell CX,CZ and --site X,Z,TIER,RADIUS");
@@ -74,6 +88,14 @@ final class CityCommand {
 			throw new UsageException("cannot plan " + site.id() + ": " + e.getMessage() + " (does the terrain window cover the settlement?)");
 		}
 		double ms = (System.nanoTime() - t0) / 1e6;
+		int districtViolations = 0;
+		if (o.flag("districts") || o.has("scene")) {
+			Set<String> scenes = new java.util.TreeSet<>();
+			if (o.has("scene")) scenes.addAll(List.of(o.get("scene", null).split(",")));
+			DistrictsResult r = planDistricts(seed, view, site, coarse, p, plan, scenes, dir);
+			plan = r.plan();
+			districtViolations = r.violations();
+		}
 		GenCommand.write(dir.resolve("settlement.json"), SettlementJson.write(plan).getBytes(StandardCharsets.UTF_8));
 		ByteArrayOutputStream bos = new ByteArrayOutputStream();
 		try (GZIPOutputStream gz = new GZIPOutputStream(bos)) {
@@ -82,9 +104,58 @@ final class CityCommand {
 		GenCommand.write(dir.resolve("terrain.json.gz"), bos.toByteArray());
 		System.err.printf(java.util.Locale.ROOT, "city: %s %s r%d at %d,%d, %d cells, %d districts, %d roads, %d gates, %d landmarks, %d violations, %.0f ms%n",
 				site.id(), site.tier().json, site.radius(), site.centre().x(), site.centre().z(), site.cells().size(), plan.districts().size(),
-				plan.roads().size(), plan.gates().size(), plan.landmarks().size(), plan.violations().size(), ms);
-		return plan.violations().isEmpty() ? 0 : 1;
+				plan.roads().size(), plan.gates().size(), plan.landmarks().size(), plan.violations().size() + districtViolations, ms);
+		return plan.violations().isEmpty() && districtViolations == 0 ? 0 : 1;
 	}
+
+	record DistrictsResult(SettlementPlan plan, int violations) {}
+
+	/**
+	 * District detail (DL) for every district the settlement lists that it owns: {@code districts/<id>.json}, filled by the brief step
+	 * (style from the biome field, storeys, street mask, front height), with an optional scene ({@code scenes/<id>.json}, exterior) for the
+	 * districts named in {@code --scene}. The settlement's district list gets the lot counts, style weights and detail paths.
+	 */
+	private static DistrictsResult planDistricts(long seed, RegionView view, SettlementSite site, CoarseProbe coarse, ProbeSpecs.Probes p, SettlementPlan plan,
+			Set<String> sceneIds, Path dir) throws IOException {
+		SkeletonSource src = new SkeletonSource.Direct(seed, view, site, coarse);
+		StyleField styles = new StyleField(p.biome(), seed);
+		List<DistrictSummary> out = new ArrayList<>();
+		int violations = 0, planned = 0, lots = 0;
+		long t0 = System.nanoTime();
+		for (DistrictSummary d : plan.districts()) {
+			Optional<Districts.Detail> det;
+			try {
+				det = Districts.plan(src, d.ix(), d.iz(), p.terrain());
+			} catch (IllegalArgumentException e) {
+				throw new UsageException("cannot plan district " + d.id() + ": " + e.getMessage() + " (does the terrain window cover it?)");
+			}
+			if (det.isEmpty()) { out.add(d); continue; }
+			DistrictPlan dp = Briefs.fill(det.get().plan(), QuarterKind.values()[det.get().plan().district().quarter()], styles, p.terrain());
+			String scenePath = null;
+			if (sceneIds.contains(d.id())) {
+				DistrictScenes.Built b = DistrictScenes.build(dp, det.get().landmarks(), p.terrain(), p.biome(), true);
+				scenePath = "scenes/" + d.id() + ".json";
+				dp = new DistrictPlan(b.plan().genVersion(), b.plan().seed(), b.plan().district(), b.plan().streets(), b.plan().plazas(), b.plan().lots(), scenePath, b.plan().violations());
+				GenCommand.write(dir.resolve(scenePath), IrJson.write(b.scene()).getBytes(StandardCharsets.UTF_8));
+				violations += b.scene().violations().size();
+			}
+			violations += dp.violations().size();
+			for (Violation v : dp.violations()) System.err.println("city: " + d.id() + " " + v.invariant() + ": " + v.message());
+			for (String n : det.get().notes()) System.err.println("city: " + d.id() + " note: " + n);
+			GenCommand.write(dir.resolve("districts/" + d.id() + ".json"), DistrictJson.write(dp).getBytes(StandardCharsets.UTF_8));
+			java.util.TreeMap<String, Integer> tally = new java.util.TreeMap<>();
+			int built = 0;
+			for (LotBrief l : dp.lots()) if (l.builds()) { tally.merge(l.style(), 1, Integer::sum); built++; }
+			List<StyleWeight> sw = new ArrayList<>();
+			for (var e : tally.entrySet()) sw.add(new StyleWeight(e.getKey(), e.getValue()));
+			out.add(new DistrictSummary(d.id(), d.ix(), d.iz(), d.x(), d.z(), d.w(), d.d(), d.originChunkX(), d.originChunkZ(), d.quarter(), d.density(), sw, dp.lots().size(), "districts/" + d.id() + ".json"));
+			planned++;
+			lots += dp.lots().size();
+		}
+		System.err.printf(java.util.Locale.ROOT, "districts: %d planned, %d lots, %d violations, %.0f ms%n", planned, lots, violations, (System.nanoTime() - t0) / 1e6);
+		return new DistrictsResult(plan.withDistricts(out), violations);
+	}
+
 
 	/** The region field with its join rule, limited to the recorded window when the terrain is a dump. */
 	private static RegionView cellView(RegionField field, ProbeSpecs.Probes p) {
