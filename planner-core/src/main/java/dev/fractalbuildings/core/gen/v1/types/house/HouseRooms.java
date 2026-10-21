@@ -2,6 +2,7 @@ package dev.fractalbuildings.core.gen.v1.types.house;
 
 import dev.fractalbuildings.core.gen.v1.interior.RoomProgram;
 import dev.fractalbuildings.core.rand.Draws;
+import dev.fractalbuildings.core.gen.v1.interior.RoomProgram.Role;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -67,6 +68,90 @@ final class HouseRooms implements RoomProgram {
 			if (k >= order.size() && d.chance(REPEAT_PERCENT, 100)) u = d.chance(1, 2) ? "kitchen" : "living";
 			uses[spare.get(k)] = u;
 		}
+	}
+
+	/** Ground-floor rooms (not counting the entry hall) from which a second kitchen is allowed. */
+	static final int BIG_HOUSE_ROOMS = 5;
+
+	private static boolean lives(String use) { return use.equals("bedroom") || use.equals("living") || use.equals("kitchen"); }
+
+	/**
+	 * The whole-house pass, after every mass has its own rooms: a house of two or more rooms has one
+	 * kitchen (on the ground floor, by the living room or the entry, with the hearth) and one living room
+	 * before further bedrooms. A second kitchen or living room survives {@link #REPEAT_PERCENT} of the time
+	 * (a kitchen only in a house of {@link #BIG_HOUSE_ROOMS}+ ground rooms). A one-room house stays a single
+	 * bedroom (a hut, "hall house"), and a ground floor of one room is a kitchen-hall that serves as the living room.
+	 */
+	@Override
+	public void refineBuilding(List<Slot> rooms, Where w, Draws d) {
+		List<Slot> ground = new ArrayList<>();
+		int habitable = 0;
+		for (Slot s : rooms) {
+			if (lives(s.use)) habitable += s.span;
+			if (s.storey == 0 && lives(s.use)) ground.add(s);
+		}
+		if (habitable < 2) return;
+		List<Slot> pool = ground;
+		if (ground.isEmpty()) { // a ground floor of only entries and halls: the kitchen goes in the entry room
+			pool = new ArrayList<>();
+			for (Slot s : rooms) if (s.storey == 0 && (s.role == Role.ENTRY || s.role == Role.THROUGH) && (s.use.equals("entry") || s.use.equals("hall"))) pool.add(s);
+			if (pool.isEmpty()) return;
+		}
+		Slot kitchen = best(pool, "kitchen", null, w);
+		if (kitchen == null) return;
+		boolean spareKitchen = ground.size() >= BIG_HOUSE_ROOMS && d.chance(REPEAT_PERCENT, 100);
+		for (Slot s : ground) {
+			if (s == kitchen || !s.use.equals("kitchen") || s.role != Role.ROOM) continue;
+			if (spareKitchen) { spareKitchen = false; continue; }
+			s.use = "bedroom";
+		}
+		kitchen.use = "kitchen";
+		Slot living = null;
+		for (Slot s : ground) if (s.use.equals("living") && (living == null || rank(s) > rank(living))) living = s;
+		if (living == null && ground.size() >= 2) {
+			living = best(ground, "living", kitchen, w);
+			if (living != null) living.use = "living";
+		}
+		for (Slot s : ground) {
+			if (s == living || !s.use.equals("living") || s.role != Role.ROOM) continue;
+			if (d.chance(REPEAT_PERCENT, 100)) continue;
+			s.use = "bedroom";
+		}
+		if (w.storeys() == 1) { // a one-storey house sleeps on its ground floor
+			boolean bed = false;
+			for (Slot s : ground) bed |= s.use.equals("bedroom");
+			if (!bed && ground.size() >= 3) {
+				Slot spare = null;
+				for (Slot s : ground) if (s.role == Role.ROOM && s != kitchen && s != living && (spare == null || s.area < spare.area)) spare = s;
+				if (spare != null) spare.use = "bedroom";
+			}
+		}
+	}
+
+	private static int rank(Slot s) { return (s.role == Role.ENTRY ? 1000 : 0) + s.area; }
+
+	/** The room of {@code pool} best suited to the use (a kitchen beside the living room or entry; a living room beside the kitchen); null if none. */
+	private static Slot best(List<Slot> pool, String use, Slot kitchen, Where w) {
+		Slot pick = null;
+		int bestScore = Integer.MIN_VALUE;
+		int bedrooms = 0;
+		for (Slot s : pool) if (s.use.equals("bedroom")) bedrooms++;
+		for (Slot s : pool) {
+			if (kitchen != null && s == kitchen) continue;
+			if (use.equals("living") && s.role != Role.ROOM && s.role != Role.ENTRY) continue;
+			int score = Math.min(s.area, 20);
+			if (s.use.equals(use)) score += 50; // already is one
+			if (s.use.equals("kitchen") || s.use.equals("living")) score += 8; // a repeated type is the cheapest to change
+			if (s.role == Role.ROOM) score += 6;
+			if (s.area < 9) score -= 12;
+			for (Slot n : s.next()) {
+				if (use.equals("kitchen") && (n.use.equals("living") || n.role == Role.ENTRY)) score += 12;
+				if (use.equals("living") && (n == kitchen || n.role == Role.ENTRY)) score += 12;
+			}
+			if (w.storeys() == 1 && bedrooms == 1 && s.use.equals("bedroom") && pool.size() >= 3) score -= 40; // keep the only bedroom
+			if (score > bestScore) { bestScore = score; pick = s; }
+		}
+		return pick;
 	}
 
 	@Override

@@ -73,7 +73,7 @@ class HouseTypeTest {
 		int houses = 0, hearth = 0, kitchen = 0, living = 0;
 		for (Case c : cases()) {
 			houses++;
-			assertTrue(c.count("living", 0) + c.count("entry", 0) + c.count("hall", 0) + c.count("bedroom", 0) >= 1, c + ": no living room or entry downstairs");
+			assertTrue(c.count("living", 0) + c.count("kitchen", 0) + c.count("entry", 0) + c.count("hall", 0) + c.count("bedroom", 0) >= 1, c + ": no living room or entry downstairs");
 			if (c.hasHook("hearth", "living", 0) || c.hasHook("hearth", "kitchen", 0)) hearth++;
 			if (c.count("kitchen", 0) > 0) kitchen++;
 			if (c.count("living", 0) > 0) living++;

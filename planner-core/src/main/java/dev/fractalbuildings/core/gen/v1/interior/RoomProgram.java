@@ -38,6 +38,27 @@ public interface RoomProgram {
 	 */
 	default void refine(Role[] roles, int[] areas, String[] uses, Where where, Draws d) {}
 
+	/** A room of the whole building as the building-wide program sees it; {@code use} may be changed. {@code storey} is the first storey of its band and {@code span} how many storeys share it. */
+	final class Slot {
+		public final int mass, storey, area, span;
+		public final Role role;
+		public String use;
+		private final List<Slot> next = new java.util.ArrayList<>();
+
+		public Slot(int mass, int storey, int span, Role role, int area, String use) {
+			this.mass = mass; this.storey = storey; this.span = span; this.role = role; this.area = area; this.use = use;
+		}
+
+		/** Rooms joined to this one by a door of the same floor plan. */
+		public List<Slot> next() { return next; }
+	}
+
+	/**
+	 * A chance to revise the uses of every room of the building at once, after each floor plan has its own
+	 * (a house gives itself one kitchen and one living room across its wings). Default: no change.
+	 */
+	default void refineBuilding(List<Slot> rooms, Where where, Draws d) {}
+
 	/** True if a floor plan must not be shared between storey {@code storey - 1} and {@code storey} of a mass (a type whose ground floor differs in use from the upper ones). */
 	default boolean newBand(int storey) { return false; }
 
