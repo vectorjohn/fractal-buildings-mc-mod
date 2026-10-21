@@ -337,7 +337,7 @@ public final class SettlementChecks {
 		boolean[] good = new boolean[n];
 		for (int i = 0; i < n; i++) {
 			Street s = d.streets().get(i);
-			boolean root = s.kind() == RoadKind.ARTERIAL || s.kind() == RoadKind.MAIN || s.kind() == RoadKind.PATH;
+			boolean root = s.kind() == RoadKind.ARTERIAL || s.kind() == RoadKind.MAIN || s.kind() == RoadKind.PATH || s.kind() == RoadKind.QUAY;
 			for (Pt p : s.points()) if (p.x() <= t.x() || p.x() >= t.x() + t.w() - 1 || p.z() <= t.z() || p.z() >= t.z() + t.d() - 1) root = true;
 			if (root) good[find(parent, i)] = true;
 		}

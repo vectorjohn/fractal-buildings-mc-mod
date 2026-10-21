@@ -27,7 +27,8 @@
     "stair": ["minecraft:smooth_sandstone", "minecraft:cut_sandstone"],
     "road": ["minecraft:sandstone", "minecraft:smooth_sandstone", "minecraft:sand"],
     "paving": ["minecraft:cut_sandstone"],
-    "ground": ["minecraft:sand"]
+    "ground": ["minecraft:sand"],
+    "deck": ["minecraft:sandstone", "minecraft:cut_sandstone"]
   },
 
   "colours": {
@@ -43,6 +44,7 @@
     "stair": ["#e0d3a2", "#d9c58f"],
     "road": ["#d9c58f", "#dccb94", "#e0d3a2"],
     "paving": ["#d6c288"],
-    "ground": ["#e0d3a2"]
+    "ground": ["#e0d3a2"],
+    "deck": ["#d6c288", "#c8b278"]
   }
 }

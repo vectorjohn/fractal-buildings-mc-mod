@@ -10,8 +10,10 @@ import dev.fractalbuildings.core.probe.CoarseProbe;
 public final class CoarseTerrain {
 	/** Floors at or above this are peaks (kept out of the urban mask). */
 	public static final int PEAK_Y = 140;
-	/** Largest height difference to a 4-neighbour over 32 blocks that still counts as buildable (1 in 2). */
-	public static final int STEEP_PER_32 = 16;
+	/** Largest height difference to a 4-neighbour over 32 blocks that still counts as buildable (3 in 4: houses and shops terrace and step up a slope; it was 1 in 2, which left real hills patchy, TR 5.3). */
+	public static final int STEEP_PER_32 = 24;
+	/** The road router charges extra for columns steeper than this (1 in 2). */
+	public static final int ROAD_STEEP_PER_32 = 24;
 
 	public final CoarseProbe probe;
 	public final int step;
@@ -35,10 +37,15 @@ public final class CoarseTerrain {
 		return probe.floorY(sx, sz) >= PEAK_Y || BiomeIds.isPeak(probe.biome(sx, sz));
 	}
 
-	/** Some 4-neighbour's surface differs from this column's by more than 1 in 2 (over one lattice step). */
-	public boolean steep(int x, int z) {
+	/** Some 4-neighbour's surface differs from this column's by more than 3 in 4 (over one lattice step). */
+	public boolean steep(int x, int z) { return steep(x, z, STEEP_PER_32); }
+
+	/** Roads keep to the older, stricter 1 in 2: ground between 1 in 2 and 3 in 4 takes buildings but not cheap roads. */
+	public boolean roadSteep(int x, int z) { return steep(x, z, ROAD_STEEP_PER_32); }
+
+	private boolean steep(int x, int z, int per32) {
 		int sx = snap(x), sz = snap(z), h = surfaceY(sx, sz);
-		int limit = STEEP_PER_32 * step / 32;
+		int limit = per32 * step / 32;
 		return Math.abs(surfaceY(sx + step, sz) - h) > limit || Math.abs(surfaceY(sx - step, sz) - h) > limit
 				|| Math.abs(surfaceY(sx, sz + step) - h) > limit || Math.abs(surfaceY(sx, sz - step) - h) > limit;
 	}

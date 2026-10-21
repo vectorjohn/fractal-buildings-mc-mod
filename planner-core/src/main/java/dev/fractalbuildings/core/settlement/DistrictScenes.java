@@ -87,12 +87,12 @@ public final class DistrictScenes {
 			List<LatticePath.Pt> pts = new ArrayList<>();
 			for (Pt p : s.points()) pts.add(new LatticePath.Pt(p.x(), p.z()));
 			Grading.RoadGrade g = Grading.road(pts, s.width(), exact);
-			addBoxes(g.boxes(), ground);
+			addBoxes(g.boxes(), ground, s.kind() == RoadKind.QUAY);
 			settlement.addAll(SettlementChecks.roadGrade(s.id(), g.profile().x(), g.profile().z(), g.profile().y()));
 		}
 		for (Plaza p : plan.plazas()) {
 			Optional<Grading.PlazaGrade> g = Grading.plaza(new Rect(p.x(), p.z(), p.w(), p.d()), exact);
-			if (g.isPresent()) addBoxes(g.get().boxes(), ground);
+			if (g.isPresent()) addBoxes(g.get().boxes(), ground, false);
 			else settlement.add(new Violation("plaza-grade", null, "plaza " + p.id() + " cannot be graded (too rough or wet)", List.of(new Box3(p.x(), p.y() - 1, p.z(), p.w(), 1, p.d()))));
 		}
 		DistrictPlan filled = new DistrictPlan(plan.genVersion(), plan.seed(), plan.district(), plan.streets(), plan.plazas(), newLots, plan.scene(), List.of());
@@ -124,17 +124,11 @@ public final class DistrictScenes {
 		return new BuildingIr(s.spec(), s.bounds(), s.storeys(), s.volumes(), List.of(), List.of(), s.roofs(), boxes, List.of());
 	}
 
-	/** Maps TA's ground box kinds to roles: road and plaza surfaces, cuts are air, everything else (fill, deck, pier) is ground. */
-	static Role role(GroundBox.Kind k) {
-		return switch (k) {
-			case ROAD -> Role.ROAD;
-			case PLAZA -> Role.PAVING;
-			case CUT -> Role.AIR;
-			case FILL, DECK, PIER -> Role.GROUND;
-		};
-	}
+	/** Maps TA's ground box kinds to roles: road and plaza surfaces, cuts are air, fill is ground, bridge decks and piers are deck. */
+	static Role role(GroundBox.Kind k) { return k.role(); }
 
-	private static void addBoxes(List<GroundBox> boxes, List<Box> out) {
-		for (GroundBox g : boxes) out.add(new Box(g.box(), role(g.kind()), Layer.GROUND, Box.NO_STOREY));
+	/** @param paved the road surface is paving, not road material (a quay is stone). */
+	private static void addBoxes(List<GroundBox> boxes, List<Box> out, boolean paved) {
+		for (GroundBox g : boxes) out.add(new Box(g.box(), paved && g.kind() == GroundBox.Kind.ROAD ? Role.PAVING : role(g.kind()), Layer.GROUND, Box.NO_STOREY));
 	}
 }

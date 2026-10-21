@@ -50,12 +50,12 @@ for (const p of presets) {
       const base = await serve(page, p.name);
       const q = p.camera.plan;
       const view = `${q.x !== undefined && q.z !== undefined ? `&x=${q.x}&z=${q.z}` : ''}${q.zoom !== undefined ? `&zoom=${q.zoom}` : ''}`;
-      await page.goto(`/plan.html?city=${base}&terrain=${base}terrain.json.gz&layers=${encodeURIComponent(q.layers ?? '+terrain')}${view}`);
+      await page.goto(`/plan.html?city=${base}&terrain=${base}terrain.json.gz&layers=${encodeURIComponent(process.env['FB_PLAN_LAYERS'] ?? q.layers ?? '+terrain')}${view}`);
       await page.waitForFunction(() => { const r = window.__planReady; return r !== undefined && (!r.ok || r.pending === 0); }, undefined, { timeout: 90_000 });
       const ready = await page.evaluate(() => window.__planReady!);
       expect(ready.ok, ready.error).toBe(true);
       expect(ready.districts).toBe(s.districts.length);
-      writeFileSync(join(dir, 'plan.png'), await page.screenshot());
+      writeFileSync(join(dir, `plan${process.env['FB_PLAN_SUFFIX'] ?? ''}.png`), await page.screenshot());
       expect(errors).toEqual([]);
     });
 

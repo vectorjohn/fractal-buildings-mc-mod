@@ -230,3 +230,4 @@ A preset is `{seed, terrain, site: {at: [x, z], tier, radius} | {cell: [cx, cz]}
 `e2e/city.spec.ts` over every preset (a plain `playwright test` runs `synth-city` only, if its data exists; `FB_CITIES=a,b` picks others): plan view loads, the first two scenes load in
 the fly camera, and `plan.png`, `<district>-overview.png`, `<district>-street.png` are written next to the data. Asserted: no `tile-border-agree` violation, no building
 violation in the scenes, no page error; `roads-connected` is reported as a test annotation, not asserted.
+`FB_PLAN_LAYERS="-terrain,+mask,+density"` overrides the plan layers and `FB_PLAN_SUFFIX=-mask` names the file `plan-mask.png` (a second look at the same city). Presets `tr-coast`, `tr-river`, `tr-steep` (TR) are zoomed on a waterfront and a steep district; their pictures are in `docs/review/phase5/terrain/`.

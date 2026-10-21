@@ -16,6 +16,7 @@ import dev.fractalbuildings.core.settlement.LotBrief;
 import dev.fractalbuildings.core.settlement.RegionView;
 import dev.fractalbuildings.core.settlement.SettlementSite;
 import dev.fractalbuildings.core.settlement.SkeletonSource;
+import dev.fractalbuildings.core.settlement.TerrainStats;
 import dev.fractalbuildings.core.settlement.Tier;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -40,7 +41,7 @@ final class CityCheckCommand {
 
 	private record Job(String label, long seed, String terrain, int cellSize, String site, int cellCx, int cellCz) {}
 
-	private record Result(Job job, String siteId, String tier, int radius, int cells, int districts, int lots, int scenes, int hubPct, int strays, List<String> problems, String error, double ms) {}
+	private record Result(Job job, String siteId, String tier, int radius, int cells, int districts, int lots, int scenes, int hubPct, int strays, List<String> problems, String error, double ms, TerrainStats terrain) {}
 
 	static int run(String[] args) throws IOException {
 		Opts o = new Opts(args, Set.of("seeds", "terrain", "sites", "scenes", "cell-size", "out", "ignore"), Set.of());
@@ -163,9 +164,9 @@ final class CityCheckCommand {
 			}
 			int lots = 0;
 			for (var d : city.districts().values()) lots += (int) d.lots().stream().filter(LotBrief::builds).count();
-			return new Result(j, site.id(), site.tier().json, site.radius(), site.cells().size(), city.districts().size(), lots, built, city.streetColumns() == 0 ? 100 : (int) (100L * city.hubPiece() / city.streetColumns()), city.strays(), problems, null, (System.nanoTime() - t0) / 1e6);
+			return new Result(j, site.id(), site.tier().json, site.radius(), site.cells().size(), city.districts().size(), lots, built, city.streetColumns() == 0 ? 100 : (int) (100L * city.hubPiece() / city.streetColumns()), city.strays(), problems, null, (System.nanoTime() - t0) / 1e6, TerrainStats.of(city, p.terrain()));
 		} catch (RuntimeException e) {
-			return new Result(j, "?", "?", 0, 0, 0, 0, 0, 0, 0, problems, e.getClass().getSimpleName() + ": " + e.getMessage(), (System.nanoTime() - t0) / 1e6);
+			return new Result(j, "?", "?", 0, 0, 0, 0, 0, 0, 0, problems, e.getClass().getSimpleName() + ": " + e.getMessage(), (System.nanoTime() - t0) / 1e6, null);
 		}
 	}
 
@@ -193,6 +194,12 @@ final class CityCheckCommand {
 		for (Result r : rs) {
 			sb.append(String.format(Locale.ROOT, "| %s | %s | %s | %d | %d | %d | %d | %d | %d | %d | %s | %.0f |%n", r.job().label(), r.siteId(), r.tier(), r.radius(), r.cells(), r.districts(), r.lots(), r.scenes(), r.hubPct(), r.strays(),
 					r.error() != null ? "error" : Integer.toString(r.problems().size()), r.ms()));
+		}
+		sb.append("\nTerrain response (urban % = columns the mask kept of those inside the footprint that are dry; cut and fill in thousands of blocks):\n\n| site | urban % | lots | empty:steep | cut k | fill k | steep roads | bridges | quays | quay lots |\n|---|---|---|---|---|---|---|---|---|---|\n");
+		for (Result r : rs) {
+			TerrainStats t = r.terrain();
+			if (t == null) continue;
+			sb.append(String.format(Locale.ROOT, "| %s | %d | %d | %d | %d | %d | %d | %d | %d | %d |%n", r.job().label(), t.urbanPct(), t.lots(), t.emptySteep(), t.cutBlocks() / 1000, t.fillBlocks() / 1000, t.steepRoads(), t.bridges(), t.quays(), t.quayLots()));
 		}
 		for (Result r : rs) {
 			if (r.error() == null && r.problems().isEmpty()) continue;

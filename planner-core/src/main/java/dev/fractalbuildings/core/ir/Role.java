@@ -30,8 +30,10 @@ public enum Role {
 	ROAD(true, true),
 	/** Plaza and square paving (Phase 5). */
 	PAVING(true, true),
-	/** Fill earth, bridge decks and piers in district scenes (Phase 5). */
-	GROUND(true, true);
+	/** Fill earth in district scenes (Phase 5). */
+	GROUND(true, true),
+	/** Bridge decks and piers (TR 5.3): timber, or stone in the desert. */
+	DECK(true, true);
 
 	public final boolean solid;
 	public final boolean closesShell;

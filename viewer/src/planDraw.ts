@@ -72,7 +72,7 @@ export const layersParam = (l: Set<LayerId>): string => LAYER_IDS.filter((x) => 
 
 // ---- colours ---------------------------------------------------------------------------------------------
 
-export const ROAD_COLOUR: Record<RoadKind, string> = { arterial: '#f4d35e', main: '#f2f2f2', street: '#d6d0c4', lane: '#a89f8c', path: '#8a7a5c' };
+export const ROAD_COLOUR: Record<RoadKind, string> = { arterial: '#f4d35e', main: '#f2f2f2', street: '#d6d0c4', quay: '#5fb3c9', lane: '#a89f8c', path: '#8a7a5c' };
 export const LOT_COLOUR: Record<string, string> = {
   house: '#c9805a', cottage: '#d49a6a', shop: '#4aa3d8', workshop: '#8a6bbf', tower: '#c8c8d8', inn: '#e0a030', hall: '#d05a8a',
   wall: '#8b5a3c', temple: '#f0e68c', barn: '#9a8a3a', warehouse: '#7a8a96', block: '#b23a3a', highrise: '#3a4ab2',
@@ -182,7 +182,7 @@ function polyline(ctx: CanvasRenderingContext2D, v: PlanView, pts: readonly (rea
 function drawRoadSet(ctx: CanvasRenderingContext2D, v: PlanView, roads: readonly { kind: RoadKind; width: number; points: [number, number][]; bridges?: [number, number][] }[]): number {
   let n = 0;
   ctx.lineCap = 'butt'; ctx.lineJoin = 'round';
-  const order: RoadKind[] = ['path', 'lane', 'street', 'main', 'arterial'];
+  const order: RoadKind[] = ['path', 'lane', 'street', 'quay', 'main', 'arterial'];
   for (const kind of order) {
     for (const r of roads) {
       if (r.kind !== kind || r.points.length < 2) continue;

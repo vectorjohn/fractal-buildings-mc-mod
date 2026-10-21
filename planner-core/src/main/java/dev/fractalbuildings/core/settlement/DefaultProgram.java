@@ -108,7 +108,7 @@ public class DefaultProgram implements TierProgram {
 				if (dy * 3 > len) return FORBIDDEN; // grade over 1 in 3
 				long cost = (diag ? 14L : 10L) * step + 60L * dy;
 				if (c.terrain.water(nx, nz)) return cost + 400;
-				if (c.terrain.steep(nx, nz)) cost += 300;
+				if (c.terrain.roadSteep(nx, nz)) cost += 300;
 				if (!c.urbanCandidate(nx, nz)) cost = cost * 16 / 10;
 				return cost;
 			}
