@@ -1,0 +1,20 @@
+{
+  "format": "fb-biome-fallback/1",
+  "note": "Biomes no style lists in its biomes array, and the style they use. Water biomes (ocean, river) are not here: they cast no vote. Anything not here either is 'plain'.",
+  "map": {
+    "minecraft:savanna": "desert",
+    "minecraft:savanna_plateau": "desert",
+    "minecraft:windswept_savanna": "desert",
+    "minecraft:dark_forest": "taiga",
+    "minecraft:pale_garden": "taiga",
+    "minecraft:windswept_hills": "taiga",
+    "minecraft:windswept_forest": "taiga",
+    "minecraft:windswept_gravelly_hills": "taiga",
+    "minecraft:stony_shore": "taiga",
+    "minecraft:cherry_grove": "plains",
+    "minecraft:beach": "plains",
+    "minecraft:swamp": "jungle",
+    "minecraft:mangrove_swamp": "jungle",
+    "minecraft:stony_peaks": "snowy"
+  }
+}
