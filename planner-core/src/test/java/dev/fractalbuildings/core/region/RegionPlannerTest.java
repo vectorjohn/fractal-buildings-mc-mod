@@ -158,7 +158,7 @@ class RegionPlannerTest {
 		for (long seed : new long[] {12345L, 987654321L}) {
 			StringBuilder sb = new StringBuilder();
 			for (CellDecision c : cells(planner(seed), 8)) {
-				sb.append(c.cx()).append(' ').append(c.cz()).append(' ').append(c.settled() ? c.tier().id : "-").append(' ')
+				sb.append(c.cx()).append(' ').append(c.cz()).append(' ').append(c.settled() ? c.tier().json : "-").append(' ')
 					.append(c.centreX()).append(' ').append(c.centreZ()).append(' ').append(c.radius()).append(' ').append(c.reason()).append('\n');
 			}
 			byte[] d = MessageDigest.getInstance("SHA-256").digest(sb.toString().getBytes(StandardCharsets.UTF_8));

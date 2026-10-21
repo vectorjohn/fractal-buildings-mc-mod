@@ -275,7 +275,7 @@ class FieldRegionViewTest {
 			for (var row : batch(v, 8)) {
 				for (var r : row) {
 					CellDecision c = r.decision();
-					sb.append(c.cx()).append(' ').append(c.cz()).append(' ').append(c.settled() ? c.tier().id : "-").append(' ')
+					sb.append(c.cx()).append(' ').append(c.cz()).append(' ').append(c.settled() ? c.tier().json : "-").append(' ')
 						.append(c.centreX()).append(' ').append(c.centreZ()).append(' ').append(c.radius()).append(' ')
 						.append(r.claimedBy() == null ? "." : r.claimedBy().cx() + "," + r.claimedBy().cz()).append('\n');
 				}

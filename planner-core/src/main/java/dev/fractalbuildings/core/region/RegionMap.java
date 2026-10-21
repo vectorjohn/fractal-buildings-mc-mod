@@ -104,7 +104,7 @@ public final class RegionMap {
 				sb.append("{\"cx\":").append(c.cx()).append(",\"cz\":").append(c.cz())
 					.append(",\"siteX\":").append(c.siteX()).append(",\"siteZ\":").append(c.siteZ())
 					.append(",\"city\":").append(c.settled()).append(",\"reason\":\"").append(c.reason())
-					.append("\",\"tier\":\"").append(c.tier().id).append("\",\"centreX\":").append(c.centreX())
+					.append("\",\"tier\":\"").append(c.tier().json).append("\",\"centreX\":").append(c.centreX())
 					.append(",\"centreZ\":").append(c.centreZ()).append(",\"radius\":").append(c.radius())
 					.append(",\"radiusDrawn\":").append(c.radiusDrawn())
 					.append(",\"radiusFit\":").append(c.radiusFit()).append(",\"edgeDist\":").append(c.edgeDist())

@@ -1,6 +1,7 @@
 package dev.fractalbuildings.core.region;
 
 import dev.fractalbuildings.core.rand.Hash64;
+import dev.fractalbuildings.core.settlement.Tier;
 
 /**
  * The settlement tier ladder (plan "Tier ladder", ROADMAP 5.1): weights, radius bands and density caps
@@ -10,28 +11,6 @@ import dev.fractalbuildings.core.rand.Hash64;
  */
 public final class Tiers {
 	private Tiers() {}
-
-	public enum Tier {
-		HAMLET("hamlet", 0.25, 40, 90, 30),
-		VILLAGE("village", 0.30, 80, 220, 45),
-		TOWN("town", 0.25, 200, 500, 65),
-		CITY("city", 0.14, 450, 1100, 85),
-		METROPOLIS("metropolis", 0.06, 1000, Integer.MAX_VALUE, 100);
-
-		public final String id;
-		public final double weight;
-		/** Radius band in blocks; the metropolis band has no upper bound (Pareto tail, see maxRadius). */
-		public final int minRadius, maxRadius;
-		public final int densityCap;
-
-		Tier(String id, double weight, int minRadius, int maxRadius, int densityCap) {
-			this.id = id;
-			this.weight = weight;
-			this.minRadius = minRadius;
-			this.maxRadius = maxRadius;
-			this.densityCap = densityCap;
-		}
-	}
 
 	public static final int DEFAULT_MAX_RADIUS = 4096;
 	/** Pareto exponent of the metropolis radius tail. */
