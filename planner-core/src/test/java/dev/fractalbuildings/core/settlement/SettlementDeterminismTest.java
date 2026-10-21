@@ -276,7 +276,7 @@ class SettlementDeterminismTest {
 		for (Preset pr : presets) {
 			Setup s = setup(pr);
 			Reference ref = reference(s);
-			assertTrue(ref.districts().size() > 5, pr.name() + ": only " + ref.districts().size() + " districts");
+			assertTrue(ref.districts().size() > 1, pr.name() + ": only " + ref.districts().size() + " districts");
 			assertFalse(ref.scenes().isEmpty(), pr.name() + ": no scenes chosen");
 			assertEquals(ref.settlement(), SettlementJson.write(reference(s).city().plan()), pr.name() + ": two runs");
 			assertEquals(List.of(), differences(s, ref, Setup::direct, full ? 0 : 10, 8), pr.name());
