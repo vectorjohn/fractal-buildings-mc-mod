@@ -338,7 +338,7 @@ terrain and biome dumps from S4. Cities have no fixed size cap; 512 × 512 is
 the first size to prove (ADR 0002, I6). The plan has two levels: a cheap city
 skeleton, then district detail built lazily (ARCHITECTURE.md, "City scale").
 
-- [ ] **5.1 Scale ladder**: hamlet, village, town, city, metropolis. Each step
+- [x] **5.1 Scale ladder**: hamlet, village, town, city, metropolis. Each step
   adds structure (a square, a main street, districts, walls, a downtown);
   no step has a fixed size cap.
   - R1 (2026-10-21): the tier ladder (`Tiers`), region field and planner, and `fractal-cli region` are in `core/region/`; the per-tier programs (D1-D3) are still to do, so this stays open.
