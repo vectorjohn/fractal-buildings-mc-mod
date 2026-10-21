@@ -22,6 +22,7 @@ public final class SettlementChecks {
 
 	public static final String LOT_IN_TILE = "lot-in-tile";
 	public static final String LOTS_DISJOINT = "lots-disjoint";
+	public static final String ROAD_GRADE = "road-grade";
 
 	/** Every rule that needs only a district plan and the landmarks inside it. */
 	public static List<Violation> district(DistrictPlan d, List<Landmark> landmarks) {
@@ -81,7 +82,7 @@ public final class SettlementChecks {
 	 * {@code p - width/2 .. p - width/2 + width - 1}), merged per axis-aligned segment; diagonal segments contribute
 	 * one square per step.
 	 */
-	static List<Rect> footprint(Street s) {
+	public static List<Rect> footprint(Street s) {
 		List<Rect> out = new ArrayList<>();
 		int w = s.width(), h = w / 2;
 		List<Pt> ps = s.points();
@@ -93,6 +94,21 @@ public final class SettlementChecks {
 			} else {
 				int n = Math.abs(b.x() - a.x()), sx = Integer.signum(b.x() - a.x()), sz = Integer.signum(b.z() - a.z());
 				for (int k = 0; k <= n; k++) out.add(new Rect(a.x() + sx * k - h, a.z() + sz * k - h, w, w));
+			}
+		}
+		return out;
+	}
+
+	/**
+	 * {@code road-grade}: along a street's graded centre line (one height per column) adjacent columns differ by at most 1
+	 * and columns 3 apart by at most 1. Reports the first failing column of the street.
+	 */
+	public static List<Violation> roadGrade(String streetId, int[] x, int[] z, int[] y) {
+		List<Violation> out = new ArrayList<>();
+		for (int i = 1; i < y.length; i++) {
+			if (Math.abs(y[i] - y[i - 1]) > 1 || (i >= 3 && Math.abs(y[i] - y[i - 3]) > 1)) {
+				out.add(v(ROAD_GRADE, "street " + streetId + " is too steep at column " + i + " (y " + y[i - 1] + " to " + y[i] + ")", x[i], z[i], 1, 1));
+				break;
 			}
 		}
 		return out;
