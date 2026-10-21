@@ -34,7 +34,7 @@ spec     { genVersion, specSeed: "<int64>", style, type, width, depth,
 storey   { index, y, height }       y = local y of the slab; stand at y + 1
 volume   { id, min, size, parent: id | null }
 room     { id, storey, volume, use, parts: [{min,size}] }
-opening  { id, kind: door|window|stair, min, size, facing, from, to }
+opening  { id, kind: door|window|stair|arch, min, size, facing, from, to }
            from/to: room id or "outside"; stair facing = direction of ascent
 roof     { form, volume, ridgeAxis: "x"|"z"|null, baseY, rise, run }
 hook     { id, kind, room: room id, pos: [x,y,z], facing }
@@ -199,3 +199,7 @@ district { format: "fb-district/1", planVersion: 1, genVersion, seed: "<int64>",
   has `allStreets`). Without a brief nothing changes.
 - **Checks** (`core/check/SettlementChecks`, separate from `Invariants`): `lot-in-tile`, `lots-disjoint` (lots overlap no
   other lot, street footprint, plaza or landmark). Later steps add rules there.
+
+# Archways (5.11)
+
+Additive, no new keys: `opening.kind` may be `arch`, a doorless opening between two rooms of one storey (open plan or an archway), 1 to 3 cells wide along the partition and 2 high. Its cells are `air` carved from the partition (no `door` voxels), with a `trim` lintel above it when the span is 2 or 3 wide and the storey has room. It joins the room graph like a door (`rooms-reachable`, `room-graph`). `room.use` adds `landing` (house upper storeys). Consumers that only know `door` ignore it harmlessly except that they must accept the kind when parsing.

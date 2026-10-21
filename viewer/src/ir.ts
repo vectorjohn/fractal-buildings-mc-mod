@@ -8,7 +8,7 @@ export const ROLES = ['air', 'foundation', 'floor', 'wall', 'trim', 'window', 'd
 export type Role = (typeof ROLES)[number];
 export const LAYERS = ['foundation', 'shell', 'interior', 'roof', 'ground'] as const;
 export type Layer = (typeof LAYERS)[number];
-export const OPENING_KINDS = ['door', 'window', 'stair'] as const;
+export const OPENING_KINDS = ['door', 'window', 'stair', 'arch'] as const;
 export type OpeningKind = (typeof OPENING_KINDS)[number];
 
 export interface Box { min: Vec3; size: Vec3; role: Role; layer: Layer; storey: number }

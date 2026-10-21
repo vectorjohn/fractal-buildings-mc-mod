@@ -27,6 +27,7 @@ final class HouseRooms implements RoomProgram {
 			case CORRIDOR -> "corridor";
 			case STAIR -> area >= STAIR_ROOM_MAX_AREA ? (ground ? "living" : "bedroom") : "stair"; // a stair room with space beside the core is a room too
 			case HALL -> "hall";
+			case THROUGH -> !ground ? "landing" : area > STAIR_ROOM_MAX_AREA ? "living" : "hall"; // the way into another wing is no bedroom
 			case ENTRY -> ground && area >= LIVING_MIN_AREA ? "living" : ground ? "entry" : "landing";
 			case ROOM -> {
 				if (!ground) yield "bedroom";
