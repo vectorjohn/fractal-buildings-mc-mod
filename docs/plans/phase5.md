@@ -1113,3 +1113,5 @@ in game):
   generator work); streets run at 0, 45 or 90 degrees; and lots never cross tile
   borders. That leaves a straight line where back lot lines meet, every 128 to 192
   blocks, unless a lane or wall runs along it.
+
+- DL (2026-10-21): streets of a tile are clipped to the tile plus 8 blocks, not to the tile (both tiles at a border then list the same streets, `tile-border-agree` holds by construction); `Districts.plan(SkeletonSource, ix, iz, exact)` replaces the plan's `(seed, tileKey, SkeletonSource, TerrainProbe, BiomeProbe)` (the style comes from `Briefs.fill`); lots are packed along axis-aligned street runs only, with lanes branching off 45 degree roads; hall and temple landmarks become lots flush against the hub square; arterials come from the pointwise `Arterials` rule, not from the cell skeletons' road parts; `Grading.profile` added (the profile without boxes). No `SUBDIVIDE` layout, no diagonal avenues (John decides; D3).

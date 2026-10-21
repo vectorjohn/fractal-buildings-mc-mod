@@ -1,0 +1,40 @@
+{
+  "format": "fb-district/1",
+  "planVersion": 1,
+  "genVersion": 2,
+  "seed": "1",
+  "district": {"id": "d54_m23", "ix": 54, "iz": -23, "x": 8624, "z": -3680, "w": 160, "d": 144, "quarter": 6, "density": 55},
+  "streets": [
+    {"id": "a054_m3536", "kind": "arterial", "width": 9, "points": [[8624, -3536], [8624, -3528]], "y": [72, 70]},
+    {"id": "a1m22_8464", "kind": "arterial", "width": 9, "points": [[8616, -3536], [8624, -3536]], "y": [80, 78]},
+    {"id": "a1m22_8624", "kind": "arterial", "width": 9, "points": [[8624, -3536], [8632, -3536], [8640, -3536], [8648, -3536], [8656, -3536], [8664, -3536], [8672, -3536], [8680, -3536], [8688, -3536], [8696, -3536], [8704, -3536], [8712, -3536], [8720, -3536], [8728, -3536], [8736, -3536], [8744, -3536], [8752, -3536], [8760, -3536], [8768, -3536], [8776, -3536], [8784, -3536]], "y": [72, 70, 68, 69, 69, 68, 68, 68, 67, 67, 67, 67, 68, 70, 72, 74, 76, 78, 80, 82, 84]},
+    {"id": "sx8709_m3560", "kind": "street", "width": 5, "points": [[8709, -3560], [8709, -3552], [8709, -3544], [8709, -3536], [8709, -3528]], "y": [65, 65, 65, 67, 67]},
+    {"id": "t0", "kind": "lane", "width": 3, "points": [[8616, -3608], [8624, -3608], [8632, -3608], [8640, -3608], [8648, -3608], [8656, -3600], [8664, -3600], [8672, -3592], [8680, -3592], [8688, -3592], [8696, -3592], [8704, -3592], [8712, -3584], [8712, -3576], [8720, -3568], [8720, -3560], [8728, -3552], [8720, -3552], [8712, -3560], [8709, -3560]], "y": [78, 79, 81, 83, 84, 84, 83, 81, 79, 78, 78, 78, 77, 76, 74, 72, 71, 69, 67, 66]},
+    {"id": "t1", "kind": "lane", "width": 3, "points": [[8704, -3688], [8704, -3680], [8704, -3672], [8704, -3664], [8704, -3656], [8712, -3648], [8720, -3640], [8728, -3640], [8736, -3640], [8744, -3640], [8752, -3640], [8760, -3640], [8768, -3632], [8776, -3632], [8768, -3624], [8760, -3632], [8752, -3624], [8744, -3616], [8744, -3608], [8744, -3600], [8736, -3592], [8728, -3592], [8720, -3584], [8712, -3576], [8704, -3584], [8696, -3584], [8704, -3576], [8704, -3568], [8712, -3560], [8709, -3560]], "y": [68, 68, 69, 71, 71, 71, 71, 71, 71, 71, 72, 74, 74, 75, 77, 78, 78, 78, 78, 78, 80, 80, 78, 76, 74, 72, 71, 69, 67, 66]}
+  ],
+  "plazas": [],
+  "lots": [
+    {"id": "d54_m23.l0", "x": 8644, "z": -3557, "w": 11, "d": 17, "front": "south", "type": "shop", "style": "desert", "storeys": [2, 4], "streets": 1, "airRights": 2, "frontY": 68, "density": 55, "status": "build"},
+    {"id": "d54_m23.l1", "x": 8659, "z": -3549, "w": 7, "d": 9, "front": "south", "type": "house", "style": "desert", "storeys": [2, 3], "streets": 1, "airRights": 2, "frontY": 68, "density": 55, "status": "build"},
+    {"id": "d54_m23.l2", "x": 8666, "z": -3557, "w": 31, "d": 17, "front": "south", "type": "house", "style": "desert", "storeys": [2, 3], "streets": 1, "airRights": 2, "frontY": 68, "density": 55, "status": "build"},
+    {"id": "d54_m23.l3", "x": 8697, "z": -3548, "w": 10, "d": 8, "front": "south", "type": "house", "style": "desert", "storeys": [2, 3], "streets": 9, "airRights": 2, "frontY": 67, "density": 52, "status": "build"},
+    {"id": "d54_m23.l4", "x": 8712, "z": -3549, "w": 8, "d": 9, "front": "south", "type": "house", "style": "desert", "storeys": [1, 3], "streets": 3, "airRights": 2, "frontY": 67, "density": 48, "status": "build"},
+    {"id": "d54_m23.l5", "x": 8722, "z": -3550, "w": 14, "d": 10, "front": "south", "type": "house", "style": "desert", "storeys": [1, 3], "streets": 5, "airRights": 2, "frontY": 69, "density": 48, "status": "build"},
+    {"id": "d54_m23.l6", "x": 8700, "z": -3558, "w": 7, "d": 10, "front": "east", "type": "house", "style": "desert", "storeys": [2, 3], "streets": 1, "airRights": 1, "frontY": 65, "density": 52, "status": "build"},
+    {"id": "d54_m23.l7", "x": 8624, "z": -3617, "w": 7, "d": 8, "front": "south", "type": "house", "style": "desert", "storeys": [1, 3], "streets": 1, "airRights": 0, "frontY": 79, "density": 37, "status": "build"},
+    {"id": "d54_m23.l8", "x": 8635, "z": -3616, "w": 7, "d": 7, "front": "south", "type": "house", "style": "desert", "storeys": [1, 3], "streets": 1, "airRights": 0, "frontY": 82, "density": 37, "status": "build"},
+    {"id": "d54_m23.l9", "x": 8628, "z": -3606, "w": 20, "d": 13, "front": "north", "type": "house", "style": "desert", "storeys": [1, 3], "streets": 1, "airRights": 0, "frontY": 82, "density": 44, "status": "build"},
+    {"id": "d54_m23.l10", "x": 8657, "z": -3608, "w": 9, "d": 7, "front": "south", "type": "house", "style": "desert", "storeys": [1, 3], "streets": 1, "airRights": 0, "frontY": 83, "density": 35, "status": "build"},
+    {"id": "d54_m23.l11", "x": 8691, "z": -3680, "w": 12, "d": 12, "front": "east", "type": "house", "style": "desert", "storeys": [1, 2], "streets": 1, "airRights": 0, "frontY": 68, "density": 15, "status": "build"},
+    {"id": "d54_m23.l12", "x": 8695, "z": -3668, "w": 8, "d": 14, "front": "east", "type": "house", "style": "desert", "storeys": [1, 2], "streets": 1, "airRights": 0, "frontY": 71, "density": 24, "status": "build"},
+    {"id": "d54_m23.l13", "x": 8706, "z": -3680, "w": 20, "d": 24, "front": "west", "type": "house", "style": "desert", "storeys": [1, 2], "streets": 1, "airRights": 0, "frontY": 69, "density": 15, "status": "build"},
+    {"id": "d54_m23.l14", "x": 8721, "z": -3651, "w": 10, "d": 10, "front": "south", "type": "house", "style": "desert", "storeys": [1, 2], "streets": 1, "airRights": 0, "frontY": 71, "density": 19, "status": "build"},
+    {"id": "d54_m23.l15", "x": 8731, "z": -3655, "w": 14, "d": 14, "front": "south", "type": "tower", "style": "desert", "storeys": [4, 6], "streets": 1, "airRights": 0, "frontY": 71, "density": 19, "status": "build"},
+    {"id": "d54_m23.l16", "x": 8745, "z": -3657, "w": 17, "d": 16, "front": "south", "type": "workshop", "style": "desert", "storeys": [1, 2], "streets": 1, "airRights": 0, "frontY": 72, "density": 13, "status": "build"},
+    {"id": "d54_m23.l17", "x": 8747, "z": -3638, "w": 11, "d": 7, "front": "north", "type": "house", "style": "desert", "storeys": [1, 2], "streets": 1, "airRights": 0, "frontY": 71, "density": 22, "status": "build"},
+    {"id": "d54_m23.l18", "x": 8769, "z": -3642, "w": 9, "d": 9, "front": "south", "type": "house", "style": "desert", "storeys": [1, 2], "streets": 1, "airRights": 0, "frontY": 74, "density": 13, "status": "build"},
+    {"id": "d54_m23.l19", "x": 8746, "z": -3615, "w": 8, "d": 17, "front": "west", "type": "house", "style": "desert", "storeys": [1, 2], "streets": 1, "airRights": 0, "frontY": 78, "density": 22, "status": "build"}
+  ],
+  "scene": null,
+  "violations": []
+}

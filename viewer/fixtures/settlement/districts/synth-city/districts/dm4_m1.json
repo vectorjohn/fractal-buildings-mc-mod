@@ -1,0 +1,31 @@
+{
+  "format": "fb-district/1",
+  "planVersion": 1,
+  "genVersion": 2,
+  "seed": "1001",
+  "district": {"id": "dm4_m1", "ix": -4, "iz": -1, "x": -656, "z": -144, "w": 192, "d": 160, "quarter": 3, "density": 50},
+  "streets": [
+    {"id": "a0m3_m144", "kind": "arterial", "width": 9, "points": [[-464, -144], [-464, -136], [-464, -128], [-464, -120], [-464, -112], [-464, -104], [-464, -96], [-464, -88], [-464, -80], [-464, -72], [-464, -64], [-464, -56], [-464, -48], [-464, -40], [-464, -32], [-464, -24], [-464, -16], [-464, -8], [-464, 0], [-464, 8], [-464, 16]], "y": [63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 63, 64, 64]},
+    {"id": "a10_m464", "kind": "arterial", "width": 9, "points": [[-464, 16], [-456, 16]], "y": [64, 64]},
+    {"id": "b1m1_m464", "kind": "street", "width": 5, "points": [[-464, -144], [-456, -144]], "y": [63, 63]},
+    {"id": "szm72_m464", "kind": "street", "width": 5, "points": [[-464, -72], [-456, -72]], "y": [63, 63]},
+    {"id": "t0", "kind": "lane", "width": 3, "points": [[-520, -152], [-520, -144], [-520, -136]], "y": [65, 65, 65]},
+    {"id": "t1", "kind": "lane", "width": 3, "points": [[-624, 24], [-624, 16], [-624, 8]], "y": [64, 63, 63]}
+  ],
+  "plazas": [],
+  "lots": [
+    {"id": "dm4_m1.l0", "x": -488, "z": -144, "w": 20, "d": 32, "front": "east", "type": "house", "style": "plains", "storeys": [1, 3], "streets": 1, "airRights": 2, "frontY": 63, "density": 46, "status": "build"},
+    {"id": "dm4_m1.l1", "x": -478, "z": -112, "w": 10, "d": 7, "front": "east", "type": "house", "style": "plains", "storeys": [1, 3], "streets": 1, "airRights": 2, "frontY": 63, "density": 47, "status": "build"},
+    {"id": "dm4_m1.l2", "x": -489, "z": -105, "w": 21, "d": 20, "front": "east", "type": "house", "style": "plains", "storeys": [1, 3], "streets": 1, "airRights": 2, "frontY": 63, "density": 47, "status": "build"},
+    {"id": "dm4_m1.l3", "x": -475, "z": -85, "w": 7, "d": 8, "front": "east", "type": "house", "style": "plains", "storeys": [1, 3], "streets": 1, "airRights": 2, "frontY": 63, "density": 48, "status": "build"},
+    {"id": "dm4_m1.l4", "x": -482, "z": -77, "w": 14, "d": 16, "front": "east", "type": "house", "style": "plains", "storeys": [1, 3], "streets": 1, "airRights": 2, "frontY": 63, "density": 48, "status": "build"},
+    {"id": "dm4_m1.l5", "x": -490, "z": -61, "w": 22, "d": 22, "front": "east", "type": "house", "style": "plains", "storeys": [1, 3], "streets": 1, "airRights": 2, "frontY": 63, "density": 48, "status": "build"},
+    {"id": "dm4_m1.l6", "x": -488, "z": -39, "w": 20, "d": 31, "front": "east", "type": "house", "style": "plains", "storeys": [1, 3], "streets": 1, "airRights": 2, "frontY": 63, "density": 49, "status": "build"},
+    {"id": "dm4_m1.l7", "x": -483, "z": -5, "w": 15, "d": 12, "front": "east", "type": "shop", "style": "plains", "storeys": [2, 4], "streets": 1, "airRights": 2, "frontY": 63, "density": 50, "status": "build"},
+    {"id": "dm4_m1.l8", "x": -475, "z": 7, "w": 7, "d": 9, "front": "east", "type": "house", "style": "plains", "storeys": [2, 3], "streets": 1, "airRights": 2, "frontY": 63, "density": 50, "status": "build"},
+    {"id": "dm4_m1.l9", "x": -531, "z": -144, "w": 10, "d": 10, "front": "east", "type": "house", "style": "plains", "storeys": [1, 3], "streets": 1, "airRights": 0, "frontY": 65, "density": 30, "status": "build"},
+    {"id": "dm4_m1.l10", "x": -518, "z": -144, "w": 11, "d": 10, "front": "west", "type": "workshop", "style": "plains", "storeys": [1, 2], "streets": 1, "airRights": 0, "frontY": 65, "density": 30, "status": "build"}
+  ],
+  "scene": null,
+  "violations": []
+}

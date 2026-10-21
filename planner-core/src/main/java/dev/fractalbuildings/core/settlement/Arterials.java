@@ -45,9 +45,9 @@ public final class Arterials {
 		return 0;
 	}
 
-	private static int ax(DistrictGrid.Segment s, int along) { return s.axis() == DistrictGrid.AXIS_X ? s.fixed() : along; }
+	static int ax(DistrictGrid.Segment s, int along) { return s.axis() == DistrictGrid.AXIS_X ? s.fixed() : along; }
 
-	private static int az(DistrictGrid.Segment s, int along) { return s.axis() == DistrictGrid.AXIS_X ? along : s.fixed(); }
+	static int az(DistrictGrid.Segment s, int along) { return s.axis() == DistrictGrid.AXIS_X ? along : s.fixed(); }
 
 	public boolean is(DistrictGrid.Segment s) {
 		if (!tier.atLeast(Tier.CITY)) return false;
@@ -64,6 +64,11 @@ public final class Arterials {
 		int mid = Math.floorDiv(s.from() + s.to(), 2);
 		double p = probability(density.base(ax(s, mid), az(s, mid)));
 		if (p <= 0 || Tiers.unit(s.hash(seed, "arterial")) >= p) return false;
+		return waterOk(s);
+	}
+
+	/** The segment crosses no run of water wider than {@link #MAX_BRIDGE} (coarse lattice samples along it). Pointwise. */
+	boolean waterOk(DistrictGrid.Segment s) {
 		int run = 0;
 		for (int q = terrain.snap(s.from()); q <= s.to(); q += terrain.step) {
 			if (q < s.from()) continue;

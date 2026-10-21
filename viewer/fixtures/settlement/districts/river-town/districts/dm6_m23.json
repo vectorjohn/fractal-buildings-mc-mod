@@ -1,0 +1,14 @@
+{
+  "format": "fb-district/1",
+  "planVersion": 1,
+  "genVersion": 2,
+  "seed": "12345",
+  "district": {"id": "dm6_m23", "ix": -6, "iz": -23, "x": -960, "z": -3680, "w": 160, "d": 144, "quarter": 5, "density": 64},
+  "streets": [
+    {"id": "rm1_m4_0", "kind": "main", "width": 5, "points": [[-824, -3528], [-816, -3536], [-808, -3544], [-800, -3552], [-792, -3560]], "y": [69, 70, 71, 71, 72]}
+  ],
+  "plazas": [],
+  "lots": [],
+  "scene": null,
+  "violations": []
+}

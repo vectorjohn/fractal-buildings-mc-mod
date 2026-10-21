@@ -1,0 +1,18 @@
+{
+  "format": "fb-district/1",
+  "planVersion": 1,
+  "genVersion": 2,
+  "seed": "1",
+  "district": {"id": "d51_m23", "ix": 51, "iz": -23, "x": 8160, "z": -3680, "w": 144, "d": 144, "quarter": 7, "density": 28},
+  "streets": [
+    {"id": "a052_m3536", "kind": "arterial", "width": 9, "points": [[8304, -3536], [8304, -3528]], "y": [78, 79]},
+    {"id": "b1m22_8304", "kind": "street", "width": 5, "points": [[8304, -3536], [8312, -3536]], "y": [78, 78]},
+    {"id": "t0", "kind": "lane", "width": 3, "points": [[8312, -3624], [8304, -3624], [8296, -3624]], "y": [70, 68, 67]}
+  ],
+  "plazas": [],
+  "lots": [
+    {"id": "d51_m23.l0", "x": 8295, "z": -3622, "w": 9, "d": 10, "front": "north", "type": "house", "style": "desert", "storeys": [1, 2], "streets": 1, "airRights": 0, "frontY": 67, "density": 12, "status": "build"}
+  ],
+  "scene": null,
+  "violations": []
+}
