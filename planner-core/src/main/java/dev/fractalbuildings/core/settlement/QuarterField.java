@@ -58,7 +58,13 @@ public final class QuarterField {
 		if (tier.atLeast(Tier.TOWN) && terrain.waterWithin(x, z, WATERFRONT_DIST)) return QuarterKind.WATERFRONT;
 		if (this.density != null && this.density.oldTown().contains(x, z)) return QuarterKind.OLD_TOWN;
 		if (density < OUTSKIRTS_DENSITY) return QuarterKind.OUTSKIRTS;
-		return seeded(x, z);
+		QuarterKind k = seeded(x, z);
+		// IRR1: a residential quarter within 0.3 radius of the hub is the old town column by column, not only when its seed point is that close (a city gets one near its hub far more often)
+		if (k == QuarterKind.RESIDENTIAL && tier.atLeast(Tier.CITY)) {
+			long cx = x - site.centre().x(), cz = z - site.centre().z(), r = (long) (0.3 * site.radius());
+			if (cx * cx + cz * cz <= r * r) return QuarterKind.OLD_TOWN;
+		}
+		return k;
 	}
 
 	private int seedX(int qx, int qz) { return qx * GRID + GRID / 4 + Hash64.below(Hash64.hash(seed, "quarter-site", qx, qz, 0), GRID / 2); }
