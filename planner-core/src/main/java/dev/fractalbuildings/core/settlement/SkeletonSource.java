@@ -37,7 +37,7 @@ public interface SkeletonSource {
 		private final dev.fractalbuildings.core.cache.BoundedCache<Cell, CellSkeleton> memo;
 
 		public Direct(long seed, RegionView view, SettlementSite site, dev.fractalbuildings.core.probe.CoarseProbe probe) {
-			this(seed, view, site, probe, new DefaultProgram());
+			this(seed, view, site, probe, TierPrograms.of(site.tier()));
 		}
 
 		/** Skeletons kept per source (LRU): a site spans a handful of cells, so this keeps them all; pass less to bound memory or to test eviction. */

@@ -29,6 +29,12 @@ public interface TierProgram {
 	/** Wall lines; none until the town program (D2). */
 	default List<Wall> walls(SkeletonContext c, Pt hub) { return List.of(); }
 
+	/** Does district detail branch lanes off the main roads and carry ports across tile borders (false: the main road is the only street)? */
+	default boolean lanes() { return true; }
+
+	/** Does district detail carry hashed lane ports across tile borders that have no street? */
+	default boolean ports() { return true; }
+
 	/** Used by district detail (DL). */
 	StreetLayout streetLayout(Tier tier, QuarterKind quarter, int density);
 }

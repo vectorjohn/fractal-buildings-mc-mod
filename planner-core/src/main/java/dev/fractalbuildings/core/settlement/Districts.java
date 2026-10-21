@@ -650,6 +650,7 @@ public final class Districts {
 
 		/** Hashed ports on the tile's non-street borders: a stub into the tile, then a lane to the nearest base street. */
 		void ports() {
+			if (!src.program().ports()) return;
 			List<Raw> base = new ArrayList<>(raws);
 			int n = 0;
 			for (DistrictGrid.Segment s : grid.segments(ix, iz)) {
@@ -720,6 +721,7 @@ public final class Districts {
 
 		/** Lanes branching from the roads and streets of organic areas every 40 to 70 blocks, 24 to 56 long. */
 		void frontageLanes() {
+			if (!src.program().lanes()) return;
 			List<Raw> base = new ArrayList<>();
 			for (Raw r : raws) if (r.kind == RoadKind.MAIN || r.kind == RoadKind.PATH || (r.kind == RoadKind.STREET && !r.id.startsWith("s"))) base.add(r);
 			base.sort(Comparator.comparing(r -> r.id));

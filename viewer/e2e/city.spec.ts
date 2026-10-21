@@ -46,7 +46,7 @@ for (const p of presets) {
       // the tile borders of neighbouring districts always agree; roads-connected is reported (known hub-area gaps), not asserted here
       expect(byRule.get('tile-border-agree') ?? 0).toBe(0);
       const withDetail = s.districts.filter((d) => d.detail !== null);
-      expect(withDetail.length).toBeGreaterThan(3);
+      expect(withDetail.length).toBeGreaterThan(s.site.tier === "hamlet" ? 0 : 3); // a hamlet is one or two tiles
       const base = await serve(page, p.name);
       const q = p.camera.plan;
       const view = `${q.x !== undefined && q.z !== undefined ? `&x=${q.x}&z=${q.z}` : ''}${q.zoom !== undefined ? `&zoom=${q.zoom}` : ''}`;

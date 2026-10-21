@@ -59,6 +59,11 @@ work becomes a ROADMAP item or a Polish backlog line. Settled items move to
   Result:
   - @John 2026-10-21: These look great, I’m excited to move forward. At some later point we might want to refine or make various types, but this looks really good as it is.
 
+- [ ] **D1 hamlet and village (p5-d1-villages)**: do the small settlements read as a hamlet and a village?
+  Where: `cd viewer && nix develop -c npm run city-gallery` with `FB_CITIES=hamlet-river,village-river,hamlet-mixed,village-mixed`, then `viewer/out/city/<name>/plan.png` and the `*-overview.png` / `*-street.png` frames.
+  Look for: a hamlet is a short track with a handful of houses and a workshop each side, no square; a village has a straight main street, a cross street on about half, a green at the hub with a temple or hall facing it from the side, lanes, and the houses lining the streets. Bad: a ruler-straight street feels too artificial, the green sits oddly, a village that is all one street.
+  Result:
+
 ## Done
 
 - [x] **3.6 storey slider**: in the viewer, lowering "storeys up to N" below the top storey hides the roof together with the upper storeys (roofs are storey −1, shown only at the top setting, per the Phase 3 plan). Does that feel right, or should the roof stay or hide on its own toggle?
