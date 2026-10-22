@@ -151,7 +151,7 @@ class TownProgramTest {
 					if (!WallRing.isRingLotId(l.id())) continue;
 					ids.add(l.id());
 					lotsTotal++;
-					assertTrue(l.type().equals("wall") || l.type().equals("tower"), l.type());
+					assertTrue(l.type().equals("wall") || l.type().equals("curtain") || l.type().equals("bastion"), l.type());
 					assertTrue(l.builds() || l.status().startsWith("empty:"), l.status());
 				}
 			}

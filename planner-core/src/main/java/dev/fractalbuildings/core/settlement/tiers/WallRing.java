@@ -42,7 +42,7 @@ public final class WallRing {
 	public static final int BAND = 2;
 	/** Lot ids of the ring contain this mark: {@code <district>.w<n>}. */
 	public static final String MARK = ".w";
-	public static final String WALL = "wall", TOWER_TYPE = "tower";
+	public static final String WALL = "wall", CURTAIN = "curtain", TOWER_TYPE = "bastion";
 
 	/** Side scales tried, nearest the nominal ring first: indices into the scale list for the west, east, north and south sides. */
 	private static final List<int[]> COMBOS = new ArrayList<>();
@@ -290,7 +290,8 @@ public final class WallRing {
 					int l = len / n + (i < len % n ? 1 : 0);
 					int depth = Hash64.range(Hash64.hash(seed, "wall-depth", side, at, r.line(side)), MIN_DEPTH, MAX_DEPTH);
 					Rect rect = side % 2 == 0 ? new Rect(at, r.line(side) - depth / 2, l, depth) : new Rect(r.line(side) - depth / 2, at, depth, l);
-					out.add(new Piece(WALL, rect, Ring.facing(side), sp.gate() != Integer.MIN_VALUE ? sp.gate() : NONE));
+					boolean gate = sp.gate() != Integer.MIN_VALUE;
+					out.add(new Piece(gate ? WALL : CURTAIN, rect, Ring.facing(side), gate ? sp.gate() : NONE));
 					at += l;
 				}
 			}

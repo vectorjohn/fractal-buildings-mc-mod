@@ -30,6 +30,8 @@ public final class Types {
 		r.add(new TempleType());
 		r.add(new TowerType());
 		r.add(new WallType());
+		r.add(new dev.fractalbuildings.core.gen.v1.types.wall.CurtainType());
+		r.add(new dev.fractalbuildings.core.gen.v1.types.wall.BastionType());
 		r.add(new WorkshopType());
 		r.add(new ShopType());
 		r.add(new HighriseType());
