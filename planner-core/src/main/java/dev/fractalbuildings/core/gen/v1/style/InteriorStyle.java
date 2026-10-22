@@ -13,13 +13,17 @@ import java.util.Map;
  *     axis; 0 = never
  * @param loopPercent chance (percent) that a pair of neighbouring rooms not joined by the spanning tree
  *     gets a door anyway
+ * @param openPercent chance (percent) that a connection between a kitchen and another public room (living
+ *     room, entry, hall) is a wide open archway instead of a door: low for styles that wall the kitchen off
+ *     (medieval), high where the kitchen is part of the living space. Other public pairs are open at least
+ *     40 % of the time. At 60 or more, openings are 2 to 4 wide.
  */
-public record InteriorStyle(int roomMin, int roomArea, int corridorAbove, int loopPercent) {
-	public static final InteriorStyle DEFAULT = new InteriorStyle(2, 0, 0, 0);
+public record InteriorStyle(int roomMin, int roomArea, int corridorAbove, int loopPercent, int openPercent) {
+	public static final InteriorStyle DEFAULT = new InteriorStyle(2, 0, 0, 0, 40);
 
 	public InteriorStyle {
 		if (roomMin < 1) throw new IllegalArgumentException("interior.roomMin " + roomMin);
-		if (roomArea < 0 || corridorAbove < 0 || loopPercent < 0 || loopPercent > 100) throw new IllegalArgumentException("interior " + roomArea + " " + corridorAbove + " " + loopPercent);
+		if (roomArea < 0 || corridorAbove < 0 || loopPercent < 0 || loopPercent > 100 || openPercent < 0 || openPercent > 100) throw new IllegalArgumentException("interior " + openPercent + " " + roomArea + " " + corridorAbove + " " + loopPercent);
 	}
 
 	public static InteriorStyle from(Map<String, Object> o, String path) {
@@ -27,6 +31,7 @@ public record InteriorStyle(int roomMin, int roomArea, int corridorAbove, int lo
 				Json.integer(o, "roomMin", DEFAULT.roomMin, path),
 				Json.integer(o, "roomArea", DEFAULT.roomArea, path),
 				Json.integer(o, "corridorAbove", DEFAULT.corridorAbove, path),
-				Json.integer(o, "loopPercent", DEFAULT.loopPercent, path));
+				Json.integer(o, "loopPercent", DEFAULT.loopPercent, path),
+				Json.integer(o, "openPercent", DEFAULT.openPercent, path));
 	}
 }

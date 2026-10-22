@@ -358,6 +358,7 @@ Open known issues that matter later (details in the Polish backlog, 5.x lines):
 - No stairs on steep lanes: they route around or drop; main roads keep their
   cut and fill (5.3).
 - Walls are rare on real terrain, and every wall lot is a gatehouse (5.1 D2, 5.7).
+- Wall walk (p5-wallwalk): ring lots without a road are now curtain walls and the corners bastions, joined by one wall walk; gatehouses only at roads. Sloping ground: fixed by p5-wallslope (ring walk profile, ramps at the joins; see its log). Open: ring pieces dropped where a plaza reserves the ground (a real gap in the walk, 2 to 3 of 28 pieces in 3 of 20 steep rings), gate lots standing high above the road on steep ground.
 - The metropolis downtown plateaus at 60 storeys and has few city blocks (5.7).
 - Every city has an old town round the hub (5.13).
 - Nothing in the mod maps the district roles (`deck`, paving, road) to blocks yet.
@@ -450,14 +451,17 @@ Fixed opportunistically or scheduled as items.
 - Balconies on residential and commercial buildings, including high-rises (John, REVIEW 2026-10-21, 5.11 entry); later iteration.
 - 5.1 D1: on very rugged ground (about 1 in 400 villages) district detail moves an ungradable green sideways, so its hall is a separate street piece.
 - 5.1 D2: no town ring where the ground is wet or steep (about 1 in 5 region towns); a ring can lose 0 to 2 lots to ponds the 32-block lattice misses; ring built only by the cell holding the centre; no gate wider than 5.
+- 5.1 ROADS2: the street lattice puts a 5-wide street on every urban tile border (a rectangular frame, 130 to 190 blocks apart) and drops what no street reaches (quays, unlinkable arterials, floating squares); towns got it too, so organic port lanes are gone and lot counts moved (flat towns about twice, a hilly town about a quarter fewer); strict-slope terrain leaves lattice gaps that cost lots. See the log and REVIEW "ROADS2".
+- 5.1 ROADS3: roads ramp at 1 in 3 to a gate on steep ground (extra cut and fill; gate-metropolis-temperate cut and fill 666k → 792k, partly the restored arterials); blocks on real terrain stay rare (water and slope veto the street rings and the lots); fabric density moved city arterials slightly; flat 50-70 belts are about 40 % blocks (REVIEW "ROADS3").
 - 5.2 DL: skeleton roads over steep ground keep cut and fill; road y can differ a block at a tile border; lots only along axis-aligned runs; lake-rich real-terrain city has few lots; brief storeys use the district quarter.
 - 5.2 DL r2: port-stub lanes graded per tile; arterial chains with no main-road link stay empty; metropolis-mixed has no hall (lake hub tile); earthwork up about 40 % on the gate windows.
 - 5.3 TR: no stairs (steep lanes route around or drop; 7 to 90 street pieces per city keep cut and fill); quays run past no lots on some banks; a road crossing an unplanned tile leaves a gap.
-- 5.7 D3: diagonal avenue frontage is empty; walled cities have 5-wide avenues; old-town walls only where the centre cell owns the ring; metropolis core plateaus at 60 storeys and half its core lots are 4-storey shops.
+- 5.7 D3: diagonal avenue frontage is empty; walled cities have 5-wide avenues; old-town walls only where the centre cell owns the ring; (the 60-storey plateau is fixed by p5-skyline: see its log) city blocks stay near absent (whole street blocks of 52 and more with a street on all four sides are rare).
 - 5.8 MC2: T2 fine windows still need `--site`; `--cell` on a recorded world dump prints a "cannot see outside the dump" note for each city-or-larger cell.
 - 5.9 SC: 1.5x time bar fails on synthetic terrain with scenes (1.8x); "exact probes" count `floorY` only; probe bar (under 1,000 per district) not met; skeleton cache below 4 costs 1.5 to 4.8x.
 - 5.10 R2: "+50 % of city sites within 256 blocks of water" unmeasurable on the world dumps; boundary cells of a window lose the big tiers.
 - 5.11 CIRC: shops still 2-3 % chain through a back room; deep-room share crept up (highrise 4.9 %, shop 3.9 %); 5-8 % of house rooms exceed 2:1 on narrow wings.
+- 5.11 OPENPLAN (p5-openplan, done): kitchens open onto living areas by style (`interior.openPercent`: plain 85 % of kitchen links, medieval 22 %); see [log](log/2026-10-21-p5-openplan.md). Known: no dining use exists yet, so "living-dining" open plan is living-hall/entry only; wide archways are 2-4 cells, never a full-wall removal.
 - 5.12: market hall floor is empty (no stalls); a city planner must catch the shop slope rejection; no railing; enclosed-shop landings are solid.
 
 ## Open questions and risks

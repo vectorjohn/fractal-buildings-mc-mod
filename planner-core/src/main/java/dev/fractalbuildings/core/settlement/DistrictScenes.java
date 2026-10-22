@@ -72,7 +72,7 @@ public final class DistrictScenes {
 					one = tryGenerate(gen, plan, used, lot, exact, biome);
 				}
 				if (one == null) {
-					newLots.add(new LotBrief(l.id(), l.x(), l.z(), l.w(), l.d(), l.front(), l.type(), l.style(), l.minStoreys(), l.maxStoreys(), l.streets(), l.airRights(), l.frontY(), l.density(), "empty:gen-failed"));
+					newLots.add(new LotBrief(l.id(), l.x(), l.z(), l.w(), l.d(), l.front(), l.type(), l.style(), l.minStoreys(), l.maxStoreys(), l.streets(), l.airRights(), l.frontY(), l.density(), "empty:gen-failed", l.walk()));
 					continue;
 				}
 			}

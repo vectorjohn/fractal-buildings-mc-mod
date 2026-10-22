@@ -34,9 +34,11 @@ public final class DistrictJson {
 	}
 
 	private static String lot(LotBrief l) {
-		return JsonWriter.object().text("id", l.id()).num("x", l.x()).num("z", l.z()).num("w", l.w()).num("d", l.d()).text("front", l.front().json())
+		JsonWriter w = JsonWriter.object().text("id", l.id()).num("x", l.x()).num("z", l.z()).num("w", l.w()).num("d", l.d()).text("front", l.front().json())
 				.text("type", l.type()).text("style", l.style()).raw("storeys", ints(l.minStoreys(), l.maxStoreys())).num("streets", l.streets())
-				.num("airRights", l.airRights()).num("frontY", l.frontY()).num("density", l.density()).text("status", l.status()).build();
+				.num("airRights", l.airRights()).num("frontY", l.frontY()).num("density", l.density()).text("status", l.status());
+		if (l.walk() != null) w.raw("walk", ints(l.walk().base(), l.walk().prev(), l.walk().next())); // only the ring lots of a walled town have one
+		return w.build();
 	}
 
 	/** Parses {@code fb-district/1}; also rejects a lot that lies outside its tile. */
@@ -69,11 +71,13 @@ public final class DistrictJson {
 
 	private static LotBrief lot(Map<String, Object> o, String p) {
 		int[] st = Rd.ints(o, p, "storeys", 2);
+		int[] wk = o.containsKey("walk") ? Rd.ints(o, p, "walk", 3) : null;
+		dev.fractalbuildings.core.gen.Brief.Walk walk = wk == null ? null : Rd.guard(p, () -> new dev.fractalbuildings.core.gen.Brief.Walk(wk[0], wk[1], wk[2]));
 		return Rd.guard(p, () -> new LotBrief(Rd.string(o, p, "id"), Rd.integer(o, p, "x"), Rd.integer(o, p, "z"), Rd.integer(o, p, "w"), Rd.integer(o, p, "d"),
 				Rd.enumOf(o, p, "front", s -> {
 					for (Facing f : Facing.values()) if (f.json().equals(s)) return f;
 					throw new IllegalArgumentException("unknown front '" + s + "'");
 				}), Rd.string(o, p, "type"), Rd.string(o, p, "style"), st[0], st[1], Rd.integer(o, p, "streets"), Rd.integer(o, p, "airRights"),
-				Rd.integer(o, p, "frontY"), Rd.integer(o, p, "density"), Rd.string(o, p, "status")));
+				Rd.integer(o, p, "frontY"), Rd.integer(o, p, "density"), Rd.string(o, p, "status"), walk));
 	}
 }

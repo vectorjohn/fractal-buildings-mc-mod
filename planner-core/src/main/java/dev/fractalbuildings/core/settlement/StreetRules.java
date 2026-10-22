@@ -15,8 +15,8 @@ import java.util.TreeMap;
  * <li><b>Border streets</b>: a tile-border segment that is not arterial gets a plain street (width {@value #BORDER_WIDTH})
  * when both its ends are urban, it crosses no water run over 40 blocks and the layout at its midpoint is the grid.</li>
  * <li><b>Grid lines</b>: the inner grid streets on an axis are keyed by (seed, axis, tile interval) only, so they run
- * straight through the whole column (or row) of tiles; a line exists where the node test holds on both ends of an
- * {@value #NODE}-block edge.</li>
+ * straight through the whole column (or row) of tiles; an {@value #NODE}-block edge of a line exists where the block side it
+ * lies on is grid land (either block it bounds) and both its ends are dry and gentle ({@link #gridSideEdgeOk}, ROADS3).</li>
  * <li><b>Ports</b>: a border segment with no street gets 0 to 2 hashed port points where lanes cross into the neighbour,
  * used when both sides are urban frontage land.</li>
  * </ul>
@@ -38,8 +38,11 @@ final class StreetRules {
 	private final TierProgram program;
 	private final Arterials arterials;
 	private final TreeMap<String, RoadKind> borderMemo = new TreeMap<>();
+	private final SkeletonSource src;
+	private RoadNetwork network;
 
 	StreetRules(SkeletonSource src) {
+		this.src = src;
 		this.seed = src.seed();
 		this.tier = src.site().tier();
 		this.density = src.density();
@@ -50,6 +53,13 @@ final class StreetRules {
 	}
 
 	Arterials arterials() { return arterials; }
+
+	/** Border streets come from the settlement's street lattice (city and metropolis): drawn whole, attached by construction. */
+	boolean lattice() {
+		if (!RoadNetwork.latticeTier(tier)) return false;
+		if (network == null) network = src.network();
+		return network.hasLattice();
+	}
 
 	/** Urban and laid out as the grid at the column. */
 	boolean gridAt(int x, int z) {
@@ -87,6 +97,10 @@ final class StreetRules {
 	}
 
 	private RoadKind computeBorder(DistrictGrid.Segment s) {
+		if (RoadNetwork.latticeTier(tier)) {
+			if (network == null) network = src.network();
+			if (network.hasLattice()) return network.kind(s);
+		}
 		if (arterials.is(s)) return RoadKind.ARTERIAL;
 		if (!density.urban(Arterials.ax(s, s.from()), Arterials.az(s, s.from())) || !density.urban(Arterials.ax(s, s.to()), Arterials.az(s, s.to()))) return null;
 		int mid = Math.floorDiv(s.from() + s.to(), 2);
@@ -118,9 +132,38 @@ final class StreetRules {
 		return Math.abs(exact.floorY(x1, z1) - exact.floorY(x0, z0)) <= EDGE_RISE;
 	}
 
-	/** A grid street edge between two nodes: both ends grid land, dry, and not steeper than {@value #EDGE_RISE} per node step. */
-	boolean gridEdgeOk(TerrainProbe exact, int x0, int z0, int x1, int z1) {
-		return gridAt(x0, z0) && gridAt(x1, z1) && !wet(exact, x0, z0) && !wet(exact, x1, z1) && slopeOk(exact, x0, z0, x1, z1);
+	/**
+	 * The nearest lines of constant coordinate on {@code axis} (tile lines and grid lines) at or below and above {@code c} within its
+	 * tile interval: {@code {lo, hi}}. Pointwise.
+	 */
+	int[] between(int axis, int c) {
+		int k = grid.indexOf(axis, c);
+		int lo = grid.lineBlock(axis, k), hi = grid.lineBlock(axis, k + 1);
+		for (int p : gridLines(axis, k)) {
+			if (p <= c) lo = Math.max(lo, p);
+			else hi = Math.min(hi, p);
+		}
+		return new int[] {lo, hi};
+	}
+
+	/**
+	 * A grid street edge on the grid line of constant {@code pos} (a line of constant x for {@code axis} AXIS_X) between the nodes
+	 * {@code a} and {@code b} along it (ROADS3). Grid land is judged once per block side, not per node: the stretch of the line between
+	 * two crossing lines is grid when the centre of either street block it bounds is grid land, so every side of a grid block is drawn
+	 * whole unless water or a slope cuts it (before, any node of a side whose own column left the grid land, a lower-density or
+	 * unbuildable sample, broke the side, and most blocks of a dense quarter had no street ring). Ends must be dry and the rise at most
+	 * {@value #EDGE_RISE}. Pointwise: a function of the seed and the positions, so every tile on the line draws the same runs.
+	 */
+	boolean gridSideEdgeOk(TerrainProbe exact, int axis, int pos, int a, int b) {
+		boolean vertical = axis == DistrictGrid.AXIS_X;
+		int other = vertical ? DistrictGrid.AXIS_Z : DistrictGrid.AXIS_X;
+		int[] along = between(other, Math.floorDiv(a + b, 2));
+		int lo = between(axis, pos - 1)[0], hi = between(axis, pos)[1]; // pos is a grid line: the blocks either side end at the lines before and after it
+		int m = Math.floorDiv(along[0] + along[1], 2), c0 = Math.floorDiv(lo + pos, 2), c1 = Math.floorDiv(pos + hi, 2);
+		boolean grid = vertical ? gridAt(c0, m) || gridAt(c1, m) : gridAt(m, c0) || gridAt(m, c1);
+		if (!grid) return false;
+		int x0 = vertical ? pos : a, z0 = vertical ? a : pos, x1 = vertical ? pos : b, z1 = vertical ? b : pos;
+		return !wet(exact, x0, z0) && !wet(exact, x1, z1) && slopeOk(exact, x0, z0, x1, z1);
 	}
 
 	/** A border street edge: bridges are allowed, so only dry edges are checked for slope. */

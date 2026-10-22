@@ -1,0 +1,7 @@
+{
+  "seed": 541,
+  "terrain": "noise:5:75:25:200+river:-120:24:6",
+  "site": {"at": [1537, -1436], "tier": "town", "radius": 410},
+  "scenes": ["d7_m11", "d9_m8"],
+  "camera": {"plan": {"layers": "+terrain", "zoom": 1.2}, "stops": [[1236, 100, -1560, 0, -26], [1275, 104, -1560, 0, -26]]}
+}

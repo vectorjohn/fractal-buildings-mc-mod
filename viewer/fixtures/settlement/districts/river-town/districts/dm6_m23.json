@@ -5,11 +5,27 @@
   "seed": "12345",
   "district": {"id": "dm6_m23", "ix": -6, "iz": -23, "x": -960, "z": -3680, "w": 160, "d": 144, "quarter": 3, "density": 64},
   "streets": [
+    {"id": "b0m5_m3536", "kind": "street", "width": 5, "points": [[-800, -3536], [-800, -3529], [-800, -3528]], "y": [71, 71, 72]},
+    {"id": "b0m6_m3680", "kind": "street", "width": 5, "points": [[-960, -3680], [-960, -3679], [-960, -3672], [-960, -3671], [-960, -3664], [-960, -3663], [-960, -3608], [-960, -3607], [-960, -3604], [-960, -3603], [-960, -3600], [-960, -3599], [-960, -3582], [-960, -3581], [-960, -3536]], "y": [71, 70, 70, 69, 69, 68, 68, 67, 67, 66, 66, 65, 65, 66, 66]},
+    {"id": "b1m22_m1120", "kind": "street", "width": 5, "points": [[-968, -3536], [-960, -3536]], "y": [63, 63]},
+    {"id": "b1m22_m960", "kind": "street", "width": 5, "points": [[-960, -3536], [-957, -3536], [-956, -3536], [-953, -3536], [-952, -3536], [-921, -3536], [-920, -3536], [-917, -3536], [-916, -3536], [-913, -3536], [-912, -3536], [-883, -3536], [-882, -3536], [-880, -3536], [-879, -3536], [-876, -3536], [-875, -3536], [-872, -3536], [-871, -3536], [-868, -3536], [-867, -3536], [-857, -3536], [-856, -3536], [-853, -3536], [-852, -3536], [-849, -3536], [-848, -3536], [-845, -3536], [-844, -3536], [-841, -3536], [-840, -3536], [-825, -3536], [-824, -3536], [-817, -3536], [-816, -3536], [-800, -3536]], "y": [64, 64, 65, 65, 66, 66, 67, 67, 68, 68, 69, 69, 68, 68, 67, 67, 66, 66, 65, 65, 64, 64, 65, 65, 66, 66, 67, 67, 68, 68, 69, 69, 70, 70, 71, 71]},
+    {"id": "b1m23_m1120", "kind": "street", "width": 5, "points": [[-968, -3680], [-965, -3680], [-964, -3680], [-961, -3680], [-960, -3680]], "y": [66, 66, 67, 67, 68]},
     {"id": "quaym964_m3600", "kind": "quay", "width": 4, "points": [[-964, -3600], [-956, -3592], [-960, -3588], [-968, -3588]], "y": [65, 65, 65, 65]},
     {"id": "rm1_m4_0", "kind": "main", "width": 5, "points": [[-824, -3528], [-817, -3535], [-816, -3536], [-809, -3543], [-808, -3544], [-793, -3559], [-792, -3560]], "y": [69, 69, 70, 70, 71, 71, 72]}
   ],
   "plazas": [],
-  "lots": [],
+  "lots": [
+    {"id": "dm6_m23.l0", "x": -957, "z": -3680, "w": 8, "d": 7, "front": "west", "type": "house", "style": "plains", "storeys": [1, 3], "streets": 1, "airRights": 1, "frontY": 70, "density": 41, "status": "build"},
+    {"id": "dm6_m23.l1", "x": -957, "z": -3670, "w": 20, "d": 27, "front": "west", "type": "workshop", "style": "plains", "storeys": [1, 2], "streets": 1, "airRights": 1, "frontY": 68, "density": 49, "status": "build"},
+    {"id": "dm6_m23.l2", "x": -957, "z": -3643, "w": 11, "d": 7, "front": "west", "type": "house", "style": "plains", "storeys": [1, 3], "streets": 1, "airRights": 1, "frontY": 68, "density": 49, "status": "build"},
+    {"id": "dm6_m23.l3", "x": -920, "z": -3548, "w": 9, "d": 10, "front": "south", "type": "house", "style": "plains", "storeys": [2, 3], "streets": 1, "airRights": 1, "frontY": 67, "density": 64, "status": "build"},
+    {"id": "dm6_m23.l4", "x": -903, "z": -3545, "w": 8, "d": 7, "front": "south", "type": "house", "style": "plains", "storeys": [2, 3], "streets": 1, "airRights": 1, "frontY": 69, "density": 64, "status": "build"},
+    {"id": "dm6_m23.l5", "x": -880, "z": -3545, "w": 8, "d": 7, "front": "south", "type": "house", "style": "plains", "storeys": [2, 3], "streets": 1, "airRights": 1, "frontY": 67, "density": 62, "status": "build"},
+    {"id": "dm6_m23.l6", "x": -872, "z": -3548, "w": 8, "d": 10, "front": "south", "type": "house", "style": "plains", "storeys": [2, 3], "streets": 1, "airRights": 1, "frontY": 65, "density": 62, "status": "build"},
+    {"id": "dm6_m23.l7", "x": -862, "z": -3552, "w": 20, "d": 14, "front": "south", "type": "workshop", "style": "plains", "storeys": [2, 2], "streets": 1, "airRights": 1, "frontY": 65, "density": 62, "status": "build"},
+    {"id": "dm6_m23.l8", "x": -842, "z": -3545, "w": 10, "d": 7, "front": "south", "type": "house", "style": "plains", "storeys": [2, 3], "streets": 1, "airRights": 1, "frontY": 69, "density": 60, "status": "build"},
+    {"id": "dm6_m23.l9", "x": -832, "z": -3554, "w": 15, "d": 16, "front": "south", "type": "workshop", "style": "plains", "storeys": [2, 2], "streets": 1, "airRights": 1, "frontY": 69, "density": 60, "status": "build"}
+  ],
   "scene": null,
   "violations": []
 }

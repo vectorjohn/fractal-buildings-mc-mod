@@ -3,7 +3,7 @@
   "planVersion": 1,
   "genVersion": 2,
   "seed": "1",
-  "district": {"id": "d55_m23", "ix": 55, "iz": -23, "x": 8784, "z": -3680, "w": 160, "d": 144, "quarter": 5, "density": 26},
+  "district": {"id": "d55_m23", "ix": 55, "iz": -23, "x": 8784, "z": -3680, "w": 160, "d": 144, "quarter": 5, "density": 30},
   "streets": [
     {"id": "a1m22_8624", "kind": "arterial", "width": 9, "points": [[8776, -3536], [8779, -3536], [8780, -3536], [8783, -3536], [8784, -3536]], "y": [82, 82, 83, 83, 84]}
   ],

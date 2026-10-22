@@ -40,6 +40,13 @@ public final class InteriorPass {
 
 	/** Chance (percent) that a door between two open-plan rooms becomes an archway. */
 	static final int ARCH_PERCENT = 40;
+	/** Style open percent from which archways are wide (2 to 4). */
+	static final int WIDE_FROM = 60;
+
+	/** Chance (percent) that a connection between rooms of these uses is open: kitchen pairs follow the style, other public pairs are at least {@link #ARCH_PERCENT}. */
+	static int pct(InteriorStyle st, String a, String b) {
+		return a.equals("kitchen") || b.equals("kitchen") ? st.openPercent() : Math.max(ARCH_PERCENT, st.openPercent());
+	}
 
 	private record Site(String kind, int leaf, int x, int z, Facing facing) {}
 
@@ -87,7 +94,7 @@ public final class InteriorPass {
 			Mass a = ms.get(i);
 			for (int s = a.from(); s < a.to(); s++) {
 				if (drafts[i][s] == null) continue;
-				Band cur = done.computeIfAbsent(drafts[i][s], dr -> band(c, prog, dr));
+				Band cur = done.computeIfAbsent(drafts[i][s], dr -> band(c, prog, st, dr));
 				int top = a.open() ? g.y(a.to()) : g.y(s + 1);
 				String[] ids = new String[cur.plan().leaves().size()];
 				for (int l = 0; l < ids.length; l++) {
@@ -106,7 +113,7 @@ public final class InteriorPass {
 				if (sp == null || Math.max(sp[2], sp[3]) < 3 || m.party(ms.get(i), ms.get(j))) continue;
 				for (int s = 0; s < g.count(); s++) {
 					if (placed[i][s] == null || placed[j][s] == null) continue;
-					stripDoor(c, m, ms.get(i), placed[i][s], placed[j][s], sp, s);
+					stripDoor(c, m, prog, st, ms.get(i), placed[i][s], placed[j][s], sp, s, c.draws("interior/stripArch", i, j, s));
 				}
 			}
 		}
@@ -236,10 +243,10 @@ public final class InteriorPass {
 		return n;
 	}
 
-	private static Band band(BuildContext c, RoomProgram prog, Draft dr) {
+	private static Band band(BuildContext c, RoomProgram prog, InteriorStyle st, Draft dr) {
 		String[] uses = dr.uses();
 		int s = dr.start(), idx = dr.idx();
-		FloorPlan plan = dr.plan().withArches(prog::openPlan, uses, dr.info().core(), ARCH_PERCENT, c.draws("interior/arch", idx, s));
+		FloorPlan plan = dr.plan().withArches(prog::openPlan, uses, dr.info().core(), (a, b) -> pct(st, a, b), WIDE_FROM, c.draws("interior/arch", idx, s));
 		List<Site> hooks = new ArrayList<>();
 		for (int l = 0; l < uses.length; l++) hookSites(c, prog, plan, dr.info(), idx, s, l, uses[l], hooks);
 		return new Band(s, dr.info(), plan, uses, hooks);
@@ -341,16 +348,53 @@ public final class InteriorPass {
 		return alongX ? new int[] {best, st[1]} : new int[] {st[0], best};
 	}
 
-	/** A 1x2 door through the strip, joining the rooms on its two sides. */
-	private static void stripDoor(BuildContext c, Massing m, Mass a, Placed pa, Placed pb, int[] st, int s) {
-		int[] pos = stripDoorPos(m, a, st, s);
-		boolean alongX = st[3] == 1;
+	/** True if a hook (furniture) stands on the cell (x, z) of a placed floor. */
+	private static boolean hookAt(Placed p, int x, int z) {
+		for (Site h : p.band().hooks()) if (p.ox() + h.x() == x && p.oz() + h.z() == z) return true;
+		return false;
+	}
+
+	/** The use of the room with id {@code id} on a placed floor. */
+	private static String useOf(Placed p, String id) {
+		for (int l = 0; l < p.ids().length; l++) if (p.ids()[l].equals(id)) return p.band().uses()[l];
+		return "";
+	}
+
+	/**
+	 * A 1x2 door through the strip, joining the rooms on its two sides, or, between two public rooms and by the
+	 * style's open percent, a doorless archway 1 to 3 cells wide (2 to 4 in open styles, as far as the strip and
+	 * the rooms on both sides allow, with a pier of wall left at each end).
+	 */
+	private static void stripDoor(BuildContext c, Massing m, RoomProgram prog, InteriorStyle st, Mass a, Placed pa, Placed pb, int[] st4, int s, Draws dr) {
+		int[] pos = stripDoorPos(m, a, st4, s);
+		boolean alongX = st4[3] == 1;
 		int x = pos[0], z = pos[1], y = m.grid().y(s) + 1;
-		int[] in = insideOf(a, st, pos);
+		int[] in = insideOf(a, st4, pos);
 		int ox = alongX ? x : 2 * x - in[0], oz = alongX ? 2 * z - in[1] : z; // the cell on the other side
 		String ra = pa.idAt(in[0], in[1]), rb = pb.idAt(ox, oz);
 		if (ra == null || rb == null) throw new IllegalStateException("strip door at " + x + "," + z + " opens into a partition");
 		Facing f = alongX ? (in[1] < z ? Facing.SOUTH : Facing.NORTH) : (in[0] < x ? Facing.EAST : Facing.WEST);
+		String ua = useOf(pa, ra), ub = useOf(pb, rb);
+		if (prog.openPlan(ua) && prog.openPlan(ub) && dr.chance(pct(st, ua, ub), 100)) {
+			int want = pct(st, ua, ub) >= WIDE_FROM ? 2 + dr.below(3) : 1 + dr.below(3);
+			int lo = 0, hi = 0; // offsets along the strip from the door cell
+			int stripLo = (alongX ? st4[0] : st4[1]) + 1, stripHi = (alongX ? st4[0] : st4[1]) + Math.max(st4[2], st4[3]) - 2;
+			while (hi - lo + 1 < want) {
+				boolean up = (hi - lo) % 2 == 0;
+				int k = up ? hi + 1 : lo - 1;
+				int sx = alongX ? x + k : x, sz = alongX ? z : z + k, p = alongX ? sx : sz;
+				if (p < stripLo || p > stripHi) break;
+				int ix = alongX ? in[0] + k : in[0], iz = alongX ? in[1] : in[1] + k, jx = alongX ? ox + k : ox, jz = alongX ? oz : oz + k;
+				if (m.inCore(s, sx, sz) || m.inCore(s, ix, iz) || m.inCore(s, jx, jz) || !ra.equals(pa.idAt(ix, iz)) || !rb.equals(pb.idAt(jx, jz)) || hookAt(pa, ix, iz) || hookAt(pb, jx, jz)) break; // no furniture in the way
+				if (up) hi = k; else lo = k;
+			}
+			int n = hi - lo + 1, bx = alongX ? x + lo : x, bz = alongX ? z : z + lo;
+			Box3 box = Box3.of(bx, y, bz, alongX ? n : 1, 2, alongX ? 1 : n);
+			c.box(Role.AIR, Layer.INTERIOR, s, box.x(), box.y(), box.z(), box.sx(), 2, box.sz());
+			if (n >= 2 && m.grid().height(s) >= 4) c.box(Role.TRIM, Layer.INTERIOR, s, box.x(), y + 2, box.z(), box.sx(), 1, box.sz()); // lintel
+			c.opening(OpeningKind.ARCH, box, f, ra, rb);
+			return;
+		}
 		c.box(Role.DOOR, Layer.INTERIOR, s, x, y, z, 1, 2, 1);
 		c.opening(OpeningKind.DOOR, Box3.of(x, y, z, 1, 2, 1), f, ra, rb);
 	}

@@ -57,7 +57,7 @@ public final class Briefs {
 		String style = styles.pick(l.x() + l.w() / 2, l.z() + l.d() / 2);
 		int mask = streetMask(l, streetRects, plazas);
 		int frontY = frontY(plan, l, streetRects);
-		if (!l.builds()) return new LotBrief(l.id(), l.x(), l.z(), l.w(), l.d(), l.front(), l.type(), style, l.minStoreys(), l.maxStoreys(), mask, l.airRights(), frontY, l.density(), l.status());
+		if (!l.builds()) return new LotBrief(l.id(), l.x(), l.z(), l.w(), l.d(), l.front(), l.type(), style, l.minStoreys(), l.maxStoreys(), mask, l.airRights(), frontY, l.density(), l.status(), l.walk());
 		int lo = Integer.MAX_VALUE, hi = Integer.MIN_VALUE;
 		for (int z = l.z(); z < l.z() + l.d(); z++)
 			for (int x = l.x(); x < l.x() + l.w(); x++) {
@@ -76,11 +76,12 @@ public final class Briefs {
 		}
 		if ((type.equals("house") || type.equals("workshop")) && relief > STEEP_RELIEF) return empty(l, style, mask, frontY, "empty:steep");
 		int[] range = storeys(type, l.density(), quarter);
-		return new LotBrief(l.id(), l.x(), l.z(), l.w(), l.d(), l.front(), type, style, range[0], range[1], mask, l.airRights(), frontY, l.density(), LotBrief.BUILD);
+		if (type.equals("highrise")) range = ClassTable.lotStoreys(plan.seed(), l.x(), l.z(), l.density(), range[0], range[1]);
+		return new LotBrief(l.id(), l.x(), l.z(), l.w(), l.d(), l.front(), type, style, range[0], range[1], mask, l.airRights(), frontY, l.density(), LotBrief.BUILD, l.walk());
 	}
 
 	private static LotBrief empty(LotBrief l, String style, int mask, int frontY, String status) {
-		return new LotBrief(l.id(), l.x(), l.z(), l.w(), l.d(), l.front(), l.type(), style, l.minStoreys(), l.maxStoreys(), mask, l.airRights(), frontY, l.density(), status);
+		return new LotBrief(l.id(), l.x(), l.z(), l.w(), l.d(), l.front(), l.type(), style, l.minStoreys(), l.maxStoreys(), mask, l.airRights(), frontY, l.density(), status, l.walk());
 	}
 
 	/** The checks of {@code SpecPolicyV1.spec} that can throw: lot size along the front, and relief for gentle-ground types. */
@@ -90,7 +91,7 @@ public final class Briefs {
 		boolean alongX = l.front() == Facing.NORTH || l.front() == Facing.SOUTH;
 		int lw = alongX ? l.w() : l.d(), ld = alongX ? l.d() : l.w();
 		int w = lw - 2 * lim.side(), d = ld - lim.front() - lim.back();
-		return w >= lim.minWidth() && d >= lim.minDepth() && SpecPolicyV1.reliefOk(lim, relief, l.w(), l.d());
+		return w >= lim.minWidth() && d >= lim.minDepth() && SpecPolicyV1.reliefOk(lim, relief, l.w(), l.d()) && ClassTable.reliefAllows(type, relief);
 	}
 
 	/** Storey range for a type: its class-table entry in this row, within the type's own limits. */

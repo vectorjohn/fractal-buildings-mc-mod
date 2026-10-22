@@ -322,3 +322,76 @@ k=kitchen b=bedroom l=living
 #bbb#bbb#bbbb#
  ### ### #### 
 ```
+
+## After open plan (p5-openplan)
+
+Style `interior.openPercent` (medieval 20, taiga 35, snowy 40, desert 60, plains 65, jungle 70, plain 85): kitchen links open by that chance, other public pairs at least 40 %; from 60 openings are 2 to 4 wide; wings joined across a strip wall can be archways too. `.` is open, `D` a door. Generator: house 20x20, noise terrain, front north (the gallery preset).
+
+### medieval seed 7
+```
+##############D###
+#llllll#kkkk#llll#
+#llllll#kkkkDllll#
+#llllll#kkkk#llll#
+#llllll.kkkk#llll#
+#llllll#kkkk#llll#
+##D###########D###
+#bbbb#     #bbbbb#
+#bbbb#     #bbbbb#
+#bbbb#######bbbbb#
+#bbbb#bbbbb#bbbbb#
+#bbbbDbbbbbDbbbbb#
+#bbbb#bbbbb#bbbbb#
+#bbbb#bbbbb#bbbbb#
+##################
+```
+
+### plain seed 6
+```
+   #####D#####
+   #kkk#lllll#
+   #kkk.lllll#
+   #kkk.lllll#
+   #kkk.lllll#
+   #kkk.lllll#
+   #kkk#lllll#
+   #kkk#lllll#
+   #####D#####
+     #bbbbb#
+     #bbbbb#
+     #bbbbb#
+     #bbbbb#
+     #bbbbb#
+     #bbbbb#
+     #######
+```
+
+### plain seed 2
+```
+##############D##
+#kkk#llllll#llll#
+#kkk.llllll#llll#
+#kkk.llllll.llll#
+#kkk.llllll.llll#
+#kkk#llllll#llll#
+#kkk#llllll#llll#
+############llll#
+           #llll#
+           #llll#
+           ######
+```
+
+### plain seed 14
+```
+    #####D#####
+    #kkk#lllll#
+    #kkk#lllll#
+    #kkk#lllll#
+    #kkk.lllll#
+    #kkk.lllll#
+    #kkk.lllll#
+    #kkk#lllll#
+    ###########
+```
+
+Cutaway galleries (16 seeds): `house-medieval-cutaway-open-plan.png`, `house-plain-cutaway-open-plan.png`.

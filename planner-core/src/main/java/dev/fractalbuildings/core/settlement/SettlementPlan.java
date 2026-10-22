@@ -67,6 +67,15 @@ public record SettlementPlan(int genVersion, long seed, SettlementSite site, Rec
 		return new SettlementPlan(genVersion, seed, site, bounds, coarse, quarters, cells, districts, roads, gates, new ArrayList<>(l), walls, violations);
 	}
 
+	/** The same plan with other roads (CityPlanner leaves out the arterials the street lattice does not draw). */
+	public SettlementPlan withRoads(List<Road> r) {
+		Set<String> ids = new TreeSet<>();
+		for (Road x : r) ids.add(x.id());
+		List<Gate> g = new ArrayList<>();
+		for (Gate x : gates) g.add(x.road() == null || ids.contains(x.road()) ? x : new Gate(x.id(), x.kind(), x.x(), x.z(), x.cells(), null));
+		return new SettlementPlan(genVersion, seed, site, bounds, coarse, quarters, cells, districts, new ArrayList<>(r), g, landmarks, walls, violations);
+	}
+
 	public SettlementPlan withViolations(List<Violation> v) {
 		return new SettlementPlan(genVersion, seed, site, bounds, coarse, quarters, cells, districts, roads, gates, landmarks, walls, new ArrayList<>(v));
 	}

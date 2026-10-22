@@ -219,7 +219,7 @@ class FacadeLayoutTest {
 	void plainHasNoDecorAndMedievalDoes() {
 		for (Massing m : TestMassings.all().values()) {
 			BuildingIr plain = TestMassings.shell(m, 1, "plain");
-			assertFalse(plain.boxes().stream().anyMatch(b -> b.role() == Role.TRIM || b.role() == Role.BEAM || b.role() == Role.FOUNDATION), "plain: all decor off");
+			assertFalse(plain.boxes().stream().anyMatch(b -> b.layer() != dev.fractalbuildings.core.ir.Layer.INTERIOR && (b.role() == Role.TRIM || b.role() == Role.BEAM || b.role() == Role.FOUNDATION)), "plain: all facade decor off (an interior archway lintel is no facade decor)");
 		}
 		BuildingIr med = TestMassings.shell(TestMassings.all().get("jetty"), 1, "medieval");
 		for (Role role : List.of(Role.FOUNDATION, Role.TRIM, Role.BEAM)) assertTrue(med.boxes().stream().anyMatch(b -> b.role() == role), "medieval has " + role);

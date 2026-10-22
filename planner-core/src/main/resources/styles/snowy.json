@@ -12,7 +12,7 @@
     "blankCorners": true, "doorSurround": true, "plinth": true, "sills": true, "shutters": true, "cornice": true,
     "corners": "post", "timber": "none"},
 
-  "interior": {"roomMin": 3, "roomArea": 26, "corridorAbove": 8, "loopPercent": 20},
+  "interior": {"roomMin": 3, "roomArea": 26, "corridorAbove": 8, "loopPercent": 20, "openPercent": 40},
 
   "palette": {
     "foundation": ["minecraft:stone", "minecraft:cobblestone", "minecraft:andesite", "minecraft:stone_bricks"],
