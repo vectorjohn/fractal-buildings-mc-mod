@@ -43,6 +43,12 @@ public interface BuildingType {
 
 	default Program openings() { return OpeningPass::run; }
 
+	/**
+	 * Extra site boxes (local coordinates) that join this building's wall walk to its neighbours' at the other level, given the lot's level in the ring's
+	 * walk profile: none by default.
+	 */
+	default java.util.List<dev.fractalbuildings.core.ir.Box> walkJoins(dev.fractalbuildings.core.ir.BuildingIr shell, dev.fractalbuildings.core.gen.Brief.Walk walk) { return java.util.List.of(); }
+
 	/** Room uses and furnishing hooks for the interior pass (4.5). */
 	default RoomProgram rooms() { return RoomProgram.DEFAULT; }
 }

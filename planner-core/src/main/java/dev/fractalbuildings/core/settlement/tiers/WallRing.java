@@ -1,5 +1,6 @@
 package dev.fractalbuildings.core.settlement.tiers;
 
+import dev.fractalbuildings.core.gen.Brief;
 import dev.fractalbuildings.core.ir.Facing;
 import dev.fractalbuildings.core.rand.Hash64;
 import dev.fractalbuildings.core.region.Tiers;
@@ -42,7 +43,7 @@ public final class WallRing {
 	public static final int BAND = 2;
 	/** Lot ids of the ring contain this mark: {@code <district>.w<n>}. */
 	public static final String MARK = ".w";
-	public static final String WALL = "wall", TOWER_TYPE = "tower";
+	public static final String WALL = "wall", CURTAIN = "curtain", TOWER_TYPE = "bastion";
 
 	/** Side scales tried, nearest the nominal ring first: indices into the scale list for the west, east, north and south sides. */
 	private static final List<int[]> COMBOS = new ArrayList<>();
@@ -290,7 +291,8 @@ public final class WallRing {
 					int l = len / n + (i < len % n ? 1 : 0);
 					int depth = Hash64.range(Hash64.hash(seed, "wall-depth", side, at, r.line(side)), MIN_DEPTH, MAX_DEPTH);
 					Rect rect = side % 2 == 0 ? new Rect(at, r.line(side) - depth / 2, l, depth) : new Rect(r.line(side) - depth / 2, at, depth, l);
-					out.add(new Piece(WALL, rect, Ring.facing(side), sp.gate() != Integer.MIN_VALUE ? sp.gate() : NONE));
+					boolean gate = sp.gate() != Integer.MIN_VALUE;
+					out.add(new Piece(gate ? WALL : CURTAIN, rect, Ring.facing(side), gate ? sp.gate() : NONE));
 					at += l;
 				}
 			}
@@ -340,6 +342,97 @@ public final class WallRing {
 		return i >= 0 && i + MARK.length() < id.length() && Character.isDigit(id.charAt(i + MARK.length()));
 	}
 
+
+	// ---- the walk profile (slope step)
+
+	/** Most blocks a curtain walk may stand above the tower doorway it meets: it carves a stair flight down through its own end (down to just under the gallery floor: it cuts into its own foundation). */
+	public static final int MAX_CARVE = 9;
+
+	/**
+	 * May two neighbouring ring lots stand at these levels? Curtains differ by at most {@link Brief#MAX_STEP} (the lower one climbs a ramp on top of its walk).
+	 * A gate lot or corner bastion meets its neighbour by a doorway at its own walk level: against a curtain it may stand up to {@link Brief#MAX_STEP} below
+	 * it (the curtain ramps up to the door) or up to {@link #MAX_CARVE} above it (the curtain's walk descends in a stair cut through its end);
+	 * two towers side by side are level.
+	 */
+	public static boolean joined(String typeA, int a, String typeB, int b) {
+		boolean ta = !typeA.equals(CURTAIN), tb = !typeB.equals(CURTAIN);
+		if (ta && tb) return a == b;
+		if (!ta && !tb) return Math.abs(a - b) <= Brief.MAX_STEP;
+		int tower = ta ? a : b, curtain = ta ? b : a;
+		return tower - curtain <= Brief.MAX_STEP && curtain - tower <= MAX_CARVE;
+	}
+
+	/**
+	 * The level (world y of the ground slab) of every lot of the ring, in {@code pieces} order, so that the wall walk is continuous on sloping ground.
+	 * Each level is at least the lot's own highest ground ({@code top}), so no lot is sunk into a hillside, and neighbours are {@link #joined}. Levels only
+	 * rise from the ground, and only as much as the rules need, so a gate lot stays at its own ground (where the road passes) unless a neighbour forces it.
+	 * The least such levels: a pure function of the ring and the ground, so every district tile that holds part of the ring gets the same profile.
+	 */
+	public static int[] walkLevels(List<Piece> pieces, java.util.function.ToIntFunction<Piece> top) {
+		int n = pieces.size();
+		int[] lv = new int[n];
+		for (int i = 0; i < n; i++) lv[i] = top.applyAsInt(pieces.get(i));
+		if (n < 2) return lv;
+		int[] cw = clockwise(pieces.stream().map(Piece::type).toList());
+		boolean changed = true;
+		while (changed) {
+			changed = false;
+			for (int c = 0; c < n; c++) {
+				int i = cw[c], j = cw[(c + 1) % n];
+				String ti = pieces.get(i).type(), tj = pieces.get(j).type();
+				boolean toweri = !ti.equals(CURTAIN), towerj = !tj.equals(CURTAIN);
+				int x = lv[i], y = lv[j];
+				if (toweri && towerj) { x = y = Math.max(x, y); }
+				else if (toweri != towerj) {
+					int tw = toweri ? x : y, cu = toweri ? y : x;
+					tw = Math.max(tw, cu - MAX_CARVE);
+					cu = Math.max(cu, tw - Brief.MAX_STEP);
+					if (toweri) { x = tw; y = cu; } else { y = tw; x = cu; }
+				} else {
+					x = Math.max(x, y - Brief.MAX_STEP);
+					y = Math.max(y, x - Brief.MAX_STEP);
+				}
+				if (x != lv[i] || y != lv[j]) { lv[i] = x; lv[j] = y; changed = true; }
+			}
+		}
+		return lv;
+	}
+
+	/**
+	 * The walk of piece {@code i}, given the {@link #walkLevels}: its base level and what its walk does at each end: a positive step is a ramp up of that many
+	 * blocks to a higher neighbour, a negative one a stair cut down through a curtain's end to a lower tower; no work against a lower curtain (that one climbs).
+	 * 'next' is the clockwise end, 'prev' the anticlockwise one.
+	 */
+	public static dev.fractalbuildings.core.gen.Brief.Walk walkOf(List<String> types, int[] lv, int i) {
+		int n = lv.length;
+		int[] cw = clockwise(types);
+		int c = 0;
+		while (cw[c] != i) c++;
+		int p = cw[(c + n - 1) % n], q = cw[(c + 1) % n];
+		return new dev.fractalbuildings.core.gen.Brief.Walk(lv[i], work(types.get(p), lv[p] - lv[i]), work(types.get(q), lv[q] - lv[i]));
+	}
+
+	private static int work(String neighbourType, int delta) { return delta < 0 && neighbourType.equals(CURTAIN) ? 0 : delta; }
+
+	/**
+	 * Indices of the pieces in clockwise order round the ring, from the north-west tower: {@link #pieces} lists each side's lots in increasing
+	 * coordinate, which is clockwise on the north and east sides and against it on the south and west sides (a lot's local +x always points clockwise).
+	 */
+	public static int[] clockwise(List<String> types) {
+		int n = types.size();
+		int[] out = new int[n];
+		int k = 0, side = -1;
+		for (int i = 0; i < n;) {
+			if (types.get(i).equals(TOWER_TYPE)) { side++; out[k++] = i++; }
+			int j = i;
+			while (j < n && !types.get(j).equals(TOWER_TYPE)) j++;
+			if (side >= 2) for (int m = j - 1; m >= i; m--) out[k++] = m;
+			else for (int m = i; m < j; m++) out[k++] = m;
+			i = j;
+		}
+		return out;
+	}
+
 	// ---- roads
 
 	/**
@@ -363,7 +456,7 @@ public final class WallRing {
 				if (i > 0 && in != prevIn) {
 					Pt edge = in ? p : cols.get(i - 1); // the inside column next to the outside one
 					Gate g = gateOf(r, edge);
-					if (g == null || !straight(set, g, reach)) return null;
+					if (g == null || !straight(set, g, reach) || !straightRun(cols, in ? i : i - 1, cols.get(i - 1), p, reach)) return null;
 					if (seen.add(key(g.at().x(), g.at().z()))) out.add(new Crossing(g, road.id()));
 				}
 				prevIn = in;
@@ -382,6 +475,24 @@ public final class WallRing {
 	private static boolean straight(Set<Long> cols, Gate g, int reach) {
 		int[] n = Ring.normal(g.side());
 		for (int k = -reach; k <= reach; k++) if (!cols.contains(key(g.at().x() + n[0] * k, g.at().z() + n[1] * k))) return false;
+		return true;
+	}
+
+	/**
+	 * The road itself runs straight through the crossing: the {@code reach} columns before and after the edge column {@code m}, in the
+	 * road's own order, step the way it crossed (a road that comes back onto the gate column and leaves it another way, ROADS3, would
+	 * pass the set test with its out-and-back spur and still cut the gate lot).
+	 */
+	private static boolean straightRun(List<Pt> cols, int m, Pt from, Pt to, int reach) {
+		int dx = to.x() - from.x(), dz = to.z() - from.z();
+		if (Math.abs(dx) + Math.abs(dz) != 1) return false;
+		Pt e = cols.get(m);
+		for (int t = -reach; t <= reach; t++) {
+			int k = m + t;
+			if (k < 0 || k >= cols.size()) return false;
+			Pt q = cols.get(k);
+			if (q.x() != e.x() + dx * t || q.z() != e.z() + dz * t) return false;
+		}
 		return true;
 	}
 

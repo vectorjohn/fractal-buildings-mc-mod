@@ -48,8 +48,8 @@ public final class Districts {
 	public static final int MAX_DEPTH = 44;
 	static final int PAD = 16, MIN_W = 7, MIN_DEPTH_ANY = 7;
 	static final int STREET = 1, PLAZA = 2, LOT = 4, RESERVED = 8, WET = 16, SKEL = 32;
-	/** Densest rows only get whole-block lots. */
-	static final int BLOCK_DENSITY = 70;
+	/** Whole-block lots from density 50 up (ROADS3; was 70): the mid-density grid quarters get perimeter blocks too, where the class table picks one. */
+	static final int BLOCK_DENSITY = 50;
 
 	/**
 	 * A planned district: the plan, the landmarks that still reserve ground (open squares, and hall or temple landmarks that
@@ -168,6 +168,9 @@ public final class Districts {
 		}
 
 		boolean skeletonish() { return kind == RoadKind.ARTERIAL || kind == RoadKind.MAIN || kind == RoadKind.PATH; }
+
+		/** A skeleton road, or a border street of the settlement's lattice: the streets everything else attaches to. */
+		boolean macro() { return skeletonish() || (kind == RoadKind.STREET && id.length() > 1 && id.charAt(0) == 'b' && Character.isDigit(id.charAt(1))); }
 	}
 
 	private static final class Build {
@@ -339,7 +342,7 @@ public final class Districts {
 			boolean[] good = new boolean[n + np];
 			for (int i = 0; i < n; i++) {
 				Raw r = finals.get(i);
-				if (!r.skeletonish()) continue;
+				if (!r.macro()) continue;
 				for (int[] c : r.cols) if (net.live(c[0], c[1])) { good[find(parent, i)] = true; break; }
 			}
 			for (int i = 0; i < n; i++) finals.get(i).lotOk = good[find(parent, i)];
@@ -386,7 +389,7 @@ public final class Districts {
 			for (int i = 0; i < lots.size(); i++) {
 				LotBrief l = lots.get(i);
 				String nid = id + ".l" + i;
-				if (!l.id().contains(WallRing.MARK) && !l.id().equals(nid)) lots.set(i, new LotBrief(nid, l.x(), l.z(), l.w(), l.d(), l.front(), l.type(), l.style(), l.minStoreys(), l.maxStoreys(), l.streets(), l.airRights(), l.frontY(), l.density(), l.status()));
+				if (!l.id().contains(WallRing.MARK) && !l.id().equals(nid)) lots.set(i, new LotBrief(nid, l.x(), l.z(), l.w(), l.d(), l.front(), l.type(), l.style(), l.minStoreys(), l.maxStoreys(), l.streets(), l.airRights(), l.frontY(), l.density(), l.status(), l.walk()));
 			}
 		}
 
@@ -422,7 +425,7 @@ public final class Districts {
 				if (pick < 0) { notes.add(type + " got no lot anywhere in the tile"); continue; }
 				LotBrief o = lots.get(pick);
 				TypeLimits lim = Types.get(type).limits();
-				lots.set(pick, new LotBrief(o.id(), o.x(), o.z(), o.w(), o.d(), o.front(), type, o.style(), lim.minStoreys(), lim.maxStoreys(), o.streets(), o.airRights(), o.frontY(), o.density(), o.status()));
+				lots.set(pick, new LotBrief(o.id(), o.x(), o.z(), o.w(), o.d(), o.front(), type, o.style(), lim.minStoreys(), lim.maxStoreys(), o.streets(), o.airRights(), o.frontY(), o.density(), o.status(), o.walk()));
 				landmarks.removeIf(m -> m == l); // skeleton landmark ids are not unique yet ("l?"): remove this one only
 				notes.add(type + " placed on lot " + o.id() + " (no room facing the square)");
 			}
@@ -528,10 +531,13 @@ public final class Districts {
 			subdivide();
 			ports();
 			plazaLanes();
+			dropUnrooted(true);
 			hallLots();
 			quays();
+			dropUnrooted(false);
 			frontageLanes();
 			avenueLanes();
+			dropUnrooted(false);
 			List<Raw> finals = new ArrayList<>();
 			for (Raw r : raws) if (r.street != null) finals.add(r);
 			finals.sort(Comparator.comparing(r -> r.id));
@@ -645,14 +651,66 @@ public final class Districts {
 
 		// ---- the wall ring (D2): wall and corner-tower lots, reserved so that streets stop at them except through a gate's passage
 
-		void wallLots() {
+		/** One wall ring of the centre cell: its pieces, and the walk profile of the whole ring ({@link WallRing#walkLevels}), worked out on first use. */
+		final class RingInfo {
+			final List<WallRing.Piece> pieces;
+			int[] levels;
+
+			RingInfo(List<WallRing.Piece> pieces) { this.pieces = pieces; }
+
+			int[] levels() {
+				if (levels == null) levels = WallRing.walkLevels(pieces, q -> groundTop(q.rect()));
+				return levels;
+			}
+		}
+
+		List<RingInfo> rings;
+
+		/** The wall rings of the settlement (the centre cell's walls), the same in every tile. */
+		List<RingInfo> rings() {
+			if (rings != null) return rings;
+			rings = new ArrayList<>();
 			Cell centreCell = CellGeometry.owner(src.view().field(), src.site().centre().x(), src.site().centre().z());
-			if (!src.site().cells().contains(centreCell)) return;
+			if (!src.site().cells().contains(centreCell)) return rings;
 			CellSkeleton sk = src.skeleton(centreCell);
 			for (Wall w : sk.walls()) {
 				List<Pt> gates = new ArrayList<>();
 				for (Gate g : sk.gates()) if (g.kind() == GateKind.WALL) gates.add(new Pt(g.x(), g.z()));
-				List<WallRing.Piece> pieces = WallRing.pieces(w, gates, grid, seed);
+				rings.add(new RingInfo(WallRing.pieces(w, gates, grid, seed)));
+			}
+			return rings;
+		}
+
+		/**
+		 * Gate pins of a whole street (ROADS3): every centre column of it that lies in a gate's passage band, or one column beyond either
+		 * face, must sit at the passage floor (the gate lot's ring level plus one, the first free y over its slab), so the road runs
+		 * through the gate at the gate's height on both sides. Keyed by column index; null when the street passes no gate. A pure
+		 * function of the ring and the exact ground, so every tile that grades the street pins it the same.
+		 */
+		TreeMap<Integer, Integer> gatePins(List<int[]> cols) {
+			TreeMap<Integer, Integer> pins = null;
+			for (RingInfo ri : rings()) {
+				for (int k = 0; k < ri.pieces.size(); k++) {
+					WallRing.Piece p = ri.pieces.get(k);
+					if (p.gate() == WallRing.NONE) continue;
+					Rect b = WallRing.band(p);
+					boolean alongX = p.front() == Facing.NORTH || p.front() == Facing.SOUTH; // the passage runs along z
+					Rect e = alongX ? new Rect(b.x(), b.z() - 1, b.w(), b.d() + 2) : new Rect(b.x() - 1, b.z(), b.w() + 2, b.d());
+					for (int i = 0; i < cols.size(); i++) {
+						int[] c = cols.get(i);
+						if (!e.contains(c[0], c[1])) continue;
+						if (pins == null) pins = new TreeMap<>();
+						pins.put(i, ri.levels()[k] + 1);
+					}
+				}
+			}
+			return pins;
+		}
+
+		void wallLots() {
+			for (RingInfo ri : rings()) {
+				List<WallRing.Piece> pieces = ri.pieces;
+				int[] levels = null; List<String> types = pieces.stream().map(WallRing.Piece::type).toList(); // the walk profile of the whole ring, worked out once (by the first piece that lies in this tile)
 				for (int k = 0; k < pieces.size(); k++) {
 					WallRing.Piece p = pieces.get(k);
 					Rect r = p.rect();
@@ -674,13 +732,21 @@ public final class Districts {
 					}
 					TypeLimits lim = Types.get(p.type()).limits();
 					int dens = den.at(r.x() + r.w() / 2, r.z() + r.d() / 2);
-					lots.add(new LotBrief(id + WallRing.MARK + k, r.x(), r.z(), r.w(), r.d(), p.front(), p.type(), StyleLibrary.AUTO, lim.minStoreys(), lim.maxStoreys(), 1, 0, Brief.NO_FRONT_Y, dens, LotBrief.BUILD));
+					if (levels == null) levels = ri.levels();
+					lots.add(new LotBrief(id + WallRing.MARK + k, r.x(), r.z(), r.w(), r.d(), p.front(), p.type(), StyleLibrary.AUTO, lim.minStoreys(), lim.maxStoreys(), 1, 0, Brief.NO_FRONT_Y, dens, LotBrief.BUILD, WallRing.walkOf(types, levels, k)));
 					lotAir.add(0);
 					paintRect(r, LOT | RESERVED);
 					reserved.addAll(WallRing.blocked(p));
 					wallBlocked.addAll(WallRing.blocked(p));
 				}
 			}
+		}
+
+		/** Highest exact ground over every column of the rectangle. */
+		int groundTop(Rect r) {
+			int hi = Integer.MIN_VALUE;
+			for (int z = r.z(); z < r.z() + r.d(); z++) for (int x = r.x(); x < r.x() + r.w(); x++) hi = Math.max(hi, fl(x, z));
+			return hi;
 		}
 
 		/** Which flags are set somewhere on the rectangle, for notes. */
@@ -846,7 +912,7 @@ public final class Districts {
 			List<Raw> out = new ArrayList<>();
 			Grading.RoadGrade wg = null;
 			for (List<int[]> run0 : StreetCols.runs(cols, c -> keep(c) && !hitsReserved(c, width))) {
-				if (wg == null) wg = Grading.profile(lattice(StreetCols.vertices(cols)), memo);
+				if (wg == null) wg = Grading.profile(lattice(StreetCols.vertices(cols)), memo, gatePins(cols));
 				int s = indexOf(cols, run0.get(0)), e = s + run0.size() - 1;
 				List<int[]> run = new ArrayList<>(run0);
 				int off = 0;
@@ -926,7 +992,8 @@ public final class Districts {
 				}
 			}
 			List<Road> out = new ArrayList<>();
-			for (Cell c : cells.keySet()) for (Road r : src.skeleton(c).roads()) if (r.kind() != RoadKind.ARTERIAL) out.add(r);
+			RoadNetwork net = rules.lattice() ? src.network() : null;
+			for (Cell c : cells.keySet()) for (Road r : src.skeleton(c).roads()) if (r.kind() != RoadKind.ARTERIAL && (net == null || net.reaches(r))) out.add(r);
 			return out;
 		}
 
@@ -977,10 +1044,28 @@ public final class Districts {
 					addPieces(Ids.arterial(s.axis(), s.line(), s.from()), k, art.width(), StreetCols.columns(art.points(s, s.from(), s.to())), true);
 					continue;
 				}
+				if (rules.lattice()) {
+					addPieces("b" + s.axis() + Ids.n(s.line()) + "_" + Ids.n(s.from()), RoadKind.STREET, StreetRules.BORDER_WIDTH, StreetCols.columns(art.points(s, s.from(), s.to())), true);
+					continue;
+				}
 				for (List<Pt> run : nodeRuns(s.from(), s.to(), (a, b) -> StreetRules.borderEdgeOk(exact, Arterials.ax(s, a), Arterials.az(s, a), Arterials.ax(s, b), Arterials.az(s, b)), s)) {
 					addPieces("b" + s.axis() + Ids.n(s.line()) + "_" + Ids.n(axisCoord(s, run.get(0))), RoadKind.STREET, StreetRules.BORDER_WIDTH, StreetCols.columns(run), true);
 				}
 			}
+		}
+
+		/**
+		 * The column lies within {@code r} blocks of a border of its tile where the street lattice has no street. Grid lines and quays stop
+		 * short of such a border (neither tile may draw a piece that crosses it, and the piece would reach no street there).
+		 */
+		boolean nearAbsentBorder(int x, int z, int r) {
+			if (!rules.lattice()) return false;
+			DistrictGrid.Tile t = grid.tileAt(x, z);
+			for (DistrictGrid.Segment s : grid.segments(t.ix(), t.iz())) {
+				int across = s.axis() == DistrictGrid.AXIS_X ? x : z, along = s.axis() == DistrictGrid.AXIS_X ? z : x;
+				if (Math.abs(across - s.fixed()) <= r && along >= s.from() - r && along <= s.to() + r && rules.borderKind(s) == null) return true;
+			}
+			return false;
 		}
 
 		static int axisCoord(DistrictGrid.Segment s, Pt p) { return s.axis() == DistrictGrid.AXIS_X ? p.z() : p.x(); }
@@ -1024,7 +1109,7 @@ public final class Districts {
 					lo -= GRID_REACH;
 					hi += GRID_REACH;
 					DistrictGrid.Segment s = new DistrictGrid.Segment(axis, 0, 0, pos, lo, hi);
-					for (List<Pt> run : nodeRuns(lo, hi, (a, b) -> rules.gridEdgeOk(memo, Arterials.ax(s, a), Arterials.az(s, a), Arterials.ax(s, b), Arterials.az(s, b)), s)) {
+					for (List<Pt> run : nodeRuns(lo, hi, (a, b) -> rules.gridSideEdgeOk(memo, s.axis(), pos, a, b) && !nearAbsentBorder(Arterials.ax(s, a), Arterials.az(s, a), 0) && !nearAbsentBorder(Arterials.ax(s, b), Arterials.az(s, b), 0), s)) {
 						addPieces("s" + (vertical ? "x" : "z") + Ids.n(pos) + "_" + Ids.n(axisCoord(s, run.get(0))), RoadKind.STREET, StreetRules.GRID_WIDTH, StreetCols.columns(run), false);
 					}
 				}
@@ -1075,6 +1160,108 @@ public final class Districts {
 			return new Street(r.id, r.kind, r.width, pts, ys);
 		}
 
+		/**
+		 * Drops the streets that reach no road (ROADS2): components of the tile's streets (footprints that overlap or touch) that hold
+		 * no root, where a root is a skeleton road or a border street of the lattice with a live column. Lanes, quays and grid
+		 * runs are the only things dropped; skeleton roads and lattice streets never are. Pieces cut off by exact terrain (a grid run
+		 * between two steep edges) or whose link lane failed (a quay with no street in reach) are not left floating. Neighbouring
+		 * tiles agree: a piece that reaches the border does so on a lattice street (rooted in both tiles), and the slivers a tile sees of
+		 * its neighbour's pieces within its margin carry no column near the border.
+		 */
+		/** The plaza is the hub square: the hub column lies within {@value #HUB_SQUARE_REACH} blocks of it (the skeleton joins that one itself). */
+		boolean hubSquare(Plaza pz) {
+			Pt h = src.network().hub();
+			if (h == null) return false;
+			int dx = Math.max(Math.max(pz.x() - h.x(), h.x() - (pz.x() + pz.w() - 1)), 0), dz = Math.max(Math.max(pz.z() - h.z(), h.z() - (pz.z() + pz.d() - 1)), 0);
+			return dx <= HUB_SQUARE_REACH && dz <= HUB_SQUARE_REACH;
+		}
+
+		static final int HUB_SQUARE_REACH = 24;
+
+		/** Squares and greens that touch no rooted street are dropped, with their landmarks: nothing could reach them. */
+		void dropFloatingPlazas(short[] tmp, int[] parent, boolean[] rooted) {
+			List<Plaza> keep = new ArrayList<>();
+			for (Plaza pz : plazas) {
+				boolean ok = false;
+				for (int z = pz.z() - 1; z <= pz.z() + pz.d() && !ok; z++) {
+					for (int x = pz.x() - 1; x <= pz.x() + pz.w() && !ok; x++) {
+						if (!inR(x, z)) continue;
+						int a = tmp[(z - rz0) * rw + (x - rx0)];
+						if (a != 0 && rooted[find(parent, a - 1)]) ok = true;
+					}
+				}
+				if (ok || hubSquare(pz)) { keep.add(pz); continue; }
+				Rect r = new Rect(pz.x(), pz.z(), pz.w(), pz.d());
+				notes.add("plaza " + pz.kind() + " at " + pz.x() + "," + pz.z() + " dropped (reaches no road)");
+				squares.remove(r);
+				reserved.remove(r);
+				moved.remove(r);
+				landmarks.removeIf(l -> l.x() == r.x() && l.z() == r.z() && l.w() == r.w() && l.d() == r.d() && open(l.kind()));
+				clearRect(r, PLAZA | RESERVED);
+			}
+			if (keep.size() == plazas.size()) return;
+			plazas.clear();
+			for (int i = 0; i < keep.size(); i++) {
+				Plaza q = keep.get(i);
+				plazas.add(new Plaza("p" + i, q.kind(), q.x(), q.z(), q.w(), q.d(), q.y()));
+			}
+		}
+
+		void dropUnrooted(boolean plazasToo) {
+			boolean latt = rules.lattice();
+			if (!latt && !plazasToo) return;
+			RoadNetwork net = src.network();
+			int n = raws.size();
+			int[] parent = new int[n];
+			for (int i = 0; i < n; i++) parent[i] = i;
+			short[] tmp = new short[rw * rd];
+			for (int i = 0; i < n; i++) {
+				Raw r = raws.get(i);
+				int h = r.width / 2;
+				for (int[] c : r.cols) {
+					for (int dz = 0; dz < r.width; dz++) {
+						for (int dx = 0; dx < r.width; dx++) {
+							int x = c[0] - h + dx, z = c[1] - h + dz;
+							if (!inR(x, z)) continue;
+							int p = (z - rz0) * rw + (x - rx0);
+							if (tmp[p] == 0) tmp[p] = (short) (i + 1);
+							else union(parent, tmp[p] - 1, i);
+						}
+					}
+				}
+			}
+			for (int z = 0; z < rd; z++) {
+				for (int x = 0; x < rw; x++) {
+					int a = tmp[z * rw + x];
+					if (a == 0) continue;
+					if (x + 1 < rw && tmp[z * rw + x + 1] != 0) union(parent, a - 1, tmp[z * rw + x + 1] - 1);
+					if (z + 1 < rd && tmp[(z + 1) * rw + x] != 0) union(parent, a - 1, tmp[(z + 1) * rw + x] - 1);
+				}
+			}
+			boolean[] rooted = new boolean[n];
+			for (int i = 0; i < n; i++) {
+				Raw r = raws.get(i);
+				if (r.kind == RoadKind.MAIN || r.kind == RoadKind.PATH) rooted[find(parent, i)] = true;
+				else if (r.macro()) for (int[] c : r.cols) if (net.live(c[0], c[1])) { rooted[find(parent, i)] = true; break; }
+			}
+			if (plazasToo) dropFloatingPlazas(tmp, parent, rooted);
+			List<Raw> kept = new ArrayList<>();
+			int dropped = 0;
+			StringBuilder ids = new StringBuilder();
+			for (int i = 0; i < n; i++) {
+				if (!latt || rooted[find(parent, i)] || raws.get(i).macro() || raws.get(i).kind == RoadKind.MAIN) kept.add(raws.get(i));
+				else { dropped++; ids.append(ids.length() == 0 ? "" : ", ").append(raws.get(i).id); }
+			}
+			if (dropped == 0) return;
+			notes.add(dropped + " street pieces dropped (reach no road): " + ids);
+			raws.clear();
+			raws.addAll(kept);
+			for (int i = 0; i < flags.length; i++) flags[i] &= (byte) ~STREET;
+			ownerList.clear();
+			java.util.Arrays.fill(owner, (short) 0);
+			for (Raw r : raws) paint(r);
+		}
+
 		/** Grades the base streets (dropping grid streets that are too steep and do not touch the border) and keeps connected ones. */
 		void finishBase() {
 			for (Raw r : raws) {
@@ -1112,7 +1299,14 @@ public final class Districts {
 				}
 			}
 			boolean[] good = new boolean[n];
-			for (int i = 0; i < n; i++) if (raws.get(i).skeletonish() || touchesBorder(raws.get(i))) good[find(parent, i)] = true;
+			boolean latt = rules.lattice();
+			RoadNetwork net = src.network();
+			for (int i = 0; i < n; i++) {
+				Raw r = raws.get(i);
+				if (!latt) { if (r.skeletonish() || touchesBorder(r)) good[find(parent, i)] = true; continue; }
+				if (r.kind == RoadKind.MAIN || r.kind == RoadKind.PATH) good[find(parent, i)] = true; // skeleton roads are never dropped
+				else if (r.macro()) for (int[] c : r.cols) if (net.live(c[0], c[1])) { good[find(parent, i)] = true; break; }
+			}
 			List<Raw> kept = new ArrayList<>();
 			int dropped = 0;
 			for (int i = 0; i < n; i++) {
@@ -1302,7 +1496,7 @@ public final class Districts {
 
 		/** A quay column: dry, clear of the water, in the waterfront quarter and on a low bank (pointwise: the same answer in every tile). */
 		boolean quayOk(int[] c) {
-			if (wt(c[0], c[1]) || !clearOfWater(c[0], c[1])) return false;
+			if (wt(c[0], c[1]) || !clearOfWater(c[0], c[1]) || nearAbsentBorder(c[0], c[1], 5)) return false;
 			if (!den.urban(c[0], c[1])) return false;
 			int dens = den.at(c[0], c[1]);
 			if (dens < QuarterField.OUTSKIRTS_DENSITY || qf.at(c[0], c[1], dens) != QuarterKind.WATERFRONT) return false; // outskirts keep their bank
@@ -1351,22 +1545,73 @@ public final class Districts {
 		}
 
 		/** A lane from the column of a quay nearest to a road or street, to that street; null when none is within reach or the route is bad. */
+		/**
+		 * {@link #nearest}, and in a lattice tile also the tile's own border streets: for a column of one the target is the point
+		 * {@value #EDGE_STEP} blocks inside the tile (a lane ending there shares an edge with the border street's footprint and stays
+		 * clear of the columns {@code tile-border-agree} compares).
+		 */
+		int[] nearestAttach(List<Raw> base, int x, int z) {
+			int[] best = nearest(base, x, z);
+			if (!rules.lattice()) return best;
+			long bd = best == null ? 200L * 200L : (long) (best[0] - x) * (best[0] - x) + (long) (best[1] - z) * (best[1] - z);
+			for (Raw r : base) {
+				if (!r.macro() || r.kind != RoadKind.STREET) continue;
+				int[] a = r.cols.get(0), e = r.cols.get(r.cols.size() - 1);
+				boolean horizontal = a[1] == e[1], vertical = a[0] == e[0];
+				if (horizontal == vertical) continue;
+				int line = horizontal ? a[1] : a[0], lo = horizontal ? tile.minZ() : tile.minX(), hi = horizontal ? tile.maxZ() : tile.maxX();
+				int sgn = line == lo ? 1 : 0; // only the tile's low borders: a lane beside a high border would cover the column just inside the band both tiles compare
+				if (sgn == 0) continue;
+				for (int[] c : r.cols) {
+					int along = horizontal ? c[0] : c[1];
+					if (along < (horizontal ? tile.minX() : tile.minZ()) + EDGE_STEP || along > (horizontal ? tile.maxX() : tile.maxZ()) - EDGE_STEP) continue;
+					int tx = horizontal ? c[0] : line + sgn * EDGE_STEP, tz = horizontal ? line + sgn * EDGE_STEP : c[1];
+					long dx = tx - x, dz = tz - z, d = dx * dx + dz * dz;
+					if (d < bd) { bd = d; best = new int[] {tx, tz}; }
+				}
+			}
+			return best;
+		}
+
+		static final int EDGE_STEP = 4;
+
+		/** Longest tries to join a quay to the streets: the nearest few columns of it and their nearest street targets, in order of distance. */
+		static final int QUAY_TRIES = 6;
+
 		Raw quayLink(String laneId, List<int[]> run, List<Raw> base) {
-			int m = StreetRules.NODE;
-			int[] from = null, to = null;
-			long best = 200L * 200L;
+			List<long[]> cand = new ArrayList<>();
+			List<int[]> froms = new ArrayList<>(), tos = new ArrayList<>();
 			for (int i = 0; i < run.size(); i += 4) {
 				int[] c = run.get(i);
-				if (c[0] < tile.minX() + m || c[0] > tile.maxX() - m || c[1] < tile.minZ() + m || c[1] > tile.maxZ() - m) continue;
-				int[] near = nearest(base, c[0], c[1]);
+				if (c[0] < tile.minX() + EDGE_STEP || c[0] > tile.maxX() - EDGE_STEP - 1 || c[1] < tile.minZ() + EDGE_STEP || c[1] > tile.maxZ() - EDGE_STEP - 1) continue;
+				int[] near = nearestAttach(base, c[0], c[1]);
 				if (near == null) continue;
-				long dx = near[0] - c[0], dz = near[1] - c[1], d = dx * dx + dz * dz;
-				if (d < best) { best = d; from = c; to = near; }
+				long dx = near[0] - c[0], dz = near[1] - c[1];
+				cand.add(new long[] {dx * dx + dz * dz, froms.size()});
+				froms.add(c);
+				tos.add(near);
 			}
-			if (from == null) return null;
+			cand.sort((p, q) -> p[0] != q[0] ? Long.compare(p[0], q[0]) : Long.compare(p[1], q[1]));
+			List<int[]> tried = new ArrayList<>();
+			for (int k = 0, n = 0; k < cand.size() && n < QUAY_TRIES; k++) {
+				int[] from = froms.get((int) cand.get(k)[1]), to = tos.get((int) cand.get(k)[1]);
+				boolean dup = false;
+				for (int[] t : tried) if (Math.abs(t[0] - from[0]) + Math.abs(t[1] - from[1]) < 16 && t[2] == to[0] && t[3] == to[1]) dup = true;
+				if (dup) continue;
+				tried.add(new int[] {from[0], from[1], to[0], to[1]});
+				n++;
+				Raw lane = quayLane(laneId, from, to);
+				if (lane != null) return lane;
+			}
+			return null;
+		}
+
+		/** A lane from a quay column to a street target (null when the lattice route, or the lane it makes, is no good). */
+		Raw quayLane(String laneId, int[] from, int[] to) {
+			int m = StreetRules.NODE;
 			int qx = from[0], qz = from[1];
 			int gx = qx + Math.round((to[0] - qx) / (float) m) * m, gz = qz + Math.round((to[1] - qz) / (float) m) * m;
-			LatticePath.Bounds b = new LatticePath.Bounds(tile.minX() + m, tile.minZ() + m, tile.maxX() - m, tile.maxZ() - m);
+			LatticePath.Bounds b = new LatticePath.Bounds(tile.minX() + EDGE_STEP, tile.minZ() + EDGE_STEP, tile.maxX() - EDGE_STEP - 1, tile.maxZ() - EDGE_STEP - 1);
 			if (!b.contains(gx, gz) || (gx == qx && gz == qz)) return null;
 			List<LatticePath.Pt> path = LatticePath.find(new LatticePath.Pt(qx, qz), new LatticePath.Pt(gx, gz), laneCost(qx, qz, 8), b, m, -1, 20_000, false);
 			if (path.size() < 2) return null;
@@ -1428,7 +1673,7 @@ public final class Districts {
 
 		/** Hashed ports on the tile's non-street borders: a stub into the tile, then a lane to the nearest base street. */
 		void ports() {
-			if (!src.program().ports()) return;
+			if (!src.program().ports() || rules.lattice()) return;
 			List<Raw> base = new ArrayList<>(raws);
 			int n = 0;
 			for (DistrictGrid.Segment s : grid.segments(ix, iz)) {
@@ -1541,6 +1786,13 @@ public final class Districts {
 								if ((fg(fx, fz) & (PLAZA | LOT | RESERVED | WET)) != 0 || !inR(fx, fz)) bad = true;
 							}
 							if (bad) break;
+							// the tip's footprint shares an edge with a street (a border street that the guard above keeps the lane off)
+							boolean adj = false;
+							for (int o = -h; o <= h; o++) {
+								int fx = x + ux * (h + 1) + (alongX ? o : 0), fz = z + uz * (h + 1) + (alongX ? 0 : o);
+								if ((fg(fx, fz) & STREET) != 0) adj = true;
+							}
+							if (adj) { hit = s; break; }
 						}
 						if (hit < 0 || hit >= bestLen) continue;
 						Raw lane = new Raw(laneId, RoadKind.LANE, StreetRules.LANE_WIDTH, StreetCols.columns(List.of(new Pt(sx, sz), new Pt(sx + ux * Math.max(1, hit), sz + uz * Math.max(1, hit)))), false);
@@ -2038,7 +2290,7 @@ public final class Districts {
 				LotBrief l = lots.get(i);
 				int mask = Briefs.streetMask(l, streetRects, plazaRects);
 				int fy = Briefs.frontY(bare, l, streetRects);
-				out.add(new LotBrief(l.id(), l.x(), l.z(), l.w(), l.d(), l.front(), l.type(), l.style(), l.minStoreys(), l.maxStoreys(), mask, lotAir.get(i), fy, l.density(), l.status()));
+				out.add(new LotBrief(l.id(), l.x(), l.z(), l.w(), l.d(), l.front(), l.type(), l.style(), l.minStoreys(), l.maxStoreys(), mask, lotAir.get(i), fy, l.density(), l.status(), l.walk()));
 			}
 			DistrictPlan plan = new DistrictPlan(GEN_VERSION, seed, info, streets, plazas, out, null, List.of());
 			List<Violation> v = new ArrayList<>(SettlementChecks.detail(plan, landmarks));

@@ -272,7 +272,7 @@ class CityProgramTest {
 				if (dp != null) for (LotBrief l : dp.lots()) assertTrue(!l.builds(), "a park tile has a building: " + l.id());
 			}
 		}
-		assertTrue(downtown > 250, "downtown tiles " + downtown);
+		assertTrue(downtown > 100, "downtown tiles " + downtown);
 		assertTrue(parks * 100 >= downtown * 7 && parks * 100 <= downtown * 20, parks + " parks in " + downtown + " downtown tiles (one in eight)");
 	}
 
@@ -308,7 +308,30 @@ class CityProgramTest {
 			assertTrue(mean < prev, "mean top storeys in band " + e.getKey() + " is " + mean + ", not below " + prev);
 			prev = mean;
 		}
-		assertTrue(band.get(0)[0] / (double) band.get(0)[1] > 20 && band.get(4)[0] / (double) band.get(4)[1] < 4, "a skyline at the centre and houses at the edge");
+		assertTrue(band.get(0)[0] / (double) band.get(0)[1] > 12 && band.get(4)[0] / (double) band.get(4)[1] < 4, "a skyline at the centre and houses at the edge");
+	}
+
+	/** P5 skyline: the tall core is a small share of the city, heights inside it are peaked (not a flat plateau), and a long tail of mid-rise and low buildings runs outward. */
+	@Test
+	void theTallCoreIsASmallShareWithAPeakedHeightDistributionAndALongTail() {
+		int built = 0, tall = 0, mid = 0, low = 0, top = 0;
+		for (Planned p : metros()) {
+			for (DistrictPlan dp : p.city().districts().values()) {
+				for (LotBrief l : dp.lots()) {
+					if (!l.builds()) continue;
+					built++;
+					int s = l.maxStoreys();
+					if (s >= 20) tall++;
+					if (s >= 45) top++;
+					if (s >= 10 && s <= 19) mid++;
+					if (s <= 4) low++;
+				}
+			}
+		}
+		assertTrue(tall > 0 && tall * 100 <= built * 8, tall + " of " + built + " lots reach 20 storeys: the tall core is at most 8 per cent of the city");
+		assertTrue(top * 100 <= tall * 20, top + " of " + tall + " towers reach 45 storeys: the tallest are few");
+		assertTrue(mid * 100 >= built * 3, mid + " mid-rise lots of " + built);
+		assertTrue(low * 100 >= built * 80, low + " lots of 4 storeys or fewer, of " + built + ": the long tail");
 	}
 
 	/** Writes build/skyline/metropolis.png (two transects through the centre of the first two metropolises) and checks their shape. */
@@ -332,5 +355,107 @@ class CityProgramTest {
 			}
 		}
 		SkylinePng.write(profiles, labels, new java.io.File("build/skyline/metropolis.png"));
+	}
+
+	// ---- street blocks and the street fabric (ROADS3)
+
+	/** Does a street footprint cover every column of the ring just outside the rectangle (all four sides and the corners)? */
+	private static boolean ringIsStreet(DistrictPlan d, LotBrief l) {
+		java.util.Set<Long> cover = new java.util.HashSet<>();
+		for (Street s : d.streets())
+			for (Rect r : SettlementChecks.footprint(s))
+				for (int z = Math.max(r.z(), l.z() - 1); z < Math.min(r.z() + r.d(), l.z() + l.d() + 1); z++)
+					for (int x = Math.max(r.x(), l.x() - 1); x < Math.min(r.x() + r.w(), l.x() + l.w() + 1); x++) cover.add(((long) x << 32) ^ (z & 0xffffffffL));
+		for (int x = l.x() - 1; x <= l.x() + l.w(); x++) for (int z : new int[] {l.z() - 1, l.z() + l.d()}) if (!cover.contains(((long) x << 32) ^ (z & 0xffffffffL))) return false;
+		for (int z = l.z(); z < l.z() + l.d(); z++) for (int x : new int[] {l.x() - 1, l.x() + l.w()}) if (!cover.contains(((long) x << 32) ^ (z & 0xffffffffL))) return false;
+		return true;
+	}
+
+	/**
+	 * The grid quarters form street rings (ROADS3: grid land is judged per block side, not per node, and blocks stand from density 50), so the
+	 * mid-density band gets perimeter blocks: every block lot has street on all four sides, and the cities and metropolises on these gentle
+	 * terrains hold blocks in the 50-to-85 band (before: 5 in all 28 settlements, almost all at 70 and up).
+	 */
+	@Test
+	void gridQuartersFormStreetRingsSoTheMidDensityBandGetsPerimeterBlocks() {
+		int blocks = 0, mid = 0, low = 0;
+		List<Planned> all = new ArrayList<>(cities());
+		all.addAll(metros());
+		for (Planned p : all) {
+			for (DistrictPlan d : p.city().districts().values()) {
+				for (LotBrief l : d.lots()) {
+					if (!l.type().equals("block") || !l.builds()) continue;
+					blocks++;
+					assertTrue(ringIsStreet(d, l), "block " + l.id() + " has a side with no street");
+					if (l.density() < 85) mid++;
+					if (l.density() < 70) low++;
+				}
+			}
+		}
+		System.out.println("blocks " + blocks + ", density 50-84 " + mid + ", 50-69 " + low);
+		assertTrue(mid >= 60, "perimeter blocks in the 50-85 band: " + mid + " of " + blocks);
+		assertTrue(low >= 20, "perimeter blocks in the 50-70 band: " + low + " of " + blocks);
+	}
+
+	/**
+	 * Arterials and squares read the street fabric's density ({@link DensityField#fabric}: the plain {@code cap (1 - t^2)} profile, keyed to the
+	 * share of the radius), not the skyline's (ROADS3: SKYLINE's smaller tall core had thinned the metropolis's arterials and squares). On flat ground
+	 * every urban tile-border segment whose fabric density at its midpoint is 80 or more is an arterial (the rule's probability is 1 there), well
+	 * beyond the tall core.
+	 */
+	@Test
+	void metropolisArterialsFollowTheStreetFabricNotTheSkyline() {
+		int sure = 0, outsideCore = 0;
+		for (Planned p : metros()) {
+			if (!TERRAINS[(int) ((p.setup().seed() - 900) % TERRAINS.length)].equals("flat:64")) continue; // flat ground: no grade or water veto
+			SkeletonSource src = p.setup().source();
+			DensityField den = src.density();
+			Arterials art = den.arterials();
+			Pt c = p.centre();
+			int r = p.radius();
+			for (DistrictGrid.Segment s : art.segmentsIn(c.x() - r, c.z() - r, c.x() + r, c.z() + r)) {
+				int mid = Math.floorDiv(s.from() + s.to(), 2), mx = Arterials.ax(s, mid), mz = Arterials.az(s, mid);
+				if (!den.urban(Arterials.ax(s, s.from()), Arterials.az(s, s.from())) || !den.urban(Arterials.ax(s, s.to()), Arterials.az(s, s.to()))) continue;
+				if (den.fabric(mx, mz) < 80) continue;
+				sure++;
+				if (den.base(mx, mz) < 80) outsideCore++;
+				assertTrue(art.is(s), "seed " + p.setup().seed() + " segment " + s + " fabric " + den.fabric(mx, mz) + " is no arterial");
+			}
+		}
+		System.out.println("fabric-80 segments " + sure + ", of them below skyline density 80: " + outsideCore);
+		assertTrue(sure >= 40 && outsideCore >= 20, "segments checked " + sure + ", outside the tall core " + outsideCore);
+	}
+
+	/**
+	 * Grid land is judged once per block side (ROADS3, {@code StreetRules.gridSideEdgeOk}): on flat dry ground, where no slope or water vetoes an
+	 * edge, every stretch of a grid line between two crossing lines is drawn whole or not at all (before, a node whose own column fell below density
+	 * 50 or out of the footprint cut the side short and left the blocks beside it without a street ring).
+	 */
+	@Test
+	void gridLandIsJudgedPerBlockSideSoEachSideIsWholeOrAbsent() {
+		int whole = 0;
+		for (Planned p : cities()) {
+			if (!TERRAINS[(int) ((p.setup().seed() - 900) % TERRAINS.length)].equals("flat:64")) continue;
+			SkeletonSource src = p.setup().source();
+			StreetRules rules = new StreetRules(src);
+			dev.fractalbuildings.core.probe.TerrainProbe exact = p.setup().p().terrain();
+			for (DistrictPlan d : p.city().districts().values()) {
+				DistrictGrid.Tile t = src.grid().tile(d.district().ix(), d.district().iz());
+				for (int axis = 0; axis < 2; axis++) {
+					boolean vertical = axis == DistrictGrid.AXIS_X;
+					int other = vertical ? DistrictGrid.AXIS_Z : DistrictGrid.AXIS_X;
+					int lo = vertical ? t.minZ() : t.minX(), hi = vertical ? t.maxZ() : t.maxX();
+					for (int pos : rules.gridLines(axis, vertical ? t.ix() : t.iz())) {
+						TreeMap<Integer, Set<Boolean>> bySide = new TreeMap<>();
+						for (int a = Math.floorDiv(lo, 8) * 8; a + 8 <= hi; a += 8) bySide.computeIfAbsent(rules.between(other, a + 4)[0], k -> new java.util.TreeSet<>()).add(rules.gridSideEdgeOk(exact, axis, pos, a, a + 8));
+						for (var e : bySide.entrySet()) {
+							assertEquals(1, e.getValue().size(), "seed " + p.setup().seed() + " line " + (vertical ? "x " : "z ") + pos + ": the side from " + e.getKey() + " is partly grid");
+							if (e.getValue().contains(true)) whole++;
+						}
+					}
+				}
+			}
+		}
+		assertTrue(whole >= 50, "whole grid sides " + whole);
 	}
 }

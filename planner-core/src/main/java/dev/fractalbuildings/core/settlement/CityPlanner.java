@@ -68,6 +68,11 @@ public final class CityPlanner {
 			hub = new Pt(hp.x() + hp.w() / 2, hp.z() + hp.d() / 2);
 			break;
 		}
+		if (src.network().hasLattice()) {
+			List<Road> roads = new ArrayList<>();
+			for (Road r : plan.roads()) if (r.kind() == RoadKind.ARTERIAL ? src.network().arterialPresent(r.id()) : src.network().reaches(r)) roads.add(r);
+			plan = plan.withRoads(roads);
+		}
 		plan = plan.withLandmarks(placedLandmarks(plan.landmarks(), districts, landmarks));
 		List<Violation> v = new ArrayList<>(plan.violations());
 		SettlementChecks.CityRoads cr = SettlementChecks.cityRoads(districts.values(), hub);
@@ -84,11 +89,19 @@ public final class CityPlanner {
 	 */
 	static List<Landmark> placedLandmarks(List<Landmark> sk, SortedMap<String, DistrictPlan> districts, SortedMap<String, List<Landmark>> kept) {
 		List<Landmark> out = new ArrayList<>();
+		List<Landmark> used = new ArrayList<>(); // matched landmarks (identity of a record: equal fields)
 		for (Landmark l : sk) {
 			DistrictPlan dp = districts.get(l.district());
 			Rect r = null;
 			if (dp != null) {
-				for (Landmark k : kept.getOrDefault(l.district(), List.of())) if (k.kind() == l.kind() && r == null) r = new Rect(k.x(), k.z(), k.w(), k.d());
+				Landmark pick = null;
+				long bd = Long.MAX_VALUE;
+				for (Landmark k : kept.getOrDefault(l.district(), List.of())) {
+					if (k.kind() != l.kind() || used.contains(k)) continue;
+					long dx = k.x() + k.w() / 2 - (l.x() + l.w() / 2), dz = k.z() + k.d() / 2 - (l.z() + l.d() / 2), dd = dx * dx + dz * dz;
+					if (dd < bd) { bd = dd; pick = k; }
+				}
+				if (pick != null) { used.add(pick); r = new Rect(pick.x(), pick.z(), pick.w(), pick.d()); }
 				if (r == null && (l.kind() == LandmarkKind.HALL || l.kind() == LandmarkKind.TEMPLE)) {
 					String type = l.kind() == LandmarkKind.HALL ? "hall" : "temple";
 					long best = Long.MAX_VALUE;
@@ -99,6 +112,7 @@ public final class CityPlanner {
 					}
 				}
 			}
+			if (r == null && dp != null && (l.kind() == LandmarkKind.SQUARE || l.kind() == LandmarkKind.GREEN || l.kind() == LandmarkKind.MARKET || l.kind() == LandmarkKind.PARK)) continue; // its plaza was dropped
 			out.add(r == null ? l : new Landmark(l.id(), l.kind(), r.x(), r.z(), r.w(), r.d(), l.district()));
 		}
 		return out;

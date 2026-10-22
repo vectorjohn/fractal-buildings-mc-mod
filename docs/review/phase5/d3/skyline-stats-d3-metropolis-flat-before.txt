@@ -1,0 +1,22 @@
+d3-metropolis-flat: 4393 built lots, radius 1100
+d/R 0.0-0.1: n=26 dens=100 meanMax=29.8 max=60 {"hall":1,"temple":1,"highrise":12,"shop":12}
+d/R 0.1-0.2: n=105 dens=99 meanMax=26.7 max=60 {"highrise":43,"shop":61,"block":1}
+d/R 0.2-0.3: n=167 dens=97 meanMax=32.1 max=60 {"highrise":91,"shop":71,"block":5}
+d/R 0.3-0.4: n=274 dens=91 meanMax=20.7 max=60 {"block":7,"shop":154,"highrise":112,"hall":1}
+d/R 0.4-0.5: n=372 dens=83 meanMax=13.0 max=60 {"highrise":144,"shop":204,"block":12,"house":8,"workshop":3,"hall":1}
+d/R 0.5-0.6: n=656 dens=71 meanMax=5.5 max=31 {"highrise":98,"shop":372,"block":15,"workshop":55,"house":116}
+d/R 0.6-0.7: n=1019 dens=60 meanMax=3.6 max=17 {"house":380,"shop":481,"highrise":20,"workshop":132,"tower":4,"hall":2}
+d/R 0.7-0.8: n=799 dens=45 meanMax=3.1 max=8 {"shop":255,"workshop":135,"house":391,"tower":18}
+d/R 0.8-0.9: n=637 dens=23 meanMax=2.6 max=8 {"house":407,"workshop":112,"tower":32,"shop":86}
+d/R 0.9-1.0: n=338 dens=9 meanMax=2.1 max=6 {"house":239,"workshop":72,"tower":12,"shop":15}
+tallest 60@0.32R 60@0.32R 60@0.33R 60@0.34R 60@0.38R
+storey histogram (top storey, share of built lots, median d/R):
+   1-2   24.1%  n=1058  median d/R 0.87
+   3-4   61.7%  n=2709  median d/R 0.64
+   5-5    0.9%  n=  40  median d/R 0.48
+   6-9    1.5%  n=  66  median d/R 0.83
+  10-19   4.0%  n= 175  median d/R 0.53
+  20-29   1.2%  n=  53  median d/R 0.41
+  30-44   1.6%  n=  72  median d/R 0.43
+  45-60   5.0%  n= 220  median d/R 0.27
+>=20 storeys: 345 lots (7.9%), 40 blocks

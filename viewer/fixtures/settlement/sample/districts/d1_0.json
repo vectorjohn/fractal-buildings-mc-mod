@@ -12,7 +12,7 @@
     {"id": "p0", "kind": "market", "x": 216, "z": 90, "w": 32, "d": 28, "y": 64}
   ],
   "lots": [
-    {"id": "d1_0.l0", "x": 152, "z": 123, "w": 16, "d": 14, "front": "south", "type": "shop", "style": "desert", "storeys": [2, 4], "streets": 1, "airRights": 0, "frontY": 63, "density": 56, "status": "build"},
+    {"id": "d1_0.l0", "x": 152, "z": 123, "w": 16, "d": 14, "front": "south", "type": "house", "style": "desert", "storeys": [2, 3], "streets": 1, "airRights": 0, "frontY": 63, "density": 56, "status": "build"},
     {"id": "d1_0.l1", "x": 152, "z": 144, "w": 16, "d": 14, "front": "north", "type": "house", "style": "desert", "storeys": [2, 3], "streets": 1, "airRights": 0, "frontY": 63, "density": 56, "status": "build"},
     {"id": "d1_0.l2", "x": 172, "z": 123, "w": 16, "d": 14, "front": "south", "type": "shop", "style": "desert", "storeys": [2, 4], "streets": 1, "airRights": 0, "frontY": 62, "density": 50, "status": "build"},
     {"id": "d1_0.l3", "x": 172, "z": 144, "w": 16, "d": 14, "front": "north", "type": "house", "style": "desert", "storeys": [2, 3], "streets": 1, "airRights": 0, "frontY": 62, "density": 50, "status": "build"},

@@ -62,6 +62,38 @@ class InvariantsTest {
 		assertEquals(new TreeSet<>(List.of("roof-covers", "roof-closed")), got);
 	}
 
+	/**
+	 * A stair well cut down through the roof and ceiling (WALLSLOPE: a town-wall walk descending through a curtain's end to a lower tower doorway) is
+	 * open on purpose, and roof-covers and shell-closed excuse it, but only on a building of type {@code curtain}: the same hole over a stair in a house
+	 * is a hole in the roof (ROADS3 pins the type check).
+	 */
+	@Test
+	void stairWellThroughTheRoofIsExcusedOnACurtainOnly() {
+		for (String type : new String[] {"house", "curtain"}) {
+			SceneDoc s = SampleScenes.house();
+			PlacedBuilding b = s.buildings().get(0);
+			BuildingIr sh = b.shell();
+			List<Box> boxes = new ArrayList<>(sh.boxes());
+			boxes.remove(15); // the ridge row (y 7, z 2) ...
+			boxes.remove(6); // ... and the ceiling (y 4) ...
+			boxes.add(new Box(Box3.of(0, 7, 2, 2, 1, 1), Role.ROOF, Layer.ROOF, Box.NO_STOREY)); // ... put back except over column x 2, z 2
+			boxes.add(new Box(Box3.of(3, 7, 2, 4, 1, 1), Role.ROOF, Layer.ROOF, Box.NO_STOREY));
+			boxes.add(new Box(Box3.of(0, 4, 0, 7, 1, 2), Role.FLOOR, Layer.ROOF, Box.NO_STOREY));
+			boxes.add(new Box(Box3.of(0, 4, 3, 7, 1, 2), Role.FLOOR, Layer.ROOF, Box.NO_STOREY));
+			boxes.add(new Box(Box3.of(0, 4, 2, 2, 1, 1), Role.FLOOR, Layer.ROOF, Box.NO_STOREY));
+			boxes.add(new Box(Box3.of(3, 4, 2, 4, 1, 1), Role.FLOOR, Layer.ROOF, Box.NO_STOREY));
+			boxes.add(new Box(Box3.of(1, 1, 1, 2, 1, 3), Role.STAIR, Layer.INTERIOR, 0)); // the stair flight under the well fills the room's floor
+			var sp = sh.spec();
+			var spec = new dev.fractalbuildings.core.ir.BuildingSpec(sp.genVersion(), sp.specSeed(), sp.style(), type, sp.width(), sp.depth(), sp.storeys(), sp.roof(), sp.maxHeight(), sp.streets(), sp.lead());
+			BuildingIr shell = new BuildingIr(spec, sh.bounds(), sh.storeys(), sh.volumes(), sh.rooms(), sh.openings(), sh.roofs(), boxes);
+			PlacedBuilding nb = new PlacedBuilding(b.id(), b.lots(), b.ox(), b.oy(), b.oz(), b.rotation(), shell, b.siteBoxes());
+			TreeSet<String> got = ids(Invariants.check(new SceneDoc(s.genVersion(), s.seed(), s.terrain(), s.lots(), List.of(nb), s.violations())));
+			boolean curtain = type.equals("curtain");
+			assertEquals(!curtain, got.contains("roof-covers"), type + ": " + got);
+			assertEquals(!curtain, got.contains("shell-closed"), type + ": " + got);
+		}
+	}
+
 	@Test
 	void missingNorthWallOpensShell() {
 		SceneDoc s = mutateBoxes(b -> { b.remove(1); return b; });

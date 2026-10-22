@@ -30,7 +30,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * A town-wall segment with a gatehouse. The wall runs along the lot's front (local x); the field is
+ * A town-wall gatehouse (the other ring lots are {@link CurtainType} walls and {@link BastionType} corner towers; the walk joining them is {@link WalkOps}). The wall runs along the lot's front (local x); the field is
  * to the north (the front), the town to the south. A gatehouse (two towers and a passage between
  * them) stands in the segment and curtain walls run out from its towers to the lot's ends.
  *
@@ -117,7 +117,11 @@ public final class WallType implements BuildingType {
 		if (sr > 0) ms.add(curtain("curtain1", towerR.maxX() - 1, sr + 1, d, r));
 		List<Core> cores = new ArrayList<>();
 		for (Mass t : List.of(towerL, towerR)) {
-			Core k = MassingOps.core(g, List.of(t), ms, 0, t.to(), r);
+			Core k = null;
+			for (int tries = 0; tries < 8; tries++) { // the stair must leave the doorway onto the neighbour's walk free (a tower on the lot's end)
+				k = MassingOps.core(g, List.of(t), ms, 0, t.to(), r);
+				if (k == null || !blocksDoorway(k, t, w, d)) break;
+			}
 			if (k == null) return null;
 			cores.add(k);
 		}
@@ -125,11 +129,21 @@ public final class WallType implements BuildingType {
 		return MassingCheck.check(m, w, d, sp.maxHeight()).isEmpty() ? m : null;
 	}
 
+	/** Does the core fill the inside of the doorway cells of a tower that stands on an end of the lot (see {@link WalkOps#endDoor})? */
+	private static boolean blocksDoorway(Core k, Mass t, int w, int d) {
+		for (boolean east : new boolean[] {false, true}) {
+			if (east ? t.maxX() != w : t.x() != 0) continue;
+			int ix = east ? t.maxX() - 2 : t.x() + 1;
+			boolean free = false;
+			for (int z : WalkOps.cells(d, 1, 1)) free |= !(ix >= k.x() && ix < k.maxX() && z >= k.z() && z < k.maxZ());
+			if (!free) return true;
+		}
+		return false;
+	}
+
 	/** A gallery wall 3 to 5 thick (1 to 3 inside), shifted along the depth. */
 	private static Mass curtain(String id, int x, int sx, int d, Draws r) {
-		int t = r.range(3, Math.min(5, d));
-		int z = r.range(0, d - t);
-		return new Mass(id, "curtain", x, z, sx, t, 0, 1, null, true);
+		return new Mass(id, "curtain", x, WalkOps.bandZ(d), sx, WalkOps.BAND, 0, 1, null, true);
 	}
 
 	// ---- roofs: flat with a crenellated parapet ----
@@ -140,6 +154,7 @@ public final class WallType implements BuildingType {
 			RoofStyle s = c.style().roof();
 			RoofPass.run(c, new RoofStyle(s.forms(), s.rise(), s.run(), 0, 2, "wall", 1, 0));
 			battlements(c);
+			for (Mass cur : c.massing().masses()) if (cur.kind().equals("curtain")) WalkOps.openEnds(c, cur);
 		};
 	}
 
@@ -205,6 +220,7 @@ public final class WallType implements BuildingType {
 			Massing m = c.massing();
 			OpeningPass.run(c, e -> gate(c, e));
 			for (Mass cur : m.masses()) if (cur.kind().equals("curtain")) walkDoor(c, m, cur);
+			endDoors(c, m);
 		};
 	}
 
@@ -222,6 +238,17 @@ public final class WallType implements BuildingType {
 		c.box(Role.DOOR, Layer.SHELL, f.storey(), box.x(), box.y(), box.z(), box.sx(), box.sy(), box.sz());
 		c.opening(OpeningKind.DOOR, box, f.side(), room, Opening.OUTSIDE);
 		return e;
+	}
+
+	/** A tower end that has no curtain in the lot opens onto the neighbouring lot's walk, and a curtain reaching the lot's end opens its parapet there. */
+	static void endDoors(BuildContext c, Massing m) {
+		int e = c.spec().depth();
+		for (Mass t : m.masses()) {
+			if (!t.kind().equals("tower") || t.to() < 2) continue;
+			boolean west = t.x() == 0, east = t.maxX() == c.spec().width();
+			if (west) WalkOps.endDoor(c, m, t, false, e, 1, 1);
+			if (east) WalkOps.endDoor(c, m, t, true, e, 1, 1);
+		}
 	}
 
 	/**

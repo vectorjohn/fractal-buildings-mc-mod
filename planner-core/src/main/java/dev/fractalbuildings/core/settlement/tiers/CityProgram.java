@@ -37,6 +37,9 @@ public class CityProgram extends TownProgram {
 	/** About one arterial crossing in this many gets a square. */
 	public static final int SQUARE_ONE_IN = 4;
 
+	/** The hub square keeps 14 clear of the tile edge, so the 9-wide avenues its reservation clips agree across the border (tile-border-agree). */
+	@Override protected int landmarkMargin() { return 14; }
+
 	@Override protected int exitCount(SkeletonContext c) {
 		if (!c.holdsCentre()) return 1;
 		return 3 + Hash64.below(Hash64.hash(c.seed, "exit-count", c.cell.cx(), c.cell.cz()), 2);
@@ -118,10 +121,25 @@ public class CityProgram extends TownProgram {
 		return null;
 	}
 
-	@Override protected Route route(SkeletonContext c, Pt hub, Pt target) {
-		if (hub == null || hub.equals(target)) return super.route(c, hub, target);
+	@Override protected Route route(SkeletonContext c, Pt hub, Pt target, java.util.function.BiPredicate<Integer, Integer> avoid) {
+		if (hub == null || hub.equals(target)) return super.route(c, hub, target, avoid);
 		Route r = octilinear(c, hub, target);
-		return r != null ? r : super.route(c, hub, target);
+		return r != null && clear(c, r, avoid) ? r : super.route(c, hub, target, avoid);
+	}
+
+	/** No lattice column of the route's legs (its target excepted) is one {@code avoid} holds. */
+	private static boolean clear(SkeletonContext c, Route r, java.util.function.BiPredicate<Integer, Integer> avoid) {
+		if (avoid == null) return true;
+		List<Pt> v = r.points();
+		for (int i = 1; i < v.size(); i++) {
+			Pt a = v.get(i - 1), b = v.get(i);
+			int sx = Integer.signum(b.x() - a.x()), sz = Integer.signum(b.z() - a.z()), n = Math.max(Math.abs(b.x() - a.x()), Math.abs(b.z() - a.z())) / c.step;
+			for (int k = 1; k <= n; k++) {
+				int x = a.x() + sx * k * c.step, z = a.z() + sz * k * c.step;
+				if (!(x == r.target().x() && z == r.target().z()) && avoid.test(x, z)) return false;
+			}
+		}
+		return true;
 	}
 
 	// ---- the old-town wall
@@ -200,7 +218,7 @@ public class CityProgram extends TownProgram {
 		int w = Hash64.range(Hash64.hash(h, "w"), 24, 36), d = Hash64.range(Hash64.hash(h, "d"), 24, 36), inset = c.density.arterials().width() / 2 + 1;
 		int px = sx > 0 ? lx + inset : lx - inset - w, pz = sz > 0 ? lz + inset : lz - inset - d;
 		int cx = px + w / 2, cz = pz + d / 2;
-		if (!c.density.urban(cx, cz) || c.terrain.waterWithin(cx, cz, 24) || c.density.at(cx, cz) < 50) return;
+		if (!c.density.urban(cx, cz) || c.terrain.waterWithin(cx, cz, 24) || c.density.fabricAt(cx, cz) < 50) return; // ROADS3: squares follow the street fabric (share of the radius), not the skyline
 		if (c.quarters.at(cx, cz, c.density.at(cx, cz)) == QuarterKind.PARK) return; // a park tile stays open ground
 		if (nearRing(c, px, pz, w, d)) return;
 		String district = Ids.district(t.ix(), t.iz());

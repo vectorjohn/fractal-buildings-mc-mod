@@ -12,7 +12,7 @@
     "narrowCorners": false, "blankCorners": true, "doorSurround": true, "plinth": true, "sills": true, "lintels": true, "cornice": true,
     "corners": "none", "timber": "none"},
 
-  "interior": {"roomMin": 3, "roomArea": 28, "corridorAbove": 8, "loopPercent": 20},
+  "interior": {"roomMin": 3, "roomArea": 28, "corridorAbove": 8, "loopPercent": 20, "openPercent": 60},
 
   "palette": {
     "foundation": ["minecraft:cut_sandstone", "minecraft:sandstone", "minecraft:smooth_sandstone"],

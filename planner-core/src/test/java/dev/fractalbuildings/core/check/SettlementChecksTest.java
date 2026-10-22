@@ -150,9 +150,10 @@ class SettlementChecksTest {
 		var v = SettlementChecks.cityRoadsConnected(List.of(tile(0, 0, List.of(main, dead), onMain, onDead), tile(1, 0, List.of(main))), hub);
 		assertEquals(List.of("roads-connected"), ids(v));
 		assertTrue(v.get(0).message().contains("lot b"), v.get(0).message());
-		// the same lane without a lot is a stray fragment: counted, not a violation
+		// the same lane without a lot is a detached road (ROADS2): counted as a stray and reported as roads-attached, not roads-connected
 		var r = SettlementChecks.cityRoads(List.of(tile(0, 0, List.of(main, dead), onMain), tile(1, 0, List.of(main))), hub);
-		assertEquals(List.of(), r.violations());
+		assertEquals(List.of("roads-attached"), ids(r.violations()));
+		assertTrue(r.violations().get(0).message().contains("x 39..91"), r.violations().get(0).message());
 		assertEquals(1, r.strays());
 		// joining the lane to the road fixes the first case
 		Street join = street("j", RoadKind.LANE, 3, new Pt(60, 64), new Pt(60, 110));

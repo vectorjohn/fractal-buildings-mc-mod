@@ -185,7 +185,10 @@ district { format: "fb-district/1", planVersion: 1, genVersion, seed: "<int64>",
   streets:  [{ id, kind, width, points: [[x, z]], y: [int] }],   y per point: road surface (first free y)
   plazas:   [{ id, kind, x, z, w, d, y }],
   lots:     [{ id, x, z, w, d, front, type, style, storeys: [min, max], streets, airRights, frontY,
-               density, status }],       front: north|east|south|west; status: "build" | "empty:<reason>"
+               density, status, walk? }],       front: north|east|south|west; status: "build" | "empty:<reason>"
+               walk?: [base, prev, next] on town-wall (ring) lots only: base = world y of the lot's ground slab in the ring's walk profile (the generator uses it instead of the
+               highest ground under the footprint), prev/next = work at the lot's anticlockwise/clockwise end: >0 a stair ramp up that many blocks to a higher
+               neighbour, <0 a stair cut down through a curtain end to a lower tower doorway, 0 none (|n| <= 10; optional key, written only when present)
   scene:    "<path to the fb-scene file>" | null,
   violations: [violation] }
 ```
@@ -210,7 +213,10 @@ district { format: "fb-district/1", planVersion: 1, genVersion, seed: "<int64>",
   temple facing it, all inside one tile. `fractal-cli city` also writes `terrain.json.gz`, the plan raster as a terrain-only
   `fb-region-dump/1` (step 32) for the plan view background. Fixtures: `viewer/fixtures/settlement/skeleton/`.
 - **District detail** (DL, `Districts.plan`, CLI `city --districts`): `streets` are the skeleton's main roads and paths, the
-  tile-border arterials and plain border streets, the grid lines shared along a row or column of tiles, hashed port lanes and
+  tile-border arterials and plain border streets (in a town, city or metropolis the *street lattice* of `RoadNetwork`, ROADS2: every tile-border segment that
+  is an arterial candidate or has 2 of its 3 sample points urban, is dry enough and not steeper than 1 in 3, and that a chain of such segments links to a
+  live road is drawn, an arterial where the rule picked one and a 5-wide street otherwise; an arterial no chain links is not drawn), the grid lines shared
+  along a row or column of tiles (they stop short of a border that has no street), hashed port lanes (not in lattice tiers) and
   frontage lanes, each clipped to the tile plus 8 blocks (so two tiles at a border list the same streets; a lot never lies outside the
   tile). Ids: the road's own (`r..`, a later piece of the same road gets `.1`...), `a<axis><line>_<from>` arterials, `b<axis><line>_<from>`
   border streets, `sx<x>_<z>` / `sz<z>_<x>` grid lines, `t<n>` ports, `n<n>` lanes, `quay<x>_<z>` waterfront promenades (kind `quay`, width 4: the marching-squares contour of "water within 8 blocks" on the 8-lattice, kept in the waterfront quarter, on a bank at most 4 above the water, runs of 40+ columns; `k<n>` lanes link them to the nearest street); sorted by id. `points` are the vertices plus both columns of every change of height (ROADS), so floor
@@ -227,10 +233,10 @@ district { format: "fb-district/1", planVersion: 1, genVersion, seed: "<int64>",
   ones (the hub tile, then one per quarter kind, in a hash order) or named districts. The settlement's `violations` also hold the two
   whole-city rules: **`tile-border-agree`** for every pair of neighbouring tiles, and **`roads-connected`** (city part): the street and plaza columns of
   all tiles form 4-connected pieces; every piece that holds the front of a lot that builds must be the piece of the hub (bridges are street
-  points). A piece without a lot front (a port, grid line or outlying arterial that dead-ends) is a *stray*, counted by `city-check`, not a
-  violation. To keep lots off such fragments, `Districts` gives no lots to streets whose piece within the tile and its margin holds no skeleton
-  road. The site id is `s<cx>_<cz>` of the claimant cell with negative parts written `m` (`Ids.site`), for `--cell` and `--site` alike.
-- **Brief** (`GenRequest.brief`, optional, `core/gen/Brief`): `{minStoreys, maxStoreys, streets, airRights, frontY}`
+  points). A piece that holds no lot front is a *stray*, counted by `city-check`; since ROADS2 it is also a violation, **`roads-attached`**: no street or plaza
+  piece of the city may be cut off from the hub (strays are 0 on every window and site checked). To keep lots off fragments, `Districts` gives no lots to
+  streets whose piece within the tile and its margin holds no live road. The site id is `s<cx>_<cz>` of the claimant cell with negative parts written `m` (`Ids.site`), for `--cell` and `--site` alike.
+- **Brief** (`GenRequest.brief`, optional, `core/gen/Brief`): `{minStoreys, maxStoreys, streets, airRights, frontY, walk?}` (`walk` = `Brief.Walk(base, prev, next)`, ring lots only, see `fb-district/1` lots)
   from a lot of the plan. `SpecPolicyV1` draws storeys from the brief's range intersected with the type's (if they do
   not meet, the type's bound nearest the brief) and sets `spec.streets` from the brief (front forced, unless the type
   has `allStreets`). With `airRights` > 0, a known `frontY`, a style with jetties (medieval), a house or shop of 2+

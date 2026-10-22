@@ -10,8 +10,14 @@ import java.util.Objects;
  * {@code "empty:<reason>"}.
  */
 public record LotBrief(String id, int x, int z, int w, int d, Facing front, String type, String style, int minStoreys, int maxStoreys,
-		int streets, int airRights, int frontY, int density, String status) {
+		int streets, int airRights, int frontY, int density, String status, Brief.Walk walk) {
 	public static final String BUILD = "build";
+
+	/** A lot without a wall-walk level. */
+	public LotBrief(String id, int x, int z, int w, int d, Facing front, String type, String style, int minStoreys, int maxStoreys,
+			int streets, int airRights, int frontY, int density, String status) {
+		this(id, x, z, w, d, front, type, style, minStoreys, maxStoreys, streets, airRights, frontY, density, status, null);
+	}
 
 	public LotBrief {
 		Objects.requireNonNull(id);
@@ -32,5 +38,5 @@ public record LotBrief(String id, int x, int z, int w, int d, Facing front, Stri
 	public Rect rect() { return new Rect(x, z, w, d); }
 
 	/** The brief to hand to the generator (the front bit is forced by the spec policy). */
-	public Brief brief() { return new Brief(minStoreys, maxStoreys, streets, airRights, frontY); }
+	public Brief brief() { return new Brief(minStoreys, maxStoreys, streets, airRights, frontY, walk); }
 }

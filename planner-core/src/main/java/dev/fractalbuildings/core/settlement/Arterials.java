@@ -60,7 +60,7 @@ public final class Arterials {
 		if (tier == Tier.CITY && density.oldTown().cuts(s)) return false; // the old-town wall takes no arterial through its gates
 		if (tier == Tier.METROPOLIS && outerRing(s)) return waterOk(s);
 		int mid = Math.floorDiv(s.from() + s.to(), 2);
-		double p = probability(density.base(ax(s, mid), az(s, mid)));
+		double p = probability(density.fabric(ax(s, mid), az(s, mid))); // ROADS3: the fabric density, not the skyline one
 		if (p <= 0 || Tiers.unit(s.hash(seed, "arterial")) >= p) return false;
 		return waterOk(s) && gradeOk(s);
 	}
@@ -70,8 +70,11 @@ public final class Arterials {
 	 * differ by more than {@link CoarseTerrain#ROAD_STEEP_PER_32} (1 in 2; the road grade limit is 1 in 3, but the cut and fill beside a
 	 * nine-wide road on steeper ground would shear the hill). Bridged spans are exempt. Pointwise.
 	 */
-	boolean gradeOk(DistrictGrid.Segment s) {
-		int limit = CoarseTerrain.ROAD_STEEP_PER_32 * terrain.step / 32;
+	boolean gradeOk(DistrictGrid.Segment s) { return gradeOk(s, CoarseTerrain.ROAD_STEEP_PER_32); }
+
+	/** {@link #gradeOk(DistrictGrid.Segment)} with the largest rise per 32 blocks given (the street lattice's plain streets keep to 1 in 4). */
+	boolean gradeOk(DistrictGrid.Segment s, int per32) {
+		int limit = per32 * terrain.step / 32;
 		int prev = Integer.MIN_VALUE;
 		for (int q = terrain.snap(s.from()); q <= terrain.snap(s.to()); q += terrain.step) {
 			if (terrain.water(ax(s, q), az(s, q))) { prev = Integer.MIN_VALUE; continue; }

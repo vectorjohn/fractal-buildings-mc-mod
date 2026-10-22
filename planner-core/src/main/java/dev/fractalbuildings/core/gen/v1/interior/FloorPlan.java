@@ -81,14 +81,14 @@ record FloorPlan(int w, int d, List<Leaf> leaves, List<Cut> cuts, List<Door> doo
 	 * a stair core and has partition either side of it (so a pier stays at each end), and no other door
 	 * is within a cell. Rooms, cuts and the rest of the doors are unchanged, so reachability is too.
 	 */
-	FloorPlan withArches(java.util.function.Predicate<String> open, String[] uses, boolean[][] core, int percent, Draws dr) {
+	FloorPlan withArches(java.util.function.Predicate<String> open, String[] uses, boolean[][] core, java.util.function.BiFunction<String, String, Integer> percent, int wideFrom, Draws dr) {
 		List<Door> out = new ArrayList<>();
 		for (Door dd : doors) {
-			if (!open.test(uses[dd.from()]) || !open.test(uses[dd.to()]) || !dr.chance(percent, 100)) {
+			if (!open.test(uses[dd.from()]) || !open.test(uses[dd.to()]) || !dr.chance(percent.apply(uses[dd.from()], uses[dd.to()]), 100)) {
 				out.add(dd);
 				continue;
 			}
-			int want = 1 + dr.below(3);
+			int want = percent.apply(uses[dd.from()], uses[dd.to()]) >= wideFrom ? 2 + dr.below(3) : 1 + dr.below(3); // open styles: 2 to 4 wide
 			int lo = 0, hi = 0; // span offsets relative to the door cell, inclusive
 			while (hi - lo + 1 < want) {
 				boolean up = (hi - lo) % 2 == 0;
