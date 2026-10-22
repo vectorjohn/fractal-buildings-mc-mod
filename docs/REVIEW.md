@@ -318,3 +318,10 @@ work becomes a ROADMAP item or a Polish backlog line. Settled items move to
   Look for: the road ramping up (or down) to a gate on a hillside: is a 1-in-3 ramp with up to ~15 blocks of fill or cut in front of the gate acceptable, or should the gatehouse sit lower instead? On flat ground the 50-70 density belt is now about 40 % 3-5 storey perimeter blocks (d3-metropolis-flat 12 → 64 blocks, walled city 2 → 22): too many, or the mid-size tail you wanted? On the real gate windows blocks stay rare (4 in all 9 cities): of 846 candidate street blocks only 60 are dry and gentle enough for a block at all (water and hills), so that is the terrain, not the street rings.
   Result:
     - @John 2026-10-22: Yes, this looks good.
+
+## S10 roads between settlements (spike)
+
+- [ ] **S10 spike pictures**: do the roads between settlements look like roads you want? The spike passes only if you like them (plan [intercity-roads.md](plans/intercity-roads.md), "The spike (S10)").
+  Where: region maps `docs/research/spikes/s10/roads-12345.png`, `roads-987654321.png`, `roads-12345-zoom.png` (findings: [s10-intercity-roads.md](research/spikes/s10-intercity-roads.md)); in-game shots `docs/research/spikes/s10/s10-road-0.png`, `s10-road-1.png`, `s10-road-2.png` (findings: [s10-mod.md](research/spikes/s10-mod.md)).
+  Look for: how sparse the network is (each settlement links to its natural neighbours; about 91 % of settlements on land are linked, islands are not); a few hooks and U-turns; many short bridges, because the recorded worlds are full of ponds; road ends stopping 64 blocks short of each town (the town's own exit roads will meet them in 6.10). In game: a causeway across a lake (road-0, road-1), and a trench cut into a hill with sheer 5 to 15 block walls and whole-block steps in the deck (road-2). Is that trench an acceptable start, with terraced cuttings later?
+  Result:
