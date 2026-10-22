@@ -55,6 +55,9 @@ public final class CurtainType implements BuildingType {
 	}
 
 	@Override
+	public java.util.List<dev.fractalbuildings.core.ir.Box> walkJoins(dev.fractalbuildings.core.ir.BuildingIr shell, dev.fractalbuildings.core.gen.Brief.Walk walk) { return WalkOps.joins(shell, walk); }
+
+	@Override
 	public Program roofs() {
 		return c -> {
 			RoofStyle s = c.style().roof();
@@ -76,7 +79,7 @@ public final class CurtainType implements BuildingType {
 			if (fs.size() != 1) throw new IllegalStateException("curtain south face: " + fs.size() + " runs");
 			Face f = fs.get(0);
 			Draws r = c.draws("curtain/door");
-			int pos = f.a() + 3 + r.below(Math.max(1, f.length() - 6));
+			int pos = f.a() + 10 + r.below(Math.max(1, f.length() - 20)); // clear of the ends, where a walk descending to a tower doorway is cut through the gallery
 			FacadePlan.Entrance town = new FacadePlan.Entrance(f, pos);
 			List<FacadePlan.Layout> layouts = new ArrayList<>();
 			for (FacadePlan.Layout l : p.layouts()) {

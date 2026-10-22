@@ -288,6 +288,9 @@ work becomes a ROADMAP item or a Polish backlog line. Settled items move to
   Look for: a continuous crenellated top along the whole ring (does it read as one wall, not boxes in a row?); gates only at the roads (the town-walled plan has 6); corner towers taller than the wall; the doorways from a tower out onto the walk. How you get up: the stair inside each gatehouse tower and corner tower leads to a doorway onto the walk (one block step up, with a step block inside); the wall galleries themselves have a guard door on the town side but no stair. Known: on sloping ground neighbouring segments stand at their own levels, so the walk has drops of more than a block between them (flat ground is fine). Is a stair or ramp at every join worth doing, or are the towers enough?
   Result:
 
+- [ ] **Wall walk on slopes (p5-wallslope)**: the wall now follows hills: each lot stands at its level in a ring-wide profile and the lower curtain has a stair ramp up to its higher neighbour or a tower doorway.
+  Where: `docs/review/phase5/wallwalk/slope-d7_m11-overview.png` and `slope-d7_m11-along.png` (the west wall of a river town, seed 541); `FB_CITIES=town-walled-hills npm run city-gallery` (also `npm run city -- town-walled-hills`) regenerates them.
+  Look for: does the stepped wall with green ramps read as a wall climbing a hill, or as blocks in a row? Ramps up to 10 blocks high between parapets that are 2 high; corner towers and gatehouses standing high on foundations on steep ground (up to ~20 blocks); a few doors walled up where a tower stands too high to reach. Is the ramp step limit (10) too generous?
 ## Skyline (John's D3 feedback)
 
 - [ ] **SKYLINE (p5-skyline)**: is the metropolis still "oops all highrise", or does it read as a small tall core with a long tail of mid-rise and low buildings?

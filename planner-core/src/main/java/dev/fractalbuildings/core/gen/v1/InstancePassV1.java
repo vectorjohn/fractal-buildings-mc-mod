@@ -30,6 +30,9 @@ import java.util.List;
 public final class InstancePassV1 {
 	private InstancePassV1() {}
 
+	/** The town-wall types, whose doors are walled up where the lot has no room for a flight down to the ground. */
+	private static final java.util.Set<String> WALL_TYPES = java.util.Set.of("wall", "curtain", "bastion");
+
 	public static PlacedBuilding place(BuildingIr shell, GenRequest req) { return place(shell, req, Types.get(shell.spec().type()).limits()); }
 
 	/** With explicit margins (tests place shells of unregistered types). */
@@ -59,6 +62,8 @@ public final class InstancePassV1 {
 			int wx = p0.worldX(o.box().x() + f.dx, o.box().z() + f.dz), wz = p0.worldZ(o.box().x() + f.dx, o.box().z() + f.dz);
 			if (lot.containsColumn(wx, wz)) oy = Math.max(oy, t.floorY(wx, wz) - entranceStorey(shell).y());
 		}
+		dev.fractalbuildings.core.gen.Brief.Walk walk = req.brief() == null ? null : req.brief().walk();
+		if (walk != null) oy = Math.max(oy, walk.base()); // a town-wall lot stands at its level in the ring's walk profile (the ground under it is filled up to it)
 		List<Box> site = new ArrayList<>();
 		for (int lz = 0; lz < d; lz++) {
 			int runStart = 0, runH = 0;
@@ -73,8 +78,31 @@ public final class InstancePassV1 {
 		}
 		PlacedBuilding provisional = new PlacedBuilding("b0", List.of(lot.id()), ox, oy, oz, r, shell, site);
 		List<Box> all = new ArrayList<>(site);
-		steps(provisional, lot, t, all, lim.stoop());
-		return new PlacedBuilding("b0", List.of(lot.id()), ox, oy, oz, r, shell, all);
+		List<Opening> unreachable = new ArrayList<>();
+		steps(provisional, lot, t, all, lim.stoop(), unreachable);
+		BuildingIr built = shell;
+		if (walk != null) all.addAll(Types.get(shell.spec().type()).walkJoins(shell, walk));
+		if (!unreachable.isEmpty() && WALL_TYPES.contains(shell.spec().type())) built = sealed(shell, unreachable); // a wall tower or gatehouse standing high above steep ground: no way down in the lot, so no door
+
+		return new PlacedBuilding("b0", List.of(lot.id()), ox, oy, oz, r, built, all);
+	}
+
+	/** The shell with these doors walled up: their boxes become wall and the openings go. */
+	static BuildingIr sealed(BuildingIr shell, List<Opening> doors) {
+		if (shell.spec().type().equals("curtain")) { // a gallery with no door at all: solid wall (its only way in was the guard door)
+			List<Box> solid = new ArrayList<>(shell.boxes());
+			for (dev.fractalbuildings.core.ir.Volume v : shell.volumes()) solid.add(new Box(v.box(), Role.WALL, Layer.SHELL, 0));
+			return new BuildingIr(shell.spec(), shell.bounds(), shell.storeys(), shell.volumes(), List.of(), List.of(), shell.roofs(), solid, List.of());
+		}
+		List<Box> boxes = new ArrayList<>(shell.boxes());
+		List<Opening> openings = new ArrayList<>(shell.openings());
+		for (Opening o : doors) {
+			int storey = Box.NO_STOREY;
+			for (Box b : shell.boxes()) if (b.role() == Role.DOOR && b.box().equals(o.box())) storey = b.storey();
+			boxes.add(new Box(o.box(), Role.WALL, Layer.SHELL, storey));
+			openings.remove(o);
+		}
+		return new BuildingIr(shell.spec(), shell.bounds(), shell.storeys(), shell.volumes(), shell.rooms(), openings, shell.roofs(), boxes, shell.hooks());
 	}
 
 	/** The lowest storey with rooms (storey 0, except under stilts, where it is the open leg zone): its exterior doors need a way down. */
@@ -107,7 +135,7 @@ public final class InstancePassV1 {
 	 * below, the slab needs none. When no route exists the door is left as it is and the
 	 * {@code entrance-reachable} invariant reports it.
 	 */
-	private static void steps(PlacedBuilding provisional, Lot lot, TerrainProbe t, List<Box> site, boolean stoop) {
+	private static void steps(PlacedBuilding provisional, Lot lot, TerrainProbe t, List<Box> site, boolean stoop, List<Opening> unreachable) {
 		BuildingIr shell = provisional.shell();
 		List<Opening> doors = entranceDoors(shell);
 		if (doors.isEmpty()) return;
@@ -220,7 +248,10 @@ public final class InstancePassV1 {
 				System.arraycopy(saved, 0, blocked, 0, blocked.length);
 				merged = false;
 			}
-			if (found < 0) continue;
+			if (found < 0) {
+				unreachable.add(o);
+				continue;
+			}
 			if (deck != null) { // the landing: a level block at door level per cell; solid below, or (a hall on posts) open between posts so the floor under stays open to the street
 				Facing lat = out.rotate(1);
 				int outer = Integer.MIN_VALUE;

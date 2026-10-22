@@ -117,12 +117,28 @@ public final class WallType implements BuildingType {
 		if (sr > 0) ms.add(curtain("curtain1", towerR.maxX() - 1, sr + 1, d, r));
 		List<Core> cores = new ArrayList<>();
 		for (Mass t : List.of(towerL, towerR)) {
-			Core k = MassingOps.core(g, List.of(t), ms, 0, t.to(), r);
+			Core k = null;
+			for (int tries = 0; tries < 8; tries++) { // the stair must leave the doorway onto the neighbour's walk free (a tower on the lot's end)
+				k = MassingOps.core(g, List.of(t), ms, 0, t.to(), r);
+				if (k == null || !blocksDoorway(k, t, w, d)) break;
+			}
 			if (k == null) return null;
 			cores.add(k);
 		}
 		Massing m = new Massing(g, ms, cores);
 		return MassingCheck.check(m, w, d, sp.maxHeight()).isEmpty() ? m : null;
+	}
+
+	/** Does the core fill the inside of the doorway cells of a tower that stands on an end of the lot (see {@link WalkOps#endDoor})? */
+	private static boolean blocksDoorway(Core k, Mass t, int w, int d) {
+		for (boolean east : new boolean[] {false, true}) {
+			if (east ? t.maxX() != w : t.x() != 0) continue;
+			int ix = east ? t.maxX() - 2 : t.x() + 1;
+			boolean free = false;
+			for (int z : WalkOps.cells(d, 1, 1)) free |= !(ix >= k.x() && ix < k.maxX() && z >= k.z() && z < k.maxZ());
+			if (!free) return true;
+		}
+		return false;
 	}
 
 	/** A gallery wall 3 to 5 thick (1 to 3 inside), shifted along the depth. */

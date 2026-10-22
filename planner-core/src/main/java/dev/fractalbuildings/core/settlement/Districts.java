@@ -389,7 +389,7 @@ public final class Districts {
 			for (int i = 0; i < lots.size(); i++) {
 				LotBrief l = lots.get(i);
 				String nid = id + ".l" + i;
-				if (!l.id().contains(WallRing.MARK) && !l.id().equals(nid)) lots.set(i, new LotBrief(nid, l.x(), l.z(), l.w(), l.d(), l.front(), l.type(), l.style(), l.minStoreys(), l.maxStoreys(), l.streets(), l.airRights(), l.frontY(), l.density(), l.status()));
+				if (!l.id().contains(WallRing.MARK) && !l.id().equals(nid)) lots.set(i, new LotBrief(nid, l.x(), l.z(), l.w(), l.d(), l.front(), l.type(), l.style(), l.minStoreys(), l.maxStoreys(), l.streets(), l.airRights(), l.frontY(), l.density(), l.status(), l.walk()));
 			}
 		}
 
@@ -425,7 +425,7 @@ public final class Districts {
 				if (pick < 0) { notes.add(type + " got no lot anywhere in the tile"); continue; }
 				LotBrief o = lots.get(pick);
 				TypeLimits lim = Types.get(type).limits();
-				lots.set(pick, new LotBrief(o.id(), o.x(), o.z(), o.w(), o.d(), o.front(), type, o.style(), lim.minStoreys(), lim.maxStoreys(), o.streets(), o.airRights(), o.frontY(), o.density(), o.status()));
+				lots.set(pick, new LotBrief(o.id(), o.x(), o.z(), o.w(), o.d(), o.front(), type, o.style(), lim.minStoreys(), lim.maxStoreys(), o.streets(), o.airRights(), o.frontY(), o.density(), o.status(), o.walk()));
 				landmarks.removeIf(m -> m == l); // skeleton landmark ids are not unique yet ("l?"): remove this one only
 				notes.add(type + " placed on lot " + o.id() + " (no room facing the square)");
 			}
@@ -659,6 +659,7 @@ public final class Districts {
 				List<Pt> gates = new ArrayList<>();
 				for (Gate g : sk.gates()) if (g.kind() == GateKind.WALL) gates.add(new Pt(g.x(), g.z()));
 				List<WallRing.Piece> pieces = WallRing.pieces(w, gates, grid, seed);
+				int[] levels = null; List<String> types = pieces.stream().map(WallRing.Piece::type).toList(); // the walk profile of the whole ring, worked out once (by the first piece that lies in this tile)
 				for (int k = 0; k < pieces.size(); k++) {
 					WallRing.Piece p = pieces.get(k);
 					Rect r = p.rect();
@@ -680,13 +681,21 @@ public final class Districts {
 					}
 					TypeLimits lim = Types.get(p.type()).limits();
 					int dens = den.at(r.x() + r.w() / 2, r.z() + r.d() / 2);
-					lots.add(new LotBrief(id + WallRing.MARK + k, r.x(), r.z(), r.w(), r.d(), p.front(), p.type(), StyleLibrary.AUTO, lim.minStoreys(), lim.maxStoreys(), 1, 0, Brief.NO_FRONT_Y, dens, LotBrief.BUILD));
+					if (levels == null) levels = WallRing.walkLevels(pieces, q -> groundTop(q.rect()));
+					lots.add(new LotBrief(id + WallRing.MARK + k, r.x(), r.z(), r.w(), r.d(), p.front(), p.type(), StyleLibrary.AUTO, lim.minStoreys(), lim.maxStoreys(), 1, 0, Brief.NO_FRONT_Y, dens, LotBrief.BUILD, WallRing.walkOf(types, levels, k)));
 					lotAir.add(0);
 					paintRect(r, LOT | RESERVED);
 					reserved.addAll(WallRing.blocked(p));
 					wallBlocked.addAll(WallRing.blocked(p));
 				}
 			}
+		}
+
+		/** Highest exact ground over every column of the rectangle. */
+		int groundTop(Rect r) {
+			int hi = Integer.MIN_VALUE;
+			for (int z = r.z(); z < r.z() + r.d(); z++) for (int x = r.x(); x < r.x() + r.w(); x++) hi = Math.max(hi, fl(x, z));
+			return hi;
 		}
 
 		/** Which flags are set somewhere on the rectangle, for notes. */
@@ -2230,7 +2239,7 @@ public final class Districts {
 				LotBrief l = lots.get(i);
 				int mask = Briefs.streetMask(l, streetRects, plazaRects);
 				int fy = Briefs.frontY(bare, l, streetRects);
-				out.add(new LotBrief(l.id(), l.x(), l.z(), l.w(), l.d(), l.front(), l.type(), l.style(), l.minStoreys(), l.maxStoreys(), mask, lotAir.get(i), fy, l.density(), l.status()));
+				out.add(new LotBrief(l.id(), l.x(), l.z(), l.w(), l.d(), l.front(), l.type(), l.style(), l.minStoreys(), l.maxStoreys(), mask, lotAir.get(i), fy, l.density(), l.status(), l.walk()));
 			}
 			DistrictPlan plan = new DistrictPlan(GEN_VERSION, seed, info, streets, plazas, out, null, List.of());
 			List<Violation> v = new ArrayList<>(SettlementChecks.detail(plan, landmarks));

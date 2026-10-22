@@ -185,7 +185,10 @@ district { format: "fb-district/1", planVersion: 1, genVersion, seed: "<int64>",
   streets:  [{ id, kind, width, points: [[x, z]], y: [int] }],   y per point: road surface (first free y)
   plazas:   [{ id, kind, x, z, w, d, y }],
   lots:     [{ id, x, z, w, d, front, type, style, storeys: [min, max], streets, airRights, frontY,
-               density, status }],       front: north|east|south|west; status: "build" | "empty:<reason>"
+               density, status, walk? }],       front: north|east|south|west; status: "build" | "empty:<reason>"
+               walk?: [base, prev, next] on town-wall (ring) lots only: base = world y of the lot's ground slab in the ring's walk profile (the generator uses it instead of the
+               highest ground under the footprint), prev/next = work at the lot's anticlockwise/clockwise end: >0 a stair ramp up that many blocks to a higher
+               neighbour, <0 a stair cut down through a curtain end to a lower tower doorway, 0 none (|n| <= 10; optional key, written only when present)
   scene:    "<path to the fb-scene file>" | null,
   violations: [violation] }
 ```
@@ -233,7 +236,7 @@ district { format: "fb-district/1", planVersion: 1, genVersion, seed: "<int64>",
   points). A piece that holds no lot front is a *stray*, counted by `city-check`; since ROADS2 it is also a violation, **`roads-attached`**: no street or plaza
   piece of the city may be cut off from the hub (strays are 0 on every window and site checked). To keep lots off fragments, `Districts` gives no lots to
   streets whose piece within the tile and its margin holds no live road. The site id is `s<cx>_<cz>` of the claimant cell with negative parts written `m` (`Ids.site`), for `--cell` and `--site` alike.
-- **Brief** (`GenRequest.brief`, optional, `core/gen/Brief`): `{minStoreys, maxStoreys, streets, airRights, frontY}`
+- **Brief** (`GenRequest.brief`, optional, `core/gen/Brief`): `{minStoreys, maxStoreys, streets, airRights, frontY, walk?}` (`walk` = `Brief.Walk(base, prev, next)`, ring lots only, see `fb-district/1` lots)
   from a lot of the plan. `SpecPolicyV1` draws storeys from the brief's range intersected with the type's (if they do
   not meet, the type's bound nearest the brief) and sets `spec.streets` from the brief (front forced, unless the type
   has `allStreets`). With `airRights` > 0, a known `frontY`, a style with jetties (medieval), a house or shop of 2+

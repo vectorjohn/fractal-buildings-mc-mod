@@ -106,4 +106,53 @@ final class WalkOps {
 		c.box(Role.DOOR, Layer.SHELL, 1, box.x(), box.y(), box.z(), box.sx(), box.sy(), box.sz());
 		c.opening(OpeningKind.DOOR, box, side, room, Opening.OUTSIDE);
 	}
+
+	/** The y a walker stands at on the walk in a shell's column (the first free cell above the highest solid block, boxes applied in order), or -1 if the column is empty. */
+	static int standing(dev.fractalbuildings.core.ir.BuildingIr shell, int x, int z) {
+		int top = -1;
+		boolean[] solid = new boolean[shell.bounds().maxY() + 2];
+		for (dev.fractalbuildings.core.ir.Box b : shell.boxes()) {
+			Box3 q = b.box();
+			if (x < q.x() || x >= q.maxX() || z < q.z() || z >= q.maxZ()) continue;
+			for (int y = Math.max(0, q.y()); y < Math.min(solid.length, q.maxY()); y++) solid[y] = b.role().solid;
+		}
+		for (int y = solid.length - 1; y >= 0; y--) if (solid[y]) { top = y; break; }
+		return top < 0 ? -1 : top + 1;
+	}
+
+	/**
+	 * Ramps at the ends of a curtain walk that meets a neighbour higher by {@code k} blocks: the lower lot climbs, one block per column over the
+	 * last {@code k} columns of the lot (the neighbour's walk is open across the whole band at the join, so is this one's). Between the parapets
+	 * (the three inner rows of the band) each column is filled up to its height and topped with a stair block, so the top of the ramp at the
+	 * lot's end is level with the neighbour's walk. Local coordinates.
+	 */
+	static java.util.List<dev.fractalbuildings.core.ir.Box> joins(dev.fractalbuildings.core.ir.BuildingIr shell, dev.fractalbuildings.core.gen.Brief.Walk walk) {
+		java.util.List<dev.fractalbuildings.core.ir.Box> out = new java.util.ArrayList<>();
+		int w = shell.spec().width(), z0 = bandZ(shell.spec().depth()) + 1;
+		int y = standing(shell, w / 2, z0 + 1);
+		if (y < 0) return out;
+		ramp(out, walk.prev(), y, z0, w, false);
+		ramp(out, walk.next(), y, z0, w, true);
+		return out;
+	}
+
+	private static void ramp(java.util.List<dev.fractalbuildings.core.ir.Box> out, int k, int y, int z0, int w, boolean east) {
+		k = Math.max(-w / 2, Math.min(k, w / 2));
+		if (k < 0) { // the neighbour is a tower doorway lower than this walk: a stair cut down through the end, between the parapets
+			for (int j = 0; j < -k; j++) { // the column j blocks from the end stands at y - (-k - j)
+				int x = east ? w - 1 - j : j, s = y + k + j; // standing level of the column
+				out.add(new dev.fractalbuildings.core.ir.Box(Box3.of(x, s, z0, 1, y + 4 - s, BAND - 2), Role.AIR, Layer.FOUNDATION, dev.fractalbuildings.core.ir.Box.NO_STOREY));
+				if (s - 1 > 0) out.add(new dev.fractalbuildings.core.ir.Box(Box3.of(x, 0, z0, 1, s - 1, BAND - 2), Role.WALL, Layer.FOUNDATION, dev.fractalbuildings.core.ir.Box.NO_STOREY));
+				out.add(new dev.fractalbuildings.core.ir.Box(Box3.of(x, s - 1, z0, 1, 1, BAND - 2), Role.STAIR, Layer.FOUNDATION, dev.fractalbuildings.core.ir.Box.NO_STOREY));
+			}
+			int px = east ? w - 1 + k : -k; // the gallery behind the cut ends in a wall, so its air does not reach the open stair
+			out.add(new dev.fractalbuildings.core.ir.Box(Box3.of(px, 0, z0, 1, y - 2, BAND - 2), Role.WALL, Layer.FOUNDATION, dev.fractalbuildings.core.ir.Box.NO_STOREY));
+			return;
+		}
+		for (int j = 0; j < k; j++) { // j columns in from the lot's end; the column is k - j high
+			int x = east ? w - 1 - j : j, h = k - j;
+			if (h > 1) out.add(new dev.fractalbuildings.core.ir.Box(Box3.of(x, y, z0, 1, h - 1, BAND - 2), Role.FOUNDATION, Layer.FOUNDATION, dev.fractalbuildings.core.ir.Box.NO_STOREY));
+			out.add(new dev.fractalbuildings.core.ir.Box(Box3.of(x, y + h - 1, z0, 1, 1, BAND - 2), Role.STAIR, Layer.FOUNDATION, dev.fractalbuildings.core.ir.Box.NO_STOREY));
+		}
+	}
 }

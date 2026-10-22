@@ -358,7 +358,7 @@ Open known issues that matter later (details in the Polish backlog, 5.x lines):
 - No stairs on steep lanes: they route around or drop; main roads keep their
   cut and fill (5.3).
 - Walls are rare on real terrain, and every wall lot is a gatehouse (5.1 D2, 5.7).
-- Wall walk (p5-wallwalk): ring lots without a road are now curtain walls and the corners bastions, joined by one wall walk; gatehouses only at roads. On sloping ground adjacent ring lots stand at their own levels, so the walk has drops and climbs of more than a block between lots (hilly towns: about a third of the joins, up to 11 blocks); a stepped walk with ramps at the joins is the follow-up.
+- Wall walk (p5-wallwalk): ring lots without a road are now curtain walls and the corners bastions, joined by one wall walk; gatehouses only at roads. Sloping ground: fixed by p5-wallslope (ring walk profile, ramps at the joins; see its log). Open: ring pieces dropped where a plaza reserves the ground (a real gap in the walk, 2 to 3 of 28 pieces in 3 of 20 steep rings), gate lots standing high above the road on steep ground.
 - The metropolis downtown plateaus at 60 storeys and has few city blocks (5.7).
 - Every city has an old town round the hub (5.13).
 - Nothing in the mod maps the district roles (`deck`, paving, road) to blocks yet.

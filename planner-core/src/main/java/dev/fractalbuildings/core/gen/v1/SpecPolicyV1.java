@@ -58,6 +58,7 @@ public final class SpecPolicyV1 {
 		if (!reliefOk(lim, maxFloor - minFloor, lot.w(), lot.d())) {
 			throw new IllegalArgumentException("lot ground relief " + (maxFloor - minFloor) + " over " + lot.w() + "x" + lot.d() + " is steeper than 1 in " + lim.maxGrade() + ", too steep for a " + t.id());
 		}
+		if (req.brief() != null && req.brief().walk() != null) maxFloor = Math.max(maxFloor, req.brief().walk().base()); // a wall lot stands at its ring level, at or above its highest ground
 		int maxHeight = Invariants.WORLD_MAX_Y + 1 - maxFloor;
 		if (maxHeight < MIN_HEIGHT) throw new IllegalArgumentException("lot ground at y " + maxFloor + " leaves no room under the world ceiling");
 		long specSeed = Hash64.hash(req.worldSeed(), "building", lot.x(), lot.z());

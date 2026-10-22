@@ -30,7 +30,7 @@ public final class BastionType implements BuildingType {
 	static final int FRONT = 2;
 
 	private static final TypeLimits LIMITS = new TypeLimits(12, 10, 3, 4, 0, FRONT, 0, false,
-			List.of(new int[] {12, 12}), 120, 4);
+			List.of(new int[] {12, 12}), 120, 3);
 
 	@Override
 	public String id() { return ID; }

@@ -240,6 +240,9 @@ public final class Invariants {
 							for (int x = p.x(); x < p.maxX(); x++) {
 								if (!g.inGrid(x, y, z) && !(x >= ox && y >= oy && z >= oz && x < ox + ex && y < oy + ey && z < oz + ez)) continue;
 								if (g.get(x, y, z) != Role.AIR || !isOutside(x, y, z)) continue;
+								boolean well = false; // above a stair cut down through the end of a wall gallery: open on purpose
+								for (int yy = g.minY; yy < y && !well; yy++) well = b.shell().spec().type().equals("curtain") && g.get(x, yy, z) == Role.STAIR && yy >= y - 12;
+								if (well) continue;
 								total++;
 								if (cells.size() < MAX_CELLS) cells.add(g.worldCell(x, y, z));
 							}
@@ -261,6 +264,9 @@ public final class Invariants {
 						int top = Integer.MIN_VALUE;
 						for (int y = g.minY + g.sy - 1; y >= vb.maxY(); y--) if (g.get(x, y, z) == Role.ROOF) { top = y; break; }
 						if (top == Integer.MIN_VALUE) {
+							boolean cut = false; // (curtains only) a stair cut down through the roof (a town wall walk descending to a tower doorway) is open on purpose
+							for (int y = g.minY; y < vb.maxY() && !cut; y++) cut = b.shell().spec().type().equals("curtain") && g.get(x, y, z) == Role.STAIR && g.get(x, vb.maxY(), z) == Role.AIR;
+							if (cut) continue;
 							nUncovered++;
 							if (uncovered.size() < MAX_CELLS) uncovered.add(g.worldCell(x, vb.maxY(), z));
 							continue;
