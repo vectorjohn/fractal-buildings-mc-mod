@@ -1,7 +1,7 @@
 # Plan: roads between settlements
 
 Status: proposal, waiting for a spike (S10) and John. Author: lead-coder, 2026-10-21.
-Asked by John in [REVIEW.md](../REVIEW.md) (D1 hamlet and village). Not in the ROADMAP yet.
+Asked by John in [REVIEW.md](../REVIEW.md) (D1 hamlet and village). On the ROADMAP since 2026-10-22: S10 (approved by John, running) and item 6.10.
 
 # The problem
 
@@ -155,6 +155,30 @@ the mod feature. Its mod half needs 6.1 (palette roles) and 6.2 (registration); 
 planner half needs neither. If Phase 6 is to stay lean for the first release, it moves to
 a Phase 7 with the other world-level features. The coordinator decides; the ROADMAP is
 not edited here.
+
+# Related research
+
+Added 2026-10-22 (assistant), after John pointed at the Lost Cities notes.
+
+- [lost-cities-road-planning.md](../research/overlays/lost-cities-road-planning.md):
+  Lost Cities' `INTERCITY_NETWORK_V1` is the closest working prior art (MIT). Useful here:
+  its graph is built from decisions only, with a bounded search (±2 planning cells) and a
+  canonical edge owner (the smaller key), as in (a); a chunk asks only the routes owned by
+  nearby cells, like (a)'s per-cell edge cache; the highway level is derived from the two
+  ends' levels (average), a simple default for our port heights; and its plan doc's
+  determinism checklist (stable hash ties, quantised scores, caches never change results,
+  bounded neighbourhoods) is a ready review list for S10. Its failures are what (a)
+  avoids: mutual selection leaves hubs unlinked (the RNG contains the spanning tree),
+  axis-aligned L routes read as a grid (A* plus curves), and hub decisions persisted in
+  the save (ours are pure). Its 11.0.2 changelog is mostly highway-planning performance
+  fixes, a warning to measure per-edge cost early, as S10 does.
+- [lost-cities-city-placement.md](../research/overlays/lost-cities-city-placement.md):
+  less direct. Its "city potential" for remote hubs comes from a cheap approximation,
+  never from the full building plan, which avoids recursion: the same rule as the graph
+  here reading decisions, never skeletons. Its city centres ignore the world seed, a
+  reminder to hash (seed, position, purpose) for ports and route tie-breaks.
+- Not researched: Lost Cities' railway planner (its highways bend round railway
+  corridors). Worth a note before ROADMAP 7.1 (transit), which could share 6.10's links.
 
 # Open questions (with the assumption if nobody answers)
 

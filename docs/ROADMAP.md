@@ -371,7 +371,7 @@ downtown. Awaiting John (REVIEW "Phase 5 gate").
 
 ## Phase 6: Minecraft integration and release
 
-Updated: 2026-10-21
+Updated: 2026-10-22
 
 Wire the proven core into worldgen using the approach fixed in the Phase 2 ADR.
 
@@ -389,9 +389,22 @@ Wire the proven core into worldgen using the approach fixed in the Phase 2 ADR.
   city, checked in CI.
 - [ ] **6.8 Client tests**: fly-through screenshots of fixed seeds.
 - [ ] **6.9 Railings on stairs, landings and balconies** (John 2026-10-21): a `rail` IR role on stair flights, landings, balconies and lookouts (front steps up to houses and shops first), mapped to fence or wall blocks per style in the palette; the viewer draws it.
+- [ ] **S10 Spike: roads between settlements** (approved by John 2026-10-22, REVIEW "D1 hamlet and village"; running now beside the start of Phase 6, two halves in parallel: the planner on the recorded world dumps, the mod feature in a noise world). Question, pass bar and fallbacks: [plans/intercity-roads.md](plans/intercity-roads.md), "The spike (S10)". Spike code is not merged: a findings note in `docs/research/spikes/`, lessons into an ADR (the road feature needs ADR 0004 or an amendment to 0003).
+- [ ] **6.10 Roads between settlements** (John 2026-10-21; after S10): a region-scale road graph (relative neighbourhood graph over resolved settlements), each link routed once on the coarse lattice and cached per edge; SK required exits and approaches aimed at the links; a road layer in the region map and plan view; in the mod, a per-chunk road feature with its own cut and fill. Plan: [plans/intercity-roads.md](plans/intercity-roads.md). The planner half needs no gate; the mod half needs 6.1 and 6.2. May move to Phase 7 if Phase 6 is to stay lean for the first release.
 
 **Gate:** a fresh world on three seeds plays well for an hour; then a first
 public release.
+
+---
+
+## Phase 7: World-level features (later)
+
+Updated: 2026-10-22
+
+After the first release; no plan yet. Items wait for Phase 6 unless noted.
+
+- [ ] **7.1 Transit: subways and surface railways** (John 2026-10-21, REVIEW "Whole-city roads"): a transit layer in city planning. Stations in dense districts (downtown and city-block tiers first), lines along arterials and main roads, minecart rails underground (vanilla rails and powered rails, no other mod needed), surface or elevated lines between districts, and later between settlements along 6.10's links. Prior art: [lost-cities-road-planning.md](research/overlays/lost-cities-road-planning.md) (global hashed lines clipped to the city mask, pure per-chunk queries: the shape for lines; Lost Cities' highways already route round its railway corridors); Lost Cities' own railway and station planner is not researched yet. Needs a research note and a plan first.
+- [ ] **7.2 Research: integration with other mods, Create first** (John 2026-10-21, REVIEW "Downtown skyline and avenues"): high-rises are hard to climb on foot; with Create they could have working elevator shafts. Check Create's support for our Minecraft version, how its contraptions could be placed at worldgen, and optional-dependency loading on Fabric. Cheap step before then: leave a shaft-sized space in high-rise cores for a later elevator.
 
 ---
 
@@ -462,6 +475,7 @@ Fixed opportunistically or scheduled as items.
 - 5.10 R2: "+50 % of city sites within 256 blocks of water" unmeasurable on the world dumps; boundary cells of a window lose the big tiers.
 - 5.11 CIRC: shops still 2-3 % chain through a back room; deep-room share crept up (highrise 4.9 %, shop 3.9 %); 5-8 % of house rooms exceed 2:1 on narrow wings.
 - 5.11 OPENPLAN (p5-openplan, done): kitchens open onto living areas by style (`interior.openPercent`: plain 85 % of kitchen links, medieval 22 %); see [log](log/2026-10-21-p5-openplan.md). Known: no dining use exists yet, so "living-dining" open plan is living-hall/entry only; wide archways are 2-4 cells, never a full-wall removal.
+- 5.11 OPENPLAN (John, REVIEW 2026-10-22): lintels over wide openings as top-half slabs where the style's wall or trim material has a slab, and arches as upside-down stairs; needs slab and stair shapes in the palette mapping (6.1).
 - 5.12: market hall floor is empty (no stalls); a city planner must catch the shop slope rejection; no railing; enclosed-shop landings are solid.
 
 ## Open questions and risks
