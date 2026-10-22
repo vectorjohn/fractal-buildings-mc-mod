@@ -459,6 +459,7 @@ Fixed opportunistically or scheduled as items.
 - 5.9 SC: 1.5x time bar fails on synthetic terrain with scenes (1.8x); "exact probes" count `floorY` only; probe bar (under 1,000 per district) not met; skeleton cache below 4 costs 1.5 to 4.8x.
 - 5.10 R2: "+50 % of city sites within 256 blocks of water" unmeasurable on the world dumps; boundary cells of a window lose the big tiers.
 - 5.11 CIRC: shops still 2-3 % chain through a back room; deep-room share crept up (highrise 4.9 %, shop 3.9 %); 5-8 % of house rooms exceed 2:1 on narrow wings.
+- 5.11 OPENPLAN (p5-openplan, done): kitchens open onto living areas by style (`interior.openPercent`: plain 85 % of kitchen links, medieval 22 %); see [log](log/2026-10-21-p5-openplan.md). Known: no dining use exists yet, so "living-dining" open plan is living-hall/entry only; wide archways are 2-4 cells, never a full-wall removal.
 - 5.12: market hall floor is empty (no stalls); a city planner must catch the shop slope rejection; no railing; enclosed-shop landings are solid.
 
 ## Open questions and risks

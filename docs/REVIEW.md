@@ -275,6 +275,7 @@ work becomes a ROADMAP item or a Polish backlog line. Settled items move to
   Agent notes: pictures looked at 2026-10-21. Plans read as settlements on their terrain (cores on dry land between water, main roads following shores); the metropolis downtown is one block of equal 60-storey towers; desert walls look speckled; the village is one street. The 3D frames paint a whole district in its first building's palette, so mixed districts cannot be judged in 3D (use the plan and the counts).
   Result:
 
+- [ ] **OPENPLAN open kitchens** (John's note on 5.11, 2026-10-21): look at `docs/review/phase5/circulation/house-plain-cutaway-open-plan.png` and `house-medieval-cutaway-open-plan.png` and the "After open plan" plans in `house-medieval-plans.md`. Do plain/plains/jungle houses read as open plan (kitchen and living joined by a 2-4 wide gap), and medieval ones as separate rooms with a door? Is the share (medieval 22 %, plain 83 % of kitchen links) about right, and is the lintel over wide gaps fine?
 ## ROADS2 (John's roads feedback)
 
 - [ ] **ROADS2 (p5-roads2)**: is every road now part of one network, and does the built-up area thin out towards the edge instead of ending at the arterials?
