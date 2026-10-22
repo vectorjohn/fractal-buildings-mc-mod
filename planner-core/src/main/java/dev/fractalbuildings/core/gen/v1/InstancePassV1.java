@@ -184,7 +184,7 @@ public final class InstancePassV1 {
 				nOut++;
 			}
 			int nDeck = 0;
-			if (stoop && ground[s0] < oy - 1) candidates.addAll(stoopCandidates(out, sx, sz, x0, x1, z0, z1, nx, ground, oy, base, grid, fp));
+			if (stoop && ground[s0] < oy) candidates.addAll(stoopCandidates(out, sx, sz, x0, x1, z0, z1, nx, ground, oy, base, grid, fp));
 			nDeck = candidates.size();
 			candidates.add(new int[] {s0});
 			boolean[] deck = null;
@@ -210,7 +210,7 @@ public final class InstancePassV1 {
 						int cx = x0 + c % nx, cz = z0 + c / nx, d = depth[c];
 						int g = ground[c];
 						int h = oy - d;
-						boolean ends = d == 0 ? g >= oy - 1 : g >= h;
+						boolean ends = d == 0 ? g >= oy && g <= oy + 1 : g >= h + 1 && g <= h + 2; // off the door floor (top oy + 1) or the last stair (top h + 3/2, one cell back) onto ground at most a block below and at most half a block above
 						if (ci < nDeck && (cx - sx) * out.dx + (cz - sz) * out.dz != nOut) ends = false; // a flight from a landing must come down on the lot's street row, not behind the building
 						int top = ends ? g : h; // highest solid under the feet
 						// the cells the walker occupies (and the step block itself) must be free of the building
@@ -274,8 +274,8 @@ public final class InstancePassV1 {
 				flightTop[c] = c == found && !merged ? ground[c] : oy - depth[c];
 				if (c == found && !merged) continue; // ends on the terrain itself
 				int cx = x0 + c % nx, cz = z0 + c / nx, h = oy - depth[c], g = ground[c];
-				if (h > g) {
-					site.add(new Box(Box3.of(cx, g - base, cz, 1, h - g, 1), Role.FOUNDATION, Layer.FOUNDATION, Box.NO_STOREY));
+				if (h >= g) { // a step on the ground itself (h == g) needs no foundation under it
+					if (h > g) site.add(new Box(Box3.of(cx, g - base, cz, 1, h - g, 1), Role.FOUNDATION, Layer.FOUNDATION, Box.NO_STOREY));
 					site.add(new Box(Box3.of(cx, h - base, cz, 1, 1, 1), Role.STAIR, Layer.FOUNDATION, Box.NO_STOREY));
 				}
 			}
@@ -341,7 +341,7 @@ public final class InstancePassV1 {
 	private static boolean deckOk(int x, int z, int x0, int x1, int z0, int z1, int nx, int[] ground, int oy, int base, VoxelGrid grid, boolean[][] fp) {
 		if (x < x0 || x > x1 || z < z0 || z > z1) return false;
 		if (x >= 0 && z >= 0 && x < fp.length && z < fp[0].length && fp[x][z]) return false;
-		if (ground[(z - z0) * nx + (x - x0)] >= oy - 1) return false;
+		if (ground[(z - z0) * nx + (x - x0)] >= oy) return false;
 		for (int y = oy - base; y <= oy + 3 - base; y++) if (grid.get(x, y, z) != Role.AIR) return false;
 		return true;
 	}

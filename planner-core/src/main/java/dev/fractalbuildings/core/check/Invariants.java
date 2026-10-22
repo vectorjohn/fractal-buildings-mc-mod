@@ -45,7 +45,8 @@ public final class Invariants {
 	public static List<Violation> check(SceneDoc scene, TerrainProbe terrain) {
 		TerrainProbe ground = terrain != null ? terrain : patchProbe(scene.terrain());
 		List<Violation> out = new ArrayList<>(dev.fractalbuildings.core.ir.IrValidator.validate(scene));
-		for (PlacedBuilding b : scene.buildings()) new BuildingCheck(scene, b, ground, out).run();
+		java.util.Map<Long, Integer> surface = scene.genVersion() >= 2 && !scene.ground().isEmpty() ? StairGround.surfaceLevels(scene) : java.util.Map.of();
+		for (PlacedBuilding b : scene.buildings()) new BuildingCheck(scene, b, ground, out, surface).run();
 		return out;
 	}
 
@@ -58,11 +59,13 @@ public final class Invariants {
 		final PlacedBuilding b;
 		final TerrainProbe ground;
 		final List<Violation> out;
+		final java.util.Map<Long, Integer> surface;
 		final VoxelGrid g;
 		boolean[] outside; // flood over the grid plus a one-cell margin
 		int ox, oy, oz, ex, ey, ez; // margin-grid origin and extent
 
-		BuildingCheck(SceneDoc scene, PlacedBuilding b, TerrainProbe ground, List<Violation> out) {
+		BuildingCheck(SceneDoc scene, PlacedBuilding b, TerrainProbe ground, List<Violation> out, java.util.Map<Long, Integer> surface) {
+			this.surface = surface;
 			this.scene = scene;
 			this.b = b;
 			this.ground = ground;
@@ -81,6 +84,17 @@ public final class Invariants {
 			roomGraph();
 			roomsReachable();
 			entranceReachable();
+			stepsReachGround();
+		}
+
+		void stepsReachGround() {
+			if (scene.genVersion() < 2) return;
+			List<StairGround.Fail> fails = StairGround.check(scene, b, g, ground, surface);
+			if (fails.isEmpty()) return;
+			List<Box3> cells = new ArrayList<>();
+			List<String> names = new ArrayList<>();
+			for (StairGround.Fail f : fails) { cells.add(f.cell()); names.add(f.door()); }
+			report(Invariant.STEPS_REACH_GROUND, "exterior door(s) " + String.join(", ", names) + " have no way down onto the ground (a drop over a block, or no walkable block in front of the last step)", cells, cells.size());
 		}
 
 		int floorY(int lx, int lz) { return ground.floorY(g.worldX(lx, lz), g.worldZ(lx, lz)); }
@@ -397,7 +411,7 @@ public final class Invariants {
 			int lo = Integer.MAX_VALUE, hi = Integer.MIN_VALUE;
 			for (int z = z0; z <= z1; z++)
 				for (int x = x0; x <= x1; x++) {
-					int t = floorY(x, z) - b.oy();
+					int t = floorY(x, z) - 1 - b.oy(); // the top solid block: floorY is the first free one
 					top[(z - z0) * nx + (x - x0)] = t;
 					lo = Math.min(lo, t);
 					hi = Math.max(hi, t);

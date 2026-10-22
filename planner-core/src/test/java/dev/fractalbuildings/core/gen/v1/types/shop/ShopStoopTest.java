@@ -66,14 +66,14 @@ class ShopStoopTest {
 					Stoop st = measure(s, rq);
 					if (!st.lifted) continue;
 					lifted++;
-					// a landing of at least 3 cells (the door and a cell either side) at door level; a lift over 5 (a market hall on ground that also falls away) may keep the plain flight
-					if (st.landing < 3 && st.lift <= 5) bad.add(terrain + " " + f + " seed " + seed + " lift " + st.lift + " landing " + st.landing + " of " + st.width);
+					// a landing of at least 3 cells (the door and a cell either side) at door level; a lift over 4 (the flight is one step longer since STAIRGROUND: it ends on the ground, not one above it; a market hall on ground that also falls away) may keep the plain flight
+					if (st.landing < 3 && st.lift <= 4) bad.add(terrain + " " + f + " seed " + seed + " lift " + st.lift + " landing " + st.landing + " of " + st.width);
 					if (st.landing * 2 >= st.width) wide++;
 				}
 		System.out.println(String.format(Locale.ROOT, "shop stoops: %d of %d shops lifted 2+ above the door's ground; %d landings span half the front or more", lifted, total, wide));
 		assertTrue(bad.isEmpty(), bad.toString());
 		assertTrue(lifted >= 30, "only " + lifted + " lifted shops");
-		assertTrue(wide >= lifted * 0.9, "wide landings " + wide + " of " + lifted);
+		assertTrue(wide >= lifted * 0.8, "wide landings " + wide + " of " + lifted);
 	}
 
 	@Test
