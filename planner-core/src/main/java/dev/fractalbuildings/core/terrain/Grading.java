@@ -60,10 +60,25 @@ public final class Grading {
 
 	/** The height profile and steep runs of a road without building its boxes (the boxes list is empty); same profile as {@link #road}. */
 	public static RoadGrade profile(List<LatticePath.Pt> points, TerrainProbe exact) {
-		return grade(points, null, 1, exact, false);
+		return grade(points, null, null, 1, exact, false);
+	}
+
+	/**
+	 * As {@link #profile(List, TerrainProbe)}, with some columns pinned: {@code pins} maps a centre-line column index (in the order
+	 * {@code StreetCols.columns} gives) to the level that column must have (a gate passage the road runs through, ROADS3). Pinned
+	 * columns are anchors the grade clamp never moves; the other anchors follow them within the grade limit, so the road climbs or
+	 * drops to the pin at 1 in {@link #GRADE_RUN}, and its cut or fill may then exceed {@link #MAX_CUT_FILL} (reported as steep).
+	 * With no pins this is exactly {@link #profile(List, TerrainProbe)}.
+	 */
+	public static RoadGrade profile(List<LatticePath.Pt> points, TerrainProbe exact, java.util.SortedMap<Integer, Integer> pins) {
+		return grade(points, null, pins == null || pins.isEmpty() ? null : pins, 1, exact, false);
 	}
 
 	private static RoadGrade grade(List<LatticePath.Pt> points, int[] given, int width, TerrainProbe exact, boolean withBoxes) {
+		return grade(points, given, null, width, exact, withBoxes);
+	}
+
+	private static RoadGrade grade(List<LatticePath.Pt> points, int[] given, java.util.SortedMap<Integer, Integer> pins, int width, TerrainProbe exact, boolean withBoxes) {
 		if (points.isEmpty() || width <= 0) throw new IllegalArgumentException("road needs points and a width");
 		// 1. centre-line columns
 		List<Integer> pointAt = new ArrayList<>(List.of(0));
@@ -103,15 +118,18 @@ public final class Grading {
 		}
 		// 3. anchors every 8 columns, plus ends and span ends (or, with given heights, the points)
 		int[] anchors = given != null ? pointAt.stream().mapToInt(Integer::intValue).toArray() : java.util.stream.IntStream.range(0, n)
-				.filter(i -> i % SAMPLE_EVERY == 0 || i == n - 1 || spanFirst[i] || spanLast[i]).toArray();
+				.filter(i -> i % SAMPLE_EVERY == 0 || i == n - 1 || spanFirst[i] || spanLast[i] || (pins != null && pins.containsKey(i))).toArray();
 		int m = anchors.length;
 		int[] r = new int[m], floor = new int[m];
+		boolean[] pinned = new boolean[m];
+		if (pins != null) for (int a = 0; a < m; a++) pinned[a] = pins.containsKey(anchors[a]);
 		if (given != null) System.arraycopy(given, 0, r, 0, m);
 		else {
 		for (int a = 0; a < m; a++) {
 			int i = anchors[a];
 			floor[a] = Integer.MIN_VALUE / 2;
 			if (wet[i]) { r[a] = deck[i]; floor[a] = deck[i]; continue; }
+			if (pinned[a]) { r[a] = pins.get(i); continue; }
 			if (a == 0 || a == m - 1) { r[a] = g[i]; continue; }
 			r[a] = median(g[anchors[a - 1]], g[i], g[anchors[a + 1]]);
 		}
@@ -125,11 +143,13 @@ public final class Grading {
 		for (int pass = 0; pass < 200; pass++) {
 			boolean changed = false;
 			for (int a = 1; a < m; a++) {
+				if (pinned[a]) continue;
 				int mx = (anchors[a] - anchors[a - 1]) / GRADE_RUN;
 				int v = Math.max(floor[a], Math.max(r[a - 1] - mx, Math.min(r[a - 1] + mx, r[a])));
 				if (v != r[a]) { r[a] = v; changed = true; }
 			}
 			for (int a = m - 2; a >= 0; a--) {
+				if (pinned[a]) continue;
 				int mx = (anchors[a + 1] - anchors[a]) / GRADE_RUN;
 				int v = Math.max(floor[a], Math.max(r[a + 1] - mx, Math.min(r[a + 1] + mx, r[a])));
 				if (v != r[a]) { r[a] = v; changed = true; }

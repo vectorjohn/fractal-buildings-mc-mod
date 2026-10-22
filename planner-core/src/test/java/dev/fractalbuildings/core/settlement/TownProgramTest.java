@@ -221,4 +221,19 @@ class TownProgramTest {
 			assertEquals(SettlementJson.write(town(i).plan()), SettlementJson.write(town(i).plan()));
 		}
 	}
+
+	/**
+	 * A main road must run straight through its gate in its own order (ROADS3): one that passes out through the gate, turns back onto the gate column
+	 * and leaves it on a diagonal (seed 30, noise:9:90:40:150, site -91,-1558 town 404) would cut the gate lot's tower, so district detail split the
+	 * road there and the town beyond had no street to the hub. The column-set test alone accepted it; the ring is now refused.
+	 */
+	@Test
+	void aRoadThatComesBackOntoItsGateColumnIsNoGateCrossing() {
+		dev.fractalbuildings.core.settlement.tiers.WallRing.Ring ring = new dev.fractalbuildings.core.settlement.tiers.WallRing.Ring(0, 400, 0, 400);
+		Road straight = new Road("r0", RoadKind.MAIN, 5, List.of(new Pt(200, 200), new Pt(368, 200), new Pt(432, 200), new Pt(496, 264)), List.of());
+		Road back = new Road("r1", RoadKind.MAIN, 5, List.of(new Pt(200, 200), new Pt(368, 200), new Pt(432, 200), new Pt(400, 200), new Pt(464, 264)), List.of());
+		var ok = dev.fractalbuildings.core.settlement.tiers.WallRing.crossings(ring, List.of(straight), 32);
+		assertTrue(ok != null && ok.size() == 1 && ok.get(0).gate().at().equals(new Pt(400, 200)), "straight crossing " + ok);
+		assertEquals(null, dev.fractalbuildings.core.settlement.tiers.WallRing.crossings(ring, List.of(back), 32));
+	}
 }

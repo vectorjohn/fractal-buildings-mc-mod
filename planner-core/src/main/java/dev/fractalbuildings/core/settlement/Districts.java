@@ -48,8 +48,8 @@ public final class Districts {
 	public static final int MAX_DEPTH = 44;
 	static final int PAD = 16, MIN_W = 7, MIN_DEPTH_ANY = 7;
 	static final int STREET = 1, PLAZA = 2, LOT = 4, RESERVED = 8, WET = 16, SKEL = 32;
-	/** Densest rows only get whole-block lots. */
-	static final int BLOCK_DENSITY = 70;
+	/** Whole-block lots from density 50 up (ROADS3; was 70): the mid-density grid quarters get perimeter blocks too, where the class table picks one. */
+	static final int BLOCK_DENSITY = 50;
 
 	/**
 	 * A planned district: the plan, the landmarks that still reserve ground (open squares, and hall or temple landmarks that
@@ -651,14 +651,65 @@ public final class Districts {
 
 		// ---- the wall ring (D2): wall and corner-tower lots, reserved so that streets stop at them except through a gate's passage
 
-		void wallLots() {
+		/** One wall ring of the centre cell: its pieces, and the walk profile of the whole ring ({@link WallRing#walkLevels}), worked out on first use. */
+		final class RingInfo {
+			final List<WallRing.Piece> pieces;
+			int[] levels;
+
+			RingInfo(List<WallRing.Piece> pieces) { this.pieces = pieces; }
+
+			int[] levels() {
+				if (levels == null) levels = WallRing.walkLevels(pieces, q -> groundTop(q.rect()));
+				return levels;
+			}
+		}
+
+		List<RingInfo> rings;
+
+		/** The wall rings of the settlement (the centre cell's walls), the same in every tile. */
+		List<RingInfo> rings() {
+			if (rings != null) return rings;
+			rings = new ArrayList<>();
 			Cell centreCell = CellGeometry.owner(src.view().field(), src.site().centre().x(), src.site().centre().z());
-			if (!src.site().cells().contains(centreCell)) return;
+			if (!src.site().cells().contains(centreCell)) return rings;
 			CellSkeleton sk = src.skeleton(centreCell);
 			for (Wall w : sk.walls()) {
 				List<Pt> gates = new ArrayList<>();
 				for (Gate g : sk.gates()) if (g.kind() == GateKind.WALL) gates.add(new Pt(g.x(), g.z()));
-				List<WallRing.Piece> pieces = WallRing.pieces(w, gates, grid, seed);
+				rings.add(new RingInfo(WallRing.pieces(w, gates, grid, seed)));
+			}
+			return rings;
+		}
+
+		/**
+		 * Gate pins of a whole street (ROADS3): every centre column of it that lies in a gate's passage band, or one column beyond either
+		 * face, must sit at the passage floor (the gate lot's ring level plus one, the first free y over its slab), so the road runs
+		 * through the gate at the gate's height on both sides. Keyed by column index; null when the street passes no gate. A pure
+		 * function of the ring and the exact ground, so every tile that grades the street pins it the same.
+		 */
+		TreeMap<Integer, Integer> gatePins(List<int[]> cols) {
+			TreeMap<Integer, Integer> pins = null;
+			for (RingInfo ri : rings()) {
+				for (int k = 0; k < ri.pieces.size(); k++) {
+					WallRing.Piece p = ri.pieces.get(k);
+					if (p.gate() == WallRing.NONE) continue;
+					Rect b = WallRing.band(p);
+					boolean alongX = p.front() == Facing.NORTH || p.front() == Facing.SOUTH; // the passage runs along z
+					Rect e = alongX ? new Rect(b.x(), b.z() - 1, b.w(), b.d() + 2) : new Rect(b.x() - 1, b.z(), b.w() + 2, b.d());
+					for (int i = 0; i < cols.size(); i++) {
+						int[] c = cols.get(i);
+						if (!e.contains(c[0], c[1])) continue;
+						if (pins == null) pins = new TreeMap<>();
+						pins.put(i, ri.levels()[k] + 1);
+					}
+				}
+			}
+			return pins;
+		}
+
+		void wallLots() {
+			for (RingInfo ri : rings()) {
+				List<WallRing.Piece> pieces = ri.pieces;
 				int[] levels = null; List<String> types = pieces.stream().map(WallRing.Piece::type).toList(); // the walk profile of the whole ring, worked out once (by the first piece that lies in this tile)
 				for (int k = 0; k < pieces.size(); k++) {
 					WallRing.Piece p = pieces.get(k);
@@ -681,7 +732,7 @@ public final class Districts {
 					}
 					TypeLimits lim = Types.get(p.type()).limits();
 					int dens = den.at(r.x() + r.w() / 2, r.z() + r.d() / 2);
-					if (levels == null) levels = WallRing.walkLevels(pieces, q -> groundTop(q.rect()));
+					if (levels == null) levels = ri.levels();
 					lots.add(new LotBrief(id + WallRing.MARK + k, r.x(), r.z(), r.w(), r.d(), p.front(), p.type(), StyleLibrary.AUTO, lim.minStoreys(), lim.maxStoreys(), 1, 0, Brief.NO_FRONT_Y, dens, LotBrief.BUILD, WallRing.walkOf(types, levels, k)));
 					lotAir.add(0);
 					paintRect(r, LOT | RESERVED);
@@ -861,7 +912,7 @@ public final class Districts {
 			List<Raw> out = new ArrayList<>();
 			Grading.RoadGrade wg = null;
 			for (List<int[]> run0 : StreetCols.runs(cols, c -> keep(c) && !hitsReserved(c, width))) {
-				if (wg == null) wg = Grading.profile(lattice(StreetCols.vertices(cols)), memo);
+				if (wg == null) wg = Grading.profile(lattice(StreetCols.vertices(cols)), memo, gatePins(cols));
 				int s = indexOf(cols, run0.get(0)), e = s + run0.size() - 1;
 				List<int[]> run = new ArrayList<>(run0);
 				int off = 0;
@@ -1058,7 +1109,7 @@ public final class Districts {
 					lo -= GRID_REACH;
 					hi += GRID_REACH;
 					DistrictGrid.Segment s = new DistrictGrid.Segment(axis, 0, 0, pos, lo, hi);
-					for (List<Pt> run : nodeRuns(lo, hi, (a, b) -> rules.gridEdgeOk(memo, Arterials.ax(s, a), Arterials.az(s, a), Arterials.ax(s, b), Arterials.az(s, b)) && !nearAbsentBorder(Arterials.ax(s, a), Arterials.az(s, a), 0) && !nearAbsentBorder(Arterials.ax(s, b), Arterials.az(s, b), 0), s)) {
+					for (List<Pt> run : nodeRuns(lo, hi, (a, b) -> rules.gridSideEdgeOk(memo, s.axis(), pos, a, b) && !nearAbsentBorder(Arterials.ax(s, a), Arterials.az(s, a), 0) && !nearAbsentBorder(Arterials.ax(s, b), Arterials.az(s, b), 0), s)) {
 						addPieces("s" + (vertical ? "x" : "z") + Ids.n(pos) + "_" + Ids.n(axisCoord(s, run.get(0))), RoadKind.STREET, StreetRules.GRID_WIDTH, StreetCols.columns(run), false);
 					}
 				}

@@ -107,13 +107,29 @@ public final class DensityField {
 	}
 
 	/** Density before the arterial bonus, 0..cap; 0 outside the footprint. */
-	public int base(int x, int z) {
+	public int base(int x, int z) { return base(x, z, false); }
+
+	/**
+	 * The street fabric's density (ROADS3): {@link #base} on the plain {@code cap (1 - t^2)} profile every tier had before the skyline
+	 * profile, keyed to the share of the radius rather than to building height. Arterials and squares read it, so a metropolis's
+	 * smaller tall core (SKYLINE) does not also thin its main streets and squares; heights and types still read {@link #at}.
+	 * For towns and smaller it equals {@link #base}.
+	 */
+	public int fabric(int x, int z) { return base(x, z, true); }
+
+	/** {@link #fabric} plus the arterial bonus, at most the tier cap (what {@link #at} is to {@link #base}). */
+	public int fabricAt(int x, int z) {
+		if (!inside(x, z)) return 0;
+		return Math.min(site.tier().densityCap, fabric(x, z) + (arterials.near(terrain.snap(x), terrain.snap(z)) ? Arterials.BONUS : 0));
+	}
+
+	private int base(int x, int z, boolean fabric) {
 		int sx = terrain.snap(x), sz = terrain.snap(z);
 		if (!inside(sx, sz)) return 0;
 		double dx = sx - site.centre().x(), dz = sz - site.centre().z();
 		double t = (dx == 0 && dz == 0) ? 0 : dist(sx, sz) / radiusAt(StrictMath.atan2(dz, dx));
 		int cap = site.tier().densityCap;
-		double f = site.tier().atLeast(Tier.CITY) ? cityProfile(t) : 1 - t * t;
+		double f = site.tier().atLeast(Tier.CITY) && !fabric ? cityProfile(t) : 1 - t * t;
 		int raw = (int) StrictMath.floor(cap * f + 0.5) + noise(sx, sz);
 		return Math.max(0, Math.min(cap, raw));
 	}

@@ -96,11 +96,15 @@ public class DefaultProgram implements TierProgram {
 	}
 
 	/** Slope-aware A* on the lattice from the hub to a target inside the cell (or on its gate). */
-	protected Route route(SkeletonContext c, Pt hub, Pt target) {
+	protected Route route(SkeletonContext c, Pt hub, Pt target) { return route(c, hub, target, null); }
+
+	/** As {@link #route(SkeletonContext, Pt, Pt)}, never stepping onto a lattice point {@code avoid} holds (the target excepted); null avoids nothing. */
+	protected Route route(SkeletonContext c, Pt hub, Pt target, java.util.function.BiPredicate<Integer, Integer> avoid) {
 		if (hub == null || hub.equals(target)) return new Route(target, List.of(), List.of());
 		int step = c.step;
 		LatticePath.Cost cost = new LatticePath.Cost() {
 			@Override public long step(int x, int z, int nx, int nz) {
+				if (avoid != null && !(nx == target.x() && nz == target.z()) && avoid.test(nx, nz)) return FORBIDDEN;
 				if (!(c.owned(nx, nz) || (nx == target.x() && nz == target.z()))) return FORBIDDEN;
 				boolean diag = x != nx && z != nz;
 				int dy = Math.abs(c.terrain.surfaceY(nx, nz) - c.terrain.surfaceY(x, z));

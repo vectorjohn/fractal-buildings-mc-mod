@@ -281,27 +281,30 @@ class WallWalkTest {
 
 	/**
 	 * A gate lot stands at its own ground (where the road passes), never lifted for its neighbours' sake unless a neighbouring curtain is more than
-	 * {@link WallRing#MAX_CARVE} blocks above it. On the standard terrains the passage floor is within 2 blocks of the street on both faces
-	 * (the street is graded to the ground and the passage stands on the lot's highest ground); on steep ground the gap is the ground's own relief.
+	 * {@link WallRing#MAX_CARVE} blocks above it, and the road through it is graded to its passage floor (ROADS3: the gate is a fixed height on the
+	 * road's profile), so on every terrain, steep included, the passage floor is within 1 block of the street on both faces.
 	 */
 	@Test
-	void gatePassagesStayAtTheirOwnGroundAndNearTheStreet() {
+	void gatePassagesStayAtTheirOwnGroundAndMeetTheStreet() {
 		List<TownProgramTest.Town> towns = new ArrayList<>();
 		for (int kind : new int[] {0, 1, 2}) towns.addAll(rings(kind, 8));
 		List<Integer> gaps = gateGaps(towns);
-		System.out.println("standard gate raise nonzero " + raised.stream().filter(v -> v != 0).toList() + " of " + raised.size());
+		System.out.println("standard gate raise nonzero " + raised.stream().filter(v -> v != 0).toList() + " of " + raised.size() + ", gaps " + gaps);
 		assertTrue(gaps.size() >= 40, "gate faces measured " + gaps.size());
 		for (int r : raised) assertEquals(0, r, "gate lifted above its own ground: " + raised);
+		for (int g : gaps) assertTrue(Math.abs(g) <= 1, "passage floor minus street on a standard terrain: " + gaps);
 		List<TownProgramTest.Town> steep = new ArrayList<>();
 		for (String terrain : new String[] {"noise:9:90:40:150", "noise:7:80:30:100"}) {
 			steep.addAll(ringsOn(terrain, dev.fractalbuildings.core.settlement.Tier.TOWN, 280, 6, 60));
 			steep.addAll(ringsOn(terrain, dev.fractalbuildings.core.settlement.Tier.CITY, 600, 3, 40));
 		}
-		gateGaps(steep);
+		List<Integer> steepGaps = gateGaps(steep);
 		int lifted = 0;
 		for (int r : raised) if (r > 0) lifted++;
-		System.out.println("steep gate faces " + raised.size() + " lifted " + lifted + " " + raised);
+		System.out.println("steep gate faces " + raised.size() + " lifted " + lifted + " " + raised + ", gaps " + steepGaps);
+		assertTrue(steepGaps.size() >= 40, "steep gate faces measured " + steepGaps.size());
 		assertTrue(lifted * 10 <= raised.size() * 3, "gates lifted above their own ground on steep terrain: " + lifted + " of " + raised.size());
+		for (int g : steepGaps) assertTrue(Math.abs(g) <= 1, "passage floor minus street on steep terrain: " + steepGaps);
 	}
 
 	@Test

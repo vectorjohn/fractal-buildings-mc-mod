@@ -55,17 +55,25 @@ public class TownProgram extends DefaultProgram {
 		List<Route> out = new ArrayList<>();
 		for (int i = 0; i < targets.size(); i++) {
 			WallRing.Gate g = gates.get().get(i);
-			out.add(g == null ? route(c, hub, targets.get(i)) : through(c, hub, targets.get(i), g));
+			out.add(g == null ? route(c, hub, targets.get(i)) : through(c, hub, targets.get(i), g, ring.get()));
 		}
 		return out;
 	}
 
-	/** Hub to the gate's inner point, straight through the gate lot, then on to the target. */
-	protected Route through(SkeletonContext c, Pt hub, Pt target, WallRing.Gate g) {
+	/**
+	 * Hub to the gate's inner point, straight through the gate lot, then on to the target. The inner part keeps strictly inside the
+	 * ring and the outer part off the ring and its inside (ROADS3: an outer part that stepped back onto the gate column and left it on a
+	 * diagonal cut through the gate lot's tower, so district detail split the road there and the town beyond had no way to the hub);
+	 * where that finds no way the plain routes are used and {@link #walls} drops the ring if they cross it badly.
+	 */
+	protected Route through(SkeletonContext c, Pt hub, Pt target, WallRing.Gate g, WallRing.Ring ring) {
 		int[] n = WallRing.normal(g.side());
 		int r = reach(c);
 		Pt in = new Pt(g.at().x() - n[0] * r, g.at().z() - n[1] * r), out = new Pt(g.at().x() + n[0] * r, g.at().z() + n[1] * r);
-		Route a = route(c, hub, in), b = route(c, out, target);
+		Route a = route(c, hub, in, (x, z) -> !(x > ring.xl() && x < ring.xr() && z > ring.zt() && z < ring.zb()));
+		Route b = route(c, out, target, (x, z) -> x >= ring.xl() && x <= ring.xr() && z >= ring.zt() && z <= ring.zb());
+		if (a.points().size() < 2) a = route(c, hub, in);
+		if (b.points().size() < 2) b = route(c, out, target);
 		if (a.points().size() < 2 || b.points().size() < 2) return new Route(target, List.of(), List.of());
 		List<Pt> pts = new ArrayList<>(a.points());
 		pts.addAll(b.points());

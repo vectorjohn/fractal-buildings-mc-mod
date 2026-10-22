@@ -456,7 +456,7 @@ public final class WallRing {
 				if (i > 0 && in != prevIn) {
 					Pt edge = in ? p : cols.get(i - 1); // the inside column next to the outside one
 					Gate g = gateOf(r, edge);
-					if (g == null || !straight(set, g, reach)) return null;
+					if (g == null || !straight(set, g, reach) || !straightRun(cols, in ? i : i - 1, cols.get(i - 1), p, reach)) return null;
 					if (seen.add(key(g.at().x(), g.at().z()))) out.add(new Crossing(g, road.id()));
 				}
 				prevIn = in;
@@ -475,6 +475,24 @@ public final class WallRing {
 	private static boolean straight(Set<Long> cols, Gate g, int reach) {
 		int[] n = Ring.normal(g.side());
 		for (int k = -reach; k <= reach; k++) if (!cols.contains(key(g.at().x() + n[0] * k, g.at().z() + n[1] * k))) return false;
+		return true;
+	}
+
+	/**
+	 * The road itself runs straight through the crossing: the {@code reach} columns before and after the edge column {@code m}, in the
+	 * road's own order, step the way it crossed (a road that comes back onto the gate column and leaves it another way, ROADS3, would
+	 * pass the set test with its out-and-back spur and still cut the gate lot).
+	 */
+	private static boolean straightRun(List<Pt> cols, int m, Pt from, Pt to, int reach) {
+		int dx = to.x() - from.x(), dz = to.z() - from.z();
+		if (Math.abs(dx) + Math.abs(dz) != 1) return false;
+		Pt e = cols.get(m);
+		for (int t = -reach; t <= reach; t++) {
+			int k = m + t;
+			if (k < 0 || k >= cols.size()) return false;
+			Pt q = cols.get(k);
+			if (q.x() != e.x() + dx * t || q.z() != e.z() + dz * t) return false;
+		}
 		return true;
 	}
 
