@@ -1,0 +1,34 @@
+seed=10101 probe=exact corridor chunks=212 loadavg=18.73 10.59 4.81 4/4246 345991
+asc generated 212 chunks in 5143 ms
+asc gravel written=2615 not gravel on read-back=0
+asc digest d47a93123b690ede (155030 blocks)
+asc road chunks=108 road cols=2615 shoulder cols=6832 height probes=108
+asc plan: n=108 mean=0.485 p50=0.110 p90=1.051 max=8.776 ms
+asc write: n=108 mean=0.377 p50=0.186 p90=1.041 max=3.514 ms
+asc total: n=108 mean=0.862 p50=0.546 p90=1.898 max=9.173 ms
+desc generated 212 chunks in 4621 ms
+desc gravel written=2615 not gravel on read-back=0
+desc digest d47a93123b690ede (155030 blocks)
+desc road chunks=108 road cols=2615 shoulder cols=6832 height probes=108
+desc plan: n=108 mean=0.462 p50=0.013 p90=1.035 max=6.810 ms
+desc write: n=108 mean=0.297 p50=0.147 p90=0.791 max=2.825 ms
+desc total: n=108 mean=0.759 p50=0.435 p90=1.618 max=6.930 ms
+profile (station: raw/smooth): 0:110/98.9 6:63/89.8 12:86/87.4 18:102/85.4 24:63/75.5 30:63/63.5 36:63/67.8 42:71/68.9 48:63/68.4 54:63/65.6 60:71/78.8 66:102/88.4 72:95/90.3 78:78/96.8 84:126/109.3 90:125/119.7 96:121/117.1 102:111/113.9  rawMin=63 rawMax=126 stations=108
+screenshot s10-road-0 at 97,2 ground y=70
+screenshot s10-road-1 at 280,8 ground y=67
+screenshot s10-road-2 at 455,196 ground y=116
+shuf1 generated 212 chunks in 3330 ms
+shuf1 gravel written=2615 not gravel on read-back=0
+shuf1 digest d47a93123b690ede (155030 blocks)
+shuf1 road chunks=108 road cols=2615 shoulder cols=6832 height probes=108
+shuf1 plan: n=108 mean=0.415 p50=0.007 p90=1.288 max=8.901 ms
+shuf1 write: n=108 mean=0.267 p50=0.130 p90=0.586 max=2.707 ms
+shuf1 total: n=108 mean=0.683 p50=0.205 p90=1.757 max=8.912 ms
+shuf2-nocache generated 212 chunks in 4003 ms
+shuf2-nocache gravel written=2615 not gravel on read-back=0
+shuf2-nocache digest d47a93123b690ede (155030 blocks)
+shuf2-nocache road chunks=108 road cols=2615 shoulder cols=6832 height probes=2015
+shuf2-nocache plan: n=108 mean=6.903 p50=6.885 p90=8.282 max=11.138 ms
+shuf2-nocache write: n=108 mean=0.291 p50=0.140 p90=0.777 max=3.039 ms
+shuf2-nocache total: n=108 mean=7.193 p50=7.055 p90=9.289 max=11.910 ms
+DIGESTS IDENTICAL over [asc, desc, shuf1, shuf2-nocache]
