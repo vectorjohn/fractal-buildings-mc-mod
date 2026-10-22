@@ -38,8 +38,11 @@ final class StreetRules {
 	private final TierProgram program;
 	private final Arterials arterials;
 	private final TreeMap<String, RoadKind> borderMemo = new TreeMap<>();
+	private final SkeletonSource src;
+	private RoadNetwork network;
 
 	StreetRules(SkeletonSource src) {
+		this.src = src;
 		this.seed = src.seed();
 		this.tier = src.site().tier();
 		this.density = src.density();
@@ -50,6 +53,13 @@ final class StreetRules {
 	}
 
 	Arterials arterials() { return arterials; }
+
+	/** Border streets come from the settlement's street lattice (city and metropolis): drawn whole, attached by construction. */
+	boolean lattice() {
+		if (!RoadNetwork.latticeTier(tier)) return false;
+		if (network == null) network = src.network();
+		return network.hasLattice();
+	}
 
 	/** Urban and laid out as the grid at the column. */
 	boolean gridAt(int x, int z) {
@@ -87,6 +97,10 @@ final class StreetRules {
 	}
 
 	private RoadKind computeBorder(DistrictGrid.Segment s) {
+		if (RoadNetwork.latticeTier(tier)) {
+			if (network == null) network = src.network();
+			if (network.hasLattice()) return network.kind(s);
+		}
 		if (arterials.is(s)) return RoadKind.ARTERIAL;
 		if (!density.urban(Arterials.ax(s, s.from()), Arterials.az(s, s.from())) || !density.urban(Arterials.ax(s, s.to()), Arterials.az(s, s.to()))) return null;
 		int mid = Math.floorDiv(s.from() + s.to(), 2);

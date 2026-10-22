@@ -196,6 +196,8 @@ public final class SettlementChecks {
 	public static final String LOT_DRY = "lot-dry";
 	public static final String LOT_GRADE = "lot-grade";
 	public static final String ROADS_CONNECTED = "roads-connected";
+	/** Whole-city rule (ROADS2): every street or plaza column of the city reaches the hub through street and plaza columns; no detached road. */
+	public static final String ROADS_ATTACHED = "roads-attached";
 	public static final String TILE_BORDER_AGREE = "tile-border-agree";
 	/** Blocks of the plan's own coverage raster round the tile (streets reach this far over the border). */
 	public static final int COVER_PAD = 16;
@@ -468,11 +470,16 @@ public final class SettlementChecks {
 		int hubSize = 0, total = 0;
 		if (start >= 0) { pc.flood(start); hubSize = pc.size; }
 		int listed = 0, pieces = 0, strays = 0;
+		List<Violation> strayList = new ArrayList<>();
 		for (int i = 0; i < kind.length; i++) {
 			if (kind[i] == 0 || seen[i]) continue;
 			pc.flood(i);
 			if (start < 0) continue;
-			if (pc.lot == null) { strays++; continue; }
+			if (pc.lot == null) {
+				strays++;
+				if (strayList.size() < MAX_LISTED) strayList.add(v(ROADS_ATTACHED, "a detached piece of " + pc.size + " street columns (x " + (x0 + pc.minX) + ".." + (x0 + pc.maxX) + ", z " + (z0 + pc.minZ) + ".." + (z0 + pc.maxZ) + (pc.skeleton ? ", with a skeleton road" : "") + ") does not reach the hub", x0 + i % w, z0 + i / w, 1, 1));
+				continue;
+			}
 			pieces++;
 			if (listed++ < MAX_LISTED) {
 				out.add(v(ROADS_CONNECTED, "a piece of " + pc.size + " street columns (x " + (x0 + pc.minX) + ".." + (x0 + pc.maxX) + ", z " + (z0 + pc.minZ) + ".." + (z0 + pc.maxZ) + ") with the front of lot " + pc.lot + (pc.skeleton ? " and a skeleton road" : "") + " does not reach the hub",
@@ -480,6 +487,10 @@ public final class SettlementChecks {
 			}
 		}
 		if (start >= 0 && pieces > MAX_LISTED) out.add(v(ROADS_CONNECTED, (pieces - MAX_LISTED) + " more pieces do not reach the hub", hub.x(), hub.z(), 1, 1));
+		if (start >= 0) {
+			out.addAll(strayList);
+			if (strays > strayList.size()) out.add(v(ROADS_ATTACHED, (strays - strayList.size()) + " more detached pieces do not reach the hub", hub.x(), hub.z(), 1, 1));
+		}
 		for (byte b : kind) if (b != 0) total++;
 		return new CityRoads(out, strays, hubSize, total);
 	}

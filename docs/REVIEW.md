@@ -274,3 +274,10 @@ work becomes a ROADMAP item or a Polish backlog line. Settled items move to
   12. Build and flake changes this phase (README, "What changed"): `mod/build.gradle` JUnit deps and test heap, `cli/build.gradle` test inputs, `viewer/vite.config.ts` page inputs, `viewer/package.json` scripts `city` and `city-gallery`, `flake.nix` `SB_SPACE_IGNORE`. OK?
   Agent notes: pictures looked at 2026-10-21. Plans read as settlements on their terrain (cores on dry land between water, main roads following shores); the metropolis downtown is one block of equal 60-storey towers; desert walls look speckled; the village is one street. The 3D frames paint a whole district in its first building's palette, so mixed districts cannot be judged in 3D (use the plan and the counts).
   Result:
+
+## ROADS2 (John's roads feedback)
+
+- [ ] **ROADS2 (p5-roads2)**: is every road now part of one network, and does the built-up area thin out towards the edge instead of ending at the arterials?
+  Where: `docs/review/phase5/roads2/` (`gate-snow-city`, `gate-temperate-city`, `gate-metropolis-temperate`, each `-before.png` and `-after.png`); `cd viewer && nix develop -c npm run city-gallery` with `FB_CITIES=gate-snow-city,gate-temperate-city` for the rest; any other gate city's `plan.png`.
+  Look for: no yellow or grey road piece lying on its own (the snow city's loose arterials are gone and its streets reach the main roads); streets with houses and workshops past the highrise belt, no highrises in the outer quarter; whether the 5-wide streets on every tile border (130 to 190 blocks apart, a rectangular frame, houses along it) read as a city's minor roads or as too regular; towns got the same frame (about twice the lots on flat ground, about a quarter fewer on a hill, the organic port lanes are gone): keep, or give towns their old organic look and a cheaper attach rule?; waterfront quays are fewer (only those a street can reach).
+  Result:

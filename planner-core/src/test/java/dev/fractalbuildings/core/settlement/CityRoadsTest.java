@@ -25,7 +25,7 @@ import org.junit.jupiter.api.Test;
  * profile keeps the grade, and the plan's landmarks sit where district detail put them.
  */
 class CityRoadsTest {
-	record Planned(String name, CityPlanner.City city, TerrainProbe exact) {}
+	record Planned(String name, CityPlanner.City city, TerrainProbe exact, SkeletonSource src) {}
 
 	static List<Planned> gates() throws Exception {
 		List<String> rows = Files.readAllLines(Path.of("../fixtures/terrain/gate-sites.tsv"));
@@ -46,8 +46,9 @@ class CityRoadsTest {
 				SettlementSite site = new SettlementSite(Ids.site(claimant.cx(), claimant.cz()), Tier.of(f[4]), new Pt(x, z), radius, claimant, cells);
 				RecordedProbe r = RecordedProbe.read(Path.of("../fixtures/terrain/" + f[0] + ".json.gz"));
 				CoarseProbe coarse = CoarseProbe.of(r, r, 32);
-				CityPlanner.City city = CityPlanner.plan(new SkeletonSource.Direct(seed, new FixedSiteView(site, field), site, coarse), coarse, r, r, GeneratorV1.GEN_VERSION);
-				return new Planned(f[0], city, r);
+				SkeletonSource src = new SkeletonSource.Direct(seed, new FixedSiteView(site, field), site, coarse);
+				CityPlanner.City city = CityPlanner.plan(src, coarse, r, r, GeneratorV1.GEN_VERSION);
+				return new Planned(f[0], city, r, src);
 			} catch (Exception e) {
 				throw new RuntimeException(e);
 			}
@@ -70,8 +71,9 @@ class CityRoadsTest {
 			Cell claimant = CellGeometry.owner(field, sites[i][0], sites[i][1]);
 			SettlementSite site = new SettlementSite(Ids.site(claimant.cx(), claimant.cz()), tiers[i], new Pt(sites[i][0], sites[i][1]), sites[i][2], claimant, List.of(claimant));
 			CoarseProbe coarse = CoarseProbe.of(p.terrain(), p.biome(), 32);
-			CityPlanner.City city = CityPlanner.plan(new SkeletonSource.Direct(seeds[i], new FixedSiteView(site, field), site, coarse), coarse, p.terrain(), p.biome(), GeneratorV1.GEN_VERSION);
-			return new Planned(t + " #" + i, city, p.terrain());
+			SkeletonSource src = new SkeletonSource.Direct(seeds[i], new FixedSiteView(site, field), site, coarse);
+			CityPlanner.City city = CityPlanner.plan(src, coarse, p.terrain(), p.biome(), GeneratorV1.GEN_VERSION);
+			return new Planned(t + " #" + i, city, p.terrain(), src);
 		}).toList();
 	}
 
