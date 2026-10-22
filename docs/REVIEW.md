@@ -157,13 +157,15 @@ work becomes a ROADMAP item or a Polish backlog line. Settled items move to
   Where: `docs/review/phase4/gallery/{house,temple,hall,block,workshop}/*-cutaway.png`; every preset's cutaway in the full set (`viewer/out/gallery/*-cutaway.png`)
   Look for: room sizes, doors between rooms, the stair core against a wall, hook markers (furniture places). Interiors are not gameplay yet; this is about the plan only.
   Result:
-- [ ] **4.7 styles** [St-desert, St-taiga, St-snowy, St-jungle]: does each new style read as its biome?
+- [x] **4.7 styles** [St-desert, St-taiga, St-snowy, St-jungle]: does each new style read as its biome?
   Where: `docs/review/phase4/gallery/styles/` (a house and a large type per style; `desert-*`, `taiga-*`, `snowy-*`, `jungle-*`), and in the full set `viewer/out/gallery/tower-<style>-front-left.png`
   Look for: desert flat sandstone roofs (walls speckled by the terracotta in the mix: drop it?); taiga steep spruce roofs; snowy small windows, stone and spruce; jungle green roofs and bamboo/jungle wood (does it read as jungle?). Known: no dormers on 2/1 roofs, no verandas or raised floors in jungle.
   Result:
   - @John 2026-10-21: I think at some point we’re going to want more variation for biomes. It’s not just about the colors or the blocks used, houses may be actually designed differently in different biomes. Using different materials might mean, for example, a different style roof. Desert homes might not have gabled roofs, snowy biome homes might want to have very steep pitched roofs, etc. Also a general thought on the color / block palette, the timbers look great, I love that. The plains look is a bit splotchy, like maybe they need to be made of blocks that are more similarly colored, subtle shading instead of dark and light scatterings of blocks.
     - @assistant 2026-10-21: Today a style changes roof form and pitch as well as blocks (`fb-style/1` roof settings): desert has flat roofs with a parapet and no gables; taiga and snowy have steep 2-in-1 gables (rise 2, run 1), the others 1-in-1; jungle mostly hips with a deep 2-block overhang; snowy also has fewer windows (wider bays, blank corners). What is not there yet is structural difference per biome: desert courtyard houses and flat-roofed adobe blocks, jungle raised floors and verandas, snowy compact plans. Also known: plains walls mix birch, oak, white terracotta and smooth stone, which is the splotchiness you see.
     - @coordinator 2026-10-21: Added two ROADMAP Polish backlog lines: "plains palette: smoother, more similar wall blocks (less speckle)" and, as a later-phase idea, "biome-specific building forms beyond palette and roof pitch (desert courtyard and flat roofs, jungle raised floors and verandas, snowy steep roofs and small windows)". The plains palette is a small fix; I am scheduling it now.
+      -
+      - @John 2026-10-21: sounds good, approved.
 
 - [x] **Tower watchtowers** (gate follow-up): do the stilted lookouts (spindly legs, stair up the front, small room), the top-heavy towers (shaft with a wider room overhanging on all sides) and the unglazed window holes read as watch towers?
   Where: `docs/review/phase4/gallery/tower/tower-medieval-front-left.png` (seeds 4 and 11 stilted, 6 and 10 top-heavy; seeds 1, 3, 5 have window holes)
@@ -210,28 +212,39 @@ work becomes a ROADMAP item or a Polish backlog line. Settled items move to
 - [x] **Plains palette calmer (p5-plains-palette)**: answers John's "plains look is splotchy". Walls are now birch/bamboo planks/smooth sandstone, roof bricks/red terracotta/terracotta, foundation cobble/stone/andesite, beams oak/spruce log (no more dark brown terracotta, white terracotta, smooth stone or birch log speckle). Before/after seed gallery (front-left, seeds 0-15): `docs/review/phase5/plains-palette/house-plains-before.png` and `house-plains-after.png`. Does plains now read as one calm material with subtle shading? Medieval is untouched.
     - @John 2026-10-21: this is much better!
 
-- [ ] **CIRC2 Squarer rooms and more bedrooms** (answer to the 5.11 review): do house plans now look like a person laid them out, with squarish rooms and more than one bedroom?
+- [x] **CIRC2 Squarer rooms and more bedrooms** (answer to the 5.11 review): do house plans now look like a person laid them out, with squarish rooms and more than one bedroom?
   Where: `docs/review/phase5/circulation/house-medieval-plans.md` section "After CIRC2" (seeds 9, 7), cutaways `house-{medieval,plains,desert}-cutaway-after-circ2.png` (compare `-after.png`); numbers in `docs/log/2026-10-21-p5-circ2.md`.
   Look for: rooms still too long or too many tiny ones (long wings are now cut in two, so rooms are smaller); too many or too few bedrooms (1.8 per medieval house, ground-floor spare rooms become bedrooms 85 % of the time); a house of wings with no kitchen (seed 7).
   Result:
+  - @John 2026-10-21: it’s an improvement. S9 is still weird, but weird is ok. I can make up a story why that house has a tiny bedroom and tons of living room space.
 - [ ] **D2 town walls**: a walled town's plan and gatehouses.
   Where: `viewer/out/city/town-walled/plan.png` and `dm6_m24-overview.png`, `dm6_m25-overview.png` (`FB_CITIES=town-walled npm run city-gallery`).
   Look for: does a rectangular ring with crenellated gatehouses and corner towers read as a town wall; roads meeting the gate lots straight; towers too tall or too short next to the wall; the market and hall inside.
+  Result:
+    - @John 2026-10-21: the town-walled looks great. However, when walls connect, a mob/player should probably be able to walk between the segments. That might mean stairs or something. 
 
 - [ ] **Waterfront quays and bridges (p5-tr-terrain)**: do the promenades along lakes, rivers and the coast read as a waterfront (stone, shops facing the water), or are they too thin, too many, or running past nothing? Do the plank bridges (role `deck`) look right? Is the steep badlands town (arterials dropped on hills, a main road cut into the slope, houses on stilts) acceptable? Pictures: `docs/review/phase5/terrain/` (README there); live: `npm run city -- tr-coast tr-river tr-steep` then `npm run city-gallery`.
+  - @John 2026-10-21: IMO, any building needs *some* sort of path leading to its door. This is especially true for shops, but even houses should have it. I’m seeing from tr-coast-dm47_m22-overview.png that the actual waterfront looks amazing, but behind the waterfront it looks like shops with pillars, etc, but no path at all getting to them. Actually, I can’t tell, maybe the road to the back is the access point. But there should be a door there at least. So maybe there’s nothing to do.
+  - The tr-river town looks great. 
 - [ ] **House kitchen and living room (p5-house-program)**: does every house now have a kitchen and a living room, in sensible places?
   Where: `docs/review/phase5/circulation/house-medieval-plans.md` section "After house program" (seeds 7, 9), numbers in `docs/log/2026-10-21-p5-house-program.md`; gallery `house-medieval`, `house-plains`, `house-desert`.
   Look for: kitchens (hearth) beside the living room or entry; houses that now have too few bedrooms (1.7 per medieval house, was 1.8); a one-room hut that is only a bedroom; a ground floor that is a single kitchen-hall under bedrooms.
   Result:
+  - @John 2026-10-21: these look much better, great even. **That said** one thing I want to re-emphasize (I mentioned it but probably it got buried), we should consider partitioning rooms in ways that don’t use doors. Or have “double doors” that are actually air not actual doors. Example, in seed 7, the entryway to living room, to kitchen - the division between kitchen and living room could be open. In real life, sometimes people used to strictly separate the kitchen. Modern houses usually let the kitchen be open to living areas. Maybe that’s the rule - other than medieval, kitchen/living area divisions can and often should be open - archways, wide “air” doors, etc. 
 
 - [ ] **Downtown skyline and avenues (p5-d3-city)**: does the metropolis downtown read as a high-rise centre, and do the diagonal avenues and the walled old town look like a real city?
   Where: `docs/review/phase5/d3/` (plan with storeys colours, skyline transects, 3D frames; presets `d3-metropolis-flat`, `d3-city-walled`, `d3-city-avenues`, `gate-metropolis-temperate`, `gate-metropolis-mixed`; `cd viewer && npm run city -- d3-metropolis-flat && npm run city-gallery` regenerates them).
   Look for: towers rising towards the centre then mid-rise (10 to 19 storeys) then blocks then houses (it plateaus at 60 storeys over about 0.3 of the radius, is that too flat, too many?); diagonal avenues meeting at the hub square and bending to cross wall gates; the old town inside the wall with only 3 to 5 storey buildings; squares (with a hall) at some arterial crossings; empty park tiles in the downtown (open ground only, no trees or paths yet); the outer arterial ring.
   Result:
+  - @John 2026-10-21: Notes:
+    * Put on the roadmap a research topic to look into how we could integrate with some other mods. The one I’m thinking of is Create. One issue might be version compatibility, but here is the thing: These highrises are going to be basically non-navigable on foot. We can put in ladders / stairwells, sure. But they need elevators! And _with Create mod_ we could build real functioning elevator shafts. It would be amazing but that is a whole level of complexity. Maybe it’s simple for this mod though - leave a space to put an elevator shaft for now.
+    * It’s looking good. metropolis-flat-plan-height.png clearly shows a much taller downtown. Even has empty sections for parks!
+    * Is the skyline-transects.png showing a kind of height map toward the center? If so, I suppose I’d say the *center* should probably tend to be smaller as a proportion. Like, a smaller area of very tall buildings in the dense core with a longer tail of medium to small buildings. On the other hand, some city centers really are packed with tall buildings. Overall though, I’d like to see more “long tail” of the shorter buildings. It comes off as “oops all highrise”. 
 - [ ] **IRR1 (5.13)**: do old towns and diagonal avenues read as organic, "people built this", and not as a grid with extra lanes?
   Where: `docs/review/phase5/irregular/old-town-plan.png` (synthetic city seed 1001: the hub tile and the old-town tiles round it, beside grid quarters) and `avenues-plan.png` (the D3 avenue city after, compare `docs/review/phase5/d3/city-avenues-plan.png` before); regenerate with `npm run city -- irr1-old-town d3-city-avenues`, then `FB_CITIES=irr1-old-town,d3-city-avenues CITY_GALLERY=1 npx playwright test e2e/city.spec.ts -g "plan view"`; 3D is not captured for these (plan only).
   Look for: blocks of different sizes meeting in T junctions with lanes and a small square or green now and then (good); old-town streets that stop short or run straight through everything (bad: they dead-end 14 blocks from the tile border unless an arterial is there, and tiles join mostly by ports); lots stepping along a diagonal avenue on its cut lanes rather than on the avenue itself; empty wedges beside the avenue (known: under 16 across stay empty); whether the old town should be bigger, smaller, or walled-in only.
   Result:
+    - @John 2026-10-21: Yes, these look fantastic.
 
 ## Phase 5 gate
 
