@@ -63,6 +63,10 @@ work becomes a ROADMAP item or a Polish backlog line. Settled items move to
   Where: `cd viewer && nix develop -c npm run city-gallery` with `FB_CITIES=hamlet-river,village-river,hamlet-mixed,village-mixed`, then `viewer/out/city/<name>/plan.png` and the `*-overview.png` / `*-street.png` frames.
   Look for: a hamlet is a short track with a handful of houses and a workshop each side, no square; a village has a straight main street, a cross street on about half, a green at the hub with a temple or hall facing it from the side, lanes, and the houses lining the streets. Bad: a ruler-straight street feels too artificial, the green sits oddly, a village that is all one street.
   Result:
+  - @John 2026-10-21: notes:
+    - #important do we have anything planned to connect cities with roads of some kind or another? This might be a missed detail. Not absolutely required, but a metropolis with cities nearby that aren’t connected by a road kind of makes no sense. I don’t know what we could do in the planning to connect them though, this is a question for a coder or a spike to consider. **Unless I missed it and this was already accounted for**.
+    - I think hamlets need more houses than this. Not much, I get that they want to be small. The one in the review is ok as one random example, so long as the range allows for larger ones.
+    - The example has a ruler straight road.
 
 - [ ] **Whole-city roads (p5-roads)**: are the hall and temple placements, and the cities with no unreachable buildings, believable? Is it acceptable that arterial blocks with no link to a main road stay empty (snow city lost 27 lots)?
   Where: `docs/review/phase5/roads/` (plan views of gate-snow-city, gate-temperate-city, gate-metropolis-temperate); `npm run city -- gate-snow-city` then the plan view for any other gate city; numbers in `docs/log/2026-10-21-p5-roads.md`.
