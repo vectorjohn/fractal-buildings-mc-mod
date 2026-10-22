@@ -455,7 +455,7 @@ Fixed opportunistically or scheduled as items.
 - 5.2 DL: skeleton roads over steep ground keep cut and fill; road y can differ a block at a tile border; lots only along axis-aligned runs; lake-rich real-terrain city has few lots; brief storeys use the district quarter.
 - 5.2 DL r2: port-stub lanes graded per tile; arterial chains with no main-road link stay empty; metropolis-mixed has no hall (lake hub tile); earthwork up about 40 % on the gate windows.
 - 5.3 TR: no stairs (steep lanes route around or drop; 7 to 90 street pieces per city keep cut and fill); quays run past no lots on some banks; a road crossing an unplanned tile leaves a gap.
-- 5.7 D3: diagonal avenue frontage is empty; walled cities have 5-wide avenues; old-town walls only where the centre cell owns the ring; metropolis core plateaus at 60 storeys and half its core lots are 4-storey shops.
+- 5.7 D3: diagonal avenue frontage is empty; walled cities have 5-wide avenues; old-town walls only where the centre cell owns the ring; (the 60-storey plateau is fixed by p5-skyline: see its log) city blocks stay near absent (whole street blocks of 52 and more with a street on all four sides are rare).
 - 5.8 MC2: T2 fine windows still need `--site`; `--cell` on a recorded world dump prints a "cannot see outside the dump" note for each city-or-larger cell.
 - 5.9 SC: 1.5x time bar fails on synthetic terrain with scenes (1.8x); "exact probes" count `floorY` only; probe bar (under 1,000 per district) not met; skeleton cache below 4 costs 1.5 to 4.8x.
 - 5.10 R2: "+50 % of city sites within 256 blocks of water" unmeasurable on the world dumps; boundary cells of a window lose the big tiers.

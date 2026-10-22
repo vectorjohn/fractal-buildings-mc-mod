@@ -1,0 +1,22 @@
+gate-metropolis-temperate: 3110 built lots, radius 1430
+d/R 0.0-0.1: n=49 dens=97 meanMax=16.1 max=59 {"highrise":22,"shop":25,"hall":1,"temple":1}
+d/R 0.1-0.2: n=92 dens=91 meanMax=15.8 max=56 {"highrise":50,"shop":42}
+d/R 0.2-0.3: n=162 dens=82 meanMax=9.8 max=36 {"highrise":49,"shop":113}
+d/R 0.3-0.4: n=282 dens=76 meanMax=7.0 max=32 {"highrise":65,"shop":169,"house":35,"workshop":10,"hall":3}
+d/R 0.4-0.5: n=476 dens=70 meanMax=5.1 max=21 {"shop":203,"house":146,"workshop":61,"highrise":66}
+d/R 0.5-0.6: n=731 dens=61 meanMax=3.5 max=17 {"shop":250,"house":362,"workshop":103,"highrise":16}
+d/R 0.6-0.7: n=642 dens=54 meanMax=3.1 max=14 {"shop":173,"house":334,"workshop":120,"tower":12,"highrise":2,"hall":1}
+d/R 0.7-0.8: n=320 dens=38 meanMax=3.0 max=8 {"house":220,"workshop":52,"shop":37,"tower":11}
+d/R 0.8-0.9: n=225 dens=25 meanMax=2.7 max=8 {"house":164,"shop":13,"tower":12,"workshop":36}
+d/R 0.9-1.0: n=131 dens=11 meanMax=2.2 max=6 {"house":92,"shop":6,"workshop":28,"tower":5}
+tallest 59@0.09R 56@0.11R 53@0.16R 52@0.07R 51@0.07R
+storey histogram (top storey, share of built lots, median d/R):
+   1-2   19.1%  n= 593  median d/R 0.70
+   3-4   71.4%  n=2221  median d/R 0.57
+   5-5    0.0%  n=   0  median d/R -
+   6-9    0.8%  n=  26  median d/R 0.80
+  10-19   4.9%  n= 153  median d/R 0.40
+  20-29   2.8%  n=  88  median d/R 0.18
+  30-44   0.7%  n=  22  median d/R 0.20
+  45-60   0.2%  n=   7  median d/R 0.09
+>=20 storeys: 117 lots (3.8%), 0 blocks

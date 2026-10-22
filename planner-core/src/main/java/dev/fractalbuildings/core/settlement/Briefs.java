@@ -76,6 +76,7 @@ public final class Briefs {
 		}
 		if ((type.equals("house") || type.equals("workshop")) && relief > STEEP_RELIEF) return empty(l, style, mask, frontY, "empty:steep");
 		int[] range = storeys(type, l.density(), quarter);
+		if (type.equals("highrise")) range = ClassTable.lotStoreys(plan.seed(), l.x(), l.z(), l.density(), range[0], range[1]);
 		return new LotBrief(l.id(), l.x(), l.z(), l.w(), l.d(), l.front(), type, style, range[0], range[1], mask, l.airRights(), frontY, l.density(), LotBrief.BUILD);
 	}
 
@@ -90,7 +91,7 @@ public final class Briefs {
 		boolean alongX = l.front() == Facing.NORTH || l.front() == Facing.SOUTH;
 		int lw = alongX ? l.w() : l.d(), ld = alongX ? l.d() : l.w();
 		int w = lw - 2 * lim.side(), d = ld - lim.front() - lim.back();
-		return w >= lim.minWidth() && d >= lim.minDepth() && SpecPolicyV1.reliefOk(lim, relief, l.w(), l.d());
+		return w >= lim.minWidth() && d >= lim.minDepth() && SpecPolicyV1.reliefOk(lim, relief, l.w(), l.d()) && ClassTable.reliefAllows(type, relief);
 	}
 
 	/** Storey range for a type: its class-table entry in this row, within the type's own limits. */

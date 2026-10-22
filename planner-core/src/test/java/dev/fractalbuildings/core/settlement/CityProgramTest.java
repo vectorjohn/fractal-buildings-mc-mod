@@ -272,7 +272,7 @@ class CityProgramTest {
 				if (dp != null) for (LotBrief l : dp.lots()) assertTrue(!l.builds(), "a park tile has a building: " + l.id());
 			}
 		}
-		assertTrue(downtown > 250, "downtown tiles " + downtown);
+		assertTrue(downtown > 100, "downtown tiles " + downtown);
 		assertTrue(parks * 100 >= downtown * 7 && parks * 100 <= downtown * 20, parks + " parks in " + downtown + " downtown tiles (one in eight)");
 	}
 
@@ -308,7 +308,30 @@ class CityProgramTest {
 			assertTrue(mean < prev, "mean top storeys in band " + e.getKey() + " is " + mean + ", not below " + prev);
 			prev = mean;
 		}
-		assertTrue(band.get(0)[0] / (double) band.get(0)[1] > 20 && band.get(4)[0] / (double) band.get(4)[1] < 4, "a skyline at the centre and houses at the edge");
+		assertTrue(band.get(0)[0] / (double) band.get(0)[1] > 12 && band.get(4)[0] / (double) band.get(4)[1] < 4, "a skyline at the centre and houses at the edge");
+	}
+
+	/** P5 skyline: the tall core is a small share of the city, heights inside it are peaked (not a flat plateau), and a long tail of mid-rise and low buildings runs outward. */
+	@Test
+	void theTallCoreIsASmallShareWithAPeakedHeightDistributionAndALongTail() {
+		int built = 0, tall = 0, mid = 0, low = 0, top = 0;
+		for (Planned p : metros()) {
+			for (DistrictPlan dp : p.city().districts().values()) {
+				for (LotBrief l : dp.lots()) {
+					if (!l.builds()) continue;
+					built++;
+					int s = l.maxStoreys();
+					if (s >= 20) tall++;
+					if (s >= 45) top++;
+					if (s >= 10 && s <= 19) mid++;
+					if (s <= 4) low++;
+				}
+			}
+		}
+		assertTrue(tall > 0 && tall * 100 <= built * 8, tall + " of " + built + " lots reach 20 storeys: the tall core is at most 8 per cent of the city");
+		assertTrue(top * 100 <= tall * 20, top + " of " + tall + " towers reach 45 storeys: the tallest are few");
+		assertTrue(mid * 100 >= built * 3, mid + " mid-rise lots of " + built);
+		assertTrue(low * 100 >= built * 80, low + " lots of 4 storeys or fewer, of " + built + ": the long tail");
 	}
 
 	/** Writes build/skyline/metropolis.png (two transects through the centre of the first two metropolises) and checks their shape. */

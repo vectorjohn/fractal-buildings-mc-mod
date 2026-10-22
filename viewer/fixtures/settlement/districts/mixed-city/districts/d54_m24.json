@@ -3,7 +3,7 @@
   "planVersion": 1,
   "genVersion": 2,
   "seed": "1",
-  "district": {"id": "d54_m24", "ix": 54, "iz": -24, "x": 8624, "z": -3824, "w": 160, "d": 144, "quarter": 7, "density": 13},
+  "district": {"id": "d54_m24", "ix": 54, "iz": -24, "x": 8624, "z": -3824, "w": 160, "d": 144, "quarter": 7, "density": 15},
   "streets": [],
   "plazas": [],
   "lots": [],

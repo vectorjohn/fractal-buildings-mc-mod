@@ -91,6 +91,23 @@ class ClassTableTest {
 		assertEquals(15, mid);
 	}
 
+	/** P5 skyline: a tower lot is peaked (many near 20, few near the density's tallest) and high-rises skip steep ground. */
+	@Test
+	void towerHeightsArePeakedAndHighrisesAvoidSteepLots() {
+		assertTrue(ClassTable.reliefAllows("highrise", ClassTable.HIGHRISE_MAX_RELIEF) && !ClassTable.reliefAllows("highrise", 13) && ClassTable.reliefAllows("shop", 40));
+		int n = 3000, low = 0, high = 0, top = 0;
+		for (int i = 0; i < n; i++) {
+			var p = ClassTable.pick(21, i * 7, i * 11, 100, QuarterKind.DOWNTOWN, 0, 60, 60).orElseThrow();
+			if (!p.type().equals("highrise")) continue;
+			assertTrue(p.minStoreys() >= 20 && p.minStoreys() <= p.maxStoreys() && p.maxStoreys() <= 60, p.toString());
+			if (p.maxStoreys() < 35) low++;
+			if (p.maxStoreys() >= 50) top++;
+			high++;
+		}
+		assertTrue(high > 1000 && low * 100 >= high * 55 && top * 100 <= high * 15 && top > 0, low + " below 35 and " + top + " from 50 of " + high + " towers at density 100");
+		for (int i = 0; i < 200; i++) assertTrue(ClassTable.pick(5, i, i * 3, 95, QuarterKind.DOWNTOWN, 13, 60, 60).map(q -> !q.type().equals("highrise")).orElse(true));
+	}
+
 	@Test
 	void oldTownHasNeitherBlocksNorHighrises() {
 		for (int d = 0; d <= 100; d += 5) {

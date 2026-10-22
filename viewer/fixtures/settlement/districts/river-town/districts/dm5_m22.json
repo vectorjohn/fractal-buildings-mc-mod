@@ -16,14 +16,14 @@
     {"id": "dm5_m22.l1", "x": -797, "z": -3517, "w": 21, "d": 11, "front": "west", "type": "shop", "style": "plains", "storeys": [2, 4], "streets": 1, "airRights": 1, "frontY": 71, "density": 56, "status": "build"},
     {"id": "dm5_m22.l2", "x": -797, "z": -3506, "w": 23, "d": 24, "front": "west", "type": "house", "style": "plains", "storeys": [2, 3], "streets": 1, "airRights": 1, "frontY": 70, "density": 58, "status": "build"},
     {"id": "dm5_m22.l3", "x": -797, "z": -3482, "w": 16, "d": 13, "front": "west", "type": "shop", "style": "plains", "storeys": [2, 4], "streets": 1, "airRights": 1, "frontY": 69, "density": 59, "status": "build"},
-    {"id": "dm5_m22.l4", "x": -797, "z": -3469, "w": 17, "d": 15, "front": "west", "type": "shop", "style": "plains", "storeys": [2, 4], "streets": 1, "airRights": 1, "frontY": 69, "density": 59, "status": "build"},
-    {"id": "dm5_m22.l5", "x": -797, "z": -3451, "w": 18, "d": 15, "front": "west", "type": "shop", "style": "plains", "storeys": [2, 4], "streets": 1, "airRights": 1, "frontY": 70, "density": 58, "status": "build"},
-    {"id": "dm5_m22.l6", "x": -797, "z": -3434, "w": 22, "d": 23, "front": "west", "type": "house", "style": "plains", "storeys": [2, 3], "streets": 1, "airRights": 1, "frontY": 68, "density": 58, "status": "build"},
-    {"id": "dm5_m22.l7", "x": -797, "z": -3407, "w": 25, "d": 15, "front": "west", "type": "shop", "style": "plains", "storeys": [2, 4], "streets": 1, "airRights": 1, "frontY": 68, "density": 57, "status": "build"},
-    {"id": "dm5_m22.l8", "x": -797, "z": -3390, "w": 7, "d": 7, "front": "west", "type": "house", "style": "plains", "storeys": [2, 3], "streets": 1, "airRights": 1, "frontY": 69, "density": 57, "status": "build"},
-    {"id": "dm5_m22.l9", "x": -797, "z": -3383, "w": 13, "d": 12, "front": "west", "type": "house", "style": "plains", "storeys": [2, 3], "streets": 1, "airRights": 1, "frontY": 68, "density": 54, "status": "build"},
-    {"id": "dm5_m22.l10", "x": -797, "z": -3371, "w": 25, "d": 15, "front": "west", "type": "shop", "style": "plains", "storeys": [2, 4], "streets": 1, "airRights": 1, "frontY": 65, "density": 54, "status": "build"},
-    {"id": "dm5_m22.l11", "x": -797, "z": -3352, "w": 10, "d": 8, "front": "west", "type": "house", "style": "plains", "storeys": [2, 3], "streets": 1, "airRights": 1, "frontY": 66, "density": 54, "status": "build"}
+    {"id": "dm5_m22.l4", "x": -797, "z": -3469, "w": 10, "d": 16, "front": "west", "type": "house", "style": "plains", "storeys": [2, 3], "streets": 1, "airRights": 1, "frontY": 69, "density": 59, "status": "build"},
+    {"id": "dm5_m22.l5", "x": -797, "z": -3450, "w": 17, "d": 12, "front": "west", "type": "shop", "style": "plains", "storeys": [2, 4], "streets": 1, "airRights": 1, "frontY": 70, "density": 58, "status": "build"},
+    {"id": "dm5_m22.l6", "x": -797, "z": -3438, "w": 11, "d": 13, "front": "west", "type": "house", "style": "plains", "storeys": [2, 3], "streets": 1, "airRights": 1, "frontY": 69, "density": 58, "status": "build"},
+    {"id": "dm5_m22.l7", "x": -797, "z": -3425, "w": 17, "d": 12, "front": "west", "type": "shop", "style": "plains", "storeys": [2, 4], "streets": 1, "airRights": 1, "frontY": 68, "density": 58, "status": "build"},
+    {"id": "dm5_m22.l8", "x": -797, "z": -3413, "w": 18, "d": 20, "front": "west", "type": "workshop", "style": "plains", "storeys": [2, 2], "streets": 1, "airRights": 1, "frontY": 68, "density": 57, "status": "build"},
+    {"id": "dm5_m22.l9", "x": -797, "z": -3389, "w": 19, "d": 13, "front": "west", "type": "shop", "style": "plains", "storeys": [2, 4], "streets": 1, "airRights": 1, "frontY": 69, "density": 57, "status": "build"},
+    {"id": "dm5_m22.l10", "x": -797, "z": -3376, "w": 20, "d": 22, "front": "west", "type": "house", "style": "plains", "storeys": [2, 3], "streets": 1, "airRights": 1, "frontY": 65, "density": 54, "status": "build"},
+    {"id": "dm5_m22.l11", "x": -797, "z": -3354, "w": 15, "d": 10, "front": "west", "type": "shop", "style": "plains", "storeys": [2, 4], "streets": 1, "airRights": 1, "frontY": 66, "density": 54, "status": "build"}
   ],
   "scene": null,
   "violations": []

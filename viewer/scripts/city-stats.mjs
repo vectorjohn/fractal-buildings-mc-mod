@@ -29,3 +29,14 @@ for (const b of [...bands.keys()].sort((a, c) => a - c)) {
 }
 const tall = lots.filter((l) => l.type === 'highrise').sort((a, b) => b.storeys[1] - a.storeys[1]).slice(0, 5);
 console.log('tallest', tall.map((l) => `${l.storeys[1]}@${l.dist.toFixed(2)}R`).join(' '));
+// Skyline histogram (P5 skyline): share of built lots by top storey, and the radius band that holds each share.
+const edges = [[1, 2], [3, 4], [5, 5], [6, 9], [10, 19], [20, 29], [30, 44], [45, 60]];
+const total = lots.length;
+console.log('storey histogram (top storey, share of built lots, median d/R):');
+for (const [a, b] of edges) {
+  const ls = lots.filter((l) => l.storeys[1] >= a && l.storeys[1] <= b).sort((x, y) => x.dist - y.dist);
+  const med = ls.length ? ls[Math.floor(ls.length / 2)].dist.toFixed(2) : '-';
+  console.log(`  ${String(a).padStart(2)}-${String(b).padEnd(2)} ${((100 * ls.length) / total).toFixed(1).padStart(5)}%  n=${String(ls.length).padStart(4)}  median d/R ${med}`);
+}
+const tallLots = lots.filter((l) => l.storeys[1] >= 20);
+console.log(`>=20 storeys: ${tallLots.length} lots (${((100 * tallLots.length) / total).toFixed(1)}%), ${lots.filter((l) => l.type === 'block').length} blocks`);

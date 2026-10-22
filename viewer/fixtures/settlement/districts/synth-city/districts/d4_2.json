@@ -3,7 +3,7 @@
   "planVersion": 1,
   "genVersion": 2,
   "seed": "1001",
-  "district": {"id": "d4_2", "ix": 4, "iz": 2, "x": 640, "z": 320, "w": 176, "d": 176, "quarter": 7, "density": 4},
+  "district": {"id": "d4_2", "ix": 4, "iz": 2, "x": 640, "z": 320, "w": 176, "d": 176, "quarter": 7, "density": 5},
   "streets": [
     {"id": "b04_144", "kind": "street", "width": 5, "points": [[640, 312], [640, 320]], "y": [72, 72]},
     {"id": "b12_480", "kind": "street", "width": 5, "points": [[632, 320], [640, 320]], "y": [72, 72]}

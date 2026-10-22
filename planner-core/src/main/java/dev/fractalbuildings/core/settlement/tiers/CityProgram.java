@@ -37,6 +37,9 @@ public class CityProgram extends TownProgram {
 	/** About one arterial crossing in this many gets a square. */
 	public static final int SQUARE_ONE_IN = 4;
 
+	/** The hub square keeps 14 clear of the tile edge, so the 9-wide avenues its reservation clips agree across the border (tile-border-agree). */
+	@Override protected int landmarkMargin() { return 14; }
+
 	@Override protected int exitCount(SkeletonContext c) {
 		if (!c.holdsCentre()) return 1;
 		return 3 + Hash64.below(Hash64.hash(c.seed, "exit-count", c.cell.cx(), c.cell.cz()), 2);

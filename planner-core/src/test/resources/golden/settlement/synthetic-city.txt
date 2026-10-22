@@ -1,2 +1,2 @@
-fd4f7be3346913292a9c40107ef3da997cf9855c2289fb374916026ba66c51a1
-synthetic-city: city, 6 cells, 62 districts, 84 roads, 0 bridges, 18 gates, 12 landmarks, 69871 bytes
+1d973f7779e87a82fb820cf44719499dac8f0903e6f4cfa8fa69d15c5d73ca45
+synthetic-city: city, 6 cells, 62 districts, 79 roads, 0 bridges, 18 gates, 10 landmarks, 68835 bytes
