@@ -39,7 +39,7 @@ it.
 | any **oak** block (planks, stairs, slab, trapdoor, fence, gate, door, pressure plate, button, shelf, log) | `wood`, same form | spruce stairs in medieval, birch in desert |
 | any **dark oak** block | `accent`, same form | dark oak in medieval, bamboo in jungle |
 | **stone bricks**, stone brick stairs, slab, wall | `stone`, same form | cobblestone in taiga, smooth sandstone in desert |
-| **white** wool, carpet, banner, bed | `cloth`, main colour of the room | red in medieval |
+| **white** wool, carpet, banner | `cloth`, main colour of the room | red in medieval |
 | **light gray** wool, carpet, banner | `cloth`, second colour (borders) | brown in medieval |
 | any **potted plant** | `plant` | potted cactus in desert |
 | a **chest** | a chest hook: placed with loot by the game | |

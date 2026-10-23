@@ -50,7 +50,7 @@ A template cell names a **role and a form**, or a literal block:
 | `wood` | `planks stairs slab trapdoor fence fence_gate door pressure_plate button shelf log` | a wood family: `oak`, `spruce`, `birch`, `jungle`, `acacia`, `dark_oak`, `mangrove`, `cherry`, `pale_oak`, `poplar`, `bamboo`, `crimson`, `warped` |
 | `accent` | same as `wood` | a second wood family (usually darker, for frames, arms, backs) |
 | `stone` | `block stairs slab wall` | a stone family: `cobblestone`, `stone_brick`, `smooth_sandstone`, `mud_brick`, `polished_andesite`... (a table maps family + form to an id: `stone_bricks`, `stone_brick_stairs`) |
-| `cloth` | `wool carpet banner bed` | a list of dye colours; one colour per room, a second for borders |
+| `cloth` | `wool carpet banner` | a list of dye colours; one colour per room, a second for borders |
 | `plant` | `pot` | a list of `potted_*` blocks per style |
 | literal | any block id | itself: `smoker`, `water_cauldron`, `bookshelf`, `chiseled_bookshelf`, `lantern`, `candle`, `barrel`, `iron_chain`, `campfire`... |
 
