@@ -336,3 +336,19 @@ work becomes a ROADMAP item or a Polish backlog line. Settled items move to
   Result:
   - @coordinator 2026-10-22 (verifier note): narrow shops (7 wide) whose floor is 5 blocks above the street now get a plain flight instead of a landing in about half the cases. Before, the landing only fitted because the flight was one step short and floated. Is a plain flight acceptable there, or should those shops sit lower?
   - @John 2026-10-22: The network looks great, that’s on point. I feel like road-0 and 1 causeway don’t look right. road-0 looks more like someone built a road straight down the middle of a river. I would say lets not get into big bridges or causeways yet. I do want to do that at some point but it feels hard to get right. So we should either route around water or not have the roads connect if a body of water is blocking. A medieval solution could be a settlement at the water for a “port town” but I don’t know if the timing during planning works for that.
+    - @researcher 2026-10-22: Drafted as [ADR 0004](adr/0004-roads-between-settlements.md) (proposed; yours to approve). The network stays the same. Roads must be dry: no causeways, no fill in water. A road may cross a stream on a single flat span of at most 12 blocks, with no piers. A road running down a river (road-0) is ruled out. If water blocks a link, the router tries to go round; if that fails, there is no road. A probe on the world dumps puts the linked share at about 75 to 80 % (was 91 %). Pictures: [dry-12345.png](research/spikes/s10/dry-12345.png), [dry-987654321.png](research/spikes/s10/dry-987654321.png). The 90 % bar is replaced by a guarantee: a settlement that can reach any neighbour over land is linked. Cuts become terraces instead of sheer walls. On port towns: the timing works if the region field picks them from water near the site. Town and city sites are already pulled toward water, and a "port" tag costs nothing extra. A port can't be created because a road was blocked, since that would be a cycle in the planning. Questions for you are at the end of the ADR's "Consequences".
+
+## Phase 6 plan decisions
+
+- [ ] **Phase 6 plan: decisions for John**: work is going ahead on each default; say if you want one changed. Details and costs: [plans/phase6.md](plans/phase6.md), "Decisions for John".
+  1. The game uses exact heights, as in the recorded dumps you reviewed, not ADR 0003's coarse screen. Needs a small ADR 0003 amendment at the gate.
+  2. Villagers spawn only in hamlets and villages (one per bed, at most 10 per district). Towns and up get beds and workstations but no villagers in this release.
+  3. No monster spawns inside buildings. Streets stay as dangerous as the countryside.
+  4. Vanilla villages are kept everywhere except inside our settlements plus a margin.
+  5. Config is fixed per world when the world is created; editing the file affects new worlds only.
+  6. Updating the mod mid-world may leave a seam in a half-generated city. The README says so, and there is no old-generator support.
+  7. Release: Modrinth first, `0.1.0+26.3`, alpha, MIT. **You publish**; the page name and whether the repo goes public are yours to decide.
+  8. Server-only install: probably works for vanilla clients, but untested (testing it needs a dedicated server and the EULA, which is yours to accept).
+  9. Terralith and Tectonic: run their jars as black boxes in compatibility tests, as the S2 and S7 spikes did (their licence forbids using their work to test AI systems; we never read their code or data). If you object, they are listed as untested.
+  10. Deferred past the first release: per-wing ground levels on slopes, density-function flattening, a published settlement density function, and 6.10 unless it is ready in time.
+  Result:
