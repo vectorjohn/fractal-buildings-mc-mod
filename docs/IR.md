@@ -145,6 +145,26 @@ lot of one district tile.
   (`road`: gravel/path gradient, `paving`: stone bricks, also a quay street's surface, `ground`: dirt, `deck`: planks; desert uses sandstone and sand).
 - **layer** `ground`.
 - `lots` and `buildings` list every built lot of the district; building ids are `b0`..`bN` in lot order.
+- **Cell ownership (Phase 6, `core/raster/PieceRaster`)**: the block-level view of a scene, for the game. Every cell
+  of a district scene has **exactly one owner** (a piece), so the building structure and the ground structure never
+  write the same block and their order does not matter.
+  - A **building** owns every cell its boxes touch: a solid cell, or an explicit `air` clear (a carved room, a cut
+    through a hill). Boxes apply as the viewer's `buildingVoxels` does: shell boxes, then site boxes, list order,
+    later wins, `air` clears, then the placement (rotation, origin). A building's cells depend on that building alone.
+  - The **ground** owns the cells of its boxes (world frame, list order, later wins, `air` cuts) that **no building
+    touches**; where a ground box and a building overlap, the building wins (the viewer draws both; the game must pick
+    one). A ground `air` cut is emitted as an explicit air cell where no building touches.
+  - Of two **buildings** touching one cell the one **earlier in the scene's `buildings` list** owns it.
+  - A piece is **clipped** to a box (the tile, a chunk): pieces on a partition of space partition the cells. Each
+    piece is rastered over its clip grown by one block on every side, so connections and stair directions are read
+    from the piece's own boxes, never from the world or a neighbouring chunk: the cells and shapes inside a clip are
+    identical whatever the clip is.
+  - Each cell carries a `Shape` (`facing`, `half`, `hinge`, `axis`, `connect`): doors (2 high, `facing` = the walking
+    direction of the opening, hinge LEFT for a single door, LEFT/RIGHT as the walker sees a wider doorway), stairs
+    (`facing` = ascent: the opening's `facing`, else the next higher step; a step with nothing higher stays a full
+    block, `Shape.NONE`), panes and fences (`connect` = solid horizontal neighbours), beams and trim (`axis` = the long
+    axis of the box that made the cell). The block is the style palette entry at `cellHash(x, y, z) % n` (a port of
+    the viewer's `cellHash`, fixture `planner-core/src/test/resources/raster/cellhash.csv`, checked by a vitest too).
 
 ## Settlement plans (Phase 5): `fb-settlement/1` and `fb-district/1`
 
