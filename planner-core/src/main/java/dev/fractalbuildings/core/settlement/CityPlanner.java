@@ -48,13 +48,13 @@ public final class CityPlanner {
 		List<String> notes = new ArrayList<>();
 		List<DistrictSummary> out = new ArrayList<>();
 		for (DistrictSummary d : plan.districts()) {
-			Optional<Districts.Detail> det = Districts.plan(src, d.ix(), d.iz(), exact);
-			if (det.isEmpty()) { out.add(d); continue; }
-			DistrictPlan dp = Briefs.fill(det.get().plan(), src.quarters()::at, styles, exact);
+			Optional<Tile> tile = planTile(src, d.ix(), d.iz(), styles, exact);
+			if (tile.isEmpty()) { out.add(d); continue; }
+			DistrictPlan dp = tile.get().plan();
 			districts.put(d.id(), dp);
-			landmarks.put(d.id(), det.get().landmarks());
-			squareReached.put(d.id(), det.get().firstPlazaReached());
-			for (String n : det.get().notes()) notes.add(d.id() + ": " + n);
+			landmarks.put(d.id(), tile.get().landmarks());
+			squareReached.put(d.id(), tile.get().firstPlazaReached());
+			for (String n : tile.get().notes()) notes.add(d.id() + ": " + n);
 			out.add(summary(d, dp));
 		}
 		Pt hub = site.centre();
@@ -79,6 +79,28 @@ public final class CityPlanner {
 		v.addAll(cr.violations());
 		v.addAll(SettlementChecks.cityTileBorders(districts.values()));
 		return new City(plan.withDistricts(out).withViolations(v), districts, landmarks, notes, hub, cr.strays(), cr.hubPiece(), cr.total());
+	}
+
+	/**
+	 * One planned tile: the layout of {@link Districts#plan} and the briefs of {@link Briefs#fill}.
+	 *
+	 * @param plan the filled district plan
+	 * @param landmarks the landmarks that still reserve ground in the tile
+	 * @param notes the district planner's notes (what was dropped or moved)
+	 * @param firstPlazaReached the first plaza (the hub square in the hub tile) is joined to a road that reaches the hub
+	 */
+	public record Tile(DistrictPlan plan, List<Landmark> landmarks, List<String> notes, boolean firstPlazaReached) {}
+
+	/**
+	 * Plans one tile of the settlement {@code src} serves, exactly as {@link #plan} does for each of its districts (the shared code of
+	 * the CLI and the world planner): empty when another settlement owns the tile. Uses the source's quarter field for the briefs; the
+	 * result depends on (seed, site, probes, tile) alone.
+	 */
+	public static Optional<Tile> planTile(SkeletonSource src, int ix, int iz, StyleField styles, TerrainProbe exact) {
+		Optional<Districts.Detail> det = Districts.plan(src, ix, iz, exact);
+		if (det.isEmpty()) return Optional.empty();
+		DistrictPlan dp = Briefs.fill(det.get().plan(), src.quarters()::at, styles, exact);
+		return Optional.of(new Tile(dp, det.get().landmarks(), det.get().notes(), det.get().firstPlazaReached()));
 	}
 
 	/**

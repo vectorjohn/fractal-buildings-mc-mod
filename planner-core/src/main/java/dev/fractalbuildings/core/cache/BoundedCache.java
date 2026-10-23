@@ -42,6 +42,11 @@ public final class BoundedCache<K, V> {
 		return v;
 	}
 
+	/** Drops every entry (memory pressure, tests); what is asked next is recomputed, so answers do not change. */
+	public void clear() {
+		synchronized (map) { map.clear(); }
+	}
+
 	public int size() {
 		synchronized (map) { return map.size(); }
 	}

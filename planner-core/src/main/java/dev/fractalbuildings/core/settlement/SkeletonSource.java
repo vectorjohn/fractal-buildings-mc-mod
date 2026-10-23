@@ -88,10 +88,15 @@ public interface SkeletonSource {
 
 		private volatile RoadNetwork network;
 
-		/** Built once (a pure function of the skeletons, so two threads building it at once get equal networks). */
+		/** Built once, by the first thread that asks (the others wait: a metropolis network costs seconds, so duplicating it on every worker would multiply the cost). */
 		@Override public RoadNetwork network() {
 			RoadNetwork n = network;
-			if (n == null) network = n = RoadNetwork.build(this);
+			if (n == null) {
+				synchronized (this) {
+					n = network;
+					if (n == null) network = n = RoadNetwork.build(this);
+				}
+			}
 			return n;
 		}
 	}
