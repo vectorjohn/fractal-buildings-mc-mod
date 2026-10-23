@@ -387,7 +387,8 @@ Plan: [plans/phase6.md](plans/phase6.md) (steps A1–C3; ten decisions for John,
 - [ ] **6.3 Terrain**: adaptation mode or our own grading, per S5.
 - [ ] **6.4 Gameplay hooks**: loot tables, villager workstations and beds,
   `/locate` support. Leave room for a villager AI mod later.
-- [ ] **6.5 Config**: frequency, maximum city size (a default from S6, not a design cap; ADR 0002), enabled styles.
+- [x] **6.5 Config**: frequency, maximum city size (a default from S6, not a design cap; ADR 0002), enabled styles.
+  *Done (P6 B6):* `config/fractalbuildings.json` (defaults for new worlds), pinned per world in saved data `fractalbuildings:config` (`WorldConfigData`); `/fb config` prints it. Parsing and clamping are core (`FbSettings`). Max radius default 4096 (S6, ADR 0003). B1 builds `WorldPlanner` from `WorldConfigData.get(server).settings().world()`; B5 reads `villagers`, B7 `vetoVanillaVillages`.
 - [ ] **6.6 Compatibility**: test with popular terrain mods (Terralith,
   Tectonic) and alongside vanilla villages.
 - [ ] **6.7 Performance budget**: worldgen time per chunk and save size per
