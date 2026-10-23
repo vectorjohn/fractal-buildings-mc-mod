@@ -1,0 +1,4 @@
+[18:53:53] [Test worker/INFO]: [STDOUT]: MANY: 72 chunks equal, 38 with water, 1 windowed fallbacks
+[18:53:53] [Test worker/INFO]: [STDOUT]: PARITY gate-temperate-city.json.gz: 2401 columns equal, 458 with water
+[18:53:54] [Test worker/INFO]: [STDOUT]: PARITY gate-coast-city.json.gz: 4225 columns equal, 1883 with water
+[18:53:55] [Test worker/INFO]: [STDOUT]: PARITY gate-snow-city.json.gz: 2401 columns equal, 389 with water

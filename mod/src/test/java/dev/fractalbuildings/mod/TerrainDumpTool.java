@@ -13,6 +13,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.zip.GZIPOutputStream;
+import dev.fractalbuildings.mod.probe.LiveTerrainProbe;
 import net.minecraft.SharedConstants;
 import net.minecraft.core.Holder;
 import net.minecraft.core.HolderLookup;
@@ -43,7 +44,7 @@ public final class TerrainDumpTool {
 	private TerrainDumpTool() {}
 
 	public static final String MC = "26.3";
-	static final LevelHeightAccessor H = LevelHeightAccessor.create(-64, 384);
+	static final LevelHeightAccessor H = LiveTerrainProbe.H;
 	/** Fixed non-tie target that resets the RTree's thread-local "last result" before each lookup. */
 	private static final Climate.TargetPoint PRIME = Climate.target(0.0F, 0.0F, 0.5F, 0.0F, 0.0F, 0.0F);
 
@@ -65,20 +66,16 @@ public final class TerrainDumpTool {
 	/** One sampled lattice window, row-major. */
 	public record Grid(long seed, int x0, int z0, int step, int nx, int nz, List<String> palette, int[] biome, int[] surface, int[] water) {}
 
-	/** {surface, floor}: surface = first non-air from the top (+1), floor = first non-air non-fluid (+1). */
+	/** {surface, floor}: the live probe's definition ({@link LiveTerrainProbe#column}), so dumps and the game cannot drift. */
 	static int[] surfaceAndFloor(RandomState rs, int x, int z) {
-		NoiseColumn col = gen.getBaseColumn(x, z, H, rs);
-		int surf = Integer.MIN_VALUE, floor = Integer.MIN_VALUE;
-		for (int y = H.getMaxY(); y >= H.getMinY(); y--) {
-			var st = col.getBlock(y);
-			if (st.isAir()) continue;
-			if (surf == Integer.MIN_VALUE) surf = y + 1;
-			if (st.getFluidState().isEmpty()) {
-				floor = y + 1;
-				break;
-			}
-		}
-		return new int[] {surf, floor};
+		return LiveTerrainProbe.column(gen, rs, x, z);
+	}
+
+	public static NoiseBasedChunkGenerator generator() { boot(); return gen; }
+
+	public static RandomState randomState(long seed) {
+		boot();
+		return RandomState.create(reg.lookupOrThrow(Registries.NOISE), seed, settings.value());
 	}
 
 	static String name(Holder<Biome> h) {
