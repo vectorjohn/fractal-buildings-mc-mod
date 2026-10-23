@@ -104,6 +104,7 @@ Notes:
   type/style (`viewer/gallery-presets/`) with the `cutaway` camera. Gate pack
   numbers (168,000 cases, per-type timing and diversity): `docs/review/phase4/`.
 
+- Added in Phase 6 (A3): `core/raster/` (`PieceRaster`, `Shapes`, `Variant`) and `RasterOwnershipTest` over real gate-city districts (one owner per cell, union equals the scene, same cells under any chunk clipping, door and stair facings; writes top-down pictures to `planner-core/build/raster/`); `cellhash.csv` shared by `VariantTest` and the viewer's `cellhash.test.ts`.
 ---
 
 ## Phase 0: Scaffolding (done 2026-10-08; gate: awaiting John)
