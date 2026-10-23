@@ -6,6 +6,10 @@ base {
 	archivesName = project.mod_id
 }
 
+// Release version: <mod version>+<Minecraft version> (e.g. 0.1.0+26.3), used for the jar name
+// and expanded into fabric.mod.json. planner-core keeps the plain version.
+version = "${project.version}+${project.minecraft_version}"
+
 loom {
 	mods {
 		"${project.mod_id}" {
@@ -53,6 +57,14 @@ java {
 	withSourcesJar()
 	sourceCompatibility = JavaVersion.VERSION_25
 	targetCompatibility = JavaVersion.VERSION_25
+}
+
+// Ship the licence at the root of the mod jar and the sources jar.
+tasks.named("jar") {
+	from(rootProject.file("LICENSE"))
+}
+tasks.named("sourcesJar") {
+	from(rootProject.file("LICENSE"))
 }
 
 // Keep client game test screenshots at a stable path that other tasks' run-dir cleanup can't wipe.

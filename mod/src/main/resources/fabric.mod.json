@@ -3,9 +3,10 @@
 	"id": "fractalbuildings",
 	"version": "${version}",
 	"name": "Fractal Buildings",
-	"description": "Procedurally generated buildings and cities from rules.",
+	"description": "Generates villages, towns and cities from rules rather than stamped templates: every building is planned for its lot and the terrain around it.",
 	"authors": ["John Reeves"],
 	"license": "MIT",
+	"icon": "assets/fractalbuildings/icon.png",
 	"environment": "*",
 	"entrypoints": {
 		"main": ["dev.fractalbuildings.mod.FractalBuildingsMod"]
