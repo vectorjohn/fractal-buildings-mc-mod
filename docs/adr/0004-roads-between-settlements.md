@@ -22,8 +22,8 @@ neighbourhood graph over rim gaps, routed on the coarse lattice. Roads stay
 dry apart from short single-span stream crossings, with no causeways or long
 bridges. The mod draws them with one per-chunk feature that cuts and fills
 the terrain in terraces. This ADR adds to [ADR 0003](0003-worldgen.md)
-without superseding it. It amends W10 (the feature is used for roads) and D4
-(a road deck may come from the coarse surface).
+without superseding it, and amends W10: the per-chunk feature is used for
+roads.
 
 ## Context
 
@@ -46,6 +46,11 @@ without superseding it. It amends W10 (the feature is used for roads) and D4
   or causeways yet… either route around water or not have the roads connect
   if a body of water is blocking." He also asked whether a port town is
   possible at planning time.
+- **The Phase 6 plan**, [decision 1](../plans/phase6.md) (default, waiting
+  for John), says the game uses the dumps' exact height definition
+  everywhere, through a per-world `ColumnMemo`. The coarse surface is off by
+  12 to 16 blocks, and by 50 to 150 under Terralith and Tectonic (S2), so a
+  road deck must not come from it.
 - **Probe (researcher, 2026-10-22).** This is throwaway code on the S10
   planner, on branch `claude/adr-roads-probe`, never to be merged. It ran
   on the same two world dumps and adds two things. First, the dry rule:
@@ -81,15 +86,19 @@ not measured.
    `rmax`. (b) RNG over rim gaps. (c) Option (b) where a witness counts only
    if both of its links route. (d) Lost Cities' mutual k-nearest, which
    leaves hubs unlinked.
-3. **Heights.** (a) Exact probes per edge (S10): 100 to 250 ms per edge.
-   (b) A per-chunk window of exact probes with a memo: 7.2 ms cold, under
-   1 ms warm. (c) A per-edge profile from the coarse surface.
+3. **Heights.** (a) Exact probes at every S10 sample: 645 per edge, 100 to
+   250 ms. (b) A per-chunk window of exact probes with a memo: 7.2 ms cold,
+   under 1 ms warm. It cannot decide whether an edge exists under a dry
+   rule, though: water must be known along the whole route first. (c) A
+   per-edge profile from the coarse surface. Cheap, but off by up to 150
+   blocks under modded terrain. (d) Exact reads at the 8-block stations
+   only, per edge. These feed both the dry check and the deck.
 4. **Cuts.** (a) Sheer walls (S10). (b) A 1:1 slope. (c) Terraces with a
    width cap.
 
 ## Decision
 
-**1c, 2c, 3c, 4c.**
+**1c, 2c, 3d, 4c.**
 
 ### Network
 
@@ -129,19 +138,23 @@ not measured.
 
 ### Water rule
 
-- **WR1 Dry check on the curve.** The check samples the centre line every 4
-  blocks and both road edges every 8 blocks. A sample is wet when its water
-  depth is at least 1; the biome does not count. Samples come from the
-  noise-stage probe, never from the generated world.
+- **WR1 Dry check on the curve.** The check reads every 8-block station on
+  the centre line (HT). A station is wet when its water depth is at least 1;
+  the biome does not count. Reads come from the noise-stage probe, never
+  from the generated world. The lattice search also charges extra for nodes
+  next to wet nodes, which keeps roads off the shore.
 - **WR2 Crossings.** A wet run of at most **12 blocks** along the road is a
-  crossing. It gets a flat deck at the higher bank's deck height, resting on
+  crossing. The run is measured exactly: at a wet station, the columns
+  between the dry stations on either side are read (at most 14 more reads).
+  A crossing gets a flat deck at the higher bank's deck height, resting on
   the banks, with no piers. Crossings must be at least 32 blocks apart; two
   closer together count as one run. Anything longer means reroute, then
   drop the edge. A road running down a river or lake gives a long wet run, so
   John's road-0 case is ruled out by construction.
 - **WR3 No fill in water, ever.** Shoulders, embankments and terraces stop
-  at wet columns. A water column the probe missed (under 4 blocks wide) gets
-  deck blocks, never fill.
+  at wet columns. Any water column under the road gets deck blocks, never
+  fill. That covers water narrower than the 8-block station spacing, and
+  road edges that hang over a bank.
 - **WR4 Linked share.** The bar "at least 90 % of settlements linked" is
   retired. 6.10's bars become:
   - the invariants: no road column on water outside a crossing, no fill in
@@ -160,20 +173,31 @@ not measured.
   own rim. Each cell resolution is memoised by the region view (D6). The
   test turns S10's scan-radius log into an assertion. *Untested:* the probe
   did not implement claim lookup.
-- **HT Heights.** The deck profile is computed per edge, with the route.
-  Stations sit every 8 blocks on the coarse surface (`chunk_surface_level`
-  with S10's +16 correction). The deck is the mean over ±8 stations, with a
-  grade limit (start at 1 in 4). There are **no exact probes per edge**, and
-  the feature makes no probes at all. This amends D4 for roads only: cut and
-  fill absorb the 2 to 4 block error, and a building floor still never comes
-  from the coarse surface. Fallback: option 3b, if 6.10 measures a
-  deck-to-ground error over 3 blocks at the 95th percentile on live terrain.
-- **Cost.** The lattice search takes about 2,500 coarse probes per region
-  cell, once. Stations and the dry check add a few hundred more. In total
-  that is about 50 ms live at 17 µs per probe, against 11 ms for the cell's
-  decision; it is an estimate, not measured. Region prefetch (P2) can
-  compute it ahead of the player. A warm road chunk costs only its writes,
-  about 0.3 ms.
+- **HT Heights.** All heights use the game's single definition (Phase 6
+  decision 1: exact, through `ColumnMemo`). The coarse surface is never
+  used for a deck. D4 stands unchanged.
+  - **Topology.** The lattice A* and the string-pull grade test read only
+    the 64-block region lattice. S10's 16-block chord samples are dropped.
+  - **Stations.** For each edge, the water and floor are read once at every
+    8-block station of the shaped curve: about 100 stations for a median
+    edge, 200 at p95. One read serves both the dry check (WR1) and the deck.
+    The deck is the mean over ±8 stations, with a grade limit (start at 1
+    in 4), stored with the route.
+  - **The feature makes no probes.** S10's 645 reads per edge drop to the
+    stations alone.
+  - **Why per edge, not per chunk.** The dry rule must know the water along
+    the whole route before the edge can exist. A per-chunk profile (3b)
+    cannot decide that.
+- **Cost (estimates, not measured).**
+  - Station reads: 15 to 75 ms per edge, once, at S6's 0.15 to 0.38 ms per
+    column. A1's batched probe may cut this.
+  - The lattice search: at most 256 distinct lattice nodes per region cell,
+    if a pure lattice memo shares them with the region decision. Most of the
+    probe's 2,500 calls per cell are repeats. Exact reads put this at 40 to
+    100 ms per cell at worst; the coarse fallback for the region layer, about
+    4 ms.
+  - Region prefetch (P2) can do all of it ahead of the player. A warm road
+    chunk costs only its writes, about 0.3 ms.
 
 ### Mod feature and cuts
 
@@ -247,13 +271,13 @@ port-tagged nodes.
   networks. Routable witnesses win back 5 to 7 points over the plain graph,
   and cost 50 to 60 % more routes.
 - **For 6.10:** a planner half with N1 to N4, WR1 to WR4, RC and HT, plus
-  RoadNetTest. A mod half with MF1 to MF4 and TC, plus the T2 road test. It
+  RoadNetTest, on Phase 6 A1's live probes and `ColumnMemo`. A mod half with MF1 to MF4 and TC, plus the T2 road test (C1). It
   will report wet-run histograms and links lost to rivers on live terrain.
 - **The case for crossings now:** links grow from about 75 % to 91 %, and
   rivers stop acting as borders. **What would change this ADR:**
   - live linked share under 70 %, or John finding unlinked towns odd:
     raise the 12-block limit or bring bridges forward;
-  - deck error over 3 blocks: switch to per-chunk exact probes (3b);
+  - station reads over 100 ms per edge live: read the dry check every 16 blocks, and build the deck per chunk (3b);
   - per-cell routing cost over 100 ms live: drop routable witnesses (N1
     falls back to plain rim-gap RNG);
   - the claim lookup failing to bound reads: graph nodes per region cell
@@ -271,3 +295,7 @@ port-tagged nodes.
      screenshot.
   5. Port towns later: a `port` tag from the region field, plus a water
      bias for villages. Should we plan that, or wait for bridges?
+  6. HT assumes Phase 6 decision 1 (exact heights in the game). If the
+     region layer falls back to the coarse screen, roads still read exact
+     heights at their stations, because a deck cannot sit on a surface that
+     may be 150 blocks off. Is that acceptable?
