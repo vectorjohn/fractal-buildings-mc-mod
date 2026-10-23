@@ -375,6 +375,7 @@ downtown. Passed 2026-10-22 (John, REVIEW "Phase 5 gate").
 Updated: 2026-10-22
 
 Wire the proven core into worldgen using the approach fixed in the Phase 2 ADR.
+Plan: [plans/phase6.md](plans/phase6.md) (steps A1–C3; ten decisions for John, each with a default).
 
 - [ ] **6.1 Adapter**: palette roles to block states; IR to structure pieces,
   clipped per chunk.
