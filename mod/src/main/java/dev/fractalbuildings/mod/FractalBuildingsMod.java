@@ -15,6 +15,7 @@ public class FractalBuildingsMod implements ModInitializer {
 		dev.fractalbuildings.mod.probe.ProbeInit.register();
 		dev.fractalbuildings.mod.worldgen.ModWorldgen.register();
 		dev.fractalbuildings.mod.config.ConfigInit.register();
+		dev.fractalbuildings.mod.gameplay.Gameplay.register();
 		dev.fractalbuildings.mod.worldgen.RegionWarmer.register();
 	}
 }
