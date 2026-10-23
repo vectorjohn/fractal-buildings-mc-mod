@@ -34,12 +34,13 @@ public final class WorldPlanners {
 	/** The world's pinned config (B6's saved data), set as the overworld loads; null until then. */
 	private static volatile WorldConfig pinned;
 	/** Where a new planner gets its config; tests replace it. */
-	private static volatile Supplier<WorldConfig> config = () -> {
+	private static final Supplier<WorldConfig> PINNED_OR_DEFAULTS = () -> {
 		WorldConfig p = pinned;
 		if (p != null) return p;
 		FractalBuildingsMod.LOGGER.warn("A settlement planner is being created before the world's config was pinned; using the defaults");
 		return WorldConfig.defaults();
 	};
+	private static volatile Supplier<WorldConfig> config = PINNED_OR_DEFAULTS;
 	/** Runs {@link WorldPlanner#prefetch}; null (the default) means none. B4 sets it. */
 	private static volatile Executor workers;
 	/** Exceptions swallowed by the structures (they log and place nothing instead of crashing chunk generation); tests assert 0. */
@@ -86,6 +87,9 @@ public final class WorldPlanners {
 	public static void pin(WorldConfig c) { pinned = c; }
 
 	public static void setConfigSource(Supplier<WorldConfig> source) { config = source; }
+
+	/** Tests: back to reading the pinned config after {@link #setConfigSource}. */
+	public static void resetConfigSource() { config = PINNED_OR_DEFAULTS; }
 
 	public static void setWorkers(Executor executor) { workers = executor; }
 

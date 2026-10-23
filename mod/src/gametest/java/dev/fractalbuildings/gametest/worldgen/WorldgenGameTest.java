@@ -176,7 +176,7 @@ public class WorldgenGameTest {
 		for (long k : both.cells().keySet()) {
 			check(t.tile().contains(dev.fractalbuildings.mod.worldgen.PieceLedger.x(k), dev.fractalbuildings.mod.worldgen.PieceLedger.z(k)), "cell outside the tile: " + dev.fractalbuildings.mod.worldgen.PieceLedger.x(k) + "," + dev.fractalbuildings.mod.worldgen.PieceLedger.z(k));
 		}
-		long worldAsc = StartSupport.worldHash(level, b);
+		long worldAsc = StartSupport.worldHash(level, b, g);
 		checkDoorsAndStairs(level, b);
 
 		for (var order : List.of(reversed(asc), shuffled(asc, 7), shuffled(asc, 99))) {
@@ -185,7 +185,7 @@ public class WorldgenGameTest {
 			StartSupport.Placed again = placeBoth(level, b, g, order, order.hashCode());
 			check(again.digest().equals(both.digest()), "ledger digest differs in another chunk order");
 			check(again.outsideChunk() == 0 && again.duplicates() == 0, "outside/dups in another order");
-			check(StartSupport.worldHash(level, b) == worldAsc, "world blocks differ in another chunk order");
+			check(StartSupport.worldHash(level, b, g) == worldAsc, "world blocks differ in another chunk order");
 		}
 
 		// save and load: a reloaded start places the same blocks

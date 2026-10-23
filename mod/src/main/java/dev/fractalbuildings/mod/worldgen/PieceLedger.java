@@ -30,7 +30,7 @@ public final class PieceLedger {
 		if (r != null) r.add(x, y, z, stateId);
 	}
 
-	/** Records furniture placed over claimed air (hook blocks enter the ledger like any block, without making a second owner). */
+	/** Records furniture placed over claimed air. Hook blocks are kept apart from the shell cells ({@link Recording#hooks}), so the shell can be compared with the core raster exactly. */
 	public static void override(int x, int y, int z, int stateId) {
 		Recording r = active;
 		if (r != null) r.replace(x, y, z, stateId);
@@ -64,14 +64,18 @@ public final class PieceLedger {
 
 	public static final class Recording implements AutoCloseable {
 		private final ConcurrentSkipListMap<Long, int[]> cells = new ConcurrentSkipListMap<>();
+		private final ConcurrentSkipListMap<Long, Integer> hooks = new ConcurrentSkipListMap<>();
+
+		/** The hook blocks (furniture, chests, lights) with their state ids, in key order. */
+		public Map<Long, Integer> hooks() { return new TreeMap<>(hooks); }
 
 		private void add(int x, int y, int z, int stateId) {
 			cells.merge(pack(x, y, z), new int[] {1, stateId}, (a, b) -> new int[] {a[0] + 1, b[1]});
 		}
 
-		/** A later write over a cell the pieces already claimed (a bed on claimed room air): changes its state, not its owner count. */
+		/** A hook block (a bed on claimed room air): kept in its own map, the shell cell is not touched. */
 		private void replace(int x, int y, int z, int stateId) {
-			cells.merge(pack(x, y, z), new int[] {1, stateId}, (a, b) -> new int[] {a[0], b[1]});
+			hooks.put(pack(x, y, z), stateId);
 		}
 
 		/** Cells in (x, z, y) key order with their state ids. */

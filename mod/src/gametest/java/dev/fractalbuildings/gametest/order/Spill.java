@@ -1,0 +1,52 @@
+package dev.fractalbuildings.gametest.order;
+
+import java.util.Set;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.tags.BlockTags;
+import net.minecraft.world.level.block.CrossCollisionBlock;
+import net.minecraft.world.level.block.WallBlock;
+import net.minecraft.world.level.block.state.BlockState;
+
+/**
+ * What vanilla features may legitimately leave inside our cells: they run for a neighbouring chunk after our write and spill over the border
+ * (ADR 0003 D5). Known kinds: carver cuts (cave air, lava, magma) into our ground, ores and disks (sand, gravel, clay) and moss patches over natural ground; the dirt base of a tree, leaves, leaf
+ * litter, logs, huge mushrooms and short plants in our air; shape-only changes of a connecting block next to a vanilla block. Everything else
+ * that changes one of our cells is {@code unknown} and fails the test; the histogram of every run is logged so a new kind is seen, not guessed.
+ */
+final class Spill {
+	private Spill() {}
+
+	/** Natural ground our raster may want (terrain-following fill, roads of gravel and sand). */
+	private static final Set<String> GROUND = Set.of("dirt", "coarse_dirt", "rooted_dirt", "grass_block", "podzol", "mycelium", "stone", "andesite", "diorite", "granite", "deepslate", "tuff",
+			"gravel", "sand", "red_sand", "clay", "mud", "moss_block", "pale_moss_block", "sandstone", "red_sandstone", "calcite", "dripstone_block", "snow_block", "packed_ice", "ice", "terracotta", "water");
+	/** The base a tree feature puts under its trunk, whatever it replaces. */
+	private static final Set<String> TREE_BASE = Set.of("dirt", "podzol", "rooted_dirt", "coarse_dirt", "grass_block");
+	/** What a carver of a later neighbouring chunk leaves where it cuts into our ground (caves run per chunk, not in a global order): cave openings, lava, magma, stone. */
+	private static final Set<String> CARVER = Set.of("cave_air", "lava", "magma_block", "stone", "deepslate", "water");
+	/** What spill leaves behind in air. */
+	private static final Set<String> AIR_SPILL = Set.of("moss_carpet", "pale_moss_carpet", "glow_lichen", "snow",
+			"pale_hanging_moss", "cave_air", "red_mushroom_block", "brown_mushroom_block", "mushroom_stem", "leaf_litter", "short_grass", "tall_grass", "fern", "vine");
+
+	static String name(BlockState s) { return BuiltInRegistries.BLOCK.getKey(s.getBlock()).getPath(); }
+
+	private static boolean ground(BlockState s) { String n = name(s); return GROUND.contains(n) || n.endsWith("_ore"); }
+
+	/** "spill" (known vanilla), "shape" (same connecting block, other connections) or "unknown". {@code above} is the world block over the cell. */
+	static String solidKind(BlockState want, BlockState have, BlockState above) {
+		if (want.getBlock() == have.getBlock() && (want.getBlock() instanceof CrossCollisionBlock || want.getBlock() instanceof WallBlock)) return "shape";
+		boolean natural = ground(want) || name(want).equals("dirt_path");
+		if (natural && ground(have)) return "spill";
+		if (natural && (TREE_BASE.contains(name(have)) || CARVER.contains(name(have)))) return "spill";
+		// a tree's dirt base under a log may replace a block that is not ground (a road edge, a wall foot)
+		if (TREE_BASE.contains(name(have)) && above.is(BlockTags.LOGS)) return "spill";
+		return "unknown";
+	}
+
+	/** "spill" (canopy, litter, patches, a tree's dirt under a log) or "unknown". */
+	static String airKind(BlockState have, BlockState above) {
+		String n = name(have);
+		if (n.equals("dirt") && above.is(BlockTags.LOGS)) return "spill";
+		if (AIR_SPILL.contains(n) || n.endsWith("_ore") || have.is(BlockTags.LEAVES) || have.is(BlockTags.LOGS) || have.is(BlockTags.FLOWERS) || have.is(BlockTags.SAPLINGS)) return "spill";
+		return "unknown";
+	}
+}

@@ -90,5 +90,10 @@ public final class DistrictStructure extends Structure {
 	}
 
 	@Override
+	public net.minecraft.world.level.levelgen.GenerationStep.Decoration step() {
+		return Mutations.is(Mutations.EARLY_STEP) ? net.minecraft.world.level.levelgen.GenerationStep.Decoration.SURFACE_STRUCTURES : super.step();
+	}
+
+	@Override
 	public StructureType<?> type() { return ModWorldgen.DISTRICT_TYPE; }
 }

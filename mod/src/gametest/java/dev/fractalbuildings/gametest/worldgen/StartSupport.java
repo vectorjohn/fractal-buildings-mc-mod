@@ -22,19 +22,19 @@ import net.minecraft.world.level.levelgen.structure.Structure;
 import net.minecraft.world.level.levelgen.structure.StructureStart;
 
 /** Shared helpers of the worldgen server tests: make a start by hand (as S9 did), place it chunk by chunk in a given order, read it back. */
-final class StartSupport {
+public final class StartSupport {
 	private StartSupport() {}
 
-	static void check(boolean ok, String msg) {
+	public static void check(boolean ok, String msg) {
 		if (!ok) throw new IllegalStateException(msg);
 	}
 
-	static Holder.Reference<Structure> structure(ServerLevel level, String path) {
+	public static Holder.Reference<Structure> structure(ServerLevel level, String path) {
 		return level.registryAccess().lookupOrThrow(Registries.STRUCTURE).getOrThrow(ResourceKey.create(Registries.STRUCTURE, Identifier.fromNamespaceAndPath("fractalbuildings", path)));
 	}
 
 	/** {@code Structure.generate} for the start chunk, the way {@code ChunkGenerator.tryGenerateStructure} calls it. */
-	static StructureStart start(ServerLevel level, String structurePath, ChunkPos cp) {
+	public static StructureStart start(ServerLevel level, String structurePath, ChunkPos cp) {
 		Holder.Reference<Structure> holder = structure(level, structurePath);
 		ChunkGenerator gen = level.getChunkSource().getGenerator();
 		RandomState rs = level.getChunkSource().randomState();
@@ -42,7 +42,7 @@ final class StartSupport {
 				rs.createClimateSampler(SamplerContext.EMPTY_UNCACHED), rs, level.getStructureTemplateManager(), level.getSeed(), cp, 0, level, b -> true);
 	}
 
-	static List<ChunkPos> chunks(StructureStart s) {
+	public static List<ChunkPos> chunks(StructureStart s) {
 		BoundingBox b = s.getBoundingBox();
 		List<ChunkPos> out = new ArrayList<>();
 		for (int cz = b.minZ() >> 4; cz <= b.maxZ() >> 4; cz++) for (int cx = b.minX() >> 4; cx <= b.maxX() >> 4; cx++) out.add(new ChunkPos(cx, cz));
@@ -50,14 +50,19 @@ final class StartSupport {
 	}
 
 	/** What one run placed: the merged cells the pieces claimed, and how many of them lay outside the chunk being generated. */
-	record Placed(TreeMap<Long, Integer> cells, int outsideChunk, int duplicates) {
-		String digest() { return PieceLedger.digest(cells); }
+	public record Placed(TreeMap<Long, Integer> cells, int outsideChunk, int duplicates, TreeMap<Long, Integer> hooks) {
+		public Placed(TreeMap<Long, Integer> cells, int outsideChunk, int duplicates) { this(cells, outsideChunk, duplicates, new TreeMap<>()); }
+
+		public String digest() { return PieceLedger.digest(cells); }
+
+		public String hookDigest() { return PieceLedger.digest(hooks); }
 	}
 
 	/** Places the start chunk by chunk in {@code order}; each chunk gets a random seeded from the chunk and {@code salt} (a piece must not read it). */
-	static Placed place(ServerLevel level, StructureStart s, List<ChunkPos> order, long salt) {
+	public static Placed place(ServerLevel level, StructureStart s, List<ChunkPos> order, long salt) {
 		ChunkGenerator gen = level.getChunkSource().getGenerator();
 		TreeMap<Long, Integer> merged = new TreeMap<>();
+		TreeMap<Long, Integer> hooks = new TreeMap<>();
 		int outside = 0, dups = 0;
 		for (ChunkPos c : order) {
 			BoundingBox cbb = new BoundingBox(c.getMinBlockX(), level.getMinY(), c.getMinBlockZ(), c.getMaxBlockX(), level.getMaxY(), c.getMaxBlockZ());
@@ -69,13 +74,14 @@ final class StartSupport {
 					if (merged.put(k, e.getValue()) != null) dups++;
 				}
 				dups += r.duplicates().size();
+				hooks.putAll(r.hooks());
 			}
 		}
-		return new Placed(merged, outside, dups);
+		return new Placed(merged, outside, dups, hooks);
 	}
 
 	/** Air over the start's whole box, so a second placement starts from nothing. */
-	static void clear(ServerLevel level, StructureStart s) {
+	public static void clear(ServerLevel level, StructureStart s) {
 		BoundingBox b = s.getBoundingBox();
 		BlockPos.MutableBlockPos p = new BlockPos.MutableBlockPos();
 		for (int y = Math.max(level.getMinY(), b.minY() - 16); y <= b.maxY() + 2; y++) {
@@ -86,17 +92,19 @@ final class StartSupport {
 		}
 	}
 
-	/** Hash of the blocks of the start's box (and 16 below it, for foundations). */
-	static long worldHash(ServerLevel level, StructureStart s) {
-		BoundingBox b = s.getBoundingBox();
+	/** Hash of the blocks of the starts' boxes (and 16 below them, for foundations): pass the building start and the ground start. */
+	public static long worldHash(ServerLevel level, StructureStart... starts) {
 		long h = 1125899906842597L;
 		BlockPos.MutableBlockPos p = new BlockPos.MutableBlockPos();
-		for (int y = Math.max(level.getMinY(), b.minY() - 16); y <= b.maxY() + 2; y++)
-			for (int z = b.minZ(); z <= b.maxZ(); z++)
-				for (int x = b.minX(); x <= b.maxX(); x++) {
-					p.set(x, y, z);
-					h = (h ^ Block.getId(level.getBlockState(p))) * 0x100000001B3L + (h >>> 29);
-				}
+		for (StructureStart s : starts) {
+			BoundingBox b = s.getBoundingBox();
+			for (int y = Math.max(level.getMinY(), b.minY() - 16); y <= b.maxY() + 2; y++)
+				for (int z = b.minZ(); z <= b.maxZ(); z++)
+					for (int x = b.minX(); x <= b.maxX(); x++) {
+						p.set(x, y, z);
+						h = (h ^ Block.getId(level.getBlockState(p))) * 0x100000001B3L + (h >>> 29);
+					}
+		}
 		return h;
 	}
 }
