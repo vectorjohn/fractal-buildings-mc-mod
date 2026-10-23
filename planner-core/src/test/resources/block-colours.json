@@ -1,0 +1,18 @@
+{
+  "minecraft:cobblestone": "#7f7f7f", "minecraft:mossy_cobblestone": "#6f7a62", "minecraft:stone": "#7d7d7d",
+  "minecraft:andesite": "#888886", "minecraft:stone_bricks": "#7a7a78", "minecraft:cracked_stone_bricks": "#767674",
+  "minecraft:mossy_stone_bricks": "#6f7a68", "minecraft:smooth_stone": "#9e9e9e", "minecraft:granite": "#95695a",
+  "minecraft:bricks": "#96574a", "minecraft:mud_bricks": "#8a6a52", "minecraft:terracotta": "#985e43",
+  "minecraft:red_terracotta": "#8e3c2e", "minecraft:white_terracotta": "#d1b1a1", "minecraft:brown_terracotta": "#4d3323",
+  "minecraft:yellow_terracotta": "#ba8524", "minecraft:orange_terracotta": "#a25427", "minecraft:mushroom_stem": "#cbc4b9",
+  "minecraft:sandstone": "#dccb94", "minecraft:cut_sandstone": "#d9c58f", "minecraft:smooth_sandstone": "#e0d3a2",
+  "minecraft:chiseled_sandstone": "#d6c288", "minecraft:sand": "#dbd3a0",
+  "minecraft:oak_planks": "#b08a55", "minecraft:birch_planks": "#c8b077", "minecraft:bamboo_planks": "#c2ad58",
+  "minecraft:bamboo_mosaic": "#c8b05a", "minecraft:stripped_bamboo_block": "#d6c26a", "minecraft:spruce_planks": "#7a5a34",
+  "minecraft:dark_oak_planks": "#4b3621", "minecraft:jungle_planks": "#a07850", "minecraft:acacia_planks": "#a85a32",
+  "minecraft:stripped_spruce_wood": "#6e5232", "minecraft:stripped_spruce_log": "#8a6a3c", "minecraft:spruce_log": "#4a3820",
+  "minecraft:dark_oak_log": "#3e2c18", "minecraft:oak_log": "#6b5030", "minecraft:stripped_oak_log": "#a58a55",
+  "minecraft:stripped_birch_log": "#c8b890", "minecraft:stripped_birch_wood": "#c0a870", "minecraft:stripped_jungle_log": "#a07850", "minecraft:jungle_log": "#5a3e22",
+  "minecraft:bamboo_block": "#a89a40", "minecraft:stripped_acacia_log": "#8f5c3a", "minecraft:acacia_log": "#6e5a4a",
+  "minecraft:moss_block": "#596e2d", "minecraft:snow_block": "#f4f8fa", "minecraft:deepslate_bricks": "#4a4a52"
+}

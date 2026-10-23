@@ -92,7 +92,7 @@ class BlockMapperTest {
 		}
 		// Vanilla has no stairs or slabs of these: they stay full blocks (a new entry here needs a decision).
 		var full = new TreeSet<String>();
-		for (String b : new String[] {"brown_terracotta", "moss_block", "red_terracotta", "snow_block", "terracotta"}) { full.add("stair:minecraft:" + b); full.add("slab:minecraft:" + b); }
+		for (String b : new String[] {"brown_terracotta", "moss_block", "red_terracotta", "terracotta"}) { full.add("stair:minecraft:" + b); full.add("slab:minecraft:" + b); }
 		assertEquals(full, missing);
 	}
 
