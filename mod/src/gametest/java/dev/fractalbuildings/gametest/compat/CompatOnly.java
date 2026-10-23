@@ -13,7 +13,14 @@ public final class CompatOnly {
 
 	/** True (and logs it) when this test is to be skipped. */
 	public static boolean skip(String test) {
-		if (!on()) return false;
+		// B9: FB_FLY=only runs the fly-through alone; every other client test steps aside
+		if (!on()) {
+			if (!test.equals("FlyThroughClientGameTest") && dev.fractalbuildings.gametest.flythrough.FlyThroughClientGameTest.skipOthers()) {
+				FractalBuildingsMod.LOGGER.info("[B9] {} skipped (FB_FLY=only)", test);
+				return true;
+			}
+			return false;
+		}
 		FractalBuildingsMod.LOGGER.info("[B7] {} skipped (compatOnly)", test);
 		return true;
 	}

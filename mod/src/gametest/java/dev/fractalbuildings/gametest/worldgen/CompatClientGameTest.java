@@ -52,6 +52,7 @@ public class CompatClientGameTest implements FabricClientGameTest {
 	@Override
 	public void runTest(ClientGameTestContext context) {
 		String set = label();
+		if (dev.fractalbuildings.gametest.flythrough.FlyThroughClientGameTest.skipOthers()) return; // B9: a fly-only run
 		try (TestSingleplayerContext world = context.worldBuilder()
 				.setUseConsistentSettings(false)
 				.adjustSettings(c -> c.setSeed("987654321"))
