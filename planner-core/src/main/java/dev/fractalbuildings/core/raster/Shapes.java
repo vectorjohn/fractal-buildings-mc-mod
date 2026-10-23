@@ -84,6 +84,9 @@ public final class Shapes {
 	static Shape stair(RoleView g, int x, int y, int z, Hints h) {
 		Facing a = h.ascent();
 		if (a != null && g.role(x + a.dx, y + 1, z + a.dz).solid) return Shape.stair(a);
+		// The top step of an interior flight's last column stands in the slab layer: nothing higher ahead (it is left sideways onto the floor
+		// beside it), but it must stay a stair, never a full block, or the walk up to it is a jump. Cells buried under it take the usual rules.
+		if (a != null && g.role(x, y + 1, z) != Role.STAIR) return Shape.stair(a);
 		// Prefer the next step, then a floor or surface it climbs to; never a wall.
 		for (Facing f : Facing.values()) if (g.role(x + f.dx, y + 1, z + f.dz) == Role.STAIR) return Shape.stair(f);
 		for (Facing f : Facing.values()) {

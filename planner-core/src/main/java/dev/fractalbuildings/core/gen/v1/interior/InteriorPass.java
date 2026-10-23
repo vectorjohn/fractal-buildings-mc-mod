@@ -400,7 +400,7 @@ public final class InteriorPass {
 	}
 
 	/**
-	 * The flight from storey s to s + 1 in core k: a straight run of h - 1 solid step columns
+	 * The flight from storey s to s + 1 in core k: a straight run of h solid step columns (the last one in the slab layer, flush with the next floor; it is left sideways, onto the landing of the next flight)
 	 * (h = the storey's height), even flights (counted from the core's first storey) on the core's back
 	 * row (larger z, or larger x for a core along z) ascending towards +x (+z), odd flights on the front
 	 * row ascending the other way, so each flight stands on an intact slab. The slab above the steps
@@ -413,18 +413,21 @@ public final class InteriorPass {
 		int len = ax ? k.sx() : k.sz();
 		int base = ax ? k.x() : k.z();
 		int row = ax ? (even ? k.maxZ() - 1 : k.z()) : (even ? k.maxX() - 1 : k.x());
-		int first = Integer.MAX_VALUE;
-		for (int i = 0; i <= h - 2; i++) {
+		int first = Integer.MAX_VALUE, cut = Integer.MAX_VALUE; // lowest column of the run, and of the steps under the slab opening
+		for (int i = 0; i <= h - 1; i++) {
 			int col = even ? base + 1 + i : base + len - 2 - i;
 			first = Math.min(first, col);
+			if (i <= h - 2) cut = Math.min(cut, col);
 			if (ax) c.box(Role.STAIR, Layer.INTERIOR, s, col, y + 1, row, 1, i + 1, 1);
 			else c.box(Role.STAIR, Layer.INTERIOR, s, row, y + 1, col, 1, i + 1, 1);
 		}
 		int top = g.y(s + 1);
-		if (ax) c.box(Role.AIR, Layer.INTERIOR, s, first, top, row, h - 1, 1, 1);
-		else c.box(Role.AIR, Layer.INTERIOR, s, row, top, first, 1, 1, h - 1);
+		// The last step is the slab level itself (its top is flush with the next floor), and the walker leaves it sideways onto the
+		// landing of the next flight; the slab is cut only over the other h - 1 steps, whose headroom needs it.
+		if (ax) c.box(Role.AIR, Layer.INTERIOR, s, cut, top, row, h - 1, 1, 1);
+		else c.box(Role.AIR, Layer.INTERIOR, s, row, top, cut, 1, 1, h - 1);
 		Facing f = ax ? (even ? Facing.EAST : Facing.WEST) : (even ? Facing.SOUTH : Facing.NORTH);
-		Box3 run = ax ? Box3.of(first, y + 1, row, h - 1, h - 1, 1) : Box3.of(row, y + 1, first, 1, h - 1, h - 1);
+		Box3 run = ax ? Box3.of(first, y + 1, row, h, h, 1) : Box3.of(row, y + 1, first, 1, h, h);
 		c.opening(OpeningKind.STAIR, run, f, from, to);
 	}
 }
