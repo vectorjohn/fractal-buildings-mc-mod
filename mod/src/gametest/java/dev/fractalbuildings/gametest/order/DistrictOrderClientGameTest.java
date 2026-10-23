@@ -57,7 +57,7 @@ public class DistrictOrderClientGameTest implements FabricClientGameTest {
 	private static final double SOLID_LIMIT = 0.01;
 	private static final double AIR_LIMIT = 0.01;
 	/** Beds that lose a half at a chunk border: 8 of 5,886 bed cells after the B3 merge (B5 defect, reported; set to 0 once fixed). Chests and other hooks must be exact. */
-	private static final double BED_LOSS_LIMIT = 0.003;
+	private static final double BED_LOSS_LIMIT = 0.0;
 	/** The evictor clears every planner cache after each this-many completed chunk requests (about 6 evictions per world: each costs a cold rebuild of the plans, 5 to 10 s per tile). S3 evicted every 2 ms because its plans took microseconds; a live settlement plan takes seconds, and time-based eviction at 2 or 500 ms never let it finish (livelock seen in this test). */
 	private static int evictEvery(int chunks) { return Math.max(5, chunks / 6); }
 

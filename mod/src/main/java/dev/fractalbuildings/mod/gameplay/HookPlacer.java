@@ -135,10 +135,16 @@ public final class HookPlacer {
 		if (!footHere && !headHere) return 0;
 		if (!rasterAir(planner, ref, h.x(), h.y(), h.z()) || !rasterAir(planner, ref, hx, h.y(), hz)) return 0;
 		Block bed = BEDS[Hash64.below(h.seed(seed, "bed"), BEDS.length)];
-		if (footHere) set(level, new BlockPos(h.x(), h.y(), h.z()), bed.defaultBlockState().setValue(BedBlock.FACING, f).setValue(BedBlock.PART, BedPart.FOOT));
-		if (headHere) set(level, new BlockPos(hx, h.y(), hz), bed.defaultBlockState().setValue(BedBlock.FACING, f).setValue(BedBlock.PART, BedPart.HEAD));
+		BlockPos footPos = new BlockPos(h.x(), h.y(), h.z()), headPos = new BlockPos(hx, h.y(), hz);
+		if (writable(level, footPos, footHere)) set(level, footPos, bed.defaultBlockState().setValue(BedBlock.FACING, f).setValue(BedBlock.PART, BedPart.FOOT));
+		if (writable(level, headPos, headHere)) set(level, headPos, bed.defaultBlockState().setValue(BedBlock.FACING, f).setValue(BedBlock.PART, BedPart.HEAD));
 		if (footHere && villagerBeds.contains(WorldHooks.key(h.x(), h.y(), h.z())) && Villagers.spawn(level, h, seed)) return 2;
 		return 1;
+	}
+
+	/** Can this region write the cell? Both halves are written by whichever chunk generates first (a tree placed in the first chunk runs BedBlock.updateShape on a lone half and deletes it; seen as ~3 in 2,943 beds, StructureTemplate.updateShapeAtEdge from TreeFeature). The other half is the same raster-derived state, so the second chunk writes identical blocks. */
+	private static boolean writable(WorldGenLevel level, BlockPos p, boolean here) {
+		return here || (level instanceof net.minecraft.server.level.WorldGenRegion r && r.ensureCanWrite(p));
 	}
 
 	private static void set(WorldGenLevel level, BlockPos p, BlockState s) {
