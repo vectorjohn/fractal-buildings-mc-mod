@@ -208,7 +208,8 @@ class RasterOwnershipTest {
 					stairs++;
 					Facing f = c.shape().facing();
 					assertEquals(Shape.Half.BOTTOM, c.shape().half());
-					assertTrue(roles.getOrDefault(key(x + f.dx, y + 1, z + f.dz), Role.AIR).solid, "stair at " + x + "," + y + "," + z + " faces " + f + " but nothing higher there");
+					// higher ahead, or the last step of a flight (it tops out flush with the floor and is left sideways, STAIRS): the step it climbed from is behind it
+					assertTrue(roles.getOrDefault(key(x + f.dx, y + 1, z + f.dz), Role.AIR).solid || roles.getOrDefault(key(x - f.dx, y - 1, z - f.dz), Role.AIR) == Role.STAIR, "stair at " + x + "," + y + "," + z + " faces " + f + " but nothing higher there");
 				} else if (c.role() == Role.BEAM && c.shape().axis() != null) {
 					logs++;
 				}

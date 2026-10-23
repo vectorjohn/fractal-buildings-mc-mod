@@ -85,6 +85,16 @@ public final class Invariants {
 			roomsReachable();
 			entranceReachable();
 			stepsReachGround();
+			stairRise();
+		}
+
+		void stairRise() {
+			if (scene.genVersion() < 2) return;
+			List<StairRise.Fail> fails = StairRise.check(b, g);
+			if (fails.isEmpty()) return;
+			List<Box3> cells = new ArrayList<>();
+			for (StairRise.Fail f : fails) cells.add(g.placement().toWorld(f.cell()));
+			report(Invariant.STAIR_RISE, fails.size() + " interior flight(s) need a jump or lead nowhere: " + fails.get(0).opening() + " (" + fails.get(0).why() + ")", cells, cells.size());
 		}
 
 		void stepsReachGround() {

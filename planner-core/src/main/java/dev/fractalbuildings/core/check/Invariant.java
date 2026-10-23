@@ -15,7 +15,9 @@ public enum Invariant {
 	/** Generator v1 only: every exterior ground-floor door has a walkable way down to the terrain inside the lot. */
 	ENTRANCE_REACHABLE("entrance-reachable"),
 	/** Generator v1 only: from every exterior ground-floor door a walker gets down onto the real ground (terrain, road or paving) with no drop over a block and no rise over half a block (STAIRGROUND). */
-	STEPS_REACH_GROUND("steps-reach-ground");
+	STEPS_REACH_GROUND("steps-reach-ground"),
+	/** Generator v1 only: walking an interior flight from one floor to the next never needs a rise over half a block (STAIRS). */
+	STAIR_RISE("stair-rise");
 
 	public final String id;
 

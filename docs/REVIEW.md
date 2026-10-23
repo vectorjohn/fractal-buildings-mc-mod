@@ -401,3 +401,8 @@ work becomes a ROADMAP item or a Polish backlog line. Settled items move to
   Where: `docs/review/phase6/roads-ingame/` (`road-terrace-along.png`, `road-terrace-side.png`, `road-bridge-along.png`, `road-bridge-side.png`, `road-country-along.png`, `road-country-side.png`, README); in game: new world, seed 987654321, `/tp 3764 120 -1315` (terrace), `/tp 3420 90 -1304` (bridge), spectator mode.
   Look for: (1) terraces: 2-high steps with 2-wide grass benches and a dirt riser, first block level with the road: the look you want, or gentler (smaller steps, wider benches), or retaining walls; (2) the bridge: a plain plank span with no rails or piers, fine for 20 blocks; (3) the road beside a vanilla village: it stops at the village pieces and resumes, with a visible kink; (4) road surface mix (dirt path, gravel, coarse dirt per biome style) reads as a track.
   Result:
+
+- [ ] **STAIRS (your high-rise stair jump)**: interior stairs now reach the next floor with no one-block jump.
+  Where: `docs/review/phase6/stairs/` (`highrise-before.png` / `highrise-after.png`, `house-before.png` / `house-after.png`: the same flight from above, roof and upper storeys hidden; the after flights have one more step at floor level). In game: any stair core of a high-rise or house, walk up from floor N and see whether you arrive on floor N+1 without jumping.
+  Look for: the last step must be level with the floor above (you step off it sideways onto the landing, not straight ahead); the stair should still read as a stair, not a block; no head bump on the new last step.
+  Result:
