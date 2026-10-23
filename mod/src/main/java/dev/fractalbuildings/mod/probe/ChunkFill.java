@@ -38,7 +38,7 @@ public interface ChunkFill {
 
 	/**
 	 * (c) (b) restricted to a y window around the sampled {@code chunk_surface_level}; a chunk whose window
-	 * does not bracket every surface (air on top, floor inside) is redone as (b).
+	 * does not bracket every surface (air on top, nothing solid above, floor inside) is redone as (b).
 	 */
 	ChunkFill WINDOWED = (gen, rs, cx, cz) -> Batched.fill(gen, rs, cx, cz, true);
 
@@ -70,15 +70,32 @@ public interface ChunkFill {
 			if (windowed) {
 				int[] w = window(rs, settings, picker, cx, cz, minY, height);
 				if (w != null) {
-					int[] out = scan(rs, settings, picker, cx, cz, w[0], w[1] - w[0] + 1, true);
-					if (out != null) return out;
+					if (w[2] != 0) {
+						ABOVE_HITS.incrementAndGet();
+					} else {
+						int[] out = scan(rs, settings, picker, cx, cz, w[0], w[1] - w[0] + 1, true);
+						if (out != null) return out;
+					}
 				}
 				FALLBACKS.incrementAndGet();
 			}
 			return scan(rs, settings, picker, cx, cz, minY, height, false);
 		}
 
-		/** {lowY, highY} (inclusive, 8-aligned) around the chunk's sampled surface levels, or null if it would be the whole range. */
+		/** Vertical step of the check that nothing is solid above the window. */
+		static final int ABOVE_STEP = 16;
+		/** Counts windowed fills sent to the full scan by that check (read by tests). */
+		public static final java.util.concurrent.atomic.AtomicLong ABOVE_HITS = new java.util.concurrent.atomic.AtomicLong();
+
+		/**
+		 * {lowY, highY, solidAbove} (y inclusive, 8-aligned) around the chunk's sampled surface levels, or null if it would be
+		 * the whole range. {@code solidAbove} is 1 when the final density is positive anywhere on the sample grid above the
+		 * window: the two diagonal corner columns of the chunk, every {@link #ABOVE_STEP} blocks from just above the window to the
+		 * world top. That is something solid higher than the scan can see, which would make the surface higher than the window
+		 * reports. (Above the window the sea and lava levels are far below, so positive density is the only way to be non-air.)
+		 * The grid is sparse by design (a column costs about 30 us per point, a tall volume about 5 ms): solid features thinner
+		 * than the step, or that miss both columns, are not seen. Vanilla terrain has none (tests); modded terrain is B7's matrix.
+		 */
 		private static int[] window(RandomState rs, NoiseGeneratorSettings settings, Aquifer.FluidPicker picker, int cx, int cz, int minY, int height) {
 			var vol = new DensityVolume(1, 1, 1, cx * 16, minY, cz * 16);
 			double lo = Double.MAX_VALUE, hi = -Double.MAX_VALUE;
@@ -91,10 +108,16 @@ public interface ChunkFill {
 						hi = Math.max(hi, v);
 					}
 				}
+				int a = Math.max(minY, Math.floorDiv((int) Math.floor(lo) - MARGIN, 8) * 8);
+				int b = Math.min(minY + height - 1, Math.floorDiv((int) Math.ceil(hi) + MARGIN, 8) * 8 + 7);
+				if (b - a + 1 >= height) return null;
+				var density = nc.cachingSamplers().get(settings.noiseRouter().finalDensity());
+				int solid = 0;
+				for (int y = b + 1; y <= minY + height - 1 && solid == 0; y += ABOVE_STEP) {
+					if (density.sampleValue(cx * 16, y, cz * 16) > 0 || density.sampleValue(cx * 16 + 15, y, cz * 16 + 15) > 0) solid = 1;
+				}
+				return new int[] {a, b, solid};
 			}
-			int a = Math.max(minY, Math.floorDiv((int) Math.floor(lo) - MARGIN, 8) * 8);
-			int b = Math.min(minY + height - 1, Math.floorDiv((int) Math.ceil(hi) + MARGIN, 8) * 8 + 7);
-			return b - a + 1 >= height ? null : new int[] {a, b};
 		}
 
 		/** Scans every column top-down; returns null in window mode when a column is not bracketed. */

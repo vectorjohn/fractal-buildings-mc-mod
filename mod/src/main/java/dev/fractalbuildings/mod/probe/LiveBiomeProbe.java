@@ -23,7 +23,7 @@ public final class LiveBiomeProbe implements BiomeProbe {
 	private final ThreadLocal<Climate.Sampler> sampler;
 	private final SurfaceSource surface;
 
-	/** Surface height of a column (the terrain probe's, so the same column is not generated twice). */
+	/** Surface height of a column (the district memo or the sparse columns, so the same column is not generated twice). */
 	@FunctionalInterface
 	public interface SurfaceSource { int surfaceY(int x, int z); }
 

@@ -28,7 +28,7 @@ class LiveProbeTest {
 			RecordedProbe dump = RecordedProbe.read(TERRAIN.resolve(w.file()));
 			var gen = TerrainDumpTool.generator();
 			var rs = TerrainDumpTool.randomState(w.seed());
-			var live = new LiveProbes(gen, rs, ChunkFill.COLUMNS);
+			var live = new LiveProbes(gen, rs);
 			var region = live.region();
 			int checked = 0, wet = 0;
 			for (int j = 0; j < dump.nz(); j += 4) {
@@ -117,9 +117,75 @@ class LiveProbeTest {
 				if (Arrays.stream(a, 256, 512).anyMatch(v -> v > 0)) wet++;
 			}
 		}
-		System.out.println("MANY: 72 chunks equal, " + wet + " with water, " + (ChunkFill.Batched.FALLBACKS.get() - fallbacks0) + " windowed fallbacks");
+		System.out.println("MANY: 72 chunks equal, " + wet + " with water, " + (ChunkFill.Batched.FALLBACKS.get() - fallbacks0) + " windowed fallbacks, " + ChunkFill.Batched.ABOVE_HITS.get() + " of them by the solid-above check");
 	}
 
+
+	/** Reads in a scrambled order, one column per chunk (what a district does), equal getBaseColumn; district biome (memo surface) equals sparse biome (single-column surface). */
+	@Test
+	void lazyBlockReadsMatchColumns() {
+		var gen = TerrainDumpTool.generator();
+		for (long seed : new long[] {1L, 12345L, 987654321L}) {
+			var rs = TerrainDumpTool.randomState(seed);
+			var live = new LiveProbes(gen, rs);
+			long h = seed * 0x9E3779B97F4A7C15L;
+			int wet = 0;
+			for (int k = 0; k < 400; k++) {
+				h = (h ^ (h >>> 29)) * 0xBF58476D1CE4E5B9L + k;
+				int cx = (int) ((h >>> 8) % 400) - 200, cz = (int) ((h >>> 32) % 400) - 200;
+				int x = cx * 16 + (int) ((h >>> 3) & 15), z = cz * 16 + (int) ((h >>> 52) & 15);
+				int[] ref = LiveTerrainProbe.column(gen, rs, x, z);
+				String at = "seed " + seed + " (" + x + ", " + z + ")";
+				assertEquals(ref[1], live.exact().floorY(x, z), "floor " + at);
+				assertEquals(ref[0] - ref[1], live.exact().waterDepth(x, z), "water " + at);
+				assertEquals(ref[0], live.exact().surfaceY(x, z), "surface " + at);
+				if (k % 8 == 0) assertEquals(live.region().biome(x, z), live.biome().biome(x, z), "biome " + at);
+				if (ref[0] > ref[1]) wet++;
+			}
+			assertTrue(live.exactLive().memo().size() >= 200, "chunks filled lazily");
+		}
+	}
+
+	/** The sparse memo hands out copies: writing to a result does not change later reads. */
+	@Test
+	void sparseColumnsReturnCopies() {
+		var gen = TerrainDumpTool.generator();
+		var sparse = new SparseColumns(gen, TerrainDumpTool.randomState(987654321L), 16);
+		int[] a = sparse.get(1280, -9600);
+		int f = a[1];
+		a[0] = 12345;
+		a[1] = 54321;
+		assertEquals(f, sparse.get(1280, -9600)[1]);
+		assertEquals(f, sparse.floor(1280, -9600));
+		assertNotEquals(12345, sparse.surface(1280, -9600));
+	}
+
+	/**
+	 * The solid-above check: a slab 16 thick at y 224 to 239 (the sample step; thinner features are the documented blind spot), far above the surface (more than 32 blocks above the sampled
+	 * chunk_surface_level, air at the window top), must send the fill to the full scan, and the result must equal getBaseColumn
+	 * on the same bent terrain. Without the check the windowed fill would report the real ground (control below).
+	 */
+	@Test
+	void overhangAboveWindowFallsBack() {
+		var base = TerrainDumpTool.generator();
+		var s = base.generatorSettings().value();
+		var r = s.noiseRouter();
+		var slab = net.minecraft.world.level.levelgen.densityfunction.DensityFunctions.rangeChoice(
+			net.minecraft.world.level.levelgen.densityfunction.DensityFunctions.yClampedGradient(-64, 320, -64f, 320f), 224f, 240f,
+			net.minecraft.world.level.levelgen.densityfunction.DensityFunctions.constant(1f), net.minecraft.world.level.levelgen.densityfunction.DensityFunctions.constant(-1f));
+		var router = new net.minecraft.world.level.levelgen.NoiseRouter(r.temperature(), r.vegetation(), r.continents(), r.erosion(), r.depth(), r.ridges(), r.chunkSurfaceLevel(),
+			net.minecraft.world.level.levelgen.densityfunction.DensityFunctions.max(r.finalDensity(), slab));
+		var bent = new net.minecraft.world.level.levelgen.NoiseGeneratorSettings(s.noiseSettings(), s.defaultBlock(), s.defaultFluid(), router, s.materialRule(), s.spawnTarget(), s.seaLevel(), s.disableMobGeneration(), s.aquifers(), s.useLegacyRandomSource(), s.debugFunctions());
+		var gen = new net.minecraft.world.level.levelgen.NoiseBasedChunkGenerator(base.getBiomeSource(), net.minecraft.core.Holder.direct(bent));
+		var rs = TerrainDumpTool.randomState(987654321L, bent);
+		long hits0 = ChunkFill.Batched.ABOVE_HITS.get();
+		for (int[] c : new int[][] {{80, -600}, {268, 28}, {420, -424}}) {
+			int[] ref = ChunkFill.COLUMNS.fill(gen, rs, c[0], c[1]);
+			assertEquals(240, ref[0], "the slab is the surface of the bent terrain");
+			assertArrayEquals(ref, ChunkFill.WINDOWED.fill(gen, rs, c[0], c[1]), "windowed chunk " + c[0] + "," + c[1]);
+		}
+		assertTrue(ChunkFill.Batched.ABOVE_HITS.get() - hits0 >= 3, "the check, not luck, caught the slab");
+	}
 
 	/** Memo eviction and read order change speed only. */
 	@Test

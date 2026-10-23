@@ -101,7 +101,7 @@ class LiveProbeTiming {
 		String[] names = {"(a) 256 x getBaseColumn", "(b) batched volume", "(c) windowed volume", "(a) again (drift check)"};
 		ChunkFill[] fills = {ChunkFill.COLUMNS, ChunkFill.BATCHED, ChunkFill.WINDOWED, ChunkFill.COLUMNS};
 		ChunkFill.Batched.FALLBACKS.set(0);
-		for (int m = 0; m < 4; m++) {
+		for (int m = 0; m < fills.length; m++) {
 			long t0 = System.nanoTime();
 			for (int[] c : chunks) fills[m].fill(gen, rs, c[0], c[1]);
 			double per = ms(t0) / chunks.size();
@@ -142,32 +142,31 @@ class LiveProbeTiming {
 		line("|---|---|---|---|---|");
 		line("| %d | %d | %d | %d | %.1f |", counted, sumCalls / counted, sumCols / counted, sumChunks / counted, (double) sumCols / sumChunks);
 
-		// C: the real thing, cold memo, live terrain: wall time of one district plan per fill method
+		// C: the real thing, cold memo, live terrain: wall time of one district plan, chunk-memo method x biome source
 		line("");
 		line("Cold district plan on live terrain (fresh memo each; skeleton already planned; 1 thread):");
-		line("| district | probe | ms | chunk fills | sparse columns |");
+		line("| district | variant | ms | chunk fills | sparse columns |");
 		line("|---|---|---|---|---|");
 		int[] pick = {0, owned.size() / 4, owned.size() / 2, 3 * owned.size() / 4, owned.size() - 1};
-		String[] labels = {"direct columns (no memo)", "(a) memo, columns", "(b) memo, batched", "(c) memo, windowed"};
+		String[] labels = {"windowed, recorded biome", "windowed, live biome"};
 		double[] total = new double[labels.length];
-		for (int p : pick) {
-			DistrictSummary d = owned.get(p);
+		double[][] each = new double[labels.length][pick.length];
+		for (int pi = 0; pi < pick.length; pi++) {
+			DistrictSummary d = owned.get(pick[pi]);
 			for (int m = 0; m < labels.length; m++) {
-				var live = new LiveProbes(gen, rs, m == 2 ? ChunkFill.BATCHED : m == 3 ? ChunkFill.WINDOWED : ChunkFill.COLUMNS);
-				TerrainProbe exact = m == 0 ? new TerrainProbe() {
-					@Override public int floorY(int x, int z) { return live.sparse().get(x, z)[1]; }
-					@Override public int waterDepth(int x, int z) { int[] c = live.sparse().get(x, z); return c[0] - c[1]; }
-				} : live.exact();
+				var live = new LiveProbes(gen, rs, ChunkFill.WINDOWED);
+				TerrainProbe exact = live.exact();
+				StyleField liveStyles = new StyleField(m == 1 ? live.biome() : rec.biome(), SEED);
 				long t = System.nanoTime();
 				var det = Districts.plan(src, d.ix(), d.iz(), exact);
-				Briefs.fill(det.get().plan(), src.quarters()::at, styles, exact);
+				Briefs.fill(det.get().plan(), src.quarters()::at, liveStyles, exact);
 				double e = ms(t);
 				total[m] += e;
+				each[m][pi] = e;
 				line("| %s | %s | %.0f | %d | %d |", d.id(), labels[m], e, live.exactLive().memo().fills(), live.sparse().misses());
 			}
 		}
-		for (int m = 0; m < labels.length; m++) line("mean cold district, %s: %.0f ms", labels[m], total[m] / pick.length);
-
+		for (int m = 0; m < labels.length; m++) line("mean cold district, %s: %.0f ms (min %.0f, max %.0f)", labels[m], total[m] / pick.length, java.util.Arrays.stream(each[m]).min().getAsDouble(), java.util.Arrays.stream(each[m]).max().getAsDouble());
 		// D: skeleton on live coarse reads (stride 32, exact definition), cold
 		line("");
 		var live = new LiveProbes(gen, rs, ChunkFill.COLUMNS);

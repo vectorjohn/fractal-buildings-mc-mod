@@ -78,6 +78,12 @@ public final class TerrainDumpTool {
 		return RandomState.create(reg.lookupOrThrow(Registries.NOISE), seed, settings.value());
 	}
 
+	/** A random state for modified settings (tests that bend the density router). */
+	public static RandomState randomState(long seed, NoiseGeneratorSettings s) {
+		boot();
+		return RandomState.create(reg.lookupOrThrow(Registries.NOISE), seed, s);
+	}
+
 	static String name(Holder<Biome> h) {
 		return h.unwrapKey().map(k -> k.identifier().getNamespace().equals("minecraft") ? k.identifier().getPath() : k.identifier().toString()).orElse("?");
 	}

@@ -33,6 +33,8 @@ public final class LiveTerrainProbe implements TerrainProbe {
 
 	@Override public int waterDepth(int x, int z) { return memo.water(x, z); }
 
+	@Override public int surfaceY(int x, int z) { return memo.surface(x, z); }
+
 	/** {surface, floor} of one column, exactly as the dumps define them. */
 	public static int[] column(NoiseBasedChunkGenerator gen, RandomState rs, int x, int z) {
 		NoiseColumn col = gen.getBaseColumn(x, z, H, rs);
