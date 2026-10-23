@@ -221,10 +221,10 @@ elif ! command -v xvfb-run > /dev/null || ! command -v flock > /dev/null; then
 else
 	mkdir -p "$(dirname "$HEAVY_LOCK")"
 	say "  client: waiting for heavy lock $HEAVY_LOCK ..."
-	# Headless only: with WAYLAND_DISPLAY set (the human's GNOME session) SDL picks
-	# Wayland over Xvfb and the client dies at the first frame. See scripts/client-test.sh.
-	if run_logged client env -u WAYLAND_DISPLAY SDL_VIDEODRIVER=x11 \
-		flock "$HEAVY_LOCK" xvfb-run -a "${GRADLE[@]}" :mod:runClientGameTest; then st=pass; else st=fail; fi
+	# scripts/client-test.sh takes the heavy lock, hides WAYLAND_DISPLAY (else SDL picks
+	# Wayland over Xvfb), and kills a client left hanging after a crash or past
+	# FB_CLIENT_TIMEOUT, so a failed run can't hold the lock.
+	if run_logged client "$ROOT/scripts/client-test.sh"; then st=pass; else st=fail; fi
 	gt_line=$(grep -oE '(All [0-9]+ required tests? passed|[0-9]+ required tests? failed|[0-9]+ client game tests? [a-z]+)' "${LOGS[client]}" | tail -n1)
 	record client $st "${gt_line:-no count in log}; /proc/loadavg at end: $(cut -d' ' -f1-3 /proc/loadavg)"
 fi
