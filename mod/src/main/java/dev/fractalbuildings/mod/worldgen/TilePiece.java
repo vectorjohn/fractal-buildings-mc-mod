@@ -107,5 +107,14 @@ public abstract class TilePiece extends StructurePiece {
 		} finally {
 			LaneStats.postEnd(lt);
 		}
+		if (ref.kind() == PieceRef.Kind.BUILDING) {
+			try {
+				// furniture, chests and villagers for the planner's hooks, after the shell cells of this chunk (plan B5)
+				dev.fractalbuildings.mod.gameplay.HookPlacer.place(level, planner.get(), ref, x0, x1, z0, z1, dev.fractalbuildings.mod.gameplay.Gameplay.villagersEnabled());
+			} catch (RuntimeException e) {
+				WorldPlanners.FAILURES.incrementAndGet();
+				FractalBuildingsMod.LOGGER.error("Placing the hooks of {} failed", ref, e);
+			}
+		}
 	}
 }

@@ -388,8 +388,9 @@ Plan: [plans/phase6.md](plans/phase6.md) (steps A1–C3; ten decisions for John,
   spacing, region layer, biome tags for where settlements may appear.
   *Mostly done (P6 B1), left unticked:* structure types, six structures (one per tier plus ground), two structure sets, `#fractalbuildings:settlement`, placement and the per-world planner (region layer) are in and `/locate`-ready; spacing is the tile grid, not data-driven (by design, ASSUMPTIONS); the biome tag `#fractalbuildings:no_settlements` exists but is empty and nothing reads it yet (B7). *Known issues:* road cuts on steep slopes can leave overhangs above the street (seen in the client test; B3).
 - [ ] **6.3 Terrain**: adaptation mode or our own grading, per S5.
-- [ ] **6.4 Gameplay hooks**: loot tables, villager workstations and beds,
+- [x] **6.4 Gameplay hooks**: loot tables, villager workstations and beds,
   `/locate` support. Leave room for a villager AI mod later.
+  *Done (P6 B5):* hooks become beds, chests (loot tables under `data/fractalbuildings/loot_table/chests/`, seed from the position), job sites, crafting tables, furnaces, lanterns in `TilePiece.postProcess` (`gameplay/HookPlacer`, pure part `core.world.WorldHooks`); villagers one per bed in hamlets and villages, at most 10 per district, off with config `villagers: false`; `/fb info`, `/fb locate [tier]`; `/locate structure #fractalbuildings:settlement` verified in a real world; read-only `api/Settlements`. *Known issues:* no villager professions assigned; beds across a chunk edge are skipped; furniture mapping and loot are first drafts (REVIEW).
 - [x] **6.5 Config**: frequency, maximum city size (a default from S6, not a design cap; ADR 0002), enabled styles.
   *Done (P6 B6):* `config/fractalbuildings.json` (defaults for new worlds), pinned per world in saved data `fractalbuildings:config` (`WorldConfigData`); `/fb config` prints it. Parsing and clamping are core (`FbSettings`). Max radius default 4096 (S6, ADR 0003). B1 builds `WorldPlanner` from `WorldConfigData.get(server).settings().world()`; B5 reads `villagers`, B7 `vetoVanillaVillages`.
 - [ ] **6.6 Compatibility**: test with popular terrain mods (Terralith,

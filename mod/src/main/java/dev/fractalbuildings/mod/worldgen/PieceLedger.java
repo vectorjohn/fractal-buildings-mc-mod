@@ -30,6 +30,12 @@ public final class PieceLedger {
 		if (r != null) r.add(x, y, z, stateId);
 	}
 
+	/** Records furniture placed over claimed air (hook blocks enter the ledger like any block, without making a second owner). */
+	public static void override(int x, int y, int z, int stateId) {
+		Recording r = active;
+		if (r != null) r.replace(x, y, z, stateId);
+	}
+
 	/** SHA-256 hex of a (key, state) map in key order: the digest of cells merged from several recordings. */
 	public static String digest(java.util.SortedMap<Long, Integer> states) {
 		try {
@@ -61,6 +67,11 @@ public final class PieceLedger {
 
 		private void add(int x, int y, int z, int stateId) {
 			cells.merge(pack(x, y, z), new int[] {1, stateId}, (a, b) -> new int[] {a[0] + 1, b[1]});
+		}
+
+		/** A later write over a cell the pieces already claimed (a bed on claimed room air): changes its state, not its owner count. */
+		private void replace(int x, int y, int z, int stateId) {
+			cells.merge(pack(x, y, z), new int[] {1, stateId}, (a, b) -> new int[] {a[0], b[1]});
 		}
 
 		/** Cells in (x, z, y) key order with their state ids. */

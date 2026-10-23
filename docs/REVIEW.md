@@ -367,3 +367,8 @@ work becomes a ROADMAP item or a Polish backlog line. Settled items move to
   Where: `docs/review/phase6/worldgen/district-overview.png` (hill village from the south), `district-door-a.png` (door seen from inside), `district-door-b.png` (from outside); in game: new world, seed 987654321, `/locate structure fractalbuildings:village` (or `/tp -576 120 704` in spectator).
   Look for: does the door sit in its wall with the hinge on a sensible side and open to the right side; do the red roofs and the tall block read as a village; the road cuts on the slope may leave overhangs (known, terrain step B3).
   Result:
+
+- [ ] **B5 furnished interior in a real world (p6-b5-gameplay)**: beds, chests, job sites and villagers in a hamlet or village.
+  Where: `docs/review/phase6/gameplay/gameplay-interior-bed.png` (client game test); in game: new world seed 987654321, `/fb locate village`, `/tp` there, walk into a house.
+  Look for: do beds, chests, crafting tables, lanterns and job-site blocks read as furnishing a room (not scattered); do the villagers stand by the beds; do the loot tables feel right (house: food and sticks, shop: emeralds, tower: arrows)?
+  Result:

@@ -65,3 +65,7 @@ claude/<item>        ●  ●  ●      ●  ●  ●                  several i
 To watch a run, read the ledger in the coordinator's worktree
 (`.claude/worktrees/run-<slug>/docs/runs/`) or `git log --graph --all`.
 `scripts/agent-usage.sh <agent-id>` summarises an agent's time and tokens.
+
+## For other mods: `Settlements`
+
+`dev.fractalbuildings.mod.api.Settlements.at(ServerLevel, BlockPos)` answers what the planner says is at a block column: the settlement id and tier, the district tile, the lot, the building type and style, and the building's furnishing hooks (bed, chest, workstation, ...) in world coordinates. It is read-only and has no behaviour of its own (a villager-AI mod can build on it). Beds, job sites and chests are real blocks; villagers are ordinary vanilla villagers placed at beds in hamlets and villages (at most 10 per district tile).
