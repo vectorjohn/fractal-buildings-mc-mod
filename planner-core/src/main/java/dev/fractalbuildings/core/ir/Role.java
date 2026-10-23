@@ -33,7 +33,9 @@ public enum Role {
 	/** Fill earth in district scenes (Phase 5). */
 	GROUND(true, true),
 	/** Bridge decks and piers (TR 5.3): timber, or stone in the desert. */
-	DECK(true, true);
+	DECK(true, true),
+	/** Railing on the open side of exterior steps and landings (6.9): a fence or wall post on a kerb beside the flight, never across the line of travel. Appended last; older readers reject the unknown value. */
+	RAIL(true, true);
 
 	public final boolean solid;
 	public final boolean closesShell;

@@ -164,6 +164,7 @@ public final class InstancePassV1 {
 			if (x >= x0 && x <= x1 && z >= z0 && z <= z1) blocked[(z - z0) * nx + (x - x0)] = true;
 		}
 		boolean[] deckCells = new boolean[nx * nz]; // cells of a stoop built for an earlier door
+		List<int[]> treads = new ArrayList<>(); // every placed step or landing cell: x, z, tread level, least drop to the ground beside it that gets a rail
 		boolean posted = shell.volumes().stream().anyMatch(v -> v.id().startsWith("leg")); // a hall on posts: its landing is a deck on posts
 		for (Opening o : doors) {
 			Facing out = outward(o);
@@ -266,6 +267,7 @@ public final class InstancePassV1 {
 					if (!posted) site.add(new Box(Box3.of(cx, g - base, cz, 1, oy - g, 1), Role.FOUNDATION, Layer.FOUNDATION, Box.NO_STOREY));
 					else if (post) site.add(new Box(Box3.of(cx, g - base, cz, 1, oy - g, 1), Role.BEAM, Layer.FOUNDATION, Box.NO_STOREY));
 					site.add(new Box(Box3.of(cx, oy - base, cz, 1, 1, 1), Role.STAIR, Layer.FOUNDATION, Box.NO_STOREY));
+					treads.add(new int[] {cx, cz, oy, RAIL_DROP_LANDING});
 				}
 			}
 			for (int c = found; c >= 0; c = parent[c]) {
@@ -277,8 +279,43 @@ public final class InstancePassV1 {
 				if (h >= g) { // a step on the ground itself (h == g) needs no foundation under it
 					if (h > g) site.add(new Box(Box3.of(cx, g - base, cz, 1, h - g, 1), Role.FOUNDATION, Layer.FOUNDATION, Box.NO_STOREY));
 					site.add(new Box(Box3.of(cx, h - base, cz, 1, 1, 1), Role.STAIR, Layer.FOUNDATION, Box.NO_STOREY));
+					treads.add(new int[] {cx, cz, h, RAIL_DROP_FLIGHT});
 				}
 			}
+		}
+		rails(treads, lot, p, x0, x1, z0, z1, nx, ground, blocked, grid, base, site);
+	}
+
+	/** Least drop (blocks, tread level minus the ground beside it) that gets a rail: along a flight, and along a landing. */
+	static final int RAIL_DROP_FLIGHT = 2, RAIL_DROP_LANDING = 1;
+
+	/**
+	 * Railings (6.9): for each free cell beside a step or landing where the ground is far enough below the tread, a kerb of
+	 * foundation up to the tread level with a {@link Role#RAIL} block on it, so the rail stands one block above the tread. Rails
+	 * go only on cells that are not part of any flight, landing or door approach ({@code blocked}), are inside the lot and are
+	 * free of the building, so they never cross the line of travel; a walker could only step sideways onto ground at most one
+	 * block below the tread, and no rail stands there. Where several treads touch a cell the highest decides.
+	 */
+	private static void rails(List<int[]> treads, Lot lot, Placement p, int x0, int x1, int z0, int z1, int nx, int[] ground, boolean[] blocked, VoxelGrid grid, int base, List<Box> site) {
+		int[] level = new int[blocked.length];
+		java.util.Arrays.fill(level, Integer.MIN_VALUE);
+		for (int[] t : treads) {
+			for (Facing f : Facing.values()) {
+				int x = t[0] + f.dx, z = t[1] + f.dz;
+				if (x < x0 || x > x1 || z < z0 || z > z1) continue;
+				int i = (z - z0) * nx + (x - x0);
+				if (blocked[i] || !lot.containsColumn(p.worldX(x, z), p.worldZ(x, z)) || t[2] - ground[i] < t[3]) continue;
+				level[i] = Math.max(level[i], t[2]);
+			}
+		}
+		for (int i = 0; i < level.length; i++) {
+			if (level[i] == Integer.MIN_VALUE) continue;
+			int cx = x0 + i % nx, cz = z0 + i / nx, h = level[i], g = ground[i];
+			boolean free = true;
+			for (int y = g - base; y <= h + 1 - base && free; y++) free = grid.get(cx, y, cz) == Role.AIR;
+			if (!free) continue;
+			site.add(new Box(Box3.of(cx, g - base, cz, 1, h - g, 1), Role.FOUNDATION, Layer.FOUNDATION, Box.NO_STOREY));
+			site.add(new Box(Box3.of(cx, h - base, cz, 1, 1, 1), Role.RAIL, Layer.FOUNDATION, Box.NO_STOREY));
 		}
 	}
 

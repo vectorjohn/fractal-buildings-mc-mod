@@ -21,7 +21,7 @@ class DesertStyleTest {
 	/** Block ids verified against the 26.3 registry (blockstate assets in the merged jar). */
 	static final Set<String> VANILLA = Set.of("minecraft:cut_sandstone", "minecraft:sandstone", "minecraft:smooth_sandstone",
 			"minecraft:chiseled_sandstone", "minecraft:acacia_planks", "minecraft:yellow_terracotta", "minecraft:orange_terracotta",
-			"minecraft:terracotta", "minecraft:stripped_acacia_log", "minecraft:acacia_log", "minecraft:acacia_fence",
+			"minecraft:terracotta", "minecraft:stripped_acacia_log", "minecraft:acacia_log", "minecraft:acacia_fence", "minecraft:sandstone_wall",
 			"minecraft:glass_pane", "minecraft:acacia_door", "minecraft:jungle_door",
 			"minecraft:sand");
 

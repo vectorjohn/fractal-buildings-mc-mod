@@ -16,6 +16,7 @@ export const ROLE_COLOURS: Record<string, Rgb> = {
   paving: 0x8a8a8a,
   ground: 0x6b4f33,
   deck: 0xa07a48,
+  rail: 0xd0a040,
 };
 export const UNKNOWN_COLOUR: Rgb = 0xff00ff;
 export const TERRAIN_COLOUR: Rgb = 0x5c7a3c;
