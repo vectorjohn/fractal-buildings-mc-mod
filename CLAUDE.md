@@ -18,6 +18,7 @@ throwaway spikes before the architecture is locked in. The plan is in
 | Decisions that shape the architecture (gate outcomes) | `docs/adr/NNNN-<slug>.md` (listed by the query page `docs/adr/INDEX.md`) | researcher drafts; the human approves |
 | Research one-pagers, and their index with statuses | `docs/research/<track>/<slug>.md`, `docs/research/INDEX.md` | research agents; INDEX lines by the coordinator |
 | Plans for large items | `docs/plans/<slug>.md` | lead-coder (`mode: plan`) |
+| Performance issues and accepted tradeoffs | `docs/PERFORMANCE.md` | anyone, append; decisions by the human |
 | Things only the human can judge (looks, "would a person build this", in-game feel) | `docs/REVIEW.md` | anyone, append only; results by the human |
 | Finished phases' full text, old material | `docs/archive/` | coordinator at a phase merge |
 

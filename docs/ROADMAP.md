@@ -432,6 +432,9 @@ After the first release; no plan yet. Items wait for Phase 6 unless noted.
 Non-breaking known issues from verified items, one line each with the item id.
 Fixed opportunistically or scheduled as items.
 
+Performance issues and the tradeoffs we accepted are tracked separately in
+[PERFORMANCE.md](PERFORMANCE.md) (measured numbers, budgets, John's decisions).
+
 - 6.6: the vanilla-structure veto is cold-expensive: about 100 ms per village candidate (169 region cells scanned, ~20 ms each, reach about 6 km), worst case about 3 s on the worldgen lane for the first candidates of a fresh area, and the same on the server thread for `/locate` and explorer maps. Cells are cached afterwards and the warmer fills the same ones. B8 measures it; fixes: tier-bounded scan, pre-resolving cells in the warmer.
 - 6.3: street junctions are not reconciled: where a street meets or ends at another street at a different level the surfaces differ by 2 to 20 blocks (229 of 670 gate-window tiles have a step over 3, `GroundWalkTest` keeps it from growing); fix = one height per junction node in the street network, then lower the ratchet.
 - 0.1b: viewer irToVoxels ordering test only varies x; y/z sort keys untested (a mutation survived). Add a multi-row case.
@@ -498,6 +501,7 @@ Fixed opportunistically or scheduled as items.
 - 5.11 OPENPLAN (p5-openplan, done): kitchens open onto living areas by style (`interior.openPercent`: plain 85 % of kitchen links, medieval 22 %); see [log](log/2026-10-21-p5-openplan.md). Known: no dining use exists yet, so "living-dining" open plan is living-hall/entry only; wide archways are 2-4 cells, never a full-wall removal.
 - 5.11 OPENPLAN (John, REVIEW 2026-10-22): lintels over wide openings as top-half slabs where the style's wall or trim material has a slab, and arches as upside-down stairs; needs slab and stair shapes in the palette mapping (6.1).
 - 5.12: market hall floor is empty (no stalls); a city planner must catch the shop slope rejection; no railing; enclosed-shop landings are solid.
+- 6.7 (John 2026-10-23): hide the ~4 s teleport hitch into an unvisited city: hold a far same-dimension teleport on the server until the destination is warm (mixin on `ServerPlayer.teleport`, chunk ticket, RegionWarmer, action-bar message; server-only, S to M), optionally a client screen later; joins, respawns and portals already get vanilla's loading screen. Research: [teleport-loading-screen.md](research/worldgen/teleport-loading-screen.md); ledger: [PERFORMANCE.md](PERFORMANCE.md).
 
 ## Open questions and risks
 
