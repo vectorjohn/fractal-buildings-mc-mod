@@ -51,15 +51,42 @@ public class WorldPlanner {
 	 *
 	 * @param skeletons cell skeletons per settlement; {@code region} entries in each of the region view's four memos
 	 */
-	public record Caches(int tiles, int sources, int skeletons, int region, int plans, int buildings, int ground) {
+	public record Caches(int tiles, int sources, int skeletons, int region, int plans, int buildings, int ground, long graceNanos, int hardFactor) {
+		/** Entries used within this long are kept past the cap (see {@link FlightCache}): a tile's chunks all arrive within it. */
+		public static final long DEFAULT_GRACE_NANOS = 120_000_000_000L;
+		/** Retention never lets a memo exceed this multiple of its cap: the memory ceiling. */
+		public static final int DEFAULT_HARD_FACTOR = 4;
+
+		public Caches(int tiles, int sources, int skeletons, int region, int plans, int buildings, int ground) {
+			this(tiles, sources, skeletons, region, plans, buildings, ground, DEFAULT_GRACE_NANOS, DEFAULT_HARD_FACTOR);
+		}
+
+		/** The same caps with retention off: strict LRU (tests that force eviction). */
+		public Caches strict() { return new Caches(tiles, sources, skeletons, region, plans, buildings, ground, 0, 1); }
+
 		public Caches {
+			if (graceNanos < 0 || hardFactor < 1) throw new IllegalArgumentException("retention");
 			if (tiles < 1 || sources < 1 || skeletons < 1 || region < 1 || plans < 1 || buildings < 1 || ground < 1) throw new IllegalArgumentException("capacity < 1");
 		}
 
 		public static final Caches DEFAULT = new Caches(4096, 64, 64, FieldRegionView.DEFAULT_CACHE, 64, 32, 32);
 
-		/** The same capacity everywhere. */
-		public static Caches all(int n) { return new Caches(n, n, n, n, n, n, n); }
+		/** Measured: a cached tile (plan, buildings, ground) holds about this much heap (CacheMemoryTest: 0.9 MiB; rounded up). */
+		public static final long BYTES_PER_TILE = 1L << 20;
+
+		/**
+		 * Caps scaled to the heap: the hard ceiling (cap x hardFactor, per tile memo) is held to about a tenth of {@code maxHeapBytes},
+		 * between the defaults' floor (32 buildings / 64 plans, ceiling 128 / 256 tiles) and twice that. Larger heaps keep more tiles
+		 * warm for more simultaneous players; answers never change.
+		 */
+		public static Caches forHeap(long maxHeapBytes) {
+			long hardTiles = Math.max(1, maxHeapBytes / 10 / BYTES_PER_TILE);
+			int cap = (int) Math.max(DEFAULT.buildings(), Math.min(2L * DEFAULT.buildings(), hardTiles / DEFAULT_HARD_FACTOR));
+			return new Caches(DEFAULT.tiles(), DEFAULT.sources(), DEFAULT.skeletons(), DEFAULT.region(), 2 * cap, cap, cap, DEFAULT_GRACE_NANOS, DEFAULT_HARD_FACTOR);
+		}
+
+		/** The same capacity everywhere, strict LRU. */
+		public static Caches all(int n) { return new Caches(n, n, n, n, n, n, n).strict(); }
 	}
 
 	private static final int LATTICE = 32; // spacing of the columns that vote for the owner of a tile whose centre cell has no settlement
@@ -119,11 +146,11 @@ public class WorldPlanner {
 		this.fieldView = fixed != null ? null : new FieldRegionView(rp, probes.window(), caps.region());
 		this.view = fixed != null ? new FixedSiteView(fixed, field) : new FieldSiteView(fieldView, field);
 		this.styles = new StyleField(probes.biome(), seed);
-		this.sources = new BoundedCache<>(caps.sources());
+		this.sources = new BoundedCache<>(caps.sources(), caps.graceNanos(), caps.hardFactor(), System::nanoTime); // det-ok: retention only, never an answer
 		this.tiles = new BoundedCache<>(caps.tiles());
-		this.plans = new FlightCache<>(caps.plans());
-		this.buildings = new FlightCache<>(caps.buildings());
-		this.grounds = new FlightCache<>(caps.ground());
+		this.plans = new FlightCache<>(caps.plans(), caps.graceNanos(), caps.hardFactor(), System::nanoTime); // det-ok: retention only, never an answer
+		this.buildings = new FlightCache<>(caps.buildings(), caps.graceNanos(), caps.hardFactor(), System::nanoTime); // det-ok: retention only, never an answer
+		this.grounds = new FlightCache<>(caps.ground(), caps.graceNanos(), caps.hardFactor(), System::nanoTime); // det-ok: retention only, never an answer
 	}
 
 	/** For subclasses that serve their own tiles ({@link FixtureWorldPlanner}); every method they do not override fails. */
