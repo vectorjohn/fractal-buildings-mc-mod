@@ -98,8 +98,10 @@ Lithostitched) change our answers too; probes must not assume vanilla.
 - `preliminary_surface_level`: a smoothed 2D estimate at ~0.0085 ms per column
   (*probe*), but ~12–15 blocks low with p90 error 17 (*measured in game*), and
   it misses Terralith's dunes and arches (*read*,
-  [terralith](research/overlays/terralith.md)). A coarse screen for region
-  suitability, never a foundation probe.
+  [terralith](research/overlays/terralith.md)). Not used in the game; kept
+  only as a fallback screen for the region layer if Phase 6's B8 region
+  budget fails, never a foundation probe ([ADR 0003](adr/0003-worldgen.md)
+  W2, amended 2026-10-22).
 
 **Size is the real constraint** (*measured in game* unless marked,
 [structure-pipeline](research/worldgen/structure-pipeline.md)):
@@ -114,9 +116,11 @@ Lithostitched) change our answers too; probes must not assume vanilla.
   dimension**: a 20 ms piece builder ran with max concurrency 1. Only biomes
   and terrain run in parallel (*read*). Every millisecond of planning at start
   time stalls that dimension's generation, so the plan is computed once per
-  region cell, cached, and height sampling stays coarse: 1,024 columns (a
-  16-block grid over 512×512) is ~0.2 s by the probe figure, ~0.5 s at the
-  in-game rate.
+  region cell, cached, and warmed off the lane. Heights are exact
+  everywhere (the dump definition), made affordable by a per-chunk memo, a
+  windowed batched chunk fill (1.9 ms a chunk against 92–142 ms for 256
+  single columns), background warming and cache retention
+  ([ADR 0003](adr/0003-worldgen.md) W2).
 - Pieces are built **lazily**: `findGenerationPoint` returns a stub and the
   piece builder runs only in `generate`; `/locate` calls
   `findGenerationPoint` from other threads without building pieces (*read*).
@@ -159,9 +163,10 @@ field), and no existing layer we could reuse to place cities
   Each cell decides whether it holds a settlement, its centre, size and
   culture. Leaning: membership as a scalar field with a threshold, with
   biomes as a **multiplier** (oceans and rivers suppress) rather than a
-  boundary, plus a height veto from the coarse screen, which only culls, with
-  a margin of at least 20 blocks, and never gives a floor height (its bias is
-  not stable, [S2](research/spikes/s2.md); [ADR 0003](adr/0003-worldgen.md)
+  boundary, plus a height veto on exact heights, decided once per city and
+  cached. The coarse screen's bias is not stable ([S2](research/spikes/s2.md));
+  it returns only as a region-layer fallback if B8's budget fails, culling
+  with a margin of at least 20 blocks ([ADR 0003](adr/0003-worldgen.md) W2,
   D4).
 - Field shape ([lithostitched-deep-dive](research/overlays/lithostitched-deep-dive.md)):
   2D cells (a 3D Voronoi sliced at y = 0 leaves sliver cells, *probe*), a
@@ -198,7 +203,8 @@ doesn't scale for free is a monolithic plan on the serial lane: about 0.5 s
 per Mblock² with exact heights, ~2.5 s at 2048² and 29.5 s at 8192²
 (S6, quiet machine, stand-in generator). So the plan has two levels:
 
-- **City skeleton** (cheap, built first): the coarse height screen, roads on
+- **City skeleton** (built first, warmed ahead): exact heights on a 32-block
+  lattice (memoised single columns), roads on
   position-hashed lines (as Lost Cities' arterials,
   [lost-cities-road-planning](research/overlays/lost-cities-road-planning.md)),
   district borders, and the big lots that districts must be drawn around.
@@ -250,7 +256,7 @@ it run yet:
 - Wrap **three slots with the same mask**: router `final_density`, router
   `chunk_surface_level` and the aquifer `surface_level`. Leave the shared
   `preliminary_surface_level` entry alone: in vanilla only those last two
-  read it, so it stays the unwrapped coarse screen (*read*,
+  read it, so it stays unwrapped (*read*,
   [lithostitched-deep-dive](research/overlays/lithostitched-deep-dive.md)).
   With `final_density` alone, cuts more than a few blocks deep come out as
   bare stone (surface rule gated off) and may flood (aquifer sees cave air).
@@ -258,9 +264,9 @@ it run yet:
   in Terralith's forced-flooded cliff zones; leave caves alone.
 - **The plan reads unwrapped terrain.** Wrapping replaces the router in the
   shared settings, so `getBaseHeight` sees wrapped terrain. The mask depends
-  on the region field only, never on the lot plan. The plan uses the coarse
-  screen, or exact heights from the original `final_density` captured before
-  wrapping and compiled with `RandomState.getSampler` (*read*, not run).
+  on the region field only, never on the lot plan. The plan uses exact
+  heights from the original `final_density` captured before wrapping and
+  compiled with `RandomState.getSampler` (*read*, not run).
 - Hook: our own mixin, or Lithostitched's `wrap_noise_router` /
   `wrap_aquifers` (MIT, but a dependency, and `wrap_aquifers` needs 2.0.6+).
   Leaning: our own; compat by publishing our field as a density-function type
