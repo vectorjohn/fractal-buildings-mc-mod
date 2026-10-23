@@ -1,9 +1,9 @@
 ---
 tags: adr
 status: accepted
-date: "2026-10-16"
+date: "2026-10-22"
 author: researcher
-approvedBy: "John, 2026-10-16"
+approvedBy: "John, 2026-10-16; amended John, 2026-10-22"
 supersededBy:
 dependsOn:
 related:
@@ -42,7 +42,9 @@ City size has no design limit. This ADR **supersedes
 still in force, so 0002 is history only. John accepted the proposed
 decisions as written (2026-10-16), and answered the gate's questions: 0003
 supersedes 0002, dropped big cities release their cells (R2), and S6 is
-re-measured on a quiet machine.
+re-measured on a quiet machine. **Amended 2026-10-22** (John, Phase 6
+[decision 1](../plans/phase6.md)): the game reads exact heights, not the
+coarse screen (W2, P1, D4).
 
 ## Context
 
@@ -105,8 +107,28 @@ re-measured on a quiet machine.
   decision; the lazy piece builder reads the cached plan. `/locate` finds a
   district, not the city centre.
 - **W2 Suitability is decided per city, never per start**, by one cached
-  decision on the **coarse screen** (11–12 ms); exact heights cost about
-  130 ms and make `/locate` 2.5–25 s instead of 0.1–0.24 s.
+  decision on **exact heights**: the dump definition, the same
+  `LiveTerrainProbe.column` the dump tool calls, so the game's region
+  decisions equal the ones reviewed in the viewer. **Amended (John,
+  2026-10-22: "I'm happy with the default")**; it was the coarse screen,
+  which is off by 12–16 blocks on average and 50–150 under Terralith and
+  Tectonic ([S2](../research/spikes/s2.md)). It is made affordable by the
+  per-chunk memo (`ColumnMemo`), the windowed batched chunk fill (1.9 ms a
+  chunk against 92–142 ms for 256 `getBaseColumn`; a cold district plan
+  0.8–0.9 s on one loaded thread, [A1](../log/2026-10-22-p6-a1-probes.md),
+  [A1F](../log/2026-10-22-p6-a1f-probes.md)), background warming
+  ([B4](../log/2026-10-22-p6-b4-warming.md): a metropolis's 4.3 s cold
+  first touch costs the lane 0.03 ms once warmed) and cache retention
+  ([CACHE](../log/2026-10-22-p6-cache.md)). Region and skeleton lattices
+  read single exact columns through a sparse memo (about 0.3–0.55 ms a
+  column; stride 64 cannot batch). **Fallback:** the coarse screen, for
+  the region layer only, and only if B8's measured region budget fails
+  (resolve ≤ 1 s cold, 0 on the lane when warmed); region decisions then
+  no longer match the viewer. A teleport or respawn into a cold settlement
+  can hitch for seconds. *(Replaced: the cost note "coarse screen
+  11–12 ms; exact about 130 ms, `/locate` 2.5–25 s", from
+  [S6](../research/spikes/s6.md); `/locate` is now held to B8's ≤ 10 s
+  cold.)*
 - **W3 Pieces save references and their brief, never IR.** A reference is
   13 B per piece; stored IR is 11–24 KB per tower, so a 58-tower downtown
   reaches the 1 MB region slot (vanilla then spills to an external `.mcc`
@@ -153,9 +175,12 @@ re-measured on a quiet machine.
 
 ### Plan and region field
 
-- **P1 Two-level plan.** The **skeleton** is the coarse screen on a 32-block
-  stride plus arterials hashed from (seed, axis, line index), computed per
-  tile of at most 4096² (83 ms, 2 B per 1024 blocks²). A gate on a cell
+- **P1 Two-level plan.** The **skeleton** reads exact heights (W2, amended
+  2026-10-22) on a 32-block stride, plus arterials hashed from (seed, axis,
+  line index), computed per tile of at most 4096² (S6's stand-in on the
+  coarse screen: 83 ms, 2 B per 1024 blocks²; the real region resolve and
+  road network of a metropolis cost 3.3 s cold under load and are warmed
+  ahead, B4). A gate on a cell
   border comes from a hash of the edge key (0 mismatches over 9,800 edges),
   so tiles and cells agree without coordination. **District detail** probes
   exactly only at building sites: under 100 ms whatever the city size. The
@@ -230,8 +255,9 @@ re-measured on a quiet machine.
 - **D4 Heights.** `getBaseHeight(OCEAN_FLOOR_WG)` is exact on 99–99.9 % of
   land and an upper bound of solid ground there; over frozen oceans icebergs
   rise up to +99 above it, so also check the water surface. The
-  coarse screen is for culling and the skeleton only, with a margin of at
-  least 20, never a floor height. Planner probes read **unwrapped** terrain,
+  coarse screen is unused in the game (W2, amended 2026-10-22); if W2's
+  fallback is ever taken, it culls region decisions only, with a margin of
+  at least 20, never a floor height. Planner probes read **unwrapped** terrain,
   and the plan never re-probes after the beard.
 - **D5 Ownership.** District boxes partition the plane; a road is drawn by
   the district that owns the block; pieces clip to `chunkBB` and their
@@ -268,12 +294,14 @@ re-measured on a quiet machine.
   districts, 2.5 s at 2048² with the two-level plan, the coarse-screen veto.
 - **Easier:** one plan feeds structures, the fallback and the pool element,
   with no coordination between districts.
-- **Harder:** teleporting into a downtown; the join rule is unproven; the
-  coarse screen's cost under Tectonic is unmeasured for suitability and the
-  skeleton (S2 put it above an exact probe there; measure in Phase 5 or use
-  sparse exact probes); a `genVersion` change mid-world leaves seams
+- **Harder:** teleporting or respawning into a cold settlement (seconds of
+  hitch, accepted 2026-10-22); the join rule is unproven; exact region and
+  skeleton reads cost more than the screen did (resolved the S2 worry that
+  the screen cost more than an exact probe under Tectonic: sparse exact
+  probes are now the default); a `genVersion` change mid-world leaves seams
   (rendezvous choice limits them to the buildings where a new rule wins).
 - **Revisit:** 1b if the real generator outruns 4 workers at elytra speed;
   pool components if the pooling rule triggers; 3a if joins can't stay
   local; 6b if flattening needs more than our three hooks or pack makers need
-  more than our density function.
+  more than our density function; W2's coarse-screen fallback if B8's
+  quiet-machine region budget fails.
