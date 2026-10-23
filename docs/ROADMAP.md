@@ -103,6 +103,7 @@ Notes:
   `vanilla-26.3-blocks.txt` for style tests; gallery presets one file per
   type/style (`viewer/gallery-presets/`) with the `cutaway` camera. Gate pack
   numbers (168,000 cases, per-type timing and diversity): `docs/review/phase4/`.
+- Live-probe parity (P6 A1): `mod/src/test/.../probe/LiveProbeTest` compares `LiveProbes` with `fixtures/terrain/` dumps on the same columns (floor, water, biome) and the three chunk-fill methods with `getBaseColumn`; it runs in `:mod:test`, so a Minecraft bump shows at once whether the game still matches the reviewed dumps. Timing table: `LiveProbeTiming` (`-Dfb.timing=1`, heavy lock).
 
 - Added in Phase 6 (A3): `core/raster/` (`PieceRaster`, `Shapes`, `Variant`) and `RasterOwnershipTest` over real gate-city districts (one owner per cell, union equals the scene, same cells under any chunk clipping, door and stair facings; writes top-down pictures to `planner-core/build/raster/`); `cellhash.csv` shared by `VariantTest` and the viewer's `cellhash.test.ts`.
 ---

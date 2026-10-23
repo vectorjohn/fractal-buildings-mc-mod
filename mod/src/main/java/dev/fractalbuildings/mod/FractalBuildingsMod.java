@@ -12,5 +12,6 @@ public class FractalBuildingsMod implements ModInitializer {
 	@Override
 	public void onInitialize() {
 		LOGGER.info("Fractal Buildings loaded (planner core {})", Planner.version());
+		dev.fractalbuildings.mod.probe.ProbeInit.register();
 	}
 }

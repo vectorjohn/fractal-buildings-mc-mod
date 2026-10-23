@@ -8,6 +8,7 @@
 	"license": "MIT",
 	"icon": "assets/fractalbuildings/icon.png",
 	"environment": "*",
+	"mixins": ["fractalbuildings.mixins.json"],
 	"entrypoints": {
 		"main": ["dev.fractalbuildings.mod.FractalBuildingsMod"]
 	},
