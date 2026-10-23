@@ -299,3 +299,11 @@ port-tagged nodes.
      region layer falls back to the coarse screen, roads still read exact
      heights at their stations, because a deck cannot sit on a surface that
      may be 150 blocks off. Is that acceptable?
+
+<!--
+1. Make the span 24, then yes.
+2. yes
+3. yes
+4. I’ll wait for the screenshot
+-- @John
+-->
