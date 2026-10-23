@@ -120,6 +120,34 @@ public final class RegionPlanner {
 		return StrictMath.sqrt((double) best);
 	}
 
+	/**
+	 * N6: is there large water within {@link Tiers#PORT_REACH} of the centre, a water sample of the sparse lattice with a water
+	 * neighbour (a body at least one lattice step wide)? Reads the same lattice samples as the water search, through its cache.
+	 */
+	private boolean largeWaterNear(int x, int z, WaterCache cache) {
+		int step = Tiers.WATER_STEP, reach = Tiers.PORT_REACH;
+		long r2 = (long) reach * reach;
+		for (int gz = Math.floorDiv(z - reach, step); gz <= Math.floorDiv(z + reach, step) + 1; gz++) {
+			for (int gx = Math.floorDiv(x - reach, step); gx <= Math.floorDiv(x + reach, step) + 1; gx++) {
+				long dx = (long) gx * step - x, dz = (long) gz * step - z;
+				if (dx * dx + dz * dz > r2 || !latticeWater(gx, gz, cache)) continue;
+				for (int nz = -1; nz <= 1; nz++) {
+					for (int nx = -1; nx <= 1; nx++) if ((nx != 0 || nz != 0) && latticeWater(gx + nx, gz + nz, cache)) return true;
+				}
+			}
+		}
+		return false;
+	}
+
+	/** Water at a lattice sample: through the decision's cache when the sample lies in its span, else a direct read. */
+	private boolean latticeWater(int gx, int gz, WaterCache cache) {
+		int i = gx - cache.gx0, j = gz - cache.gz0;
+		if (i < 0 || j < 0 || i >= cache.n || j >= cache.n) return probe.water(gx * Tiers.WATER_STEP, gz * Tiers.WATER_STEP);
+		int k = cache.index(gx, gz);
+		if (cache.state[k] == 0) cache.state[k] = (byte) (probe.water(gx * Tiers.WATER_STEP, gz * Tiers.WATER_STEP) ? 2 : 1);
+		return cache.state[k] == 2;
+	}
+
 	/** Water lattice samples already probed for one decision: a flat array over every point a candidate can reach. */
 	private final class WaterCache {
 		final int gx0, gz0, n;
@@ -205,7 +233,8 @@ public final class RegionPlanner {
 		int fit = (int) Math.floor(0.95 * edge);
 		radius = Math.min(radius, fit);
 		return new CellDecision(cx, cz, siteX, siteZ, settled, reason, tier, bestX, bestZ, drawn, radius, fit, edge,
-			roll, chance, bestScore, siteScore, bestK, best.water, best.peak, best.groups, bestDw);
+			roll, chance, bestScore, siteScore, bestK, best.water, best.peak, best.groups, bestDw,
+			settled && biased && bestDw >= 0 && bestDw <= Tiers.PORT_REACH && largeWaterNear(bestX, bestZ, wcache));
 	}
 
 	/**

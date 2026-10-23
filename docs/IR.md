@@ -196,6 +196,7 @@ settlement { format: "fb-settlement/1", planVersion: 1, genVersion, seed: "<int6
   roads:     [{ id, kind, width, points: [[x, z]], bridges: [[i, j]] }],   kind: arterial|main|street|quay|lane|path (a `quay` is the waterfront promenade, width 4, TR 5.3);
                                                                            bridges: inclusive point-index ranges over water
   gates:     [{ id, kind, x, z, cells: [[cx, cz], [cx, cz]] | null, road: id | null }],   kind: cell|wall|exit
+  approaches: [{ id, kind, width, points: [[x, z]], bridges: [] }],   optional (written only when non-empty): from a required exit to a road port toward another settlement (ADR 0004 N5, ROADMAP 6.10), kind main|path, no bridges, the first point an exit gate, the last the port; ids k<cx>_<cz>_<n>
   landmarks: [{ id, kind, x, z, w, d, district }],   kind: square|market|green|park|temple|hall|tower
   walls:     [{ id, points: [[x, z]], closed: bool }],
   violations: [violation] }                           violation as in fb-scene/1

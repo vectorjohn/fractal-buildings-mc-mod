@@ -58,7 +58,7 @@ final class CityCommand {
 	static final int MAX_CELLS = 64;
 
 	static int run(String[] args) throws IOException {
-		Opts o = new Opts(args, Set.of("seed", "terrain", "cell", "site", "cell-size", "out-dir", "scene", "scenes"), Set.of("districts", "exterior", "interiors", "check"));
+		Opts o = new Opts(args, Set.of("seed", "terrain", "cell", "site", "cell-size", "out-dir", "scene", "scenes"), Set.of("districts", "exterior", "interiors", "check", "roads"));
 		long seed = o.longValue("seed");
 		Path dir = Path.of(o.require("out-dir"));
 		if (o.has("cell") == o.has("site")) throw new UsageException("give exactly one of --cell CX,CZ and --site X,Z,TIER,RADIUS");
@@ -74,7 +74,7 @@ final class CityCommand {
 		if (o.has("cell")) {
 			int[] a = ints(o.get("cell", null), 2, "--cell CX,CZ");
 			FieldRegionView fv = fieldView(field, p);
-			view = new FieldSiteView(fv, field);
+			view = new FieldSiteView(fv, field, o.flag("roads") ? roadNet(field, fv, p) : null);
 			if (!fv.decidable(a[0], a[1])) throw new UsageException("cell " + a[0] + "," + a[1] + " cannot be decided from this terrain window (its probe reach leaves the recorded area); " + WINDOW_HINT);
 			site = view.siteOf(new Cell(a[0], a[1])).orElseThrow(() -> new UsageException("cell " + a[0] + "," + a[1] + " belongs to no settlement"
 					+ (fv.covers(a[0], a[1]) ? "" : " (the terrain window is smaller than the join rule reads around the cell, so a neighbour that would claim it may be out of view; " + WINDOW_HINT + ")")));
@@ -161,6 +161,17 @@ final class CityCommand {
 	/** The region field with its join rule, limited to the recorded window when the terrain is a dump. */
 	static RegionView cellView(RegionField field, ProbeSpecs.Probes p) {
 		return new FieldSiteView(fieldView(field, p), field);
+	}
+
+	/** The road graph over the same field and window (ADR 0004): ports for required exits and approaches ({@code --roads}). */
+	static dev.fractalbuildings.core.road.RoadNet roadNet(RegionField field, FieldRegionView fv, ProbeSpecs.Probes p) {
+		RegionMap.Window w = null;
+		if (p.terrain() instanceof RecordedProbe r) {
+			int s = RegionProbe.STRIDE, x0 = Math.floorDiv(r.x0() + s - 1, s) * s, z0 = Math.floorDiv(r.z0() + s - 1, s) * s;
+			int x1 = Math.floorDiv(r.x0() + (r.nx() - 1) * r.step(), s) * s, z1 = Math.floorDiv(r.z0() + (r.nz() - 1) * r.step(), s) * s;
+			w = new RegionMap.Window(x0, z0, (x1 - x0) / s + 1, (z1 - z0) / s + 1);
+		}
+		return new dev.fractalbuildings.core.road.RoadNet(field, fv, w, RegionProbe.of(p.terrain(), p.biome()), p.terrain());
 	}
 
 	static FieldRegionView fieldView(RegionField field, ProbeSpecs.Probes p) {

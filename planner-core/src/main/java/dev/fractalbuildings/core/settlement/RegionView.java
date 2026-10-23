@@ -1,6 +1,8 @@
 package dev.fractalbuildings.core.settlement;
 
 import dev.fractalbuildings.core.region.RegionField;
+import dev.fractalbuildings.core.road.RoadPort;
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -13,4 +15,10 @@ public interface RegionView {
 
 	/** The settlement the cell is a member of (as claimant or joined cell), if any. */
 	Optional<SettlementSite> siteOf(Cell cell);
+
+	/**
+	 * Where the road links of a settlement meet it (ADR 0004 N5): the skeleton aims a required exit at each port and runs an approach to it.
+	 * None by default (a view without a road graph, a settlement with no links): the skeleton is then exactly what it was before roads.
+	 */
+	default List<RoadPort> ports(SettlementSite site) { return List.of(); }
 }

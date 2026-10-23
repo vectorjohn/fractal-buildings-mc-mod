@@ -60,6 +60,11 @@ public final class RegionMap {
 	}
 
 	public static String toJson(long seed, String mc, RegionProbe probe, Window w, List<Layer> layers) {
+		return toJson(seed, mc, probe, w, layers, null);
+	}
+
+	/** As above; a non-null {@code roadsJson} (see {@code RoadJson}) is written as the first layer's {@code roads} key. */
+	public static String toJson(long seed, String mc, RegionProbe probe, Window w, List<Layer> layers, String roadsJson) {
 		List<String> palette = new ArrayList<>();
 		List<Integer> biome = new ArrayList<>(), surface = new ArrayList<>(), water = new ArrayList<>();
 		for (int j = 0; j < w.nz(); j++) {
@@ -111,7 +116,7 @@ public final class RegionMap {
 					.append(",\"roll\":").append(f(c.roll())).append(",\"chance\":").append(f(c.chance()))
 					.append(",\"suitability\":").append(f(c.suitability())).append(",\"siteSuitability\":").append(f(c.siteSuitability()))
 					.append(",\"candidate\":").append(c.candidate()).append(",\"water\":").append(f(c.waterFrac()))
-					.append(",\"peak\":").append(f(c.peakFrac())).append(",\"waterDist\":").append(Math.round(c.waterDist())).append(",\"groups\":{");
+					.append(",\"peak\":").append(f(c.peakFrac())).append(",\"waterDist\":").append(Math.round(c.waterDist())).append(c.port() ? ",\"port\":true" : "").append(",\"groups\":{");
 				boolean first = true;
 				for (var e : c.groups().entrySet()) {
 					if (!first) sb.append(',');
@@ -133,7 +138,9 @@ public final class RegionMap {
 					sb.append('[').append(cx).append(',').append(cz).append(',').append(fld.siteX(cx, cz)).append(',').append(fld.siteZ(cx, cz)).append(']');
 				}
 			}
-			sb.append("]}");
+			sb.append("]");
+			if (li == 0 && roadsJson != null) sb.append(",\"roads\":").append(roadsJson);
+			sb.append("}");
 		}
 		sb.append("]}\n");
 		return sb.toString();

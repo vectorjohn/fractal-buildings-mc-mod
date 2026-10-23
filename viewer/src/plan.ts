@@ -3,7 +3,7 @@
 import { loadDump } from './regionmap';
 import {
   LAYER_IDS, LOT_SCALE, baseLayers, coarseRaster, districtAt, districtsToLoad, drawPlan, fitView, layersParam, lotAt, lotColour, pan,
-  parseLayers, showLots, terrainRaster, toWorld, zoomAt, ROAD_COLOUR, type DrawStats, type LayerId, type PlanView, type Raster,
+  parseLayers, showLots, terrainRaster, toWorld, zoomAt, ROAD_COLOUR, LINK_COLOUR, type DrawStats, type LayerId, type PlanView, type Raster,
 } from './planDraw';
 import { joinUrl, loadDistrict, loadSettlement, type District, type Settlement } from './settlement';
 
@@ -11,7 +11,7 @@ export interface PlanReady {
   ok: boolean; error?: string;
   /** Districts in the plan / loaded now / still loading. */
   districts: number; loaded: number; pending: number;
-  draws: number; lots: number; roads: number; lod: 'overview' | 'detail'; scale: number; lastDrawMs: number;
+  draws: number; lots: number; roads: number; links: number; lod: 'overview' | 'detail'; scale: number; lastDrawMs: number;
 }
 export interface PlanApi {
   setView(x: number, z: number, scale: number): void;
@@ -65,7 +65,7 @@ async function main(): Promise<void> {
   const failed = new Set<string>();
   let hover: { district: string | null; lot: string | null } = { district: null, lot: null };
   let selected: string | null = null;
-  let last: DrawStats = { draws: 0, lots: 0, districtsLoaded: 0, lod: 'overview', roads: 0 };
+  let last: DrawStats = { draws: 0, lots: 0, districtsLoaded: 0, lod: 'overview', roads: 0, links: 0 };
   let lastMs = 0;
   let queued = false;
 
@@ -89,7 +89,7 @@ async function main(): Promise<void> {
   const publish = (ok = true, error?: string): void => {
     window.__planReady = {
       ok, ...(error ? { error } : {}), districts: s.districts.length, loaded: districts.size, pending: inflight.size,
-      draws: last.draws, lots: last.lots, roads: last.roads, lod: last.lod, scale: view.scale, lastDrawMs: lastMs,
+      draws: last.draws, lots: last.lots, roads: last.roads, links: last.links, lod: last.lod, scale: view.scale, lastDrawMs: lastMs,
     };
   };
 
@@ -119,7 +119,7 @@ async function main(): Promise<void> {
   }
   document.getElementById('title')!.textContent = `${s.site.id} (${s.site.tier}), seed ${s.seed}`;
   const sw = (col: string): string => `<span class="sw" style="background:${col}"></span>`;
-  document.getElementById('legend')!.innerHTML = '<br><b>roads</b><br>' + Object.entries(ROAD_COLOUR).map(([k, col]) => `${sw(col)}${k}`).join('<br>') +
+  document.getElementById('legend')!.innerHTML = '<br><b>roads</b><br>' + Object.entries(ROAD_COLOUR).map(([k, col]) => `${sw(col)}${k}`).join('<br>') + `<br>${sw(LINK_COLOUR)}link approach (ring = road port)` +
     '<br><br><b>lots</b><br>' + ['house', 'shop', 'workshop', 'tower', 'block', 'highrise', 'hall', 'temple'].map((t) => `${sw(lotColour(t))}${t}`).join('<br>') +
     `<br><br>lots show from ${LOT_SCALE} px/block`;
 
@@ -208,5 +208,5 @@ async function main(): Promise<void> {
 
 main().catch((e: unknown) => {
   document.getElementById('info')!.textContent = String(e);
-  window.__planReady = { ok: false, error: String(e), districts: 0, loaded: 0, pending: 0, draws: 0, lots: 0, roads: 0, lod: 'overview', scale: 0, lastDrawMs: 0 };
+  window.__planReady = { ok: false, error: String(e), districts: 0, loaded: 0, pending: 0, draws: 0, lots: 0, roads: 0, links: 0, lod: 'overview', scale: 0, lastDrawMs: 0 };
 });

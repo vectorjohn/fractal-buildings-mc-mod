@@ -232,3 +232,14 @@ the fly camera, and `plan.png`, `<district>-overview.png`, `<district>-street.pn
 violation in the scenes, no page error; `roads-connected` is reported as a test annotation, not asserted.
 `FB_PLAN_LAYERS="-terrain,+mask,+density"` overrides the plan layers and `FB_PLAN_SUFFIX=-mask` names the file `plan-mask.png` (a second look at the same city). Presets `tr-coast`, `tr-river`, `tr-steep` (TR) are zoomed on a waterfront and a steep district; their pictures are in `docs/review/phase5/terrain/`.
 For a city or metropolis the plan test also writes `plan-height.png` (the `height` layer over the plain background). `node scripts/city-stats.mjs <preset>` (in `viewer/`, after `npm run city`) prints built lots by type, mean and top storeys per tenth of the radius. Presets `d3-metropolis-flat`, `d3-city-walled`, `d3-city-avenues` (D3) show a downtown skyline, an old-town wall with gates and diagonal avenues; their pictures are in `docs/review/phase5/d3/`.
+
+# Road layer (ROADMAP 6.10)
+
+**Region map.** A region dump whose first layer has a `roads` object (`fractal-cli roads --seed S --terrain recorded:fixtures/terrain/world-S-s64.json.gz --out FILE`, the core's `RoadJson`) gets a road
+layer in `region.html`: each link as a yellow line with a dark edge along its 8-block stations (width from the road's width, at least 2 px), single-span crossings over water in cyan, a white dot at the meeting
+point of each touching pair (rims under 128 apart: no road of their own), dropped pairs (no routable witness blocks them but no dry route exists, or no port) as red dashes between their ports or centres, and a white
+ring on settlements the region field tagged `port` (ADR 0004 N6; the dump's cells also carry `"port": true`). `&roads=0` hides the layer. The panel counts links, crossings, meeting points, dropped pairs
+and ports. Committed dumps: `viewer/fixtures/region/roads-12345.json.gz` and `roads-987654321.json.gz` (regenerate with the command above, then `gzip -9n`). `e2e/roads.spec.ts` writes `out/region/roads-<seed>.png`.
+
+**Plan view.** `plan.html` has a `links` layer (on by default, `&layers=-links` hides it): the approaches of a settlement skeleton (`approaches` in `settlement.json`) from each required exit (a white gate square) to
+its road port, in the link colour with a ring at the port. Fixtures: `viewer/fixtures/settlement/roads/` (`fractal-cli city --cell 2,1 --roads ...`, see its README). `e2e/roads.spec.ts` writes `out/plan/links-<name>.png`.

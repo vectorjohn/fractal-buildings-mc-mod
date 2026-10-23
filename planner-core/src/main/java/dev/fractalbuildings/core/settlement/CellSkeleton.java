@@ -10,7 +10,7 @@ import java.util.Objects;
  * no urban column. Ids of gates and landmarks are provisional; {@link Skeletons#assemble} numbers them.
  */
 public record CellSkeleton(Cell cell, CellOutline outline, CoarseRaster coarse, Pt hub, List<Road> roads, List<Gate> gates,
-		List<Landmark> landmarks, List<DistrictSummary> districts, List<Wall> walls) {
+		List<Landmark> landmarks, List<DistrictSummary> districts, List<Wall> walls, List<Road> approaches) {
 	public CellSkeleton {
 		Objects.requireNonNull(cell);
 		Objects.requireNonNull(outline);
@@ -20,5 +20,12 @@ public record CellSkeleton(Cell cell, CellOutline outline, CoarseRaster coarse, 
 		landmarks = List.copyOf(landmarks);
 		districts = List.copyOf(districts);
 		walls = List.copyOf(walls);
+		approaches = List.copyOf(approaches);
+	}
+
+	/** A skeleton without road links (no required exits, no approaches). */
+	public CellSkeleton(Cell cell, CellOutline outline, CoarseRaster coarse, Pt hub, List<Road> roads, List<Gate> gates,
+			List<Landmark> landmarks, List<DistrictSummary> districts, List<Wall> walls) {
+		this(cell, outline, coarse, hub, roads, gates, landmarks, districts, walls, List.of());
 	}
 }
