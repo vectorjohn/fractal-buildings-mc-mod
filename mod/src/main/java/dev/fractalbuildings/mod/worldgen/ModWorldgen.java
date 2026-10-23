@@ -30,10 +30,17 @@ public final class ModWorldgen {
 		Registry.register(BuiltInRegistries.STRUCTURE_PLACEMENT, id("districts"), DistrictPlacement.CODEC);
 		// the planner reads the world's pinned settings (B6): the saved data of the overworld, created from the config file on a new world
 		ServerLevelEvents.LOAD.register((server, level) -> {
-			if (level.dimension() == Level.OVERWORLD) WorldPlanners.pin(WorldConfigData.get(server).settings().world());
+			if (level.dimension() == Level.OVERWORLD) {
+				var s = WorldConfigData.get(server).settings();
+				WorldPlanners.pin(s.world());
+				WorldPlanners.setVeto(s.vetoVanillaVillages());
+			}
 		});
 		// planners hold their level's RandomState; let them go with the server
-		ServerLifecycleEvents.SERVER_STOPPED.register(server -> WorldPlanners.clear());
+		ServerLifecycleEvents.SERVER_STOPPED.register(server -> {
+			WorldPlanners.clear();
+			dev.fractalbuildings.mod.compat.BiomeAliases.clear();
+		});
 	}
 
 	private static Identifier id(String path) { return Identifier.fromNamespaceAndPath("fractalbuildings", path); }

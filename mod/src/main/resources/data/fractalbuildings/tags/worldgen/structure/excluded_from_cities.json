@@ -1,0 +1,11 @@
+{
+  "values": [
+    "#minecraft:village",
+    "minecraft:pillager_outpost",
+    "minecraft:desert_pyramid",
+    "minecraft:jungle_pyramid",
+    "minecraft:igloo",
+    "minecraft:swamp_hut",
+    "minecraft:mansion"
+  ]
+}

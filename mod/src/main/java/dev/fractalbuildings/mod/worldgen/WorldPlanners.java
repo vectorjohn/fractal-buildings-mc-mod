@@ -31,6 +31,8 @@ public final class WorldPlanners {
 	private static final Map<RandomState, Boolean> UNSUPPORTED = new ConcurrentHashMap<>();
 
 	private static volatile WorldPlanner override;
+	/** The world's pinned {@code vetoVanillaVillages}; true until the overworld's saved settings say otherwise. */
+	private static volatile boolean veto = true;
 	/** The world's pinned config (B6's saved data), set as the overworld loads; null until then. */
 	private static volatile WorldConfig pinned;
 	/** Where a new planner gets its config; tests replace it. */
@@ -58,7 +60,8 @@ public final class WorldPlanners {
 		return find(level.getChunkSource().randomState(), generator, level.getSeed());
 	}
 
-	private static Optional<WorldPlanner> find(RandomState rs, ChunkGenerator gen, long seed) {
+	/** The planner of a RandomState from any thread (also the structure veto's way in). */
+	public static Optional<WorldPlanner> find(RandomState rs, ChunkGenerator gen, long seed) {
 		WorldPlanner o = override;
 		if (o != null) return Optional.of(o);
 		WorldPlanner p = PLANNERS.get(rs);
@@ -86,6 +89,10 @@ public final class WorldPlanners {
 	/** The overworld loaded: its saved settings are the planner's config from now on. */
 	public static void pin(WorldConfig c) { pinned = c; }
 
+	public static void setVeto(boolean on) { veto = on; }
+
+	public static boolean vetoEnabled() { return veto; }
+
 	public static void setConfigSource(Supplier<WorldConfig> source) { config = source; }
 
 	/** Tests: back to reading the pinned config after {@link #setConfigSource}. */
@@ -97,6 +104,7 @@ public final class WorldPlanners {
 	public static void clear() {
 		PLANNERS.clear();
 		pinned = null;
+		veto = true;
 		UNSUPPORTED.clear();
 	}
 }

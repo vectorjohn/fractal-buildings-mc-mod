@@ -3,7 +3,10 @@
 	"minVersion": "0.8",
 	"package": "dev.fractalbuildings.mod.mixin",
 	"compatibilityLevel": "JAVA_25",
-	"mixins": [],
+	"mixins": [
+		"ChunkGeneratorMixin",
+		"StructureCheckMixin"
+	],
 	"injectors": {
 		"defaultRequire": 1
 	}
