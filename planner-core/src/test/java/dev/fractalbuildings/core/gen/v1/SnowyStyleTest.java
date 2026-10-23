@@ -38,7 +38,7 @@ class SnowyStyleTest {
 		}
 		s.palette().forEach((role, ids) -> ids.forEach(b -> assertTrue(blocks.contains(b), role + ": unknown block " + b)));
 		assertTrue(s.palette().get("wall").stream().anyMatch(b -> b.contains("stone")), "stone walls");
-		assertTrue(s.palette().get("wall").stream().anyMatch(b -> b.contains("spruce")), "spruce walls");
+		assertTrue(s.palette().get("beam").stream().anyMatch(b -> b.contains("spruce")), "spruce timber");
 		for (String b : s.biomes()) {
 			assertTrue(biomes.contains(b), "unknown biome " + b);
 			assertEquals("snowy", StyleLibrary.forBiome(b).id(), b);

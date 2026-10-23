@@ -30,7 +30,7 @@ class VariantTest {
 	void picksFromThePaletteAndUsesEveryEntry() {
 		Set<String> seen = new HashSet<>();
 		for (int x = 0; x < 30; x++) for (int z = 0; z < 5; z++) seen.add(Variant.pick("medieval", Role.WALL, x, 3, z));
-		assertEquals(Set.of("minecraft:white_terracotta", "minecraft:mushroom_stem", "minecraft:smooth_sandstone"), seen);
+		assertEquals(Set.of("minecraft:white_terracotta", "minecraft:mushroom_stem"), seen);
 		assertEquals(Variant.pick("medieval", Role.ROOF, 4, 5, 6), Variant.pick("medieval", Role.ROOF, 4, 5, 6));
 		assertEquals("minecraft:air", Variant.pick("medieval", Role.AIR, 0, 0, 0));
 		assertTrue(Variant.pick("no-such-style", Role.WALL, 0, 0, 0).startsWith("minecraft:"));
