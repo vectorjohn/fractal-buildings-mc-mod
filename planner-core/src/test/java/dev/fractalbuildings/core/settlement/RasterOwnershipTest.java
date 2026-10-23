@@ -63,7 +63,7 @@ class RasterOwnershipTest {
 		return Box3.of(x0 - 2, y0 - 2, z0 - 2, x1 - x0 + 4, y1 - y0 + 4, z1 - z0 + 4);
 	}
 
-	static List<SceneDoc> scenes(int perCity, Object[]... gates) throws Exception {
+	static List<SceneDoc> scenes(boolean exterior, int perCity, Object[]... gates) throws Exception {
 		List<SceneDoc> out = new ArrayList<>();
 		for (Object[] g : gates) {
 			TerrainProbe[] ex = new TerrainProbe[1];
@@ -74,23 +74,31 @@ class RasterOwnershipTest {
 			ds.sort((a, b) -> b.lots().size() - a.lots().size());
 			for (int i = 0; i < Math.min(perCity, ds.size()); i++) {
 				DistrictPlan f = Briefs.fill(ds.get(i), QuarterKind.values()[ds.get(i).district().quarter()], styles, ex[0]);
-				out.add(DistrictScenes.build(f, city.landmarks().getOrDefault(f.district().id(), List.of()), ex[0], biome, true).scene());
+				out.add(DistrictScenes.build(f, city.landmarks().getOrDefault(f.district().id(), List.of()), ex[0], biome, exterior).scene());
 			}
 		}
 		return out;
 	}
 
-	static List<SceneDoc> cache;
+	static final Map<Boolean, List<SceneDoc>> cache = new HashMap<>();
 
-	static synchronized List<SceneDoc> scenes() throws Exception {
-		if (cache == null) cache = scenes(3, WaterfrontTest.GATES[0], WaterfrontTest.GATES[2]);
-		return cache;
+	/** Full interiors (doors, stairs, rooms). */
+	static List<SceneDoc> scenes() throws Exception { return scenes(false); }
+
+	static synchronized List<SceneDoc> scenes(boolean exterior) throws Exception {
+		if (!cache.containsKey(exterior)) cache.put(exterior, scenes(exterior, 3, WaterfrontTest.GATES[0], WaterfrontTest.GATES[2]));
+		return cache.get(exterior);
 	}
 
 	@Test
-	void everyCellHasOneOwnerAndTheUnionIsTheScene() throws Exception {
-		int cells = 0, bCells = 0, gCells = 0, bAir = 0, yielded = 0, bbOverlap = 0;
-		for (SceneDoc s : scenes()) {
+	void everyCellHasOneOwnerWithInteriors() throws Exception { ownership(false); }
+
+	@Test
+	void everyCellHasOneOwnerExteriorOnly() throws Exception { ownership(true); }
+
+	void ownership(boolean exterior) throws Exception {
+		int roomAir = 0, cells = 0, bCells = 0, gCells = 0, bAir = 0, yielded = 0, bbOverlap = 0;
+		for (SceneDoc s : scenes(exterior)) {
 			Map<Long, Cell> m = rasterScene(s, hull(s), null);
 			// independent expectation: buildings by VoxelGrid (the first building wins an overlap), ground by brute force
 			Map<Long, Role> bSolid = new HashMap<>();
@@ -128,9 +136,19 @@ class RasterOwnershipTest {
 				if (c == null) fail("gap: ground cell " + e.getKey() + " has no owner");
 				if (!c.owner().equals("ground")) yielded++;
 			}
+			for (PlacedBuilding b : s.buildings())
+				for (var room : b.shell().rooms())
+					for (Box3 part : room.parts()) {
+						Box3 q = b.placement().toWorld(part);
+						for (int y = q.y(); y < q.maxY(); y++) for (int z = q.z(); z < q.maxZ(); z++) for (int x = q.x(); x < q.maxX(); x++) {
+							Cell c = m.get(key(x, y, z));
+							assertTrue(c != null && !c.owner().equals("ground"), "room cell " + x + "," + y + "," + z + " of " + b.id() + " not building-owned");
+							if (c.role() == Role.AIR) roomAir++;
+						}
+					}
 			cells += m.size();
 		}
-		System.out.println("raster: " + scenes().size() + " districts, " + cells + " cells (" + bCells + " building incl. " + bAir + " air clears, " + gCells + " ground), " + yielded + " ground cells yielded to buildings");
+		System.out.println("raster (" + (exterior ? "exterior" : "interiors") + "): " + roomAir + " room air cells counted, " + scenes(exterior).size() + " districts, " + cells + " cells (" + bCells + " building incl. " + bAir + " air clears, " + gCells + " ground), " + yielded + " ground cells yielded to buildings");
 		assertTrue(bCells > 20000 && gCells > 20000, bCells + " building, " + gCells + " ground cells");
 	}
 
