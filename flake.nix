@@ -47,6 +47,7 @@
               pkgs.nodejs # viewer/ (TypeScript + three.js); npm comes with it
               pkgs.playwright-driver.browsers # Chromium for viewer screenshots (see PLAYWRIGHT_* below)
               pkgs.silverbullet # for viewing markdown files locally
+              pkgs.imagemagick # `import -window root` screenshots of Xvfb (scripts/server-only-test.sh)
             ];
 
             # Playwright: browsers come from nixpkgs, so the npm `playwright` / `@playwright/test` version in

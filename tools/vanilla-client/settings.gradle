@@ -1,0 +1,11 @@
+// Standalone build (NOT part of the root build): a Minecraft client with Fabric Loader only,
+// no Fabric API and no fractalbuildings. Used by scripts/server-only-test.sh as the "unmodded"
+// client. Run with: ./gradlew -p tools/vanilla-client runClient
+pluginManagement {
+	repositories {
+		maven { name = 'Fabric'; url = 'https://maven.fabricmc.net/' }
+		mavenCentral()
+		gradlePluginPortal()
+	}
+}
+rootProject.name = 'vanilla-client'

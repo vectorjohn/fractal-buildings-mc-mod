@@ -11,6 +11,15 @@ base {
 version = "${project.version}+${project.minecraft_version}"
 
 loom {
+	runs {
+		// Dedicated server for scripts/server-only-test.sh (own run dir; the script writes
+		// server.properties and eula.txt there, see docs/research/spikes/server-only.md).
+		serverOnly {
+			server()
+			runDir "build/run/serverOnly"
+			ideConfigGenerated false
+		}
+	}
 	mods {
 		"${project.mod_id}" {
 			sourceSet sourceSets.main

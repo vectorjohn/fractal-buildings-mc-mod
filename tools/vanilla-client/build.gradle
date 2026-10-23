@@ -1,0 +1,18 @@
+plugins {
+	id 'net.fabricmc.fabric-loom' version "${loom_version}"
+}
+
+dependencies {
+	minecraft "com.mojang:minecraft:${project.minecraft_version}"
+	implementation "net.fabricmc:fabric-loader:${project.loader_version}"
+}
+
+loom {
+	runs {
+		client {
+			// Joins straight away; port is passed by the script via -PserverPort.
+			programArgs "--quickPlayMultiplayer", "127.0.0.1:${findProperty('serverPort') ?: '25599'}"
+			programArgs "--username", "Vanilla"
+		}
+	}
+}
