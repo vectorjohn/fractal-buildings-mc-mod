@@ -30,6 +30,12 @@ public interface SkeletonSource {
 	 */
 	default RoadNetwork network() { return RoadNetwork.build(this); }
 
+	/**
+	 * The heights at which the settlement's whole streets meet ({@link JunctionField}), over the given exact terrain. This default builds
+	 * it on every call; sources that serve many tiles memoise it (per probe).
+	 */
+	default JunctionField junctions(dev.fractalbuildings.core.probe.TerrainProbe exact) { return JunctionField.build(this, exact); }
+
 	/** Builds skeletons directly from a coarse probe, once per cell. */
 	final class Direct implements SkeletonSource {
 		private final long seed;
@@ -98,6 +104,20 @@ public interface SkeletonSource {
 				}
 			}
 			return n;
+		}
+
+		private volatile Object[] junctions;
+
+		/** Built once per exact probe, by the first thread that asks (as {@link #network}). */
+		@Override public JunctionField junctions(dev.fractalbuildings.core.probe.TerrainProbe exact) {
+			Object[] j = junctions;
+			if (j == null || j[0] != exact) {
+				synchronized (this) {
+					j = junctions;
+					if (j == null || j[0] != exact) junctions = j = new Object[] {exact, JunctionField.build(this, exact)};
+				}
+			}
+			return (JunctionField) j[1];
 		}
 	}
 }

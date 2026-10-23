@@ -13,9 +13,14 @@ import java.util.TreeSet;
  * @param maxRadius largest settlement radius a metropolis may draw, blocks
  * @param styles the enabled style ids; empty means all of them. A lot whose style is disabled is built as {@code plain}
  * @param genVersion the generator version the world was created with (carried in plans; the planner builds with the current one)
+ * @param intercityRoads whether settlements are linked by roads (ADR 0004). Off: no road graph, no approaches, no road feature
  */
-public record WorldConfig(int cellSize, double frequency, int maxRadius, Set<String> styles, int genVersion) {
+public record WorldConfig(int cellSize, double frequency, int maxRadius, Set<String> styles, int genVersion, boolean intercityRoads) {
 	public static final int DEFAULT_CELL_SIZE = 1024;
+
+	public WorldConfig(int cellSize, double frequency, int maxRadius, Set<String> styles, int genVersion) {
+		this(cellSize, frequency, maxRadius, styles, genVersion, true);
+	}
 
 	public WorldConfig {
 		if (cellSize < 256 || cellSize > 65536) throw new IllegalArgumentException("cellSize " + cellSize);
@@ -28,6 +33,9 @@ public record WorldConfig(int cellSize, double frequency, int maxRadius, Set<Str
 	public static WorldConfig defaults() {
 		return new WorldConfig(DEFAULT_CELL_SIZE, 1.0, dev.fractalbuildings.core.region.Tiers.DEFAULT_MAX_RADIUS, Set.of(), GeneratorV1.GEN_VERSION);
 	}
+
+	/** The same config with the road switch set (test fixtures that pin a settlement's layout switch the roads off). */
+	public WorldConfig withIntercityRoads(boolean on) { return new WorldConfig(cellSize, frequency, maxRadius, styles, genVersion, on); }
 
 	public boolean styleEnabled(String style) { return styles.isEmpty() || styles.contains(style); }
 }

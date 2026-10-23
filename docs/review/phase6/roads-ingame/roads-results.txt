@@ -1,0 +1,58 @@
+routes near the origin: 4
+relief EdgeKey[a=CellKey[cx=1, cz=-4], b=CellKey[cx=2, cz=-2]] length 634 stations 81 (0 in the corridor) crossings 0 ports [1280, -3200] [1664, -2880]
+bridge EdgeKey[a=CellKey[cx=2, cz=-2], b=CellKey[cx=4, cz=-1]] length 1292 stations 163 (84 in the corridor) crossings 1 ports [3328, -1280] [4288, -704]
+asc picked in 4 ms, corridor 168 chunks, loadavg 2.24 7.64 13.54 3/4224 1098883
+asc generated 168 chunks in 8590 ms
+read back: 2846 road columns, 2826 on the ledger and 2826 equal to it, 2826 with a solid deck block, 0 over water (0 outside a crossing), 0 with a block in the 3 above, 0 inside a settlement
+blocks in the 3 above the deck: {block.minecraft.birch_leaves=1, block.minecraft.brown_mushroom=1, block.minecraft.leaf_litter=40, block.minecraft.lilac=2, block.minecraft.oak_leaves=49, block.minecraft.oak_log=3, block.minecraft.oxeye_daisy=11, block.minecraft.poppy=34, block.minecraft.short_grass=61, block.minecraft.spruce_leaves=182, block.minecraft.spruce_log=14, block.minecraft.sweet_berry_bush=1, block.minecraft.tall_grass=3, block.minecraft.wildflowers=41}
+road columns the feature did not draw (a foreign structure or a district has them): 20, e.g. [4137,-1054, 4137,-1053, 4138,-1053, 4137,-1052, 4138,-1052]; foreign structures seen: [minecraft:ancient_city, minecraft:mineshaft, minecraft:abandoned_camp_forest]
+asc digest bc7306a30c91a83fae65cb8d3b4ad1c32c5e374947059dd9979d6be9546f6748 (42127 cells); road chunks 89, blocks 22610, feature mean 0.58 ms, slowest 10.1 ms (load 2.13 7.44 13.41 4/4226 1098952)
+asc feature calls 587 (all chunks): mean 22.434 ms
+routes near the origin: 4
+relief EdgeKey[a=CellKey[cx=1, cz=-4], b=CellKey[cx=2, cz=-2]] length 634 stations 81 (0 in the corridor) crossings 0 ports [1280, -3200] [1664, -2880]
+bridge EdgeKey[a=CellKey[cx=2, cz=-2], b=CellKey[cx=4, cz=-1]] length 1292 stations 163 (84 in the corridor) crossings 1 ports [3328, -1280] [4288, -704]
+desc picked in 0 ms, corridor 168 chunks, loadavg 2.58 7.18 13.20 6/4216 1099044
+desc generated 168 chunks in 8124 ms
+desc digest bc7306a30c91a83fae65cb8d3b4ad1c32c5e374947059dd9979d6be9546f6748 (42127 cells); road chunks 89, blocks 22610, feature mean 24.70 ms, slowest 2171.3 ms (load 2.53 7.10 13.14 2/4214 1099098)
+desc feature calls 587 (all chunks): mean 22.160 ms
+routes near the origin: 4
+relief EdgeKey[a=CellKey[cx=1, cz=-4], b=CellKey[cx=2, cz=-2]] length 634 stations 81 (0 in the corridor) crossings 0 ports [1280, -3200] [1664, -2880]
+bridge EdgeKey[a=CellKey[cx=2, cz=-2], b=CellKey[cx=4, cz=-1]] length 1292 stations 163 (84 in the corridor) crossings 1 ports [3328, -1280] [4288, -704]
+shuffled picked in 0 ms, corridor 168 chunks, loadavg 2.16 6.72 12.88 5/4188 1099197
+shuffled generated 168 chunks in 7135 ms
+shuffled digest bc7306a30c91a83fae65cb8d3b4ad1c32c5e374947059dd9979d6be9546f6748 (42127 cells); road chunks 89, blocks 22610, feature mean 19.61 ms, slowest 1719.7 ms (load 2.23 6.66 12.83 3/4192 1099224)
+shuffled feature calls 587 (all chunks): mean 22.439 ms
+routes near the origin: 4
+relief EdgeKey[a=CellKey[cx=1, cz=-4], b=CellKey[cx=2, cz=-2]] length 634 stations 81 (0 in the corridor) crossings 0 ports [1280, -3200] [1664, -2880]
+bridge EdgeKey[a=CellKey[cx=2, cz=-2], b=CellKey[cx=4, cz=-1]] length 1292 stations 163 (84 in the corridor) crossings 1 ports [3328, -1280] [4288, -704]
+shuffled-evicting picked in 0 ms, corridor 168 chunks, loadavg 1.89 6.29 12.58 2/4178 1099327
+shuffled-evicting generated 168 chunks in 8446 ms
+shuffled-evicting digest bc7306a30c91a83fae65cb8d3b4ad1c32c5e374947059dd9979d6be9546f6748 (42127 cells); road chunks 89, blocks 22610, feature mean 42.19 ms, slowest 1761.9 ms (load 2.71 6.33 12.52 2/4194 1099368)
+shuffled-evicting feature calls 587 (all chunks): mean 24.818 ms
+terrace chunk 235,-83 in meadow
+terrace columns in the chosen chunk: 131 at chunk 235,-83
+screenshot road-bridge-along at 3420,-1304
+screenshot road-bridge-side at 3420,-1304
+screenshot road-terrace-along at 3764,-1315
+screenshot road-terrace-side at 3764,-1315
+screenshot road-country-along at 1474,-3130
+screenshot road-country-side at 1474,-3130
+routes near the origin: 4
+relief EdgeKey[a=CellKey[cx=1, cz=-4], b=CellKey[cx=2, cz=-2]] length 634 stations 81 (0 in the corridor) crossings 0 ports [1280, -3200] [1664, -2880]
+bridge EdgeKey[a=CellKey[cx=2, cz=-2], b=CellKey[cx=4, cz=-1]] length 1292 stations 163 (84 in the corridor) crossings 1 ports [3328, -1280] [4288, -704]
+mutant-asc picked in 1 ms, corridor 168 chunks, loadavg 4.90 6.58 12.32 2/4216 1099658
+mutant-asc generated 168 chunks in 7973 ms
+mutant-asc digest dd7fa5fbac942437fab6b8da60c21ffbd605b60476177c687cd7f61bc56c62bc (51192 cells); road chunks 95, blocks 29168, feature mean 0.34 ms, slowest 1.0 ms (load 4.45 6.42 12.21 2/4168 1099670)
+mutant-asc feature calls 587 (all chunks): mean 22.246 ms
+routes near the origin: 4
+relief EdgeKey[a=CellKey[cx=1, cz=-4], b=CellKey[cx=2, cz=-2]] length 634 stations 81 (0 in the corridor) crossings 0 ports [1280, -3200] [1664, -2880]
+bridge EdgeKey[a=CellKey[cx=2, cz=-2], b=CellKey[cx=4, cz=-1]] length 1292 stations 163 (84 in the corridor) crossings 1 ports [3328, -1280] [4288, -704]
+mutant-shuffled picked in 1 ms, corridor 168 chunks, loadavg 3.68 6.16 12.03 1/4207 1099789
+mutant-shuffled generated 168 chunks in 7242 ms
+mutant-shuffled digest d684ff41c04fc25d03f7c1ea1014d2f0813f7bebfecc2668553bdcd55d440d3e (50405 cells); road chunks 95, blocks 28722, feature mean 36.07 ms, slowest 1734.2 ms (load 3.27 5.99 11.91 2/4176 1099807)
+mutant-shuffled feature calls 587 (all chunks): mean 22.280 ms
+foreign structures seen near the roads: [minecraft:ancient_city, minecraft:village_plains, minecraft:mineshaft, minecraft:abandoned_camp_forest]
+DIGESTS {asc=bc7306a30c91a83fae65cb8d3b4ad1c32c5e374947059dd9979d6be9546f6748 (42127 cells), desc=bc7306a30c91a83fae65cb8d3b4ad1c32c5e374947059dd9979d6be9546f6748 (42127 cells), mutant-asc=dd7fa5fbac942437fab6b8da60c21ffbd605b60476177c687cd7f61bc56c62bc (51192 cells), mutant-shuffled=d684ff41c04fc25d03f7c1ea1014d2f0813f7bebfecc2668553bdcd55d440d3e (50405 cells), shuffled=bc7306a30c91a83fae65cb8d3b4ad1c32c5e374947059dd9979d6be9546f6748 (42127 cells), shuffled-evicting=bc7306a30c91a83fae65cb8d3b4ad1c32c5e374947059dd9979d6be9546f6748 (42127 cells)}
+columns that differ between asc and desc: 0 of 6962
+columns that differ between asc and shuffled: 0 of 6962
+columns that differ between asc and shuffled-evicting: 0 of 6962

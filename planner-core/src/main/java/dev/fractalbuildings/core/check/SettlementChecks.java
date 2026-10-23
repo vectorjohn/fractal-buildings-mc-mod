@@ -10,6 +10,7 @@ import dev.fractalbuildings.core.probe.TerrainProbe;
 import dev.fractalbuildings.core.region.RegionField;
 import dev.fractalbuildings.core.settlement.Cell;
 import dev.fractalbuildings.core.settlement.CellGeometry;
+import dev.fractalbuildings.core.settlement.DistrictInfo;
 import dev.fractalbuildings.core.settlement.CellSkeleton;
 import dev.fractalbuildings.core.settlement.DistrictPlan;
 import dev.fractalbuildings.core.settlement.Gate;
@@ -567,6 +568,167 @@ public final class SettlementChecks {
 	}
 
 	private static long key(int ix, int iz) { return ((long) ix << 32) ^ (iz & 0xffffffffL); }
+
+	// ---- street junction heights (JUNCTION)
+
+	/** Whole-city rule: where two different streets share ground (one ends on the other, or they cross) their surfaces differ by at most {@link #JUNCTION_STEP}. */
+	public static final String JUNCTION_HEIGHT = "junction-height";
+	public static final int JUNCTION_STEP = 1;
+
+	/**
+	 * One pair of streets whose footprints overlap, with the first cell more than {@link #JUNCTION_STEP} apart.
+	 *
+	 * @param a the street with the smaller id, b the other
+	 * @param cells overlapping footprint cells, bad of them more than {@link #JUNCTION_STEP} apart
+	 * @param maxDiff the largest difference
+	 */
+	public record Junction(String a, RoadKind ka, String b, RoadKind kb, int cells, int bad, int maxDiff, int x, int z, int ya, int yb) {}
+
+	/** Surface level of each footprint cell of a street ({@code (z << 32) + x} to y): the first centre-line column to claim a cell gives its height, as the grader does. */
+	static java.util.Map<Long, Integer> streetCells(Street s) { return streetCells(s, null, null); }
+
+	/**
+	 * {@link #streetCells(Street)}, and in {@code ends} the cells that the street's first or last {@code width / 2 + 1} columns claim (its end
+	 * faces), leaving out an end that lies on the edge of the window a tile keeps its streets in ({@code tile}, widened by
+	 * {@code Districts.MARGIN}): there the street goes on in the neighbouring tile.
+	 */
+	static java.util.Map<Long, Integer> streetCells(Street s, java.util.Set<Long> ends, DistrictInfo tile) {
+		List<Pt> ps = s.points();
+		List<long[]> cols = new ArrayList<>();
+		int[] ys = s.y();
+		int w = s.width(), h = w / 2;
+		java.util.Map<Long, Integer> cells = new java.util.TreeMap<>();
+		for (int p = 0; p < ps.size(); p++) {
+			int n = 0, dx = 0, dz = 0;
+			if (p > 0) {
+				dx = ps.get(p).x() - ps.get(p - 1).x();
+				dz = ps.get(p).z() - ps.get(p - 1).z();
+				n = Math.max(Math.abs(dx), Math.abs(dz));
+			}
+			for (int k = p == 0 ? 0 : 1; k <= n; k++) {
+				int cx, cz, y;
+				if (p == 0) { cx = ps.get(0).x(); cz = ps.get(0).z(); y = ys[0]; }
+				else {
+					cx = ps.get(p - 1).x() + (int) Math.floorDiv(2L * dx * k + n, 2L * n);
+					cz = ps.get(p - 1).z() + (int) Math.floorDiv(2L * dz * k + n, 2L * n);
+					y = ys[p - 1] + (int) Math.floorDiv((long) (ys[p] - ys[p - 1]) * k, n);
+				}
+				cols.add(new long[] {cx, cz, y});
+			}
+		}
+		int n = cols.size(), e = h + 1;
+		boolean headEnd = ends != null && !onWindowEdge(cols.get(0), tile), tailEnd = ends != null && !onWindowEdge(cols.get(n - 1), tile);
+		for (int i = 0; i < n; i++) {
+			long[] c = cols.get(i);
+			boolean end = (headEnd && i < e) || (tailEnd && i >= n - e);
+			for (int oz = 0; oz < w; oz++) {
+				for (int ox = 0; ox < w; ox++) {
+					long k = ((c[1] - h + oz) << 32) | ((c[0] - h + ox) & 0xffffffffL);
+					if (cells.putIfAbsent(k, (int) c[2]) == null && end) ends.add(k);
+				}
+			}
+		}
+		return cells;
+	}
+
+	/** The column lies on the edge of the tile's street window (tile plus {@code Districts.MARGIN} = 8), where district detail clips its streets. */
+	private static boolean onWindowEdge(long[] c, DistrictInfo t) {
+		if (t == null) return false;
+		int m = 8;
+		return c[0] <= t.x() - m || c[0] >= t.x() + t.w() - 1 + m || c[1] <= t.z() - m || c[1] >= t.z() + t.d() - 1 + m;
+	}
+
+	/**
+	 * Every pair of streets in the plans whose footprints overlap, or touch where one of them ends (its end face against the other's side or end),
+	 * in id order. Each cell is judged in the plan of the tile that builds
+	 * it: a tile's ground is clipped to the tile ({@code Pieces.ground}), so the part of a street piece that lies in a neighbour's
+	 * ground (the margin a tile keeps its streets in) is built by the neighbour, from the neighbour's plan, and is never compared.
+	 */
+	public static List<Junction> junctions(java.util.Collection<DistrictPlan> plans) {
+		List<DistrictPlan> sorted = new ArrayList<>(plans);
+		sorted.sort(java.util.Comparator.comparing((DistrictPlan p) -> p.district().id()));
+		java.util.TreeMap<String, Junction> by = new java.util.TreeMap<>();
+		for (DistrictPlan p : sorted) {
+			java.util.Map<Long, List<Object[]>> at = new java.util.TreeMap<>(); // cell of this tile -> {street id, kind, y, end face}
+			var t = p.district();
+			for (Street s : p.streets()) {
+				java.util.Set<Long> ends = new java.util.TreeSet<>();
+				java.util.Map<Long, Integer> mine = streetCells(s, ends, t);
+				for (var e : mine.entrySet()) {
+					int x = (int) (long) e.getKey(), z = (int) (e.getKey() >> 32);
+					if (x < t.x() || z < t.z() || x >= t.x() + t.w() || z >= t.z() + t.d()) continue;
+					List<Object[]> here = at.computeIfAbsent(e.getKey(), k -> new ArrayList<>(2));
+					int y = e.getValue();
+					boolean dup = false;
+					for (Object[] o : here) {
+						String oid = (String) o[0];
+						// a cell two pieces of one whole street cover is built by the first ({@code DistrictScenes.ground})
+						if (oid.equals(s.id()) || wholeStreet(oid).equals(wholeStreet(s.id()))) { dup = true; break; }
+					}
+					if (dup) continue;
+					for (Object[] o : here) meet(by, (String) o[0], (RoadKind) o[1], (Integer) o[2], s.id(), s.kind(), y, x, z);
+					here.add(new Object[] {s.id(), s.kind(), y, ends.contains(e.getKey())});
+				}
+			}
+			// a street that ends against another street's side (footprints touching across one cell edge, not overlapping) meets it there too
+			for (var e : at.entrySet()) {
+				int x = (int) (long) e.getKey(), z = (int) (e.getKey() >> 32);
+				for (int[] d : new int[][] {{1, 0}, {0, 1}}) {
+					List<Object[]> nb = at.get(((long) (z + d[1]) << 32) | ((x + d[0]) & 0xffffffffL));
+					if (nb == null) continue;
+					for (Object[] a : e.getValue()) {
+						for (Object[] b : nb) {
+							if (!((Boolean) a[3] || (Boolean) b[3])) continue;
+							String ia = (String) a[0], ib = (String) b[0];
+							if (wholeStreet(ia).equals(wholeStreet(ib)) || covers(e.getValue(), ib) || covers(nb, ia)) continue; // overlapping: compared above
+							meet(by, ia, (RoadKind) a[1], (Integer) a[2], ib, (RoadKind) b[1], (Integer) b[2], x, z);
+						}
+					}
+				}
+			}
+		}
+		return new ArrayList<>(by.values());
+	}
+
+	private static boolean covers(List<Object[]> cell, String id) {
+		for (Object[] o : cell) if (wholeStreet((String) o[0]).equals(wholeStreet(id))) return true;
+		return false;
+	}
+
+	/** Records one compared cell of the pair of streets. */
+	private static void meet(java.util.TreeMap<String, Junction> by, String oid, RoadKind ok, int oy, String id, RoadKind k, int y, int x, int z) {
+		boolean first = oid.compareTo(id) < 0;
+		String ida = first ? oid : id, idb = first ? id : oid;
+		RoadKind ka = first ? ok : k, kb = first ? k : ok;
+		int ya = first ? oy : y, yb = first ? y : oy;
+		String key = ida + "|" + idb;
+		Junction j = by.get(key);
+		int d = Math.abs(ya - yb);
+		boolean isBad = d > JUNCTION_STEP;
+		if (j == null) by.put(key, new Junction(ida, ka, idb, kb, 1, isBad ? 1 : 0, d, x, z, ya, yb));
+		else if (!isBad) by.put(key, new Junction(ida, ka, idb, kb, j.cells() + 1, j.bad(), j.maxDiff(), j.x(), j.z(), j.ya(), j.yb()));
+		else if (j.bad() == 0) by.put(key, new Junction(ida, ka, idb, kb, j.cells() + 1, 1, d, x, z, ya, yb));
+		else by.put(key, new Junction(ida, ka, idb, kb, j.cells() + 1, j.bad() + 1, Math.max(d, j.maxDiff()), j.x(), j.z(), j.ya(), j.yb()));
+	}
+
+	/** The whole street a street piece belongs to: its id less a {@code .N} piece suffix (district detail names the pieces of a street cut by a square {@code r}, {@code r.1}, ...). */
+	public static String wholeStreet(String id) {
+		int dot = id.lastIndexOf('.');
+		if (dot < 0 || dot == id.length() - 1) return id;
+		for (int i = dot + 1; i < id.length(); i++) if (!Character.isDigit(id.charAt(i))) return id;
+		return id.substring(0, dot);
+	}
+
+	/** {@code junction-height}: one violation per pair of streets with a cell more than {@link #JUNCTION_STEP} apart. */
+	public static List<Violation> cityJunctionHeights(java.util.Collection<DistrictPlan> plans) {
+		List<Violation> out = new ArrayList<>();
+		for (Junction j : junctions(plans)) {
+			if (j.bad() == 0) continue;
+			out.add(new Violation(JUNCTION_HEIGHT, null, "streets " + j.a() + " (" + j.ka().json + ") and " + j.b() + " (" + j.kb().json + ") meet at " + j.x() + "," + j.z() + " with surfaces " + j.ya() + " and " + j.yb()
+					+ " (" + j.bad() + " of " + j.cells() + " shared cells more than " + JUNCTION_STEP + " apart, up to " + j.maxDiff() + ")", List.of(new Box3(j.x(), Math.min(j.ya(), j.yb()), j.z(), 1, Math.abs(j.ya() - j.yb()) + 1, 1))));
+		}
+		return out;
+	}
 
 
 	private static Violation v(String id, String msg, int x, int z, int w, int d) {

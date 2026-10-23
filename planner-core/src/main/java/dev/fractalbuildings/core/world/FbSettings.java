@@ -64,7 +64,7 @@ public record FbSettings(WorldConfig world, boolean villagers, boolean vetoVanil
 			}
 			if (s instanceof List<?> l && !l.isEmpty() && styles.isEmpty()) warn.accept("no known style listed; enabling every style");
 		}
-		return new FbSettings(new WorldConfig(cc, freq, radius, styles, GeneratorV1.GEN_VERSION),
+		return new FbSettings(new WorldConfig(cc, freq, radius, styles, GeneratorV1.GEN_VERSION, bool(m, "intercityRoads", w.intercityRoads(), warn)),
 				bool(m, "villagers", d.villagers(), warn), bool(m, "vetoVanillaVillages", d.vetoVanillaVillages(), warn));
 	}
 
@@ -95,6 +95,7 @@ public record FbSettings(WorldConfig world, boolean villagers, boolean vetoVanil
 				.raw("villagers", Boolean.toString(villagers))
 				.raw("vetoVanillaVillages", Boolean.toString(vetoVanillaVillages))
 				.num("cellSize", world.cellSize())
+				.raw("intercityRoads", Boolean.toString(world.intercityRoads()))
 				.build();
 	}
 }

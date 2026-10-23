@@ -52,6 +52,8 @@ public final class RoadNet {
 	public static final int FOOT_MARGIN = 32;
 	/** No road column lies farther than this from the nearer port of its link (bounds a chunk's read, RC). */
 	public static final int CORRIDOR = 3000;
+	/** How far a road column may lie outside its route's search band box: the shaped curve bulges by up to 32 blocks and a column reaches half the width (at most 4) further. A cell keeps a link when this grown box meets it. */
+	public static final int BAND_SLACK = 40;
 	/** Largest height difference between lattice nodes the string-pull accepts per 64 blocks (1 in 4). */
 	private static final int PULL_STEP = 16;
 
@@ -109,6 +111,8 @@ public final class RoadNet {
 	private final BoundedCache<EdgeKey, int[][]> ports;
 	private final BoundedCache<EdgeKey, Route> routes;
 	private final BoundedCache<CellKey, List<EdgeKey>> cellEdges;
+	private final java.util.concurrent.ConcurrentHashMap<EdgeKey, java.util.concurrent.CompletableFuture<Route>> routeFlights = new java.util.concurrent.ConcurrentHashMap<>();
+	private final java.util.concurrent.ConcurrentHashMap<CellKey, java.util.concurrent.CompletableFuture<List<EdgeKey>>> cellFlights = new java.util.concurrent.ConcurrentHashMap<>();
 	private final BoundedCache<Long, int[]> nodes;
 	private final AtomicLong nodeReads = new AtomicLong();
 
@@ -145,6 +149,17 @@ public final class RoadNet {
 
 	public RoadNet(RegionField field, FieldRegionView view, RegionMap.Window window, RegionProbe coarse, TerrainProbe exact) {
 		this(field, view, window, coarse, exact, FieldRegionView.DEFAULT_CACHE);
+	}
+
+	/** Drops every memo (memory pressure, tests). Answers do not change. */
+	public void evictAll() {
+		settlements.clear();
+		neighbours.clear();
+		edgesOf.clear();
+		ports.clear();
+		routes.clear();
+		cellEdges.clear();
+		nodes.clear();
 	}
 
 	/** Lattice nodes read from the coarse probe so far (cache misses). */
@@ -433,7 +448,31 @@ public final class RoadNet {
 
 	// ---- routes ----
 
-	public Route route(EdgeKey e) { return routes.get(e, this::timedRoute); }
+	public Route route(EdgeKey e) { return flight(routeFlights, routes, e, this::timedRoute); }
+
+	/**
+	 * {@code cache.get} where threads that miss on the same key while another computes it wait for that result instead of computing it
+	 * again (a world generates its first chunks of a region on every worker at once, and a cold cell costs seconds). Answers are the same
+	 * either way: the function is pure. The graph below is acyclic (a cell's links need routes, a route needs ports and settlements,
+	 * never the other way), so a waiter cannot wait on itself. A failure reaches every waiter and leaves nothing cached.
+	 */
+	private static <K, V> V flight(java.util.concurrent.ConcurrentHashMap<K, java.util.concurrent.CompletableFuture<V>> inflight, BoundedCache<K, V> cache, K key, java.util.function.Function<K, V> fn) {
+		return cache.get(key, k -> {
+			java.util.concurrent.CompletableFuture<V> mine = new java.util.concurrent.CompletableFuture<>();
+			java.util.concurrent.CompletableFuture<V> other = inflight.putIfAbsent(k, mine);
+			if (other != null) return other.join();
+			try {
+				V v = fn.apply(k);
+				mine.complete(v);
+				return v;
+			} catch (Throwable e) {
+				mine.completeExceptionally(e);
+				throw e;
+			} finally {
+				inflight.remove(k, mine);
+			}
+		});
+	}
 
 	private Route timedRoute(EdgeKey e) {
 		long t0 = System.nanoTime(); // det-ok: report only, never an answer
@@ -634,14 +673,24 @@ public final class RoadNet {
 		rt.length = len;
 		if (MUTANT_CACHE_STATE) for (int k = 0; k < pr.deck().length; k++) pr.deck()[k] += (int) (routes.misses() & 1);
 		rt.maxGrade = mg;
-		double hw = rt.width / 2.0;
+		rt.byChunk = raster(st, pr.deck(), pr.span(), rt.width);
+		for (List<Col> l : rt.byChunk.values()) rt.columns += l.size();
+	}
+
+	/**
+	 * The columns of a road of {@code width} along the stations, by chunk: each column takes the nearest segment (the lower segment on a
+	 * tie), its deck height interpolated along it; {@code span} marks the stations of a crossing. Pure.
+	 */
+	public static TreeMap<Long, List<Col>> raster(double[][] st, int[] deck, boolean[] span, int width) {
+		TreeMap<Long, List<Col>> byChunk = new TreeMap<>();
+		double hw = width / 2.0;
 		TreeMap<Long, double[]> best = new TreeMap<>(); // column -> {dist, segment, y, crossing}
 		for (int k = 0; k + 1 < st.length; k++) {
 			double[] p = st[k], q = st[k + 1];
 			int cx0 = (int) StrictMath.floor(Math.min(p[0], q[0]) - hw - 1), cx1 = (int) StrictMath.ceil(Math.max(p[0], q[0]) + hw + 1);
 			int cz0 = (int) StrictMath.floor(Math.min(p[1], q[1]) - hw - 1), cz1 = (int) StrictMath.ceil(Math.max(p[1], q[1]) + hw + 1);
 			double dx = q[0] - p[0], dz = q[1] - p[1], l2 = dx * dx + dz * dz;
-			boolean cross = pr.span()[k] && pr.span()[k + 1];
+			boolean cross = span[k] && span[k + 1];
 			for (int z = cz0; z <= cz1; z++) {
 				for (int x = cx0; x <= cx1; x++) {
 					double ccx = x + 0.5, ccz = z + 0.5;
@@ -649,7 +698,7 @@ public final class RoadNet {
 					double ex = ccx - (p[0] + t * dx), ez = ccz - (p[1] + t * dz);
 					double dist = StrictMath.sqrt(ex * ex + ez * ez);
 					if (dist > hw) continue;
-					double y = pr.deck()[k] + t * (pr.deck()[k + 1] - pr.deck()[k]);
+					double y = deck[k] + t * (deck[k + 1] - deck[k]);
 					double[] cur = best.get(colKey(x, z));
 					if (cur == null || dist < cur[0] || (dist == cur[0] && k < cur[1])) {
 						best.put(colKey(x, z), new double[] {dist, k, y, cross ? 1 : 0});
@@ -660,13 +709,28 @@ public final class RoadNet {
 		for (var en : best.entrySet()) {
 			int x = (int) ((en.getKey() & 0xffffffffL) - (1 << 30)), z = (int) ((en.getKey() >>> 32) - (1 << 30));
 			double[] v = en.getValue();
-			rt.byChunk.computeIfAbsent(chunkKey(Math.floorDiv(x, 16), Math.floorDiv(z, 16)), kk -> new ArrayList<>())
-				.add(new Col(x, z, (int) StrictMath.floor(v[2] + 0.5), v[3] == 1, rt.width));
-			rt.columns++;
+			byChunk.computeIfAbsent(chunkKey(Math.floorDiv(x, 16), Math.floorDiv(z, 16)), kk -> new ArrayList<>())
+				.add(new Col(x, z, (int) StrictMath.floor(v[2] + 0.5), v[3] == 1, width));
 		}
+		return byChunk;
 	}
 
 	// ---- chunk query ----
+
+	/**
+	 * The deck surface height of the road to {@code other} at {@code s}'s end of it, or empty for a touching pair (no road: both
+	 * approaches meet at one point) or a dropped link. The approach from the settlement is pinned to it.
+	 */
+	public java.util.OptionalInt endDeck(Settlement s, CellKey other) {
+		Optional<Settlement> o = settlementOf(other);
+		if (o.isEmpty()) return java.util.OptionalInt.empty();
+		EdgeKey e = key(s, o.get());
+		Route r = route(e);
+		if (!r.ok || r.touching) return java.util.OptionalInt.empty();
+		int[] d = r.profile.deck();
+		return java.util.OptionalInt.of(e.a().equals(s.owner()) ? d[0] : d[d.length - 1]);
+	}
+
 
 	/**
 	 * Links whose road may reach the region cell: every link of a settlement whose rim is within the corridor bound of the cell
@@ -683,7 +747,7 @@ public final class RoadNet {
 	public int chunkReadBound() { return CORRIDOR + PORT_OFFSET + LATTICE + (int) (0.71 * S) + 16 + slack + (int) (0.71 * S); }
 
 	private List<EdgeKey> cellEdgesOf(CellKey cell) {
-		return cellEdges.get(cell, c -> {
+		return flight(cellFlights, cellEdges, cell, c -> {
 			int x0 = c.cx() * S, z0 = c.cz() * S, x1 = x0 + S - 1, z1 = z0 + S - 1;
 			int cxm = x0 + S / 2, czm = z0 + S / 2;
 			TreeSet<EdgeKey> cand = new TreeSet<>();
@@ -701,7 +765,7 @@ public final class RoadNet {
 				Route r = route(e);
 				if (!r.ok || r.touching) continue;
 				int[] b = r.bandBox;
-				if (b[2] + 16 < x0 || b[0] - 16 > x1 || b[3] + 16 < z0 || b[1] - 16 > z1) continue;
+				if (b[2] + BAND_SLACK < x0 || b[0] - BAND_SLACK > x1 || b[3] + BAND_SLACK < z0 || b[1] - BAND_SLACK > z1) continue;
 				out.add(e);
 			}
 			return List.copyOf(out);

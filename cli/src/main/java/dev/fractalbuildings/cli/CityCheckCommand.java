@@ -1,6 +1,7 @@
 package dev.fractalbuildings.cli;
 
 import dev.fractalbuildings.cli.Main.UsageException;
+import dev.fractalbuildings.core.check.SettlementChecks;
 import dev.fractalbuildings.core.gen.v1.GeneratorV1;
 import dev.fractalbuildings.core.ir.Violation;
 import dev.fractalbuildings.core.probe.CoarseProbe;
@@ -44,7 +45,13 @@ final class CityCheckCommand {
 	private record Result(Job job, String siteId, String tier, int radius, int cells, int districts, int lots, int scenes, int hubPct, int strays, List<String> problems, String error, double ms, TerrainStats terrain) {}
 
 	static int run(String[] args) throws IOException {
-		Opts o = new Opts(args, Set.of("seeds", "terrain", "sites", "scenes", "cell-size", "out", "ignore"), Set.of());
+		Opts o = new Opts(args, Set.of("seeds", "terrain", "sites", "scenes", "cell-size", "out", "ignore", "list", "junctions-near"), Set.of("junction"));
+		o.flag("junction"); // junction-height is part of every check now (JUNCTION); the flag that turned it on is accepted and does nothing
+		listMax = o.intValue("list", 20);
+		if (o.has("junctions-near")) {
+			String[] f = o.get("junctions-near", null).split(",");
+			near = new int[] {Integer.parseInt(f[0]), Integer.parseInt(f[1]), f.length > 2 ? Integer.parseInt(f[2]) : 24};
+		}
 		String sites = o.get("sites", "cells");
 		int scenes = 0;
 		String sc = o.get("scenes", "auto:0");
@@ -90,6 +97,11 @@ final class CityCheckCommand {
 		else System.out.print(md);
 		return bad == 0 ? 0 : 1;
 	}
+
+	/** Violations listed per site in the report ({@code --list}). */
+	private static volatile int listMax = 20;
+	/** {@code --junctions-near X,Z[,R]}: print the junction field's junctions with a pad end within R blocks of (X, Z) (debugging JUNCTION). */
+	private static volatile int[] near;
 
 	private static int parse(String s) {
 		try { return Integer.parseInt(s); } catch (NumberFormatException e) { throw new UsageException("bad number '" + s + "'"); }
@@ -152,7 +164,15 @@ final class CityCheckCommand {
 			SettlementSite site = CityCommand.fromSite(field, j.site());
 			RegionView view = new FixedSiteView(site, field);
 			CoarseProbe coarse = CoarseProbe.of(p.terrain(), p.biome(), 32);
-			CityPlanner.City city = CityPlanner.plan(new SkeletonSource.Direct(j.seed(), view, site, coarse), coarse, p.terrain(), p.biome(), GeneratorV1.GEN_VERSION);
+			SkeletonSource.Direct src = new SkeletonSource.Direct(j.seed(), view, site, coarse);
+			CityPlanner.City city = CityPlanner.plan(src, coarse, p.terrain(), p.biome(), GeneratorV1.GEN_VERSION);
+			if (near != null) {
+				for (var jn : src.junctions(p.terrain()).junctions()) {
+					boolean hit = false;
+					for (String pad : jn.pads()) for (String xz : pad.substring(pad.indexOf(' ') + 1).split("\\.\\.")) { String[] q = xz.split(","); if (Math.abs(Integer.parseInt(q[0]) - near[0]) <= near[2] && Math.abs(Integer.parseInt(q[1]) - near[1]) <= near[2]) hit = true; }
+					if (hit) System.out.println(j.label() + " junction level " + jn.level() + " ground " + jn.ground() + " pads " + jn.pads());
+				}
+			}
 			for (Violation v : CityPlanner.check(city)) problems.add(v.invariant() + ": " + v.message());
 			int built = 0;
 			List<String> ids = CityPlanner.autoScenes(city, sceneCount);
@@ -205,8 +225,8 @@ final class CityCheckCommand {
 			if (r.error() == null && r.problems().isEmpty()) continue;
 			sb.append("\n## ").append(r.job().label()).append(" (--site ").append(r.job().site()).append(")\n\n");
 			if (r.error() != null) sb.append("- error: ").append(r.error()).append('\n');
-			for (int i = 0; i < Math.min(r.problems().size(), 20); i++) sb.append("- ").append(r.problems().get(i)).append('\n');
-			if (r.problems().size() > 20) sb.append("- ... ").append(r.problems().size() - 20).append(" more\n");
+			for (int i = 0; i < Math.min(r.problems().size(), listMax); i++) sb.append("- ").append(r.problems().get(i)).append('\n');
+			if (r.problems().size() > listMax) sb.append("- ... ").append(r.problems().size() - listMax).append(" more\n");
 		}
 		return sb.toString();
 	}

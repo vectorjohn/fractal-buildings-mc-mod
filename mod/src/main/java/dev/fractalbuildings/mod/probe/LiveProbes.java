@@ -13,9 +13,13 @@ public final class LiveProbes {
 	public static final int DEFAULT_CHUNKS = 4096;
 	/** Sparse columns kept for region (stride 64) and coarse (stride 32) reads. */
 	public static final int DEFAULT_SPARSE = 1 << 17;
+	/** Single columns kept for road stations (about 450 reads per route). */
+	public static final int DEFAULT_ROAD_COLUMNS = 1 << 16;
 
 	private final LiveTerrainProbe exact;
 	private final SparseColumns sparse;
+	/** The road graph's station reads: single exact columns (stations are 8 apart, so whole chunks would be waste), own memo so the lattice reads keep theirs. */
+	private final SparseColumns roadColumns;
 	/** District reads: surface from the chunk memo. */
 	private final LiveBiomeProbe biome;
 	/** Region and coarse lattice reads: surface from single columns, no chunk fills. */
@@ -26,6 +30,7 @@ public final class LiveProbes {
 	public LiveProbes(NoiseBasedChunkGenerator gen, RandomState rs, ChunkFill fill) {
 		this.exact = new LiveTerrainProbe(gen, rs, fill, DEFAULT_CHUNKS);
 		this.sparse = new SparseColumns(gen, rs, DEFAULT_SPARSE);
+		this.roadColumns = new SparseColumns(gen, rs, DEFAULT_ROAD_COLUMNS);
 		this.biome = new LiveBiomeProbe(gen, rs, exact::surfaceY);
 		this.sparseBiome = new LiveBiomeProbe(gen, rs, sparse::surface);
 	}
@@ -55,4 +60,13 @@ public final class LiveProbes {
 	}
 
 	public SparseColumns sparse() { return sparse; }
+
+	/** Exact heights at single columns for the road graph (same definition as {@link #exact}, bit for bit). */
+	public TerrainProbe roads() {
+		return new TerrainProbe() {
+			@Override public int floorY(int x, int z) { return roadColumns.floor(x, z); }
+			@Override public int waterDepth(int x, int z) { return roadColumns.water(x, z); }
+			@Override public int surfaceY(int x, int z) { return roadColumns.surface(x, z); }
+		};
+	}
 }

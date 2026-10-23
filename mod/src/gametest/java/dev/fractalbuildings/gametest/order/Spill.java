@@ -32,21 +32,30 @@ final class Spill {
 	private static boolean ground(BlockState s) { String n = name(s); return GROUND.contains(n) || n.endsWith("_ore"); }
 
 	/** "spill" (known vanilla), "shape" (same connecting block, other connections) or "unknown". {@code above} is the world block over the cell. */
-	static String solidKind(BlockState want, BlockState have, BlockState above) {
+	static String solidKind(BlockState want, BlockState have, BlockState above, BlockState above2) {
 		if (want.getBlock() == have.getBlock() && (want.getBlock() instanceof CrossCollisionBlock || want.getBlock() instanceof WallBlock)) return "shape";
 		boolean natural = ground(want) || name(want).equals("dirt_path");
 		if (natural && ground(have)) return "spill";
 		if (natural && (TREE_BASE.contains(name(have)) || CARVER.contains(name(have)))) return "spill";
 		// a tree's dirt base under a log may replace a block that is not ground (a road edge, a wall foot)
-		if (TREE_BASE.contains(name(have)) && above.is(BlockTags.LOGS)) return "spill";
+		if (TREE_BASE.contains(name(have)) && treeAbove(above, above2)) return "spill";
 		return "unknown";
 	}
 
 	/** "spill" (canopy, litter, patches, a tree's dirt under a log) or "unknown". */
-	static String airKind(BlockState have, BlockState above) {
+	static String airKind(BlockState have, BlockState above, BlockState above2) {
 		String n = name(have);
-		if (n.equals("dirt") && above.is(BlockTags.LOGS)) return "spill";
+		if (n.equals("dirt") && treeAbove(above, above2)) return "spill";
 		if (AIR_SPILL.contains(n) || n.endsWith("_ore") || have.is(BlockTags.LEAVES) || have.is(BlockTags.LOGS) || have.is(BlockTags.FLOWERS) || have.is(BlockTags.SAPLINGS)) return "spill";
 		return "unknown";
+	}
+
+	/**
+	 * A tree's trunk stands over this cell: a log directly above, or one cell higher with grass or dirt between. Traced (p6-spill-dirt, reverse order,
+	 * 1360,69,-9571 and -9570): a dark oak 2x2 of a neighbouring chunk's features, which run after our write, calls setDirtAt (flags 19) under its
+	 * trunk cells at y 69 and puts the logs at y 71, over the cells our street cut had cleared; the grass at y 70 is natural terrain beside the cut.
+	 */
+	private static boolean treeAbove(BlockState above, BlockState above2) {
+		return above.is(BlockTags.LOGS) || ((name(above).equals("grass_block") || name(above).equals("dirt")) && above2.is(BlockTags.LOGS));
 	}
 }

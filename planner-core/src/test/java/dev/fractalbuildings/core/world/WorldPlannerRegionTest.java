@@ -48,7 +48,10 @@ class WorldPlannerRegionTest {
 		assertEquals("sm3_m9", site.id());
 
 		RegionPlanner rp = new RegionPlanner(field, dev.fractalbuildings.core.region.RegionProbe.of(WORLD.exact(), WORLD.biome()));
-		FieldSiteView view = new FieldSiteView(new FieldRegionView(rp, WORLD.window()), field);
+		FieldRegionView fv = new FieldRegionView(rp, WORLD.window());
+		// the planner draws roads by default, so the CLI side plans with the same road graph (required exits and approaches)
+		dev.fractalbuildings.core.road.RoadNet net = new dev.fractalbuildings.core.road.RoadNet(field, fv, WORLD.window(), WORLD.region(), WORLD.roadExact());
+		FieldSiteView view = new FieldSiteView(fv, field, net);
 		CityPlanner.City city = CityPlanner.plan(new SkeletonSource.Direct(SEED, view, site, WORLD.coarse()), WORLD.coarse(), WORLD.exact(), WORLD.biome(), GeneratorV1.GEN_VERSION);
 		assertFalse(city.districts().isEmpty());
 		TreeMap<String, Boolean> mine = new TreeMap<>();
@@ -70,6 +73,28 @@ class WorldPlannerRegionTest {
 				}
 			}
 		}
+	}
+
+	@Test
+	void theRoadSwitchTurnsTheGraphAndTheApproachesOff() {
+		WorldConfig d = WorldConfig.defaults();
+		WorldConfig off = new WorldConfig(d.cellSize(), d.frequency(), d.maxRadius(), d.styles(), d.genVersion(), false);
+		WorldPlanner on = planner(d, WorldPlanner.Caches.DEFAULT), none = planner(off, WorldPlanner.Caches.DEFAULT);
+		assertTrue(on.roadsEnabled());
+		assertFalse(none.roadsEnabled());
+		int roadChunks = 0;
+		for (var e : on.roads().allEdges()) {
+			var r = on.roads().route(e);
+			if (!r.ok || r.touching) continue;
+			var first = r.byChunk.values().iterator().next().get(0);
+			int cx = Math.floorDiv(first.x(), 16), cz = Math.floorDiv(first.z(), 16);
+			assertFalse(on.roadColumns(cx, cz).isEmpty());
+			assertEquals(java.util.List.of(), none.roadColumns(cx, cz));
+			for (var c : on.roads().query(cx, cz)) assertTrue(on.roadColumns(cx, cz).contains(c), "the graph's column " + c);
+			if (++roadChunks >= 10) break;
+		}
+		assertTrue(roadChunks >= 10);
+		assertNull(none.districtColumns(0, 0));
 	}
 
 	@Test

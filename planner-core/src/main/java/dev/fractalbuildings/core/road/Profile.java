@@ -45,6 +45,45 @@ public final class Profile {
 		return (int) StrictMath.floor(v + 0.5);
 	}
 
+	/** The surface averaged over +- {@link #WINDOW} stations (ends clamped), rounded. */
+	static int[] mean(int[] raw) {
+		int n = raw.length, w = 2 * WINDOW + 1;
+		int[] deck = new int[n];
+		for (int k = 0; k < n; k++) {
+			long sum = 0;
+			for (int q = -WINDOW; q <= WINDOW; q++) sum += raw[Math.max(0, Math.min(n - 1, k + q))];
+			deck[k] = (int) Math.floorDiv(sum + w / 2, w);
+		}
+		return deck;
+	}
+
+	/** Limits the change between neighbouring stations to {@link #MAX_STEP}, leaving pinned stations as they are. */
+	static void limit(int[] deck, boolean[] pin) {
+		int n = deck.length;
+		for (int pass = 0; pass < 3; pass++) {
+			for (int k = 1; k < n; k++) if (!pin[k]) deck[k] = Math.max(deck[k - 1] - MAX_STEP, Math.min(deck[k - 1] + MAX_STEP, deck[k]));
+			for (int k = n - 2; k >= 0; k--) if (!pin[k]) deck[k] = Math.max(deck[k + 1] - MAX_STEP, Math.min(deck[k + 1] + MAX_STEP, deck[k]));
+		}
+	}
+
+	/**
+	 * The deck of a road that is not checked for water (a settlement approach): the averaged surface at the stations, with the last
+	 * station pinned to {@code endDeck} when given, so the road meets the one it joins. Exact reads at the stations only.
+	 */
+	public static int[] approachDeck(double[][] st, TerrainProbe exact, java.util.OptionalInt endDeck) {
+		int n = st.length;
+		int[] raw = new int[n];
+		for (int k = 0; k < n; k++) raw[k] = exact.surfaceY(round(st[k][0]), round(st[k][1]));
+		int[] deck = mean(raw);
+		boolean[] pin = new boolean[n];
+		if (endDeck.isPresent() && n > 0) {
+			deck[n - 1] = endDeck.getAsInt();
+			pin[n - 1] = true;
+		}
+		limit(deck, pin);
+		return deck;
+	}
+
 	public static Result build(double[][] st, TerrainProbe exact) {
 		int n = st.length;
 		long[] reads = {0};
@@ -99,12 +138,7 @@ public final class Profile {
 		}
 
 		// deck: mean of the surface over +- WINDOW stations
-		int w = 2 * WINDOW + 1;
-		for (int k = 0; k < n; k++) {
-			long sum = 0;
-			for (int q = -WINDOW; q <= WINDOW; q++) sum += raw[Math.max(0, Math.min(n - 1, k + q))];
-			deck[k] = (int) Math.floorDiv(sum + w / 2, w);
-		}
+		deck = mean(raw);
 		boolean[] pin = new boolean[n];
 		List<Crossing> crossings = new ArrayList<>();
 		for (int[] m : measured) {
@@ -114,10 +148,7 @@ public final class Profile {
 			for (int k = a - 1; k <= b + 1; k++) span[k] = true;
 			crossings.add(new Crossing(a, b, a - 1, b + 1, m[2], flat));
 		}
-		for (int pass = 0; pass < 3; pass++) {
-			for (int k = 1; k < n; k++) if (!pin[k]) deck[k] = Math.max(deck[k - 1] - MAX_STEP, Math.min(deck[k - 1] + MAX_STEP, deck[k]));
-			for (int k = n - 2; k >= 0; k--) if (!pin[k]) deck[k] = Math.max(deck[k + 1] - MAX_STEP, Math.min(deck[k + 1] + MAX_STEP, deck[k]));
-		}
+		limit(deck, pin);
 		return new Result(true, "", -1, wet, deck, span, crossings, reads[0]);
 	}
 }

@@ -196,4 +196,18 @@ final class StreetRules {
 		}
 		return out;
 	}
+
+	/**
+	 * The column lies within {@code r} blocks of a border of its tile where the street lattice has no street. Grid lines and quays stop
+	 * short of such a border (neither tile may draw a piece that crosses it, and the piece would reach no street there). Pointwise.
+	 */
+	boolean nearAbsentBorder(int x, int z, int r) {
+		if (!lattice()) return false;
+		DistrictGrid.Tile t = grid.tileAt(x, z);
+		for (DistrictGrid.Segment s : grid.segments(t.ix(), t.iz())) {
+			int across = s.axis() == DistrictGrid.AXIS_X ? x : z, along = s.axis() == DistrictGrid.AXIS_X ? z : x;
+			if (Math.abs(across - s.fixed()) <= r && along >= s.from() - r && along <= s.to() + r && borderKind(s) == null) return true;
+		}
+		return false;
+	}
 }

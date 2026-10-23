@@ -42,11 +42,12 @@ class GroundWalkTest {
 	}
 
 	/**
-	 * Known issue, a ratchet and not a rule: streets that meet at a junction or end at another street are graded one by one, so at
-	 * steep junctions neighbouring road columns of different streets differ by more than one block (a street can end 20 blocks under
-	 * the street it meets). Along one street the grade is checked by {@code road-grade}. B3 measured 234 of 670 gate-window tiles with a step
-	 * above 3 blocks (and 376 above 1) before and after the fill/headroom change (which does not move surfaces); the test keeps that
-	 * from getting worse until street junction heights are reconciled (ROADMAP polish backlog).
+	 * A ratchet and not a rule: steps of more than one block between neighbouring road, paving and deck columns, whatever their cause. Streets
+	 * that share ground meet at one level since JUNCTION (rule {@code junction-height}, 0 on every set); what remains are steps between surfaces
+	 * that touch without sharing cells (a plaza edge beside a street, two streets side by side, a deck end; a street ending against another's side
+	 * meets it since JUNCTION round 3). Measured on the 670 gate-window
+	 * tiles: 370 with a step above 1 and 229 above 3 before JUNCTION, 138 and 39 after round 2, 107 and 18 after round 3 (docs/log/2026-10-23-p6-junction.md); the test keeps
+	 * that from getting worse (ROADMAP polish backlog 6.3).
 	 */
 	@Test
 	void junctionStepsDoNotGetWorse() {
@@ -69,8 +70,8 @@ class GroundWalkTest {
 		}
 		System.out.println("[B3] walkability: tiles " + tiles + ", with a step over 1: " + over1 + ", over 3: " + over3 + " " + examples);
 		assertTrue(tiles > 600);
-		assertTrue(over1 <= 400, "tiles with a step over 1 block: " + over1);
-		assertTrue(over3 <= 250, "tiles with a step over 3 blocks: " + over3 + " " + examples);
+		assertTrue(over1 <= 107, "tiles with a step over 1 block: " + over1);
+		assertTrue(over3 <= 18, "tiles with a step over 3 blocks: " + over3 + " " + examples);
 	}
 
 	/**

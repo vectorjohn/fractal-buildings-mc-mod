@@ -34,6 +34,18 @@ class FbSettingsTest {
 	}
 
 	@Test
+	void intercityRoadsDefaultToOnAndCanBeSwitchedOff() {
+		List<String> w = new ArrayList<>();
+		assertTrue(FbSettings.defaults().world().intercityRoads());
+		assertTrue(parse("{}", w).world().intercityRoads());
+		FbSettings off = parse("{\"intercityRoads\": false}", w);
+		assertFalse(off.world().intercityRoads());
+		assertEquals(off, parse(off.toJson(), w));
+		assertTrue(parse("{\"intercityRoads\": \"no\"}", w).world().intercityRoads(), "a bad value keeps the default");
+		assertEquals(1, w.size(), w.toString());
+	}
+
+	@Test
 	void garbageGivesDefaults() {
 		for (String bad : new String[] {"", "{", "[1]", "42", "{\"frequency\": \"lots\"}"}) {
 			List<String> w = new ArrayList<>();

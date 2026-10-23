@@ -64,7 +64,7 @@ public class DistrictOrderClientGameTest implements FabricClientGameTest {
 	/** What one world's run measured. */
 	record Run(String label, String digest, TreeMap<Long, String> chunkDigests, String worldSolidDigest, int cells, int duplicates, int refCells, int missing, int extra, int wrong,
 			int solid, int solidBad, int solidTrees, int air, int airBad, int failures, long genMs, String load, String detail,
-			int unknownSolid, int vegAir, int unknownAir, String hist, String hookDigest, HookReadback.Result hook, boolean stepOk) {
+			int unknownSolid, int vegAir, int unknownAir, String hist, String hookDigest, HookReadback.Result hook, boolean stepOk, String roadDigest) {
 		/** What is wrong with this run compared with the baseline run ({@code null} for the baseline itself). */
 		List<String> problems(Run base) {
 			List<String> p = new ArrayList<>();
@@ -80,6 +80,7 @@ public class DistrictOrderClientGameTest implements FabricClientGameTest {
 			if (solidBad > solid * SOLID_LIMIT) p.add(solidBad + " of " + solid + " solid cells differ in the world");
 			if (airBad > air * AIR_LIMIT) p.add(airBad + " of " + air + " claimed air cells are not air in the world");
 			if (base != null && !hookDigest.equals(base.hookDigest)) p.add("hook digest differs from " + base.label);
+			if (base != null && !roadDigest.equals(base.roadDigest)) p.add("road feature cells differ from " + base.label + ": " + roadDigest + " vs " + base.roadDigest);
 			if (!hook.ok(BED_LOSS_LIMIT)) p.add("hook readback: " + hook);
 			if (unknownSolid > 0) p.add(unknownSolid + " solid cells changed by something that is not a known vanilla spill (see the histogram)");
 
@@ -225,6 +226,7 @@ public class DistrictOrderClientGameTest implements FabricClientGameTest {
 				String loadBefore = load();
 				long start = System.nanoTime();
 				boolean[] stepOk = {true};
+				String[] roadDigest = {""};
 				TreeMap<Long, Integer> ledger, hooks = new TreeMap<>();
 				int dups;
 				Mutations.mode = mutation;
@@ -235,11 +237,14 @@ public class DistrictOrderClientGameTest implements FabricClientGameTest {
 						if (dev.fractalbuildings.gametest.worldgen.StartSupport.structure(level, s).value().step() != net.minecraft.world.level.levelgen.GenerationStep.Decoration.TOP_LAYER_MODIFICATION) stepOk[0] = false;
 					}
 					ledger = new TreeMap<>();
+					TreeMap<Long, Integer> roadCells = new TreeMap<>();
 					for (var e : rec.states().entrySet()) {
 						int x = PieceLedger.x(e.getKey()), z = PieceLedger.z(e.getKey());
+						if (rec.roadCells().contains(e.getKey())) { if (chunkSet.containsKey(ChunkPos.pack(x >> 4, z >> 4))) roadCells.put(e.getKey(), e.getValue()); continue; } // the road feature (C1) is not a district piece: set aside, compared across orders
 						if (chunkSet.containsKey(ChunkPos.pack(x >> 4, z >> 4)) && tiles.stream().anyMatch(t -> t.tile().contains(x, z))) ledger.put(e.getKey(), e.getValue());
 					}
-					dups = rec.duplicates().size();
+					dups = (int) rec.duplicates().stream().filter(k -> !rec.roadCells().contains(k)).count();
+					roadDigest[0] = PieceLedger.digest(roadCells) + " " + roadCells.size();
 					for (var e : rec.hooks().entrySet()) {
 						int x = PieceLedger.x(e.getKey()), z = PieceLedger.z(e.getKey());
 						if (tiles.stream().anyMatch(t -> t.tile().contains(x, z))) hooks.put(e.getKey(), e.getValue());
@@ -281,9 +286,15 @@ public class DistrictOrderClientGameTest implements FabricClientGameTest {
 						air++;
 						if (!have.isAir()) {
 							airBad++;
-							String kind = Spill.airKind(have, level.getBlockState(p.set(PieceLedger.x(k), PieceLedger.y(k) + 1, PieceLedger.z(k))));
+							String kind = Spill.airKind(have, level.getBlockState(p.set(PieceLedger.x(k), PieceLedger.y(k) + 1, PieceLedger.z(k))), level.getBlockState(p.set(PieceLedger.x(k), PieceLedger.y(k) + 2, PieceLedger.z(k))));
 							hist.merge("air->" + blockName(have) + " [" + kind + "]", 1, Integer::sum);
-							if (kind.equals("unknown")) unknownAir++;
+							if (kind.equals("unknown")) {
+								unknownAir++;
+								if (unknownAir <= 10) { // C1: where they are, with what is around them (a 2x2 dark oak's dirt under a base cell whose log was blocked?)
+									int ux = PieceLedger.x(k), uy = PieceLedger.y(k), uz = PieceLedger.z(k);
+									dev.fractalbuildings.mod.FractalBuildingsMod.LOGGER.info("[B2] unknown air cell {},{},{} has {}; above {}; below {}; around N {} E {} S {} W {}", ux, uy, uz, blockName(have), blockName(level.getBlockState(p.set(ux, uy + 1, uz))), blockName(level.getBlockState(p.set(ux, uy - 1, uz))), blockName(level.getBlockState(p.set(ux, uy, uz - 1))), blockName(level.getBlockState(p.set(ux + 1, uy, uz))), blockName(level.getBlockState(p.set(ux, uy, uz + 1))), blockName(level.getBlockState(p.set(ux - 1, uy, uz))));
+								}
+							}
 						}
 					} else {
 						solid++;
@@ -291,7 +302,7 @@ public class DistrictOrderClientGameTest implements FabricClientGameTest {
 						if (have != want) {
 							solidBad++;
 							if (have.is(net.minecraft.tags.BlockTags.LOGS) || have.is(net.minecraft.tags.BlockTags.LEAVES)) solidTrees++;
-							String kind = Spill.solidKind(want, have, level.getBlockState(p.set(PieceLedger.x(k), PieceLedger.y(k) + 1, PieceLedger.z(k))));
+							String kind = Spill.solidKind(want, have, level.getBlockState(p.set(PieceLedger.x(k), PieceLedger.y(k) + 1, PieceLedger.z(k))), level.getBlockState(p.set(PieceLedger.x(k), PieceLedger.y(k) + 2, PieceLedger.z(k))));
 							hist.merge(blockName(want) + "->" + blockName(have) + " [" + kind + "]", 1, Integer::sum);
 							if (kind.equals("unknown")) unknownSolid++;
 							if (firstBad.isEmpty()) firstBad = PieceLedger.x(k) + "," + PieceLedger.y(k) + "," + PieceLedger.z(k) + " want " + want + " have " + have;
@@ -300,7 +311,7 @@ public class DistrictOrderClientGameTest implements FabricClientGameTest {
 				}
 				HookReadback.Result hookResult = HookReadback.check(level, hooks);
 				result[0] = new Run(label, PieceLedger.digest(ledger), perChunk(ledger), sha(worldSolid.entrySet()), ledger.size(), dups, ref.size(), missing, extra, wrong, solid, solidBad, solidTrees, air, airBad,
-						WorldPlanners.FAILURES.get(), genMs, loadBefore + " -> " + load(), firstBad, unknownSolid, vegAir, unknownAir, hist.toString(), PieceLedger.digest(hooks), hookResult, stepOk[0]);
+						WorldPlanners.FAILURES.get(), genMs, loadBefore + " -> " + load(), firstBad, unknownSolid, vegAir, unknownAir, hist.toString(), PieceLedger.digest(hooks), hookResult, stepOk[0], roadDigest[0]);
 				if (checkConfig) checkPinnedConfig(server, level);
 				for (ChunkPos c : asc) level.setChunkForced(c.x(), c.z(), false);
 			});
@@ -386,7 +397,7 @@ public class DistrictOrderClientGameTest implements FabricClientGameTest {
 			List<String> p = r.problems(o == Order.FORWARD ? null : base);
 			report(String.format("%-14s cells %d (reference %d) digest %.12s chunks %d, duplicates %d, ledger missing/extra/wrong %d/%d/%d, world solid %d bad %d (trees %d), air %d bad %d, failures %d, %d ms, load %s%s", label, r.cells, r.refCells,
 					r.digest, r.chunkDigests.size(), r.duplicates, r.missing, r.extra, r.wrong, r.solid, r.solidBad, r.solidTrees, r.air, r.airBad, r.failures, r.genMs, r.load, r.detail.isEmpty() ? "" : " first bad: " + r.detail));
-			report("  histogram: " + r.hist + "; hooks: " + r.hook);
+			report("  roads: " + r.roadDigest.substring(0, Math.min(12, r.roadDigest.length())) + r.roadDigest.substring(r.roadDigest.indexOf(" ")) + " cells; histogram: " + r.hist + "; hooks: " + r.hook);
 			for (String s : p) failures.add(label + ": " + s);
 		}
 		// mutants: each must be caught by one of the checks above, on the centre tile only

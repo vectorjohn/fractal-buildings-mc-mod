@@ -347,4 +347,105 @@ class RoadNetTest {
 		assertEquals(ref, run(w.net(8192, 8192), chunks));
 		assertNotEquals(ref, run(world(987654321).net(8192, 8192), chunks), "another world gives other roads");
 	}
+
+	// ---- completeness (every column of a route is returned) and RD4 ----
+
+	private static String ck(int x, int z) { return x + "," + z; }
+
+	@Test
+	void queryReturnsEveryColumnOfEveryRoute() {
+		for (long seed : SEEDS) {
+			RoadNet n = world(seed).net(8192, 8192);
+			int routes = 0, cols = 0, worstOut = 0;
+			for (EdgeKey e : n.allEdges()) {
+				Route r = n.route(e);
+				if (!r.ok || r.touching) continue;
+				routes++;
+				for (var en : r.byChunk.entrySet()) {
+					Col first = en.getValue().get(0);
+					int cx = Math.floorDiv(first.x(), 16), cz = Math.floorDiv(first.z(), 16);
+					java.util.Set<String> got = new java.util.TreeSet<>();
+					for (Col c : n.query(cx, cz)) got.add(ck(c.x(), c.z()));
+					for (Col c : en.getValue()) {
+						cols++;
+						int[] b = r.bandBox;
+						worstOut = Math.max(worstOut, Math.max(Math.max(b[0] - c.x(), c.x() - b[2]), Math.max(b[1] - c.z(), c.z() - b[3])));
+						assertTrue(got.contains(ck(c.x(), c.z())), "seed " + seed + " edge " + e + " column " + c + " missing from query of chunk " + cx + "," + cz);
+					}
+				}
+			}
+			assertTrue(worstOut <= RoadNet.BAND_SLACK, "a column lies " + worstOut + " outside its band box");
+			assertTrue(routes > 60 && cols > 100_000, "routes " + routes + " columns " + cols);
+			System.out.println("completeness seed " + seed + ": " + routes + " routes, " + cols + " columns, farthest outside a band box " + worstOut);
+		}
+	}
+
+	@Test
+	void lowerEdgeKeyWinsWhereRoadsOverlap() {
+		int total = 0;
+		for (long seed : SEEDS) {
+			RoadNet n = world(seed).net(8192, 8192);
+			java.util.TreeMap<String, List<EdgeKey>> owners = new java.util.TreeMap<>();
+			java.util.TreeMap<String, Col> byKeyCol = new java.util.TreeMap<>();
+			for (EdgeKey e : n.allEdges()) { // allEdges is in key order
+				Route r = n.route(e);
+				if (!r.ok || r.touching) continue;
+				for (var l : r.byChunk.values()) for (Col c : l) {
+					owners.computeIfAbsent(ck(c.x(), c.z()), k -> new ArrayList<>()).add(e);
+					byKeyCol.put(e + "@" + ck(c.x(), c.z()), c);
+				}
+			}
+			int shared = 0;
+			for (var en : owners.entrySet()) {
+				List<EdgeKey> l = en.getValue();
+				if (l.size() < 2) continue;
+				shared++;
+				EdgeKey lowest = java.util.Collections.min(l);
+				Col want = byKeyCol.get(lowest + "@" + en.getKey());
+				Col got = null;
+				for (Col c : n.query(Math.floorDiv(want.x(), 16), Math.floorDiv(want.z(), 16))) if (c.x() == want.x() && c.z() == want.z()) got = c;
+				assertEquals(want, got, "seed " + seed + " column " + en.getKey() + " shared by " + l);
+			}
+			System.out.println("RD4 seed " + seed + ": " + shared + " columns on two or more routes");
+			total += shared;
+		}
+		assertTrue(total > 0, "no overlapping columns in the fixtures: the test would pass for any merge order");
+	}
+
+	/** Threads that ask the same cold net at once share each route's computation (single flight): same answers, no route computed twice. */
+	@Test
+	void coldChunksAskedByManyThreadsComputeEachRouteOnce() throws Exception {
+		World w = world(12345);
+		List<int[]> chunks = sampleChunks(w.ref());
+		long[] single = countedRun(w, chunks, 1);
+		long[] many = countedRun(w, chunks, 8);
+		assertEquals(single[1], many[1], "answers (hash of every chunk) do not depend on the thread count");
+		assertEquals(single[0], many[0], "exact reads: every route's profile was read once, not once per thread");
+	}
+
+	/** {exact reads, hash of all answers} after {@code threads} threads query {@code chunks} (each in its own order) on a fresh net. */
+	private static long[] countedRun(World w, List<int[]> chunks, int threads) throws Exception {
+		java.util.concurrent.atomic.AtomicLong reads = new java.util.concurrent.atomic.AtomicLong();
+		dev.fractalbuildings.core.probe.TerrainProbe counting = new dev.fractalbuildings.core.probe.TerrainProbe() {
+			@Override public int floorY(int x, int z) { reads.incrementAndGet(); return w.rec().floorY(x, z); }
+			@Override public int waterDepth(int x, int z) { reads.incrementAndGet(); return w.rec().waterDepth(x, z); }
+		};
+		RegionPlanner p = new RegionPlanner(new RegionField(w.seed(), 1024), RegionProbe.of(w.rec(), w.rec()));
+		RoadNet net = new RoadNet(p.field, new FieldRegionView(p, w.w(), 8192), w.w(), RegionProbe.of(w.rec(), w.rec()), counting, 8192);
+		java.util.concurrent.ExecutorService pool = java.util.concurrent.Executors.newFixedThreadPool(threads);
+		List<java.util.concurrent.Future<TreeMap<String, List<Col>>>> fs = new ArrayList<>();
+		for (int t = 0; t < threads; t++) {
+			List<int[]> mine = new ArrayList<>(chunks);
+			Collections.shuffle(mine, new Random(t));
+			fs.add(pool.submit(() -> run(net, mine)));
+		}
+		TreeMap<String, List<Col>> first = null;
+		for (var f : fs) {
+			TreeMap<String, List<Col>> r = f.get();
+			if (first == null) first = r;
+			assertEquals(first, r);
+		}
+		pool.shutdown();
+		return new long[] {reads.get(), first.hashCode()};
+	}
 }

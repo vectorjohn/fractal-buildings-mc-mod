@@ -78,6 +78,7 @@ public final class CityPlanner {
 		SettlementChecks.CityRoads cr = SettlementChecks.cityRoads(districts.values(), hub);
 		v.addAll(cr.violations());
 		v.addAll(SettlementChecks.cityTileBorders(districts.values()));
+		v.addAll(SettlementChecks.cityJunctionHeights(districts.values())); // JUNCTION: streets that share ground meet within a block
 		return new City(plan.withDistricts(out).withViolations(v), districts, landmarks, notes, hub, cr.strays(), cr.hubPiece(), cr.total());
 	}
 

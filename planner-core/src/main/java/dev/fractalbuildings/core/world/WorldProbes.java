@@ -12,14 +12,20 @@ import java.util.Objects;
  * once (the live ones in the mod are; recorded and synthetic ones are). {@code region} is read on the 64-block lattice only,
  * {@code coarse} on its own stride, {@code exact} and {@code biome} anywhere.
  *
+ * @param roadExact the exact terrain the road graph reads at its stations (the same values as {@code exact}; a live world gives single-column reads, since stations are sparse); null means {@code exact}
  * @param window the area a recorded dump covers, or null for an unbounded world; cells whose probe reach leaves it are not decided
  */
-public record WorldProbes(RegionProbe region, CoarseProbe coarse, TerrainProbe exact, BiomeProbe biome, RegionMap.Window window) {
+public record WorldProbes(RegionProbe region, CoarseProbe coarse, TerrainProbe exact, BiomeProbe biome, RegionMap.Window window, TerrainProbe roadExact) {
 	public WorldProbes {
 		Objects.requireNonNull(region);
 		Objects.requireNonNull(coarse);
 		Objects.requireNonNull(exact);
 		Objects.requireNonNull(biome);
+		if (roadExact == null) roadExact = exact;
+	}
+
+	public WorldProbes(RegionProbe region, CoarseProbe coarse, TerrainProbe exact, BiomeProbe biome, RegionMap.Window window) {
+		this(region, coarse, exact, biome, window, null);
 	}
 
 	/** An unbounded world. */

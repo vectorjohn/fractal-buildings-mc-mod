@@ -25,9 +25,18 @@ public final class PieceLedger {
 		return r;
 	}
 
-	static void record(int x, int y, int z, int stateId) {
+	public static void record(int x, int y, int z, int stateId) {
 		Recording r = active;
 		if (r != null) r.add(x, y, z, stateId);
+	}
+
+	/** The road feature's cells (C1): recorded like any cell, and also listed in {@link Recording#roadCells} so a harness that compares district pieces to a reference raster can set them aside. */
+	public static void recordRoad(int x, int y, int z, int stateId) {
+		Recording r = active;
+		if (r != null) {
+			r.add(x, y, z, stateId);
+			r.roads.add(pack(x, y, z));
+		}
 	}
 
 	/** Records furniture placed over claimed air. Hook blocks are kept apart from the shell cells ({@link Recording#hooks}), so the shell can be compared with the core raster exactly. */
@@ -64,6 +73,10 @@ public final class PieceLedger {
 
 	public static final class Recording implements AutoCloseable {
 		private final ConcurrentSkipListMap<Long, int[]> cells = new ConcurrentSkipListMap<>();
+		final java.util.concurrent.ConcurrentSkipListSet<Long> roads = new java.util.concurrent.ConcurrentSkipListSet<>();
+
+		/** Keys of the cells the road feature recorded. */
+		public java.util.Set<Long> roadCells() { return roads; }
 		private final ConcurrentSkipListMap<Long, Integer> hooks = new ConcurrentSkipListMap<>();
 
 		/** The hook blocks (furniture, chests, lights) with their state ids, in key order. */
