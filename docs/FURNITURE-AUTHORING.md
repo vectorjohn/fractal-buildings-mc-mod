@@ -18,6 +18,29 @@ them later.
 So: you build in the game (a); the converter writes the text format (b) into the repo;
 you or an agent can tweak the text afterwards. (c) is not planned.
 
+# Designing in the viewer vs in game
+
+You asked (2026-10-23) whether this can be done in the viewer, since that is partly
+what the viewer is for. What it can do today: it draws the IR with every block as a
+**plain cube** coloured by role or style; stairs, doors, trapdoors, signs, fences and
+rails are all cubes (the IR has no block shapes or facings).
+
+- **Use the viewer for** placement, layout and room fit: which pieces each room gets,
+  where they stand, how full rooms are, blocked paths (drawn in red), every style and
+  building type side by side in the gallery. Previewing and reviewing generated rooms
+  happens there (step 8 below, plan F5).
+- **Use the game for** the look of partial-block furniture: sign arms, stair seats,
+  slab tables, fence legs. As cubes they read as lumps.
+- **Optional plan step F8** would give the viewer real shapes for stairs, slabs,
+  trapdoors, fences, signs, doors and carpets, so furniture and rails can be judged in
+  the browser. Moderate work (M): a three.js geometry per shape with rotations, the
+  face mesh taught that partial blocks don't hide neighbours, and shape data for the
+  shell's stairs and rails (today only the Java raster knows them). Details:
+  [plans/furniture.md](plans/furniture.md), "Designing in the viewer vs in game".
+- **Authoring stays in game** with a structure block: building with the real blocks
+  is the fastest way for a person to make a piece, and you see the real look while you
+  do it.
+
 # Step by step (option a)
 
 ## 1. A world to build in
@@ -36,7 +59,7 @@ it.
 
 | You build with | Becomes | Example in a style |
 |---|---|---|
-| any **oak** block (planks, stairs, slab, trapdoor, fence, gate, door, pressure plate, button, shelf, log) | `wood`, same form | spruce stairs in medieval, birch in desert |
+| any **oak** block (planks, stairs, slab, trapdoor, fence, gate, door, pressure plate, button, shelf, log, wall sign) | `wood`, same form | spruce stairs in medieval, birch in desert |
 | any **dark oak** block | `accent`, same form | dark oak in medieval, bamboo in jungle |
 | **stone bricks**, stone brick stairs, slab, wall | `stone`, same form | cobblestone in taiga, smooth sandstone in desert |
 | **white** wool, carpet, banner | `cloth`, main colour of the room | red in medieval |
@@ -173,8 +196,8 @@ What the converter writes, and what you can write or edit by hand
     ".": "clear",
     " ": "any",
     "S": {"block": "wood.stairs", "facing": "north", "half": "bottom"},
-    "W": {"block": "accent.trapdoor", "facing": "west", "half": "bottom", "open": "true"},
-    "E": {"block": "accent.trapdoor", "facing": "east", "half": "bottom", "open": "true"}
+    "W": {"block": "accent.wall_sign", "facing": "west"},
+    "E": {"block": "accent.wall_sign", "facing": "east"}
   },
   "layers": [
     ["===",
@@ -196,3 +219,6 @@ What the converter writes, and what you can write or edit by hand
 - Stairs `facing` is the side of the tall back (`north` = a seat facing south).
   An open trapdoor's panel sits on the edge opposite its `facing` (`west` = panel on
   the east edge); plan step F4 pins this with a test.
+- Chair and sofa arms are wall signs (your choice, 2026-10-23). A wall sign hangs on
+  the block opposite its `facing` (`west` = hangs on the block to its east), and that
+  block must be part of the same piece, or the converter rejects it.
