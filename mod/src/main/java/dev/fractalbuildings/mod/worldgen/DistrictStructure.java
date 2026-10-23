@@ -55,8 +55,13 @@ public final class DistrictStructure extends Structure {
 			Optional<DistrictGrid.Tile> start = planner.startTile(cp.x(), cp.z());
 			if (start.isEmpty()) return Optional.empty();
 			DistrictGrid.Tile t = start.get();
+			long lane = LaneStats.startBegin();
 			Optional<TileInfo> info = planner.tile(t.ix(), t.iz());
-			if (info.isEmpty() || info.get().tier() != tier) return Optional.empty();
+			if (info.isEmpty() || info.get().tier() != tier) {
+				LaneStats.startAbort(lane);
+				return Optional.empty();
+			}
+			planner.prefetch(t.ix(), t.iz()); // the neighbours' plans, on the workers, while this start builds its own pieces
 			BlockPos pos = new BlockPos(cp.getMiddleBlockX(), ctx.chunkGenerator().getSeaLevel(), cp.getMiddleBlockZ());
 			return Optional.of(new GenerationStub(pos, builder -> {
 				try {
@@ -73,6 +78,8 @@ public final class DistrictStructure extends Structure {
 				} catch (RuntimeException e) {
 					WorldPlanners.FAILURES.incrementAndGet();
 					FractalBuildingsMod.LOGGER.error("Planning the buildings of tile {},{} failed; the tile gets none", t.ix(), t.iz(), e);
+				} finally {
+					LaneStats.startEnd(lane);
 				}
 			}));
 		} catch (RuntimeException e) {

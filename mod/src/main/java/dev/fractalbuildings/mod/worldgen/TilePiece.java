@@ -91,7 +91,9 @@ public abstract class TilePiece extends StructurePiece {
 		boolean mixRandom = Mutations.is(Mutations.RANDOM);
 		BlockState air = Blocks.AIR.defaultBlockState();
 		BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+		long lt = 0;
 		try {
+			lt = LaneStats.postBegin();
 			planner.get().raster(ref, clip, (x, y, z, role, blockId, shape) -> {
 				BlockState state = BlockMapper.state(role, blockId, shape);
 				if (mixRandom && random.nextInt(4) == 0) state = Blocks.STONE.defaultBlockState();
@@ -102,6 +104,8 @@ public abstract class TilePiece extends StructurePiece {
 			});
 		} catch (IllegalArgumentException e) {
 			if (WARNED.put("missing" + ref, true) == null) FractalBuildingsMod.LOGGER.warn("District piece {} no longer exists in its tile (saved by generator v{}, config changed?): nothing placed", ref, genVersion);
+		} finally {
+			LaneStats.postEnd(lt);
 		}
 	}
 }

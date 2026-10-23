@@ -5,6 +5,7 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 /**
@@ -22,6 +23,8 @@ final class FlightCache<K, V> {
 
 	private final int capacity;
 	private final LinkedHashMap<K, Entry<V>> map = new LinkedHashMap<>(16, 0.75f, true);
+	/** Told how each lookup was served (counters only; never changes an answer). */
+	volatile Consumer<WorldPlanner.Lookup> observer;
 
 	FlightCache(int capacity) {
 		if (capacity < 1) throw new IllegalArgumentException("capacity < 1");
@@ -30,8 +33,10 @@ final class FlightCache<K, V> {
 
 	V get(K key, Function<K, V> compute) {
 		Entry<V> e;
+		boolean wasDone = false;
 		synchronized (map) {
 			e = map.get(key);
+			if (e != null) wasDone = e.future.isDone();
 			if (e == null) {
 				e = new Entry<>();
 				map.put(key, e);
@@ -43,7 +48,10 @@ final class FlightCache<K, V> {
 				}
 			}
 		}
-		if (e.started.compareAndSet(false, true)) {
+		boolean ran = e.started.compareAndSet(false, true);
+		Consumer<WorldPlanner.Lookup> obs = observer;
+		if (obs != null) obs.accept(ran ? WorldPlanner.Lookup.INLINE : wasDone ? WorldPlanner.Lookup.DONE : WorldPlanner.Lookup.INFLIGHT);
+		if (ran) {
 			try {
 				e.future.complete(compute.apply(key));
 			} catch (Throwable t) {

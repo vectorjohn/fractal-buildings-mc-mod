@@ -80,6 +80,14 @@ public class WorldPlanner {
 	private final FlightCache<Long, List<BuildingPiece>> buildings;
 	private final FlightCache<Long, List<GroundPiece>> grounds;
 
+	/** How a {@link #buildings} lookup was served: a finished result, waiting for a worker, or computed by the caller. */
+	public enum Lookup { DONE, INFLIGHT, INLINE }
+
+	/** Counters hook: told how every building lookup was served. Never changes an answer; null stops it. */
+	public void observeBuildings(java.util.function.Consumer<Lookup> observer) {
+		if (buildings != null) buildings.observer = observer;
+	}
+
 	/** @param workers runs {@link #prefetch}; null means prefetch does nothing. A direct executor runs it on the caller. */
 	public WorldPlanner(long seed, WorldConfig config, WorldProbes probes, Executor workers) {
 		this(seed, config, probes, workers, Caches.DEFAULT);

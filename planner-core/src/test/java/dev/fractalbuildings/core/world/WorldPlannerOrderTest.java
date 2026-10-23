@@ -172,6 +172,28 @@ class WorldPlannerOrderTest {
 		}
 	}
 
+	@Test
+	void lookupObserverClassifiesWithoutChangingAnswers() throws Exception {
+		ExecutorService workers = Executors.newFixedThreadPool(2);
+		try {
+			WorldPlanner w = GATE.planner(WorldPlanner.Caches.DEFAULT, workers);
+			int[] counts = new int[3];
+			w.observeBuildings(l -> { synchronized (counts) { counts[l.ordinal()]++; } });
+			int[] t = TILE_LIST.get(0);
+			String first = digest(w, t[0], t[1]); // computed inline by this thread
+			assertEquals(first, BASELINE.get(id(t)));
+			int inline;
+			synchronized (counts) { inline = counts[WorldPlanner.Lookup.INLINE.ordinal()]; }
+			org.junit.jupiter.api.Assertions.assertTrue(inline >= 1, "a cold lookup is inline");
+			int doneBefore;
+			synchronized (counts) { doneBefore = counts[WorldPlanner.Lookup.DONE.ordinal()]; }
+			w.buildings(t[0], t[1]);
+			synchronized (counts) { org.junit.jupiter.api.Assertions.assertEquals(doneBefore + 1, counts[WorldPlanner.Lookup.DONE.ordinal()], "a repeat is served from the finished result"); }
+		} finally {
+			workers.shutdownNow();
+		}
+	}
+
 	// ---- mutants: the harness must notice these
 
 	/** The biome answer depends on how many questions came before (order dependence). */
