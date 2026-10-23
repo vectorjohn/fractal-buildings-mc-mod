@@ -158,7 +158,7 @@ class WorldPlannerOrderTest {
 	void prefetchOnAPoolChangesNothing() throws Exception {
 		ExecutorService workers = Executors.newFixedThreadPool(4);
 		try {
-			WorldPlanner w = GATE.planner(new WorldPlanner.Caches(4096, 64, 64, 8192, 4, 4, 4), workers);
+			WorldPlanner w = GATE.planner(new WorldPlanner.Caches(4096, 64, 64, 8192, 4, 4, 4).strict(), workers);
 			List<int[]> sh = new ArrayList<>(TILE_LIST);
 			Collections.shuffle(sh, new Random(7));
 			Map<String, String> out = new TreeMap<>();

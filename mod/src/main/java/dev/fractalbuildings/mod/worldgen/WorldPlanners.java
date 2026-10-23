@@ -74,7 +74,7 @@ public final class WorldPlanners {
 		WorldProbes probes = new WorldProbes(lp.region(), lp.coarse(32), lp.exact(), lp.biome());
 		WorldConfig cfg = config.get();
 		FractalBuildingsMod.LOGGER.info("Settlement planner created for seed {} (cell size {}, frequency {}, max radius {})", seed, cfg.cellSize(), cfg.frequency(), cfg.maxRadius());
-		WorldPlanner planner = new WorldPlanner(seed, cfg, probes, workers);
+		WorldPlanner planner = new WorldPlanner(seed, cfg, probes, workers, WorldPlanner.Caches.forHeap(Runtime.getRuntime().maxMemory()));
 		LaneStats.attach(planner);
 		return planner;
 	}
