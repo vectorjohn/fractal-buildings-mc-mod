@@ -301,9 +301,12 @@ port-tagged nodes.
      may be 150 blocks off. Is that acceptable?
 
 <!--
-1. Make the span 24, then yes.
+**Answered 2026-10-23**
+1. Make the span 20, then yes.
 2. yes
 3. yes
-4. I’ll wait for the screenshot
+4. This sounds good.
+5. Yes port tag, no nudging villages. Cities already bias towards water, so port towns would naturally be the larger settlements by chance.
+6. Yes
 -- @John
 -->
