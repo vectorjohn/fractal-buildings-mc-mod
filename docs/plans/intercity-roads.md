@@ -1,6 +1,6 @@
 # Plan: roads between settlements
 
-Status: proposal, waiting for a spike (S10) and John. Author: lead-coder, 2026-10-21.
+Status: spike S10 done; the decisions are drafted in [ADR 0004](../adr/0004-roads-between-settlements.md) (proposed 2026-10-22, waiting for John), which overrides this plan where they differ: no causeways or long bridges (crossings up to 12 blocks), rim-gap graph with routable witnesses, the read cap, deck heights from exact reads at 8-block stations, and terraced cuts. Author: lead-coder, 2026-10-21.
 Asked by John in [REVIEW.md](../REVIEW.md) (D1 hamlet and village). On the ROADMAP since 2026-10-22: S10 (approved by John, running) and item 6.10.
 
 # The problem
