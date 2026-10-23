@@ -50,6 +50,8 @@ public final class Districts {
 	static final int STREET = 1, PLAZA = 2, LOT = 4, RESERVED = 8, WET = 16, SKEL = 32;
 	/** Whole-block lots from density 50 up (ROADS3; was 70): the mid-density grid quarters get perimeter blocks too, where the class table picks one. */
 	static final int BLOCK_DENSITY = 50;
+	/** How far beyond the tile a grid line's runs are followed (a multiple of {@link StreetRules#NODE}). */
+	static final int GRID_REACH = 256;
 
 	/**
 	 * A planned district: the plan, the landmarks that still reserve ground (open squares, and hall or temple landmarks that
@@ -124,6 +126,62 @@ public final class Districts {
 	/** Longest cut lane, and the shortest that is kept (a lane needs a straight run of lot-width on each side). */
 	static final int AVE_LANE_MAX = 56, AVE_LANE_MIN = 14;
 
+	/**
+	 * Quay runs as every tile that sees them grades them: each from its end with the smaller column key (a contour chain starts where
+	 * the window cuts it, so the same run can come either way), in order of their smallest column (ties by first column), the order a
+	 * later run meets an earlier one in.
+	 */
+	static List<List<int[]>> canonicalQuays(List<List<int[]>> runs) {
+		List<List<int[]>> out = new ArrayList<>();
+		for (List<int[]> r : runs) {
+			List<int[]> o = new ArrayList<>(r);
+			if (qkey(o.get(o.size() - 1)[0], o.get(o.size() - 1)[1]) < qkey(o.get(0)[0], o.get(0)[1])) java.util.Collections.reverse(o);
+			out.add(o);
+		}
+		out.sort(Comparator.comparingLong((List<int[]> r) -> qsmallest(r)).thenComparingLong(r -> qkey(r.get(0)[0], r.get(0)[1])).thenComparingInt(List::size));
+		return out;
+	}
+
+	private static long qkey(int x, int z) { return ((long) z << 32) ^ (x & 0xffffffffL); }
+
+	private static long qsmallest(List<int[]> cols) {
+		long best = Long.MAX_VALUE;
+		for (int[] c : cols) best = Math.min(best, qkey(c[0], c[1]));
+		return best;
+	}
+
+	/** The wall rings of the settlement (the centre cell's walls) as ring lots, the same in every tile. */
+	static List<List<WallRing.Piece>> wallRings(SkeletonSource src) {
+		List<List<WallRing.Piece>> out = new ArrayList<>();
+		Cell centreCell = CellGeometry.owner(src.view().field(), src.site().centre().x(), src.site().centre().z());
+		if (!src.site().cells().contains(centreCell)) return out;
+		CellSkeleton sk = src.skeleton(centreCell);
+		for (Wall w : sk.walls()) {
+			List<Pt> gates = new ArrayList<>();
+			for (Gate g : sk.gates()) if (g.kind() == GateKind.WALL) gates.add(new Pt(g.x(), g.z()));
+			out.add(WallRing.pieces(w, gates, src.grid(), src.seed()));
+		}
+		return out;
+	}
+
+	/** Gate pins of a whole street (ROADS3; {@code Build.gatePins}) for one wall ring, added to {@code pins} (created when null and some column passes a gate). */
+	static TreeMap<Integer, Integer> ringGatePins(List<WallRing.Piece> pieces, java.util.function.Supplier<int[]> levels, List<int[]> cols, TreeMap<Integer, Integer> pins) {
+		for (int k = 0; k < pieces.size(); k++) {
+			WallRing.Piece p = pieces.get(k);
+			if (p.gate() == WallRing.NONE) continue;
+			Rect b = WallRing.band(p);
+			boolean alongX = p.front() == Facing.NORTH || p.front() == Facing.SOUTH; // the passage runs along z
+			Rect e = alongX ? new Rect(b.x(), b.z() - 1, b.w(), b.d() + 2) : new Rect(b.x() - 1, b.z(), b.w() + 2, b.d());
+			for (int i = 0; i < cols.size(); i++) {
+				int[] c = cols.get(i);
+				if (!e.contains(c[0], c[1])) continue;
+				if (pins == null) pins = new TreeMap<>();
+				pins.put(i, levels.get()[k] + 1);
+			}
+		}
+		return pins;
+	}
+
 	/** Index ranges {first, last} of the maximal runs of a street's columns that step one block in x and one in z each time. */
 	static List<int[]> diagonalRuns(List<int[]> cols) {
 		List<int[]> out = new ArrayList<>();
@@ -156,6 +214,11 @@ public final class Districts {
 			this.cols = cols;
 			this.fixed = fixed;
 		}
+
+		/** The graded height of every column (set by {@code grade}). */
+		int[] y;
+		/** {@code grade} found no profile that meets the streets this one touches within the grade limit (JUNCTION). */
+		boolean unmet;
 
 		/** For a piece of a whole street: its slice of the whole profile and which columns need more cut or fill than allowed (null otherwise). */
 		int[] wholeY;
@@ -350,6 +413,155 @@ public final class Districts {
 			for (int j = 0; j < np; j++) plazaOk[j] = good[find(parent, n + j)];
 		}
 
+		/**
+		 * The last guard of JUNCTION: a street whose end face still touches another street's side more than a block away (a piece of a
+		 * whole street cut by this tile's own reservation, which the junction field cannot know of) loses its end columns until it no
+		 * longer does (a street running beside another to its end), one column at a time, keeping at least its width plus two columns, and only inside the tile clear of its border band (where
+		 * the neighbouring tile must draw the same footprint). In id order; deterministic.
+		 */
+		void trimAbuttingEnds(List<Raw> finals) {
+			for (Raw r : finals) {
+				if (r.y == null || r.y.length != r.cols.size()) continue;
+				for (int side = 0; side < 2; side++) {
+					while (r.cols.size() > r.width + 2) {
+						int[] end = side == 0 ? r.cols.get(0) : r.cols.get(r.cols.size() - 1);
+						int m = r.width / 2 + 3;
+						if (end[0] < tile.minX() + m || end[0] >= tile.maxX() - m || end[1] < tile.minZ() + m || end[1] >= tile.maxZ() - m) break;
+						if (!abutsAtAnotherLevel(r, side, finals)) break;
+						if (!stillJoined(r, side, finals)) { relevelEnd(r, side, finals); break; } // never cut a street off the streets it hangs from: bring its end to their level instead
+						try {
+							r.cols.remove(side == 0 ? 0 : r.cols.size() - 1);
+						} catch (UnsupportedOperationException e) {
+							break;
+						}
+						r.y = side == 0 ? java.util.Arrays.copyOfRange(r.y, 1, r.y.length) : java.util.Arrays.copyOf(r.y, r.y.length - 1);
+						if (r.wholeY != null) {
+							r.wholeY = r.y;
+							r.steep = side == 0 ? java.util.Arrays.copyOfRange(r.steep, 1, r.steep.length) : java.util.Arrays.copyOf(r.steep, r.steep.length - 1);
+						}
+						r.street = street(r, r.y);
+						notes.add("street " + r.id + " stops a column short of a street at another level");
+					}
+				}
+			}
+		}
+
+		/**
+		 * Brings the end face of {@code r} at {@code side} to the level of the streets it touches there, ramping back to its own profile at
+		 * 1 in 3, when the result keeps the grade, stays inside the tile clear of its border band and still meets every street it overlaps
+		 * within a block. False (and no change) otherwise.
+		 */
+		boolean relevelEnd(Raw r, int side, List<Raw> finals) {
+			int h = r.width / 2, n = r.cols.size();
+			int[] b = footprintBox(r.cols, r.width);
+			Layer mine = cells(r.cols, r.width, r.y, b[0], b[1], b[2], b[3], side == 0, side == 1);
+			List<Layer> others = new ArrayList<>();
+			for (Raw s : finals) {
+				if (s == r || s.y == null || SettlementChecks.wholeStreet(s.id).equals(SettlementChecks.wholeStreet(r.id))) continue;
+				Layer l = cells(s.cols, s.width, s.y, b[0] - 1, b[1] - 1, b[2] + 1, b[3] + 1, false, false);
+				if (l != null) others.add(l);
+			}
+			int lo = Integer.MAX_VALUE, hi = Integer.MIN_VALUE;
+			int e0 = side == 0 ? 0 : Math.max(0, n - 1 - h), e1 = side == 0 ? Math.min(n - 1, h) : n - 1;
+			for (int i = e0; i <= e1; i++) {
+				int[] c = r.cols.get(i);
+				for (int dz = 0; dz < r.width; dz++) for (int dx = 0; dx < r.width; dx++) {
+					int x = c[0] - h + dx, z = c[1] - h + dz;
+					int[] v = mine.at(x, z);
+					if (v == null || v[2] != 1) continue;
+					for (int[] d : new int[][] {{1, 0}, {-1, 0}, {0, 1}, {0, -1}}) {
+						if (mine.at(x + d[0], z + d[1]) != null) continue;
+						for (Layer o : others) {
+							int[] w = o.at(x + d[0], z + d[1]);
+							if (w == null || o.at(x, z) != null) continue;
+							lo = Math.min(lo, w[0]);
+							hi = Math.max(hi, w[1]);
+						}
+					}
+				}
+			}
+			if (lo == Integer.MAX_VALUE || hi - lo > 2) return false;
+			int t = Math.floorDiv(lo + hi, 2), edge = side == 0 ? e1 : e0;
+			int[] y = r.y.clone();
+			int m = r.width / 2 + 3;
+			for (int k = 0; k < n; k++) {
+				int dist = side == 0 ? Math.max(0, k - edge) : Math.max(0, edge - k);
+				int v = Math.max(Math.min(y[k], t + dist / Grading.GRADE_RUN), t - dist / Grading.GRADE_RUN);
+				if (v == y[k]) continue;
+				int[] c = r.cols.get(k);
+				if (c[0] < tile.minX() + m || c[0] >= tile.maxX() - m || c[1] < tile.minZ() + m || c[1] >= tile.maxZ() - m) return false;
+				y[k] = v;
+			}
+			int[] xs = new int[n], zs = new int[n];
+			for (int k = 0; k < n; k++) { xs[k] = r.cols.get(k)[0]; zs[k] = r.cols.get(k)[1]; }
+			if (!SettlementChecks.roadGrade(r.id, xs, zs, y).isEmpty()) return false;
+			Layer moved = cells(r.cols, r.width, y, b[0], b[1], b[2], b[3], false, false);
+			for (int z = b[1]; z <= b[3]; z++) for (int x = b[0]; x <= b[2]; x++) {
+				int[] v = moved.at(x, z);
+				if (v == null) continue;
+				for (Layer o : others) { int[] w = o.at(x, z); if (w != null && Math.abs(w[0] - v[0]) > 1) return false; }
+			}
+			r.y = y;
+			if (r.wholeY != null) r.wholeY = y;
+			r.street = street(r, y);
+			notes.add("street " + r.id + " brought to the level of the street its end meets");
+			return true;
+		}
+
+		/** Without its end column at {@code side}, the street's footprint still overlaps or touches (across a cell edge) another street. */
+		boolean stillJoined(Raw r, int side, List<Raw> finals) {
+			List<int[]> rest = side == 0 ? r.cols.subList(1, r.cols.size()) : r.cols.subList(0, r.cols.size() - 1);
+			int h = r.width / 2;
+			int[] b = footprintBox(rest, r.width);
+			for (Raw s : finals) {
+				if (s == r || s.y == null || SettlementChecks.wholeStreet(s.id).equals(SettlementChecks.wholeStreet(r.id))) continue;
+				Layer l = cells(s.cols, s.width, s.y, b[0] - 1, b[1] - 1, b[2] + 1, b[3] + 1, false, false);
+				if (l == null) continue;
+				for (int[] c : rest) {
+					for (int dz = -1; dz <= r.width; dz++) {
+						for (int dx = -1; dx <= r.width; dx++) {
+							if ((dx == -1 || dx == r.width) && (dz == -1 || dz == r.width)) continue; // corners do not join
+							if (l.at(c[0] - h + dx, c[1] - h + dz) != null) return true;
+						}
+					}
+				}
+			}
+			return false;
+		}
+
+		/** The end face of {@code r} at one end (its first or last {@code width / 2 + 1} columns' cells) touches a cell of another street, across one cell edge and not shared, more than a block away. */
+		boolean abutsAtAnotherLevel(Raw r, int side, List<Raw> finals) {
+			int h = r.width / 2, n = r.cols.size();
+			int[] b = footprintBox(r.cols, r.width);
+			Layer mine = cells(r.cols, r.width, r.y, b[0], b[1], b[2], b[3], side == 0, side == 1);
+			List<Layer> others = new ArrayList<>();
+			for (Raw s : finals) {
+				if (s == r || s.y == null || SettlementChecks.wholeStreet(s.id).equals(SettlementChecks.wholeStreet(r.id))) continue;
+				Layer l = cells(s.cols, s.width, s.y, b[0] - 1, b[1] - 1, b[2] + 1, b[3] + 1, false, false);
+				if (l != null) others.add(l);
+			}
+			if (others.isEmpty()) return false;
+			for (int i = side == 0 ? 0 : Math.max(0, n - 1 - h); i <= (side == 0 ? Math.min(n - 1, h) : n - 1); i++) {
+				int[] c = r.cols.get(i);
+				for (int dz = 0; dz < r.width; dz++) {
+					for (int dx = 0; dx < r.width; dx++) {
+						int x = c[0] - h + dx, z = c[1] - h + dz;
+						int[] v = mine.at(x, z);
+						if (v == null || v[2] != 1) continue; // a cell of this end face
+						for (int[] d : new int[][] {{1, 0}, {-1, 0}, {0, 1}, {0, -1}}) {
+							if (mine.at(x + d[0], z + d[1]) != null) continue;
+							for (Layer o : others) {
+								int[] w = o.at(x + d[0], z + d[1]);
+								if (w == null || o.at(x, z) != null) continue;
+								if (Math.abs(w[0] - v[0]) > 1) return true;
+							}
+						}
+					}
+				}
+			}
+			return false;
+		}
+
 		/** Hall and temple lots placed on a square, with the square they face. */
 		final List<Object[]> onSquare = new ArrayList<>();
 
@@ -541,6 +753,7 @@ public final class Districts {
 			List<Raw> finals = new ArrayList<>();
 			for (Raw r : raws) if (r.street != null) finals.add(r);
 			finals.sort(Comparator.comparing(r -> r.id));
+			trimAbuttingEnds(finals);
 			markLotEligible(finals);
 			dropCutOffHallLots();
 			ownerList.clear();
@@ -670,15 +883,24 @@ public final class Districts {
 		List<RingInfo> rings() {
 			if (rings != null) return rings;
 			rings = new ArrayList<>();
-			Cell centreCell = CellGeometry.owner(src.view().field(), src.site().centre().x(), src.site().centre().z());
-			if (!src.site().cells().contains(centreCell)) return rings;
-			CellSkeleton sk = src.skeleton(centreCell);
-			for (Wall w : sk.walls()) {
-				List<Pt> gates = new ArrayList<>();
-				for (Gate g : sk.gates()) if (g.kind() == GateKind.WALL) gates.add(new Pt(g.x(), g.z()));
-				rings.add(new RingInfo(WallRing.pieces(w, gates, grid, seed)));
-			}
+			for (List<WallRing.Piece> pieces : wallRings(src)) rings.add(new RingInfo(pieces));
 			return rings;
+		}
+
+		/** The settlement's junction field (JUNCTION), built once per source and probe. */
+		JunctionField junctions() {
+			if (junctionField == null) junctionField = src.junctions(exact);
+			return junctionField;
+		}
+
+		JunctionField junctionField;
+
+		/** The pins of a whole street: its junction pads ({@link JunctionField}), and gate passages over them (a gate's level is the wall's). Null when none. */
+		TreeMap<Integer, Integer> pins(String key, List<int[]> cols) {
+			TreeMap<Integer, Integer> j = key == null ? null : junctions().pins(key, cols), g = gatePins(cols);
+			if (j == null) return g;
+			if (g != null) j.putAll(g);
+			return j;
 		}
 
 		/**
@@ -689,21 +911,7 @@ public final class Districts {
 		 */
 		TreeMap<Integer, Integer> gatePins(List<int[]> cols) {
 			TreeMap<Integer, Integer> pins = null;
-			for (RingInfo ri : rings()) {
-				for (int k = 0; k < ri.pieces.size(); k++) {
-					WallRing.Piece p = ri.pieces.get(k);
-					if (p.gate() == WallRing.NONE) continue;
-					Rect b = WallRing.band(p);
-					boolean alongX = p.front() == Facing.NORTH || p.front() == Facing.SOUTH; // the passage runs along z
-					Rect e = alongX ? new Rect(b.x(), b.z() - 1, b.w(), b.d() + 2) : new Rect(b.x() - 1, b.z(), b.w() + 2, b.d());
-					for (int i = 0; i < cols.size(); i++) {
-						int[] c = cols.get(i);
-						if (!e.contains(c[0], c[1])) continue;
-						if (pins == null) pins = new TreeMap<>();
-						pins.put(i, ri.levels()[k] + 1);
-					}
-				}
-			}
+			for (RingInfo ri : rings()) pins = ringGatePins(ri.pieces, ri::levels, cols, pins);
 			return pins;
 		}
 
@@ -893,9 +1101,9 @@ public final class Districts {
 		}
 
 		/** Clips a street's columns to the tile and its margin and the reserved rectangles; each remaining run is a street. */
-		void addPieces(String base, RoadKind kind, int width, List<int[]> cols, boolean fixed) {
+		void addPieces(String base, RoadKind kind, int width, List<int[]> cols, boolean fixed, String key) {
 			int n = 0;
-			for (Raw r : pieces(cols, width, kind, fixed)) {
+			for (Raw r : pieces(cols, width, kind, fixed, key)) {
 				raws.add(new Raw(n == 0 ? base : base + "." + n, kind, width, r.cols, fixed).withWhole(r));
 				n++;
 			}
@@ -908,11 +1116,31 @@ public final class Districts {
 		 * road at the same height (ROADS; before, each tile graded its own clipped piece and the two disagreed by up to 14 blocks).
 		 * Ids are the caller's; the returned Raws carry only columns and the slice.
 		 */
-		List<Raw> pieces(List<int[]> cols, int width, RoadKind kind, boolean fixed) {
+		List<Raw> pieces(List<int[]> cols, int width, RoadKind kind, boolean fixed, String key) {
+			return pieces(cols, width, kind, fixed, key, null, null);
+		}
+
+		/**
+		 * {@link #pieces(List, int, RoadKind, boolean, String)}. A whole street of the junction field (a key) takes its profile from the
+		 * field, which grades every whole street of the settlement once with its junction pads pinned; one graded already ({@code givenY},
+		 * {@code givenSteep}: a quay run, {@link #quayWholes}) keeps that profile; any other is graded here with its gate pins.
+		 */
+		List<Raw> pieces(List<int[]> cols, int width, RoadKind kind, boolean fixed, String key, int[] givenY, boolean[] givenSteep) {
 			List<Raw> out = new ArrayList<>();
-			Grading.RoadGrade wg = null;
+			int[] wy = givenY;
+			boolean[] wst = givenSteep;
 			for (List<int[]> run0 : StreetCols.runs(cols, c -> keep(c) && !hitsReserved(c, width))) {
-				if (wg == null) wg = Grading.profile(lattice(StreetCols.vertices(cols)), memo, gatePins(cols));
+				if (wy == null) {
+					JunctionField.Slice sl = key == null ? null : junctions().profile(key, cols);
+					if (sl != null) { wy = sl.y(); wst = sl.steep(); }
+					else {
+						TreeMap<Integer, Integer> pn = pins(key, cols);
+						Grading.RoadGrade wg = Grading.profile(lattice(StreetCols.vertices(cols)), memo, pn);
+						wy = wg.profile().y();
+						wst = new boolean[cols.size()];
+						for (Grading.Steep st : wg.steep()) for (int i = st.from(); i <= st.to(); i++) wst[i] = true;
+					}
+				}
 				int s = indexOf(cols, run0.get(0)), e = s + run0.size() - 1;
 				List<int[]> run = new ArrayList<>(run0);
 				int off = 0;
@@ -923,8 +1151,8 @@ public final class Districts {
 				r.steep = new boolean[run.size()];
 				for (int i = 0; i < run.size(); i++) {
 					int w = Math.max(s, Math.min(e, s + i - off)); // a join step takes its neighbour's height
-					r.wholeY[i] = wg.profile().y()[w];
-					for (Grading.Steep st : wg.steep()) if (w >= st.from() && w <= st.to()) r.steep[i] = true;
+					r.wholeY[i] = wy[w];
+					r.steep[i] = wst[w];
 				}
 				out.add(r);
 			}
@@ -998,7 +1226,7 @@ public final class Districts {
 		}
 
 		void skeletonStreets() {
-			for (Road r : nearbyRoads()) addPieces(r.id(), r.kind(), r.width(), StreetCols.columns(r.points()), true);
+			for (Road r : nearbyRoads()) addPieces(r.id(), r.kind(), r.width(), StreetCols.columns(r.points()), true, JunctionField.roadKey(r.id()));
 		}
 
 		/** Flags {@link #SKEL} under the skeleton roads and arterials of the tile (unclipped), so a moved square can prefer a spot beside one. */
@@ -1041,15 +1269,15 @@ public final class Districts {
 				RoadKind k = rules.borderKind(s);
 				if (k == null) continue;
 				if (k == RoadKind.ARTERIAL) {
-					addPieces(Ids.arterial(s.axis(), s.line(), s.from()), k, art.width(), StreetCols.columns(art.points(s, s.from(), s.to())), true);
+					addPieces(Ids.arterial(s.axis(), s.line(), s.from()), k, art.width(), StreetCols.columns(art.points(s, s.from(), s.to())), true, JunctionField.lineKey(s.axis(), s.fixed()));
 					continue;
 				}
 				if (rules.lattice()) {
-					addPieces("b" + s.axis() + Ids.n(s.line()) + "_" + Ids.n(s.from()), RoadKind.STREET, StreetRules.BORDER_WIDTH, StreetCols.columns(art.points(s, s.from(), s.to())), true);
+					addPieces("b" + s.axis() + Ids.n(s.line()) + "_" + Ids.n(s.from()), RoadKind.STREET, StreetRules.BORDER_WIDTH, StreetCols.columns(art.points(s, s.from(), s.to())), true, JunctionField.lineKey(s.axis(), s.fixed()));
 					continue;
 				}
 				for (List<Pt> run : nodeRuns(s.from(), s.to(), (a, b) -> StreetRules.borderEdgeOk(exact, Arterials.ax(s, a), Arterials.az(s, a), Arterials.ax(s, b), Arterials.az(s, b)), s)) {
-					addPieces("b" + s.axis() + Ids.n(s.line()) + "_" + Ids.n(axisCoord(s, run.get(0))), RoadKind.STREET, StreetRules.BORDER_WIDTH, StreetCols.columns(run), true);
+					addPieces("b" + s.axis() + Ids.n(s.line()) + "_" + Ids.n(axisCoord(s, run.get(0))), RoadKind.STREET, StreetRules.BORDER_WIDTH, StreetCols.columns(run), true, JunctionField.lineKey(s.axis(), s.fixed()));
 				}
 			}
 		}
@@ -1058,15 +1286,7 @@ public final class Districts {
 		 * The column lies within {@code r} blocks of a border of its tile where the street lattice has no street. Grid lines and quays stop
 		 * short of such a border (neither tile may draw a piece that crosses it, and the piece would reach no street there).
 		 */
-		boolean nearAbsentBorder(int x, int z, int r) {
-			if (!rules.lattice()) return false;
-			DistrictGrid.Tile t = grid.tileAt(x, z);
-			for (DistrictGrid.Segment s : grid.segments(t.ix(), t.iz())) {
-				int across = s.axis() == DistrictGrid.AXIS_X ? x : z, along = s.axis() == DistrictGrid.AXIS_X ? z : x;
-				if (Math.abs(across - s.fixed()) <= r && along >= s.from() - r && along <= s.to() + r && rules.borderKind(s) == null) return true;
-			}
-			return false;
-		}
+		boolean nearAbsentBorder(int x, int z, int r) { return rules.nearAbsentBorder(x, z, r); }
 
 		static int axisCoord(DistrictGrid.Segment s, Pt p) { return s.axis() == DistrictGrid.AXIS_X ? p.z() : p.x(); }
 
@@ -1094,9 +1314,6 @@ public final class Districts {
 		}
 
 		/** Grid lines: the shared lines of this tile's row and column of tiles, as runs of ok edges over the tile and its margin. */
-		/** How far beyond the tile a grid line's runs are followed (a multiple of {@link StreetRules#NODE}). */
-		static final int GRID_REACH = 256;
-
 		void gridStreets() {
 			int lo, hi;
 			for (int axis = 0; axis < 2; axis++) {
@@ -1110,7 +1327,7 @@ public final class Districts {
 					hi += GRID_REACH;
 					DistrictGrid.Segment s = new DistrictGrid.Segment(axis, 0, 0, pos, lo, hi);
 					for (List<Pt> run : nodeRuns(lo, hi, (a, b) -> rules.gridSideEdgeOk(memo, s.axis(), pos, a, b) && !nearAbsentBorder(Arterials.ax(s, a), Arterials.az(s, a), 0) && !nearAbsentBorder(Arterials.ax(s, b), Arterials.az(s, b), 0), s)) {
-						addPieces("s" + (vertical ? "x" : "z") + Ids.n(pos) + "_" + Ids.n(axisCoord(s, run.get(0))), RoadKind.STREET, StreetRules.GRID_WIDTH, StreetCols.columns(run), false);
+						addPieces("s" + (vertical ? "x" : "z") + Ids.n(pos) + "_" + Ids.n(axisCoord(s, run.get(0))), RoadKind.STREET, StreetRules.GRID_WIDTH, StreetCols.columns(run), false, JunctionField.lineKey(s.axis(), pos));
 					}
 				}
 			}
@@ -1123,7 +1340,12 @@ public final class Districts {
 			return false;
 		}
 
-		/** Grades a street (the profile the scene will compute from the same columns); false when it needs more cut or fill than allowed. */
+		/**
+		 * Grades a street (the profile the scene will compute from the same columns); false when it needs more cut or fill than allowed,
+		 * or (JUNCTION) when it cannot meet the streets it touches within the grade limit. A whole street keeps its slice of the whole
+		 * profile; any other street (a subdivision street, lane, link or port) is graded after the streets it meets and takes their
+		 * level where its footprint overlaps theirs ({@link #meetPins}), so it joins them flat or within one block.
+		 */
 		boolean grade(Raw r) {
 			int n = r.cols.size();
 			int[] y;
@@ -1132,13 +1354,196 @@ public final class Districts {
 				y = r.wholeY;
 				for (int i = 0; i < n; i++) ok &= !r.steep[i];
 			} else {
-				Grading.RoadGrade g = Grading.profile(lattice(StreetCols.vertices(r.cols)), memo);
+				TreeMap<Integer, Integer> pins = meetPins(r);
+				Grading.RoadGrade g = Grading.profile(lattice(StreetCols.vertices(r.cols)), memo, pins);
 				if (g.profile().size() != n) throw new IllegalStateException("street " + r.id + ": profile has " + g.profile().size() + " columns for " + n);
 				y = g.profile().y();
-				ok = g.ok();
+				// the drop rule: a street that cannot meet the streets it touches (too steep between them, two of them too far apart at one
+				// column, or a bridge deck it must keep lifting it off one) is not drawn
+				r.unmet = pins != null && (meetConflict || !meetBad.isEmpty() || !SettlementChecks.roadGrade(r.id, g.profile().x(), g.profile().z(), y).isEmpty());
+				if (pins != null) for (var e : pins.entrySet()) r.unmet |= y[e.getKey()] != e.getValue();
+				ok = g.ok() && !r.unmet;
 			}
+			r.y = y;
 			r.street = street(r, y);
 			return ok;
+		}
+
+		/** The last {@link #meetPins} found a column that touches two streets more than two blocks apart. */
+		boolean meetConflict;
+
+		/** The columns the last {@link #meetPins} found no level for: they touch one street whose cells there span more than two blocks. */
+		TreeSet<Integer> meetBad = new TreeSet<>();
+
+		/**
+		 * A street another may meet, over a box: the level it has on a cell ({@code {lo, hi, end}}: end 1 when the cell belongs to the
+		 * street's end face), or null where it does not cover the cell.
+		 */
+		interface Layer { int[] at(int x, int z); }
+
+		/**
+		 * A street's cells over the box {@code [x0, x1] x [z0, z1]}: the first of its columns whose footprint covers a cell gives the cell's
+		 * level, as the grader builds it. Null when the street misses the box.
+		 */
+		static Layer cells(List<int[]> cols, int width, int[] y, int x0, int z0, int x1, int z1, boolean headEnd, boolean tailEnd) {
+			int w = x1 - x0 + 1, d = z1 - z0 + 1, sh = width / 2, n = cols.size();
+			int[] lvl = new int[w * d];
+			boolean[] set = new boolean[w * d], end = new boolean[w * d];
+			boolean any = false;
+			for (int i = 0; i < cols.size(); i++) {
+				int[] c = cols.get(i);
+				if (c[0] - sh > x1 || c[0] - sh + width - 1 < x0 || c[1] - sh > z1 || c[1] - sh + width - 1 < z0) continue;
+				for (int dz = 0; dz < width; dz++) {
+					int z = c[1] - sh + dz;
+					if (z < z0 || z > z1) continue;
+					for (int dx = 0; dx < width; dx++) {
+						int x = c[0] - sh + dx;
+						if (x < x0 || x > x1 || set[(z - z0) * w + (x - x0)]) continue;
+						set[(z - z0) * w + (x - x0)] = true;
+						lvl[(z - z0) * w + (x - x0)] = y[i];
+						end[(z - z0) * w + (x - x0)] = (headEnd && i <= sh) || (tailEnd && i >= n - 1 - sh);
+						any = true;
+					}
+				}
+			}
+			if (!any) return null;
+			return (x, z) -> {
+				if (x < x0 || x > x1 || z < z0 || z > z1 || !set[(z - z0) * w + (x - x0)]) return null;
+				int v = lvl[(z - z0) * w + (x - x0)];
+				return new int[] {v, v, end[(z - z0) * w + (x - x0)] ? 1 : 0};
+			};
+		}
+
+		/** The box a street's footprint covers: {x0, z0, x1, z1}. */
+		static int[] footprintBox(List<int[]> cols, int width) {
+			int h = width / 2, x0 = Integer.MAX_VALUE, z0 = Integer.MAX_VALUE, x1 = Integer.MIN_VALUE, z1 = Integer.MIN_VALUE;
+			for (int[] c : cols) { x0 = Math.min(x0, c[0] - h); z0 = Math.min(z0, c[1] - h); x1 = Math.max(x1, c[0] - h + width - 1); z1 = Math.max(z1, c[1] - h + width - 1); }
+			return new int[] {x0, z0, x1, z1};
+		}
+
+		/**
+		 * The levels a street must take where its footprint overlaps the graded streets of the tile (JUNCTION), and the settlement's
+		 * quays (graded ahead, {@link #quayWholes}, so a street laid before the quays still meets them): see {@link #meetPins(List, int, List, boolean, boolean)}.
+		 */
+		TreeMap<Integer, Integer> meetPins(Raw r) {
+			int[] b = footprintBox(r.cols, r.width);
+			b = new int[] {b[0] - 1, b[1] - 1, b[2] + 1, b[3] + 1}; // and the cells beside it, where a street ending against it touches it
+			List<Layer> layers = new ArrayList<>();
+			for (Raw s : raws) {
+				if (s == r || s.street == null || s.y == null) continue;
+				Layer l = cells(s.cols, s.width, s.y, b[0], b[1], b[2], b[3], !windowEdge(s.cols.get(0)), !windowEdge(s.cols.get(s.cols.size() - 1)));
+				if (l != null) layers.add(l);
+			}
+			for (QuayWhole q : quayWholes()) {
+				Layer l = cells(q.cols(), Quays.WIDTH, q.y(), b[0], b[1], b[2], b[3], true, true);
+				if (l != null) layers.add(l);
+			}
+			return meetPins(r.cols, r.width, layers, !windowEdge(r.cols.get(0)), !windowEdge(r.cols.get(r.cols.size() - 1)));
+		}
+
+		/** The column lies on the edge of the window the tile keeps its streets in (a piece cut there goes on in the neighbouring tile). */
+		boolean windowEdge(int[] c) {
+			return c[0] <= tile.minX() - MARGIN || c[0] >= tile.maxX() + MARGIN || c[1] <= tile.minZ() - MARGIN || c[1] >= tile.maxZ() + MARGIN;
+		}
+
+		/**
+		 * Column index to level for every column of a street whose footprint shares a cell with one of the layers (the streets it meets),
+		 * null when none does. For each street it touches, a run of touching columns gets one level within one block of every level that
+		 * street has on those cells (the middle of their range), so the street meets it flat; when no single level fits (a street sloping
+		 * across the whole overlap), each column gets the middle of its own cells. A column that touches two streets takes a level within a
+		 * block of both, or sets {@link #meetConflict} when there is none.
+		 */
+		TreeMap<Integer, Integer> meetPins(List<int[]> cols, int width, List<Layer> layers, boolean headEnd, boolean tailEnd) {
+			int h = width / 2, n = cols.size();
+			meetConflict = false;
+			meetBad = new TreeSet<>();
+			TreeMap<Integer, int[]> acc = null; // column -> {sum of the streets' levels, count, lowest and highest cell level} over the streets it touches
+			for (Layer l : layers) {
+				int[] cLo = new int[n], cHi = new int[n];
+				boolean[] touch = new boolean[n];
+				for (int i = 0; i < n; i++) {
+					int[] c = cols.get(i);
+					cLo[i] = Integer.MAX_VALUE;
+					cHi[i] = Integer.MIN_VALUE;
+					for (int dz = 0; dz < width; dz++) {
+						for (int dx = 0; dx < width; dx++) {
+							int[] v = l.at(c[0] - h + dx, c[1] - h + dz);
+							if (v == null) continue;
+							touch[i] = true;
+							cLo[i] = Math.min(cLo[i], v[0]);
+							cHi[i] = Math.max(cHi[i], v[1]);
+						}
+					}
+					// the cells beside the footprint, across one cell edge: a street that ends there (this one at its end column, or the
+					// other at its end face) meets the other street as if they overlapped
+					boolean mineEnd = (headEnd && i <= h) || (tailEnd && i >= n - 1 - h);
+					for (int k = 0; k < width; k++) {
+						int[][] ring = {{c[0] - h - 1, c[1] - h + k}, {c[0] - h + width, c[1] - h + k}, {c[0] - h + k, c[1] - h - 1}, {c[0] - h + k, c[1] - h + width}};
+						for (int[] q : ring) {
+							int[] v = l.at(q[0], q[1]);
+							if (v == null || !(mineEnd || v[2] == 1)) continue;
+							touch[i] = true;
+							cLo[i] = Math.min(cLo[i], v[0]);
+							cHi[i] = Math.max(cHi[i], v[1]);
+						}
+					}
+				}
+				TreeMap<Integer, Integer> p = runPins(touch, cLo, cHi, meetBad);
+				if (p == null) continue;
+				if (acc == null) acc = new TreeMap<>();
+				for (var e : p.entrySet()) {
+					int[] a = acc.computeIfAbsent(e.getKey(), k -> new int[] {0, 0, Integer.MAX_VALUE, Integer.MIN_VALUE});
+					a[0] += e.getValue();
+					a[1]++;
+					a[2] = Math.min(a[2], cLo[e.getKey()]);
+					a[3] = Math.max(a[3], cHi[e.getKey()]);
+				}
+			}
+			if (acc == null) return null;
+			TreeMap<Integer, Integer> pins = new TreeMap<>();
+			for (var e : acc.entrySet()) {
+				int[] a = e.getValue();
+				int v = Math.floorDiv(a[0], a[1]);
+				if (a[1] > 1) {
+					if (a[3] - a[2] > 2) meetConflict = true; // no level is within a block of every street this column touches
+					else v = Math.max(a[3] - 1, Math.min(a[2] + 1, v));
+				}
+				pins.put(e.getKey(), v);
+			}
+			return pins;
+		}
+
+		/**
+		 * One level per run of touching columns within one block of every level on its cells when one fits, else each column's middle.
+		 * Two runs on one street whose levels differ by more than the grade allows over the gap between them (a street crossing the
+		 * chord of another's bend) count as one run.
+		 */
+		static TreeMap<Integer, Integer> runPins(boolean[] touch, int[] cLo, int[] cHi, java.util.Set<Integer> bad) {
+			int n = touch.length;
+			List<int[]> runs = new ArrayList<>(); // {first, last, lowest, highest}
+			for (int i = 0; i < n; ) {
+				if (!touch[i]) { i++; continue; }
+				int j = i, rLo = Integer.MAX_VALUE, rHi = Integer.MIN_VALUE;
+				while (j < n && touch[j]) { rLo = Math.min(rLo, cLo[j]); rHi = Math.max(rHi, cHi[j]); j++; }
+				int[] r = {i, j - 1, rLo, rHi};
+				int[] prev = runs.isEmpty() ? null : runs.get(runs.size() - 1);
+				if (prev != null && Math.abs(Math.floorDiv(r[2] + r[3], 2) - Math.floorDiv(prev[2] + prev[3], 2)) > JunctionField.rise(prev[1], r[0])) {
+					prev[1] = r[1];
+					prev[2] = Math.min(prev[2], r[2]);
+					prev[3] = Math.max(prev[3], r[3]);
+				} else runs.add(r);
+				i = j;
+			}
+			if (runs.isEmpty()) return null;
+			TreeMap<Integer, Integer> pins = new TreeMap<>();
+			for (int[] r : runs) {
+				for (int k = r[0]; k <= r[1]; k++) {
+					if (!touch[k]) continue;
+					pins.put(k, r[3] - r[2] <= 2 ? Math.floorDiv(r[2] + r[3], 2) : Math.floorDiv(cLo[k] + cHi[k], 2));
+					if (r[3] - r[2] > 2 && cHi[k] - cLo[k] > 2 && bad != null) bad.add(k); // no level is within a block of every cell of this one street
+				}
+			}
+			return pins;
 		}
 
 		/**
@@ -1399,7 +1804,9 @@ public final class Districts {
 				if (!grade(r)) continue; // too steep: this run is dropped (a child that then joins nothing is dropped too)
 				if (!joinsStreet(r)) {
 					List<Raw> base = new ArrayList<>(raws);
+					raws.add(r); // so the link meets the street it starts from at the street's level (JUNCTION)
 					Raw link = quayLink("sdk" + subLink, run, base);
+					raws.remove(raws.size() - 1);
 					if (link == null) continue;
 					subLink++;
 					raws.add(link);
@@ -1501,7 +1908,8 @@ public final class Districts {
 			int dens = den.at(c[0], c[1]);
 			if (dens < QuarterField.OUTSKIRTS_DENSITY || qf.at(c[0], c[1], dens) != QuarterKind.WATERFRONT) return false; // outskirts keep their bank
 			int rise = fl(c[0], c[1]) - waterLevel(c[0], c[1]);
-			return rise >= 0 && rise <= Quays.MAX_RISE;
+			if (rise < 0 || rise > Quays.MAX_RISE) return false;
+			return !junctions().splits(c[0], c[1], Quays.WIDTH); // squeezed between two streets at different heights it could meet neither (JUNCTION)
 		}
 
 		/**
@@ -1510,27 +1918,120 @@ public final class Districts {
 		 * can be reached). Pointwise, so neighbouring tiles list the same promenade near their border.
 		 */
 		void quays() {
-			if (!hasWaterfront()) return;
-			int pad = Quays.MIN_LEN + MARGIN + 2 * Quays.STEP; // a run seen through the window is as long as the whole run, or already past the minimum
+			if (quayWholes().isEmpty()) return;
 			List<Raw> base = new ArrayList<>(raws);
 			int cn = 0;
+			List<Raw> qs = new ArrayList<>();
+			for (QuayWhole qw : quayWholes()) {
+				for (Raw piece : pieces(qw.cols(), Quays.WIDTH, RoadKind.QUAY, false, null, qw.y(), qw.steep())) {
+					List<int[]> run = piece.cols;
+					Raw q = new Raw("quay" + Ids.n(run.get(0)[0]) + "_" + Ids.n(run.get(0)[1]), RoadKind.QUAY, Quays.WIDTH, run, false).withWhole(piece);
+					grade(q); // a steep stretch is the road's to bear (a promenade is never dropped: both tiles must list it)
+					raws.add(q);
+					paint(q);
+					qs.add(q);
+				}
+			}
+			// the links after every quay, so a link that crosses another quay meets it at its level (JUNCTION)
+			for (Raw q : qs) {
+				Raw link = quayLink("k" + cn, q.cols, base);
+				if (link != null) { cn++; raws.add(link); paint(link); }
+			}
+		}
+
+		/** A quay run as every tile that sees it draws it, graded once: its columns, heights and the columns over the cut and fill limit. */
+		record QuayWhole(List<int[]> cols, int[] y, boolean[] steep) {}
+
+		List<QuayWhole> quayWholes;
+
+		/**
+		 * The promenade runs of the tile's quay window, in contour order, each graded once (JUNCTION): where it overlaps a whole street
+		 * it takes the street's level from the junction field (not from this tile's pieces, so the tiles on both sides of a border grade it
+		 * alike), and where it overlaps another quay it takes the level of the one whose smallest column comes first (a canonical order,
+		 * the same in every tile that sees both). Ahead of the tile's other streets, so a subdivision street or lane laid before the quays
+		 * still meets them at their level.
+		 */
+		List<QuayWhole> quayWholes() {
+			if (quayWholes != null) return quayWholes;
+			quayWholes = new ArrayList<>();
+			if (!hasWaterfront()) return quayWholes;
+			int pad = Quays.MIN_LEN + MARGIN + 2 * Quays.STEP; // a run seen through the window is as long as the whole run, or already past the minimum
+			List<List<int[]>> runs = new ArrayList<>();
 			for (List<Pt> chain : Quays.contour(this::nearWater, tile.minX() - pad, tile.minZ() - pad, tile.maxX() + pad, tile.maxZ() + pad)) {
 				List<int[]> cols = StreetCols.columns(chain);
 				if (chain.get(0).equals(chain.get(chain.size() - 1))) cols = breakRing(cols);
-				for (List<int[]> whole : StreetCols.runs(cols, this::quayOk)) {
-					if (whole.size() < Quays.MIN_LEN) continue; // judged before clipping, so the neighbouring tile decides alike
-					for (Raw piece : pieces(whole, Quays.WIDTH, RoadKind.QUAY, false)) {
-						List<int[]> run = piece.cols;
-						Raw q = new Raw("quay" + Ids.n(run.get(0)[0]) + "_" + Ids.n(run.get(0)[1]), RoadKind.QUAY, Quays.WIDTH, run, false).withWhole(piece);
-						grade(q); // a steep stretch is the road's to bear (a promenade is never dropped: both tiles must list it)
-						raws.add(q);
-						paint(q);
-						Raw link = quayLink("k" + cn, run, base);
-						if (link != null) { cn++; raws.add(link); paint(link); }
-					}
+				for (List<int[]> whole : StreetCols.runs(cols, this::quayOk)) if (whole.size() >= Quays.MIN_LEN) runs.add(whole); // judged before clipping, so the neighbouring tile decides alike
+			}
+			JunctionField jf = junctions();
+			List<QuayWhole> out = new ArrayList<>();
+			for (List<int[]> whole : canonicalQuays(runs)) {
+				int[] b = footprintBox(whole, Quays.WIDTH);
+				b = new int[] {b[0] - 1, b[1] - 1, b[2] + 1, b[3] + 1};
+				List<Layer> layers = new ArrayList<>();
+				layers.add(jf::levelsAt);
+				for (QuayWhole q : out) {
+					Layer l = cells(q.cols(), Quays.WIDTH, q.y(), b[0], b[1], b[2], b[3], true, true);
+					if (l != null) layers.add(l);
+				}
+				quayParts(whole, layers, false, out);
+			}
+			quayWholes = List.copyOf(out);
+			return quayWholes;
+		}
+
+		/**
+		 * The parts of a quay run, graded with the levels of what they meet ({@code layers}: whole streets and earlier quays). A stretch where
+		 * it touches streets it cannot follow within the grade limit (a street beside it that climbs faster along it than a promenade may)
+		 * is no quay: the quay stops short of it, and each part left meets that street with its new end. A part still steeper than allowed
+		 * between two meetings loses the meeting nearest its first steep column. Each decision is made from the levels near it, so a tile whose
+		 * window holds only part of the run decides alike; once anything is cut, parts shorter than a whole run are dropped.
+		 */
+		void quayParts(List<int[]> cols, List<Layer> layers, boolean anyCut, List<QuayWhole> out) {
+			if (anyCut && cols.size() < Quays.MIN_LEN) return;
+			TreeMap<Integer, Integer> meet = meetPins(cols, Quays.WIDTH, layers, true, true);
+			TreeSet<Integer> cut = new TreeSet<>();
+			cut.addAll(meetBad); // where no level fits the street it crosses, the quay stops short of it
+			if (meet != null) {
+				for (int k : meet.keySet()) {
+					Integer a = meet.get(k - 1), c = meet.get(k - 3);
+					int v = meet.get(k);
+					if ((a != null && Math.abs(v - a) > 1) || (c != null && meet.containsKey(k - 2) && a != null && Math.abs(v - c) > 1)) for (int j = k - 3; j <= k; j++) if (meet.containsKey(j)) cut.add(j);
 				}
 			}
+			if (cut.isEmpty() && meet != null) {
+				QuayWhole q = gradeQuay(cols, meet);
+				int bad = firstSteep(q.y());
+				if (bad < 0) { out.add(q); return; }
+				// the run of pinned columns nearest the steep column
+				int best = -1, bd = Integer.MAX_VALUE;
+				for (int k : meet.keySet()) if (Math.abs(k - bad) < bd) { bd = Math.abs(k - bad); best = k; }
+				for (int k = best; meet.containsKey(k); k--) cut.add(k);
+				for (int k = best; meet.containsKey(k); k++) cut.add(k);
+			}
+			if (cut.isEmpty()) { out.add(gradeQuay(cols, null)); return; }
+			for (List<int[]> part : StreetCols.runs(cols, c -> !cut.contains(indexOf(cols, c)))) quayParts(part, layers, true, out);
 		}
+
+		/** The first column where a profile breaks the street grade ({@code road-grade}), or -1. */
+		static int firstSteep(int[] y) {
+			for (int i = 1; i < y.length; i++) if (Math.abs(y[i] - y[i - 1]) > 1 || (i >= 3 && Math.abs(y[i] - y[i - 3]) > 1)) return i;
+			return -1;
+		}
+
+		/** A quay run graded with the given meeting pins under its gate passages. */
+		QuayWhole gradeQuay(List<int[]> cols, TreeMap<Integer, Integer> meet) {
+			TreeMap<Integer, Integer> pn = meet, g = gatePins(cols);
+			if (pn == null) pn = g;
+			else if (g != null) { pn = new TreeMap<>(pn); pn.putAll(g); }
+			Grading.RoadGrade gr = Grading.profile(lattice(StreetCols.vertices(cols)), memo, pn);
+			boolean[] steep = new boolean[cols.size()];
+			for (Grading.Steep st : gr.steep()) for (int k = st.from(); k <= st.to(); k++) steep[k] = true;
+			return new QuayWhole(cols, gr.profile().y(), steep);
+		}
+
+		static int[] xs(List<int[]> cols) { int[] o = new int[cols.size()]; for (int i = 0; i < o.length; i++) o[i] = cols.get(i)[0]; return o; }
+
+		static int[] zs(List<int[]> cols) { int[] o = new int[cols.size()]; for (int i = 0; i < o.length; i++) o[i] = cols.get(i)[1]; return o; }
 
 		/** A closed ring of columns, rotated to start just after a column that is no quay, so a run through the ring's start is not split (the start depends on the window). */
 		List<int[]> breakRing(List<int[]> ring) {
@@ -1705,7 +2206,7 @@ public final class Districts {
 						if (full != null && !hitsReservedAny(full) && grade(full)) { raws.add(full); paint(full); continue; }
 					}
 					Raw stub = laneRaw(laneId, pts);
-					if (stub != null && !hitsWall(stub)) { grade(stub); raws.add(stub); paint(stub); }
+					if (stub != null && !hitsWall(stub)) { grade(stub); if (!stub.unmet) { raws.add(stub); paint(stub); } }
 				}
 			}
 		}

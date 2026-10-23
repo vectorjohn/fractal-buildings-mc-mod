@@ -95,9 +95,29 @@ public class TerrainClientGameTest implements FabricClientGameTest {
 
 	private static long key(int x, int y, int z) { return ((long) x & 0x3ffffff) << 38 | ((long) z & 0x3ffffff) << 12 | ((long) (y + 64) & 0xfff); }
 
+	/** This test's sites (seed, tile) are the town layouts of a world without intercity roads: roads add exits and approaches and move streets. */
 	@Override
 	public void runTest(ClientGameTestContext context) {
 		if (dev.fractalbuildings.gametest.compat.CompatOnly.skip("TerrainClientGameTest")) return;
+		java.nio.file.Path cfg = net.fabricmc.loader.api.FabricLoader.getInstance().getConfigDir().resolve("fractalbuildings.json");
+		String saved = null;
+		try {
+			saved = java.nio.file.Files.exists(cfg) ? java.nio.file.Files.readString(cfg) : null;
+			java.nio.file.Files.createDirectories(cfg.getParent());
+			java.nio.file.Files.writeString(cfg, "{\"intercityRoads\": false}\n");
+			runWithoutRoads(context);
+		} catch (java.io.IOException e) {
+			throw new java.io.UncheckedIOException(e);
+		} finally {
+			try {
+				if (saved == null) java.nio.file.Files.deleteIfExists(cfg); else java.nio.file.Files.writeString(cfg, saved);
+			} catch (java.io.IOException e) {
+				throw new java.io.UncheckedIOException(e);
+			}
+		}
+	}
+
+	private void runWithoutRoads(ClientGameTestContext context) {
 		List<String> failures = new ArrayList<>();
 		context.runOnClient(client -> client.options.renderDistance().set(6));
 		for (String seed : SEEDS) {

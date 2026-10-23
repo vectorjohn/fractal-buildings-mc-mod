@@ -75,7 +75,7 @@ public class WorldgenGameTest {
 	/** A real planner on flat plains (seed 6 puts a 62-building town at tile -2,2, see the log of this step). */
 	static WorldPlanner flatPlanner() {
 		WorldProbes pr = WorldProbes.of(SyntheticTerrain.flat(70), SyntheticBiomes.constant("minecraft:plains"));
-		return new WorldPlanner(6, WorldConfig.defaults(), pr, null);
+		return new WorldPlanner(6, WorldConfig.defaults().withIntercityRoads(false), pr, null);
 	}
 
 	static Target flatTarget(WorldPlanner w) {

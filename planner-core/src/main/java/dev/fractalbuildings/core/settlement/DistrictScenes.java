@@ -151,10 +151,23 @@ public final class DistrictScenes {
 	public static Ground ground(DistrictPlan plan, TerrainProbe exact) {
 		List<Violation> settlement = new ArrayList<>();
 		List<Box> ground = new ArrayList<>();
+		// pieces of one whole street (a road cut by a square into "r", "r.1"): a cell two of them cover is built by the first, as the whole
+		// street would build it, so a later piece's first column does not lay a second surface there at its own level (JUNCTION)
+		java.util.TreeMap<String, Integer> pieces = new java.util.TreeMap<>();
+		for (Street s : plan.streets()) pieces.merge(SettlementChecks.wholeStreet(s.id()), 1, Integer::sum);
+		java.util.TreeMap<String, java.util.TreeSet<Long>> built = new java.util.TreeMap<>();
 		for (Street s : plan.streets()) {
 			List<LatticePath.Pt> pts = new ArrayList<>();
 			for (Pt p : s.points()) pts.add(new LatticePath.Pt(p.x(), p.z()));
-			Grading.RoadGrade g = Grading.road(pts, s.y(), s.width(), exact); // the plan's heights, so both tiles at a border build the same road
+			String whole = SettlementChecks.wholeStreet(s.id());
+			java.util.TreeSet<Long> done = pieces.get(whole) > 1 ? built.computeIfAbsent(whole, k -> new java.util.TreeSet<>()) : null;
+			Grading.RoadGrade g = Grading.road(pts, s.y(), s.width(), exact, done == null ? null : (x, z) -> done.contains(((long) z << 32) ^ (x & 0xffffffffL))); // the plan's heights, so both tiles at a border build the same road
+			if (done != null) {
+				int h = s.width() / 2;
+				for (int i = 0; i < g.profile().size(); i++) {
+					for (int dz = 0; dz < s.width(); dz++) for (int dx = 0; dx < s.width(); dx++) done.add(((long) (g.profile().z()[i] - h + dz) << 32) ^ ((g.profile().x()[i] - h + dx) & 0xffffffffL));
+				}
+			}
 			addBoxes(g.boxes(), ground, s.kind() == RoadKind.QUAY);
 			settlement.addAll(SettlementChecks.roadGrade(s.id(), g.profile().x(), g.profile().z(), g.profile().y()));
 		}

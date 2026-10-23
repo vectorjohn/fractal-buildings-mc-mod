@@ -8,6 +8,7 @@ import dev.fractalbuildings.core.probe.TerrainProbe;
 import dev.fractalbuildings.core.region.FieldRegionView;
 import dev.fractalbuildings.core.region.RegionField;
 import dev.fractalbuildings.core.region.RegionPlanner;
+import dev.fractalbuildings.core.road.RoadNet;
 import dev.fractalbuildings.core.settlement.Cell;
 import dev.fractalbuildings.core.settlement.CellGeometry;
 import dev.fractalbuildings.core.settlement.CityPlanner;
@@ -27,6 +28,7 @@ import dev.fractalbuildings.core.style.StyleField;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.TreeMap;
 import java.util.concurrent.Executor;
 
@@ -98,6 +100,10 @@ public class WorldPlanner {
 	private final DistrictGrid grid;
 	private final RegionField field;
 	private final FieldRegionView fieldView;
+	/** The intercity road graph (ADR 0004), or null when the world has no roads (config off, or a fixed site). */
+	private final RoadNet roads;
+	/** The approach roads of each settlement (exit to port), by chunk: the road layer draws them, the districts do not. Null with no roads. */
+	private final BoundedCache<String, TreeMap<Long, List<RoadNet.Col>>> approaches;
 	private final RegionView view;
 	private final StyleField styles;
 	private final Caches caps;
@@ -144,7 +150,10 @@ public class WorldPlanner {
 		rp.maxRadius = config.maxRadius();
 		rp.baseChance *= config.frequency();
 		this.fieldView = fixed != null ? null : new FieldRegionView(rp, probes.window(), caps.region());
-		this.view = fixed != null ? new FixedSiteView(fixed, field) : new FieldSiteView(fieldView, field);
+		this.roads = fixed == null && config.intercityRoads()
+				? new RoadNet(field, fieldView, probes.window(), probes.region(), probes.roadExact(), caps.region()) : null;
+		this.approaches = roads == null ? null : new BoundedCache<>(caps.sources());
+		this.view = fixed != null ? new FixedSiteView(fixed, field) : new FieldSiteView(fieldView, field, roads);
 		this.styles = new StyleField(probes.biome(), seed);
 		this.sources = new BoundedCache<>(caps.sources(), caps.graceNanos(), caps.hardFactor(), System::nanoTime); // det-ok: retention only, never an answer
 		this.tiles = new BoundedCache<>(caps.tiles());
@@ -163,6 +172,8 @@ public class WorldPlanner {
 		this.grid = null;
 		this.field = null;
 		this.fieldView = null;
+		this.roads = null;
+		this.approaches = null;
 		this.view = null;
 		this.styles = null;
 		this.sources = null;
@@ -200,7 +211,7 @@ public class WorldPlanner {
 	private boolean decidable(Cell c) { return fieldView == null || fieldView.decidable(c.cx(), c.cz()); }
 
 	/** The settlement of a cell, or empty when it has none or the recorded window cannot decide it. */
-	private Optional<SettlementSite> siteOf(Cell c) {
+	Optional<SettlementSite> siteOf(Cell c) {
 		if (!decidable(c)) return Optional.empty();
 		return view.siteOf(c);
 	}
@@ -328,7 +339,7 @@ public class WorldPlanner {
 	}
 
 	/**
-	 * Resolves the region cells within {@code radius} blocks of the point and builds the road network of every settlement found there,
+	 * Resolves the region cells within {@code radius} blocks of the point and builds the road network and the junction field of every settlement found there,
 	 * on the calling thread. Never changes any answer; call it from a worker ahead of travellers.
 	 */
 	public void warm(int blockX, int blockZ, int radius) {
@@ -339,7 +350,151 @@ public class WorldPlanner {
 				siteOf(new Cell(cx, cz)).ifPresent(site -> found.put(site.id(), site));
 			}
 		}
-		for (SettlementSite site : found.values()) source(site).network();
+		for (SettlementSite site : found.values()) {
+			source(site).network();
+			source(site).junctions(probes.exact()); // JUNCTION: the settlement's junction field reads its whole streets' terrain once, ahead of the first tile
+		}
+		if (roads != null) {
+			for (int cz = Math.floorDiv(blockZ - radius, s); cz <= Math.floorDiv(blockZ + radius, s); cz++) {
+				for (int cx = Math.floorDiv(blockX - radius, s); cx <= Math.floorDiv(blockX + radius, s); cx++) roads.edgesNearCell(new dev.fractalbuildings.core.region.CellKey(cx, cz));
+			}
+		}
+	}
+
+	// ---- intercity roads (ADR 0004) ----
+
+	/** Whether this world draws roads between settlements (config on, and not a fixed-site planner). */
+	public boolean roadsEnabled() { return roads != null; }
+
+	/** The road graph, or null when {@link #roadsEnabled} is false. */
+	public RoadNet roads() { return roads; }
+
+	/**
+	 * The road columns inside a chunk, sorted by (z, x), where two roads meet the lower edge key's column (RD4). Empty when the world has
+	 * no roads. Pure: the same answer in any call order, on any thread, after any eviction. A cold region cell costs its routes (exact
+	 * reads at the stations); {@link #warm} hides that.
+	 */
+	public List<RoadNet.Col> roadColumns(int chunkX, int chunkZ) {
+		return roads == null ? List.of() : roadColumnsAround(chunkX, chunkZ).get(4);
+	}
+
+	/** Approach roads lie within the rim + the port offset + a column's reach of a settlement; a 3 x 3 block of chunks adds the chunk spacing. */
+	private static final int APPROACH_REACH = RoadNet.PORT_OFFSET + 64;
+
+	/**
+	 * {@link #roadColumns} of the 3 x 3 chunks around a chunk, index {@code (dz + 1) * 3 + (dx + 1)} (entry 4 is the chunk itself): the
+	 * intercity roads of the graph, and near a settlement the approaches that join them to its exits. Where two roads share a column the
+	 * graph's wins (RD4), then the lower settlement id. The surface plan of a chunk needs its neighbours' columns for the shoulders.
+	 */
+	public List<List<RoadNet.Col>> roadColumnsAround(int chunkX, int chunkZ) {
+		List<List<RoadNet.Col>> out = new ArrayList<>(9);
+		List<RoadNet.Settlement> near = roads == null ? List.of() : roads.settlementsNear(chunkX * 16 + 8, chunkZ * 16 + 8, APPROACH_REACH);
+		for (int dz = -1; dz <= 1; dz++) {
+			for (int dx = -1; dx <= 1; dx++) {
+				if (roads == null) { out.add(List.of()); continue; }
+				int cx = chunkX + dx, cz = chunkZ + dz;
+				List<RoadNet.Col> r = roads.query(cx, cz);
+				if (near.isEmpty()) { out.add(r); continue; }
+				TreeMap<Long, RoadNet.Col> merged = new TreeMap<>();
+				for (RoadNet.Col c : r) merged.put(((long) c.z() << 32) ^ (c.x() & 0xffffffffL), c);
+				long ck = ((long) (cz + (1 << 30)) << 32) | (long) (cx + (1 << 30));
+				for (RoadNet.Settlement st : near) {
+					Optional<SettlementSite> site = view.siteOf(new Cell(st.owner().cx(), st.owner().cz()));
+					if (site.isEmpty()) continue;
+					List<RoadNet.Col> a = approachesOf(site.get(), st).get(ck);
+					if (a != null) for (RoadNet.Col c : a) merged.putIfAbsent(((long) c.z() << 32) ^ (c.x() & 0xffffffffL), c);
+				}
+				List<RoadNet.Col> all = new ArrayList<>(merged.values());
+				all.sort((p, q) -> p.z() != q.z() ? Integer.compare(p.z(), q.z()) : Integer.compare(p.x(), q.x()));
+				out.add(all);
+			}
+		}
+		return out;
+	}
+
+	/** The columns of every approach of the settlement, by chunk (key as {@link RoadNet}'s chunk keys). Built once from its skeletons. */
+	private TreeMap<Long, List<RoadNet.Col>> approachesOf(SettlementSite site, RoadNet.Settlement owner) {
+		return approaches.get(site.id(), id -> {
+			TreeMap<Long, List<RoadNet.Col>> out = new TreeMap<>();
+			for (Approach a : approachRoads(site, owner)) {
+				for (var en : a.byChunk().entrySet()) out.computeIfAbsent(en.getKey(), k -> new ArrayList<>()).addAll(en.getValue());
+			}
+			return out;
+		});
+	}
+
+	/** One approach road as drawn: its port (null when none matches) and its columns by chunk. */
+	record Approach(dev.fractalbuildings.core.settlement.Road road, dev.fractalbuildings.core.road.RoadPort port, TreeMap<Long, List<RoadNet.Col>> byChunk) {
+		List<RoadNet.Col> columns() {
+			List<RoadNet.Col> all = new ArrayList<>();
+			for (List<RoadNet.Col> l : byChunk.values()) all.addAll(l);
+			return all;
+		}
+	}
+
+	/**
+	 * Every approach of the settlement (exit to port, from its cell skeletons), each with its deck: the averaged exact surface at 8-block
+	 * stations, the end at the port pinned to the road it joins (a graph route's deck, or the exact surface at a meeting point), so the
+	 * two meet. Pure and shared by every chunk that draws it.
+	 */
+	List<Approach> approachRoads(SettlementSite site, RoadNet.Settlement owner) {
+		List<Approach> out = new ArrayList<>();
+		SkeletonSource src = source(site);
+		List<dev.fractalbuildings.core.road.RoadPort> ports = roads.portsOf(owner);
+		for (Cell cell : site.cells()) {
+			for (dev.fractalbuildings.core.settlement.Road r : src.skeleton(cell).approaches()) {
+				dev.fractalbuildings.core.settlement.Pt end = r.points().get(r.points().size() - 1);
+				dev.fractalbuildings.core.road.RoadPort port = null;
+				for (dev.fractalbuildings.core.road.RoadPort p : ports) if (port == null && Math.abs(p.x() - end.x()) <= 32 && Math.abs(p.z() - end.z()) <= 32) port = p;
+				List<int[]> nodes = new ArrayList<>();
+				for (dev.fractalbuildings.core.settlement.Pt p : r.points()) nodes.add(new int[] {p.x(), p.z()});
+				// the skeleton ends on its coarse lattice; the road it joins starts exactly at the port (a meeting point is off the lattice)
+				if (port != null && (port.x() != end.x() || port.z() != end.z())) nodes.add(new int[] {port.x(), port.z()});
+				double[][] st = dev.fractalbuildings.core.road.Curve.stations(nodes);
+				if (st.length < 2) continue;
+				OptionalInt pin = OptionalInt.empty();
+				if (port != null) pin = port.meeting() ? OptionalInt.of(probes.roadExact().surfaceY(port.x(), port.z())) : roads.endDeck(owner, port.other());
+				int[] deck = dev.fractalbuildings.core.road.Profile.approachDeck(st, probes.roadExact(), pin);
+				out.add(new Approach(r, port, RoadNet.raster(st, deck, new boolean[st.length], r.width())));
+			}
+		}
+		return out;
+	}
+
+	/** A road column may lie in a district's piece only near a settlement: its rim + the port offset + one tile, plus the chunk. */
+	private static final int DISTRICT_REACH = RoadNet.PORT_OFFSET + 160 + 32;
+
+	/**
+	 * The columns of a chunk that a district draws (D5: the district wins where a road and a district meet): the xz extent of every
+	 * ground box of the chunk's tile, every building piece's box and every lot of its plan. Null when no district claims any column of the chunk: no settlement
+	 * within {@link #DISTRICT_REACH} of it, or no tile planned there. Index {@code (z & 15) * 16 + (x & 15)}.
+	 */
+	public boolean[] districtColumns(int chunkX, int chunkZ) {
+		if (roads == null) return null;
+		if (roads.settlementsNear(chunkX * 16 + 8, chunkZ * 16 + 8, DISTRICT_REACH).isEmpty()) return null;
+		DistrictGrid.TileId id = grid.tileOf(chunkX * 16 + 8, chunkZ * 16 + 8);
+		if (tile(id.ix(), id.iz()).isEmpty()) return null;
+		boolean[] mask = new boolean[256];
+		boolean[] any = {false};
+		int x0 = chunkX * 16, z0 = chunkZ * 16;
+		for (GroundPiece g : ground(id.ix(), id.iz())) {
+			if (g.chunkX() != chunkX || g.chunkZ() != chunkZ) continue;
+			for (dev.fractalbuildings.core.ir.Box b : g.boxes()) mark(mask, any, x0, z0, b.box().x(), b.box().z(), b.box().maxX(), b.box().maxZ());
+		}
+		for (BuildingPiece b : buildings(id.ix(), id.iz())) { // shells overhang the street (air rights): the piece's box, not just the lot
+			if (b.box().x() < x0 + 16 && b.box().maxX() > x0 && b.box().z() < z0 + 16 && b.box().maxZ() > z0) mark(mask, any, x0, z0, b.box().x(), b.box().z(), b.box().maxX(), b.box().maxZ());
+		}
+		for (LotBrief l : plan(id.ix(), id.iz()).plan().lots()) mark(mask, any, x0, z0, l.x(), l.z(), l.x() + l.w(), l.z() + l.d());
+		return any[0] ? mask : null;
+	}
+
+	private static void mark(boolean[] mask, boolean[] any, int x0, int z0, int ax, int az, int bx, int bz) {
+		for (int z = Math.max(az, z0); z < Math.min(bz, z0 + 16); z++) {
+			for (int x = Math.max(ax, x0); x < Math.min(bx, x0 + 16); x++) {
+				mask[(z - z0) * 16 + (x - x0)] = true;
+				any[0] = true;
+			}
+		}
 	}
 
 	/**
@@ -390,5 +545,6 @@ public class WorldPlanner {
 		plans.clear();
 		buildings.clear();
 		grounds.clear();
+		if (roads != null) roads.evictAll();
 	}
 }

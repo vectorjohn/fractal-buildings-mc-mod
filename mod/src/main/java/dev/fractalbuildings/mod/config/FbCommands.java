@@ -31,6 +31,6 @@ public final class FbCommands {
 		return "Fractal Buildings config of this world (pinned at creation):\n"
 				+ "frequency " + w.frequency() + ", maxRadius " + w.maxRadius() + ", cellSize " + w.cellSize() + "\n"
 				+ "styles " + (w.styles().isEmpty() ? "all" : w.styles()) + ", villagers " + s.villagers()
-				+ ", vetoVanillaVillages " + s.vetoVanillaVillages() + ", genVersion " + w.genVersion();
+				+ ", vetoVanillaVillages " + s.vetoVanillaVillages() + ", intercityRoads " + w.intercityRoads() + ", genVersion " + w.genVersion();
 	}
 }

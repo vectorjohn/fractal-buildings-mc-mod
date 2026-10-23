@@ -178,14 +178,14 @@ class DistrictsTest {
 					if (l.frontY() == dev.fractalbuildings.core.gen.Brief.NO_FRONT_Y) continue;
 					int fx = l.front() == dev.fractalbuildings.core.ir.Facing.EAST ? l.x() + l.w() : l.front() == dev.fractalbuildings.core.ir.Facing.WEST ? l.x() - 1 : l.x() + (l.w() - 1) / 2;
 					int fz = l.front() == dev.fractalbuildings.core.ir.Facing.SOUTH ? l.z() + l.d() : l.front() == dev.fractalbuildings.core.ir.Facing.NORTH ? l.z() - 1 : l.z() + (l.d() - 1) / 2;
-					// the graded surface of the street column nearest the front centre, from the same Grading call the scene makes
+					// the graded surface of the street column nearest the front centre, as the scene builds it
 					int best = Integer.MAX_VALUE, y = 0, width = 0;
 					for (Street s : plan.streets()) {
 						if (!dev.fractalbuildings.core.check.SettlementChecks.footprint(s).stream().anyMatch(r -> r.contains(fx, fz))) continue;
 						width = Math.max(width, s.width()); // crossings: the front street is the one DL saw first, any of them bounds the reach
 						List<dev.fractalbuildings.core.terrain.LatticePath.Pt> pts = new ArrayList<>();
 						for (Pt q : s.points()) pts.add(new dev.fractalbuildings.core.terrain.LatticePath.Pt(q.x(), q.z()));
-						var pr = dev.fractalbuildings.core.terrain.Grading.profile(pts, p.exact()).profile();
+						var pr = dev.fractalbuildings.core.terrain.Grading.road(pts, s.y(), 1, p.exact()).profile(); // the stored heights, which the scene builds (a street that meets another is pinned there, JUNCTION)
 						for (int k = 0; k < pr.size(); k++) {
 							int dd = Math.max(Math.abs(pr.x()[k] - fx), Math.abs(pr.z()[k] - fz));
 							if (dd < best) { best = dd; y = pr.y()[k]; }

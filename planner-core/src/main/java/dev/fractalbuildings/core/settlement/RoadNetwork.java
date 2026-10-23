@@ -69,6 +69,9 @@ public final class RoadNetwork {
 		return false;
 	}
 
+	/** The box the network covers (the planned tiles plus {@link Districts#MARGIN} + 2): {x0, z0, w, d}, all zero without planned tiles or a hub. */
+	int[] box() { return new int[] {x0, z0, w, d}; }
+
 	/** The hub column the network is flooded from (null when the centre cell has no hub). */
 	public Pt hub() { return hub; }
 

@@ -6,12 +6,12 @@
   "district": {"id": "dm8_m22", "ix": -8, "iz": -22, "x": -1280, "z": -3536, "w": 160, "d": 192, "quarter": 5, "density": 12},
   "streets": [
     {"id": "b1m22_m1120", "kind": "street", "width": 5, "points": [[-1120, -3536], [-1112, -3536]], "y": [69, 69]},
-    {"id": "n0", "kind": "lane", "width": 3, "points": [[-1147, -3456], [-1147, -3459], [-1147, -3460], [-1147, -3463], [-1147, -3464], [-1155, -3472], [-1155, -3495], [-1155, -3496], [-1155, -3504], [-1147, -3512]], "y": [65, 65, 66, 66, 67, 67, 67, 68, 68, 68]},
+    {"id": "n0", "kind": "lane", "width": 3, "points": [[-1147, -3456], [-1147, -3463], [-1147, -3464], [-1154, -3471], [-1155, -3472], [-1155, -3495], [-1155, -3496], [-1155, -3504], [-1147, -3512]], "y": [65, 65, 66, 66, 67, 67, 68, 68, 68]},
     {"id": "rm1_m4_2", "kind": "main", "width": 5, "points": [[-1112, -3456], [-1123, -3456], [-1124, -3456], [-1127, -3456], [-1128, -3456], [-1136, -3456], [-1137, -3456], [-1144, -3456], [-1145, -3456], [-1152, -3456]], "y": [65, 65, 66, 66, 67, 67, 66, 66, 65, 65]}
   ],
   "plazas": [],
   "lots": [
-    {"id": "dm8_m22.l0", "x": -1145, "z": -3465, "w": 10, "d": 7, "front": "west", "type": "house", "style": "plains", "storeys": [1, 2], "streets": 9, "airRights": 0, "frontY": 66, "density": 7, "status": "build"},
+    {"id": "dm8_m22.l0", "x": -1145, "z": -3465, "w": 10, "d": 7, "front": "west", "type": "house", "style": "plains", "storeys": [1, 2], "streets": 9, "airRights": 0, "frontY": 65, "density": 7, "status": "build"},
     {"id": "dm8_m22.l1", "x": -1169, "z": -3505, "w": 13, "d": 14, "front": "east", "type": "workshop", "style": "plains", "storeys": [1, 2], "streets": 1, "airRights": 0, "frontY": 68, "density": 10, "status": "build"},
     {"id": "dm8_m22.l2", "x": -1163, "z": -3491, "w": 7, "d": 8, "front": "east", "type": "house", "style": "plains", "storeys": [1, 2], "streets": 1, "airRights": 0, "frontY": 67, "density": 10, "status": "build"},
     {"id": "dm8_m22.l3", "x": -1167, "z": -3483, "w": 11, "d": 13, "front": "east", "type": "house", "style": "plains", "storeys": [1, 2], "streets": 1, "airRights": 0, "frontY": 67, "density": 10, "status": "build"},

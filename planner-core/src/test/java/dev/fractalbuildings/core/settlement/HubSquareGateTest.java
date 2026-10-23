@@ -59,7 +59,9 @@ class HubSquareGateTest {
 				boolean has = dp.lots().stream().anyMatch(l -> l.type().equals(kind));
 				assertEquals(!MISSING.contains(name + ":" + kind), has, name + " " + kind + "; " + det.notes());
 			}
-			assertTrue(calls.get() < 150_000, name + ": " + calls.get() + " probe calls");
+			// the first tile of a settlement also builds its junction field (JUNCTION: every whole street of the settlement, read once,
+			// ~130k calls in the 8-cell metropolis, ~15k in a one-cell city); 150k before it
+			assertTrue(calls.get() < 220_000, name + ": " + calls.get() + " probe calls");
 			System.out.println("HUBGATE " + name + " probe calls " + calls.get());
 		}
 	}

@@ -29,7 +29,7 @@ import net.minecraft.world.level.levelgen.structure.StructureStart;
 public class WarmingGameTest {
 	private static WorldPlanner planner(ThreadPoolExecutor pool) {
 		WorldProbes pr = WorldProbes.of(SyntheticTerrain.flat(70), SyntheticBiomes.constant("minecraft:plains"));
-		WorldPlanner w = new WorldPlanner(6, WorldConfig.defaults(), pr, pool);
+		WorldPlanner w = new WorldPlanner(6, WorldConfig.defaults().withIntercityRoads(false), pr, pool);
 		LaneStats.attach(w);
 		return w;
 	}

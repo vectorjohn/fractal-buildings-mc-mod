@@ -10,12 +10,12 @@
     {"id": "b00_496", "kind": "street", "width": 5, "points": [[16, 496], [16, 511], [16, 512], [16, 527], [16, 528], [16, 551], [16, 552], [16, 567], [16, 568], [16, 591], [16, 592], [16, 607], [16, 608], [16, 631], [16, 632], [16, 640]], "y": [68, 68, 69, 69, 70, 70, 71, 71, 72, 72, 73, 73, 74, 74, 75, 75]},
     {"id": "b01_320", "kind": "street", "width": 5, "points": [[176, 488], [176, 496]], "y": [73, 73]},
     {"id": "b01_496", "kind": "street", "width": 5, "points": [[176, 496], [176, 544], [176, 545], [176, 640]], "y": [73, 73, 72, 72]},
-    {"id": "b13_16", "kind": "street", "width": 5, "points": [[16, 496], [31, 496], [32, 496], [71, 496], [72, 496], [103, 496], [104, 496], [135, 496], [136, 496], [167, 496], [168, 496], [176, 496]], "y": [68, 68, 69, 69, 70, 70, 71, 71, 72, 72, 73, 73]},
+    {"id": "b13_16", "kind": "street", "width": 5, "points": [[16, 496], [31, 496], [32, 496], [71, 496], [72, 496], [93, 496], [94, 496], [135, 496], [136, 496], [167, 496], [168, 496], [176, 496]], "y": [68, 68, 69, 69, 70, 70, 71, 71, 72, 72, 73, 73]},
     {"id": "b13_176", "kind": "street", "width": 5, "points": [[176, 496], [184, 496]], "y": [73, 73]},
     {"id": "b14_16", "kind": "street", "width": 5, "points": [[16, 640], [40, 640], [41, 640], [88, 640], [89, 640], [136, 640], [137, 640], [176, 640]], "y": [75, 75, 74, 74, 73, 73, 72, 72]},
     {"id": "b14_176", "kind": "street", "width": 5, "points": [[176, 640], [184, 640]], "y": [72, 72]},
     {"id": "b14_m144", "kind": "street", "width": 5, "points": [[8, 640], [16, 640]], "y": [75, 75]},
-    {"id": "sx99_232", "kind": "street", "width": 5, "points": [[99, 488], [99, 495], [99, 496]], "y": [70, 70, 71]}
+    {"id": "sx99_232", "kind": "street", "width": 5, "points": [[99, 488], [99, 491], [99, 492], [99, 496]], "y": [70, 70, 71, 71]}
   ],
   "plazas": [],
   "lots": [
@@ -38,7 +38,7 @@
     {"id": "d0_3.l16", "x": 59, "z": 499, "w": 11, "d": 17, "front": "north", "type": "shop", "style": "plains", "storeys": [2, 4], "streets": 1, "airRights": 1, "frontY": 69, "density": 53, "status": "build"},
     {"id": "d0_3.l17", "x": 70, "z": 499, "w": 14, "d": 10, "front": "north", "type": "house", "style": "plains", "storeys": [2, 3], "streets": 1, "airRights": 1, "frontY": 70, "density": 54, "status": "build"},
     {"id": "d0_3.l18", "x": 88, "z": 499, "w": 14, "d": 21, "front": "north", "type": "shop", "style": "plains", "storeys": [2, 4], "streets": 1, "airRights": 1, "frontY": 70, "density": 54, "status": "build"},
-    {"id": "d0_3.l19", "x": 102, "z": 499, "w": 8, "d": 8, "front": "north", "type": "house", "style": "plains", "storeys": [2, 3], "streets": 1, "airRights": 1, "frontY": 70, "density": 54, "status": "build"},
+    {"id": "d0_3.l19", "x": 102, "z": 499, "w": 8, "d": 8, "front": "north", "type": "house", "style": "plains", "storeys": [2, 3], "streets": 1, "airRights": 1, "frontY": 71, "density": 54, "status": "build"},
     {"id": "d0_3.l20", "x": 113, "z": 499, "w": 16, "d": 12, "front": "north", "type": "workshop", "style": "plains", "storeys": [2, 2], "streets": 1, "airRights": 1, "frontY": 71, "density": 54, "status": "build"},
     {"id": "d0_3.l21", "x": 132, "z": 499, "w": 13, "d": 16, "front": "north", "type": "shop", "style": "plains", "storeys": [2, 4], "streets": 1, "airRights": 1, "frontY": 72, "density": 54, "status": "build"},
     {"id": "d0_3.l22", "x": 145, "z": 499, "w": 7, "d": 7, "front": "north", "type": "house", "style": "plains", "storeys": [2, 3], "streets": 1, "airRights": 1, "frontY": 72, "density": 53, "status": "build"},

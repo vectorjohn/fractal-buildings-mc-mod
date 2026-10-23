@@ -62,8 +62,16 @@ public final class Grading {
 	 * gives back exactly the profile it was graded with, in any tile). Steep runs and boxes as {@link #road}.
 	 */
 	public static RoadGrade road(List<LatticePath.Pt> points, int[] ys, int width, TerrainProbe exact) {
+		return road(points, ys, width, exact, null);
+	}
+
+	/** Cells a road leaves to someone else (JUNCTION: an earlier piece of the same street builds them). */
+	public interface CellFilter { boolean skip(int x, int z); }
+
+	/** As {@link #road(List, int[], int, TerrainProbe)}, building no surface, earth or air on the cells {@code skip} names (null: none). */
+	public static RoadGrade road(List<LatticePath.Pt> points, int[] ys, int width, TerrainProbe exact, CellFilter skip) {
 		if (ys.length != points.size()) throw new IllegalArgumentException(ys.length + " heights for " + points.size() + " points");
-		return grade(points, ys, width, exact, true);
+		return grade(points, ys, null, width, exact, true, skip);
 	}
 
 	/** The height profile and steep runs of a road without building its boxes (the boxes list is empty); same profile as {@link #road}. */
@@ -83,10 +91,14 @@ public final class Grading {
 	}
 
 	private static RoadGrade grade(List<LatticePath.Pt> points, int[] given, int width, TerrainProbe exact, boolean withBoxes) {
-		return grade(points, given, null, width, exact, withBoxes);
+		return grade(points, given, null, width, exact, withBoxes, null);
 	}
 
 	private static RoadGrade grade(List<LatticePath.Pt> points, int[] given, java.util.SortedMap<Integer, Integer> pins, int width, TerrainProbe exact, boolean withBoxes) {
+		return grade(points, given, pins, width, exact, withBoxes, null);
+	}
+
+	private static RoadGrade grade(List<LatticePath.Pt> points, int[] given, java.util.SortedMap<Integer, Integer> pins, int width, TerrainProbe exact, boolean withBoxes, CellFilter skip) {
 		if (points.isEmpty() || width <= 0) throw new IllegalArgumentException("road needs points and a width");
 		// 1. centre-line columns
 		List<Integer> pointAt = new ArrayList<>(List.of(0));
@@ -136,7 +148,7 @@ public final class Grading {
 		for (int a = 0; a < m; a++) {
 			int i = anchors[a];
 			floor[a] = Integer.MIN_VALUE / 2;
-			if (wet[i]) { r[a] = deck[i]; floor[a] = deck[i]; continue; }
+			if (wet[i]) { r[a] = pinned[a] ? Math.max(deck[i], pins.get(i)) : deck[i]; floor[a] = deck[i]; continue; } // a pin over water may raise the deck (a junction on a bridge), never lower it
 			if (pinned[a]) { r[a] = pins.get(i); continue; }
 			if (a == 0 || a == m - 1) { r[a] = g[i]; continue; }
 			r[a] = median(g[anchors[a - 1]], g[i], g[anchors[a + 1]]);
@@ -188,6 +200,7 @@ public final class Grading {
 			for (int dz = 0; dz < width; dz++) {
 				for (int dx = 0; dx < width; dx++) {
 					int cx = x[i] - half + dx, cz = z[i] - half + dz;
+					if (skip != null && skip.skip(cx, cz)) continue;
 					cells.putIfAbsent(((long) cz << 32) + cx, new int[] {cx, cz, y[i], wet[i] ? 1 : 0});
 				}
 			}

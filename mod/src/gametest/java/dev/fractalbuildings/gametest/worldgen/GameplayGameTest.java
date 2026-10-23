@@ -49,7 +49,7 @@ import net.minecraft.world.phys.AABB;
 public class GameplayGameTest {
 	private static WorldPlanner planner(long seed) {
 		WorldProbes pr = WorldProbes.of(SyntheticTerrain.flat(70), SyntheticBiomes.constant("minecraft:plains"));
-		return new WorldPlanner(seed, WorldConfig.defaults(), pr, null);
+		return new WorldPlanner(seed, WorldConfig.defaults().withIntercityRoads(false), pr, null);
 	}
 
 	record Tile(WorldPlanner w, DistrictGrid.Tile t, TileInfo info, ChunkPos chunk) {}
