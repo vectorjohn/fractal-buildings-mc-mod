@@ -15,7 +15,7 @@ How to use it:
 - Numbers taken while other agents were busy are noisy: always give the load.
 - The automated check is `scripts/perf.sh` with budgets and CI ceilings in
   `mod/perf-budget.json` (6.7). The phase 6 measurement table is
-  `docs/review/phase6/perf/perf.md`.
+  `docs/review/phase6/perf/perf.md` (arrives with B8's merge).
 
 ## Accepted tradeoffs
 
@@ -87,8 +87,8 @@ How to use it:
   probe fills were 820 ms (431 chunks at 1.9 ms). Prefetched, the lane pays
   0.04 ms.
 - **Budget**: median 300 ms (missed 1.4x), p95 1,000 ms (met).
-- **Decision**: open. B8 recommends against A6 now (only teleports see it);
-  coordinator deferred A6 until B8 (2026-10-22).
+- **Decision**: open. A6 not needed for now (A1, then B8: only teleports see
+  the miss; run ledger 2026-10-23).
 - **Improve**: A6 (read heights on a 4-block lattice, exact only under
   buildings: ~430 to ~150 chunks per district); sub-block fills were tried and
   were slower (A1F).
