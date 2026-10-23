@@ -66,6 +66,7 @@ being true.
 - Shared scratchpad (2026-10-22): subagents of one coordinator share one scratchpad directory, so a fixed name like `testall.log` there is clobbered by a parallel verifier or coder. Put the item slug in scratch file names (`testall-<slug>.log`), or read the worktree's own `build/test-all/` logs instead of copying them.
 
 ## Tests and known flakes
+- Integration checkout (2026-10-22): never run two Gradle builds in one checkout at once. `:planner-core:test` takes ~10 min serially (settlement tests dominate), and a second `test` run wipes `planner-core/build/test-results/test/binary` while the first is still writing or reading it, so the first fails at report time with `EOFException` / `KryoException: Buffer underflow` and no failing test in the XML. Every Gradle run in the integration checkout, post-merge or ad hoc (reruns, checks, `test-all.sh`), must hold `flock <repo root>/.claude/merge.lock`; if a run already died this way, delete that `binary/` dir and rerun under the lock. Locked rerun 2026-10-22: 603 tests, 0 failures, 10m19s, loadavg 3-7.
 
 ## Baselines (timings, sizes)
 - Viewer: `npm` inside `nix develop` run from `viewer/` works (flake found by searching upward; the "does not contain a flake.nix" line is just info). `npm test` includes the tsc type-check.
