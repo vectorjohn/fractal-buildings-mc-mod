@@ -27,6 +27,13 @@ public final class ColumnMemo {
 
 	public int water(int x, int z) { return chunk(x, z)[256 + (z & 15) * 16 + (x & 15)]; }
 
+	/** Surface height (floor plus water depth). */
+	public int surface(int x, int z) {
+		int[] v = chunk(x, z);
+		int i = (z & 15) * 16 + (x & 15);
+		return v[i] + v[256 + i];
+	}
+
 	public long fills() { return cache.misses(); }
 
 	public int size() { return cache.size(); }

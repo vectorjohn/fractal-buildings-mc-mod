@@ -16,14 +16,18 @@ public final class LiveProbes {
 
 	private final LiveTerrainProbe exact;
 	private final SparseColumns sparse;
+	/** District reads: surface from the chunk memo. */
 	private final LiveBiomeProbe biome;
+	/** Region and coarse lattice reads: surface from single columns, no chunk fills. */
+	private final LiveBiomeProbe sparseBiome;
 
 	public LiveProbes(NoiseBasedChunkGenerator gen, RandomState rs) { this(gen, rs, ChunkFill.DEFAULT); }
 
 	public LiveProbes(NoiseBasedChunkGenerator gen, RandomState rs, ChunkFill fill) {
 		this.exact = new LiveTerrainProbe(gen, rs, fill, DEFAULT_CHUNKS);
 		this.sparse = new SparseColumns(gen, rs, DEFAULT_SPARSE);
-		this.biome = new LiveBiomeProbe(gen, rs, (x, z) -> sparse.get(x, z)[0]);
+		this.biome = new LiveBiomeProbe(gen, rs, exact::surfaceY);
+		this.sparseBiome = new LiveBiomeProbe(gen, rs, sparse::surface);
 	}
 
 	public TerrainProbe exact() { return exact; }
@@ -35,19 +39,19 @@ public final class LiveProbes {
 	/** Region lattice reads (any column, memoised singly; the region layer only reads multiples of {@link RegionProbe#STRIDE}). */
 	public RegionProbe region() {
 		return new RegionProbe() {
-			@Override public int floorY(int x, int z) { return sparse.get(x, z)[1]; }
-			@Override public int waterDepth(int x, int z) { int[] c = sparse.get(x, z); return c[0] - c[1]; }
-			@Override public String biome(int x, int z) { return biome.biome(x, z); }
+			@Override public int floorY(int x, int z) { return sparse.floor(x, z); }
+			@Override public int waterDepth(int x, int z) { return sparse.water(x, z); }
+			@Override public String biome(int x, int z) { return sparseBiome.biome(x, z); }
 		};
 	}
 
 	/** Coarse-lattice reads at the given stride, exact values (decision 1: no screen). */
 	public CoarseProbe coarse(int stride) {
 		TerrainProbe t = new TerrainProbe() {
-			@Override public int floorY(int x, int z) { return sparse.get(x, z)[1]; }
-			@Override public int waterDepth(int x, int z) { int[] c = sparse.get(x, z); return c[0] - c[1]; }
+			@Override public int floorY(int x, int z) { return sparse.floor(x, z); }
+			@Override public int waterDepth(int x, int z) { return sparse.water(x, z); }
 		};
-		return CoarseProbe.of(t, biome, stride);
+		return CoarseProbe.of(t, sparseBiome, stride);
 	}
 
 	public SparseColumns sparse() { return sparse; }

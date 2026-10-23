@@ -44,3 +44,4 @@ replay_*.log
 # viewer gallery (npm run gen / gallery)
 viewer/gallery-data/
 viewer/dist-gallery/
+mod/logs/
