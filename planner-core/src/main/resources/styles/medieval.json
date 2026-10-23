@@ -28,7 +28,8 @@
     "road": ["minecraft:dirt_path", "minecraft:gravel", "minecraft:coarse_dirt"],
     "paving": ["minecraft:stone_bricks", "minecraft:cobblestone"],
     "ground": ["minecraft:dirt"],
-    "deck": ["minecraft:oak_planks", "minecraft:spruce_planks"]
+    "deck": ["minecraft:oak_planks", "minecraft:spruce_planks"],
+    "rail": ["minecraft:dark_oak_fence"]
   },
 
   "colours": {
@@ -45,6 +46,7 @@
     "road": ["#9a7f55", "#8c8782", "#76593a"],
     "paving": ["#8a8a8a", "#7f7f7f"],
     "ground": ["#6b4f33"],
-    "deck": ["#a07a48", "#8a6a3e"]
+    "deck": ["#a07a48", "#8a6a3e"],
+    "rail": ["#3e2c18"]
   }
 }
