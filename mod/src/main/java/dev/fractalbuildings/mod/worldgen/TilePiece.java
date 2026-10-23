@@ -89,6 +89,9 @@ public abstract class TilePiece extends StructurePiece {
 		int minY = level.getMinY(), maxY = level.getMaxY();
 		Box3 clip = new Box3(x0, minY, z0, x1 - x0 + 1, maxY - minY + 1, z1 - z0 + 1);
 		boolean mixRandom = Mutations.is(Mutations.RANDOM);
+		boolean counter = Mutations.is(Mutations.COUNTER), skipAir = Mutations.is(Mutations.SKIP_AIR), twice = Mutations.is(Mutations.TWICE) && ref.kind() == PieceRef.Kind.GROUND;
+		boolean worldStone = Mutations.is(Mutations.WORLD_STONE);
+		int flags = Mutations.is(Mutations.FLAG2) ? Block.UPDATE_CLIENTS : WRITE_FLAGS;
 		BlockState air = Blocks.AIR.defaultBlockState();
 		BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
 		long lt = 0;
@@ -97,10 +100,14 @@ public abstract class TilePiece extends StructurePiece {
 			planner.get().raster(ref, clip, (x, y, z, role, blockId, shape) -> {
 				BlockState state = BlockMapper.state(role, blockId, shape);
 				if (mixRandom && random.nextInt(4) == 0) state = Blocks.STONE.defaultBlockState();
+				if (counter && !state.isAir() && Mutations.COUNTER_VALUE.incrementAndGet() % 7 == 0) state = Blocks.STONE_BRICKS.defaultBlockState();
 				pos.set(x, y, z);
 				PieceLedger.record(x, y, z, Block.BLOCK_STATE_REGISTRY.getId(state));
+				if (twice) PieceLedger.record(x, y, z, Block.BLOCK_STATE_REGISTRY.getId(state));
+				if (skipAir && state.isAir()) return;
+				if (worldStone && !state.isAir() && Math.floorMod(x * 31 + y * 17 + z * 13, 7) == 0) state = Blocks.STONE.defaultBlockState();
 				// a cell is only written when it changes; a claimed air cell over air costs a read, not a write
-				if (level.getBlockState(pos) != state) level.setBlock(pos, state, WRITE_FLAGS);
+				if (level.getBlockState(pos) != state) level.setBlock(pos, state, flags);
 			});
 		} catch (IllegalArgumentException e) {
 			if (WARNED.put("missing" + ref, true) == null) FractalBuildingsMod.LOGGER.warn("District piece {} no longer exists in its tile (saved by generator v{}, config changed?): nothing placed", ref, genVersion);
