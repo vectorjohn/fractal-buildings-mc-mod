@@ -52,8 +52,8 @@ item. Per-item work logs are in [log/](log/); run ledgers in [runs/](runs/).
 | 2. Worldgen spikes | done; gate passed 2026-10-16 (John accepted ADR 0003; S6 figures being re-measured) | worldgen ADR (approach, size limits, determinism rules) |
 | 3. Planner core and three.js viewer | done 2026-10-16; gate passed 2026-10-18 (John, REVIEW 3.12: "These all look good"; follow-ups: top view tilted, Phase 4 4.2 wings/jetties) | John reviews seed gallery and invariant report |
 | 4. Building generator depth | done 2026-10-19; gate passed 2026-10-21 (John, phase4 README: "consider this gate passed and move on"; feedback → 5.11, 5.12) | per building type, "would I believe a person built this?" |
-| 5. Settlements and cities | done 2026-10-21 (5.9 partial: probe bar not met); gate awaiting John (pack: docs/review/phase5/README.md, REVIEW "Phase 5 gate") | cities in ≥5 biome mixes, one straddling a border |
-| 6. Minecraft integration and release | not started | fresh world on three seeds plays well for an hour; first release |
+| 5. Settlements and cities | done 2026-10-21 (5.9 partial: probe bar not met); gate passed 2026-10-22 (John, REVIEW "Phase 5 gate"; follow-ups STAIRGROUND done, S10 roads must not cross water) | cities in ≥5 biome mixes, one straddling a border |
+| 6. Minecraft integration and release | in progress (run 2026-10-22-phase6) | fresh world on three seeds plays well for an hour; first release |
 | 7. World-level features (later) | not started | transit (7.1), other-mod integration research (7.2); S10/6.10 may move here |
 
 Unscheduled ideas: add them to the Polish backlog or a new phase item via the
@@ -330,7 +330,7 @@ built this?" review, including the high-rise, city-block and hall classes.
 again once settlements and the game show real problems). His gate feedback
 became items 5.11 and 5.12.
 
-## Phase 5: Settlements and cities (done 2026-10-21; gate: awaiting John)
+## Phase 5: Settlements and cities (done 2026-10-21; gate passed 2026-10-22)
 
 Updated: 2026-10-21
 
@@ -368,7 +368,7 @@ Open known issues that matter later (details in the Polish backlog, 5.x lines):
 
 **Gate:** John reviews cities in at least five biome mixes, including one
 straddling a border, one larger than 512 × 512, and one with a high-rise
-downtown. Awaiting John (REVIEW "Phase 5 gate").
+downtown. Passed 2026-10-22 (John, REVIEW "Phase 5 gate").
 
 ## Phase 6: Minecraft integration and release
 
