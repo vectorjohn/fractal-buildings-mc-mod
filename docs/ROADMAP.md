@@ -54,7 +54,7 @@ item. Per-item work logs are in [log/](log/); run ledgers in [runs/](runs/).
 | 4. Building generator depth | done 2026-10-19; gate passed 2026-10-21 (John, phase4 README: "consider this gate passed and move on"; feedback → 5.11, 5.12) | per building type, "would I believe a person built this?" |
 | 5. Settlements and cities | done 2026-10-21 (5.9 partial: probe bar not met); gate passed 2026-10-22 (John, REVIEW "Phase 5 gate"; follow-ups STAIRGROUND done, S10 roads must not cross water) | cities in ≥5 biome mixes, one straddling a border |
 | 6. Minecraft integration and release | in progress (run 2026-10-22-phase6) | fresh world on three seeds plays well for an hour; first release |
-| 7. World-level features (later) | not started | transit (7.1), other-mod integration research (7.2), bridges (7.3); S10/6.10 may move here |
+| 7. World-level features (later) | not started | transit (7.1), other-mod integration research (7.2), bridges (7.3), port towns (7.4); S10/6.10 may move here |
 
 Unscheduled ideas: add them to the Polish backlog or a new phase item via the
 assistant.
