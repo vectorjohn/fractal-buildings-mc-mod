@@ -13,6 +13,7 @@ public class FractalBuildingsMod implements ModInitializer {
 	public void onInitialize() {
 		LOGGER.info("Fractal Buildings loaded (planner core {})", Planner.version());
 		dev.fractalbuildings.mod.probe.ProbeInit.register();
+		dev.fractalbuildings.mod.worldgen.ModWorldgen.register();
 		dev.fractalbuildings.mod.config.ConfigInit.register();
 	}
 }

@@ -76,6 +76,11 @@ public final class FixtureWorldPlanner extends WorldPlanner {
 		return false;
 	}
 
+	@Override public Optional<DistrictGrid.Tile> startTile(int chunkX, int chunkZ) {
+		for (DistrictGrid.Tile t : tiles.values()) if (t.originChunkX() == chunkX && t.originChunkZ() == chunkZ) return Optional.of(t);
+		return Optional.empty();
+	}
+
 	@Override public Optional<TileInfo> tile(int ix, int iz) {
 		TilePlan p = plans.get(key(ix, iz));
 		return p == null ? Optional.empty() : Optional.of(p.info());
@@ -98,6 +103,10 @@ public final class FixtureWorldPlanner extends WorldPlanner {
 	}
 
 	@Override public void prefetch(int ix, int iz) {}
+
+	@Override public void evictAll() {}
+
+	@Override public WorldConfig config() { return WorldConfig.defaults(); }
 
 	@Override public void warm(int blockX, int blockZ, int radius) {}
 

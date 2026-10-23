@@ -1,0 +1,4 @@
+{
+  "structures": [ { "structure": "fractalbuildings:district_ground", "weight": 1 } ],
+  "placement": { "type": "fractalbuildings:districts", "salt": 1302 }
+}

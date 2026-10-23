@@ -6,8 +6,8 @@
 	"environment": "*",
 	"license": "MIT",
 	"entrypoints": {
-		"fabric-gametest": ["dev.fractalbuildings.gametest.HelloGameTest", "dev.fractalbuildings.gametest.ConfigGameTest"],
-		"fabric-client-gametest": ["dev.fractalbuildings.gametest.HelloClientGameTest"]
+		"fabric-gametest": ["dev.fractalbuildings.gametest.HelloGameTest", "dev.fractalbuildings.gametest.ConfigGameTest", "dev.fractalbuildings.gametest.worldgen.WorldgenGameTest"],
+		"fabric-client-gametest": ["dev.fractalbuildings.gametest.HelloClientGameTest", "dev.fractalbuildings.gametest.worldgen.DistrictClientGameTest"]
 	},
 	"depends": {
 		"fractalbuildings": "*"

@@ -4,7 +4,12 @@ import dev.fractalbuildings.core.ir.Box;
 import dev.fractalbuildings.core.ir.Box3;
 import dev.fractalbuildings.core.ir.PlacedBuilding;
 import dev.fractalbuildings.core.ir.Placement;
+import dev.fractalbuildings.core.gen.v1.style.StyleLibrary;
 import dev.fractalbuildings.core.probe.BiomeProbe;
+import dev.fractalbuildings.core.raster.CellSink;
+import dev.fractalbuildings.core.raster.PieceRaster;
+import dev.fractalbuildings.core.raster.StyleAt;
+import java.util.function.Supplier;
 import dev.fractalbuildings.core.probe.TerrainProbe;
 import dev.fractalbuildings.core.settlement.DistrictScenes;
 import dev.fractalbuildings.core.settlement.LotBrief;
@@ -27,6 +32,22 @@ final class Pieces {
 	/** The piece of one generated lot. */
 	static BuildingPiece piece(int ix, int iz, DistrictScenes.Generated g) {
 		return new BuildingPiece(PieceRef.building(ix, iz, g.index()), g.brief(), g.lot(), box(g.brief(), g.building()), g.building());
+	}
+
+	/** Cells of one piece of a tile whose buildings are {@code buildings} (lot order) and whose ground comes from {@code ground}. */
+	static void raster(PieceRef ref, List<BuildingPiece> buildings, Supplier<List<GroundPiece>> ground, Box3 clip, CellSink out) {
+		List<PlacedBuilding> placed = new ArrayList<>();
+		for (BuildingPiece b : buildings) placed.add(b.building());
+		if (ref.kind() == PieceRef.Kind.BUILDING) {
+			for (int i = 0; i < buildings.size(); i++) {
+				if (buildings.get(i).ref().equals(ref)) { PieceRaster.building(placed, i, clip, out); return; }
+			}
+		} else {
+			for (GroundPiece g : ground.get()) {
+				if (g.ref().equals(ref)) { PieceRaster.ground(g.boxes(), placed, StyleAt.nearest(placed, StyleLibrary.FALLBACK), clip, out); return; }
+			}
+		}
+		throw new IllegalArgumentException("no piece " + ref);
 	}
 
 	static Box3 box(LotBrief l, PlacedBuilding b) {
