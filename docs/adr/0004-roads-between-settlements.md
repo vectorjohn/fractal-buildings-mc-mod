@@ -32,9 +32,9 @@ roads.
   passed on determinism and cost: [planner half](../research/spikes/s10-intercity-roads.md),
   [mod half](../research/spikes/s10-mod.md). Chunk queries gave the same
   answers in shuffled orders and with cache capacity 1. 91 % of settlements
-  were linked. A warm road chunk costs 0.0 ms in the planner and about
-  0.9 ms in the mod with coarse heights. Edge digests matched in 4 chunk
-  orders.
+  were linked. A warm road chunk costs 0.0 ms in the planner. In the mod, a
+  cold road chunk costs about 0.9 ms with coarse heights and 7.2 ms with
+  exact heights. The mod's block digests matched in 4 chunk orders.
 - **What the spike left open.** It read 14.5 to 18 km around a chunk, and
   that radius grows with `rmax`, the largest settlement radius (about 3
   times larger at the live maximum of 4,096). It probed exact heights per
