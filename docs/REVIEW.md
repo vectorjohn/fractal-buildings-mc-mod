@@ -351,6 +351,9 @@ work becomes a ROADMAP item or a Polish backlog line. Settled items move to
   8. Server-only install: probably works for vanilla clients, but untested (testing it needs a dedicated server and the EULA, which is yours to accept).
   9. Terralith and Tectonic: run their jars as black boxes in compatibility tests, as the S2 and S7 spikes did (their licence forbids using their work to test AI systems; we never read their code or data). If you object, they are listed as untested.
   10. Deferred past the first release: per-wing ground levels on slopes, density-function flattening, a published settlement density function, and 6.10 unless it is ready in time.
+  Result:
+
+## Phase 6 items
 
 - [ ] **6.9 Railings on steps and landings** (2026-10-22)
   Where: `docs/review/phase6/railings/` (`house-slope`, `shop-slope-deep`, `tower-medieval`, each `-before.png` and `-after.png`).
