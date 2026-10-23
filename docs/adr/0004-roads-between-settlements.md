@@ -1,9 +1,9 @@
 ---
 tags: adr
-status: proposed
-date: "2026-10-22"
+status: accepted
+date: "2026-10-23"
 author: researcher
-approvedBy:
+approvedBy: John, 2026-10-23
 supersededBy:
 dependsOn:
   - "[[docs/adr/0003-worldgen]]"
@@ -135,6 +135,14 @@ not measured.
   skeleton therefore reads the graph: required exits face the ports, and an
   approach runs from each exit to its port (plan, "How SK exits meet the
   roads"). Approaches follow the water rule too.
+- **N6 Port tag** (John, Q5). The region field's water search (R2/5.10)
+  tags a settlement `port` when its centre is near large water. The tag is
+  part of the region decision, so it comes before the road graph and never
+  depends on it. There is no village bias and no tier nudge: towns and
+  cities already lean toward water, so ports tend to be the larger
+  settlements by chance. In 6.10 the tag is only recorded; port features
+  (docks, piers, harbour buildings) are a later item, ROADMAP 7.4. Not to
+  be confused with N3's road ports, where a road meets a rim.
 
 ### Water rule
 
@@ -181,7 +189,9 @@ not measured.
   did not implement claim lookup.
 - **HT Heights.** All heights use the game's single definition (Phase 6
   decision 1: exact, through `ColumnMemo`). The coarse surface is never
-  used for a deck. D4 stands unchanged.
+  used for a deck. Roads keep exact heights at their stations even if the
+  region layer falls back to the coarse screen (John, Q6). D4 stands
+  unchanged.
   - **Topology.** The lattice A* and the string-pull grade test read only
     the 64-block region lattice. S10's 16-block chord samples are dropped.
   - **Stations.** For each edge, the water and floor are read once at every
@@ -231,9 +241,10 @@ not measured.
   1-block shoulder, the cut rises in steps at most 2 high with benches at
   least 2 wide. It stops where it meets the ground, or 12 blocks from the
   road edge. Any face left beyond that is accepted; 6.10 reports the share of
-  columns with a face over 3 blocks. *Pending (Q4):* John judges the look
-  from a screenshot that the 6.10 mod half (C1) takes in its T2 road test;
-  no earlier probe builds terraces. Fill is a 1:1 embankment capped at 8
+  columns with a face over 3 blocks. *Look pending (Q4):* John accepted the
+  rule and still looks at the screenshot that the 6.10 mod half (C1) takes
+  in its T2 road test; no earlier probe builds terraces. This does not
+  block acceptance: a gentler look would only change TC's constants. Fill is a 1:1 embankment capped at 8
   blocks. Terraces and embankments are topped with the column's own surface
   block. On a steady grade the deck uses stairs or slabs instead of
   whole-block steps.
@@ -260,7 +271,8 @@ Big bridges are ROADMAP 7.3 (Bridges), behind a world setting (John,
 2026-10-23).
 Lost Cities' railway planner and 7.1 transit could later share the links.
 
-**Port towns (John's question).** The timing works for a port's *site*, but
+**Port towns (John's question; decided in N6: tag only, no village bias,
+no tier nudge).** The timing works for a port's *site*, but
 not as a reaction to roads. Cells decide before, and independently of, the
 road graph. A blocked road therefore cannot create a port: that would be a
 cycle. The field can tag ports itself, though. R2/5.10 already biases town
@@ -269,7 +281,9 @@ blocks. A `port` tag (a centre near large water) can come from the same
 water search at no extra cost. Biasing villages too only means changing
 constants (and bumping `genVersion`). Nudging the *tier* up at a coastal
 site is possible, but it makes every claimant's radius depend on probes,
-which widens the join rule's reads (R2). Nudge the site, not the tier. Ferries or
+which widens the join rule's reads (R2). John chose neither: the tag
+alone, with the existing town and city bias. Port features are ROADMAP
+7.4. Ferries or
 bridges between ports would come later, as a separate pure layer over
 port-tagged nodes.
 
@@ -280,7 +294,7 @@ port-tagged nodes.
   20 to 25 % on the dumps, and wide rivers become borders between road
   networks. Routable witnesses win back 5 to 7 points over the plain graph,
   and cost 50 to 60 % more routes.
-- **For 6.10:** a planner half with N1 to N4, WR1 to WR4, RC and HT, plus
+- **For 6.10:** a planner half with N1 to N4, the N6 port tag, WR1 to WR4, RC and HT, plus
   RoadNetTest, on Phase 6 A1's live probes and `ColumnMemo`. A mod half with MF1 to MF4 and TC, plus the T2 road test (C1). It
   will report wet-run histograms and links lost to rivers on live terrain.
 - **The case for crossings now:** links grow from about 75 % to 91 %, and
@@ -310,7 +324,7 @@ port-tagged nodes.
      heights at their stations, because a deck cannot sit on a surface that
      may be 150 blocks off. Is that acceptable?
 - **Answers (John, 2026-10-23):**
-  - In a comment on this ADR: "1. Make the span 24, then yes. 2. yes
+  - In a first comment on this ADR: "1. Make the span 24, then yes. 2. yes
     3. yes 4. I’ll wait for the screenshot".
   - In chat the same day, which **supersedes the 24 for question 1**: "So,
     I think no "very big" bridges for now. Lets go up a little more on a
@@ -321,7 +335,16 @@ port-tagged nodes.
     not necessarily starting/ending at the same elevation, abutments,
     pillars, suspension, all of it. I don't want 50 block slabs", and a
     setting should "allow/disallow big bridges".
-  - Recorded: 1. single-span crossings up to 20 blocks (WR2); bigger
+  - In his final comment on this ADR: "1. Make the span 20, then yes.
+    2. yes 3. yes 4. This sounds good. 5. Yes port tag, no nudging
+    villages. Cities already bias towards water, so port towns would
+    naturally be the larger settlements by chance. 6. Yes". And in chat:
+    "my answers are done on the ADR."
+  - Recorded: 1. Single-span crossings up to 20 blocks (WR2); bigger
     bridges are ROADMAP 7.3. 2. The 90 % bar is dropped (WR4). 3. Touching
-    settlements share a meeting point (N2). 4. Pending the terrace
-    screenshot from the 6.10 mod half (TC). 5. **Open.** 6. **Open.**
+    settlements share a meeting point (N2). 4. Terraces as written (TC);
+    John still looks at the terrace screenshot from the 6.10 mod half (C1),
+    which does not block acceptance. 5. The region field tags `port`
+    settlements, with no village bias and no tier nudge (N6); harbour
+    features are ROADMAP 7.4. 6. Roads read exact heights at their stations
+    even if the region layer falls back to the coarse screen (HT).
