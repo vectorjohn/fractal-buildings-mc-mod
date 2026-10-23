@@ -1,11 +1,19 @@
+import { execFileSync } from 'node:child_process';
 import { defineConfig } from '@playwright/test';
 
 // `npm run screenshot` builds the viewer, serves it with `vite preview` and runs e2e/*.spec.ts.
 // Browsers come from the Nix dev shell (PLAYWRIGHT_BROWSERS_PATH); WebGL is software (SwiftShader).
 // ANGLE/SwiftShader tries to open an X display if DISPLAY is set (even a dead one) and then gets no WebGL,
 // so the browser is launched without DISPLAY.
-// Port: FB_PORT (default 4173), so parallel agents can each run their own preview.
-const port = Number(process.env['FB_PORT'] ?? 4173);
+// Port: FB_PORT if set; otherwise a free port picked by the OS, so parallel runs (other worktrees, other
+// agents, two test-all.sh at once) never collide. The pick is written back to FB_PORT so the worker
+// processes, which re-read this config, use the same port.
+function freePort(): number {
+  const js = "const s=require('net').createServer();s.listen(0,'127.0.0.1',()=>{console.log(s.address().port);s.close()})";
+  return Number(execFileSync(process.execPath, ['-e', js], { encoding: 'utf8' }).trim());
+}
+const port = Number(process.env['FB_PORT'] || freePort());
+process.env['FB_PORT'] = String(port);
 const { DISPLAY: _display, ...browserEnv } = process.env;
 
 export default defineConfig({

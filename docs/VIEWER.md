@@ -145,7 +145,7 @@ shop, workshop, tower, temple, wall, highrise, hall and block (an unknown `--typ
 | Variable | Read by | Effect |
 |---|---|---|
 | `FB_GALLERY=1` | `vite.config.ts` | Serve `viewer/gallery-data/` (the generated `gen/` dirs) and build into `dist-gallery/` instead of `dist/`. Set by `dev:gen` and `gallery`; set it yourself to serve existing data. |
-| `FB_PORT` | `playwright.config.ts` | Port of the preview server for `gallery` and `screenshot` (default 4173). Pick a free one when other agents may be running galleries. Not used by `npm run dev`. |
+| `FB_PORT` | `playwright.config.ts` | Port of the preview server for `gallery` and `screenshot` (default: a free port the OS picks per run, so parallel runs never collide). Set it only to pin a port. Not used by `npm run dev`. |
 | `FB_PRESETS=a,b` | `e2e/gallery.spec.ts` | Capture only these presets (does not limit generation). |
 | `GALLERY=1` | `e2e/gallery.spec.ts` | Enables the gallery captures; set by `npm run gallery`. Without it the gallery tests are skipped. |
 | `PLAYWRIGHT_BROWSERS_PATH`, `PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS` | Playwright | Set by the dev shell (`flake.nix`) to its Chromium. Leave alone. |
