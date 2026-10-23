@@ -26,6 +26,14 @@ public final class Grading {
 	public static final int BRIDGE_CLEARANCE = 3;
 	public static final int PIER_EVERY = 8;
 	public static final int PLAZA_MAX_RELIEF = 6;
+	/**
+	 * Earth under every road and plaza surface reaches this far below the probed ground (and below the surface when the road is cut
+	 * into the ground): the live ground near a building is the vanilla beardifier's, which lowers it up to its 12-block margin below
+	 * what the probe saw, and a fill that starts at the probed ground would leave a gap under the road (B3).
+	 */
+	public static final int FILL_BELOW = 12;
+	/** Air above every road and plaza surface, in blocks counted from the first free level: the beardifier can raise the live ground over a street the probe saw as open (B3). */
+	public static final int HEADROOM = 4;
 
 	/** Centre-line columns of a road, index-aligned arrays. */
 	public record Profile(int[] x, int[] z, int[] y, boolean[] bridge) {
@@ -193,8 +201,7 @@ public final class Grading {
 			}
 			int cg = exact.floorY(cx, cz);
 			items.add(new Item(Kind.ROAD, cx, lvl - 1, cz, 1));
-			if (lvl - 1 > cg) items.add(new Item(Kind.FILL, cx, cg, cz, lvl - 1 - cg));
-			else if (lvl < cg) items.add(new Item(Kind.CUT, cx, lvl, cz, cg - lvl));
+			surfaceEarthAndAir(items, cx, cz, lvl, cg);
 		}
 		for (int i = 0, k = 0; i < n; i++) {
 			if (!wet[i]) { k = 0; continue; }
@@ -229,14 +236,22 @@ public final class Grading {
 			for (int xx = rect.x(); xx < rect.x() + rect.w(); xx++) {
 				int cg = exact.floorY(xx, zz);
 				items.add(new Item(Kind.PLAZA, xx, level - 1, zz, 1));
-				if (level - 1 > cg) items.add(new Item(Kind.FILL, xx, cg, zz, level - 1 - cg));
-				else if (level < cg) {
-					if (cg - level > MAX_CUT_FILL) return Optional.empty();
-					items.add(new Item(Kind.CUT, xx, level, zz, cg - level));
-				}
+				if (level < cg && cg - level > MAX_CUT_FILL) return Optional.empty();
+				surfaceEarthAndAir(items, xx, zz, level, cg);
 			}
 		}
 		return Optional.of(new PlazaGrade(level, BoxMerge.merge(items)));
+	}
+
+	/**
+	 * The earth and air of one surface column: the surface block is at {@code lvl - 1}, the probed ground has its first free block at {@code cg}.
+	 * Earth from {@link #FILL_BELOW} under the lower of the two up to the surface block (so a live ground that the beardifier lowered or
+	 * raised still has earth under the street), air from {@code lvl} to the probed ground or {@link #HEADROOM} above the surface, whichever is higher.
+	 */
+	static void surfaceEarthAndAir(List<Item> items, int x, int z, int lvl, int cg) {
+		int from = Math.min(cg, lvl - 1) - FILL_BELOW;
+		items.add(new Item(Kind.FILL, x, from, z, lvl - 1 - from));
+		items.add(new Item(Kind.CUT, x, lvl, z, Math.max(cg, lvl + HEADROOM) - lvl));
 	}
 
 	private static int median(int a, int b, int c) {
