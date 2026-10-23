@@ -411,12 +411,13 @@ public release.
 
 ## Phase 7: World-level features (later)
 
-Updated: 2026-10-22
+Updated: 2026-10-23
 
 After the first release; no plan yet. Items wait for Phase 6 unless noted.
 
 - [ ] **7.1 Transit: subways and surface railways** (John 2026-10-21, REVIEW "Whole-city roads"): a transit layer in city planning. Stations in dense districts (downtown and city-block tiers first), lines along arterials and main roads, minecart rails underground (vanilla rails and powered rails, no other mod needed), surface or elevated lines between districts, and later between settlements along 6.10's links. Prior art: [lost-cities-road-planning.md](research/overlays/lost-cities-road-planning.md) (global hashed lines clipped to the city mask, pure per-chunk queries: the shape for lines; Lost Cities' highways already route round its railway corridors); Lost Cities' own railway and station planner is not researched yet. Needs a research note and a plan first.
 - [ ] **7.2 Research: integration with other mods, Create first** (John 2026-10-21, REVIEW "Downtown skyline and avenues"): high-rises are hard to climb on foot; with Create they could have working elevator shafts. Check Create's support for our Minecraft version, how its contraptions could be placed at worldgen, and optional-dependency loading on Fabric. Cheap step before then: leave a shaft-sized space in high-rise cores for a later elevator.
+- [ ] **7.3 Bridges** (John 2026-10-23, [ADR 0004](adr/0004-roads-between-settlements.md) answers): big bridges that look like bridges: abutments, piers or pillars, arches or suspension, and decks that need not be level end to end (ramped or cambered between banks at different heights); never long flat slabs ("I don't want 50 block slabs"). A world setting allows or disallows big bridges. Small bridges stay in 6.10: single flat spans up to 20 blocks over streams (ADR 0004 WR2). Covers bridges between settlements (ADR 0004 "Deferred": links that water cuts today) and probably the city bridges from Phase 5 TR, which today are flat decks at water level + 3 with a pier every 8 blocks, over water runs up to 40 blocks on main roads and arterials (`Arterials.MAX_BRIDGE`, `Grading.BRIDGE_CLEARANCE`, `Grading.PIER_EVERY`). Needs a research note (bridge types and how to grammar them) and a plan first.
 
 ---
 
@@ -512,6 +513,10 @@ Fixed opportunistically or scheduled as items.
   in every one-pager.
 - **Scope creep:** villager AI, quests and interiors-as-gameplay belong to later
   projects.
+- **World generation profiles:** should a world pick an era? For example a
+  medieval world (no high-rises or big bridges) versus a modern one (bridges,
+  high-rises, no medieval), or mixes. A question for later (John 2026-10-23);
+  meanwhile keep big bridges (7.3) behind a setting.
 
 ## Sources
 
