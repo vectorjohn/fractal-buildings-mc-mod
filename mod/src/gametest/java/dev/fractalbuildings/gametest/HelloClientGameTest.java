@@ -14,6 +14,7 @@ import net.minecraft.world.level.Level;
 public class HelloClientGameTest implements FabricClientGameTest {
 	@Override
 	public void runTest(ClientGameTestContext context) {
+		if (dev.fractalbuildings.gametest.compat.CompatOnly.skip("HelloClientGameTest")) return;
 		try (TestSingleplayerContext world = context.worldBuilder()
 				.adjustSettings(creator -> creator.setSeed("4242"))
 				.create()) {

@@ -361,6 +361,28 @@ public class WorldPlanner {
 		return Optional.ofNullable(best);
 	}
 
+	/**
+	 * Does the block (x, z) lie within {@code margin} blocks of any settlement's footprint (the disc of its radius around its centre)?
+	 * This is the vanilla-structure veto's question (plan B7): it reads the region field only (no districts, no road networks) over the
+	 * cells a settlement of at most {@code maxRadius} could reach from, so it is a pure function of (seed, config, point, margin).
+	 * Only settlements decided by the field count, as everywhere else.
+	 */
+	public boolean footprintNear(int x, int z, int margin) {
+		Cell c0 = CellGeometry.owner(field, x, z);
+		int reach = Math.floorDiv(config.maxRadius() + margin, config.cellSize()) + 2;
+		for (int dz = -reach; dz <= reach; dz++) {
+			for (int dx = -reach; dx <= reach; dx++) {
+				Optional<SettlementSite> o = siteOf(new Cell(c0.cx() + dx, c0.cz() + dz));
+				if (o.isEmpty()) continue;
+				SettlementSite site = o.get();
+				double lim = (double) site.radius() + margin;
+				double ex = site.centre().x() - x, ez = site.centre().z() - z;
+				if (ex * ex + ez * ez <= lim * lim) return true;
+			}
+		}
+		return false;
+	}
+
 	/** Drops every memo (memory pressure, tests). Answers do not change; the next questions recompute. */
 	public void evictAll() {
 		sources.clear();

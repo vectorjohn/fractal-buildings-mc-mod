@@ -97,6 +97,7 @@ public class TerrainClientGameTest implements FabricClientGameTest {
 
 	@Override
 	public void runTest(ClientGameTestContext context) {
+		if (dev.fractalbuildings.gametest.compat.CompatOnly.skip("TerrainClientGameTest")) return;
 		List<String> failures = new ArrayList<>();
 		context.runOnClient(client -> client.options.renderDistance().set(6));
 		for (String seed : SEEDS) {

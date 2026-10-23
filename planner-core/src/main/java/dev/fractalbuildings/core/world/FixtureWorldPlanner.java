@@ -110,6 +110,11 @@ public final class FixtureWorldPlanner extends WorldPlanner {
 
 	@Override public void warm(int blockX, int blockZ, int radius) {}
 
+	@Override public boolean footprintNear(int x, int z, int margin) {
+		double lim = (double) site.radius() + margin, ex = site.centre().x() - x, ez = site.centre().z() - z;
+		return ex * ex + ez * ez <= lim * lim;
+	}
+
 	@Override public Optional<SettlementInfo> nearest(int x, int z, Tier min, int maxCells) {
 		if (!site.tier().atLeast(min)) return Optional.empty();
 		double d = StrictMath.hypot(site.centre().x() - x, site.centre().z() - z);

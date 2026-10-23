@@ -98,3 +98,47 @@ tasks.named('test') {
 	systemProperties System.properties.findAll { it.key.toString().startsWith('fb.') }
 	testLogging { showStandardStreams = true }
 }
+
+// --- Compatibility matrix (plan B7): worldgen mods as test-only runtime dependencies -----------------------------
+// -PmodSet=vanilla|lithostitched|terralith|tectonic|terratectonic|terrablender   (default vanilla: nothing is downloaded)
+// Jars come from scripts/fetch-test-mods.sh (cache ~/.cache/fractal-test-mods, or $FRACTAL_TEST_MODS); only the selected set's
+// jars are fetched, and each is checked against the sha512 Modrinth publishes. They are run as black boxes on the test classpath
+// only, never bundled. Terralith and Tectonic need Lithostitched. The test code that registers two TerraBlender regions
+// (`compat/tb`) compiles against the TerraBlender jar, so it is part of the build only for -PmodSet=terrablender; the game-test
+// mod's `terrablender` entrypoint is only called when that mod is loaded, so the other runs never look for the class.
+def testModsDir = file(System.getenv('FRACTAL_TEST_MODS') ?: "${System.getProperty('user.home')}/.cache/fractal-test-mods")
+def tmJar = [
+	lithostitched: 'lithostitched-2.0.6-fabric-26.3.jar',
+	terralith    : 'Terralith_26.3_v2.6.5+26.3.jar',
+	tectonic     : 'tectonic-3.0.31-fabric-26.3.jar',
+	terrablender : 'TerraBlender-fabric-26.3-26.3.0.0.9.jar',
+]
+def modSet = (findProperty('modSet') ?: 'vanilla').toString()
+def modSetMods = [
+	vanilla       : [],
+	lithostitched : ['lithostitched'],
+	terralith     : ['lithostitched', 'terralith'],
+	tectonic      : ['lithostitched', 'tectonic'],
+	terratectonic : ['lithostitched', 'terralith', 'tectonic'],
+	terrablender  : ['terrablender'],
+]
+if (!modSetMods.containsKey(modSet)) throw new GradleException("unknown -PmodSet=${modSet}; one of ${modSetMods.keySet()}")
+def wanted = modSetMods[modSet]
+
+tasks.register('fetchTestMods', Exec) {
+	description = 'Downloads the selected mod set\'s jars into the test-mods cache when missing (sha512-checked).'
+	commandLine(['bash', rootProject.file('scripts/fetch-test-mods.sh').absolutePath] + wanted)
+	onlyIf { wanted.any { !new File(testModsDir, tmJar[it]).exists() } }
+}
+dependencies {
+	if (modSet == 'terrablender') gametestCompileOnly files(new File(testModsDir, tmJar.terrablender))
+	wanted.each { gametestRuntimeOnly files(new File(testModsDir, tmJar[it])) }
+}
+if (modSet != 'terrablender') {
+	sourceSets.matching { it.name == 'gametest' }.configureEach { java.exclude '**/compat/tb/**' }
+}
+tasks.matching { it.name == 'compileGametestJava' && !wanted.isEmpty() }.configureEach { dependsOn 'fetchTestMods' }
+tasks.matching { it.name in ['runGameTest', 'runClientGameTest'] && !wanted.isEmpty() }.configureEach { dependsOn 'fetchTestMods' }
+// tell the tests which set this run is (the tests also look at the loaded mods)
+tasks.matching { it.name in ['runGameTest', 'runClientGameTest'] }.configureEach { systemProperty 'fb.modSet', modSet }
+if (findProperty('fb.compatOnly') == 'true') tasks.matching { it.name == 'runClientGameTest' }.configureEach { systemProperty 'fb.compatOnly', 'true' }
