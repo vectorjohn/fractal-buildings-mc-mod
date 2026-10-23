@@ -1,7 +1,11 @@
 package dev.fractalbuildings.core.world;
 
 import dev.fractalbuildings.core.ir.Box;
+import dev.fractalbuildings.core.gen.v1.InstancePassV1;
 import dev.fractalbuildings.core.ir.Box3;
+import dev.fractalbuildings.core.ir.Layer;
+import dev.fractalbuildings.core.ir.Role;
+import dev.fractalbuildings.core.terrain.Grading;
 import dev.fractalbuildings.core.ir.PlacedBuilding;
 import dev.fractalbuildings.core.ir.Placement;
 import dev.fractalbuildings.core.gen.v1.style.StyleLibrary;
@@ -34,13 +38,48 @@ final class Pieces {
 		return new BuildingPiece(PieceRef.building(ix, iz, g.index()), g.brief(), g.lot(), box(g.brief(), g.building()), g.building());
 	}
 
+	/** How far the earth under a building's footprint is replaced by foundation, below the probed ground (and below the foundation the generator planned). */
+	static final int FOUNDATION_BELOW = Grading.FILL_BELOW;
+
+	/**
+	 * The building with a foundation under every column of its footprint that reaches {@link #FOUNDATION_BELOW} below the probed ground. In the game
+	 * the ground near a building is the vanilla beardifier's, which can end a block or more under what the probe saw, and a floor on
+	 * a foundation that stops at the probed ground then has a gap under it (B3). The generator's IR and the pieces' {@code building()} stay as they
+	 * are (the viewer and the CLI show the probed ground, and the invariants hold the IR to it: {@code no-gap-below}); only the cells
+	 * rastered into a world get the deeper foundation, below the ground where nobody sees it.
+	 */
+	static PlacedBuilding deepen(PlacedBuilding b) {
+		boolean[][] fp = InstancePassV1.footprint(b.shell());
+		int w = fp.length, d = w == 0 ? 0 : fp[0].length;
+		int[][] bottom = new int[w][d]; // local y of the lowest planned foundation, 0 when none
+		for (Box s : b.siteBoxes()) {
+			if (s.role() != Role.FOUNDATION) continue;
+			Box3 c = s.box();
+			for (int x = Math.max(0, c.x()); x < Math.min(w, c.maxX()); x++) for (int z = Math.max(0, c.z()); z < Math.min(d, c.maxZ()); z++) bottom[x][z] = Math.min(bottom[x][z], c.y());
+		}
+		List<Box> site = new ArrayList<>(b.siteBoxes());
+		for (int z = 0; z < d; z++) {
+			int runStart = 0;
+			for (int x = 1; x <= w; x++) {
+				if (x < w && fp[x][z] == fp[runStart][z] && bottom[x][z] == bottom[runStart][z]) continue;
+				if (fp[runStart][z]) site.add(new Box(Box3.of(runStart, bottom[runStart][z] - FOUNDATION_BELOW, z, x - runStart, FOUNDATION_BELOW, 1), Role.FOUNDATION, Layer.FOUNDATION, Box.NO_STOREY));
+				runStart = x;
+			}
+		}
+		return new PlacedBuilding(b.id(), b.lots(), b.ox(), b.oy(), b.oz(), b.rotation(), b.shell(), site);
+	}
+
 	/** Cells of one piece of a tile whose buildings are {@code buildings} (lot order) and whose ground comes from {@code ground}. */
 	static void raster(PieceRef ref, List<BuildingPiece> buildings, Supplier<List<GroundPiece>> ground, Box3 clip, CellSink out) {
 		List<PlacedBuilding> placed = new ArrayList<>();
 		for (BuildingPiece b : buildings) placed.add(b.building());
 		if (ref.kind() == PieceRef.Kind.BUILDING) {
 			for (int i = 0; i < buildings.size(); i++) {
-				if (buildings.get(i).ref().equals(ref)) { PieceRaster.building(placed, i, clip, out); return; }
+				if (buildings.get(i).ref().equals(ref)) {
+					placed.set(i, deepen(placed.get(i))); // only the cells written into a world get the deep foundation: the pieces, the IR and the scene stay what the generator made
+					PieceRaster.building(placed, i, clip, out);
+					return;
+				}
 			}
 		} else {
 			for (GroundPiece g : ground.get()) {

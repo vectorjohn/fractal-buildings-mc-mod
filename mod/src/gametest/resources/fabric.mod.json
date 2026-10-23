@@ -7,7 +7,7 @@
 	"license": "MIT",
 	"entrypoints": {
 		"fabric-gametest": ["dev.fractalbuildings.gametest.HelloGameTest", "dev.fractalbuildings.gametest.ConfigGameTest", "dev.fractalbuildings.gametest.worldgen.WorldgenGameTest", "dev.fractalbuildings.gametest.worldgen.WarmingGameTest", "dev.fractalbuildings.gametest.worldgen.GameplayGameTest"],
-		"fabric-client-gametest": ["dev.fractalbuildings.gametest.HelloClientGameTest", "dev.fractalbuildings.gametest.worldgen.DistrictClientGameTest", "dev.fractalbuildings.gametest.worldgen.GameplayClientGameTest"]
+		"fabric-client-gametest": ["dev.fractalbuildings.gametest.HelloClientGameTest", "dev.fractalbuildings.gametest.worldgen.DistrictClientGameTest", "dev.fractalbuildings.gametest.worldgen.GameplayClientGameTest", "dev.fractalbuildings.gametest.terrain.TerrainClientGameTest"]
 	},
 	"depends": {
 		"fractalbuildings": "*"

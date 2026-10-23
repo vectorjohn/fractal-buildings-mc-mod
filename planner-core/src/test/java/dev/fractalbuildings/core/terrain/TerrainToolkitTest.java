@@ -181,8 +181,10 @@ class TerrainToolkitTest {
 		var g = Grading.road(line(0, 0, 96, 0, 8), 5, t);
 		assertGrade(g.profile());
 		assertTrue(g.steep().isEmpty());
+		// the earth under the surface reaches FILL_BELOW below the ground, the air above it at least HEADROOM (B3); beyond those, cuts and fills stay shallow
 		for (var b : g.boxes()) {
-			if (b.kind() == Kind.FILL || b.kind() == Kind.CUT) assertTrue(b.box().sy() <= Grading.MAX_CUT_FILL);
+			if (b.kind() == Kind.FILL) assertTrue(b.box().sy() <= Grading.MAX_CUT_FILL + Grading.FILL_BELOW, "fill " + b.box());
+			if (b.kind() == Kind.CUT) assertTrue(b.box().sy() <= Math.max(Grading.MAX_CUT_FILL, Grading.HEADROOM), "cut " + b.box());
 		}
 		// every box lies within the road footprint (centre line +- width / 2)
 		for (var b : g.boxes()) {
@@ -198,7 +200,8 @@ class TerrainToolkitTest {
 	void roadOnFlatGroundIsOneBox() {
 		var t = SyntheticTerrain.flat(70);
 		var g = Grading.road(line(0, 0, 0, 64, 8), 3, t);
-		assertEquals(1, g.boxes().size());
+		// the surface, the earth under it and the air over it
+		assertEquals(3, g.boxes().size());
 		assertEquals(Kind.ROAD, g.boxes().get(0).kind());
 		assertEquals(69, g.boxes().get(0).box().y());
 	}
@@ -277,16 +280,17 @@ class TerrainToolkitTest {
 		assertEquals(24L * 16, plaza);
 		// every column of row 0 ends at the plaza surface
 		for (int x = 0; x < 24; x++) {
-			int g = t.floorY(x, 0), fill = 0, cut = 0;
+			int g = t.floorY(x, 0), fillTop = Integer.MIN_VALUE, fillFrom = 0, cutTop = Integer.MIN_VALUE;
 			for (var b : pg.boxes()) {
 				if (b.box().x() <= x && x < b.box().maxX() && b.box().z() <= 0 && 0 < b.box().maxZ()) {
-					if (b.kind() == Kind.FILL) { assertEquals(g, b.box().y()); fill += b.box().sy(); }
-					if (b.kind() == Kind.CUT) { assertEquals(pg.level(), b.box().y()); cut += b.box().sy(); }
+					if (b.kind() == Kind.FILL) { fillFrom = b.box().y(); fillTop = b.box().maxY(); }
+					if (b.kind() == Kind.CUT) { assertEquals(pg.level(), b.box().y()); cutTop = b.box().maxY(); }
 				}
 			}
-			if (fill > 0) assertEquals(pg.level(), g + fill + 1, "fill column " + x);
-			else if (cut > 0) assertEquals(pg.level(), g - cut, "cut column " + x);
-			else assertTrue(g == pg.level() || g == pg.level() - 1, "untouched column " + x);
+			// earth up to the surface block from FILL_BELOW under the lower of ground and surface, air from the surface to the ground or HEADROOM over it
+			assertEquals(pg.level() - 1, fillTop, "fill column " + x);
+			assertEquals(Math.min(g, pg.level() - 1) - Grading.FILL_BELOW, fillFrom, "fill start " + x);
+			assertEquals(Math.max(g, pg.level() + Grading.HEADROOM), cutTop, "cut column " + x);
 		}
 	}
 

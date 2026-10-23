@@ -163,7 +163,20 @@ public final class DistrictScenes {
 			if (g.isPresent()) addBoxes(g.get().boxes(), ground, false);
 			else settlement.add(new Violation("plaza-grade", null, "plaza " + p.id() + " cannot be graded (too rough or wet)", List.of(new Box3(p.x(), p.y() - 1, p.z(), p.w(), 1, p.d()))));
 		}
+		// Boxes apply in list order and a later one wins. Surfaces go last, so one street's air (headroom, cut) or earth can never remove the
+		// surface or earth of another street that crosses it at a different level: air first, then earth (so a street's earth under its surface is never
+		// cut away by another street's trench), then bridge parts, then road and plaza surfaces.
+		ground.sort(java.util.Comparator.comparingInt(b -> phase(b.role())));
 		return new Ground(ground, settlement);
+	}
+
+	private static int phase(Role r) {
+		return switch (r) {
+			case AIR -> 0;
+			case GROUND -> 1;
+			case DECK -> 2;
+			default -> 3;
+		};
 	}
 
 	private static SceneDoc tryGenerate(GeneratorV1 gen, long seed, LotBrief l, Lot lot, TerrainProbe exact, BiomeProbe biome) {
