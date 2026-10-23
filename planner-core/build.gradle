@@ -79,3 +79,12 @@ tasks.named('test') {
 tasks.named('test') {
 	systemProperties System.properties.findAll { it.key.toString().startsWith('fb.') }
 }
+
+// Run test classes in several JVMs (the suite is ~10 min serial). Each class is self-contained and
+// determinism tests compare within one JVM, so forking per class is safe. Capped so that several
+// agents building at once don't starve each other.
+tasks.named('test') {
+	maxParallelForks = Math.max(1, Math.min(6, Runtime.runtime.availableProcessors().intdiv(3)))
+	forkEvery = 0
+	maxHeapSize = '1g'
+}
