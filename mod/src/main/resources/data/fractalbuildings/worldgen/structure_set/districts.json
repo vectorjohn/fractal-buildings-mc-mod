@@ -1,0 +1,10 @@
+{
+  "structures": [
+    { "structure": "fractalbuildings:hamlet", "weight": 1 },
+    { "structure": "fractalbuildings:village", "weight": 1 },
+    { "structure": "fractalbuildings:town", "weight": 1 },
+    { "structure": "fractalbuildings:city", "weight": 1 },
+    { "structure": "fractalbuildings:metropolis", "weight": 1 }
+  ],
+  "placement": { "type": "fractalbuildings:districts", "salt": 1301 }
+}

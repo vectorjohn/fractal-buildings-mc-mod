@@ -1,7 +1,9 @@
 package dev.fractalbuildings.core.world;
 
 import dev.fractalbuildings.core.cache.BoundedCache;
+import dev.fractalbuildings.core.ir.Box3;
 import dev.fractalbuildings.core.probe.BiomeProbe;
+import dev.fractalbuildings.core.raster.CellSink;
 import dev.fractalbuildings.core.probe.TerrainProbe;
 import dev.fractalbuildings.core.region.FieldRegionView;
 import dev.fractalbuildings.core.region.RegionField;
@@ -147,6 +149,12 @@ public class WorldPlanner {
 		return t.originChunkX() == chunkX && t.originChunkZ() == chunkZ;
 	}
 
+	/** The tile whose centre chunk is this chunk (the tile a structure start at this chunk plans), or empty for any other chunk. No probes. */
+	public Optional<DistrictGrid.Tile> startTile(int chunkX, int chunkZ) {
+		DistrictGrid.Tile t = grid.tileAt(chunkX * 16, chunkZ * 16);
+		return t.originChunkX() == chunkX && t.originChunkZ() == chunkZ ? Optional.of(t) : Optional.empty();
+	}
+
 	private static long key(int ix, int iz) { return ((long) ix << 32) ^ (iz & 0xffffffffL); }
 
 	/** The settlement's source: its skeletons and road network, shared by all its tiles. */
@@ -244,6 +252,17 @@ public class WorldPlanner {
 	public List<GroundPiece> ground(int ix, int iz) {
 		if (tile(ix, iz).isEmpty()) return List.of();
 		return grounds.get(key(ix, iz), k -> Pieces.ground(plan(ix, iz), probes.exact()));
+	}
+
+	/**
+	 * The cells of one piece inside {@code clip} (world coordinates; the caller clips to the chunk it writes), as roles, block ids and
+	 * shapes in (y, z, x) order. Every cell has exactly one owner piece: a building owns what its boxes touch (air clears included), the
+	 * tile's ground owns the rest of its boxes ({@code PieceRaster}); so the pieces of a tile rastered over any partition of space write
+	 * each cell once, in any order. Pure: the same call gives the same cells on any thread, after any eviction. Throws
+	 * {@link IllegalArgumentException} when the tile has no such piece (a saved piece of another generator or config).
+	 */
+	public void raster(PieceRef piece, Box3 clip, CellSink out) {
+		Pieces.raster(piece, buildings(piece.ix(), piece.iz()), () -> ground(piece.ix(), piece.iz()), clip, out);
 	}
 
 	/**

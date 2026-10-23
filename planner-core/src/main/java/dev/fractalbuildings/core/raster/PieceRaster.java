@@ -75,7 +75,9 @@ public final class PieceRaster {
 					if (taken) continue;
 					Role role = v < 0 ? Role.AIR : g.roles[v - 1];
 					String st = style != null ? style : styleAt.at(x, z);
-					String id = Variant.pick(st, role, x, y, z);
+					// both halves of a door must pick the same block: hash the lower half's height for the upper one
+					int py = role == Role.DOOR && g.role(x, y - 1, z) == Role.DOOR ? y - 1 : y;
+					String id = Variant.pick(st, role, x, py, z);
 					out.cell(x, y, z, role, id, role == Role.AIR ? Shape.NONE : Shapes.of(g, x, y, z, role, id, g.hints(x, y, z, v)));
 				}
 	}

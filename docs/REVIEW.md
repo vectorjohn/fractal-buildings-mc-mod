@@ -362,3 +362,8 @@ work becomes a ROADMAP item or a Polish backlog line. Settled items move to
 
 - [ ] **A5 release basics (p6-a5-release)**: the files a first release needs, for you to read before C3 uses them. `LICENSE` (MIT, "Copyright (c) 2026 John Reeves"), [CHANGELOG.md](../CHANGELOG.md), the player README draft [release/README-player.md](release/README-player.md) (describes what Phase 6 is building; C3 cuts what does not ship), and the placeholder icon `mod/src/main/resources/assets/fractalbuildings/icon.png`. Build change: `mod/build.gradle` names the jar `fractalbuildings-0.1.0+26.3.jar` and puts `LICENSE` in it.
   Result:
+
+- [ ] **B1 first village in a real world (p6-b1-worldgen)**: a village (`sm1_0`, tile -4,4, seed 987654321, near -576,704) generated through the normal chunk pipeline, with doors seen from both sides.
+  Where: `docs/review/phase6/worldgen/district-overview.png` (hill village from the south), `district-door-a.png` (door seen from inside), `district-door-b.png` (from outside); in game: new world, seed 987654321, `/locate structure fractalbuildings:village` (or `/tp -576 120 704` in spectator).
+  Look for: does the door sit in its wall with the hinge on a sensible side and open to the right side; do the red roofs and the tall block read as a village; the road cuts on the slope may leave overhangs (known, terrain step B3).
+  Result:

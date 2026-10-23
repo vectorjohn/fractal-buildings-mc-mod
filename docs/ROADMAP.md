@@ -107,6 +107,7 @@ Notes:
 - Live-probe parity (P6 A1): `mod/src/test/.../probe/LiveProbeTest` compares `LiveProbes` with `fixtures/terrain/` dumps on the same columns (floor, water, biome) and the three chunk-fill methods with `getBaseColumn`; it runs in `:mod:test`, so a Minecraft bump shows at once whether the game still matches the reviewed dumps. Timing table: `LiveProbeTiming` (`-Dfb.timing=1`, heavy lock).
 
 - Added in Phase 6 (A3): `core/raster/` (`PieceRaster`, `Shapes`, `Variant`) and `RasterOwnershipTest` over real gate-city districts (one owner per cell, union equals the scene, same cells under any chunk clipping, door and stair facings; writes top-down pictures to `planner-core/build/raster/`); `cellhash.csv` shared by `VariantTest` and the viewer's `cellhash.test.ts`.
+- Added in Phase 6 (B1): server-test helpers in `mod/src/gametest/.../worldgen/StartSupport` (make a start by hand with `Structure.generate`, place it per chunk in a given order, merge ledgers, clear, hash), the ledger hook `mod/.../worldgen/PieceLedger` (digest per chunk and whole, duplicate cells), `Mutations` switches, `WorldPlanners.overrideForTests` / `FAILURES`; a real `WorldPlanner` on `SyntheticTerrain.flat(70)` seed 6 gives a 62-building town for the flat test world; client test `DistrictClientGameTest` (normal world, nearest village, overview and door screenshots, door readback). Log: [log/2026-10-22-p6-b1-worldgen.md](log/2026-10-22-p6-b1-worldgen.md).
 ---
 
 ## Phase 0: Scaffolding (done 2026-10-08; gate: awaiting John)
@@ -380,10 +381,12 @@ Updated: 2026-10-22
 Wire the proven core into worldgen using the approach fixed in the Phase 2 ADR.
 Plan: [plans/phase6.md](plans/phase6.md) (steps A1–C3; ten decisions for John, each with a default).
 
-- [ ] **6.1 Adapter**: palette roles to block states; IR to structure pieces,
+- [x] **6.1 Adapter**: palette roles to block states; IR to structure pieces,
   clipped per chunk.
+  *Done (P6 A4 + B1):* `BlockMapper` for the palette half; `TilePiece` writes the planner's cells per chunk (no `random`, flags 2|16). Verified by server game tests (identical ledger digests and world blocks in four chunk orders, save/load, ownership, doors) and one client screenshot set ([review/phase6/worldgen/](review/phase6/worldgen/)). Chunk-order determinism on a real world, with threads and eviction, is B2. Log: [log/2026-10-22-p6-b1-worldgen.md](log/2026-10-22-p6-b1-worldgen.md).
 - [ ] **6.2 Registration**: structure type, structure set with data-driven
   spacing, region layer, biome tags for where settlements may appear.
+  *Mostly done (P6 B1), left unticked:* structure types, six structures (one per tier plus ground), two structure sets, `#fractalbuildings:settlement`, placement and the per-world planner (region layer) are in and `/locate`-ready; spacing is the tile grid, not data-driven (by design, ASSUMPTIONS); the biome tag `#fractalbuildings:no_settlements` exists but is empty and nothing reads it yet (B7). *Known issues:* road cuts on steep slopes can leave overhangs above the street (seen in the client test; B3).
 - [ ] **6.3 Terrain**: adaptation mode or our own grading, per S5.
 - [ ] **6.4 Gameplay hooks**: loot tables, villager workstations and beds,
   `/locate` support. Leave room for a villager AI mod later.
