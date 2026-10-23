@@ -342,6 +342,7 @@ work becomes a ROADMAP item or a Polish backlog line. Settled items move to
 
 - [ ] **Phase 6 plan: decisions for John**: work is going ahead on each default; say if you want one changed. Details and costs: [plans/phase6.md](plans/phase6.md), "Decisions for John".
   1. The game uses exact heights, as in the recorded dumps you reviewed, not ADR 0003's coarse screen. Needs a small ADR 0003 amendment at the gate.
+     - @coordinator 2026-10-22: John approved the default; ADR 0003 amended ([0003-worldgen.md](adr/0003-worldgen.md), W2, P1 and D4).
   2. Villagers spawn only in hamlets and villages (one per bed, at most 10 per district). Towns and up get beds and workstations but no villagers in this release.
   3. No monster spawns inside buildings. Streets stay as dangerous as the countryside.
   4. Vanilla villages are kept everywhere except inside our settlements plus a margin.
