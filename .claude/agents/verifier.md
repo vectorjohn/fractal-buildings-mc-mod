@@ -172,7 +172,7 @@ call. The steps:
    `git -C I branch -D claude/<slug>` (`-D` because a squash doesn't mark it
    merged). If removing the worktree fails, leave both and say so.
 
-**Every Gradle run in `I` goes inside the merge lock**, not only the script's
+**Every Gradle run in `I`, post-merge or ad hoc, holds the merge lock**, not only the script's
 step 6: a rerun after exit 5, a check before merging, anything. Two Gradle
 runs in one checkout wipe each other's `build/test-results/*/binary` and fail
 with `EOFException` / `KryoException` and no failing test (`docs/NOTES.md`).
