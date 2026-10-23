@@ -117,7 +117,9 @@ merging the integration branch into yours (below). Run client game tests only
 if you touched the mod's client side, rendering, or worldgen appearance.
 Don't repeat a passing run just to be sure; the verifier does the independent
 run. Keep tool output small: `tail` or `grep` logs, don't print full Gradle
-output.
+output. The scratchpad directory is shared with other subagents, so name
+any log or scratch file you write there after your item (`testall-<slug>.log`),
+or use the worktree's own `build/test-all/` logs.
 
 Make sure a test can fail: break the code briefly, or check a control case.
 

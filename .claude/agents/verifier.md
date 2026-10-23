@@ -67,6 +67,9 @@ Work by path: `cd <worktree> && ...` or `git -C <worktree> ...`.
    client side, rendering or worldgen appearance, and then **under the heavy
    lock**. Report the summary lines with counts; quote the relevant error for a
    failure. A failure that passes on rerun is still a finding (a flake).
+   The scratchpad directory is shared with other subagents of the coordinator:
+   name any log you write there after the item (`testall-<slug>.log`), or
+   read the worktree's own `build/test-all/` logs instead.
 6. **Mutation spot check** (cheap layers only, at most one, a few minutes):
    break the item's main behaviour with a one-line `sed`, run the narrowest
    command that covers it, confirm a test fails. Then **always** restore with
