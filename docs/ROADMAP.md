@@ -82,6 +82,7 @@ Notes:
   deliberately broken rule fails.
 - Shared test infrastructure (synthetic probes, terrain dumps, seed lists,
   gallery presets) is listed here as it's added.
+- Added in Phase 6 (A2): `core/world/` tests `WorldPlannerParityTest` / `OrderTest` / `InvariantTest` / `RegionTest` / `IsolationTest` with `GateWorld` (a gate-sites.tsv row as `WorldProbes` on its dump, `planner(caps, workers)` via `WorldPlanner.forSite`), `WorldPlanner.Caches.all(n)` for eviction runs, `FixtureWorldPlanner.sample()` for mod tests.
 - Added in Phase 5 (T1): gzipped terrain dumps in `fixtures/terrain/` (see its README) made by
   `TerrainDumpTool` (`mod/src/test`, run with `-Dfb.dump=...`, no server); `RecordedProbe`
   reads gzip.

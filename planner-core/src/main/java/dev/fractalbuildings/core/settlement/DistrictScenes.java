@@ -55,46 +55,18 @@ public final class DistrictScenes {
 	public static Built build(DistrictPlan plan, List<Landmark> landmarks, TerrainProbe exact, BiomeProbe biome, boolean exterior) {
 		Rect t = plan.district().rect();
 		TerrainPatch patch = TerrainPatch.sampleWithWater(exact, t.x() - MARGIN, t.z() - MARGIN, t.w() + 2 * MARGIN, t.d() + 2 * MARGIN);
-		GeneratorV1 gen = new GeneratorV1();
+		Lots gen = generateLots(plan, exact, biome);
 		List<Lot> lots = new ArrayList<>();
 		List<PlacedBuilding> buildings = new ArrayList<>();
-		List<LotBrief> newLots = new ArrayList<>();
-		List<String> fallbacks = new ArrayList<>();
-		for (LotBrief l : plan.lots()) {
-			if (!l.builds()) { newLots.add(l); continue; }
-			Lot lot = new Lot(l.id(), l.x(), l.z(), l.w(), l.d(), l.front());
-			LotBrief used = l;
-			SceneDoc one = tryGenerate(gen, plan, used, lot, exact, biome);
-			if (one == null) {
-				fallbacks.add(l.id());
-				if (!l.type().equals("house") && !dev.fractalbuildings.core.settlement.tiers.WallRing.isRingLotId(l.id())) {
-					used = new LotBrief(l.id(), l.x(), l.z(), l.w(), l.d(), l.front(), "house", l.style(), 1, 2, l.streets(), l.airRights(), l.frontY(), l.density(), LotBrief.BUILD);
-					one = tryGenerate(gen, plan, used, lot, exact, biome);
-				}
-				if (one == null) {
-					newLots.add(new LotBrief(l.id(), l.x(), l.z(), l.w(), l.d(), l.front(), l.type(), l.style(), l.minStoreys(), l.maxStoreys(), l.streets(), l.airRights(), l.frontY(), l.density(), "empty:gen-failed", l.walk()));
-					continue;
-				}
-			}
-			PlacedBuilding b = one.buildings().get(0);
-			lots.add(one.lots().get(0)); // the generated scene's lot: carries airRights and frontY when the building jetties over the street
-			buildings.add(new PlacedBuilding("b" + buildings.size(), b.lots(), b.ox(), b.oy(), b.oz(), b.rotation(), b.shell(), b.siteBoxes()));
-			newLots.add(used);
+		for (Generated g : gen.generated()) {
+			lots.add(g.lot());
+			buildings.add(g.building());
 		}
-		List<Violation> settlement = new ArrayList<>();
-		List<Box> ground = new ArrayList<>();
-		for (Street s : plan.streets()) {
-			List<LatticePath.Pt> pts = new ArrayList<>();
-			for (Pt p : s.points()) pts.add(new LatticePath.Pt(p.x(), p.z()));
-			Grading.RoadGrade g = Grading.road(pts, s.y(), s.width(), exact); // the plan's heights, so both tiles at a border build the same road
-			addBoxes(g.boxes(), ground, s.kind() == RoadKind.QUAY);
-			settlement.addAll(SettlementChecks.roadGrade(s.id(), g.profile().x(), g.profile().z(), g.profile().y()));
-		}
-		for (Plaza p : plan.plazas()) {
-			Optional<Grading.PlazaGrade> g = Grading.plaza(new Rect(p.x(), p.z(), p.w(), p.d()), exact);
-			if (g.isPresent()) addBoxes(g.get().boxes(), ground, false);
-			else settlement.add(new Violation("plaza-grade", null, "plaza " + p.id() + " cannot be graded (too rough or wet)", List.of(new Box3(p.x(), p.y() - 1, p.z(), p.w(), 1, p.d()))));
-		}
+		List<LotBrief> newLots = gen.lots();
+		List<String> fallbacks = gen.fallbacks();
+		Ground g = ground(plan, exact);
+		List<Violation> settlement = new ArrayList<>(g.settlement());
+		List<Box> ground = g.boxes();
 		DistrictPlan filled = new DistrictPlan(plan.genVersion(), plan.seed(), plan.district(), plan.streets(), plan.plazas(), newLots, plan.scene(), List.of());
 		settlement.addAll(SettlementChecks.district(filled, landmarks));
 		DistrictPlan out = new DistrictPlan(plan.genVersion(), plan.seed(), plan.district(), plan.streets(), plan.plazas(), newLots, plan.scene(), settlement);
@@ -109,9 +81,94 @@ public final class DistrictScenes {
 		return new Built(scene, out, fallbacks);
 	}
 
-	private static SceneDoc tryGenerate(GeneratorV1 gen, DistrictPlan plan, LotBrief l, Lot lot, TerrainProbe exact, BiomeProbe biome) {
+	/**
+	 * One generated lot.
+	 *
+	 * @param index the lot's index in the input plan's {@code lots}
+	 * @param brief the brief actually used (the house fallback's when the type was replaced)
+	 * @param lot the generated scene's lot: carries airRights and frontY when the building jetties over the street
+	 * @param building the placed building, id {@code b<n>} with {@code n} counting generated buildings in lot order
+	 */
+	public record Generated(int index, LotBrief brief, Lot lot, PlacedBuilding building) {}
+
+	/**
+	 * @param generated the buildings, in lot order
+	 * @param lots the plan's lots with fallbacks applied (same order and count as the input)
+	 * @param fallbacks lot ids whose type was replaced or that were emptied
+	 */
+	public record Lots(List<Generated> generated, List<LotBrief> lots, List<String> fallbacks) {}
+
+	/**
+	 * Generates every {@code build} lot of a filled plan with generator v1 (see {@link #generateLot}). A pure function of the plan and
+	 * the probes; each lot depends on its own brief alone.
+	 */
+	public static Lots generateLots(DistrictPlan plan, TerrainProbe exact, BiomeProbe biome) {
+		List<Generated> out = new ArrayList<>();
+		List<LotBrief> newLots = new ArrayList<>();
+		List<String> fallbacks = new ArrayList<>();
+		for (int i = 0; i < plan.lots().size(); i++) {
+			LotBrief l = plan.lots().get(i);
+			if (!l.builds()) { newLots.add(l); continue; }
+			Generated g = generateLot(plan.seed(), i, l, out.size(), exact, biome);
+			if (g == null) {
+				fallbacks.add(l.id());
+				newLots.add(new LotBrief(l.id(), l.x(), l.z(), l.w(), l.d(), l.front(), l.type(), l.style(), l.minStoreys(), l.maxStoreys(), l.streets(), l.airRights(), l.frontY(), l.density(), "empty:gen-failed", l.walk()));
+				continue;
+			}
+			if (!g.brief().equals(l)) fallbacks.add(l.id());
+			out.add(g);
+			newLots.add(g.brief());
+		}
+		return new Lots(out, newLots, fallbacks);
+	}
+
+	/**
+	 * One {@code build} lot with its fallback rule: a lot the generator refuses (it throws {@code IllegalArgumentException}) is
+	 * generated as a 1 to 2 storey house of the same style instead (not a wall-ring lot, not a lot that already is a house); null
+	 * when that is refused too. {@code index} is the lot's index in its plan, {@code n} numbers the building ({@code b<n>}).
+	 */
+	public static Generated generateLot(long seed, int index, LotBrief l, int n, TerrainProbe exact, BiomeProbe biome) {
+		GeneratorV1 gen = new GeneratorV1();
+		Lot lot = new Lot(l.id(), l.x(), l.z(), l.w(), l.d(), l.front());
+		LotBrief used = l;
+		SceneDoc one = tryGenerate(gen, seed, used, lot, exact, biome);
+		if (one == null && !l.type().equals("house") && !dev.fractalbuildings.core.settlement.tiers.WallRing.isRingLotId(l.id())) {
+			used = new LotBrief(l.id(), l.x(), l.z(), l.w(), l.d(), l.front(), "house", l.style(), 1, 2, l.streets(), l.airRights(), l.frontY(), l.density(), LotBrief.BUILD);
+			one = tryGenerate(gen, seed, used, lot, exact, biome);
+		}
+		if (one == null) return null;
+		PlacedBuilding b = one.buildings().get(0);
+		return new Generated(index, used, one.lots().get(0), new PlacedBuilding("b" + n, b.lots(), b.ox(), b.oy(), b.oz(), b.rotation(), b.shell(), b.siteBoxes()));
+	}
+
+	/**
+	 * @param boxes the world-frame ground boxes of every street and plaza, in plan order
+	 * @param settlement the road-grade and plaza-grade violations found on the way
+	 */
+	public record Ground(List<Box> boxes, List<Violation> settlement) {}
+
+	/** The ground boxes of the plan's streets and plazas ({@link Grading}), with the grade violations. */
+	public static Ground ground(DistrictPlan plan, TerrainProbe exact) {
+		List<Violation> settlement = new ArrayList<>();
+		List<Box> ground = new ArrayList<>();
+		for (Street s : plan.streets()) {
+			List<LatticePath.Pt> pts = new ArrayList<>();
+			for (Pt p : s.points()) pts.add(new LatticePath.Pt(p.x(), p.z()));
+			Grading.RoadGrade g = Grading.road(pts, s.y(), s.width(), exact); // the plan's heights, so both tiles at a border build the same road
+			addBoxes(g.boxes(), ground, s.kind() == RoadKind.QUAY);
+			settlement.addAll(SettlementChecks.roadGrade(s.id(), g.profile().x(), g.profile().z(), g.profile().y()));
+		}
+		for (Plaza p : plan.plazas()) {
+			Optional<Grading.PlazaGrade> g = Grading.plaza(new Rect(p.x(), p.z(), p.w(), p.d()), exact);
+			if (g.isPresent()) addBoxes(g.get().boxes(), ground, false);
+			else settlement.add(new Violation("plaza-grade", null, "plaza " + p.id() + " cannot be graded (too rough or wet)", List.of(new Box3(p.x(), p.y() - 1, p.z(), p.w(), 1, p.d()))));
+		}
+		return new Ground(ground, settlement);
+	}
+
+	private static SceneDoc tryGenerate(GeneratorV1 gen, long seed, LotBrief l, Lot lot, TerrainProbe exact, BiomeProbe biome) {
 		try {
-			return gen.generate(new GenRequest(plan.seed(), lot, l.type(), l.style(), exact, biome, l.brief()));
+			return gen.generate(new GenRequest(seed, lot, l.type(), l.style(), exact, biome, l.brief()));
 		} catch (IllegalArgumentException e) {
 			return null;
 		}
