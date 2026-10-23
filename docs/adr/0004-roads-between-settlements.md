@@ -1,9 +1,9 @@
 ---
 tags: adr
-status: proposed
-date: "2026-10-22"
+status: accepted
+date: "2026-10-23"
 author: researcher
-approvedBy:
+approvedBy: John, 2026-10-23
 supersededBy:
 dependsOn:
   - "[[docs/adr/0003-worldgen]]"
@@ -118,7 +118,7 @@ not measured.
 - **N2 Touching pairs.** When `g < 128`, the pair gets one shared meeting
   point on the line between the centres instead of a route. Both
   settlements' approaches go to that point. A meeting point counts as a
-  routed link, including when that pair is a witness.
+  routed link, including when that pair is a witness. (John agreed, Q3.)
 - **N3 Ports.** A port sits on the rim + 64 at the bearing to the other end,
   snapped to the 64-block lattice. If that spot is wet, on a peak or inside
   another footprint, up to 4 hashed retries move it **at most 256 blocks
@@ -135,6 +135,14 @@ not measured.
   skeleton therefore reads the graph: required exits face the ports, and an
   approach runs from each exit to its port (plan, "How SK exits meet the
   roads"). Approaches follow the water rule too.
+- **N6 Port tag** (John, Q5). The region field's water search (R2/5.10)
+  tags a settlement `port` when its centre is near large water. The tag is
+  part of the region decision, so it comes before the road graph and never
+  depends on it. There is no village bias and no tier nudge: towns and
+  cities already lean toward water, so ports tend to be the larger
+  settlements by chance. In 6.10 the tag is only recorded; port features
+  (docks, piers, harbour buildings) are a later item, ROADMAP 7.4. Not to
+  be confused with N3's road ports, where a road meets a rim.
 
 ### Water rule
 
@@ -143,11 +151,12 @@ not measured.
   the biome does not count. Reads come from the noise-stage probe, never
   from the generated world. The lattice search also charges extra for nodes
   next to wet nodes, which keeps roads off the shore.
-- **WR2 Crossings.** A wet run of at most **12 blocks** along the road is a
-  crossing. The run is measured exactly: at a wet station, the columns
-  between the dry stations on either side are read (at most 14 more reads).
-  A crossing gets a flat deck at the higher bank's deck height, resting on
-  the banks, with no piers. Crossings must be at least 32 blocks apart; two
+- **WR2 Crossings.** A wet run of at most **20 blocks** along the road is a
+  crossing (John, Q1: raised from 12). The run is measured exactly: at a wet
+  station, the columns between the dry stations on either side are read (at
+  most 28 more reads). A crossing is one span: a flat deck at the higher
+  bank's deck height, resting on the banks, with no piers. Anything bigger
+  waits for ROADMAP 7.3 (Bridges). Crossings must be at least 32 blocks apart; two
   closer together count as one run. Anything longer means reroute, then
   drop the edge. A road running down a river or lake gives a long wet run, so
   John's road-0 case is ruled out by construction.
@@ -156,12 +165,17 @@ not measured.
   fill. That covers water narrower than the 8-block station spacing, and
   road edges that hang over a bank.
 - **WR4 Linked share.** The bar "at least 90 % of settlements linked" is
-  retired. 6.10's bars become:
+  retired (John agreed, Q2). 6.10's bars become:
   - the invariants: no road column on water outside a crossing, no fill in
     water, and no footprint crossings;
   - the N1 guarantee, checked by an orphan-rescue test that must find 0;
   - the plain linked share, reported but not barred. The probe expects
-    about 75 to 80 % on the pond-heavy dumps.
+    about 75 to 80 % on the pond-heavy dumps. The probe allowed wet runs of
+    up to 16 blocks, so the 20-block limit should change that little there:
+    the dumps interpolate ponds about 64 blocks wide, and most wet runs on
+    the shaped curves were longer than 20 (up to 152 and 168, most under
+    90). Live terrain has real narrow streams, so it may gain more.
+    *Estimate, not measured.*
 
 ### Reads, heights and cost
 
@@ -175,7 +189,9 @@ not measured.
   did not implement claim lookup.
 - **HT Heights.** All heights use the game's single definition (Phase 6
   decision 1: exact, through `ColumnMemo`). The coarse surface is never
-  used for a deck. D4 stands unchanged.
+  used for a deck. Roads keep exact heights at their stations even if the
+  region layer falls back to the coarse screen (John, Q6). D4 stands
+  unchanged.
   - **Topology.** The lattice A* and the string-pull grade test read only
     the 64-block region lattice. S10's 16-block chord samples are dropped.
   - **Stations.** For each edge, the water and floor are read once at every
@@ -225,7 +241,10 @@ not measured.
   1-block shoulder, the cut rises in steps at most 2 high with benches at
   least 2 wide. It stops where it meets the ground, or 12 blocks from the
   road edge. Any face left beyond that is accepted; 6.10 reports the share of
-  columns with a face over 3 blocks. Fill is a 1:1 embankment capped at 8
+  columns with a face over 3 blocks. *Look pending (Q4):* John accepted the
+  rule and still looks at the screenshot that the 6.10 mod half (C1) takes
+  in its T2 road test; no earlier probe builds terraces. This does not
+  block acceptance: a gentler look would only change TC's constants. Fill is a 1:1 embankment capped at 8
   blocks. Terraces and embankments are topped with the column's own surface
   block. On a steady grade the deck uses stairs or slabs instead of
   whole-block steps.
@@ -246,11 +265,14 @@ not measured.
 
 ### Deferred
 
-Bridges longer than 12 blocks, causeways, piers, ferries and port links, and
+Bridges longer than 20 blocks, causeways, piers, ferries and port links, and
 roads through a third settlement. Each needs its own design and review.
+Big bridges are ROADMAP 7.3 (Bridges), behind a world setting (John,
+2026-10-23).
 Lost Cities' railway planner and 7.1 transit could later share the links.
 
-**Port towns (John's question).** The timing works for a port's *site*, but
+**Port towns (John's question; decided in N6: tag only, no village bias,
+no tier nudge).** The timing works for a port's *site*, but
 not as a reaction to roads. Cells decide before, and independently of, the
 road graph. A blocked road therefore cannot create a port: that would be a
 cycle. The field can tag ports itself, though. R2/5.10 already biases town
@@ -259,7 +281,9 @@ blocks. A `port` tag (a centre near large water) can come from the same
 water search at no extra cost. Biasing villages too only means changing
 constants (and bumping `genVersion`). Nudging the *tier* up at a coastal
 site is possible, but it makes every claimant's radius depend on probes,
-which widens the join rule's reads (R2). Nudge the site, not the tier. Ferries or
+which widens the join rule's reads (R2). John chose neither: the tag
+alone, with the existing town and city bias. Port features are ROADMAP
+7.4. Ferries or
 bridges between ports would come later, as a separate pure layer over
 port-tagged nodes.
 
@@ -270,13 +294,13 @@ port-tagged nodes.
   20 to 25 % on the dumps, and wide rivers become borders between road
   networks. Routable witnesses win back 5 to 7 points over the plain graph,
   and cost 50 to 60 % more routes.
-- **For 6.10:** a planner half with N1 to N4, WR1 to WR4, RC and HT, plus
+- **For 6.10:** a planner half with N1 to N4, the N6 port tag, WR1 to WR4, RC and HT, plus
   RoadNetTest, on Phase 6 A1's live probes and `ColumnMemo`. A mod half with MF1 to MF4 and TC, plus the T2 road test (C1). It
   will report wet-run histograms and links lost to rivers on live terrain.
 - **The case for crossings now:** links grow from about 75 % to 91 %, and
   rivers stop acting as borders. **What would change this ADR:**
   - live linked share under 70 %, or John finding unlinked towns odd:
-    raise the 12-block limit or bring bridges forward;
+    bring bridges (7.3) forward;
   - station reads over 100 ms per edge live: read the dry check every 16 blocks, and build the deck per chunk (3b);
   - per-cell routing cost over 100 ms live: drop routable witnesses (N1
     falls back to plain rim-gap RNG);
@@ -299,3 +323,28 @@ port-tagged nodes.
      region layer falls back to the coarse screen, roads still read exact
      heights at their stations, because a deck cannot sit on a surface that
      may be 150 blocks off. Is that acceptable?
+- **Answers (John, 2026-10-23):**
+  - In a first comment on this ADR: "1. Make the span 24, then yes. 2. yes
+    3. yes 4. I’ll wait for the screenshot".
+  - In chat the same day, which **supersedes the 24 for question 1**: "So,
+    I think no "very big" bridges for now. Lets go up a little more on a
+    small bridge, 20 blocks, and call it good for now. I want something on
+    the roadmap past initial integration where we start addressing the
+    Bridge Problem (I don't think it's a really big problem, but I do want
+    them to look good)." Big bridges must "look like bridges. Well designed,
+    not necessarily starting/ending at the same elevation, abutments,
+    pillars, suspension, all of it. I don't want 50 block slabs", and a
+    setting should "allow/disallow big bridges".
+  - In his final comment on this ADR: "1. Make the span 20, then yes.
+    2. yes 3. yes 4. This sounds good. 5. Yes port tag, no nudging
+    villages. Cities already bias towards water, so port towns would
+    naturally be the larger settlements by chance. 6. Yes". And in chat:
+    "my answers are done on the ADR."
+  - Recorded: 1. Single-span crossings up to 20 blocks (WR2); bigger
+    bridges are ROADMAP 7.3. 2. The 90 % bar is dropped (WR4). 3. Touching
+    settlements share a meeting point (N2). 4. Terraces as written (TC);
+    John still looks at the terrace screenshot from the 6.10 mod half (C1),
+    which does not block acceptance. 5. The region field tags `port`
+    settlements, with no village bias and no tier nudge (N6); harbour
+    features are ROADMAP 7.4. 6. Roads read exact heights at their stations
+    even if the region layer falls back to the coarse screen (HT).
