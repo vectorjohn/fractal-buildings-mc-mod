@@ -74,7 +74,9 @@ public final class WorldPlanners {
 		WorldProbes probes = new WorldProbes(lp.region(), lp.coarse(32), lp.exact(), lp.biome());
 		WorldConfig cfg = config.get();
 		FractalBuildingsMod.LOGGER.info("Settlement planner created for seed {} (cell size {}, frequency {}, max radius {})", seed, cfg.cellSize(), cfg.frequency(), cfg.maxRadius());
-		return new WorldPlanner(seed, cfg, probes, workers);
+		WorldPlanner planner = new WorldPlanner(seed, cfg, probes, workers);
+		LaneStats.attach(planner);
+		return planner;
 	}
 
 	/** Tests: every level uses this planner (a fixture on any terrain). {@code null} restores the normal lookup. */
