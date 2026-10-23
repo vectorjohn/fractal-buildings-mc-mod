@@ -102,11 +102,6 @@ that works in all three. Full conventions: `docs/SILVERBULLET.md`.
 - LAN (`192.168.0.0/16` etc.) and the tailnet (`100.64.0.0/10`) are **blocked by
   a per-user firewall**. This is intentional; don't try to work around it.
   Loopback and DNS are open.
-- **One exception: SSH to the worker box `beebox`**, for running builds and
-  tests there through `scripts/remote.sh` (see "Parallel work"). Use it only
-  for that; nothing else on the LAN or tailnet is reachable, and that's on
-  purpose. It may not be set up on every host: `scripts/remote.sh --check`
-  says whether it is.
 - If a DNS lookup fails, report it rather than switching URLs to dodge it.
 
 ## Dev shell
@@ -134,11 +129,9 @@ that works in all three. Full conventions: `docs/SILVERBULLET.md`.
   `VK_DRIVER_FILES`.
 - The host's NVIDIA and Intel GPUs are visible to Vulkan, but **don't use them**
   without asking. The GPU is shared with the human's desktop. If lavapipe is
-  too slow for something, say so, or run it on the worker box, which renders
-  on its own GPU (`scripts/remote.sh`, see "Parallel work").
+  too slow for something, say so.
 - **Automated runs:** `xvfb-run -a nix develop -c ./gradlew <task>`, under the
-  heavy lock, or on the worker box with `scripts/remote.sh` (see "Parallel
-  work").
+  heavy lock (see "Parallel work").
 - **When the human wants to watch:** a VNC display on `:1`, localhost only:
   ```sh
   Xvnc :1 -localhost -geometry 1920x1080 -SecurityTypes None &
@@ -171,11 +164,10 @@ source of truth, and update it when a command changes.)*
 - Mod, incl. server game tests (`:mod:runGameTest`, wired into `check`): `nix develop -c ./gradlew :mod:build` (jar in `mod/build/libs/`, planner-core bundled as jar-in-jar); server tests alone: `nix develop -c ./gradlew :mod:runGameTest`
 - Client game tests (heavy, ~20 s, exits on its own): `scripts/client-test.sh [gradle args]` (enters the dev shell and takes the heavy lock itself; runs `:mod:runClientGameTest` under `xvfb-run`; the bare `xvfb-run -a nix develop -c ./gradlew :mod:runClientGameTest` is also safe, since the task itself drops `WAYLAND_DISPLAY` and sets `SDL_VIDEODRIVER=x11`); screenshots are copied to `mod/build/screenshots/` (e.g. `hello-hut.png`; the raw ones are in `mod/build/run/clientGameTest/screenshots/`), log in `mod/build/run/clientGameTest/logs/latest.log`
 - Viewer (`viewer/`: Vite + Vitest + strict TS; `npm test` type-checks then runs headless): `cd viewer && nix develop -c npm ci` once, then `nix develop -c npm test`, `nix develop -c npm run build`, `nix develop -c npm run dev` (dev server); how-to for humans (URLs, controls, env vars): `docs/VIEWER.md`; gallery: `nix develop -c npm run gallery` (one gallery per `viewer/gallery-presets/<name>.json`: generates each with the CLI batch (or, for `"kind": "dump"`, the core fixture dump) into `viewer/gallery-data/gen/<name>/`, builds into `dist-gallery/`, captures one PNG per preset x camera to `viewer/out/gallery/<name>-<camera>.png`, cameras front-left, back-right, top, front and optionally cutaway; `FB_PRESETS=a,b` limits the presets, `npm run gen -- a b` regenerates only those; `FB_PORT` picks the preview port; `npm run dev:gen` serves the same data in the dev server)
-- CLI: `nix develop -c ./gradlew :cli:installDist` then `cli/build/install/fractal-cli/bin/fractal-cli <gen|batch|check|bench|diversity|region|city|city-check|sample-city> ...` (inside the dev shell; no args prints usage, bad input exits 2; generator v1 by default, `--gen v0` for Phase 3 output, `--type T` picks the building type (`check`/`bench`: `--types`), style `auto` picks it from the biome), e.g. `gen --seed 1 --lot 16x12 --style medieval --terrain plane:64:1:0:4 --check --out out.json`, `batch --seeds 0..15 --lot 16x12 --style medieval --out-dir viewer/gallery-data/gen/medieval` (seed-N.json plus index.json for the viewer), `city --seed 12345 --terrain recorded:fixtures/terrain/w12345-river-s8.json.gz --site -900,-3500,town,300 --out-dir viewer/fixtures/settlement/skeleton/river-town` (a settlement skeleton: `settlement.json` + `terrain.json.gz`; `--cell CX,CZ` instead of `--site` plans the settlement a region cell belongs to through the join rule; fixtures in `viewer/fixtures/settlement/skeleton/README.md`; `--districts` also plans every district: `districts/<id>.json` with briefs filled and lot counts in `settlement.json`, `--scenes all|none|auto:N|ID,ID` adds exterior district scenes (`--scene` is the old spelling; `--interiors` keeps interiors; `--check` prints every violation); fixtures in `viewer/fixtures/settlement/districts/README.md`), `city-check --seeds A..B [--terrain T,..] [--sites cells|random:N|gates:FILE] [--scenes auto:N] [--ignore RULE,..] [--out FILE.md]` (plans every district of each settlement, builds scenes for N of them, runs every settlement and building rule, markdown report; exit 1 on a violation not ignored; e.g. `city-check --seeds 1 --sites gates:fixtures/terrain/gate-sites.tsv --scenes auto:2`), `sample-city --out-dir viewer/fixtures/settlement/sample` (the sample settlement plan, its districts and one district scene; `--big N` writes a synthetic N x N grid for viewer performance tests, put it under `viewer/out/`; regenerate the committed fixture with it when `SampleSettlementTest` says it is stale), `check --seeds 0..999` (exit 1 on any violation), `bench --n 1000`; or `:cli:run --args="..."`; city gallery (D0): `nix develop -c npm run city` plans every `viewer/city-presets/<name>.json` (one per T2 gate window, plus the T1 river-town, mixed-city and a synthetic city, and a hamlet and a village on each of the T1 windows (D1)) into `viewer/out/city/<name>/` (`npm run city -- a b` only those), and `npm run city-gallery` also builds the viewer and captures `plan.png` plus a 3D overview and street frame of two district scenes per city next to the data (`FB_CITIES=a,b` limits it; not part of `scripts/test-all.sh`)
+- CLI: `nix develop -c ./gradlew :cli:installDist` then `cli/build/install/fractal-cli/bin/fractal-cli <gen|batch|check|bench|diversity|region|roads|city|city-check|sample-city> ...` (inside the dev shell; no args prints usage, bad input exits 2; generator v1 by default, `--gen v0` for Phase 3 output, `--type T` picks the building type (`check`/`bench`: `--types`), style `auto` picks it from the biome), e.g. `gen --seed 1 --lot 16x12 --style medieval --terrain plane:64:1:0:4 --check --out out.json`, `batch --seeds 0..15 --lot 16x12 --style medieval --out-dir viewer/gallery-data/gen/medieval` (seed-N.json plus index.json for the viewer), `city --seed 12345 --terrain recorded:fixtures/terrain/w12345-river-s8.json.gz --site -900,-3500,town,300 --out-dir viewer/fixtures/settlement/skeleton/river-town` (a settlement skeleton: `settlement.json` + `terrain.json.gz`; `--cell CX,CZ` instead of `--site` plans the settlement a region cell belongs to through the join rule; fixtures in `viewer/fixtures/settlement/skeleton/README.md`; `--districts` also plans every district: `districts/<id>.json` with briefs filled and lot counts in `settlement.json`, `--scenes all|none|auto:N|ID,ID` adds exterior district scenes (`--scene` is the old spelling; `--interiors` keeps interiors; `--check` prints every violation); fixtures in `viewer/fixtures/settlement/districts/README.md`), `roads --seed S --terrain recorded:FILE [--out FILE]` (the road graph and every route of ADR 0004 over a recorded world: a region dump with a `roads` layer for `region.html`, and a report on stdout: linked share, edge lengths, crossings, per-route cost; `city --cell ... --roads` plans a settlement with required exits and approaches toward its links), `city-check --seeds A..B [--terrain T,..] [--sites cells|random:N|gates:FILE] [--scenes auto:N] [--ignore RULE,..] [--out FILE.md]` (plans every district of each settlement, builds scenes for N of them, runs every settlement and building rule, markdown report; exit 1 on a violation not ignored; e.g. `city-check --seeds 1 --sites gates:fixtures/terrain/gate-sites.tsv --scenes auto:2`), `sample-city --out-dir viewer/fixtures/settlement/sample` (the sample settlement plan, its districts and one district scene; `--big N` writes a synthetic N x N grid for viewer performance tests, put it under `viewer/out/`; regenerate the committed fixture with it when `SampleSettlementTest` says it is stale), `check --seeds 0..999` (exit 1 on any violation), `bench --n 1000`; or `:cli:run --args="..."`; city gallery (D0): `nix develop -c npm run city` plans every `viewer/city-presets/<name>.json` (one per T2 gate window, plus the T1 river-town, mixed-city and a synthetic city, and a hamlet and a village on each of the T1 windows (D1)) into `viewer/out/city/<name>/` (`npm run city -- a b` only those), and `npm run city-gallery` also builds the viewer and captures `plan.png` plus a 3D overview and street frame of two district scenes per city next to the data (`FB_CITIES=a,b` limits it; not part of `scripts/test-all.sh`)
 - Viewer screenshot (Playwright, software WebGL, writes `viewer/out/smoke.png`): `cd viewer && nix develop -c npm run screenshot`
 - Whole Gradle build (all three modules + boundary check): `nix develop -c ./gradlew build`
 - Boundary check alone: `nix develop -c ./gradlew :planner-core:checkNoMinecraft` (also part of `check` and run before `compileJava`)
-- **Any of the above on the worker box:** `scripts/remote.sh -- <command>`, the command exactly as you'd run it from the worktree root but without a `flock .../heavy.lock` prefix (e.g. `scripts/remote.sh -- scripts/test-all.sh`, `scripts/remote.sh -- scripts/client-test.sh`, `scripts/remote.sh -- nix develop -c ./gradlew :planner-core:test`). It copies the worktree (no `.git`, nothing gitignored), queues the command, prints the last 40 lines and saves the full log to `build/remote/<job>.log`, copies results back to the same paths (`build/test-all/`, JUnit XML, `mod/build/screenshots/`, client test logs, `viewer/out/`; `--fetch PATH` for more) and exits with the command's status. Output written elsewhere doesn't come back unless you `--fetch` it. `scripts/remote.sh --check` exits 0 if the worker is reachable; `--help` for the rest.
 
 ## Parallel work (a priority)
 
@@ -197,33 +189,6 @@ agents can work and test at once. The rules below exist to make that safe.
   Timing numbers taken while other agents are busy are noisy: record the load
   (`cat /proc/loadavg`) next to them, and re-measure on a quiet machine before
   a number decides a gate.
-- **The worker box (`beebox`) is a second heavy slot.** It runs one job at a
-  time from its own queue, so it doesn't use the heavy lock, and a busy local
-  heavy lock doesn't block it. When `scripts/remote.sh --check` succeeds, send
-  heavy jobs and long runs there with `scripts/remote.sh -- <cmd>`: client
-  game tests, `scripts/test-all.sh`, the ~10 min `:planner-core:test`,
-  galleries. Run quick builds and tests locally as before; copying the
-  worktree over costs a few seconds. If the check fails, use the local heavy
-  lock as above.
-  - **It renders on its GPU**, not lavapipe: there's no desktop on it to
-    share the GPU with. `scripts/remote.sh` runs the command in a headless
-    sway session and the test scripts use its Xwayland display instead of
-    Xvfb (`FB_USE_DISPLAY=1`), so Minecraft gets hardware OpenGL (radeonsi;
-    the log says "Using graphics device: AMD Radeon Graphics"). Screenshots can
-    differ slightly from lavapipe ones. If a run fails in a way that looks
-    like a GPU or display problem, retry with `scripts/remote.sh --cpu`
-    (Xvfb + lavapipe, as locally) and add a line to `docs/NOTES.md`.
-  - It runs one job at a time, so it's quiet, which suits measurements, but
-    **timings from different hosts or renderers aren't comparable**: record
-    the host (`beebox` or this one) and renderer with every number, and
-    compare like with like.
-  - Interactive runs (`runClient` you or the human watch, VNC, the desktop
-    launch) stay local.
-  - In the integration checkout, a remote run still holds the merge lock like
-    a local Gradle run (`docs/NOTES.md`): it copies results back into the
-    checkout's `build/` directories.
-  - Its output is the tail of the log, lines cut to 300 characters; the full
-    log is in `build/remote/<job>.log`. Grep that rather than printing it.
 - **Merges into a shared branch take the merge lock**: hold
   `flock <repo root>/.claude/merge.lock` for the whole sequence (clean-checkout
   check, merge, commit, post-merge tests, cleanup). Two merges into the same

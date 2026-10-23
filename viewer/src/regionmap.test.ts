@@ -62,3 +62,31 @@ describe('colours', () => {
     expect(heatColour(5000)).toContain('hsla(240,');
   });
 });
+
+describe('road layer (6.10)', () => {
+  it('parses the roads object and the port tag of the committed roads dump', async () => {
+    const d = parseDump(await decodeBytes(new Uint8Array(fixture('roads-12345.json.gz'))));
+    const R = d.layers[0]!.roads!;
+    expect(R.lgap).toBe(1536);
+    expect(R.nodes.length).toBeGreaterThan(100);
+    expect(R.nodes.filter((n) => n.port).length).toBeGreaterThan(10);
+    expect(R.edges.length).toBeGreaterThan(40);
+    for (const e of R.edges) {
+      expect(e.pts.length % 2).toBe(0);
+      expect(e.pts.length).toBeGreaterThanOrEqual(4);
+      expect(e.cross.length % 2).toBe(0);
+      for (let k = 0; k < e.cross.length; k += 2) expect(e.cross[k]! < e.cross[k + 1]! && e.cross[k + 1]! < e.pts.length / 2).toBe(true);
+    }
+    expect(R.meet.length).toBeGreaterThan(3);
+    expect(R.dropped.length).toBeGreaterThan(10);
+    expect(d.layers[0]!.cells.filter((c) => c.port).length).toBe(R.nodes.filter((n) => n.port).length);
+  });
+
+  it('a dump without roads parses without the layer, and a bad edge is an error', async () => {
+    const d = parseDump(await decodeBytes(new Uint8Array(fixture('world-12345.json.gz'))));
+    expect(d.layers[0]!.roads).toBeUndefined();
+    const raw = JSON.parse(await decodeBytes(new Uint8Array(fixture('world-12345.json.gz')))) as { layers: Record<string, unknown>[] };
+    raw.layers[0]!['roads'] = { edges: [{ a: [0, 0], b: [1, 1], w: 3, pa: null, pb: null, pts: [1, 2, 3], cross: [] }] };
+    expect(() => parseDump(JSON.stringify(raw))).toThrow(/pairs/);
+  });
+});

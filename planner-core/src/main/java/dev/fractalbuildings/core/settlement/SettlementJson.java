@@ -34,6 +34,7 @@ public final class SettlementJson {
 				.num("x", l.x()).num("z", l.z()).num("w", l.w()).num("d", l.d()).text("district", l.district()).build(), 2)).append(",\n");
 		sb.append("  \"walls\": ").append(JsonOut.lines(s.walls(), w -> JsonWriter.object().text("id", w.id()).raw("points", JsonOut.pts(w.points()))
 				.raw("closed", Boolean.toString(w.closed())).build(), 2)).append(",\n");
+		if (!s.approaches().isEmpty()) sb.append("  \"approaches\": ").append(JsonOut.lines(s.approaches(), SettlementJson::road, 2)).append(",\n");
 		sb.append("  \"violations\": ").append(JsonOut.lines(s.violations(), JsonOut::violation, 2)).append("\n}\n");
 		return sb.toString();
 	}
@@ -104,7 +105,8 @@ public final class SettlementJson {
 				Rd.list(o, "$", "landmarks", (l, p) -> Rd.guard(p, () -> new Landmark(Rd.string(l, p, "id"), Rd.enumOf(l, p, "kind", LandmarkKind::of),
 						Rd.integer(l, p, "x"), Rd.integer(l, p, "z"), Rd.integer(l, p, "w"), Rd.integer(l, p, "d"), Rd.string(l, p, "district")))),
 				Rd.list(o, "$", "walls", (w, p) -> Rd.guard(p, () -> new Wall(Rd.string(w, p, "id"), Rd.points(w, p, "points"), Rd.bool(w, p, "closed")))),
-				Rd.list(o, "$", "violations", Rd::violation)));
+				Rd.list(o, "$", "violations", Rd::violation),
+				o.containsKey("approaches") ? Rd.list(o, "$", "approaches", SettlementJson::road) : List.of()));
 	}
 
 	private static SettlementSite site(Map<String, Object> o, String p) {

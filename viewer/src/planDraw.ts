@@ -50,10 +50,10 @@ export function districtsToLoad(s: Settlement, v: PlanView, size: Size): Distric
 // ---- layers ----------------------------------------------------------------------------------------------
 
 export const LAYER_IDS = [
-  'terrain', 'water', 'biome', 'mask', 'density', 'quarters', 'cells', 'tiles', 'roads', 'gates', 'landmarks', 'walls', 'lots', 'height', 'violations',
+  'terrain', 'water', 'biome', 'mask', 'density', 'quarters', 'cells', 'tiles', 'roads', 'links', 'gates', 'landmarks', 'walls', 'lots', 'height', 'violations',
 ] as const;
 export type LayerId = (typeof LAYER_IDS)[number];
-export const DEFAULT_LAYERS: readonly LayerId[] = ['terrain', 'water', 'tiles', 'roads', 'gates', 'landmarks', 'walls', 'lots', 'violations'];
+export const DEFAULT_LAYERS: readonly LayerId[] = ['terrain', 'water', 'tiles', 'roads', 'links', 'gates', 'landmarks', 'walls', 'lots', 'violations'];
 
 /** `layers=a,b` selects exactly those; `layers=+a,-b` edits the defaults. Unknown names throw. */
 export function parseLayers(q: string | null): Set<LayerId> {
@@ -168,7 +168,7 @@ export interface PlanState {
   images: { src: CanvasImageSource; rect: Rect }[];
   hover?: { district: string | null; lot: string | null };
 }
-export interface DrawStats { draws: number; lots: number; districtsLoaded: number; lod: 'overview' | 'detail'; roads: number }
+export interface DrawStats { draws: number; lots: number; districtsLoaded: number; lod: 'overview' | 'detail'; roads: number; /** Approaches drawn (links layer, ROADMAP 6.10). */ links: number }
 
 function polyline(ctx: CanvasRenderingContext2D, v: PlanView, pts: readonly (readonly [number, number])[], from = 0, to = pts.length - 1): void {
   ctx.beginPath();
@@ -177,6 +177,25 @@ function polyline(ctx: CanvasRenderingContext2D, v: PlanView, pts: readonly (rea
     if (i === from) ctx.moveTo(px, py); else ctx.lineTo(px, py);
   }
   ctx.stroke();
+}
+
+export const LINK_COLOUR = '#ffe14d';
+
+/** Approaches (ADR 0004 N5): from a required exit to the road port, in the link colour with a ring at the port. Returns how many were drawn. */
+function drawLinks(ctx: CanvasRenderingContext2D, v: PlanView, approaches: readonly { width: number; points: [number, number][] }[]): number {
+  let n = 0;
+  ctx.lineCap = 'butt'; ctx.lineJoin = 'round';
+  for (const a of approaches) {
+    if (a.points.length < 2) continue;
+    const wpx = Math.max(2, a.width * v.scale);
+    ctx.lineWidth = wpx + 2; ctx.strokeStyle = '#1b1d22'; polyline(ctx, v, a.points);
+    ctx.lineWidth = wpx; ctx.strokeStyle = LINK_COLOUR; polyline(ctx, v, a.points);
+    const [px, py] = toScreen(v, a.points[a.points.length - 1]![0] + 0.5, a.points[a.points.length - 1]![1] + 0.5);
+    ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(px, py, 7, 0, Math.PI * 2); ctx.stroke();
+    n++;
+  }
+  return n;
 }
 
 function drawRoadSet(ctx: CanvasRenderingContext2D, v: PlanView, roads: readonly { kind: RoadKind; width: number; points: [number, number][]; bridges?: [number, number][] }[]): number {
@@ -247,7 +266,7 @@ export function drawPlan(ctx: CanvasRenderingContext2D, st: PlanState): DrawStat
   const { s, view: v, size, layers } = st;
   ctx.canvas.width = size.w; ctx.canvas.height = size.h;
   ctx.fillStyle = '#101216'; ctx.fillRect(0, 0, size.w, size.h);
-  const stats: DrawStats = { draws: 0, lots: 0, districtsLoaded: 0, lod: showLots(v.scale) ? 'detail' : 'overview', roads: 0 };
+  const stats: DrawStats = { draws: 0, lots: 0, districtsLoaded: 0, lod: showLots(v.scale) ? 'detail' : 'overview', roads: 0, links: 0 };
   const smooth = v.scale < 1;
   ctx.imageSmoothingEnabled = smooth;
   for (const im of st.images) {
@@ -322,6 +341,7 @@ export function drawPlan(ctx: CanvasRenderingContext2D, st: PlanState): DrawStat
       stats.draws++;
     }
   }
+  if (layers.has('links')) stats.links += drawLinks(ctx, v, s.approaches);
   if (layers.has('gates')) {
     for (const g of s.gates) {
       const [px, py] = toScreen(v, g.x + 0.5, g.z + 0.5);

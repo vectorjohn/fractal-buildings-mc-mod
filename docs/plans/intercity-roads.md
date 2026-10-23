@@ -188,3 +188,12 @@ Added 2026-10-22 (assistant), after John pointed at the Lost Cities notes.
 - Roads through a third settlement are forbidden (they route round it). *Assume so; letting
   them through needs the town's skeleton to accept a through road, a later refinement.*
 - Edges over sea: none (no ferries, no long bridges). *Assume so.*
+
+# Implementation notes, planner half (ROADMAP 6.10, 2026-10-23)
+
+Built as [ADR 0004](../adr/0004-roads-between-settlements.md) says; log [2026-10-23-p6-610-roads](../log/2026-10-23-p6-610-roads.md). Deviations and choices:
+
+- **Read radius.** A chunk's own settlement scan reaches at most about 7.3 km (`RoadNet.chunkReadBound`), not the ADR's "about 5 km": a rigorous claim scan needs 2.5 cells of slack (a settlement of at most 1.3 cells has its owner site within r + 0.45 cells of its centre, a larger one has claimed a site within 1.2 cells of the rim point nearest the query), and edge lists are cached per region cell, which adds its half-diagonal. It does not depend on the largest settlement radius, which was the point.
+- **Approaches** are carried beside the skeleton's roads (`CellSkeleton.approaches`, `SettlementPlan.approaches`, JSON key `approaches`) and not as `roads`, so district detail, `RoadNetwork` and the skeleton rules are untouched.
+- **Port tag** needs a water sample with a water neighbour on the 192-lattice, not just any sample (see ASSUMPTIONS).
+- **No `genVersion` bump:** `CellDecision` gains a derived component; nothing else in a decision changes, and `RegionView.ports` is empty without a road graph.

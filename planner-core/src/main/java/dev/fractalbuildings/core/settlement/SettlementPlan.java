@@ -14,7 +14,7 @@ import java.util.TreeSet;
  */
 public record SettlementPlan(int genVersion, long seed, SettlementSite site, Rect bounds, CoarseRaster coarse, List<Quarter> quarters,
 		List<CellOutline> cells, List<DistrictSummary> districts, List<Road> roads, List<Gate> gates, List<Landmark> landmarks,
-		List<Wall> walls, List<Violation> violations) {
+		List<Wall> walls, List<Violation> violations, List<Road> approaches) {
 	public static final String FORMAT = "fb-settlement/1";
 	public static final int PLAN_VERSION = 1;
 
@@ -30,6 +30,7 @@ public record SettlementPlan(int genVersion, long seed, SettlementSite site, Rec
 		landmarks = List.copyOf(landmarks);
 		walls = List.copyOf(walls);
 		violations = List.copyOf(violations);
+		approaches = List.copyOf(approaches);
 		for (int i = 0; i < quarters.size(); i++) if (quarters.get(i).id() != i) throw new IllegalArgumentException("quarter " + i + " has id " + quarters.get(i).id());
 		for (int q : coarse.quarter()) if (q < -1 || q >= quarters.size()) throw new IllegalArgumentException("coarse quarter index " + q);
 		Set<String> dIds = unique("district", districts.stream().map(DistrictSummary::id).toList());
@@ -37,11 +38,19 @@ public record SettlementPlan(int genVersion, long seed, SettlementSite site, Rec
 		unique("gate", gates.stream().map(Gate::id).toList());
 		unique("landmark", landmarks.stream().map(Landmark::id).toList());
 		unique("wall", walls.stream().map(Wall::id).toList());
+		unique("approach", approaches.stream().map(Road::id).toList());
 		for (DistrictSummary d : districts) {
 			if (d.quarter() < -1 || d.quarter() >= quarters.size()) throw new IllegalArgumentException("district " + d.id() + " quarter " + d.quarter());
 		}
 		for (Landmark l : landmarks) if (!dIds.contains(l.district())) throw new IllegalArgumentException("landmark " + l.id() + " names unknown district " + l.district());
 		for (Gate g : gates) if (g.road() != null && !rIds.contains(g.road())) throw new IllegalArgumentException("gate " + g.id() + " names unknown road " + g.road());
+	}
+
+	/** A plan without road links (no approaches). */
+	public SettlementPlan(int genVersion, long seed, SettlementSite site, Rect bounds, CoarseRaster coarse, List<Quarter> quarters,
+			List<CellOutline> cells, List<DistrictSummary> districts, List<Road> roads, List<Gate> gates, List<Landmark> landmarks,
+			List<Wall> walls, List<Violation> violations) {
+		this(genVersion, seed, site, bounds, coarse, quarters, cells, districts, roads, gates, landmarks, walls, violations, List.of());
 	}
 
 	static Set<String> unique(String what, List<String> ids) {
@@ -57,14 +66,14 @@ public record SettlementPlan(int genVersion, long seed, SettlementSite site, Rec
 
 	/** A copy with the given district list (detail paths, lot counts and style weights filled in by the district step). */
 	public SettlementPlan withDistricts(List<DistrictSummary> d) {
-		return new SettlementPlan(genVersion, seed, site, bounds, coarse, quarters, cells, d, roads, gates, landmarks, walls, violations);
+		return new SettlementPlan(genVersion, seed, site, bounds, coarse, quarters, cells, d, roads, gates, landmarks, walls, violations, approaches);
 	}
 
 
 	/** A copy with the given violations (for checkers that annotate a plan). */
 	/** The same plan with other landmarks (CityPlanner puts them where district detail placed them). */
 	public SettlementPlan withLandmarks(List<Landmark> l) {
-		return new SettlementPlan(genVersion, seed, site, bounds, coarse, quarters, cells, districts, roads, gates, new ArrayList<>(l), walls, violations);
+		return new SettlementPlan(genVersion, seed, site, bounds, coarse, quarters, cells, districts, roads, gates, new ArrayList<>(l), walls, violations, approaches);
 	}
 
 	/** The same plan with other roads (CityPlanner leaves out the arterials the street lattice does not draw). */
@@ -73,10 +82,10 @@ public record SettlementPlan(int genVersion, long seed, SettlementSite site, Rec
 		for (Road x : r) ids.add(x.id());
 		List<Gate> g = new ArrayList<>();
 		for (Gate x : gates) g.add(x.road() == null || ids.contains(x.road()) ? x : new Gate(x.id(), x.kind(), x.x(), x.z(), x.cells(), null));
-		return new SettlementPlan(genVersion, seed, site, bounds, coarse, quarters, cells, districts, new ArrayList<>(r), g, landmarks, walls, violations);
+		return new SettlementPlan(genVersion, seed, site, bounds, coarse, quarters, cells, districts, new ArrayList<>(r), g, landmarks, walls, violations, approaches);
 	}
 
 	public SettlementPlan withViolations(List<Violation> v) {
-		return new SettlementPlan(genVersion, seed, site, bounds, coarse, quarters, cells, districts, roads, gates, landmarks, walls, new ArrayList<>(v));
+		return new SettlementPlan(genVersion, seed, site, bounds, coarse, quarters, cells, districts, roads, gates, landmarks, walls, new ArrayList<>(v), approaches);
 	}
 }

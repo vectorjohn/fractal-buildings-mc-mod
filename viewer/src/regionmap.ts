@@ -10,15 +10,23 @@ export interface Cell {
   waterDist?: number;
   /** The cell that claimed this one (MC1), as [cx, cz]. */
   claimedBy?: [number, number];
+  /** Port tag (ADR 0004 N6): a town or larger settlement near large water. */
+  port?: boolean;
 }
-export interface Layer { cellSize: number; policy: string; cells: Cell[] }
+/** A link between two settlements (ROADMAP 6.10, `RoadJson`): station polyline `pts` [x,z,...] every 8 blocks, crossing spans `cross` [i,j,...] in station indices. */
+export interface RoadEdge { a: [number, number]; b: [number, number]; w: number; pa: [number, number] | null; pb: [number, number] | null; pts: number[]; cross: number[] }
+/** A pair no road joined: the ports (null: none found) and why. */
+export interface RoadDropped { a: [number, number]; b: [number, number]; pa: [number, number] | null; pb: [number, number] | null; why: string }
+export interface RoadNode { cx: number; cz: number; x: number; z: number; r: number; tier: string; port: boolean }
+export interface RoadLayer { lgap: number; nodes: RoadNode[]; edges: RoadEdge[]; meet: { a: [number, number]; b: [number, number]; x: number; z: number }[]; dropped: RoadDropped[] }
+export interface Layer { cellSize: number; policy: string; cells: Cell[]; roads?: RoadLayer }
 export interface Grid { x0: number; z0: number; step: number; nx: number; nz: number }
 export interface Dump {
   seed: number; grid: Grid; palette: string[]; biome: number[]; surface: number[]; water: number[]; layers: Layer[];
 }
 
 declare global {
-  interface Window { __regionReady?: { ok: boolean; settled: number; cells: number; claims: number; heat: boolean; error?: string } }
+  interface Window { __regionReady?: { ok: boolean; settled: number; cells: number; claims: number; heat: boolean; roads: Stats['roads']; error?: string } }
 }
 
 /** True for gzip data (`1f 8b` magic), whatever the file is called. */
@@ -57,6 +65,31 @@ export function parseClaim(v: unknown): [number, number] | undefined {
   return undefined;
 }
 
+function pair(v: unknown, ctx: string): [number, number] {
+  if (!Array.isArray(v) || v.length !== 2 || v.some((n) => typeof n !== 'number')) throw new Error(`${ctx}: expected [x, z]`);
+  return [v[0] as number, v[1] as number];
+}
+
+function maybePair(v: unknown, ctx: string): [number, number] | null {
+  return v === null || v === undefined ? null : pair(v, ctx);
+}
+
+/** The optional `roads` object of a region layer (the core's `RoadJson`). */
+export function parseRoads(r: Record<string, unknown>): RoadLayer {
+  const list = (k: string): Record<string, unknown>[] => (r[k] as Record<string, unknown>[] | undefined) ?? [];
+  return {
+    lgap: typeof r['lgap'] === 'number' ? r['lgap'] : 1536,
+    nodes: list('nodes').map((n) => ({ cx: num(n, 'cx', 'node'), cz: num(n, 'cz', 'node'), x: num(n, 'x', 'node'), z: num(n, 'z', 'node'), r: num(n, 'r', 'node'), tier: String(n['tier']), port: n['port'] === true })),
+    edges: list('edges').map((e) => {
+      const pts = ints(e, 'pts', (e['pts'] as unknown[]).length);
+      if (pts.length % 2 !== 0) throw new Error('road edge: pts must hold x, z pairs');
+      return { a: pair(e['a'], 'edge.a'), b: pair(e['b'], 'edge.b'), w: num(e, 'w', 'edge'), pa: maybePair(e['pa'], 'edge.pa'), pb: maybePair(e['pb'], 'edge.pb'), pts, cross: (e['cross'] as number[] | undefined) ?? [] };
+    }),
+    meet: list('meet').map((m) => ({ a: pair(m['a'], 'meet.a'), b: pair(m['b'], 'meet.b'), x: num(m, 'x', 'meet'), z: num(m, 'z', 'meet') })),
+    dropped: list('dropped').map((d) => ({ a: pair(d['a'], 'dropped.a'), b: pair(d['b'], 'dropped.b'), pa: maybePair(d['pa'], 'dropped.pa'), pb: maybePair(d['pb'], 'dropped.pb'), why: String(d['why'] ?? '') })),
+  };
+}
+
 export function parseDump(text: string): Dump {
   const j = JSON.parse(text) as Record<string, unknown>;
   if (j['format'] !== 'fb-region-dump/1') throw new Error(`not an fb-region-dump/1 file (format ${String(j['format'])})`);
@@ -66,6 +99,7 @@ export function parseDump(text: string): Dump {
   const layers: Layer[] = ((j['layers'] as Record<string, unknown>[] | undefined) ?? []).map((l) => ({
     cellSize: num(l, 'cellSize', 'layer'),
     policy: String(l['policy'] ?? ''),
+    ...(l['roads'] ? { roads: parseRoads(l['roads'] as Record<string, unknown>) } : {}),
     cells: (l['cells'] as Record<string, unknown>[]).map((c) => {
       const cell: Cell = {
         cx: num(c, 'cx', 'cell'), cz: num(c, 'cz', 'cell'), siteX: num(c, 'siteX', 'cell'), siteZ: num(c, 'siteZ', 'cell'),
@@ -73,6 +107,7 @@ export function parseDump(text: string): Dump {
         centreX: num(c, 'centreX', 'cell'), centreZ: num(c, 'centreZ', 'cell'), radius: num(c, 'radius', 'cell'),
       };
       if (typeof c['waterDist'] === 'number' && c['waterDist'] >= 0) cell.waterDist = c['waterDist'];
+      if (c['port'] === true) cell.port = true;
       const claim = parseClaim(c['claimedBy']);
       if (claim) cell.claimedBy = claim;
       return cell;
@@ -140,8 +175,8 @@ export function heatColour(waterDist: number, max = 768): string {
 // ---- drawing --------------------------------------------------------------------------------------------
 
 export interface View { x0: number; z0: number; w: number; d: number; scale: number }
-export interface Options { layer: number; heat: boolean; claims: boolean; grid: boolean; reasons: boolean }
-export interface Stats { settled: number; cells: number; claims: number; heat: boolean }
+export interface Options { layer: number; heat: boolean; claims: boolean; grid: boolean; reasons: boolean; /** Road layer (6.10): links, crossings, meeting points, dropped pairs, port tags; drawn when the layer has `roads`. */ roads?: boolean }
+export interface Stats { settled: number; cells: number; claims: number; heat: boolean; /** Links, crossing spans, meeting points, dropped pairs and port-tagged settlements drawn. */ roads: { links: number; crossings: number; meetings: number; dropped: number; ports: number } }
 
 export function defaultView(g: Grid, maxPx = 1100): View {
   const w = g.nx * g.step, d = g.nz * g.step;
@@ -173,7 +208,7 @@ export function drawRegion(ctx: CanvasRenderingContext2D, region: Dump, terrain:
   paintTerrain(ctx, terrain ?? region, v);
   const sx = (x: number): number => (x - v.x0) * v.scale, sz = (z: number): number => (z - v.z0) * v.scale;
   const L = region.layers[o.layer];
-  const stats: Stats = { settled: 0, cells: 0, claims: 0, heat: false };
+  const stats: Stats = { settled: 0, cells: 0, claims: 0, heat: false, roads: { links: 0, crossings: 0, meetings: 0, dropped: 0, ports: 0 } };
   if (!L) return stats;
   stats.cells = L.cells.length;
   const S = L.cellSize;
@@ -239,5 +274,101 @@ export function drawRegion(ctx: CanvasRenderingContext2D, region: Dump, terrain:
     }
     ctx.setLineDash([]);
   }
+  if (o.roads !== false && L.roads) drawRoads(ctx, L, stats, sx, sz, v);
   return stats;
+}
+
+// ---- roads (ROADMAP 6.10) -------------------------------------------------------------------------------
+
+export const ROAD_COLOUR = '#ffe14d';
+export const CROSSING_COLOUR = '#26d9ff';
+export const DROPPED_COLOUR = '#ff4a4a';
+export const PORT_COLOUR = '#ffffff';
+
+/** Stroke width of a link in px: the road's width in blocks, at least 2 px so it stays visible zoomed out. */
+export function roadPx(widthBlocks: number, scale: number): number {
+  return Math.max(2, widthBlocks * scale);
+}
+
+/**
+ * Road layer of a region map: each link as a dark-edged yellow line along its stations, crossing spans (a flat single span over
+ * water, at most 20 blocks) in cyan, a white dot at each meeting point of a touching pair, dropped pairs (no routable witness
+ * blocks them but no dry route exists) as red dashes between their ports or centres, and a white ring on port-tagged settlements.
+ */
+function drawRoads(ctx: CanvasRenderingContext2D, L: Layer, stats: Stats, sx: (x: number) => number, sz: (z: number) => number, v: View): void {
+  const R = L.roads!;
+  const centre = new Map<string, { x: number; z: number }>();
+  for (const n of R.nodes) centre.set(`${n.cx},${n.cz}`, { x: n.x, z: n.z });
+  const at = (k: [number, number]): { x: number; z: number } | undefined => centre.get(`${k[0]},${k[1]}`);
+
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.strokeStyle = DROPPED_COLOUR;
+  ctx.lineWidth = 1.2;
+  ctx.setLineDash([5, 4]);
+  for (const d of R.dropped) {
+    const a = d.pa ? { x: d.pa[0], z: d.pa[1] } : at(d.a), b = d.pb ? { x: d.pb[0], z: d.pb[1] } : at(d.b);
+    if (!a || !b) continue;
+    stats.roads.dropped++;
+    ctx.beginPath();
+    ctx.moveTo(sx(a.x), sz(a.z));
+    ctx.lineTo(sx(b.x), sz(b.z));
+    ctx.stroke();
+  }
+  ctx.setLineDash([]);
+
+  const path = (e: RoadEdge, i0: number, i1: number): void => {
+    ctx.beginPath();
+    for (let i = i0; i <= i1; i++) {
+      const x = sx(e.pts[2 * i]!), z = sz(e.pts[2 * i + 1]!);
+      if (i === i0) ctx.moveTo(x, z);
+      else ctx.lineTo(x, z);
+    }
+    ctx.stroke();
+  };
+  for (const pass of [0, 1, 2]) {
+    for (const e of R.edges) {
+      const n = e.pts.length / 2;
+      if (n < 2) continue;
+      const w = roadPx(e.w, v.scale);
+      if (pass === 0) { // dark edge
+        ctx.strokeStyle = '#1a1a1a';
+        ctx.lineWidth = w + 2;
+        path(e, 0, n - 1);
+        stats.roads.links++;
+      } else if (pass === 1) {
+        ctx.strokeStyle = ROAD_COLOUR;
+        ctx.lineWidth = w;
+        path(e, 0, n - 1);
+      } else {
+        ctx.strokeStyle = CROSSING_COLOUR;
+        ctx.lineWidth = w + 1;
+        for (let k = 0; k + 1 < e.cross.length; k += 2) {
+          path(e, e.cross[k]!, Math.min(n - 1, e.cross[k + 1]!));
+          stats.roads.crossings++;
+        }
+      }
+    }
+  }
+  ctx.lineCap = 'butt';
+
+  for (const m of R.meet) {
+    stats.roads.meetings++;
+    ctx.fillStyle = PORT_COLOUR;
+    ctx.strokeStyle = '#000';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.arc(sx(m.x), sz(m.z), 4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+  }
+  ctx.strokeStyle = PORT_COLOUR;
+  ctx.lineWidth = 2;
+  for (const n of R.nodes) {
+    if (!n.port) continue;
+    stats.roads.ports++;
+    ctx.beginPath();
+    ctx.arc(sx(n.x), sz(n.z), 7, 0, Math.PI * 2);
+    ctx.stroke();
+  }
 }

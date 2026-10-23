@@ -9,6 +9,9 @@ public final class Ids {
 	/** Road of a cell skeleton: {@code r<cx>_<cz>_<n>}. */
 	public static String road(int cx, int cz, int n) { return "r" + n(cx) + "_" + n(cz) + "_" + n(n); }
 
+	/** Approach of a cell skeleton from a required exit to a road port (ADR 0004 N5): {@code k<cx>_<cz>_<n>}. */
+	public static String approach(int cx, int cz, int n) { return "k" + n(cx) + "_" + n(cz) + "_" + n(n); }
+
 	/** Arterial segment: {@code a<axis><line>_<from>} (axis 0 = a line of constant x, 1 = constant z). */
 	public static String arterial(int axis, int line, int from) { return "a" + axis + n(line) + "_" + n(from); }
 

@@ -94,3 +94,17 @@ describe('loading helpers', () => {
     expect(joinUrl('a/b', 'districts/d.json')).toBe('a/b/districts/d.json');
   });
 });
+
+describe('approaches (6.10)', () => {
+  it('reads the optional approaches of a planned settlement, none by default', () => {
+    const withLinks = parseSettlement(readFileSync(new URL('../fixtures/settlement/roads/town-s3_7/settlement.json', import.meta.url), 'utf8'));
+    expect(withLinks.approaches.length).toBeGreaterThanOrEqual(2);
+    for (const a of withLinks.approaches) {
+      expect(a.points.length).toBeGreaterThanOrEqual(2);
+      expect(['main', 'path']).toContain(a.kind);
+      expect(a.bridges).toEqual([]);
+    }
+    const sample = parseSettlement(readFileSync(new URL('../fixtures/settlement/sample/settlement.json', import.meta.url), 'utf8'));
+    expect(sample.approaches).toEqual([]);
+  });
+});

@@ -53,6 +53,8 @@ public final class Tiers {
 	public static final int WATER_REACH = 768;
 	/** Spacing of the sparse lattice the water search samples (a multiple of the probe stride). */
 	public static final int WATER_STEP = 192;
+	/** A biased settlement whose centre is within this of large water is tagged `port` (ADR 0004 N6). */
+	public static final int PORT_REACH = 384;
 	/** Footprint water cap for tiers with a bias (the disk may hold coast; the urban mask keeps buildings dry). */
 	public static final double WATER_CAP_BIASED = 0.4;
 	/** Roll-chance factor for a biased tier whose footprint holds more water than the plain cap: coast sites are admitted but not at the cost of a different settlement count. */

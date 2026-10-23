@@ -16,10 +16,23 @@ import java.util.Optional;
 public final class FieldSiteView implements RegionView {
 	private final FieldRegionView view;
 	private final RegionField field;
+	private final dev.fractalbuildings.core.road.RoadNet roads;
 
 	public FieldSiteView(FieldRegionView view, RegionField field) {
+		this(view, field, null);
+	}
+
+	/** With a road graph: {@link #ports} answers from it, so skeletons get required exits and approaches (6.10). */
+	public FieldSiteView(FieldRegionView view, RegionField field, dev.fractalbuildings.core.road.RoadNet roads) {
 		this.view = view;
 		this.field = field;
+		this.roads = roads;
+	}
+
+	@Override public List<dev.fractalbuildings.core.road.RoadPort> ports(SettlementSite site) {
+		if (roads == null) return List.of();
+		CellKey owner = new CellKey(site.claimant().cx(), site.claimant().cz());
+		return roads.settlement(owner).map(roads::portsOf).orElse(List.of());
 	}
 
 	@Override public RegionField field() { return field; }

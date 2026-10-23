@@ -38,12 +38,7 @@ fi
 
 cd "$ROOT" || exit 2
 # The heavy lock lives in the main checkout's .claude/, shared by all worktrees.
-# A copy without .git (scripts/remote.sh on the worker) uses its own root.
-if GIT_COMMON="$(git -C "$ROOT" rev-parse --path-format=absolute --git-common-dir 2>/dev/null)"; then
-	MAIN_ROOT="$(dirname "$GIT_COMMON")"
-else
-	MAIN_ROOT="$ROOT"
-fi
+MAIN_ROOT="$(dirname "$(git -C "$ROOT" rev-parse --path-format=absolute --git-common-dir)")"
 HEAVY_LOCK="$MAIN_ROOT/.claude/heavy.lock"
 
 OUT="$ROOT/build/test-all"
@@ -227,12 +222,9 @@ else
 	mkdir -p "$(dirname "$HEAVY_LOCK")"
 	say "  client: waiting for heavy lock $HEAVY_LOCK ..."
 	# Headless only: with WAYLAND_DISPLAY set (the human's GNOME session) SDL picks
-	# Wayland over Xvfb and the client dies at the first frame. See scripts/client-test.sh,
-	# also for FB_USE_DISPLAY (use $DISPLAY instead of Xvfb; set on the worker box).
-	XVFB=(xvfb-run -a)
-	[[ "${FB_USE_DISPLAY:-}" == 1 ]] && XVFB=()
+	# Wayland over Xvfb and the client dies at the first frame. See scripts/client-test.sh.
 	if run_logged client env -u WAYLAND_DISPLAY SDL_VIDEODRIVER=x11 \
-		flock "$HEAVY_LOCK" "${XVFB[@]}" "${GRADLE[@]}" :mod:runClientGameTest; then st=pass; else st=fail; fi
+		flock "$HEAVY_LOCK" xvfb-run -a "${GRADLE[@]}" :mod:runClientGameTest; then st=pass; else st=fail; fi
 	gt_line=$(grep -oE '(All [0-9]+ required tests? passed|[0-9]+ required tests? failed|[0-9]+ client game tests? [a-z]+)' "${LOGS[client]}" | tail -n1)
 	record client $st "${gt_line:-no count in log}; /proc/loadavg at end: $(cut -d' ' -f1-3 /proc/loadavg)"
 fi

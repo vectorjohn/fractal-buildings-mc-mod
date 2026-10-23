@@ -15,7 +15,13 @@ public record CellDecision(
 	double roll, double chance, double suitability, double siteSuitability, int candidate,
 	double waterFrac, double peakFrac, Map<String, Double> groups,
 	/** Distance from the centre to the nearest water, capped at {@link Tiers#WATER_REACH}; -1 when the tier has no water bias. */
-	double waterDist) {
+	double waterDist,
+	/**
+	 * Port tag (ADR 0004 N6): the centre is within {@link Tiers#PORT_REACH} of large water, a lake or sea at least two
+	 * {@link Tiers#WATER_STEP}-lattice samples wide. Only settled cells of tiers with a water bias (town and up) are tagged.
+	 * Recorded here for port features later (ROADMAP 7.4); the road graph never reads it.
+	 */
+	boolean port) {
 
 	/** True when two palette groups each cover at least a fifth of the footprint. */
 	public boolean straddles() {
@@ -31,6 +37,6 @@ public record CellDecision(
 	/** The same decision with another radius (a join winner takes its drawn radius, past the cell's fit). */
 	public CellDecision withRadius(int r) {
 		return new CellDecision(cx, cz, siteX, siteZ, settled, reason, tier, centreX, centreZ, radiusDrawn, r, radiusFit, edgeDist,
-			roll, chance, suitability, siteSuitability, candidate, waterFrac, peakFrac, groups, waterDist);
+			roll, chance, suitability, siteSuitability, candidate, waterFrac, peakFrac, groups, waterDist, port);
 	}
 }

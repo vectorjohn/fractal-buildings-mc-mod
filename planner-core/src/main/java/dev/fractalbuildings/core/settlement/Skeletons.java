@@ -43,6 +43,8 @@ public final class Skeletons {
 		DensityField density = new DensityField(seed, site, terrain, grid);
 		QuarterField quarters = new QuarterField(seed, site, terrain, density);
 		List<Pt> poly = CellGeometry.polygon(field, cell);
+		// road links (ADR 0004 N5): the ports this cell serves; none without a road graph, and then nothing below changes
+		List<dev.fractalbuildings.core.road.RoadPort> mine = LinkExits.assigned(site, field, cell, view.ports(site));
 
 		// 1. gates on the edges shared with the settlement's other cells
 		List<Gate> cellGates = new ArrayList<>();
@@ -67,6 +69,12 @@ public final class Skeletons {
 			maxX = Math.max(maxX, g.x());
 			minZ = Math.min(minZ, g.z());
 			maxZ = Math.max(maxZ, g.z());
+		}
+		for (dev.fractalbuildings.core.road.RoadPort p : mine) { // the window holds the port, so the approach can reach it
+			minX = Math.min(minX, p.x() - step);
+			maxX = Math.max(maxX, p.x() + step);
+			minZ = Math.min(minZ, p.z() - step);
+			maxZ = Math.max(maxZ, p.z() + step);
 		}
 		int x0 = Math.floorDiv(minX, step) * step, z0 = Math.floorDiv(minZ, step) * step;
 		int nx = Math.floorDiv(maxX - x0, step) + 1, nz = Math.floorDiv(maxZ - z0, step) + 1;
@@ -112,6 +120,18 @@ public final class Skeletons {
 		List<Pt> targets = new ArrayList<>();
 		for (Gate g : cellGates) targets.add(new Pt(g.x(), g.z()));
 		List<Pt> exits = program.exits(c, hub);
+		List<LinkExits.Link> links = LinkExits.required(c, hub, mine);
+		if (!links.isEmpty()) {
+			// required exits first; a hashed exit within 3 lattice steps of one is redundant
+			List<Pt> all = new ArrayList<>();
+			for (LinkExits.Link l : links) if (!all.contains(l.exit())) all.add(l.exit());
+			for (Pt e : exits) {
+				boolean near = false;
+				for (LinkExits.Link l : links) near |= Math.abs(e.x() - l.exit().x()) <= 3 * c.step && Math.abs(e.z() - l.exit().z()) <= 3 * c.step;
+				if (!near && !all.contains(e)) all.add(e);
+			}
+			exits = all;
+		}
 		targets.addAll(exits);
 		List<TierProgram.Route> routes = hub == null ? List.of() : program.mainRoads(c, hub, targets);
 		List<Road> roads = new ArrayList<>();
@@ -133,6 +153,11 @@ public final class Skeletons {
 			}
 		}
 		roads.addAll(arterialParts(c));
+		List<Road> approaches = new ArrayList<>();
+		for (LinkExits.Link l : links) {
+			List<Pt> pts = LinkExits.approach(c, l);
+			if (pts.size() >= 2) approaches.add(new Road(Ids.approach(cell.cx(), cell.cz(), approaches.size()), l.port().width() <= 3 ? RoadKind.PATH : RoadKind.MAIN, l.port().width(), pts, List.of()));
+		}
 
 		// 6. landmarks, districts
 		List<Landmark> landmarks = new ArrayList<>(hub == null || !c.holdsCentre() ? List.of() : program.landmarks(c, hub));
@@ -144,7 +169,7 @@ public final class Skeletons {
 
 		CoarseRaster raster = new CoarseRaster(x0, z0, step, nx, nz, floor, water, biome, palette, c.mask, dens, quarter);
 		return new CellSkeleton(cell, new CellOutline(cell.cx(), cell.cz(), new Pt(field.siteX(cell.cx(), cell.cz()), field.siteZ(cell.cx(), cell.cz())), poly),
-				raster, hub, roads, gates, landmarks, districts, walls);
+				raster, hub, roads, gates, landmarks, districts, walls, approaches);
 	}
 
 	private static List<Cell> sorted(List<Cell> cells) {
@@ -421,10 +446,13 @@ public final class Skeletons {
 		List<Wall> walls = new ArrayList<>();
 		for (CellSkeleton s : sk) walls.addAll(s.walls());
 
+		List<Road> approaches = new ArrayList<>();
+		for (CellSkeleton s : sk) approaches.addAll(s.approaches());
+
 		List<Violation> violations = new ArrayList<>();
 		violations.addAll(SettlementChecks.skeletonInCell(sk, field));
 		violations.addAll(SettlementChecks.cellGateAgree(sk));
-		return new SettlementPlan(genVersion, seed, site, new Rect(x0, z0, nx * step, nz * step), raster, quarters, outlines, dl, roads, gl, ml, walls, violations);
+		return new SettlementPlan(genVersion, seed, site, new Rect(x0, z0, nx * step, nz * step), raster, quarters, outlines, dl, roads, gl, ml, walls, violations, approaches);
 	}
 
 	private static boolean covers(CoarseRaster r, int x, int z) {

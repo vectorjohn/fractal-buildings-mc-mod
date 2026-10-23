@@ -36,6 +36,8 @@ export interface Settlement {
   bounds: { x: number; z: number; w: number; d: number };
   coarse: Coarse; quarters: Quarter[]; cells: Cell[]; districts: DistrictSummary[];
   roads: Road[]; gates: Gate[]; landmarks: Landmark[]; walls: Wall[]; violations: PlanViolation[];
+  /** Approaches from a required exit to a road port (ADR 0004 N5, ROADMAP 6.10); empty when the settlement has no road links. */
+  approaches: Road[];
 }
 export interface Street { id: string; kind: RoadKind; width: number; points: XZ[]; y: number[] }
 export interface Plaza { id: string; kind: string; x: number; z: number; w: number; d: number; y: number }
@@ -166,7 +168,7 @@ export function parseSettlement(text: string): Settlement {
     };
   });
   uniqueIds(districts, '$.districts');
-  const roads = list(o, 'roads', '$', (r, p): Road => {
+  const roadOf = (r: unknown, p: string): Road => {
     const ro = obj(r, p);
     const points = xzList(ro, 'points', p);
     const bridges = list(ro, 'bridges', p, (br, bp): [number, number] => {
@@ -175,8 +177,11 @@ export function parseSettlement(text: string): Settlement {
       return [i, j];
     });
     return { id: str(ro, 'id', p), kind: oneOf(ro, 'kind', p, ROAD_KINDS), width: int(ro, 'width', p), points, bridges };
-  });
+  };
+  const roads = list(o, 'roads', '$', roadOf);
   uniqueIds(roads, '$.roads');
+  const approaches = o['approaches'] === undefined ? [] : list(o, 'approaches', '$', roadOf);
+  uniqueIds(approaches, '$.approaches');
   return {
     genVersion: int(o, 'genVersion', '$'), seed: seed(o, '$'),
     site: {
@@ -189,7 +194,7 @@ export function parseSettlement(text: string): Settlement {
       const co = obj(c, p);
       return { cx: int(co, 'cx', p), cz: int(co, 'cz', p), site: xzField(co, 'site', p), polygon: xzList(co, 'polygon', p) };
     }),
-    districts, roads,
+    districts, roads, approaches,
     gates: list(o, 'gates', '$', (g, p): Gate => {
       const go = obj(g, p);
       const cells = field(go, 'cells', p);
