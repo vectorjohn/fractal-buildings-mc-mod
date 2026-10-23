@@ -35,7 +35,7 @@ public final class Shapes {
 				return h.logAxis() != null && axisBlock(blockId) ? Shape.log(h.logAxis()) : Shape.NONE;
 			case WINDOW:
 				return connectable(blockId) ? Shape.connected(connect(g, x, y, z)) : Shape.NONE;
-			case FENCE:
+			case FENCE: case RAIL:
 				return Shape.connected(connect(g, x, y, z));
 			default:
 				return Shape.NONE;

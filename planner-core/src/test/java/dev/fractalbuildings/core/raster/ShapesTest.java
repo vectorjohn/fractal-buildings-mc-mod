@@ -98,6 +98,34 @@ class ShapesTest {
 	}
 
 	@Test
+	void railConnectsLikeAFence() {
+		PlacedBuilding b = make(0, List.of(box(0, 0, 0, 3, 1, 1, Role.RAIL)), List.of());
+		Map<String, Cell> m = raster(b);
+		assertEquals(Shape.E | Shape.W, m.get("101,64,200").shape().connect());
+		assertEquals(Shape.E, m.get("100,64,200").shape().connect());
+	}
+
+	@Test
+	void roomPartsAreBuildingAirThatGroundYieldsTo() {
+		PlacedBuilding b = make(0, List.of(box(0, 0, 0, 1, 1, 1, Role.WALL)), List.of());
+		var room = b.shell().rooms().get(0);
+		Box3 part = b.placement().toWorld(room.parts().get(0));
+		Box3 all = Box3.of(part.x() - 3, part.y() - 3, part.z() - 3, part.sx() + 6, part.sy() + 6, part.sz() + 6);
+		Map<String, Cell> m = raster(b);
+		Map<String, String> owner = new TreeMap<>();
+		PieceRaster.ground(List.of(new Box(all, Role.GROUND, Layer.SHELL, 0)), List.of(b), (x, z) -> "plain", all, (x, y, z, r, id, s) -> owner.put(x + "," + y + "," + z, r.toString()));
+		int n = 0;
+		for (int y = part.y(); y < part.maxY(); y++) for (int z = part.z(); z < part.maxZ(); z++) for (int x = part.x(); x < part.maxX(); x++) {
+			String k = x + "," + y + "," + z;
+			assertNull(owner.get(k), "ground under room air at " + k);
+			if (!(x == 100 && y == 64 && z == 200)) assertEquals(Role.AIR, m.get(k).role(), k);
+			n++;
+		}
+		assertTrue(n > 10);
+		assertEquals("GROUND", owner.get((part.x() - 1) + "," + part.y() + "," + part.z()));
+	}
+
+	@Test
 	void fencesAndPanesConnectToSolidNeighboursOnly() {
 		// fence run along x from 0..3, wall at x 4, a window pane at (6,1,0) between walls at 5 and 7
 		List<Box> boxes = List.of(box(0, 0, 0, 4, 1, 1, Role.FENCE), box(4, 0, 0, 1, 1, 1, Role.WALL), box(5, 1, 0, 3, 1, 1, Role.WALL), box(6, 1, 0, 1, 1, 1, Role.WINDOW));

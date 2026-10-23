@@ -129,9 +129,18 @@ public final class PieceRaster {
 				hull = hull == null ? worlds[i] : union(hull, worlds[i]);
 			}
 			if (hull == null) return null;
+			// room parts are the building's interior air: it clears them, so terrain, trees and grass yield
+			List<Box3> parts = new ArrayList<>();
+			for (var room : b.shell().rooms())
+				for (Box3 part : room.parts()) {
+					Box3 w = p.toWorld(part);
+					parts.add(w);
+					hull = union(hull, w);
+				}
 			Box3 r = intersect(region, grow(hull));
 			if (r == null) return null;
 			Grid g = new Grid(r);
+			for (Box3 w : parts) g.fill(w, -1);
 			g.building = b;
 			g.openings = b.shell().openings();
 			g.roles = new Role[boxes.size()];
