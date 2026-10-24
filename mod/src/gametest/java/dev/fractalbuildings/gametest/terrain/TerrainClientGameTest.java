@@ -99,6 +99,7 @@ public class TerrainClientGameTest implements FabricClientGameTest {
 	@Override
 	public void runTest(ClientGameTestContext context) {
 		if (dev.fractalbuildings.gametest.compat.CompatOnly.skip("TerrainClientGameTest")) return;
+		if (dev.fractalbuildings.gametest.perf.PerfGate.skipOthers()) return; // B8: a perf-only run
 		java.nio.file.Path cfg = net.fabricmc.loader.api.FabricLoader.getInstance().getConfigDir().resolve("fractalbuildings.json");
 		String saved = null;
 		try {

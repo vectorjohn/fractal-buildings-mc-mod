@@ -86,6 +86,9 @@ public final class LaneStats {
 	public static long starts() { return STARTS.sum(); }
 	public static long posts() { return POSTS.sum(); }
 	public static int postPeak() { return POST_PEAK.get(); }
+	public static double postMeanMs() { long p = POSTS.sum(); return p == 0 ? 0 : POST_NS.sum() / 1e6 / p; }
+	public static double startMeanMs() { long s = STARTS.sum(); return s == 0 ? 0 : START_NS.sum() / 1e6 / s; }
+	public static double startMaxMs() { return startMaxNs / 1e6; }
 
 	public static void reset() {
 		for (LongAdder a : new LongAdder[] {STARTS, START_NS, POSTS, POST_NS, DONE, INFLIGHT, INLINE, WARMS, WARM_NS, PREFETCHES, REFUSED}) a.reset();

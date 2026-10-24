@@ -51,6 +51,7 @@ public class CompatClientGameTest implements FabricClientGameTest {
 
 	@Override
 	public void runTest(ClientGameTestContext context) {
+		if (dev.fractalbuildings.gametest.perf.PerfGate.skipOthers()) return; // B8: a perf-only run
 		String set = label();
 		if (dev.fractalbuildings.gametest.flythrough.FlyThroughClientGameTest.skipOthers()) return; // B9: a fly-only run
 		try (TestSingleplayerContext world = context.worldBuilder()
