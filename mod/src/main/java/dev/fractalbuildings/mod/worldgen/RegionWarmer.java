@@ -123,6 +123,38 @@ public final class RegionWarmer {
 		}
 	}
 
+	/**
+	 * Warms one point now (the teleport hold, TPHOLD): resolves the region and road networks around it on a worker and starts the
+	 * prefetch of the tile under it. The future completes when the warm is done; at once if the level has no planner or the pool is
+	 * missing or full (the chunks then compute what they need), and also after a failure. Call from the server thread.
+	 */
+	public static java.util.concurrent.CompletableFuture<Void> warmPoint(ServerLevel level, int x, int z) {
+		Optional<WorldPlanner> wp = WorldPlanners.of(level, level.getChunkSource().getGenerator());
+		Executor workers = Workers.pool();
+		if (wp.isEmpty() || workers == null) return java.util.concurrent.CompletableFuture.completedFuture(null);
+		return warmPoint(wp.get(), x, z, workers);
+	}
+
+	/** {@link #warmPoint(ServerLevel, int, int)} on a given planner and pool (tests call it directly). */
+	public static java.util.concurrent.CompletableFuture<Void> warmPoint(WorldPlanner planner, int x, int z, Executor workers) {
+		java.util.concurrent.CompletableFuture<Void> done = new java.util.concurrent.CompletableFuture<>();
+		try {
+			workers.execute(() -> {
+				try {
+					warmAt(planner, newState(), x, z, 2 * planner.config().cellSize(), false);
+				} catch (RuntimeException e) {
+					FractalBuildingsMod.LOGGER.debug("Warming point {},{} failed; the chunks will compute what they need", x, z, e);
+				} finally {
+					done.complete(null);
+				}
+			});
+		} catch (RuntimeException refused) {
+			LaneStats.refused();
+			done.complete(null);
+		}
+		return done;
+	}
+
 	/** Test hook: a warm state for {@link #submit}. */
 	static State newState() { return new State(); }
 

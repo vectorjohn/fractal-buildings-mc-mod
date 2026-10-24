@@ -509,6 +509,7 @@ Performance issues and the tradeoffs we accepted are tracked separately in
 - 5.11 OPENPLAN (John, REVIEW 2026-10-22): lintels over wide openings as top-half slabs where the style's wall or trim material has a slab, and arches as upside-down stairs; needs slab and stair shapes in the palette mapping (6.1).
 - 5.12: market hall floor is empty (no stalls); a city planner must catch the shop slope rejection; no railing; enclosed-shop landings are solid.
 - 6.7 (John 2026-10-23): hide the ~4 s teleport hitch into an unvisited city: hold a far same-dimension teleport on the server until the destination is warm (mixin on `ServerPlayer.teleport`, chunk ticket, RegionWarmer, action-bar message; server-only, S to M), optionally a client screen later; joins, respawns and portals already get vanilla's loading screen. Research: [teleport-loading-screen.md](research/worldgen/teleport-loading-screen.md); ledger: [PERFORMANCE.md](PERFORMANCE.md).
+  - [x] Done (TPHOLD, `claude/p6-tphold`): see [log](log/2026-10-23-p6-tphold.md). Server-only hold, wall-clock timeout 30 s, off with `-Dfractalbuildings.teleportHold=false`. *Known issues:* the player sees the old surroundings, not a loading screen; an optional client screen (research option 3) is not built.
 
 ## Open questions and risks
 

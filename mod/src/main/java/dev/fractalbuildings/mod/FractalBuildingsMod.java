@@ -17,6 +17,7 @@ public class FractalBuildingsMod implements ModInitializer {
 		dev.fractalbuildings.mod.config.ConfigInit.register();
 		dev.fractalbuildings.mod.gameplay.Gameplay.register();
 		dev.fractalbuildings.mod.worldgen.RegionWarmer.register();
+		dev.fractalbuildings.mod.teleport.TeleportHold.register();
 		dev.fractalbuildings.mod.roads.RoadFeature.register();
 	}
 }
