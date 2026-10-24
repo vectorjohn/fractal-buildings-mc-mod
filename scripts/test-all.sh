@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 # Run every test layer (ROADMAP "Testing strategy") and print a short summary.
 #
-#   scripts/test-all.sh [--no-client] [--help]
+#   scripts/test-all.sh [--no-client] [--perf] [--help]
 #
 #   --no-client   skip layer 5 (Minecraft client game tests under Xvfb)
+#   --perf        also run scripts/perf.sh (the 6.7 budget check, ~10 min, heavy lock; fails above the CI ceilings of mod/perf-budget.json)
 #
 # Works from any cwd and any worktree; re-execs itself inside `nix develop` when
 # not already in the dev shell. Each step's output goes to build/test-all/<step>.log
@@ -19,12 +20,14 @@
 # on its own lock forever.
 set -uo pipefail
 
-usage() { sed -n '2,19p' "$0" | sed 's/^# \{0,1\}//'; }
+usage() { sed -n '2,20p' "$0" | sed 's/^# \{0,1\}//'; }
 
 RUN_CLIENT=1
+RUN_PERF=0
 for arg in "$@"; do
 	case "$arg" in
 		--no-client) RUN_CLIENT=0 ;;
+		--perf) RUN_PERF=1 ;;
 		-h|--help) usage; exit 0 ;;
 		*) echo "test-all: unknown argument: $arg" >&2; usage >&2; exit 2 ;;
 	esac
@@ -229,10 +232,16 @@ else
 	record client $st "${gt_line:-no count in log}; /proc/loadavg at end: $(cut -d' ' -f1-3 /proc/loadavg)"
 fi
 
+# --- Perf budget (opt-in; heavy lock inside scripts/perf.sh) -------------------
+if (( RUN_PERF )); then
+	if run_logged perf "$ROOT/scripts/perf.sh"; then st=pass; else st=fail; fi
+	record perf $st "$(grep -E "^perf ok|^PERF FAIL" "${LOGS[perf]}" | tail -n1); table: mod/build/perf/summary.md"
+fi
+
 # --- Summary --------------------------------------------------------------------
 say ""
 say "=== test-all summary ==="
-declare -A LAYER=([planner-core]="L1" [cli]="L1" [determinism]="L2" [mod]="L4" [viewer]="L1" [viewer-shots]="L3" [client]="L5")
+declare -A LAYER=([planner-core]="L1" [cli]="L1" [determinism]="L2" [mod]="L4" [viewer]="L1" [viewer-shots]="L3" [client]="L5" [perf]="L5")
 for s in "${STEPS[@]}"; do
 	printf '%-3s %-13s %-8s %s\n' "${LAYER[$s]:-}" "$s" "${STATUS[$s]}" "${DETAIL[$s]}"
 done

@@ -383,6 +383,7 @@ public class DistrictOrderClientGameTest implements FabricClientGameTest {
 	@Override
 	public void runTest(ClientGameTestContext context) {
 		if (dev.fractalbuildings.gametest.compat.CompatOnly.skip("DistrictOrderClientGameTest")) return;
+		if (dev.fractalbuildings.gametest.perf.PerfGate.skipOthers()) return; // B8: a perf-only run
 		int radius = Integer.parseInt(System.getenv().getOrDefault("FB_ORDER_RADIUS", "1"));
 		String only = System.getenv("FB_ORDER_ONLY");
 		List<String> failures = new ArrayList<>();

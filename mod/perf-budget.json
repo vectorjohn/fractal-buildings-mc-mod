@@ -1,0 +1,123 @@
+{
+  "about": "B8 (ROADMAP 6.7). budget = the target from docs/plans/phase6.md 'Budgets'; ci = the ceiling scripts/perf.sh fails above (default 2 x budget; a few are set from a measured miss, see docs/log/2026-10-23-p6-b8-perf.md). Do not loosen a budget without the coordinator. Timing rows are not failed when the loadavg seen during the run reached 8 (PERF_LOAD_SKIP); a full run fails on any unmeasured row.",
+  "budgets": [
+    {
+      "key": "district.cold.median.ms",
+      "label": "Cold district plan (plan + buildings + ground), median",
+      "unit": "ms",
+      "budget": 300,
+      "ci": 1500
+    },
+    {
+      "key": "district.cold.p95.ms",
+      "label": "Cold district plan, p95",
+      "unit": "ms",
+      "budget": 1000,
+      "ci": 3000
+    },
+    {
+      "key": "district.cold.plan.ms",
+      "label": "First tile of a metropolis, cold (skeleton warm)",
+      "unit": "ms",
+      "budget": 1000,
+      "ci": 4000
+    },
+    {
+      "key": "district.warmed.lane.ms",
+      "label": "Same, prefetched: what the lane pays",
+      "unit": "ms",
+      "budget": 20
+    },
+    {
+      "key": "region.cold.warm.ms",
+      "label": "Region layer + road network, cold, metropolis",
+      "unit": "ms",
+      "budget": 6000,
+      "ci": 10000
+    },
+    {
+      "expr": "inlineShare",
+      "label": "Building lookups inline during an elytra flight",
+      "unit": "%",
+      "budget": 5,
+      "ci": 10
+    },
+    {
+      "key": "warm.chunk.ratio",
+      "label": "Wall per downtown chunk, mod / no settlements (warmed)",
+      "unit": "x",
+      "budget": 3,
+      "ci": 4.5
+    },
+    {
+      "key": "warm.postProcess.mean.ms",
+      "label": "postProcess per downtown chunk (block writes)",
+      "unit": "ms",
+      "budget": 5,
+      "ci": 10
+    },
+    {
+      "key": "mod.flight.tick.max.ms",
+      "label": "Worst server tick during an elytra flight into a city",
+      "unit": "ms",
+      "budget": 3000,
+      "ci": 6000
+    },
+    {
+      "key": "mod.flight.tick.p95.ms",
+      "label": "p95 server tick during the flight",
+      "unit": "ms",
+      "budget": 50,
+      "ci": 100
+    },
+    {
+      "key": "region.growth.ratio",
+      "label": "Region-file growth of 162 downtown chunks vs no settlements (downtown worst case)",
+      "unit": "ratio",
+      "budget": 1,
+      "ci": 2
+    },
+    {
+      "key": "heap.growth.mb",
+      "label": "Heap after GC, mod world vs none, after the flight and 162 city chunks",
+      "unit": "MB",
+      "budget": 500,
+      "ci": 1000
+    },
+    {
+      "key": "locate.fresh.ms",
+      "label": "/locate settlement in a fresh area",
+      "unit": "ms",
+      "budget": 3000,
+      "ci": 5000
+    },
+    {
+      "key": "locate.village.fresh.ms",
+      "label": "/locate a vanilla village (veto) in a fresh area, server thread",
+      "unit": "ms",
+      "budget": 10000,
+      "ci": 20000
+    },
+    {
+      "key": "locate.spawn.ms",
+      "label": "/locate settlement from spawn",
+      "unit": "ms",
+      "budget": 2000,
+      "ci": 4000
+    },
+    {
+      "key": "multi3.recomputes",
+      "label": "Tile recomputes, 3 players in different cities",
+      "unit": "count",
+      "budget": 0,
+      "ci": 5
+    },
+    {
+      "key": "multi8.recomputes",
+      "label": "Tile recomputes, 8 players in different cities",
+      "unit": "count",
+      "budget": 0,
+      "ci": 5
+    }
+  ]
+}
