@@ -263,7 +263,8 @@ that needs `level: full`.
 (client game tests, `scripts/perf.sh`, `scripts/flythrough.sh`) run on the run
 branch in batches: every 3–4 merges, at a batch boundary, and always before
 `merge: to-main`. Start a verifier with `heavy-batch: <last batched
-head>..<integration head>` and the integration checkout. It runs them on a snapshot, so merges carry on meanwhile. Record each run in the
+head>..<integration head>` and the integration checkout. It runs
+them on a snapshot, so merges carry on meanwhile. Record each run in the
 ledger's "Heavy runs" (range, head, PASS/FAIL, evidence folder). On FAIL it
 names the culprit squash commit; decide revert vs fix-forward as for a
 post-merge failure.
