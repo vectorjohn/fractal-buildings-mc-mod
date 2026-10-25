@@ -454,7 +454,8 @@ public class DesignBlocks {
 		return """
 				Columns: **Blocks** lists each base block id, its colour as sRGB hex (the mean of its texture; \
 				names in **Colour** are approximate, for the first block), and in brackets the variants that exist \
-				as `<stem>_<variant>`. **wood set** = stairs slab fence fence_gate door trapdoor button pressure_plate \
+				as `<stem>_<variant>` (stem = the id, or the id without `_planks`/`_block`/`_wool`, or with \
+bricks->brick, tiles->tile: quartz_block -> quartz_stairs, stone_bricks -> stone_brick_wall). **wood set** = stairs slab fence fence_gate door trapdoor button pressure_plate \
 				sign hanging_sign shelf ("-x": that one is missing); **wood** = the all-bark `_wood`/`_hyphae` block; \
 				**+waxed** = a `waxed_` copy exists (it never oxidises). `{dye}` = the 16 dye colours. A block not \
 				listed with a variant has none: never invent `X_stairs` etc. **Vanilla** = vanilla structure \
