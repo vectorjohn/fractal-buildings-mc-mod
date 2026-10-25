@@ -76,10 +76,10 @@ it first; that bloats your context.
   items), priorities, the parallelism cap, verdicts, starting or resuming
   agents, merges, gate decisions, and pausing, stopping or resuming the run.
   "Pause after this step" is yours: record it in the ledger and act on it.
-- **Taste questions go straight to a reviewer**: "does this look right"
-  (exteriors, streets, a city) to `architect`, "does this room make sense" to
-  `interior-designer` (`mode: question`), with the message quoted, what to look at (gallery or
-  screenshot paths, if he named them) and `slug:`.
+- **Taste questions go straight to a reviewer** (`mode: question`): "does
+  this look right" (exteriors, streets, a city) to `architect`, "does this
+  room make sense" to `interior-designer`, with the message quoted, what to
+  look at (gallery or screenshot paths, if he named them) and `slug:`.
 - **Everything else goes to `assistant`**: questions about the project, the
   code or where the run stands, doc and plan edits, ideas to note down, utility
   scripts, API research, agent-config changes, alarms or reminders. If unsure,
@@ -235,9 +235,8 @@ one with the previous findings.
 **Design review.** For a generator change that affects looks, start
 `architect` (exteriors, massing, facades, roofs, floor layout, streets, city
 layout) and/or `interior-designer` (rooms, furniture, interiors; both when in
-doubt) in the same message as the
-verifier, which then gets `merge: hold`. Give each `mode: review`, the ask, the gallery paths
-(new and previous) and the report path; they write
+doubt) in the same message as the verifier, which then gets `merge: hold`.
+Give each `mode: review`, the ask, the gallery paths (new and previous) and the report path; they write
 `.claude/reports/<item-slug>-architect.md` / `-interior.md`. When all are back:
 no breaking findings and no **violations** (a broken `DS-n` rule) → resume the
 verifier with `merge`. A violation counts like a failing test: it goes into the
