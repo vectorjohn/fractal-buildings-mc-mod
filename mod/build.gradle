@@ -147,27 +147,38 @@ if (findProperty('fb.compatOnly') == 'true') tasks.matching { it.name == 'runCli
 // The gametest mod's fabric.mod.json keeps `@@SERVER_TESTS@@` / `@@CLIENT_TESTS@@` placeholders; processGametestResources
 // fills them from a scan of the gametest sources (order: see below): a server test is any class with an `@GameTest`
 // method, a client test any class that `implements FabricClientGameTest`. To add a test, add the class; touch no list.
-def gametestEntrypoints = { Closure<Boolean> match ->
-	// Order: the `gametest-order: N` comment on the 18 classes that existed when this was introduced (it keeps their old run
-	// order, which matters: a different order exposed a latent interplay between the Gameplay tests and the others), then
-	// class name. A new test needs no marker: the default is 1000, so it runs after those, sorted by name.
+def gametestScan = {
 	def root = file('src/gametest/java')
-	def found = []
+	def serverRe = ~/(?m)^\s*@GameTest\b/
+	def clientRe = ~/\bimplements\s+FabricClientGameTest\b/
+	def server = [], client = [], ordered = []
 	fileTree(root).matching { include '**/*.java' }.each { f ->
-		if (match(f.getText('UTF-8'))) {
-			def order = (f.getText("UTF-8") =~ /gametest-order:\s*(-?\d+)/).with { it.find() ? it.group(1) as int : 1000 }
-			found << [order, root.toPath().relativize(f.toPath()).toString().replaceAll(/\.java$/, "").replace(File.separator, ".")]
-		}
+		def rel = root.toPath().relativize(f.toPath()).toString().replace(File.separator, '/')
+		// compat/tb is only compiled for -PmodSet=terrablender (see the source set exclude above): register it only then
+		if (modSet != 'terrablender' && rel.contains('compat/tb/')) return
+		def text = f.getText('UTF-8')
+		def m = text =~ /gametest-order:\s*(-?\d+)/
+		def entry = [m.find() ? m.group(1) as int : 1000, rel.replaceAll(/\.java$/, '').replace('/', '.')]
+		if (text =~ serverRe) server << entry
+		if (text =~ clientRe) client << entry
+		if (text.contains('gametest-order:')) ordered << entry[1]
 	}
-	found.sort { a, b -> a[0] <=> b[0] ?: a[1] <=> b[1] }
-	return found.collect { '"' + it[1] + '"' }.join(', ')
+	def fmt = { list -> list.sort { a, b -> a[0] <=> b[0] ?: a[1] <=> b[1] }.collect { '"' + it[1] + '"' }.join(', ') }
+	// Guards: a scan that finds nothing, or misses a class that carries the order marker, must fail the build, not run no tests.
+	if (server.isEmpty() || client.isEmpty()) throw new GradleException("game test scan found ${server.size()} server and ${client.size()} client test classes under src/gametest/java: the scan patterns in mod/build.gradle are broken")
+	def missing = ordered.findAll { n -> !server.any { it[1] == n } && !client.any { it[1] == n } }
+	if (!missing.isEmpty()) throw new GradleException("game test scan missed classes that carry a gametest-order marker: ${missing}")
+	return [server: fmt(server), client: fmt(client)]
 }
 tasks.matching { it.name == 'processGametestResources' }.configureEach { t ->
-	t.inputs.files(fileTree('src/gametest/java') { include '**/*.java' }).withPropertyName('gametestSources')
+	// the computed lists are inputs, so a change to the scan itself (not only to the sources) reruns the task
+	t.inputs.property('gametestServerList', providers.provider { gametestScan().server })
+	t.inputs.property('gametestClientList', providers.provider { gametestScan().client })
 	t.filesMatching('fabric.mod.json') {
 		filter { String line ->
-			line.replace('"@@SERVER_TESTS@@"', gametestEntrypoints { it =~ /(?m)^\s*@GameTest\b/ })
-				.replace('"@@CLIENT_TESTS@@"', gametestEntrypoints { it =~ /\bimplements\s+FabricClientGameTest\b/ })
+			if (!line.contains('@@')) return line
+			def s = gametestScan()
+			line.replace('"@@SERVER_TESTS@@"', s.server).replace('"@@CLIENT_TESTS@@"', s.client)
 		}
 	}
 }
