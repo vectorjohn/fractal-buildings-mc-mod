@@ -10,7 +10,7 @@ two reviewer agents catch ugly or implausible ones.
 | One brief per style (precedents, materials, roof, windows, avoid) | [styles/](styles/README.md) | agents draft; John accepts |
 | Architect reviewer | `.claude/agents/architect.md` | |
 | Interior-designer reviewer | `.claude/agents/interior-designer.md` | |
-| Research behind both | [research/aesthetics/](../research/aesthetics/) | |
+| Research behind both | [research/aesthetics](../research/aesthetics/palettes-and-gradients.md) and its neighbours | |
 
 # The reviewers
 
