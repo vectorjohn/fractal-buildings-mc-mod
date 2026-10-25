@@ -48,6 +48,7 @@ import net.minecraft.world.level.levelgen.structure.pieces.StructurePieceSeriali
  * hand ({@code Structure.generate}, as S9 did) with a planner installed by {@code WorldPlanners.overrideForTests}: the hilly fixture town
  * and a real {@code WorldPlanner} on synthetic flat plains. Chunk-order evidence on a normal world is B2's.
  */
+// gametest-order: 3
 public class WorldgenGameTest {
 	static final String[] TIERS = {"hamlet", "village", "town", "city", "metropolis"};
 

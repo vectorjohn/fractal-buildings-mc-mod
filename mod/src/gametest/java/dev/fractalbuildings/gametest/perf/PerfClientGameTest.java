@@ -35,6 +35,7 @@ import net.minecraft.world.level.chunk.status.ChunkStatus;
  * wall per chunk and region-file growth; also times {@code /locate} in a fresh area, the lane counters and the heap. Runs only with
  * {@code FB_PERF} set ({@code scripts/perf.sh}); writes {@code build/perf/world.json}.
  */
+// gametest-order: 10
 public class PerfClientGameTest implements FabricClientGameTest {
 	private static final String SEED = "987654321";
 	private static final int CITY_X = 1280, CITY_Z = -9600, METRO_X = 2432, METRO_Z = -5696;

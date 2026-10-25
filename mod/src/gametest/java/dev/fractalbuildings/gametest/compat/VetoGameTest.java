@@ -35,6 +35,7 @@ import net.minecraft.world.level.levelgen.NoiseBasedChunkGenerator;
  * as S8 did). The settlement is a one-site planner ({@code WorldPlanner.forSite}) placed over a known village, so the expected set is plain
  * geometry the test computes itself.
  */
+// gametest-order: 5
 public class VetoGameTest {
 	static final long SEED = 8_001L;
 	static final int REGIONS = 14;

@@ -51,6 +51,7 @@ import net.minecraft.world.level.chunk.status.ChunkStatus;
  * <p>Environment: {@code FB_ORDER_RADIUS} (default 1) takes the tiles within that many tiles of the settlement's centre tile;
  * {@code FB_ORDER_ONLY} (a comma list of run labels) limits the runs, for development.
  */
+// gametest-order: 7
 public class DistrictOrderClientGameTest implements FabricClientGameTest {
 	private static final long SEED = 987654321L;
 	private static final int SITE_X = 1280, SITE_Z = -9600;

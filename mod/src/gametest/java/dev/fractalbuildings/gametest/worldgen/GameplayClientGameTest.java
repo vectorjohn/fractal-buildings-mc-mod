@@ -36,6 +36,7 @@ import net.minecraft.world.phys.AABB;
  * {@code /fb info} answer; a generated hamlet-or-village tile holds beds, chests with loot tables and at most 10 villagers; one screenshot
  * of an interior with a bed (and a chest if one is near).
  */
+// gametest-order: 4
 public class GameplayClientGameTest implements FabricClientGameTest {
 	record Spot(int x, int y, int z, Direction look, int villagers, int beds, int chests) {}
 

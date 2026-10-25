@@ -53,8 +53,9 @@ Work by path: `cd <worktree> && ...` or `git -C <worktree> ...`.
    hit the interesting cases, tolerances so wide they always pass.) Changed
    existing tests: a changed expected value, removed assertion, widened
    tolerance, added wait or disabled test must be justified. Unexplained
-   weakening is a gap. Game tests must be registered in the gametest
-   `fabric.mod.json` or they silently don't run.
+   weakening is a gap. Game tests register themselves (build scan of
+   `mod/src/gametest/java`); check the new class has `@GameTest` or
+   `implements FabricClientGameTest`.
 4. **Read the main change** for problems tests rarely catch; report only real
    ones:
    - `planner-core` importing `net.minecraft`/Fabric, or anything else that

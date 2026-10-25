@@ -113,9 +113,10 @@ Each behaviour gets a test at the **cheapest layer that can catch its bugs**
    automated check where it pays (invariant overlay empty, bounding box,
    colour fraction), never a pixel-exact golden image.
 4. **Placement in world**: Fabric server game tests (run with the mod build).
-   New game test classes must be registered under the `fabric-gametest` /
-   `fabric-client-gametest` entrypoints in the gametest `fabric.mod.json`, or
-   they silently don't run.
+   New game test classes register themselves: a class with an `@GameTest` method
+   (server) or `implements FabricClientGameTest` (client) under
+   `mod/src/gametest/java` is picked up by the build. Do not edit the gametest
+   `fabric.mod.json`.
 5. **In-game appearance**: Fabric client game tests under Xvfb with lavapipe,
    with screenshots. **Heavy: always under the heavy lock** (CLAUDE.md).
 

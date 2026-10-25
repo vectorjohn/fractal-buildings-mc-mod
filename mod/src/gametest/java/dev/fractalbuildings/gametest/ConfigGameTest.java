@@ -11,6 +11,7 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.level.storage.SavedDataStorage;
 
 /** B6: the config is pinned per world; a changed file does not change an existing world. */
+// gametest-order: 2
 public class ConfigGameTest {
 	static FbSettings file(String json) { return FbSettings.parse(json, m -> {}); }
 

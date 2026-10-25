@@ -44,6 +44,7 @@ import net.minecraft.world.level.levelgen.structure.StructureStart;
  * <li>room interiors are air even when the tile was solid before (a mutant skipping air writes leaves stone);</li>
  * </ul>
  */
+// gametest-order: 7
 public class OrderGameTest {
 	/** Runs {@code body} with the planner installed and the mutation switch off again afterwards. */
 	private static void with(WorldPlanner planner, Runnable body) {

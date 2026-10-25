@@ -7,6 +7,7 @@ import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.world.level.block.Blocks;
 
 /** Server game test: the mod can place a structure into a world and read it back. */
+// gametest-order: 1
 public class HelloGameTest {
 	@GameTest
 	public void helloHutIsPlaced(GameTestHelper helper) {

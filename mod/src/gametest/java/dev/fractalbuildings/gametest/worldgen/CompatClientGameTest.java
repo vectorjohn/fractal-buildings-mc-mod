@@ -37,6 +37,7 @@ import net.minecraft.world.level.levelgen.structure.placement.StructurePlacement
  * outside still generate), takes a screenshot of the untouched generated tile, then places the start in two chunk orders and compares the
  * ledger digests (that clears the tile, so it comes last). Every result is a {@code [B7-MATRIX]} log line the matrix script collects.
  */
+// gametest-order: 3
 public class CompatClientGameTest implements FabricClientGameTest {
 	static final TagKey<Structure> VILLAGE = TagKey.create(Registries.STRUCTURE, Identifier.withDefaultNamespace("village"));
 

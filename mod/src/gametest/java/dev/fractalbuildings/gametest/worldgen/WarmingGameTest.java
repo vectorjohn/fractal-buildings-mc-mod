@@ -26,6 +26,7 @@ import net.minecraft.world.level.levelgen.structure.StructureStart;
  * block for block the world planned without it: same ledger digest, same world hash. Same synthetic flat-plains town as
  * {@link WorldgenGameTest} (seed 6).
  */
+// gametest-order: 4
 public class WarmingGameTest {
 	private static WorldPlanner planner(ThreadPoolExecutor pool) {
 		WorldProbes pr = WorldProbes.of(SyntheticTerrain.flat(70), SyntheticBiomes.constant("minecraft:plains"));

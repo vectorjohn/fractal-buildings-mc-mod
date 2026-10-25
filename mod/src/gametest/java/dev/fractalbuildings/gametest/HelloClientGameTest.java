@@ -11,6 +11,7 @@ import net.minecraft.world.level.Level;
  * Client game test: opens a fixed-seed singleplayer world, places the hello hut in front of the
  * player, waits for chunks to render and takes a screenshot (build/run/clientGameTest/screenshots/).
  */
+// gametest-order: 1
 public class HelloClientGameTest implements FabricClientGameTest {
 	@Override
 	public void runTest(ClientGameTestContext context) {

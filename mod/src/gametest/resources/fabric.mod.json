@@ -7,8 +7,8 @@
 	"license": "MIT",
 	"entrypoints": {
 		"terrablender": ["dev.fractalbuildings.gametest.compat.tb.TbRegions"],
-		"fabric-gametest": ["dev.fractalbuildings.gametest.HelloGameTest", "dev.fractalbuildings.gametest.ConfigGameTest", "dev.fractalbuildings.gametest.worldgen.WorldgenGameTest", "dev.fractalbuildings.gametest.worldgen.WarmingGameTest", "dev.fractalbuildings.gametest.compat.VetoGameTest", "dev.fractalbuildings.gametest.worldgen.GameplayGameTest", "dev.fractalbuildings.gametest.order.OrderGameTest", "dev.fractalbuildings.gametest.worldgen.TeleportHoldGameTest"],
-		"fabric-client-gametest": ["dev.fractalbuildings.gametest.HelloClientGameTest", "dev.fractalbuildings.gametest.worldgen.DistrictClientGameTest", "dev.fractalbuildings.gametest.worldgen.CompatClientGameTest", "dev.fractalbuildings.gametest.worldgen.GameplayClientGameTest", "dev.fractalbuildings.gametest.terrain.TerrainClientGameTest", "dev.fractalbuildings.gametest.roads.RoadsClientGameTest", "dev.fractalbuildings.gametest.order.DistrictOrderClientGameTest", "dev.fractalbuildings.gametest.flythrough.FlyThroughClientGameTest", "dev.fractalbuildings.gametest.worldgen.TeleportHoldClientGameTest", "dev.fractalbuildings.gametest.perf.PerfClientGameTest"]
+		"fabric-gametest": ["@@SERVER_TESTS@@"],
+		"fabric-client-gametest": ["@@CLIENT_TESTS@@"]
 	},
 	"depends": {
 		"fractalbuildings": "*"

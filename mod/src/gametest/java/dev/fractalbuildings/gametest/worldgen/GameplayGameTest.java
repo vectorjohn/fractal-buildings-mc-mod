@@ -46,6 +46,7 @@ import net.minecraft.world.phys.AABB;
  * carry a loot table and a seed derived from the position, villagers follow the tier and config rules and do not depend on the chunk order.
  * Seeds on synthetic flat plains (see the log): 1 is a hamlet with 16 beds in one tile, 5 a village with 47, 6 a town with 131.
  */
+// gametest-order: 6
 public class GameplayGameTest {
 	private static WorldPlanner planner(long seed) {
 		WorldProbes pr = WorldProbes.of(SyntheticTerrain.flat(70), SyntheticBiomes.constant("minecraft:plains"));

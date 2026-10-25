@@ -41,6 +41,7 @@ import net.minecraft.world.level.levelgen.NoiseBasedChunkGenerator;
  * included) the world is read. Two screenshots per seed: the road column with the deepest cut, and the road next to water.
  * Hard assertions: void under a ground floor is 0, no road or paving cell floats, a bridge deck is within 6 columns of a pier or over water, no step above one block across a tile border, headroom 0 (see
  */
+// gametest-order: 5
 public class TerrainClientGameTest implements FabricClientGameTest {
 	static final String[] SEEDS = System.getProperty("fb.b3.seeds", "987654321,12345,1").split(",");
 
