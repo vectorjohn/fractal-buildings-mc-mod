@@ -43,9 +43,9 @@ rm -f "$MARK"
   echo "# Evidence: $LABEL"
   echo
   echo "- commit: $SHA ($(git -C "$WT" log -1 --format=%s "$SHA"))"
-  echo "- branch: $(git -C "$WT" branch --show-current || true) (worktree $WT)"
+  echo "- branch: $(git -C "$WT" branch --show-current | grep . || echo detached) (worktree $WT)"
   if [ -n "$DIRTY" ]; then echo "- DIRTY tree at start (evidence does not pin a commit):"; echo "$DIRTY" | sed 's/^/    /'; else echo "- tree: clean"; fi
-  echo "- command: $(printf '%q ' "$@")"
+  echo "- command: $*"
   echo "- exit: $RC"
   echo "- start: $START (loadavg $LOAD0); end: $END (loadavg $LOAD1)"
   echo "- files (${#copied[@]}):"
