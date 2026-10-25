@@ -173,6 +173,20 @@ else
 	skip mod
 fi
 
+# --- Design block reference up to date (cheap; after the mod build, which caches the jars) ---
+# scripts/design-blocks.sh --check: 0 current, 1 stale (rerun the script and commit), 2 Loom's
+# Minecraft jars not cached yet (skipped, not failed: a mod build fetches them).
+if [[ -x "$ROOT/scripts/design-blocks.sh" ]]; then
+	run_logged design-blocks "$ROOT/scripts/design-blocks.sh" --check; rc=$?
+	case $rc in
+		0) record design-blocks pass "docs/design/blocks.md and agent tables current" ;;
+		2) skip design-blocks "Loom's Minecraft jars not cached; see ${LOGS[design-blocks]}" ;;
+		*) record design-blocks fail "stale or broken (exit $rc): run scripts/design-blocks.sh and commit; see ${LOGS[design-blocks]}" ;;
+	esac
+else
+	skip design-blocks
+fi
+
 # --- Viewer: unit tests (layer 1 for the viewer) ------------------------------
 VIEWER="$ROOT/viewer"
 npm_scripts=""

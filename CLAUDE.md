@@ -17,8 +17,9 @@ throwaway spikes before the architecture is locked in. The plan is in
 | Cheap-to-change assumptions made without the human (one table row per line) | `docs/ASSUMPTIONS.md` | anyone, append only |
 | Decisions that shape the architecture (gate outcomes) | `docs/adr/NNNN-<slug>.md` (listed by the query page `docs/adr/INDEX.md`) | researcher drafts; the human approves |
 | Design standards: John's numbered rules for looks and layout (`DS-n`), living and amended over time | `docs/design/STANDARDS.md` | reviewers (`architect`, `interior-designer`) propose; John accepts |
-| Style briefs: what each style should look like, one file per style | `docs/design/styles/` | agents draft; John approves |
-| Block reference (generated) | `docs/design/blocks.md` | `scripts/design-blocks.sh` only |
+| Style briefs: what each style should look like, one file per style | `docs/design/styles/` | agents draft; John accepts |
+| Block reference for the design agents (generated: ids, variants, colours) | `docs/design/blocks.md`, plus the table in the reviewer agent files | `scripts/design-blocks.sh` only; never edit by hand |
+| Block judgement cells (role, style fit, notes) that `scripts/design-blocks.sh` reads | `docs/design/blocks-notes.md` | John edits by hand (agents may propose); then rerun `scripts/design-blocks.sh` |
 | Research one-pagers, and their index with statuses | `docs/research/<track>/<slug>.md`, `docs/research/INDEX.md` | research agents; INDEX lines by the coordinator |
 | Plans for large items | `docs/plans/<slug>.md` | lead-coder (`mode: plan`) |
 | Performance issues and accepted tradeoffs | `docs/PERFORMANCE.md` | anyone, append; decisions by the human |
@@ -178,6 +179,7 @@ source of truth, and update it when a command changes.)*
 - Viewer screenshot (Playwright, software WebGL, writes `viewer/out/smoke.png`): `cd viewer && nix develop -c npm run screenshot`
 - Performance budget (6.7, heavy, ~10 min): `scripts/perf.sh` (`--planner-only`, `--check-only`); budgets in `mod/perf-budget.json`; table in `mod/build/perf/summary.md`; `scripts/test-all.sh --perf` runs it too
 - Evidence and snapshots: `scripts/evidence.sh <label> <command...>` (runs it in the current worktree; pins commit, command, exit, loadavg and the logs/screenshots it wrote under `.claude/reports/<label>-evidence/`); `scripts/snapshot-test.sh <checkout> <rev> <label> '<cmd>' ['<cmd>' ...]` (runs each command through evidence.sh on a detached worktree `.claude/worktrees/postmerge-<sha>`, then removes it; for post-merge and batched heavy runs on a shared branch); `scripts/squash-merge.sh` (verifier's merge; usage in its header)
+- Design block reference: `scripts/design-blocks.sh` regenerates `docs/design/blocks.md` and the table between `<!-- BLOCKS:BEGIN -->` and `<!-- BLOCKS:END -->` in `.claude/agents/*.md` from Minecraft's own `blocks.json` report and textures plus `docs/design/blocks-notes.md` (needs Loom's cached jars for the `minecraft_version` in `gradle.properties`; any mod build fetches them; enters the dev shell itself); `--check` writes nothing and exits 1 if stale (2 if the jars are missing); rerun after a Minecraft version bump or an edit to `blocks-notes.md`; `scripts/test-all.sh` runs the check
 - Whole Gradle build (all three modules + boundary check): `nix develop -c ./gradlew build`
 - Boundary check alone: `nix develop -c ./gradlew :planner-core:checkNoMinecraft` (also part of `check` and run before `compileJava`)
 
@@ -248,8 +250,8 @@ agents can work and test at once. The rules below exist to make that safe.
   and is the high-effort fallback; `lead-coder` (Opus) is reserved for
   genuinely hard coding problems (plans for large or unclear items, diagnosis
   after a failed verification). The `verifier` reviews and merges;
-  `architect` (exteriors, massing, streets) and `interior-designer` (rooms,
-  furniture) are read-only taste reviewers (Opus) that check generator
+  `architect` (exteriors, massing, floor layout, streets) and
+  `interior-designer` (rooms, furniture) are read-only taste reviewers (Opus) that check generator
   changes against `docs/design/STANDARDS.md` and answer John's "does this look
   right" questions.
 - **Research, then spikes, then architecture.** Research notes are one page at

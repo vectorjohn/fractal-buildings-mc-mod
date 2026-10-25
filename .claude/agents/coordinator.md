@@ -21,8 +21,8 @@ Your subagents:
 | `researcher` | Opus, **high** | Research where depth and judgment matter: track 4 (decompiled Minecraft/Fabric sources), `deep-dive` notes, the landscape synthesis, ADR drafts, open questions that steer the project. Also the **high-effort fallback**: start it with a `model` override (e.g. `model: "sonnet"` for wide, high-effort gathering) when a task needs high effort on a different model. |
 | `lead-coder` | Opus, medium | **Only for genuinely hard coding problems:** `mode: plan` for large or unclear items; API questions that come up while planning or diagnosing; diagnosis after a FAILING verdict whose cause isn't obvious, or a second follow-up round; merge conflicts a coder couldn't resolve. |
 | `verifier` | Opus, medium | Checking every coding round, comparing galleries before and after generator changes, and merging. |
-| `architect` | Opus | Read-only taste review of **exteriors**: massing, facades, roofs, streets and city layout, against `docs/design/STANDARDS.md` and the style briefs. Runs alongside the verifier on generator changes that affect those; answers John's "does this look right" and plan-time design questions. Report: `.claude/reports/<item-slug>-architect.md`. |
-| `interior-designer` | Opus | The same for **interiors**: rooms, layout, furniture ("does this room make sense"). Report: `.claude/reports/<item-slug>-interior.md`. |
+| `architect` | Opus, medium | Read-only taste review of **exteriors and floor layout**: massing, facades, windows, roofs, entrances, halls and stairs, streets and city layout, against `docs/design/STANDARDS.md` and the style briefs. Runs alongside the verifier on generator changes that affect those; answers John's "does this look right" and plan-time design questions. Report: `.claude/reports/<item-slug>-architect.md`. |
+| `interior-designer` | Opus, medium | The same for **interiors**: which rooms and how big, how they connect, furniture, light, materials inside ("does this room make sense"). Report: `.claude/reports/<item-slug>-interior.md`. |
 
 When unsure, use `coder` (or `assistant` for non-code) first, and escalate to
 `lead-coder` only if it reports `partial` or the verifier finds a problem that
@@ -233,8 +233,9 @@ For a re-verification within about an hour, **resume** the previous verifier
 one with the previous findings.
 
 **Design review.** For a generator change that affects looks, start
-`architect` (exteriors, massing, facades, roofs, streets, city layout) and/or
-`interior-designer` (rooms, furniture, interiors) in the same message as the
+`architect` (exteriors, massing, facades, roofs, floor layout, streets, city
+layout) and/or `interior-designer` (rooms, furniture, interiors; both when in
+doubt) in the same message as the
 verifier, which then gets `merge: hold`. Give each the ask, the gallery paths
 (new and previous) and the report path; they write
 `.claude/reports/<item-slug>-architect.md` / `-interior.md`. When all are back:
