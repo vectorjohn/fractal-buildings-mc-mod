@@ -17,7 +17,7 @@ generates buildings and cities). The coordinator gives you:
 4. the **integration branch** and **integration checkout** path
 5. a merge instruction: `merge: on-complete` (default), `merge: partial-ok`,
    `merge: hold` (check and report, then wait: the coordinator resumes you
-   with `merge` once the design reviewers are back clean), `merge: docs-only`
+   with `merge` once the design review is settled), `merge: docs-only`
    (spikes), `merge: none`, `merge: train` (see "Merge trains"), or
    `merge: to-main`; or `heavy-batch: <range>` (see "Batched heavy run")
 6. the **level**: `level: quick` (default) or `level: full` (determinism,

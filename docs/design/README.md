@@ -16,10 +16,16 @@ two reviewer agents catch ugly or implausible ones.
 
 Both review generated output (screenshots, IR, the CLI floor-plan command's
 text plans) against the standards and the style briefs, or answer a design
-question. A review sorts findings into **violations** (break an accepted DS
-rule; block the item like a failing test), **suggestions** (taste; go to the
-ROADMAP polish backlog), **proposed rules** (for John) and items for John
-(REVIEW.md). Their review files are `.claude/reports/<item>-architect.md`
+question. They are a layer of QA, not only notes for John: their findings
+send work back to the coder. A review sorts findings into **violations**
+(break an accepted DS rule; block the item like a failing test),
+**should-fix** (a significant taste problem no rule covers; one round back to
+the coder, then what remains goes to the polish backlog), **suggestions**
+(taste; go to the ROADMAP polish backlog), **proposed rules** (for John; a
+should-fix theme that recurs across items becomes one) and items for John
+(REVIEW.md). Each review ends with a verdict: `meets the standard`,
+`should-fix round needed` or `needs John`; the reviewer decides what is good
+enough, and a re-review checks only the listed items. Their review files are `.claude/reports/<item>-architect.md`
 and `<item>-interior.md`.
 
 - **Ask the architect** "does this look right?": massing, facades, windows,
