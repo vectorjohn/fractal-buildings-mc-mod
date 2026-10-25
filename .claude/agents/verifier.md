@@ -227,8 +227,9 @@ call. The steps:
 6. **Post-merge tests, without the lock:** if the integration branch gained
    code commits after `<base>`, pass the fast layers as the test command
    (`'scripts/test-all.sh --no-client'`). The script runs them through
-   `scripts/snapshot-test.sh` on a detached worktree
-   `.claude/worktrees/postmerge-<sha>` (removed after; logs pinned under
+   `scripts/snapshot-test.sh` in the warm, persistent worktree
+   `.claude/worktrees/postmerge` (own lock, `.claude/postmerge.lock`: another
+   merge's tests may run first; logs pinned under
    `.claude/reports/postmerge-<slug>-evidence/`). On exit 5, report the
    commit, the failing test and the evidence folder. **Don't revert and
    don't fix**: the coordinator decides revert vs fix-forward. (Two merges
@@ -266,13 +267,13 @@ merged items' worktrees. One report, one section per item.
 
 No item to review: you check the run branch after several merges. Run the
 heavy layers on a snapshot of the integration branch head `H`:
-`scripts/snapshot-test.sh I H heavy-<short H> scripts/client-test.sh scripts/flythrough.sh scripts/perf.sh`
+`scripts/snapshot-test.sh --name heavy I H heavy-<short H> scripts/client-test.sh scripts/flythrough.sh scripts/perf.sh`
 (each takes the heavy lock itself). Open at least two screenshots and the
 fly-through frames, and read the perf table. If something fails, rerun only
 that command once (a pass is a flake: see "Flakes"); if it fails again,
-bisect over the squash commits in `<range>` with that command, as in a
-train. **Don't revert**: report the culprit commit and evidence; the
-coordinator decides. Report: `## Heavy batch: PASS | FAIL (<culprit sha>)`,
+bisect over the squash commits in `<range>` with that command
+(`--name heavy`), as in a train. **Don't revert**: report the culprit
+commit and evidence; the coordinator decides. Report: `## Heavy batch: PASS | FAIL (<culprit sha>)`,
 then the commands, results, evidence folders, and what the images show.
 
 ### `merge: docs-only` (spikes)
@@ -296,7 +297,7 @@ path `M`. Don't review each item again.
 1. In the coordinator's worktree: the status table reflects the outcomes, and
    the tree is clean apart from `docs/runs/`. Run every layer on a snapshot
    of the run branch head `H`, not in the worktree itself:
-   `scripts/snapshot-test.sh <worktree> H to-main 'scripts/test-all.sh --perf' scripts/flythrough.sh`.
+   `scripts/snapshot-test.sh --name heavy <worktree> H to-main 'scripts/test-all.sh --perf' scripts/flythrough.sh`.
    If the coordinator names a passing batched heavy run at `H` (or with only
    docs after it), check its evidence by the evidence rule and run only
    `'scripts/test-all.sh --no-client'`. If anything fails, don't merge;

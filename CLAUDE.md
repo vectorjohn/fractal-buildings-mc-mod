@@ -178,7 +178,7 @@ source of truth, and update it when a command changes.)*
 - Server-only install test (heavy; takes the heavy lock itself): `scripts/server-only-test.sh [--seed N]` runs a dedicated server WITH the mod (`:mod:runServerOnly`, dir `mod/build/run/serverOnly/`, 127.0.0.1:25599, online-mode=false) and an UNMODDED client (`tools/vanilla-client`: Minecraft + Fabric Loader only, a standalone Gradle build) under Xvfb; teleports it to a settlement, screenshots, checks both logs; output in `build/server-only/` (`result.txt`, `screenshot*.png`, logs); findings in `docs/research/spikes/server-only.md`
 - Viewer screenshot (Playwright, software WebGL, writes `viewer/out/smoke.png`): `cd viewer && nix develop -c npm run screenshot`
 - Performance budget (6.7, heavy, ~10 min): `scripts/perf.sh` (`--planner-only`, `--check-only`); budgets in `mod/perf-budget.json`; table in `mod/build/perf/summary.md`; `scripts/test-all.sh --perf` runs it too
-- Evidence and snapshots: `scripts/evidence.sh <label> <command...>` (runs it in the current worktree; pins commit, command, exit, loadavg and the logs/screenshots it wrote under `.claude/reports/<label>-evidence/`); `scripts/snapshot-test.sh <checkout> <rev> <label> '<cmd>' ['<cmd>' ...]` (runs each command through evidence.sh on a detached worktree `.claude/worktrees/postmerge-<sha>`, then removes it; for post-merge and batched heavy runs on a shared branch); `scripts/squash-merge.sh` (verifier's merge; usage in its header)
+- Evidence and snapshots: `scripts/evidence.sh <label> <command...>` (runs it in the current worktree; pins commit, command, exit, loadavg and the logs/screenshots it wrote under `.claude/reports/<label>-evidence/`); `scripts/snapshot-test.sh <checkout> <rev> <label> '<cmd>' ['<cmd>' ...]` (runs each command through evidence.sh on a persistent, warm detached worktree `.claude/worktrees/<name>` (default `postmerge`; `--name heavy` for batched heavy runs) moved to `<rev>` under its own lock `.claude/<name>.lock`, keeping ignored build output and `node_modules` (deleted when `viewer/package-lock.json` changes); `--cold` uses a fresh `.claude/worktrees/postmerge-<sha>` and removes it; for post-merge and batched heavy runs on a shared branch); `scripts/squash-merge.sh` (verifier's merge; usage in its header)
 - Design block reference: `scripts/design-blocks.sh` regenerates `docs/design/blocks.md` and the table between `<!-- BLOCKS:BEGIN -->` and `<!-- BLOCKS:END -->` in `.claude/agents/*.md` from Minecraft's own `blocks.json` report and textures plus `docs/design/blocks-notes.md` (needs Loom's cached jars for the `minecraft_version` in `gradle.properties`; any mod build fetches them; enters the dev shell itself); `--check` writes nothing and exits 1 if stale (2 if the jars are missing); rerun after a Minecraft version bump or an edit to `blocks-notes.md`; `scripts/test-all.sh` runs the check
 - Whole Gradle build (all three modules + boundary check): `nix develop -c ./gradlew build`
 - Boundary check alone: `nix develop -c ./gradlew :planner-core:checkNoMinecraft` (also part of `check` and run before `compileJava`)
@@ -207,8 +207,9 @@ agents can work and test at once. The rules below exist to make that safe.
   `flock <repo root>/.claude/merge.lock` for the merge itself (clean-checkout
   check, merge, commit) in one process, then release it. Two merges into the
   same checkout at once corrupt each other. Post-merge tests run **outside**
-  that checkout, on a detached snapshot worktree of the new commit
-  (`scripts/snapshot-test.sh`, which `scripts/squash-merge.sh` calls); any
+  that checkout, in the warm snapshot worktree `.claude/worktrees/postmerge`
+  moved to the new commit under its own lock (`scripts/snapshot-test.sh`,
+  which `scripts/squash-merge.sh` calls); any
   Gradle run inside a shared checkout still needs the merge lock.
 - **Heavy runs leave pinned evidence**: run a heavy layer you'll report on
   (client game tests, `scripts/perf.sh`, `scripts/flythrough.sh`) through
