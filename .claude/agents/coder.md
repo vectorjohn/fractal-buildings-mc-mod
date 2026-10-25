@@ -23,6 +23,13 @@ parallel** in their own worktrees; the brief names the ones near your code.
 - `docs/NOTES.md` (durable facts and gotchas) and `docs/ASSUMPTIONS.md`.
 - `docs/ARCHITECTURE.md` sections relevant to your item, and any ADR in
   `docs/adr/` it relies on.
+- For a generator item (anything that changes how buildings, interiors or
+  settlements look): the rules in `docs/design/STANDARDS.md` that apply
+  (`DS-n`; the `architect` and `interior-designer` reviewers check them, and
+  a broken rule fails the item like a failing test) and the style's brief in
+  `docs/design/styles/`. If a design choice is unclear, make a reasonable
+  one and list it under "Design questions" in your report (the coordinator
+  asks the reviewer).
 - The plan in `docs/plans/` if the brief names one; related entries in
   `docs/log/` (`ls docs/log | grep <topic>`) if you need history.
 - The existing code and tests near your change. Copy their patterns.
@@ -113,13 +120,28 @@ Each behaviour gets a test at the **cheapest layer that can catch its bugs**
    with screenshots. **Heavy: always under the heavy lock** (CLAUDE.md).
 
 Run the relevant layers once on your final code before you report: after
-merging the integration branch into yours (below). Run client game tests only
-if you touched the mod's client side, rendering, or worldgen appearance.
-Don't repeat a passing run just to be sure; the verifier does the independent
-run. Keep tool output small: `tail` or `grep` logs, don't print full Gradle
+merging the integration branch into yours (below), and after your last code
+commit. Run client game tests only if you touched the mod's client side,
+rendering, or worldgen appearance. Don't repeat a passing run just to be sure.
+Keep tool output small: `tail` or `grep` logs, don't print full Gradle
 output. The scratchpad directory is shared with other subagents, so name
 any log or scratch file you write there after your item (`testall-<slug>.log`),
 or use the worktree's own `build/test-all/` logs.
+
+**Pin every heavy run** (client game tests, `scripts/perf.sh`,
+`scripts/flythrough.sh`): run it as
+`scripts/evidence.sh <slug> <command>` on a **clean, committed** tree. It
+records the commit, command, exit code and load, and copies the logs and
+screenshots to `<repo root>/.claude/reports/<slug>-evidence/<sha>-<time>/`.
+The verifier checks that evidence instead of re-running the layer, and
+re-runs only if it's missing, stale (code changed after that commit; docs
+and unrelated tests are fine) or suspicious. So run heavy layers last, and
+report for each: the commit, the integration-branch commit you merged in
+before it, the command, the result and the evidence folder.
+
+**Flakes:** if a test fails and then passes on an identical rerun, say so in
+the report and add a line to `docs/NOTES.md` ("Tests and known flakes":
+test, symptom, commit). Never rerun until green and report only the pass.
 
 Make sure a test can fail: break the code briefly, or check a control case.
 
@@ -194,10 +216,16 @@ that round.
 - <sha> <subject>
 ## Verification
 - <command> → <pass/fail, counts>
+- heavy: <commit> (merged <integration sha>) <command> → <result>, evidence
+  <folder>   (one line per heavy run, or "none")
+- flakes: <test — symptom>   (or "none")
 - output looked at: <screenshots/gallery + what they showed; before/after>
 - mutation checks: <what you broke → which test failed>
 ## Not done / blockers
 - <item> — <why> — <what would unblock it>   (or "none")
+## Design questions
+- <choice you made where the DS rules or style brief were unclear>   (or "none";
+  generator items only)
 ## Notes for the coordinator
 - <deviations, assumptions, build/flake/package changes, things later or
   parallel items must know>
