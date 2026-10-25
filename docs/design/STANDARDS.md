@@ -35,15 +35,40 @@ agent's and is marked "(agent's number)".
 
 - **Rule:** high-rises, and any building over 6 storeys (agent's number), are
   built of high-rise materials: stone, brick, terracotta, concrete, quartz,
-  deepslate, tuff, blackstone, iron, copper and glass. Never bamboo, planks,
-  logs, wool or other light timber as walls or structure. The local style may
-  tint the cladding (sandstone in a desert, mossy stone in a jungle).
-- **Why:** "You don't build a 50 story skyscraper out of bamboo."
-- **Scope:** city and metropolis; type `highrise`, `block` and anything over 6 storeys; all styles.
-- **Enforcement:** code, no test yet. Today a lot's style comes only from the
-  biome (`Briefs` / `StyleField`), so a jungle high-rise likely gets bamboo
-  walls (inferred from the code, not checked in output).
-- **Status:** accepted. **Source:** John, 2026-10-25 (design-agents request).
+  deepslate, tuff, blackstone, iron, copper and glass. Never logs, wool or
+  other light materials as walls or structure, and no planks or bamboo except
+  under the mass-timber exception below. The local style may tint the
+  cladding (sandstone in a desert, mossy stone in a jungle).
+- **Mass-timber exception:** a building of 7 to 20 storeys may have a timber
+  structure and wooden exterior only in the distinct mass-timber look
+  ([styles/mass-timber.md](styles/mass-timber.md)): planks and stripped wood,
+  which read as manufactured timber, never logs; wood (and, later, glass)
+  dominates the exterior, with high-rise materials allowed for the base and
+  trim. Bamboo is allowed on a mass-timber exterior only as a consistent,
+  deliberate pattern (uniform vertical boards, or a repeating pattern of
+  board orientations), never as random or mixed cladding. Over 20 storeys
+  no timber walls or structure at all. The 6-storey line for everything
+  else is unchanged.
+- **Why:** "You don't build a 50 story skyscraper out of bamboo." Mass timber
+  does go tall but rarely: the tallest, Ascent in Milwaukee, is 25 storeys
+  ([Dezeen, 2023](https://www.dezeen.com/2023/03/29/worlds-tallest-buildings-mass-timber-revolution/)), so John set 20.
+- **Scope:** city and metropolis; type `highrise`, `block` and anything over 6
+  storeys; all styles, the mass-timber style for the exception.
+- **Enforcement:** code, no test yet (ROADMAP 7.9). Today a lot's style comes
+  only from the biome (`Briefs` / `StyleField`), so a jungle high-rise likely
+  gets bamboo walls (inferred from the code, not checked in output); ROADMAP
+  7.7 adds the mass-timber style and style choice by height.
+- **Status:** accepted; amended 2026-10-25. **Source:** John, 2026-10-25
+  (design-agents request); amendment John 2026-10-25 (coordinator chat).
+- **Amended 2026-10-25**, John: "there are some examples of pretty tall mass
+  timber structures. The tallest is 25 storeys, and I don't think a timber
+  building that tall is common. So lets say 20 storeys. But we should have a
+  distinctive "mass timber" look, that focuses on wood appearance. It should
+  really focus on the wood (or glass, at some point) for the exterior, using
+  planks not logs. Mass timber is manufactured so it probably wouldn't look
+  like logs. [...] I think as a consistent or deliberate pattern, bamboo
+  could be allowed for mass timber exteriors - e.g. consistent vertical
+  planks, or a repeating pattern of board orientations."
 
 ## DS-2 Calm walls
 
@@ -69,6 +94,23 @@ agent's and is marked "(agent's number)".
 - **Enforcement:** guideline; partly in the style files (roof forms and pitch,
   window spacing).
 - **Status:** accepted (as a direction). **Source:** John, REVIEW 4.7 styles, 2026-10-21.
+
+## DS-29 More wood where there are trees
+
+- **Rule:** in heavily forested biomes (forest, birch and dark forest, old
+  growth forests and taigas, jungles, cherry grove, pale garden, dappled
+  forest) wood is the main wall material of a clearly larger share of
+  buildings than in open biomes (plains, desert, savanna, snowy plains,
+  badlands); in cities there, mid-rise and tall buildings lean to mass
+  timber ([styles/mass-timber.md](styles/mass-timber.md)) within DS-1's limits.
+- **Why:** local materials: "I think there should be a higher prevelance of
+  wooden buildings in biomes with a lot of trees, as that is one of the
+  advantages in real life."
+- **Scope:** all tiers; styles of forested biomes. The biome list and "clearly
+  larger" are agent's; a measure could be the share of lots whose `wall` role
+  is wood, per biome, over a city-check run.
+- **Enforcement:** guideline today; code candidate (ROADMAP 7.8).
+- **Status:** accepted. **Source:** John 2026-10-25 (coordinator chat).
 
 # Access and circulation
 
@@ -259,10 +301,12 @@ agent's and is marked "(agent's number)".
 - **Enforcement:** guideline (stairs: `rooms-reachable`; shaft: none).
 - **Status:** accepted (as a direction). **Source:** John, REVIEW downtown skyline, 2026-10-21.
 
-# Proposed by agents
+# Building and facade
 
-These are the design-agents assistant's, from the research notes and common
-practice; John accepts, edits or drops them.
+Proposed by agents (the design-agents assistant, from the research notes and
+common practice, or recording John's ideas) and accepted by John on
+2026-10-25 in the coordinator chat: DS-23, 24, 26, 27 and 28 as written,
+DS-25 with an exception for deliberate repeating patterns.
 
 ## DS-23 Storey heights
 
@@ -274,7 +318,7 @@ practice; John accepts, edits or drops them.
   look cramped, so builders go a block taller for anything grand
   ([depth-and-layering](../research/aesthetics/depth-and-layering.md)).
 - **Scope:** all. **Enforcement:** code, partial (style `massing.ground/typical` = 4; minimum not tested).
-- **Status:** proposed. **Source:** assistant, 2026-10-25.
+- **Status:** accepted. **Source:** assistant, 2026-10-25; accepted John 2026-10-25 (coordinator chat).
 
 ## DS-24 No dark rooms
 
@@ -282,17 +326,26 @@ practice; John accepts, edits or drops them.
   source in every room, covered arcades and naves included).
 - **Why:** hostile mobs spawn at block light 0 (Java 1.18+); a dark house is a spawner.
 - **Scope:** all. **Enforcement:** code candidate (light propagation over the IR); none today.
-- **Status:** proposed. **Source:** assistant, 2026-10-25.
+- **Status:** accepted. **Source:** assistant, 2026-10-25; accepted John 2026-10-25 (coordinator chat).
 
 ## DS-25 Openings line up
 
 - **Rule:** windows stack vertically storey to storey, sills and heads align
   within a storey, and bays are even across a facade (shopfronts and setbacks
   excepted). Every habitable room has a window.
+- **Exception:** a deliberate repeating pattern may break the stacking, e.g.
+  a checkerboard where alternate storeys or bays have windows that line up
+  and windows that are offset, repeated regularly across the facade. The
+  pattern has to be declared by the generator (a facade rhythm), so
+  irregular placement is still a violation.
 - **Why:** the strongest cue that a facade was designed
-  ([style-guides](../research/aesthetics/style-guides-westeroscraft-conquest.md)).
-- **Scope:** all. **Enforcement:** guideline (alignment testable on the IR).
-- **Status:** proposed. **Source:** assistant, 2026-10-25.
+  ([style-guides](../research/aesthetics/style-guides-westeroscraft-conquest.md));
+  a regular pattern is designed too. John: "I agree, but the exception would
+  be if we want repeating patterns. Say an alternating pattern of windows
+  that line up and don't, in a kind of checkerboard repeat."
+- **Scope:** all. **Enforcement:** guideline today; code candidate
+  (alignment on the IR, skipping facades with a declared pattern; ROADMAP 7.9).
+- **Status:** accepted with John's exception. **Source:** assistant, 2026-10-25; accepted John 2026-10-25 (coordinator chat).
 
 ## DS-26 Front doors face the street
 
@@ -301,7 +354,7 @@ practice; John accepts, edits or drops them.
 - **Why:** buildings that don't relate to the street read as dropped in
   ([vanilla-villages](../research/aesthetics/vanilla-villages.md)).
 - **Scope:** all types. **Enforcement:** code candidate (lot front vs door side); not checked.
-- **Status:** proposed. **Source:** assistant, 2026-10-25.
+- **Status:** accepted. **Source:** assistant, 2026-10-25; accepted John 2026-10-25 (coordinator chat).
 
 ## DS-27 Lintels and arches use part blocks
 
@@ -310,7 +363,7 @@ practice; John accepts, edits or drops them.
 - **Why:** John: "half blocks might look best for lintels ... upside down
   stairs for arches. This might be a future refinement."
 - **Scope:** all styles. **Enforcement:** guideline (polish backlog, needs 6.1 shapes).
-- **Status:** proposed (John's idea, "might"). **Source:** John, REVIEW OPENPLAN, 2026-10-22.
+- **Status:** accepted. **Source:** John, REVIEW OPENPLAN, 2026-10-22; accepted John 2026-10-25 (coordinator chat).
 
 ## DS-28 Balconies
 
@@ -319,4 +372,9 @@ practice; John accepts, edits or drops them.
 - **Why:** John: "some or more balconies in all residential and commercial
   (highrise) buildings. This can come in a future iteration."
 - **Scope:** houses, shops, blocks, high-rises. **Enforcement:** guideline (later iteration).
-- **Status:** proposed (John's request, timing open). **Source:** John, REVIEW 5.11, 2026-10-21.
+- **Status:** accepted (timing open: a later iteration). **Source:** John, REVIEW 5.11, 2026-10-21; accepted John 2026-10-25 (coordinator chat).
+
+# Proposed by agents
+
+New proposals go here (`proposed`, with the source); John accepts, edits or
+drops them, and accepted ones move to the section they belong in. None open.
