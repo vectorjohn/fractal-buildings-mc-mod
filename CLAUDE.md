@@ -16,6 +16,9 @@ throwaway spikes before the architecture is locked in. The plan is in
 | Durable facts: API gotchas, test quirks, known flakes, baselines (one bullet per line) | `docs/NOTES.md` | anyone, append only |
 | Cheap-to-change assumptions made without the human (one table row per line) | `docs/ASSUMPTIONS.md` | anyone, append only |
 | Decisions that shape the architecture (gate outcomes) | `docs/adr/NNNN-<slug>.md` (listed by the query page `docs/adr/INDEX.md`) | researcher drafts; the human approves |
+| Design standards: John's numbered rules for looks and layout (`DS-n`), living and amended over time | `docs/design/STANDARDS.md` | reviewers (`architect`, `interior-designer`) propose; John accepts |
+| Style briefs: what each style should look like, one file per style | `docs/design/styles/` | agents draft; John approves |
+| Block reference (generated) | `docs/design/blocks.md` | `scripts/design-blocks.sh` only |
 | Research one-pagers, and their index with statuses | `docs/research/<track>/<slug>.md`, `docs/research/INDEX.md` | research agents; INDEX lines by the coordinator |
 | Plans for large items | `docs/plans/<slug>.md` | lead-coder (`mode: plan`) |
 | Performance issues and accepted tradeoffs | `docs/PERFORMANCE.md` | anyone, append; decisions by the human |
@@ -25,6 +28,10 @@ throwaway spikes before the architecture is locked in. The plan is in
 Agents read **slices** of the big docs (`grep -n` the item, then read that
 range), not whole files. Keep every doc lean: the log lives in per-item files
 precisely so nobody has to read history to find the current state.
+
+ADRs record a point-in-time architecture decision and are superseded, not
+edited; `docs/design/STANDARDS.md` holds living rules for how things should
+look and work, which generators and reviewers check against.
 
 ## Reading docs (SilverBullet)
 
@@ -170,6 +177,7 @@ source of truth, and update it when a command changes.)*
 - Server-only install test (heavy; takes the heavy lock itself): `scripts/server-only-test.sh [--seed N]` runs a dedicated server WITH the mod (`:mod:runServerOnly`, dir `mod/build/run/serverOnly/`, 127.0.0.1:25599, online-mode=false) and an UNMODDED client (`tools/vanilla-client`: Minecraft + Fabric Loader only, a standalone Gradle build) under Xvfb; teleports it to a settlement, screenshots, checks both logs; output in `build/server-only/` (`result.txt`, `screenshot*.png`, logs); findings in `docs/research/spikes/server-only.md`
 - Viewer screenshot (Playwright, software WebGL, writes `viewer/out/smoke.png`): `cd viewer && nix develop -c npm run screenshot`
 - Performance budget (6.7, heavy, ~10 min): `scripts/perf.sh` (`--planner-only`, `--check-only`); budgets in `mod/perf-budget.json`; table in `mod/build/perf/summary.md`; `scripts/test-all.sh --perf` runs it too
+- Evidence and snapshots: `scripts/evidence.sh <label> <command...>` (runs it in the current worktree; pins commit, command, exit, loadavg and the logs/screenshots it wrote under `.claude/reports/<label>-evidence/`); `scripts/snapshot-test.sh <checkout> <rev> <label> '<cmd>' ['<cmd>' ...]` (runs each command through evidence.sh on a detached worktree `.claude/worktrees/postmerge-<sha>`, then removes it; for post-merge and batched heavy runs on a shared branch); `scripts/squash-merge.sh` (verifier's merge; usage in its header)
 - Whole Gradle build (all three modules + boundary check): `nix develop -c ./gradlew build`
 - Boundary check alone: `nix develop -c ./gradlew :planner-core:checkNoMinecraft` (also part of `check` and run before `compileJava`)
 
@@ -194,9 +202,22 @@ agents can work and test at once. The rules below exist to make that safe.
   (`cat /proc/loadavg`) next to them, and re-measure on a quiet machine before
   a number decides a gate.
 - **Merges into a shared branch take the merge lock**: hold
-  `flock <repo root>/.claude/merge.lock` for the whole sequence (clean-checkout
-  check, merge, commit, post-merge tests, cleanup). Two merges into the same
-  checkout at once corrupt each other.
+  `flock <repo root>/.claude/merge.lock` for the merge itself (clean-checkout
+  check, merge, commit) in one process, then release it. Two merges into the
+  same checkout at once corrupt each other. Post-merge tests run **outside**
+  that checkout, on a detached snapshot worktree of the new commit
+  (`scripts/snapshot-test.sh`, which `scripts/squash-merge.sh` calls); any
+  Gradle run inside a shared checkout still needs the merge lock.
+- **Heavy runs leave pinned evidence**: run a heavy layer you'll report on
+  (client game tests, `scripts/perf.sh`, `scripts/flythrough.sh`) through
+  `scripts/evidence.sh <item-slug> <command>`. It records the commit, command,
+  result and load, and copies the logs and screenshots to
+  `.claude/reports/<item-slug>-evidence/<sha>-<time>/`, so a verifier can check
+  them instead of re-running.
+- **Flakes are first-class**: a test that fails and then passes on an identical
+  rerun is a finding, not noise. Record it in `docs/NOTES.md` ("Tests and known
+  flakes": test, symptom, commit, how often) and in your report; the
+  coordinator makes it an item. Never rerun until green and say nothing.
 - **Merge your parent branch into yours before your final test run**, and
   resolve conflicts yourself. Any agent may merge its parent (integration)
   branch into its own branch at any time; only the verifier and coordinator
@@ -226,7 +247,11 @@ agents can work and test at once. The rules below exist to make that safe.
   matters (decompiled-source reading, deep-dives, the synthesis, ADR drafts)
   and is the high-effort fallback; `lead-coder` (Opus) is reserved for
   genuinely hard coding problems (plans for large or unclear items, diagnosis
-  after a failed verification). The `verifier` reviews and merges.
+  after a failed verification). The `verifier` reviews and merges;
+  `architect` (exteriors, massing, streets) and `interior-designer` (rooms,
+  furniture) are read-only taste reviewers (Opus) that check generator
+  changes against `docs/design/STANDARDS.md` and answer John's "does this look
+  right" questions.
 - **Research, then spikes, then architecture.** Research notes are one page at
   most, one per project/paper/technique, using `docs/research/TEMPLATE.md`, with
   the licence recorded. Spike code is **never merged**: a spike's findings note
@@ -241,7 +266,8 @@ agents can work and test at once. The rules below exist to make that safe.
 - **Look at what you generate.** Every generator change comes with viewer
   output (screenshots or a seed gallery) that an agent has actually looked at
   (open the PNGs with Read), compared with the previous gallery where one
-  exists.
+  exists. Generator work follows the `DS-n` rules in
+  `docs/design/STANDARDS.md` and the style's brief in `docs/design/styles/`.
 - **Completion bar: working and reviewable first, polish later.** Breaking (fix
   before an item counts as done): build or tests fail, determinism broken, the
   core imports Minecraft, an invariant fails (unreachable rooms, open roofs,
