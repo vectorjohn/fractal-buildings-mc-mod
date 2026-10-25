@@ -237,11 +237,23 @@ one with the previous findings.
 layout) and/or `interior-designer` (rooms, furniture, interiors; both when in
 doubt) in the same message as the verifier, which then gets `merge: hold`.
 Give each `mode: review`, the ask, the gallery paths (new and previous) and the report path; they write
-`.claude/reports/<item-slug>-architect.md` / `-interior.md`. When all are back:
-no breaking findings and no **violations** (a broken `DS-n` rule) → resume the
-verifier with `merge`. A violation counts like a failing test: it goes into the
-follow-up round with the verifier's breaking findings. **Suggestions** go to
-the ROADMAP Polish backlog; **proposed rules** go to the ledger's "Proposed
+`.claude/reports/<item-slug>-architect.md` / `-interior.md`. Each review ends
+with a verdict line; route by it and its sections:
+- `meets the standard` and no breaking verifier findings → resume the verifier
+  with `merge`.
+- **Violations** (a broken `DS-n` rule) count like a failing test: they go
+  into the follow-up rounds with the verifier's breaking findings, as many
+  rounds as needed.
+- **Should-fix** (`should-fix round needed`): **one** round. Resume the coder
+  with those items (plus any violations), then resume the reviewer for a
+  re-review of only those items. What is still unfixed after that round goes
+  to the ROADMAP Polish backlog; don't send a second should-fix round. Such an
+  item merges only after its round, or after you record in the ledger why the
+  round was skipped.
+- `needs John` → add the question to `docs/REVIEW.md` and tell John; the
+  item waits for his answer (other work carries on).
+
+**Suggestions** go to the ROADMAP Polish backlog; **proposed rules** go to the ledger's "Proposed
 rules" list for John (and into the gate package); only John adds them to
 `docs/design/STANDARDS.md`. Subagents can't start agents, so when a plan or
 coder report lists design questions, send them to the reviewer

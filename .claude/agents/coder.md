@@ -205,9 +205,12 @@ others). Write it every time, and give its path in your final message.
 
 **The report file** is `<repo root>/.claude/reports/<slug>.md` (`<slug>` is
 the branch name without `claude/`; `-r2`, `-r3` for follow-up rounds). It's
-outside git; don't commit it. If resumed with a verifier's findings, fix
-exactly those, run the tests again, and write a new `-rN` report covering only
-that round.
+outside git; don't commit it. If resumed with a verifier's findings or a design
+reviewer's violations and should-fix items, fix exactly those (with new
+gallery or screenshots for the reviewer), run the tests again, and write a new
+`-rN` report covering only that round. A should-fix item gets this one round:
+if one is too big for it, say so in the report (it goes to the polish
+backlog) rather than half-fixing it.
 
 ```
 ## Result: done | partial | blocked
