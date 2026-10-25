@@ -6,10 +6,11 @@
 # before the lock is released. The lock is released when the commit is made
 # (or the script exits or is killed), so a crashed caller can't hold it.
 #
-# Post-merge tests (optional) then run WITHOUT the lock, on a detached snapshot
-# worktree of the new commit (scripts/snapshot-test.sh: .claude/worktrees/
-# postmerge-<sha>, removed afterwards; logs pinned in .claude/reports/
-# <label>-evidence/), never in the integration checkout itself.
+# Post-merge tests (optional) then run WITHOUT the merge lock, never in the
+# integration checkout itself: scripts/snapshot-test.sh moves the persistent,
+# warm worktree .claude/worktrees/postmerge to the new commit under its own
+# lock (.claude/postmerge.lock; a second merge's tests wait their turn) and
+# pins the logs in .claude/reports/postmerge-<slug>-evidence/.
 #
 # Usage (one Bash call; write the commit message to a file first):
 #   timeout 3600 scripts/squash-merge.sh <integration checkout> <integration branch> \
