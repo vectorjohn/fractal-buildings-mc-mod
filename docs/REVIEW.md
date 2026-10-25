@@ -414,3 +414,21 @@ work becomes a ROADMAP item or a Polish backlog line. Settled items move to
   Where: [docs/review/phase6/flythrough/](review/phase6/flythrough/README.md) (14 of 90 frames; all 90 regenerate with `scripts/flythrough.sh`, about 25 minutes); seeds 987654321, 12345, 1.
   Look for: (1) the metropolis overview on 12345 (towers, plazas, streets, a river) against the one on seed 1 (two towers and some plazas in a forest: is it a city?); (2) the street frame on 987654321 city, which stands under a tree canopy (trees over a street); (3) 12345 city edge, which looks out over frozen sea (is a city in an ocean biome right?); (4) interiors (stairs, windows, a crafting table, dark ceilings); (5) hamlet and village overviews: houses along one street on a hillside.
   Result:
+
+## Styles and standards (Phase 7)
+
+- [ ] **Tall styles (architect, 2026-10-25)**: the architect's review of the mass-timber and savanna briefs, DS-1 and DS-29, and ROADMAP 7.7 (verdict: needs John; 0 violations, 4 should-fix, all applied to the briefs). Full review: `.claude/reports/design-tall-styles-architect.md`.
+  Where: [styles/mass-timber.md](design/styles/mass-timber.md) (biome-to-wood table, frame one tone from the wall), [styles/savanna.md](design/styles/savanna.md) (compounds marked later, Sahel pilasters and beam ends), [STANDARDS.md](design/STANDARDS.md) DS-1 and DS-29, ROADMAP 7.7.
+  Questions for you:
+  1. Tall buildings outside forests: a per-style `tall` variant that inherits a shared plain default (recommended: keeps each biome's tint, as DS-1 already says; a style that defines none gets the shared look), or one shared urban style for every lot over 6 storeys (one palette to tune, but every downtown looks alike)?
+  2. Later, over about 20 storeys in a metropolis core: one shared glass-dominant tower look for every biome, tinted only at the base?
+  3. Cherry grove mass timber: birch walls with cherry trim (recommended), or pink cherry towers?
+  Proposed amendments to accepted rules (not applied; yours to accept):
+  - DS-1: name the roles it governs (`wall`, `beam`/frame, `roof` cladding; `trim`, `door`, `floor`, `fence`/`rail` and interiors exempt), say that mass-timber under 7 storeys needs no exception, and that storeys are counted above ground.
+  - DS-29: give "clearly larger" a number (P3 below) so 7.8 can check it.
+  Proposed new rules (one line each):
+  - P1 Tall buildings keep their style's tint: over 6 storeys a building uses its style's `tall` variant (mass-timber in forested styles, within DS-1); the shared default only where a style defines none.
+  - P2 One wall material per building face: the wall role is one block or a declared pattern, picked per building, not hashed per block; slight variation only within one family and tone.
+  - P3 DS-29 measure: in a city-check run, lots of 1-3 storeys with a wood wall are at least 50 % in forested biomes and at most 20 % in open ones (agent's numbers).
+  Proposed block notes change: in [blocks-notes.md](design/blocks-notes.md), jungle planks High-rise `N` to `timber` (they are as tame as oak), then rerun `scripts/design-blocks.sh`; gives jungles a plank option besides bamboo.
+  Result:
