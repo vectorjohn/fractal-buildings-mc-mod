@@ -1,14 +1,21 @@
 #!/usr/bin/env bash
-# Squash-merge a feature branch into the integration checkout, holding
-# <repo root>/.claude/merge.lock for the WHOLE sequence in this one process:
-# clean-checkout check, squash, duplicate check, commit, optional post-merge
-# tests. The lock is released when the script exits (or is killed), so a
-# crashed caller can't hold it. Nothing is left half-merged: on a conflict or
-# a failed commit the checkout is reset to HEAD before the lock is released.
+# Squash-merge a feature branch into the integration checkout. Holds
+# <repo root>/.claude/merge.lock only for the merge itself, in this one process:
+# clean-checkout check, squash, duplicate check, commit. Nothing is left
+# half-merged: on a conflict or a failed commit the checkout is reset to HEAD
+# before the lock is released. The lock is released when the commit is made
+# (or the script exits or is killed), so a crashed caller can't hold it.
+#
+# Post-merge tests (optional) then run WITHOUT the lock, on a detached snapshot
+# worktree of the new commit (scripts/snapshot-test.sh: .claude/worktrees/
+# postmerge-<sha>, removed afterwards; logs pinned in .claude/reports/
+# <label>-evidence/), never in the integration checkout itself.
 #
 # Usage (one Bash call; write the commit message to a file first):
 #   timeout 3600 scripts/squash-merge.sh <integration checkout> <integration branch> \
 #       claude/<slug> <message file> ['<post-merge test command>']
+# A merge train: call it once per branch with no test command, then run
+# scripts/snapshot-test.sh once on the last commit.
 #
 # Exit codes: 0 merged (sha printed) | 2 checkout not clean / wrong branch |
 #   3 merge conflict (reset; files printed) | 4 commit failed (reset) |
@@ -48,9 +55,14 @@ if ! git -C "$I" commit -F "$MSG"; then
   git -C "$I" reset --merge
   exit 4
 fi
-echo "MERGED $(git -C "$I" rev-parse HEAD)"
+SHA=$(git -C "$I" rev-parse HEAD)
+echo "MERGED $SHA"
+
+# Release the lock now (flock -u drops it even if a child inherited fd 9).
+flock -u 9; exec 9>&-
 
 if [ -n "$TEST" ]; then
-  (cd "$I" && bash -c "$TEST") || { echo "POST-MERGE TESTS FAILED"; exit 5; }
+  "$(cd "$(dirname "$0")" && pwd)/snapshot-test.sh" "$I" "$SHA" "postmerge-${FB#claude/}" "$TEST" \
+    || { echo "POST-MERGE TESTS FAILED on $SHA"; exit 5; }
 fi
 exit 0
