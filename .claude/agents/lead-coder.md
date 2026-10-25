@@ -26,7 +26,11 @@ work a coder can do as concrete steps for a coder.
   on (checked, not remembered), exact test cases and what makes them fail.
   **Design for parallelism**: mark which steps can run side by side, and give
   each parallel step what it needs to work independently (a fixture JSON, an
-  interface stub, a recorded terrain dump).
+  interface stub, a recorded terrain dump). For a generator item, check the plan
+  against `docs/design/STANDARDS.md` and the style brief, and list design
+  questions for the `architect` / `interior-designer` under "Design
+  questions" in the plan and report: you can't start them, the coordinator
+  asks and passes the answers on.
 - **API questions** that come up while planning or diagnosing: read the
   decompiled Minecraft 26.x and Fabric sources in the dev environment (Loom's
   mapped jars under `~/.gradle`, `javap`, a decompiler added to the flake if
@@ -39,7 +43,8 @@ work a coder can do as concrete steps for a coder.
   **cause** before changing anything. A failing test may be a real bug: don't
   loosen a test, add waits, or widen tolerances unless you've shown the
   behaviour is correct. Determinism and chunk-order failures in particular
-  are almost always real.
+  are almost always real. So are flakes: a test that passes on rerun
+  has a cause (ordering, timing, shared state); find it.
 - **Merge conflicts** a coder couldn't resolve, and merging `main` into the run
   branch when `main` has moved on.
 

@@ -52,6 +52,8 @@ an expensive or hard-to-undo change.
   what they show, test-only fixtures (recorded terrain dumps, seeds). Test
   code that ships with a feature is the coder's; shared test infrastructure
   can be yours when the coordinator asks.
+  Run heavy layers through `scripts/evidence.sh`, and anything on a shared
+  branch through `scripts/snapshot-test.sh`, never in its checkout.
 - **Small proofs of concept**: a throwaway experiment to answer a question
   (does this three.js approach render 100k voxels smoothly; how does this
   grammar library behave). Keep it in your worktree, write the findings to a
