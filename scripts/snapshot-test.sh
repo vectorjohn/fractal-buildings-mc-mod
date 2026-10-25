@@ -8,7 +8,8 @@
 #        scripts/snapshot-test.sh --name heavy .claude/worktrees/run-phase6 HEAD heavy-batch \
 #          scripts/client-test.sh scripts/flythrough.sh scripts/perf.sh
 #
-# Warm (default): one persistent detached worktree <main root>/.claude/worktrees/<N> (default N=postmerge),
+# Warm (default): one persistent detached worktree <main root>/.claude/worktrees/<N> (default N=postmerge, or
+# $FB_SNAPSHOT_NAME, which squash-merge.sh passes through),
 # reused across runs and guarded by <main root>/.claude/<N>.lock (not the merge lock; a second caller waits
 # its turn). Each run moves it to <rev> with `checkout --detach -f` + `clean -fd`: tracked files match the
 # commit exactly and untracked files go, but ignored build output stays (Gradle build/ and .gradle/,
@@ -21,8 +22,8 @@
 # Exit: 0 all passed, else the first failing command's exit code; 2 bad args or no worktree; 6 lock wait
 # timed out (FB_SNAPSHOT_WAIT seconds, default 10800).
 set -uo pipefail
-usage() { sed -n '2,23p' "$0" | sed 's/^# \{0,1\}//'; exit 2; }
-NAME=postmerge COLD=0
+usage() { sed -n '2,24p' "$0" | sed 's/^# \{0,1\}//'; exit 2; }
+NAME=${FB_SNAPSHOT_NAME:-postmerge} COLD=0
 while [ $# -gt 0 ]; do
   case "$1" in
     --name) NAME=$2; shift 2 ;;
