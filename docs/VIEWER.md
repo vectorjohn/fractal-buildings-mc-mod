@@ -140,6 +140,18 @@ Run `fractal-cli` with no arguments for its commands and terrain specs; types ar
 shop, workshop, tower, temple, wall, highrise, hall and block (an unknown `--type` or
 `--style` prints the full list).
 
+## Floorplan (text plans for reviewers)
+
+`fractal-cli floorplan --seed 5 --lot 20x16 --style medieval --type house [--wide] [--out FILE]` (the `gen` flags), or
+`floorplan --in scene.json [--building ID]` (a `gen` file, or a district scene, which needs `--building` when it holds several
+buildings and lists their ids otherwise), prints each storey as an ASCII grid (1 char per block, `--wide` 2) in the shell frame (x right, z down,
+street side at the top) with a legend, a room table (label, id, use, area, connections), the openings (door facing, window sill and head, stair
+direction and which floor it goes to), furniture hooks, a circulation summary (entrances, rooms not reachable from outside) and a roof height
+map. Glyphs: `#` outer wall, `+` partition, `~` window, `/` door, `%` door to outside, `:` arch, `^ > v <` stair rising in that
+direction, `@` top step of a stair arriving from below, `O` floor opening, `.` floor, uppercase = room label, lowercase = furniture kind.
+Code: `core/ir/FloorPlanText` (pure); golden tests in `cli/src/test/resources/floorplan/` (`FB_UPDATE_GOLDEN=1` rewrites them).
+Not in the IR, so not shown: door hinge side or open direction, ladders, furniture dimensions, wall thickness meaning, exterior steps (site boxes).
+
 # Environment variables
 
 | Variable | Read by | Effect |
