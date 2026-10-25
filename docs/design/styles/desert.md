@@ -2,8 +2,8 @@
 
 Status: **proposed** (assistant, 2026-10-25; for John). Style file:
 `planner-core/src/main/resources/styles/desert.json`. Biomes: desert,
-badlands (all three), and savanna by fallback (open question from the Phase 5
-gate: savanna may want its own style).
+badlands (all three), and savanna by fallback until its own style lands
+([savanna.md](savanna.md), ROADMAP 7.6; John 2026-10-25).
 
 ## Precedents
 

@@ -18,7 +18,9 @@ Rules for the table rows below:
   about 5k tokens). Biomes are vanilla biome names or our styles (medieval,
   plains, desert, jungle, snowy, taiga, modern, classical, gothic, fantasy).
 - **High-rise**: Y = fits tall urban buildings, accent = trim only, N = keep
-  to small or rural buildings.
+  to small or rural buildings, timber = planks and stripped wood (never
+  logs) as walls only in the mass-timber style up to 20 storeys, else
+  accent ([DS-1](STANDARDS.md)).
 - Every stairs/slab/wall block in the game must belong to a row here or to
   the Ignore line, so a Minecraft update that adds one fails the script.
 
@@ -28,17 +30,17 @@ Ignore: petrified_oak_slab
 
 | Family | Bases | Colour | Biomes / styles | Uses | High-rise |
 |---|---|---|---|---|---|
-| oak | oak_planks oak_log stripped_oak_log | auto | plains, forest, meadow; medieval, plains villages | all-round walls and floors; log as timber frame and posts | N |
-| spruce | spruce_planks spruce_log stripped_spruce_log | auto | taiga, snowy, grove, mountains | roofs, timber frame, cabins, dark floors | accent |
-| birch | birch_planks birch_log stripped_birch_log | auto | birch forest, meadow, plains | light walls and floors, bright interiors | accent |
+| oak | oak_planks oak_log stripped_oak_log | auto | plains, forest, meadow; medieval, plains villages | all-round walls and floors; log as timber frame and posts | timber |
+| spruce | spruce_planks spruce_log stripped_spruce_log | auto | taiga, snowy, grove, mountains | roofs, timber frame, cabins, dark floors | timber |
+| birch | birch_planks birch_log stripped_birch_log | auto | birch forest, meadow, plains | light walls and floors, bright interiors | timber |
 | jungle | jungle_planks jungle_log stripped_jungle_log | auto | jungle, bamboo jungle | huts, treehouses, stilts, warm floors | N |
 | acacia | acacia_planks acacia_log stripped_acacia_log | auto | savanna, badlands edge | orange walls/roofs with grey bark posts | N |
 | dark oak | dark_oak_planks dark_oak_log stripped_dark_oak_log | auto | dark forest; mansions, gothic, taiga | roofs, framing, rich floors, furniture | accent |
 | mangrove | mangrove_planks mangrove_log stripped_mangrove_log mangrove_roots:  | auto | mangrove swamp, swamp | red-brown walls; roots as stilt/lattice screens | N |
 | cherry | cherry_planks cherry_log stripped_cherry_log | auto | cherry grove; East-Asian-inspired | pink walls, floors, delicate trim | N |
-| pale oak | pale_oak_planks pale_oak_log stripped_pale_oak_log | auto | pale garden; modern, gothic | near-white floors and walls, minimal interiors | accent |
+| pale oak | pale_oak_planks pale_oak_log stripped_pale_oak_log | auto | pale garden; modern, gothic | near-white floors and walls, minimal interiors | timber |
 | poplar | poplar_planks poplar_log stripped_poplar_log | auto | dappled forest (new in 26.x) | light walls and floors; untried by us, check in game | N |
-| bamboo | bamboo_planks bamboo_mosaic bamboo_block: stripped_bamboo_block: | auto | bamboo jungle, jungle; tropical | yellow walls, mosaic floors, block as poles | N |
+| bamboo | bamboo_planks bamboo_mosaic bamboo_block: stripped_bamboo_block: | auto | bamboo jungle, jungle; tropical | yellow walls, mosaic floors, block as poles | timber, patterned only |
 | crimson | crimson_planks crimson_stem stripped_crimson_stem | auto | nether, crimson forest; fantasy | magenta-red accents; nether woods don't burn | accent |
 | warped | warped_planks warped_stem stripped_warped_stem | auto | nether, warped forest; fantasy | teal accents, doors; fireproof | accent |
 
