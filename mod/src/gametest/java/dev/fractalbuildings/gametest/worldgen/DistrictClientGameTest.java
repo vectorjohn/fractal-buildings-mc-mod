@@ -27,6 +27,7 @@ import net.minecraft.world.level.levelgen.structure.StructureStart;
  * the side its {@code facing} points away from, and from the other side: A4 asked for an in-game look at hinges and facing). Also reads back
  * doors and checks that the tile's starts exist and nothing was swallowed.
  */
+// gametest-order: 2
 public class DistrictClientGameTest implements FabricClientGameTest {
 	record Spot(int ix, int iz, int minX, int minZ, int maxX, int maxZ, String tier, int doorX, int doorY, int doorZ, Direction doorFacing) {}
 

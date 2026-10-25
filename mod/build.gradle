@@ -142,3 +142,32 @@ tasks.matching { it.name in ['runGameTest', 'runClientGameTest'] && !wanted.isEm
 // tell the tests which set this run is (the tests also look at the loaded mods)
 tasks.matching { it.name in ['runGameTest', 'runClientGameTest'] }.configureEach { systemProperty 'fb.modSet', modSet }
 if (findProperty('fb.compatOnly') == 'true') tasks.matching { it.name == 'runClientGameTest' }.configureEach { systemProperty 'fb.compatOnly', 'true' }
+
+// --- Game test registration (no shared list) --------------------------------------------------------------------
+// The gametest mod's fabric.mod.json keeps `@@SERVER_TESTS@@` / `@@CLIENT_TESTS@@` placeholders; processGametestResources
+// fills them from a scan of the gametest sources (order: see below): a server test is any class with an `@GameTest`
+// method, a client test any class that `implements FabricClientGameTest`. To add a test, add the class; touch no list.
+def gametestEntrypoints = { Closure<Boolean> match ->
+	// Order: the `gametest-order: N` comment on the 18 classes that existed when this was introduced (it keeps their old run
+	// order, which matters: a different order exposed a latent interplay between the Gameplay tests and the others), then
+	// class name. A new test needs no marker: the default is 1000, so it runs after those, sorted by name.
+	def root = file('src/gametest/java')
+	def found = []
+	fileTree(root).matching { include '**/*.java' }.each { f ->
+		if (match(f.getText('UTF-8'))) {
+			def order = (f.getText("UTF-8") =~ /gametest-order:\s*(-?\d+)/).with { it.find() ? it.group(1) as int : 1000 }
+			found << [order, root.toPath().relativize(f.toPath()).toString().replaceAll(/\.java$/, "").replace(File.separator, ".")]
+		}
+	}
+	found.sort { a, b -> a[0] <=> b[0] ?: a[1] <=> b[1] }
+	return found.collect { '"' + it[1] + '"' }.join(', ')
+}
+tasks.matching { it.name == 'processGametestResources' }.configureEach { t ->
+	t.inputs.files(fileTree('src/gametest/java') { include '**/*.java' }).withPropertyName('gametestSources')
+	t.filesMatching('fabric.mod.json') {
+		filter { String line ->
+			line.replace('"@@SERVER_TESTS@@"', gametestEntrypoints { it =~ /(?m)^\s*@GameTest\b/ })
+				.replace('"@@CLIENT_TESTS@@"', gametestEntrypoints { it =~ /\bimplements\s+FabricClientGameTest\b/ })
+		}
+	}
+}

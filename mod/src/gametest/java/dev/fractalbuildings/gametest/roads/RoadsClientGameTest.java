@@ -43,6 +43,7 @@ import net.minecraft.world.level.levelgen.Heightmap;
  *
  * <p>Env: {@code FB_ROADS_SEED} (default 987654321), {@code FB_ROADS=0} skips the test, {@code FB_ROADS_SHOTS=0} skips screenshots.
  */
+// gametest-order: 6
 public class RoadsClientGameTest implements FabricClientGameTest {
 	static final StringBuilder OUT = new StringBuilder();
 	/** Failed checks: they are collected so the run still takes its screenshots, then reported together. */

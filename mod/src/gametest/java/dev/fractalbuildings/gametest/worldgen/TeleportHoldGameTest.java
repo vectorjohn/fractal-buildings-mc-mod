@@ -15,6 +15,7 @@ import net.minecraft.world.level.portal.TeleportTransition;
 import net.minecraft.world.phys.Vec3;
 
 /** Server game tests of the teleport hold (TPHOLD): a long jump into cold terrain waits for FULL chunks, times out, and short hops are untouched. */
+// gametest-order: 8
 public class TeleportHoldGameTest {
 	private static TeleportTransition to(ServerLevel level, double x, double z) {
 		return new TeleportTransition(level, new Vec3(x, 80, z), Vec3.ZERO, 0f, 0f, TeleportTransition.DO_NOTHING);

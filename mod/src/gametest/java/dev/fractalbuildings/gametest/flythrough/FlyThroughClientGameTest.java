@@ -57,6 +57,7 @@ import net.minecraft.world.level.levelgen.NoiseBasedChunkGenerator;
  * {@code scripts/flythrough.sh}. Per-frame checks: sky fraction below 0.9 and no single colour over 80% of the frame (a camera inside
  * the ground fills the frame); frames are kept either way and failures reported at the end.
  */
+// gametest-order: 8
 public class FlyThroughClientGameTest implements FabricClientGameTest {
 	static final Tier[] TIERS = {Tier.HAMLET, Tier.VILLAGE, Tier.TOWN, Tier.CITY, Tier.METROPOLIS};
 	/** Camera ceiling: the cloud layer is at about 192 and turns a frame white. */

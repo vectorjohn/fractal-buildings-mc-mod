@@ -15,6 +15,7 @@ import net.minecraft.world.phys.Vec3;
  * TPHOLD in a real client: {@code /tp} far into a cold village. The player must stay where they were until the destination is generated,
  * and the screenshot taken after the teleport must show terrain (the log says how long the hold took).
  */
+// gametest-order: 9
 public class TeleportHoldClientGameTest implements FabricClientGameTest {
 	@Override
 	public void runTest(ClientGameTestContext context) {
