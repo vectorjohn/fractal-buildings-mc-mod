@@ -460,7 +460,8 @@ bricks->brick, tiles->tile: quartz_block -> quartz_stairs, stone_bricks -> stone
 				**+waxed** = a `waxed_` copy exists (it never oxidises). `{dye}` = the 16 dye colours. A block not \
 				listed with a variant has none: never invent `X_stairs` etc. **Vanilla** = vanilla structure \
 				templates using the family (20+ blocks). **High-rise**: Y fits tall urban buildings, accent = trim \
-				only, N = keep to small or rural buildings.""";
+				only, N = keep to small or rural buildings, timber = planks and stripped wood (never logs) as \
+				walls only in the mass-timber style up to 20 storeys, else accent (DS-1).""";
 	}
 
 	static String table(List<Row> rows, boolean groups, boolean vanilla) {
