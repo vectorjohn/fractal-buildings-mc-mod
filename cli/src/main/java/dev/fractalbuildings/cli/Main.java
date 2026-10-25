@@ -8,7 +8,8 @@ public final class Main {
 			usage: fractal-cli <command> [options]
 			  common: [--gen v0|v1] (default v1); v1 adds [--type T] (default house; check/bench: --types T,..) and style "auto"
 			  gen   --seed N --lot WxD [--at X,Z] [--front north|east|south|west] [--style S] [--terrain SPEC] [--air N] [--check] [--out FILE]
-			  batch --seeds A..B --lot WxD [--style S] [--terrain SPEC] [--front F] [--no-check] --out-dir DIR
+		  floorplan (--in FILE [--building ID] | --seed N --lot WxD [gen options]) [--wide] [--out FILE]  (text floor plans: grids, legend, room table, openings, furniture, circulation)
+  batch --seeds A..B --lot WxD [--style S] [--terrain SPEC] [--front F] [--no-check] --out-dir DIR
 			  check --seeds A..B [--lots L,..] [--styles S,..] [--terrains T,..] [--fronts F,..] [--out FILE.md]
 			  bench --n N [--lots ..] [--styles ..] [--terrains ..] [--fronts ..]
 			  diversity --seeds A..B [--lot WxD] [--style S] [--terrain SPEC] [--json] [--out FILE]
@@ -34,6 +35,7 @@ public final class Main {
 		try {
 			switch (args[0]) {
 				case "gen" -> { return GenCommand.run(rest); }
+				case "floorplan" -> { return FloorplanCommand.run(rest); }
 				case "batch" -> { return BatchCommand.run(rest); }
 				case "check" -> { return CheckCommand.run(rest); }
 				case "bench" -> { return BenchCommand.run(rest); }
