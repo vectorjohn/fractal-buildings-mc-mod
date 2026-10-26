@@ -471,35 +471,15 @@ drops them, and accepted ones move to the section they belong in.
   design"; "Some floors should be lobbies or event spaces, higher ceilings."
 - **Scope:** type `highrise`; city blocks over 6 storeys for the halls and
   repeated plan. Houses and towers keep their own plans (DS-11, DS-12).
-- **For implementers** (agent's numbers unless quoted):
-  - Lobby: the whole ground floor of the tower mass or most of it; a
-    reception counter facing the door, seating groups, lights (DS-24); no
-    beds, no units. In towers over 20 storeys it may be a double-height
-    storey (two grid storeys, the upper floor left open as a gallery).
-  - Halls: 2 wide (3 on plates over about 30x30), double-loaded, running
-    from the stairwell door; no unit reached through another; no dead end
-    longer than 4 past the last door. Units are apartments (entry, living
-    with kitchen, 1-3 bedrooms) or offices (open room, desks), by the
-    district's use; one use per tower, the lobby and special floors aside.
-  - Repetition: within a band every typical floor has the same partitions,
-    doors and windows, so the facade's bays (DS-25) match the rooms behind.
-  - Special floors, chosen per building by seeded draw: event space or
-    banquet hall (one room of at least half the plate, around the core;
-    table groups, a head table or stage, chandeliers allowed at 4+ clear),
-    open floor (one room, columns about every 6), large suites (2-4 units of
-    60+ cells), sky lobby (at a setback, a door onto the terrace, rails per
-    DS-8 and DS-28). Positions: just above the podium, at a setback, or under
-    the crown (suites or an event space with a view). No two event floors
-    stacked unless they form one double-height room.
-  - `StoreyGrid` already takes per-storey heights; `Core.length` is the
-    tallest storey plus 1, so one 7-clear floor lengthens the stair core on
-    every floor (accept it, or give tall floors two flights with a landing).
 - **Enforcement:** code candidates: `highrise-lobby` (storey 0 holds a room
   of use `lobby` touching the entrance and the stairwell door),
-  `floor-repeat` (typical floors in a band have identical partitions),
-  `hall-access` (every unit door opens onto a hall, lobby or open floor).
-  None today.
-- **Status:** Approved by @John on 2026-10-25 - PENDING removal of “For implementers” section. **Source:** John, playtest notes 2026-10-25;
+  `floor-repeat` (typical floors in a band have identical partitions,
+  doors and windows, so the facade's bays, DS-25, match the rooms behind),
+  `hall-access` (every unit door opens onto a hall, lobby or open floor; no
+  unit reached through another; halls at least 2 wide, 3 on plates over
+  about 30x30, no dead end longer than 4 past the last door; agent's
+  numbers). None today. Build notes: [notes/highrises.md](notes/highrises.md).
+- **Status:** Approved by @John 2026-10-25. **Source:** John, playtest notes 2026-10-25;
   drafted by the architect (interior programme with the interior-designer's
   lens).
 
@@ -582,20 +562,10 @@ drops them, and accepted ones move to the section they belong in.
   the metropolis only. Biome tint follows DS-1 and the tall-styles
   recommendation (masonry and frame take the style's tint); whether glass
   towers vary by biome waits for John (see Status).
-- **For implementers:**
-  - The look is a seeded per-building choice that sets the facade system
-    (bay width, window size, glass share per DS-33), the wall, frame and
-    glass roles, the massing bias (setbacks for masonry; straight shafts,
-    slabs or a tower on a podium for glass) and the crown.
-  - Glass tower: glass panes (plain or light grey, grey, light blue or cyan
-    stained) in bays 2-4 wide between 1-wide mullions of iron, concrete or
-    quartz; a solid band at each floor slab (a spandrel) so floors read;
-    the stair and shaft core solid. Through the glass every floor shows, so
-    rooms must be lit (DS-24) and at least the hall and lobby furnished.
-  - Frame: columns every 3-5 and floor bands 1 proud of the glass line,
-    ribbon or 2x2 windows between.
 - **Enforcement:** guideline; code candidates: the look recorded in the IR,
-  `glazing-share` ranges per look, DS-1's `highrise-materials`.
+  `glazing-share` ranges per look (DS-33), DS-1's `highrise-materials`; in
+  a glass tower every room lit (DS-24) and the hall and lobby furnished.
+  Build notes and materials: [notes/highrises.md](notes/highrises.md).
 - **Status:** proposed; biome-dependent looks wait for John's research.
   **Source:** John, playtest notes 2026-10-25; drafted by the architect.
 
