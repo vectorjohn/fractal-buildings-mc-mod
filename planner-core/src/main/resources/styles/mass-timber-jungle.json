@@ -1,0 +1,22 @@
+{
+  "format": "fb-style/1",
+  "id": "mass-timber-jungle",
+  "extends": "mass-timber",
+  "biomes": [],
+
+  "palette": {
+    "wall": ["minecraft:jungle_planks"],
+    "floor": ["minecraft:jungle_planks"],
+    "trim": ["minecraft:stripped_jungle_wood"],
+    "beam": ["minecraft:stripped_jungle_wood"],
+    "door": ["minecraft:jungle_door"]
+  },
+
+  "colours": {
+    "wall": ["#a07850"],
+    "floor": ["#a07850"],
+    "trim": ["#ab8458"],
+    "beam": ["#ab8458"],
+    "door": ["#9a7248"]
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "format": "fb-style/1",
+  "id": "mass-timber-pale-oak",
+  "extends": "mass-timber",
+  "biomes": [],
+
+  "palette": {
+    "wall": ["minecraft:pale_oak_planks"],
+    "floor": ["minecraft:pale_oak_planks"],
+    "trim": ["minecraft:stripped_pale_oak_wood"],
+    "beam": ["minecraft:stripped_pale_oak_wood"],
+    "door": ["minecraft:pale_oak_door"]
+  },
+
+  "colours": {
+    "wall": ["#e3d6cd"],
+    "floor": ["#e3d6cd"],
+    "trim": ["#ebe1da"],
+    "beam": ["#ebe1da"],
+    "door": ["#e0d4cb"]
+  }
+}

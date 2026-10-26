@@ -1,0 +1,22 @@
+{
+  "format": "fb-style/1",
+  "id": "mass-timber-birch",
+  "extends": "mass-timber",
+  "biomes": [],
+
+  "palette": {
+    "wall": ["minecraft:birch_planks"],
+    "floor": ["minecraft:birch_planks"],
+    "trim": ["minecraft:stripped_birch_wood"],
+    "beam": ["minecraft:stripped_birch_wood"],
+    "door": ["minecraft:birch_door"]
+  },
+
+  "colours": {
+    "wall": ["#c8b077"],
+    "floor": ["#c8b077"],
+    "trim": ["#c0a870"],
+    "beam": ["#c0a870"],
+    "door": ["#c2aa74"]
+  }
+}

@@ -74,11 +74,11 @@ class GlazingTest {
 		}
 	}
 
-	/** Floor-to-ceiling glass is a per-style choice (DS-33): only the modern town styles have it, never the timber-frame or small-window ones (styles extend plain, which has it). */
+	/** Floor-to-ceiling glass is a per-style choice (DS-33): only the modern town styles (and the mass-timber towers, which extend tall) have it, never the timber-frame or small-window ones (styles extend plain, which has it). */
 	@Test
 	void tallGlassOnlyInModernStyles() {
 		for (String id : StyleLibrary.ids())
-			assertEquals(java.util.Set.of("plain", "plains", "tall").contains(id), StyleLibrary.get(id).facade().tallGlass(), id);
+			assertEquals(java.util.Set.of("plain", "plains", "tall").contains(id) || id.startsWith("mass-timber"), StyleLibrary.get(id).facade().tallGlass(), id);
 	}
 
 	/** The window-size invariant fires on a wall of 1x1 windows and not on one of 1x2 windows (the other invariants fire on the bare wall either way). */

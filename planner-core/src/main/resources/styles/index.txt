@@ -7,6 +7,13 @@ snowy
 taiga
 plains
 tall
+mass-timber
+mass-timber-spruce
+mass-timber-oak
+mass-timber-birch
+mass-timber-pale-oak
+mass-timber-jungle
+mass-timber-cherry
 keep
 keep-desert
 keep-jungle
