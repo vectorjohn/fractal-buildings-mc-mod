@@ -239,7 +239,7 @@ and Minecraft block facts ([blocks.md](blocks.md), from John's
 - **Scope:** shops; all styles.
 - **Enforcement:** code, likely partial: SHOPLAND (`ShopStoopTest`; not read in
   detail). Narrow shops 5 above the street may still get a plain flight
-  (REVIEW 6.10, open question).
+  (REVIEW 6.10, open question); answered by DS-45 (shops sit near street grade, John 2026-10-26).
 - **Status:** accepted. **Source:** John, REVIEW 5.12, 2026-10-21.
 
 ## DS-8 Railings on stairs, landings and balconies
@@ -804,3 +804,25 @@ drops them, and accepted ones move to the section they belong in.
 - **Enforcement:** code candidate (planner, after district planning).
 - **Status:** proposed. **Source:** architect, CITYQ review 2026-10-25
   ([p6-cityq-architect.md](../review/reports/p6-cityq-architect.md), "Proposed rules").
+
+## DS-45 Shops sit near street grade
+
+- **Rule:** a shopfront's entrance sits near the level of the street it
+  faces: at most a short stoop of 2 blocks up or down from the street
+  (agent's number). A larger level difference is taken by the building,
+  not by a stair: the floor is lowered or cut into the slope, the shop is
+  split-level, or a raised walkway or terrace runs along the whole
+  frontage and meets the street at its ends. Never a tall straight flight
+  up to a shop door.
+- **Why:** "I'd like the shops to sit lower if we can do it, they should
+  get closer to the street or there should be a walkway along them. I
+  can't picture any situation where a storefront has a five meter high
+  staircase straight up to a door."
+- **Scope:** shops and the shop ground floor of mixed buildings, all
+  styles and tiers. Tightens DS-7 (a landing across a lifted front).
+- **Enforcement:** code candidate, none yet: for every shop entrance door,
+  the door's floor minus the street surface in front of it is at most 2,
+  unless a walkway or terrace at door level spans the frontage and is
+  reached from the street at grade or by a short flight at its end
+  (ROADMAP 7.17 SHOPLOW).
+- **Status:** accepted. **Source:** John, REVIEW STAIRGROUND, 2026-10-26.
