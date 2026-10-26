@@ -168,7 +168,8 @@ and mention them in the ROADMAP testing section.
   REVIEW, INDEX) without editing others' lines. After merging the run branch
   into yours, run `scripts/review-check.sh`: the union merge of
   `docs/REVIEW.md` can bring back items already moved to
-  `docs/REVIEW-ARCHIVE.md`; delete any it names (keep your own entries), or
+  `docs/REVIEW-ARCHIVE.md`, or a stale copy of an item with the same title;
+  delete any it names (keep your own entries), or
   the verifier's squash merge refuses the branch.
 - If a dependency is missing, add it to `flake.nix` (CLAUDE.md); call it out.
 
