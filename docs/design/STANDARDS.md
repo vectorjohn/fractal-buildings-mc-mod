@@ -568,14 +568,11 @@ drops them, and accepted ones move to the section they belong in.
   frontage. Secondary doors are smaller and plainer (DS-26).
 - **Why:** John: "More entrances to buildings!"
 - **Scope:** all types; one-room huts, stalls and towers may keep one.
-- **For implementers:** every door gets its step or stoop to the ground
-  (DS-4) and a path (DS-6), opens into a hall, kitchen, lobby or shop floor
-  (never a bedroom), and lands on the sidewalk, not the carriageway (DS-31).
-  Today `Massing.entrances()` is one per mass, so every house, shop,
-  workshop, tower and high-rise checked has exactly one exterior door.
 - **Enforcement:** code candidate `entrance-count` (two or more exterior
   doors for buildings with 2+ storeys or a footprint of 80+ cells; high-rises
-  on two faces, the main one 2+ wide). None today.
+  on two faces, the main one 2+ wide); every door meets DS-4 and DS-6 and
+  opens into a hall, kitchen, lobby or shop floor, never a bedroom. None
+  today: `Massing.entrances()` gives one door per mass.
 - **Status:** proposed. **Source:** John, playtest notes 2026-10-25;
   drafted by the architect.
 
@@ -589,31 +586,12 @@ drops them, and accepted ones move to the section they belong in.
   gentle pitch)."
 - **Scope:** all pitched roofs (gable, hip, pyramid, shed, mansard, dormers).
   Flat roofs and parapets are not affected.
-- **For implementers** (26.3 block registry):
-  - 1:1: the top cell of every course is a stair facing up the slope;
-    odd spans cap the ridge row with a bottom slab, even spans meet back to
-    back. 1:2: courses alternate bottom slab and top slab. 2:1 (taiga,
-    snowy): a stair over a full block of the same material on each course
-    (or over an upside-down stair, for a layered look); no smoother shape
-    exists for this pitch.
-  - Hip lines take outer-corner stairs and valleys inner-corner stairs: the
-    writer sets the stair `shape` state itself (no neighbour updates), and
-    `Shape` has no corner field today. Overhangs may show upside-down stairs
-    underneath as a soffit (DS-27).
-  - Roof materials need `_stairs` and `_slab`: every wood's planks, bricks,
-    stone bricks, mud bricks, deepslate tiles and bricks, cut copper (all
-    stages), sandstone and red sandstone, prismarine, quartz, blackstone.
-    Today's palettes break this: plains `red_terracotta` and `terracotta`,
-    taiga `brown_terracotta`, jungle `moss_block` (none have stairs or
-    slabs). Hay thatch (savanna) keeps hay for the body courses with a
-    wood's stairs and slabs at eaves, ridge and verges.
-  - Today the raster gives `ROOF` cells no shape (`Shapes.of`: only
-    `STAIR` cells become stairs), so every roof in game is stepped full
-    blocks; the mod's `ShapeTable` already maps blocks to their stairs and
-    slab. The viewer draws cubes, so check this in game.
 - **Enforcement:** code candidates `roof-smooth` (every exposed top cell of
   a pitched roof is a stair or slab) and a static style test (every `roof`
-  palette entry has stairs and a slab). None today.
+  palette entry has stairs and a slab, per [blocks.md](blocks.md)). None
+  today: every roof in game is stepped full blocks, and the plains, taiga
+  and jungle roof palettes (terracotta, moss) have no stairs or slabs. Build
+  notes: [notes/roofs.md](notes/roofs.md).
 - **Status:** proposed. **Source:** John, playtest notes 2026-10-25;
   drafted by the architect.
 
@@ -628,16 +606,13 @@ drops them, and accepted ones move to the section they belong in.
   walkable roofs and terraces count as open edges.
 - **Why:** John: "The railings don't do their one job. They only go up to
   ground level, they're never functional at keeping you from falling."
-- **For implementers:** `InstancePassV1.rails` places the `RAIL` block at
-  the tread's own y (`Box3.of(cx, h - base, ...)` with `h` the tread
-  block's y), on a kerb up to `h - 1`. Its top is then 0.5 above the walking
-  surface, below the player's 0.6 step height, so a player walks onto the
-  rail and off. Raise the kerb to `h` and the rail to `h + 1`. City bridges
-  have no rails at all today (deck boxes only), and DS-31 wants them.
 - **Enforcement:** code candidate `rail-height`: every `RAIL` cell's y is
   at least that of the walking surface it guards (the step or deck block's
   y + 1); every tread, landing or deck cell with the DS-8 drop beside it
   has a rail or wall there. `RailingTest` exists and should be extended.
+  Today rails stand at the tread's own y (`InstancePassV1.rails`), 0.5
+  above the walking surface, under the player's 0.6 step height, so a
+  player walks over them; city bridges have no rails.
 - **Status:** proposed (amends accepted DS-8). **Source:** John, playtest
   notes 2026-10-25; drafted by the architect.
 
@@ -645,19 +620,16 @@ drops them, and accepted ones move to the section they belong in.
 
 - **Proposed addition** to DS-30's bridge-deck row: bamboo appears on a
   bridge only when the bridge is a small footpath (2 wide or less, span 8
-  or less; agent's numbers) and is all bamboo: deck of `bamboo_planks` or
-  `bamboo_mosaic` (both have stairs and slab), rails of `bamboo_fence`,
-  posts of `bamboo_block`. Every other bridge uses the road's material,
-  stone, or one other plank species, never mixed with bamboo.
+  or less; agent's numbers) and is all bamboo (deck, rails and posts;
+  blocks in [styles/README.md](styles/README.md), "Road surfaces"). Every
+  other bridge uses the road's material, stone, or one other plank
+  species, never mixed with bamboo.
 - **Why:** John: "No bamboo bridges unless they are small paths and all
   bamboo."
 - **Scope:** bridges and boardwalks in all tiers.
-- **For implementers:** today the jungle style's `deck` role is
-  `jungle_planks` and `bamboo_planks` mixed cell by cell, so every jungle
-  bridge, on streets and arterials too, is patchy bamboo. Making it
-  `jungle_planks` alone fixes streets now; bamboo footbridges come with
-  paths.
 - **Enforcement:** code candidate, folds into `road-one-material` (DS-30)
-  plus a width check for bamboo decks. None today.
-- **Status:** proposed (amends proposed DS-30). **Source:** John, playtest
+  plus a width check for bamboo decks. None today: the jungle style's
+  `deck` role mixes jungle and bamboo planks cell by cell, so every jungle
+  bridge is patchy bamboo ([styles/jungle.md](styles/jungle.md)).
+- **Status:** proposed (amends DS-30). **Source:** John, playtest
   notes 2026-10-25; drafted by the architect.
