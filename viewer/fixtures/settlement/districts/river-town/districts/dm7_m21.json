@@ -4,7 +4,9 @@
   "genVersion": 2,
   "seed": "12345",
   "district": {"id": "dm7_m21", "ix": -7, "iz": -21, "x": -1120, "z": -3344, "w": 160, "d": 160, "quarter": 5, "density": 30},
-  "streets": [],
+  "streets": [
+    {"id": "b1m21_m960", "kind": "street", "width": 5, "points": [[-960, -3344], [-957, -3344], [-956, -3344], [-953, -3344], [-952, -3344]], "y": [66, 66, 67, 67, 68]}
+  ],
   "plazas": [],
   "lots": [],
   "scene": null,

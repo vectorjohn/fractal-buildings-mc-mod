@@ -12,7 +12,7 @@ public final class CoarseTerrain {
 	public static final int PEAK_Y = 140;
 	/** Largest height difference to a 4-neighbour over 32 blocks that still counts as buildable (3 in 4: houses and shops terrace and step up a slope; it was 1 in 2, which left real hills patchy, TR 5.3). */
 	public static final int STEEP_PER_32 = 24;
-	/** The road router charges extra for columns steeper than this (1 in 2). */
+	/** The road router charges extra for columns steeper than this (24 per 32, 3 in 4: the comment said 1 in 2, the value was raised with {@link #STEEP_PER_32}). */
 	public static final int ROAD_STEEP_PER_32 = 24;
 
 	public final CoarseProbe probe;
@@ -40,7 +40,7 @@ public final class CoarseTerrain {
 	/** Some 4-neighbour's surface differs from this column's by more than 3 in 4 (over one lattice step). */
 	public boolean steep(int x, int z) { return steep(x, z, STEEP_PER_32); }
 
-	/** Roads keep to the older, stricter 1 in 2: ground between 1 in 2 and 3 in 4 takes buildings but not cheap roads. */
+	/** Steeper than {@link #ROAD_STEEP_PER_32} (3 in 4, equal to the buildable limit today, so it adds nothing over {@link #steep}). */
 	public boolean roadSteep(int x, int z) { return steep(x, z, ROAD_STEEP_PER_32); }
 
 	private boolean steep(int x, int z, int per32) {

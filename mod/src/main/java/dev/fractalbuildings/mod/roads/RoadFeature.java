@@ -91,8 +91,20 @@ public final class RoadFeature implements Feature {
 	public boolean place(WorldGenLevel level, ChunkGenerator gen, RandomSource random, BlockPos origin) {
 		if (level.getLevel().dimension() != Level.OVERWORLD) return false;
 		WorldPlanner planner = WorldPlanners.of(level.getLevel(), gen).orElse(null);
-		if (planner == null || !planner.roadsEnabled()) return false;
+		if (planner == null) return false;
 		ChunkPos cp = ChunkPos.containing(origin);
+		// CITYQ r5: street air beside a chunk with no ground piece of ours (the settlement's outer tile border) is re-cleared from here,
+		// since TilePiece runs the pass only where a ground piece is; this feature runs in every overworld chunk, after its own features
+		try {
+			if (planner.districtsNear(cp.x(), cp.z()) && !dev.fractalbuildings.mod.worldgen.SpillClear.hasGround(planner, cp.x(), cp.z()))
+				dev.fractalbuildings.mod.worldgen.SpillClear.run(level, planner, cp.x(), cp.z());
+			// r7: and natural leaves this chunk's trees put into the headroom of the neighbours' roads (before the draw: its foliage pass then takes what they held)
+			if (planner.roadsEnabled()) dev.fractalbuildings.mod.worldgen.SpillClear.roadLeaves(level, planner, cp.x(), cp.z());
+		} catch (RuntimeException e) {
+			WorldPlanners.FAILURES.incrementAndGet();
+			FractalBuildingsMod.LOGGER.error("Re-clearing the street air beside chunk {} failed", cp, e);
+		}
+		if (!planner.roadsEnabled()) return false;
 		long t0 = System.nanoTime(); // det-ok: report only
 		try {
 			boolean drew = draw(level, planner, cp);

@@ -39,4 +39,16 @@ public record CellDecision(
 		return new CellDecision(cx, cz, siteX, siteZ, settled, reason, tier, centreX, centreZ, radiusDrawn, r, radiusFit, edgeDist,
 			roll, chance, suitability, siteSuitability, candidate, waterFrac, peakFrac, groups, waterDist, port);
 	}
+
+	/**
+	 * CITYQ: the decision of a cell that settles alone, with a tier its radius can hold. A city or metropolis that decides alone
+	 * (a dropped claimant: the grow clamp leaves it at most half a cell) and ends below its tier's band takes the largest tier whose
+	 * band starts at or below its radius ({@link Tiers#forRadius}); every other decision is returned unchanged.
+	 */
+	public CellDecision sizedAlone() {
+		if (!settled || !tier.atLeast(Tier.CITY) || radius >= tier.minRadius) return this;
+		Tier t = Tiers.forRadius(radius);
+		return new CellDecision(cx, cz, siteX, siteZ, settled, reason, t, centreX, centreZ, radiusDrawn, radius, radiusFit, edgeDist,
+			roll, chance, suitability, siteSuitability, candidate, waterFrac, peakFrac, groups, waterDist, port);
+	}
 }

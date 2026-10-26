@@ -83,7 +83,7 @@ public class FoliageClientGameTest implements FabricClientGameTest {
 		final List<String> samples = new ArrayList<>();
 		final List<int[]> sampleXyz = new ArrayList<>();
 		Spot worst;
-		String line() { return "foliage in the clear volume (surface+1..4) at the end " + headroom + " (grew in after the chunk pass: SpillClear territory); " + columns + " columns, " + leaves + " leaves above them, orphans: " + orphanLeaves + " leaves, " + orphanLogs + " logs, " + orphanVines + " vines"; }
+		String line() { return "foliage in the clear volume (surface+1..4) at the end " + headroom + " (grew in after the chunk pass; SpillClear removes natural leaves there, CITYQ r7); " + columns + " columns, " + leaves + " leaves above them, orphans: " + orphanLeaves + " leaves, " + orphanLogs + " logs, " + orphanVines + " vines"; }
 		int orphans() { return orphanLeaves + orphanLogs + orphanVines; }
 	}
 
@@ -103,6 +103,8 @@ public class FoliageClientGameTest implements FabricClientGameTest {
 			for (int pass = 0; pass < 2; pass++) {
 				boolean on = pass == 1;
 				FoliageClear.ENABLED = on;
+				dev.fractalbuildings.mod.worldgen.SpillClear.LEAF_CLEAR = on; // CITYQ r7: the control also leaves the late crowns, so the headroom check has a signal
+				dev.fractalbuildings.mod.worldgen.SpillClear.LEAVES.set(0);
 				FoliageClear.REMOVED.set(0);
 				FoliageClear.RESIDUAL.set(0);
 				FoliageClear.RESIDUAL_STREET.set(0);
@@ -120,23 +122,26 @@ public class FoliageClientGameTest implements FabricClientGameTest {
 						c[1] = roads(level, planner, spots, on);
 						if (WorldPlanners.FAILURES.get() != 0) problem("swallowed exceptions, see the log");
 					});
-					say("seed " + seed + (on ? " AFTER " : " BEFORE ") + "street " + c[0].line() + " | road " + c[1].line() + " | removed by the pass " + FoliageClear.REMOVED.get() + " | foliage left in the cleared volume by the passes themselves (surface+1..4, own columns): " + FoliageClear.RESIDUAL.get() + " (street pieces " + FoliageClear.RESIDUAL_STREET.get() + ")" + " | trees still standing that the clear cut a cell of (crown notched from below): " + FoliageClear.CUT_KEPT.get());
+					say("seed " + seed + (on ? " AFTER " : " BEFORE ") + "street " + c[0].line() + " | road " + c[1].line() + " | removed by the pass " + FoliageClear.REMOVED.get() + " | leaves SpillClear removed " + dev.fractalbuildings.mod.worldgen.SpillClear.LEAVES.get() + " | foliage left in the cleared volume by the passes themselves (surface+1..4, own columns): " + FoliageClear.RESIDUAL.get() + " (street pieces " + FoliageClear.RESIDUAL_STREET.get() + ")" + " | trees still standing that the clear cut a cell of (crown notched from below): " + FoliageClear.CUT_KEPT.get());
 					if (on) for (Count cc : c) for (String sm : cc.samples) say("  orphan " + sm);
 					if (on) for (Count cc : c) for (String sm : cc.headSamples) say("  headroom " + sm);
 					if (on) { after = c; if (FoliageClear.RESIDUAL.get() != 0) problem("seed " + seed + ": the passes left " + FoliageClear.RESIDUAL.get() + " foliage blocks in the cleared volume (surface+1..4) of their own columns"); } else { before = c; }
 					shoot(context, world, spots, on ? "after" : "before", seed);
 				} finally {
 					FoliageClear.ENABLED = true;
+					dev.fractalbuildings.mod.worldgen.SpillClear.LEAF_CLEAR = true;
 					FoliageClear.MEASURE = false;
 				}
 			}
 			String[] names = {"street", "road"};
 			for (int k = 0; k < 2; k++) {
 				if (before[k].orphans() < 5) say("seed " + seed + " " + names[k] + ": the control found only " + before[k].orphans() + " orphans, no signal here");
-				// foliage inside the clear volume at the end (headroom) = what grew after a chunk pass: a neighbour chunk tree spilling in, SpillClear territory (CITYQ). Reported; the passes themselves must leave none (residual).
+				// foliage inside the clear volume at the end (headroom) = what grew after a chunk pass: a neighbour chunk tree spilling in. SpillClear (street air) and SpillClear.roadLeaves (road headroom) remove natural leaves there (CITYQ r7), so none may stay.
+				if (after[k].headroom != 0) problem("seed " + seed + " " + names[k] + ": " + after[k].headroom + " natural leaves in the clear volume (surface+1..4) at the end, samples " + after[k].headSamples);
 				if (after[k].orphans() != 0) problem("seed " + seed + " " + names[k] + ": " + after[k].orphans() + " orphans above " + after[k].columns + " columns remain (" + after[k].line() + "), before " + before[k].orphans());
 				if (before[k].columns != after[k].columns && Math.abs(before[k].columns - after[k].columns) > 4) say("columns differ between the worlds: " + before[k].columns + " vs " + after[k].columns);
 			}
+			say("seed " + seed + " headroom control (leaf clear off): street " + before[0].headroom + ", road " + before[1].headroom + (before[0].headroom + before[1].headroom == 0 ? " (no late crowns here: the headroom check has no signal on this seed)" : ""));
 			if (before[0].orphans() + before[1].orphans() < 5) problem("seed " + seed + ": the control (pass off) found fewer than 5 orphans in all, the test cannot fail: pick another seed");
 		}
 		try {

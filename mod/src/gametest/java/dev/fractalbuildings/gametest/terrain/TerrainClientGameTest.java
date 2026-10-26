@@ -107,10 +107,14 @@ public class TerrainClientGameTest implements FabricClientGameTest {
 			saved = java.nio.file.Files.exists(cfg) ? java.nio.file.Files.readString(cfg) : null;
 			java.nio.file.Files.createDirectories(cfg.getParent());
 			java.nio.file.Files.writeString(cfg, "{\"intercityRoads\": false}\n");
+			dev.fractalbuildings.mod.worldgen.SpillClear.clearTrace();
+			dev.fractalbuildings.mod.worldgen.SpillClear.TRACE = true; // the headroom report says what the street-air passes did at each column
 			runWithoutRoads(context);
 		} catch (java.io.IOException e) {
 			throw new java.io.UncheckedIOException(e);
 		} finally {
+			dev.fractalbuildings.mod.worldgen.SpillClear.TRACE = false;
+			dev.fractalbuildings.mod.worldgen.SpillClear.clearTrace();
 			try {
 				if (saved == null) java.nio.file.Files.deleteIfExists(cfg); else java.nio.file.Files.writeString(cfg, saved);
 			} catch (java.io.IOException e) {
@@ -199,20 +203,35 @@ public class TerrainClientGameTest implements FabricClientGameTest {
 		List<String> voidAt = new ArrayList<>();
 		for (BuildingPiece b : planner.buildings(s.ix(), s.iz())) {
 			Lot lot = b.lot();
-			Map<Long, int[]> low = new HashMap<>(); // column -> {lowest solid y, lowest floor y}
+			Map<Long, int[]> low = new HashMap<>(); // column -> {lowest solid y, lowest floor y, lowest beam y}
 			planner.raster(b.ref(), all, (x, y, z, role, id, shape) -> {
 				buildingCells.add(key(x, y, z));
 				if (role == Role.AIR || !lot.containsColumn(x, z)) return;
-				int[] v = low.computeIfAbsent(((long) x << 32) ^ (z & 0xffffffffL), k -> new int[] {Integer.MAX_VALUE, Integer.MAX_VALUE});
+				int[] v = low.computeIfAbsent(((long) x << 32) ^ (z & 0xffffffffL), k -> new int[] {Integer.MAX_VALUE, Integer.MAX_VALUE, Integer.MAX_VALUE});
 				v[0] = Math.min(v[0], y);
 				if (role == Role.FLOOR) v[1] = Math.min(v[1], y);
+				if (role == Role.BEAM) v[2] = Math.min(v[2], y);
 			});
 			int floorY = Integer.MAX_VALUE;
 			for (int[] v : low.values()) floorY = Math.min(floorY, v[1]);
+			// CITYQ: a building on stilts (a market hall, a lookout tower) has no ground floor: its raised floor stands over the open leg zone on
+			// purpose (5.12, ShopOpenGroundTest). There the posts are what stands on the ground: under each post the cell below its lowest beam must be
+			// solid; columns whose lowest floor is the raised floor are skipped, any lower floor (a landing) is checked as usual. Every other building is checked as before.
+			var pl = b.building().placement();
+			Set<Long> legs = new HashSet<>();
+			for (var v : b.building().shell().volumes()) {
+				if (!v.id().startsWith("leg")) continue;
+				Box3 w = pl.toWorld(v.box());
+				for (int z = w.z(); z < w.maxZ(); z++) for (int x = w.x(); x < w.maxX(); x++) legs.add(((long) x << 32) ^ (z & 0xffffffffL));
+			}
+			boolean stilted = !legs.isEmpty() && b.building().shell().storeys().size() > 1;
+			int raised = stilted ? pl.worldY(b.building().shell().storeys().get(1).y()) : Integer.MAX_VALUE;
 			for (var e : low.entrySet()) {
 				int x = (int) (e.getKey() >> 32), z = (int) (long) e.getKey();
 				int y = e.getValue()[1]; // the ground floor of this column: the block under it must be solid (foundation or ground), whatever caves lie deeper
-				if (y > floorY + 1) continue; // no floor, an upper storey or a jetty over a yard: not part of the ground floor
+				if (stilted && legs.contains(e.getKey()) && e.getValue()[2] != Integer.MAX_VALUE) y = e.getValue()[2]; // a post: the block under its foot
+				else if (stilted && y >= raised - 1) continue; // the raised floor over the open leg zone (or no floor)
+				else if (y > floorY + 1) continue; // no floor, an upper storey or a jetty over a yard: not part of the ground floor
 				BlockState below = level.getBlockState(p.set(x, y - 1, z));
 				cols++;
 				if (!below.getFluidState().isEmpty()) wetCols++;
@@ -276,7 +295,7 @@ public class TerrainClientGameTest implements FabricClientGameTest {
 						BlockState st = level.getBlockState(p.set(x, y + h, z));
 						if (solid(level, p, st) && !st.is(BlockTags.LEAVES) && !st.is(BlockTags.LOGS) && !buildingCells.contains(key(x, y + h, z))) {
 							headroom++;
-							if (headAt.size() < 6) headAt.add(role + "@" + x + "," + y + "," + z + " probe " + exact.floorY(x, z) + " " + col(level, x, z, y - 3, y + 8));
+							if (headAt.size() < 6) headAt.add(role + "@" + x + "," + y + "," + z + " probe " + exact.floorY(x, z) + " " + col(level, x, z, y - 3, y + 8) + " passes [" + dev.fractalbuildings.mod.worldgen.SpillClear.why(x, z) + "]");
 							break;
 						}
 					}

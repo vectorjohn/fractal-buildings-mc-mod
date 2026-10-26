@@ -16,7 +16,8 @@ import dev.fractalbuildings.core.cache.BoundedCache;
  * claimant whose claim set overlaps its own has a higher priority ({@code hash(seed, "region/priority",
  * cx, cz)} unsigned, ties to the lower (cx, cz)); dropped claimants still block, which is what bounds the
  * read. A cell claimed by a survivor is a member (survivors never overlap); a surviving owner takes its
- * drawn radius; every other cell decides alone with the grow clamp.
+ * drawn radius; every other cell decides alone with the grow clamp, and a city or metropolis left below its tier's radius band
+ * that way takes the tier its radius fits ({@link CellDecision#sizedAlone}, CITYQ).
  *
  * <p>Pure function of (seed, cell, probe): the caches here only memoise, so results never depend on
  * query order or threads (D6). Build the view after configuring the planner; it assumes the planner's
@@ -207,7 +208,7 @@ public final class FieldRegionView {
 			if (winner != null) throw new IllegalStateException("cell " + k + " claimed by two survivors " + winner + " and " + a);
 			winner = a;
 		}
-		if (winner == null) return new Resolved(decision(k), null, null);
+		if (winner == null) return new Resolved(decision(k).sizedAlone(), null, null);
 		Claim c = claim(winner);
 		SettlementSite site = new SettlementSite(winner, c.d().centreX(), c.d().centreZ(), c.radius(), c.cells());
 		if (winner.equals(k)) return new Resolved(c.d().withRadius(c.radius()), null, site);

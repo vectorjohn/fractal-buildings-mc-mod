@@ -25,7 +25,9 @@ final class Spill {
 	private static final Set<String> CARVER = Set.of("cave_air", "lava", "magma_block", "stone", "deepslate", "water");
 	/** What spill leaves behind in air. */
 	private static final Set<String> AIR_SPILL = Set.of("moss_carpet", "pale_moss_carpet", "glow_lichen", "snow",
-			"pale_hanging_moss", "cave_air", "red_mushroom_block", "brown_mushroom_block", "mushroom_stem", "leaf_litter", "short_grass", "tall_grass", "fern", "vine");
+			"pale_hanging_moss", "cave_air", "red_mushroom_block", "brown_mushroom_block", "mushroom_stem", "leaf_litter", "short_grass", "tall_grass", "fern", "vine",
+			// CITYQ r2: a fallen tree's decoration (a brown mushroom on its log, seen at 1441,64,-9476 in reverse and shuffle2 once the gate city's lattice drew a street there)
+			"brown_mushroom", "red_mushroom");
 
 	static String name(BlockState s) { return BuiltInRegistries.BLOCK.getKey(s.getBlock()).getPath(); }
 
@@ -40,6 +42,19 @@ final class Spill {
 		// a tree's dirt base under a log may replace a block that is not ground (a road edge, a wall foot)
 		if (TREE_BASE.contains(name(have)) && treeAbove(above, above2)) return "spill";
 		return "unknown";
+	}
+
+	/**
+	 * A lava lake's barrier: {@code LakeFeature} (26.3 bytecode, second pass of {@code place}) sets its barrier (stone for lava lakes) on every
+	 * solid block of the lake's shell that its replace predicate allows, ours included, when a neighbour chunk decorated later puts its lake
+	 * across the border (CITYQ r6: cobblestone->stone in 5 of 7 orders). Stone with lava within 3 blocks.
+	 */
+	static boolean lakeBarrier(BlockState have, net.minecraft.world.level.Level level, int x, int y, int z) {
+		if (!name(have).equals("stone")) return false;
+		net.minecraft.core.BlockPos.MutableBlockPos p = new net.minecraft.core.BlockPos.MutableBlockPos();
+		for (int dy = -3; dy <= 3; dy++) for (int dz = -3; dz <= 3; dz++) for (int dx = -3; dx <= 3; dx++)
+			if (level.getFluidState(p.set(x + dx, y + dy, z + dz)).is(net.minecraft.tags.FluidTags.LAVA)) return true;
+		return false;
 	}
 
 	/** "spill" (canopy, litter, patches, a tree's dirt under a log) or "unknown". */

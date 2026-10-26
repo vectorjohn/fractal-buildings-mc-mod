@@ -123,6 +123,16 @@ public abstract class TilePiece extends StructurePiece {
 		} finally {
 			LaneStats.postEnd(lt);
 		}
+		// CITYQ r7: SpillClear first. It removes natural leaves too (a standing neighbour's crown in the street air), and the foliage pass
+		// after it then removes whatever those cuts left hanging (it removes every unsupported cell within its margin, cut by anyone)
+		if (ref.kind() == PieceRef.Kind.GROUND) {
+			try {
+				SpillClear.run(level, planner.get(), chunkPos.x(), chunkPos.z()); // CITYQ: street air a later neighbour's features wrote into
+			} catch (RuntimeException e) {
+				WorldPlanners.FAILURES.incrementAndGet();
+				FractalBuildingsMod.LOGGER.error("Re-clearing the street air round {} failed", ref, e);
+			}
+		}
 		if (top != null) {
 			boolean[] own = new boolean[256];
 			boolean anyCol = false;

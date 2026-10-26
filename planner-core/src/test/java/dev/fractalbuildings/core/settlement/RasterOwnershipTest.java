@@ -201,8 +201,11 @@ class RasterOwnershipTest {
 				} else if (c.role() == Role.STAIR) {
 					if (c.shape() == Shape.NONE) {
 						flat++;
-						for (Facing q : Facing.values())
-							assertTrue(roles.getOrDefault(key(x + q.dx, y + 1, z + q.dz), Role.AIR) != Role.STAIR, "full-block step at " + x + "," + y + "," + z + " has a higher step " + q);
+						// within one building's flight (CITYQ: two neighbouring shops' entry steps at different front levels can stand side by side)
+						for (Facing q : Facing.values()) {
+							Cell hi = m.get(key(x + q.dx, y + 1, z + q.dz));
+							assertTrue(hi == null || hi.role() != Role.STAIR || !hi.owner().equals(c.owner()), "full-block step at " + x + "," + y + "," + z + " has a higher step " + q);
+						}
 						continue;
 					}
 					stairs++;
