@@ -155,11 +155,12 @@ public final class InstancePassV1 {
 		int z0 = Math.min(Math.min(zs[0], zs[1]), Math.min(zs[2], zs[3])), z1 = Math.max(Math.max(zs[0], zs[1]), Math.max(zs[2], zs[3]));
 		int nx = x1 - x0 + 1, nz = z1 - z0 + 1;
 		boolean[] blocked = new boolean[nx * nz];
+		TerrainProbe wrapped = dev.fractalbuildings.core.terrain.SiteGround.probe(provisional, t); // the effective ground: equals the raw probe until a building digs in (S2)
 		int[] ground = new int[nx * nz];
 		for (int z = z0; z <= z1; z++)
 			for (int x = x0; x <= x1; x++) {
 				int i = (z - z0) * nx + (x - x0);
-				ground[i] = t.floorY(p.worldX(x, z), p.worldZ(x, z));
+				ground[i] = wrapped.floorY(p.worldX(x, z), p.worldZ(x, z));
 				blocked[i] = x >= 0 && z >= 0 && x < fp.length && z < fp[0].length && fp[x][z];
 			}
 		int[] outG = new int[nx * nz]; // lowest ground just outside the lot beside each edge cell, MAX_VALUE for inner cells: a rail there would stand outside the lot
@@ -506,12 +507,5 @@ public final class InstancePassV1 {
 	}
 
 	/** Local columns [x][z] under a volume that starts at y 0. */
-	public static boolean[][] footprint(BuildingIr shell) {
-		boolean[][] fp = new boolean[shell.bounds().maxX()][shell.bounds().maxZ()];
-		for (Volume v : shell.volumes()) {
-			if (v.box().y() != 0) continue;
-			for (int x = v.box().x(); x < v.box().maxX(); x++) for (int z = v.box().z(); z < v.box().maxZ(); z++) fp[x][z] = true;
-		}
-		return fp;
-	}
+	public static boolean[][] footprint(BuildingIr shell) { return dev.fractalbuildings.core.terrain.SiteGround.footprint(shell); }
 }

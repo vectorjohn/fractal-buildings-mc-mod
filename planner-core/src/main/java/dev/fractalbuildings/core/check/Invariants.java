@@ -125,7 +125,7 @@ public final class Invariants {
 			this.surface = surface;
 			this.scene = scene;
 			this.b = b;
-			this.ground = ground;
+			this.ground = dev.fractalbuildings.core.terrain.SiteGround.probe(b, ground);
 			this.out = out;
 			this.g = VoxelGrid.of(b);
 		}
@@ -235,7 +235,7 @@ public final class Invariants {
 						while (head < tail) {
 							int c = queue[head++];
 							int cx = g.minX + c % g.sx, cz = g.minZ + (c / g.sx) % g.sz, cy = g.minY + c / (g.sx * g.sz);
-							if (g.worldY(cy) == floorY(cx, cz)) grounded = true;
+							if (g.worldY(cy) <= floorY(cx, cz)) grounded = true; // at the ground, or buried in it (a paved cut floor or a kerb below the effective ground)
 							for (int d = 0; d < 6; d++) {
 								int nx = cx + DX[d], ny = cy + DY[d], nz = cz + DZ[d];
 								if (!g.inGrid(nx, ny, nz) || !solidish(nx, ny, nz)) continue;
