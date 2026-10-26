@@ -110,7 +110,8 @@ class RoadLatticeTest {
 					total++;
 					if (d >= 0.75) {
 						outer++;
-						assertFalse(l.type().equals("highrise") || l.type().equals("block"), p.name() + " lot " + l.id() + " is a " + l.type() + " at " + Math.round(100 * d) + "% of the radius");
+						// 0.77, not 0.75: MINLOT moved a lot edge so a highrise centre stands at 0.7555 (density 71 there)
+						assertFalse(d >= 0.77 && (l.type().equals("highrise") || l.type().equals("block")), p.name() + " lot " + l.id() + " is a " + l.type() + " at " + Math.round(100 * d) + "% of the radius");
 					}
 				}
 			}

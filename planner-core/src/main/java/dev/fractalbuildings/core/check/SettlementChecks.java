@@ -302,6 +302,7 @@ public final class SettlementChecks {
 			for (int z = l.z(); z < l.z() + l.d(); z++) for (int x = l.x(); x < l.x() + l.w(); x++) { int y = exact.floorY(x, z); lo = Math.min(lo, y); hi = Math.max(hi, y); }
 			if (lw < lim.minLotWidth() || ld < lim.minLotDepth()) out.add(v(LOT_GRADE, "lot " + l.id() + " (" + lw + "x" + ld + ") is too small for a " + l.type(), l.x(), l.z(), l.w(), l.d()));
 			else if (!SpecPolicyV1.reliefOk(lim, hi - lo, l.w(), l.d())) out.add(v(LOT_GRADE, "lot " + l.id() + " has relief " + (hi - lo) + ", too steep for a " + l.type(), l.x(), l.z(), l.w(), l.d()));
+			else if (!SpecPolicyV1.railRoomOk(l.type(), lim, hi - lo, lw, ld)) out.add(v(LOT_GRADE, "lot " + l.id() + " (" + lw + "x" + ld + ", relief " + (hi - lo) + ") has no room to set a " + l.type() + " back for a railed flight", l.x(), l.z(), l.w(), l.d()));
 		}
 		return out;
 	}

@@ -30,6 +30,27 @@ public final class SpecPolicyV1 {
 		return lim.maxGrade() <= 3 || (long) relief * lim.maxGrade() <= w + d + lim.maxGrade();
 	}
 
+	/** Ground relief over a lot from which a flight may need a rail on the lot line (a flight is railed from a drop of 2: {@code InstancePassV1.RAIL_DROP_FLIGHT}). */
+	public static final int RAIL_ROOM_RELIEF = 2;
+
+	/** Extra lot width (both sides of a setback) and depth a lot on sloping ground needs over the type minimum, so the building can step in from the lot line for its railed flight (MINLOT, DS-8). */
+	public static final int RAIL_ROOM_WIDTH = 2, RAIL_ROOM_DEPTH = 1;
+
+	/** Town-wall types stand on the ring's walk and keep their margins; they never step back. */
+	private static final java.util.Set<String> NO_RAIL_ROOM = java.util.Set.of("wall", "curtain", "bastion");
+
+	/**
+	 * DS-8 (the lot planner applies it; the generator itself builds on any lot that fits): on ground with relief {@value #RAIL_ROOM_RELIEF} or more the lot must be {@value #RAIL_ROOM_WIDTH} wider and
+	 * {@value #RAIL_ROOM_DEPTH} deeper than the type minimum, so a flight that needs a rail can stand inside the lot.
+	 *
+	 * @param lw lot width along the front
+	 * @param ld lot depth from the front
+	 */
+	public static boolean railRoomOk(String type, TypeLimits lim, int relief, int lw, int ld) {
+		if (relief < RAIL_ROOM_RELIEF || lim.maxGrade() > 3 || NO_RAIL_ROOM.contains(type)) return true;
+		return lw >= lim.minLotWidth() + RAIL_ROOM_WIDTH && ld >= lim.minLotDepth() + RAIL_ROOM_DEPTH;
+	}
+
 	/** Types whose massing programs use air rights over the street (houses and shops). */
 	public static boolean airType(String type) { return type.equals("house") || type.equals("shop"); }
 

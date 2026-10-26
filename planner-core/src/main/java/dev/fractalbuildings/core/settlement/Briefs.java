@@ -91,7 +91,8 @@ public final class Briefs {
 		boolean alongX = l.front() == Facing.NORTH || l.front() == Facing.SOUTH;
 		int lw = alongX ? l.w() : l.d(), ld = alongX ? l.d() : l.w();
 		int w = lw - 2 * lim.side(), d = ld - lim.front() - lim.back();
-		return w >= lim.minWidth() && d >= lim.minDepth() && SpecPolicyV1.reliefOk(lim, relief, l.w(), l.d()) && ClassTable.reliefAllows(type, relief);
+		return w >= lim.minWidth() && d >= lim.minDepth() && SpecPolicyV1.reliefOk(lim, relief, l.w(), l.d()) && ClassTable.reliefAllows(type, relief)
+				&& SpecPolicyV1.railRoomOk(type, lim, relief, lw, ld);
 	}
 
 	/** Storey range for a type: its class-table entry in this row, within the type's own limits. */
