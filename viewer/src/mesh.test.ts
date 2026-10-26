@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
+import { readFileSync } from 'node:fs';
 import { Occupancy, exposedFaces, groundCells, terrainMesh, terrainTops, waterMesh } from './mesh';
 import type { Cell } from './mesh';
+import { parseScene } from './ir';
 import type { Scene } from './ir';
 
 function faces(cells: Cell[], extraSolid: Cell[] = []): number {
@@ -82,5 +84,57 @@ describe('ground and terrain', () => {
     expect(m.quads).toBe(2);
     expect(Array.from(m.positions.slice(1, 2))).toEqual([7]); // surface = floorY + depth
     expect(waterMesh(scene(1, 1, [5]), 0).quads).toBe(0);
+  });
+});
+
+describe('cuts: footprint and areaway lower the terrain (SHOPLOW S1v)', () => {
+  // fixtures/shoplow/cut-fixture.json (scripts/gen-cut-fixture.mjs): terrain 64 north of z 5 rising 1 a row to 68; a shop
+  // 8x8 at origin (6, 64, 6), its slab at the street level, a 1-wide areaway of air boxes + paving round the sides and back.
+  const load = (): Scene => parseScene(JSON.parse(readFileSync(new URL('../fixtures/shoplow/cut-fixture.json', import.meta.url), 'utf8')));
+  const at = (tops: number[], s: Scene, x: number, z: number): number => tops[(z - s.terrain!.z0) * s.terrain!.nx + (x - s.terrain!.x0)]!;
+
+  it('no terrain above the slab inside the footprint; the areaway columns drop to the slab; beyond them it is untouched', () => {
+    const s = load(), tops = terrainTops(s);
+    for (let z = 6; z < 14; z++) for (let x = 6; x < 14; x++) expect(at(tops, s, x, z)).toBe(64);
+    for (let z = 5; z < 15; z++) for (const x of [5, 14]) expect(at(tops, s, x, z)).toBe(64); // side ring
+    for (let x = 6; x < 14; x++) expect(at(tops, s, x, 14)).toBe(64); // back ring
+    expect(at(tops, s, 4, 12)).toBe(68); // outside the ring: the natural cut face
+    expect(at(tops, s, 15, 9)).toBe(68);
+    expect(at(tops, s, 10, 15)).toBe(68);
+    expect(at(tops, s, 10, 2)).toBe(64);
+    // a raw column that was higher in the footprint did get lowered
+    expect(at(s.terrain!.floorY, s, 10, 12)).toBe(68);
+  });
+  it('without the building cuts the same columns keep their earth (the mutation)', () => {
+    const s = load();
+    const bare = terrainTops({ ...s, buildings: s.buildings.map((b) => ({ ...b, siteBoxes: [], shell: { ...b.shell, volumes: [] } })) });
+    expect(at(bare, s, 10, 12)).toBe(68);
+    expect(at(bare, s, 5, 12)).toBe(68);
+  });
+  it('the cut follows the building rotation', () => {
+    const s = load();
+    const b = s.buildings[0]!;
+    // origin (6,6), local extent 8x8; rotate 2: the back ring (local z 8) becomes world z 5, which is street level
+    // (raw 64, not spanning), and the front ring (local z -1) lands on world z 14, which is earth.
+    const r = terrainTops({ ...s, buildings: [{ ...b, rotation: 2 }] });
+    expect(at(r, s, 10, 5)).toBe(64);
+    // air box local z -1..8 on x -1 and x 8 are symmetric; the front-ring paving is not air, so z 14 stays high
+    expect(at(r, s, 10, 14)).toBe(68);
+  });
+  it('a building whose slab is at or above the ground changes nothing', () => {
+    const s = load();
+    const b = s.buildings[0]!;
+    const raised = { ...b, origin: [6, 80, 6] as [number, number, number], siteBoxes: [] };
+    expect(terrainTops({ ...s, buildings: [raised] })).toEqual(s.terrain!.floorY);
+  });
+  it('the terrain mesh has no top quad in the footprint above the slab', () => {
+    const s = load(), tops = terrainTops(s);
+    const m = terrainMesh(s, tops, () => 0);
+    let above = 0;
+    for (let i = 0; i < m.positions.length; i += 3) {
+      const x = m.positions[i]!, y = m.positions[i + 1]!, z = m.positions[i + 2]!;
+      if (x > 6 && x < 14 && z > 6 && z < 14 && y > 64) above++;
+    }
+    expect(above).toBe(0);
   });
 });
