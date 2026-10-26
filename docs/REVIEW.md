@@ -432,6 +432,7 @@ in `.claude/reports/`.
       - @assistant 2026-10-26: This sentence is cut off; what did you mean to add? (CITYQ also made this site, `s0_5` at 640,5312, a town, so FLY2's frames will show it as one.)
     - 12345-metropolis-2-overview.jpg looks decent, but the roads are a little wonky. There are a lot of redundant roads, and empty space. If more space was filled _between_ the roads, that would look good, but it’s too sparse.
     - 987654321-hamlet-4-interior.jpg has a staircase made out of stairs. As in, the blocks *under* the stairs are also stairs. Not sure if that was an intentional design (“wine storage”?). Looks like a mistake.
+      - @coordinator 2026-10-26: a mistake, now fixed (STAIRFILL, merged da900b2b): each step was a column of stair blocks; now only the top of each column is a stair and the cells under it are the plain full block of the wall material. A test covers every type and style. Not yet seen in game (next batched heavy run). Tell us if you would rather have a stringer look (open under the flight) instead of solid blocks.
     - The rest of these look quite good.
 
 - [ ] **CITYQ**: small "cities" and "metropolises" become towns; city lattice reaches hilly and river-cut ground
