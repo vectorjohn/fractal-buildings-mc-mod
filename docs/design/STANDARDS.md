@@ -460,6 +460,24 @@ and Minecraft block facts ([blocks.md](blocks.md), from John's
   "modern"?) is answered by DS-37 (John, 2026-10-25): every city and
   metropolis, whatever its style.
 
+## DS-44 City bridges carry the road's own surface
+
+- **Rule:** in city and metropolis tiers (DS-37), and on roads between two
+  cities, a bridge deck is the road's own material. Plank decks are for
+  tracks, villages and towns only.
+- **Why:** a modern road should not turn into a boardwalk mid-run (an
+  asphalt arterial crossing a river on 40 blocks of wooden planks).
+- **Scope:** bridge decks of city and metropolis roads and streets, and of
+  roads between two cities. Narrows DS-30's "the road's material, or one
+  plank species" for these; elsewhere DS-30 holds as written.
+- **Enforcement:** code candidate, folded into `road-one-material` (DS-30):
+  deck block == the road's block wherever the tier is city or above, or the
+  route joins two cities. None today.
+- **Status:** accepted. **Source:** architect, ROADS1 review 2026-10-26
+  (proposed rule, `.claude/reports/p7-roads1-architect.md`); accepted by
+  John 2026-10-26 (coordinator chat: "I accept the architect's suggestions
+  on ROADS1").
+
 ## DS-21 Hamlets and villages are not ruler-straight
 
 - **Rule:** small settlements' roads bend with the land; a hamlet can be a

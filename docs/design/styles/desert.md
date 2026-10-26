@@ -18,6 +18,9 @@ Sandstone family (cut, smooth, plain) for walls, plinths and parapets,
 chiseled sandstone trim; acacia beams whose ends show below the roof line
 (vigas); acacia doors. Badlands: terracotta in earth tones. Interiors birch
 and jungle wood, smooth sandstone, orange, yellow and red cloth, cacti.
+Roads (John 2026-10-26, ROADS1; table in [README.md](README.md), "Road
+surfaces"): `mud_bricks` tracks, `smooth_sandstone` town streets, so the
+street hierarchy shows; one plaza paving block (DS-2).
 
 ## Proportions and massing
 
