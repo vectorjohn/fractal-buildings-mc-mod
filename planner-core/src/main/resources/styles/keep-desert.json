@@ -1,0 +1,20 @@
+{
+  "format": "fb-style/1",
+  "id": "keep-desert",
+  "extends": "desert",
+  "biomes": [],
+
+  "palette": {
+    "wall": ["minecraft:cut_sandstone"],
+    "trim": ["minecraft:chiseled_sandstone"],
+    "beam": ["minecraft:smooth_sandstone"],
+    "fence": ["minecraft:sandstone_wall"]
+  },
+
+  "colours": {
+    "wall": ["#d9c58f"],
+    "trim": ["#d6c288"],
+    "beam": ["#e0d3a2"],
+    "fence": ["#d8c58a"]
+  }
+}
