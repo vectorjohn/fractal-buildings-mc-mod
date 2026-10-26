@@ -405,7 +405,7 @@ drops them, and accepted ones move to the section they belong in.
 - **Enforcement:** code candidate: `road-one-material` (each road's surface
   cells are one base block, its slab and stairs, plus listed wear variants
   within the share) in `city-check` and the `roads` report. None today.
-- **Status:** proposed. **Source:** John, playtest note 2026-10-25;
+- **Status:** Approved by @John on 2026-10-25. **Source:** John, playtest note 2026-10-25;
   drafted by the architect.
 
 ## DS-31 Smooth roads; kerbed city streets
