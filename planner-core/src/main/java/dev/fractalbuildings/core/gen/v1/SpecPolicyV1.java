@@ -33,9 +33,11 @@ public final class SpecPolicyV1 {
 	/** Types whose massing programs use air rights over the street (houses and shops). */
 	public static boolean airType(String type) { return type.equals("house") || type.equals("shop"); }
 
-	public static BuildingSpec spec(GenRequest req) {
+	public static BuildingSpec spec(GenRequest req) { return spec(req, Types.get(req.type()).limits()); }
+
+	/** With explicit margins (a setback tried by {@link GeneratorV1}). */
+	public static BuildingSpec spec(GenRequest req, TypeLimits lim) {
 		BuildingType t = Types.get(req.type());
-		TypeLimits lim = t.limits();
 		Lot lot = req.lot();
 		boolean alongX = lot.front() == Facing.NORTH || lot.front() == Facing.SOUTH;
 		int lw = alongX ? lot.w() : lot.d();

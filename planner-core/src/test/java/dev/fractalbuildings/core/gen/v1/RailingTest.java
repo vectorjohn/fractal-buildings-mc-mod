@@ -122,7 +122,7 @@ class RailingTest {
 	 */
 	@Test
 	void railsStandOneBlockAboveTheSurfaceAndLeaveNoGap() {
-		int rails = 0, edges = 0, diag = 0, shopLotLine = 0;
+		int rails = 0, edges = 0, diag = 0;
 		for (String type : TYPES)
 			for (String slope : SLOPES)
 				for (long seed = 1; seed <= 8; seed++) {
@@ -167,11 +167,57 @@ class RailingTest {
 							if (inShell || nearDoor(b, cx, cz) || columns.contains(k)) continue;
 							if (b.oy() + t.box().y() - rq.terrain().floorY(wx, wz) < InstancePassV1.RAIL_DROP_FLIGHT) continue;
 							edges++;
-							if (!railCols.contains(k) && !rq.lot().containsColumn(wx, wz) && type.equals("shop")) { shopLotLine++; continue; } /* known issue: a shop whose only margin row is the lot line has no inner row for a railed landing */ assertTrue(railCols.contains(k), what + (rq.lot().containsColumn(wx, wz) ? "" : " (lot line)") + ": open edge beside tread " + t.box() + " at (" + cx + "," + cz + ") has no rail");
+							assertTrue(railCols.contains(k), what + (rq.lot().containsColumn(wx, wz) ? "" : " (lot line)") + ": open edge beside tread " + t.box() + " at (" + cx + "," + cz + ") has no rail");
 						}
 					}
 				}
-		assertTrue(rails >= 50 && edges >= 50 && diag >= 10 && shopLotLine < 250, rails + " rails, " + edges + " edges, " + diag + " corners, " + shopLotLine + " unguarded shop lot-line edges");
+		assertTrue(rails >= 50 && edges >= 50 && diag >= 10, rails + " rails, " + edges + " edges, " + diag + " corners");
+	}
+
+	/** Open edges beside a flight or landing deeper than the rail threshold with no rail on them, as text. */
+	static List<String> unguardedEdges(PlacedBuilding b, GenRequest rq) {
+		List<String> bad = new ArrayList<>();
+		java.util.Set<Long> columns = new java.util.HashSet<>(), railCols = new java.util.HashSet<>();
+		for (Box x : b.siteBoxes()) {
+			long k = ((long) x.box().x() << 32) ^ (x.box().z() & 0xffffffffL);
+			if (x.role() == Role.RAIL) railCols.add(k);
+			else if (x.role() == Role.STAIR) columns.add(k);
+		}
+		Box3 bd = b.shell().bounds();
+		for (Box t : b.siteBoxes()) {
+			if (t.role() != Role.STAIR) continue;
+			for (Facing f : Facing.values()) {
+				int cx = t.box().x() + f.dx, cz = t.box().z() + f.dz;
+				long k = ((long) cx << 32) ^ (cz & 0xffffffffL);
+				int wx = b.placement().worldX(cx, cz), wz = b.placement().worldZ(cx, cz);
+				if (cx >= 0 && cz >= 0 && cx < bd.maxX() && cz < bd.maxZ() || nearDoor(b, cx, cz) || columns.contains(k)) continue;
+				if (b.oy() + t.box().y() - rq.terrain().floorY(wx, wz) < InstancePassV1.RAIL_DROP_FLIGHT) continue;
+				if (!railCols.contains(k)) bad.add("tread " + t.box() + " open to (" + cx + "," + cz + ")" + (rq.lot().containsColumn(wx, wz) ? "" : " on the lot line"));
+			}
+		}
+		return bad;
+	}
+
+	/**
+	 * LOTRAIL: the gallery presets whose buildings had only a one-cell margin (house-slope seeds 3, 4, 6, 7 had 8-11 block drops
+	 * unguarded along the lot line): every flight and landing is railed inside the lot, because the building is set back.
+	 */
+	@Test
+	void presetBuildingsWithAOneCellMarginAreSetBack() {
+		Object[][] presets = {{"house", 14, 12, "plane:64:0:1:1", 8}, {"shop", 11, 25, "plane:64:0:1:9", 16}, {"tower", 13, 13, "noise:7:64:6:32", 16}};
+		int checked = 0;
+		for (Object[] pr : presets)
+			for (long seed = 0; seed < (int) pr[4]; seed++) {
+				ProbeSpecs.Probes p = ProbeSpecs.parse((String) pr[3]);
+				GenRequest rq = new GenRequest(seed, new Lot("lot0", 0, 0, (int) pr[1], (int) pr[2], Facing.NORTH), (String) pr[0], "medieval", p.terrain(), p.biome());
+				SceneDoc s = generate(rq);
+				if (s == null) continue;
+				checked++;
+				String what = pr[0] + " " + pr[3] + " seed " + seed;
+				assertEquals(List.of(), unguardedEdges(s.buildings().get(0), rq), what);
+				assertEquals(List.of(), Invariants.check(s, rq.terrain()), what);
+			}
+		assertTrue(checked >= 35, "checked " + checked);
 	}
 
 	/** The walk model: the top of a rail or fence is not a floor. */

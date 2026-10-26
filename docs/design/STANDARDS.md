@@ -665,6 +665,11 @@ drops them, and accepted ones move to the section they belong in.
   against the lot edge. The RAILFIX r2 review scan found no step-over or
   corner gaps left in the galleries; the lot-line
   case still fails in the galleries.
+  LOTRAIL (2026-10-25): enforced in code: the site pass sets a building back
+  (front, then every side, up to 2 cells) until every flight and landing is
+  railed inside the lot; a door wider than one cell gets a landing as wide as
+  the door. Tests: `RailingTest`, `LotRailTest`. Lots at the type minimum have
+  no room to set back and keep the old placement (known issue).
 - **Status:** proposed (amends the proposed DS-8 amendment). **Source:**
   architect, RAILFIX review 2026-10-25
   (`.claude/reports/p6-railfix-architect.md`, "Proposed rules").

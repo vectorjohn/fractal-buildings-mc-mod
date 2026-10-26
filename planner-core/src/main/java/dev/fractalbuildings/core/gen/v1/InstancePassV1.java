@@ -36,7 +36,12 @@ public final class InstancePassV1 {
 	public static PlacedBuilding place(BuildingIr shell, GenRequest req) { return place(shell, req, Types.get(shell.spec().type()).limits()); }
 
 	/** With explicit margins (tests place shells of unregistered types). */
-	public static PlacedBuilding place(BuildingIr shell, GenRequest req, TypeLimits lim) {
+	public static PlacedBuilding place(BuildingIr shell, GenRequest req, TypeLimits lim) { return placeChecked(shell, req, lim).building(); }
+
+	/** A placement, and whether every flight and landing in it can be railed inside the lot (DS-8) and every door has a way down. */
+	public record Placed(PlacedBuilding building, boolean guarded) {}
+
+	public static Placed placeChecked(BuildingIr shell, GenRequest req, TypeLimits lim) {
 		Lot lot = req.lot();
 		int r = lot.front().ordinal();
 		boolean odd = (r & 1) == 1;
@@ -79,12 +84,12 @@ public final class InstancePassV1 {
 		PlacedBuilding provisional = new PlacedBuilding("b0", List.of(lot.id()), ox, oy, oz, r, shell, site);
 		List<Box> all = new ArrayList<>(site);
 		List<Opening> unreachable = new ArrayList<>();
-		steps(provisional, lot, t, all, lim.stoop(), unreachable);
+		boolean guarded = steps(provisional, lot, t, all, lim.stoop(), unreachable) && unreachable.isEmpty();
 		BuildingIr built = shell;
 		if (walk != null) all.addAll(Types.get(shell.spec().type()).walkJoins(shell, walk));
 		if (!unreachable.isEmpty() && WALL_TYPES.contains(shell.spec().type())) built = sealed(shell, unreachable); // a wall tower or gatehouse standing high above steep ground: no way down in the lot, so no door
 
-		return new PlacedBuilding("b0", List.of(lot.id()), ox, oy, oz, r, built, all);
+		return new Placed(new PlacedBuilding("b0", List.of(lot.id()), ox, oy, oz, r, built, all), guarded);
 	}
 
 	/** The shell with these doors walled up: their boxes become wall and the openings go. */
@@ -135,10 +140,11 @@ public final class InstancePassV1 {
 	 * below, the slab needs none. When no route exists the door is left as it is and the
 	 * {@code entrance-reachable} invariant reports it.
 	 */
-	private static void steps(PlacedBuilding provisional, Lot lot, TerrainProbe t, List<Box> site, boolean stoop, List<Opening> unreachable) {
+	private static boolean steps(PlacedBuilding provisional, Lot lot, TerrainProbe t, List<Box> site, boolean stoop, List<Opening> unreachable) {
 		BuildingIr shell = provisional.shell();
 		List<Opening> doors = entranceDoors(shell);
-		if (doors.isEmpty()) return;
+		if (doors.isEmpty()) return true;
+		boolean guarded = true; // false when a landing or flight had to go where no rail can stand inside the lot
 		Placement p = provisional.placement();
 		int base = provisional.oy(), oy = base + entranceStorey(shell).y(); // oy: the entrance floor level (above the slab under stilts)
 		VoxelGrid grid = VoxelGrid.of(provisional);
@@ -195,10 +201,42 @@ public final class InstancePassV1 {
 				nOut++;
 			}
 			int nDeck = 0;
-			if (stoop && ground[s0] < oy) candidates.addAll(stoopCandidates(out, sx, sz, x0, x1, z0, z1, nx, ground, oy, base, grid, fp));
+			// a door wider than one cell opens onto a landing as wide as the door: no drop beside the flight, in the doorway
+			List<Integer> front = new ArrayList<>();
+			boolean lowFront = false;
+			Box3 ob0 = o.box();
+			for (int x = ob0.x(); x < ob0.maxX(); x++)
+				for (int z = ob0.z(); z < ob0.maxZ(); z++) {
+					int fx = x + out.dx, fz = z + out.dz;
+					if (fx < x0 || fx > x1 || fz < z0 || fz > z1) continue;
+					int fi = (fz - z0) * nx + (fx - x0);
+					if (!front.contains(fi)) front.add(fi);
+					lowFront |= ground[fi] < oy;
+				}
+			boolean wide = front.size() > 1 && lowFront;
+			if (stoop && ground[s0] < oy || wide) {
+				for (int[] cand : stoopCandidates(out, sx, sz, x0, x1, z0, z1, nx, ground, oy, base, grid, fp)) {
+					if (wide) { boolean covers = true; for (int fi : front) if (ground[fi] < oy) { boolean in = false; for (int c : cand) in |= c == fi; covers &= in; } if (!covers) continue; }
+					candidates.add(cand);
+				}
+				if (wide) { // just the width of the door
+					int[] strip = front.stream().filter(fi -> ground[fi] < oy).mapToInt(Integer::intValue).toArray();
+					boolean ok = true;
+					for (int fi : strip) ok &= deckOk(x0 + fi % nx, z0 + fi / nx, x0, x1, z0, z1, nx, ground, oy, base, grid, fp);
+					if (ok) candidates.add(strip);
+				}
+			}
+			// the same landings without the cells on the lot line that need a rail (only pass 0 takes these): the landing stays inside the lot
+			for (int ci = 0, n = candidates.size(); ci < n; ci++) {
+				int[] full = candidates.get(ci);
+				int[] kept = java.util.Arrays.stream(full).filter(c -> oy - outG[c] < RAIL_DROP_LANDING).toArray();
+				if (kept.length == 0 || kept.length == full.length || !connected(kept, s0, nx)) continue;
+				candidates.add(kept);
+			}
 			nDeck = candidates.size();
 			candidates.add(new int[] {s0});
 			boolean[] deck = null;
+			int foundPass = -1, foundCi = -1;
 			for (int strictPass = 0; strictPass < 3 && found < 0; strictPass++) { // pass 0: only landings and flights whose open sides lie inside the lot (every one can be railed); pass 1: flights only (a landing on the lot line stays); pass 2: any route
 			boolean strict = strictPass <= 1, strictLanding = strictPass == 0;
 			for (int ci = 0; ci < candidates.size(); ci++) {
@@ -255,6 +293,8 @@ public final class InstancePassV1 {
 					}
 				}
 				if (found >= 0) {
+					foundPass = strictPass;
+					foundCi = ci;
 					if (ci < nDeck) {
 						deck = new boolean[nx * nz];
 						for (int c : srcs) deck[c] = true;
@@ -269,6 +309,8 @@ public final class InstancePassV1 {
 				unreachable.add(o);
 				continue;
 			}
+			if (foundPass >= 2) guarded = false;
+			else if (foundPass == 1 && foundCi < nDeck) for (int c : candidates.get(foundCi)) guarded &= oy - outG[c] < RAIL_DROP_LANDING;
 			if (deck != null) { // the landing: a level block at door level per cell; solid below, or (a hall on posts) open between posts so the floor under stays open to the street
 				Facing lat = out.rotate(1);
 				int outer = Integer.MIN_VALUE;
@@ -312,6 +354,7 @@ public final class InstancePassV1 {
 		List<Opening> extDoors = new ArrayList<>(); // every exterior door of any storey: no rail stands in front of one at its own height
 		for (Opening o : shell.openings()) if (o.kind() == OpeningKind.DOOR && o.to().equals(Opening.OUTSIDE) != o.from().equals(Opening.OUTSIDE)) extDoors.add(o);
 		rails(treads, lot, p, x0, x1, z0, z1, nx, ground, blocked, doorFront, extDoors, grid, base, site);
+		return guarded;
 	}
 
 	/** Least drop (blocks, tread level minus the ground beside it) that gets a rail: along a flight, and along a landing. */
@@ -382,6 +425,20 @@ public final class InstancePassV1 {
 		return x < x0 || x > x1 || z < z0 || z > z1 ? Integer.MIN_VALUE : level[(z - z0) * nx + (x - x0)];
 	}
 
+
+	/** Whether these cells form one 4-connected piece that contains {@code start}. */
+	private static boolean connected(int[] cells, int start, int nx) {
+		java.util.Set<Integer> left = new java.util.TreeSet<>();
+		for (int c : cells) left.add(c);
+		if (!left.remove(start)) return false;
+		java.util.ArrayDeque<Integer> q = new java.util.ArrayDeque<>();
+		q.add(start);
+		while (!q.isEmpty()) {
+			int c = q.poll();
+			for (int n : new int[] {c - 1, c + 1, c - nx, c + nx}) if (left.remove(n)) q.add(n);
+		}
+		return left.isEmpty();
+	}
 
 	/** Most cells a stoop is trimmed at one end to make room for the flight. */
 	private static final int STOOP_MAX_TRIM = 8;
