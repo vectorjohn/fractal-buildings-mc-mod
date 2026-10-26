@@ -1,0 +1,147 @@
+# Change-scoped test policy: which test layers a change needs (docs/TESTING.md). Read by scripts/test-scope.sh.
+# Tab-separated. Lines starting with # are comments. Three kinds of row:
+#
+#   layer    <name>     <command>                 <implies>   <what it checks>
+#   path     <glob>     <area>                    <layers>    <why>
+#   content  <regex>    <area>                    <layers>    <why>
+#
+# path rows: FIRST match wins, so specific globs go above general ones. Glob as in bash [[ == ]]: * also crosses /.
+#   Shorthands: @core/ = planner-core/src/main/java/dev/fractalbuildings/core/
+#               @mod/  = mod/src/main/java/dev/fractalbuildings/mod/
+#               @gt/   = mod/src/gametest/java/dev/fractalbuildings/gametest/
+#   A file no row matches is "unknown": the script asks for every layer and says so (the verifier decides).
+# layers: comma list; "-" = none. A trailing ? makes a layer advisory ("consider": run it when the change could matter, see the why).
+# content rows: a regex matched against block ids (minecraft:...) that the change ADDS to planner-core main sources or styles and that
+#   appear nowhere in the base tree's planner-core/src/main: a block kind the generators never emitted before.
+# Layer commands for heavy layers are run through scripts/evidence.sh <slug> <command> (CLAUDE.md "Parallel work").
+# client-quick, client-full and order follow claude/p6-testlayers (FB_LAYER, the dedicated-server order harness); adjust when it lands.
+
+layer	fast	scripts/test-all.sh --no-client	-	planner-core (rules, determinism, order: WorldPlannerOrderTest, SettlementDeterminismTest, RasterOwnershipTest, goldens), CLI, viewer unit tests, mod build + server game tests (OrderGameTest block states, WarmingGameTest, GameplayGameTest)
+layer	gallery	cd viewer && nix develop -c npm run gallery	-	building look: one PNG per preset x camera; open them and compare with the previous gallery (FB_PRESETS=a,b limits it)
+layer	city	cd viewer && nix develop -c npm run city-gallery	-	settlement look: plan.png, overview and street frames per city preset (FB_CITIES=a,b limits it)
+layer	client-quick	FB_LAYER=quick scripts/client-test.sh	-	heavy: the smoke client tests (mod loads, a real world generates a settlement tile, screenshots)
+layer	client-full	FB_LAYER=full scripts/client-test.sh	client-quick	heavy: every client test (foliage, terrain, roads, compat, gameplay, teleport hold) except the opt-in ones
+layer	order	scripts/order-test.sh	-	heavy: B2 chunk-order test in a real noise world (orders, 8 threads, cache eviction, mutants); only the mod's write path is new evidence, the core checks the rest
+layer	perf-planner	scripts/perf.sh --planner-only	-	heavy (timing): cold district plan, region layer, cache pressure, veto query against mod/perf-budget.json
+layer	perf	scripts/perf.sh	perf-planner	heavy (timing): planner plus the in-world half (flight, chunk cost, region growth, heap)
+layer	compat	scripts/compat-matrix.sh	-	heavy: the client compat test once per worldgen mod set
+layer	server-only	scripts/server-only-test.sh	-	heavy: dedicated server with the mod plus an unmodded client (client-only classes in common code, networking)
+layer	flythrough	scripts/flythrough.sh	-	heavy: fly-through frames per tier; never asked for by source paths, only by its own files, the human or a gate
+
+# --- docs and agent config: no tests
+path	docs/*	docs	-	documentation
+path	Library/*	docs	-	SilverBullet library
+path	.claude/*	agent-config	-	agent definitions and settings
+path	*.md	docs	-	documentation
+path	LICENSE	docs	-	licence
+path	.gitattributes	repo	-	merge rules
+path	.gitignore	repo	-	ignore rules
+
+# --- build and toolchain: everything (gradle.properties holds the Minecraft and Fabric versions)
+path	gradle.properties	build	fast,gallery,city,client-full,order,server-only,compat?,perf?	Minecraft/Fabric/Loom versions: vanilla behaviour, mixin targets and block states can all move
+path	flake.nix	build	fast,gallery,client-full,order,perf?	toolchain (JDK, Node, Mesa, Vulkan loader)
+path	flake.lock	build	fast,gallery,client-full,order,perf?	toolchain pins
+path	gradle/*	build	fast,client-full,order	Gradle wrapper
+path	gradlew*	build	fast,client-full,order	Gradle wrapper
+path	*build.gradle	build	fast,client-full,order,perf?	build logic (test tasks, jar-in-jar, run configs)
+path	settings.gradle	build	fast,client-full,order	modules
+
+# --- test infrastructure scripts: the layer they drive
+path	scripts/test-scope.*	test-scope	-	this policy; try it with --check-table and a few ranges
+path	scripts/test-all.sh	test-infra	fast	runs the fast layers
+path	scripts/client-test.sh	test-infra	client-quick	client test runner and watchdog
+path	scripts/order-test.sh	test-infra	order	order harness
+path	scripts/perf*	test-infra	perf	perf runner and budget check
+path	scripts/flythrough.sh	test-infra	flythrough	fly-through runner
+path	scripts/server-only-test.sh	test-infra	server-only	server-only runner
+path	tools/vanilla-client/*	test-infra	server-only	the unmodded client of the server-only test
+path	scripts/compat-matrix.sh	test-infra	compat	compat matrix runner
+path	scripts/fetch-test-mods.sh	test-infra	compat	compat mod sets
+path	scripts/design-blocks.sh	design-blocks	fast	test-all runs its --check
+path	scripts/DesignBlocks.java	design-blocks	fast	test-all runs its --check
+path	scripts/*	scripts	-	process tooling (evidence, snapshots, merges): exercise it by hand
+path	tools/*	tools	-	helper tools
+
+# --- CLI and viewer
+path	cli/src/test/*	cli	fast	CLI tests
+path	cli/*	cli	fast,gallery?	the CLI batch feeds the galleries
+path	viewer/gallery-presets/*	viewer-presets	gallery	gallery presets
+path	viewer/city-presets/*	viewer-presets	fast,city	SettlementDeterminismTest runs every city preset
+path	viewer/fixtures/*	viewer	fast	viewer fixtures (tests read them)
+path	viewer/*.test.ts	viewer	fast	viewer unit tests
+path	viewer/e2e/*	viewer	fast	viewer screenshot tests
+path	viewer/scripts/*city*	viewer	city	city gallery generation
+path	viewer/scripts/*	viewer	gallery	gallery generation
+path	viewer/package*.json	viewer	fast,gallery,city	viewer dependencies
+path	viewer/*	viewer	fast,gallery	renderer code: look at the output
+
+# --- shared fixtures
+path	fixtures/terrain/*	fixtures	fast,city	recorded terrain: gate worlds, LiveProbeTest, city presets
+path	fixtures/*	fixtures	fast	test fixtures
+
+# --- planner-core
+path	planner-core/src/test/*	core-tests	fast	core tests and goldens
+path	planner-core/src/main/resources/styles/*	building-style	fast,gallery	palettes and style rules: block content inside the lot (new block kinds: see the content rows)
+path	planner-core/src/main/resources/region/*	region	fast,city,client-full	biome classes: where settlements go
+path	@core/gen/v1/interior/*	building-interior	fast,gallery,client-quick?	rooms, furniture and hooks; HookPlacer turns hooks into blocks (GameplayGameTest in fast re-checks beds, chests, order); client-quick if hooks change kind or count
+path	@core/gen/*	building	fast,gallery,perf-planner?	one building's blocks inside its lot: core goldens, property tests and RasterOwnershipTest cover order; perf-planner if it adds a search or a loop (the cold district budget includes buildings)
+path	@core/grammar/*	building	fast,gallery	split grammar helpers
+path	@core/style/*	building-style	fast,gallery	per-position style choice
+path	@core/ir/*	ir	fast,gallery	the IR model (a new Role needs a BlockMapper mapping: OrderGameTest in fast)
+path	@core/json/*	ir	fast,gallery	JSON for IR and styles
+path	@core/voxel/*	ir	fast,gallery	voxel grid
+path	@core/check/*	checks	fast	invariants and reports
+path	@core/metrics/*	checks	fast	diversity and descriptors
+path	@core/Planner.java	building	fast,gallery	CLI planner entry
+path	@core/raster/Variant.java	raster	fast,gallery,client-quick?	per-cell block variant hash, shared with the viewer (cellhash.csv): content only
+path	@core/raster/*	raster	fast,gallery,order?,client-quick?	cell ownership and shapes: what the mod writes. RasterOwnershipTest proves one owner per cell and the same cells under any chunk clipping, OrderGameTest (fast) that the world keeps neighbour-shaped states; order if ownership, clipping or the grown-grid neighbour read changes, not for a new shape case
+path	@core/rand/*	determinism	fast,gallery,city,order,client-full	hashing and draws: every output changes
+path	@core/cache/*	world-planner	fast,order,perf	shared bounded caches: thread safety and eviction under real chunk threads
+path	@core/world/*	world-planner	fast,order,client-full,perf	WorldPlanner, Pieces (ground, foundations), tile lookup, prefetch: the mod's only door into the core
+path	@core/probe/*	probes	fast,order,client-full,perf	probes and memos (recorded/synthetic ones only matter to tests, but the memos are live)
+path	@core/terrain/*	settlement	fast,city,order,client-full	grading, lot ground, water: ground pieces and foundations in the world (TerrainClientGameTest)
+path	@core/settlement/*	settlement	fast,city,order,client-full,perf-planner	settlement plans, districts, briefs, ground boxes
+path	@core/road/*	roads	fast,city,client-full,perf-planner	intercity roads (RoadsClientGameTest has its own order digest)
+path	@core/region/*	region	fast,city,client-full,perf	region layer: where settlements are, veto footprints
+
+# --- mod
+path	mod/src/test/*	mod-tests	fast	mod unit tests (:mod:test)
+path	mod/perf-budget.json	perf	perf	budgets
+path	@gt/order/*	order-test	order	the order test itself
+path	@gt/flythrough/*	flythrough	flythrough	the fly-through test
+path	@gt/perf/*	perf	perf	the perf test
+path	@gt/compat/*	compat	fast,compat?	VetoGameTest (server, in fast); CompatOnly is the matrix switch
+path	@gt/*ClientGameTest.java	client-test	client-full	a client test changed: run at least it (the script prints an FB_ONLY hint)
+path	@gt/worldgen/StartSupport.java	gametest-support	fast,order	start, place, ledger and hash helpers the order test also uses
+path	@gt/*	gametest	fast,client-full?	server tests and helpers; client-full if a helper the client tests use changed
+path	mod/src/gametest/*	gametest	fast,client-quick?	game test resources
+path	@mod/block/*	block-mapping	fast,order,client-quick	palette id + shape to block state; write flags and neighbour shapes are engine behaviour
+path	@mod/worldgen/Mutations.java	order-hooks	fast,order	mutant switches the order test needs to fail
+path	@mod/worldgen/PieceLedger.java	order-hooks	fast,order	the ledger the order test compares
+path	@mod/worldgen/RegionWarmer.java	threads	fast,order,perf	prefetch and warming threads: must change speed only
+path	@mod/worldgen/Workers.java	threads	fast,order,perf	worker pool
+path	@mod/worldgen/LaneStats.java	threads	fast,perf	counters
+path	@mod/worldgen/FoliageClear.java	spill	fast,order,client-full	vanilla trees and features next to our air (FoliageClientGameTest)
+path	@mod/worldgen/SpillClear.java	spill	fast,order,client-full	neighbour chunks' features writing into street air
+path	@mod/worldgen/*	worldgen	fast,order,client-full,perf	structures, pieces, placement, the write path
+path	@mod/roads/*	roads	fast,client-full,perf	road feature (RoadsClientGameTest has its own order digest)
+path	@mod/probe/*	probes	fast,order,client-full,perf	live probes from the noise router; LiveProbeTest in fast
+path	@mod/compat/*	veto	fast,client-full,compat?,perf?	vanilla structure veto and biome aliases (VetoGameTest in fast)
+path	@mod/mixin/ChunkGeneratorMixin.java	veto	fast,client-full,compat?	veto at start generation
+path	@mod/mixin/StructureCheckMixin.java	veto	fast,client-full,compat?	veto at /locate
+path	@mod/mixin/ServerPlayerTeleportMixin.java	teleport	fast,client-quick,server-only?	teleport hold
+path	@mod/teleport/*	teleport	fast,client-quick,server-only?	teleport hold (TeleportHoldGameTest in fast)
+path	@mod/gameplay/*	gameplay	fast,client-quick	hooks to blocks, villagers, /fb (GameplayGameTest in fast)
+path	@mod/config/*	config	fast,client-quick	config pinned per world (ConfigGameTest in fast)
+path	@mod/api/*	api	fast	public API
+path	@mod/FractalBuildingsMod.java	entrypoint	fast,client-quick,server-only?	registration and init
+path	@mod/HelloHut.java	entrypoint	fast,client-quick	the hello hut
+path	mod/src/main/resources/data/*/worldgen/*	worldgen	fast,order,client-full	structure sets, placement, features
+path	mod/src/main/resources/*	mod-resources	fast,client-quick,server-only?	fabric.mod.json, mixin configs, loot, tags, assets
+
+# --- block kinds the world changes after we write them (gravity, fluids, support, two-block, neighbour-shaped):
+#     new to the generators means the in-world order test is the only check that sees them land
+content	(^|_)(sand|red_sand|gravel|concrete_powder|anvil|chipped_anvil|damaged_anvil|scaffolding|pointed_dripstone|dragon_egg)$	block-kinds	order,client-quick	falls when unsupported
+content	^(water|lava|bubble_column|kelp|kelp_plant|seagrass|tall_seagrass)$	block-kinds	order,client-quick	fluid: flows into neighbours, possibly across a chunk border
+content	(torch|lantern|candle|carpet|rail|button|pressure_plate|sign|banner|sapling|flower$|tulip|vine|ladder|lichen|redstone|lever|chain$|bell$|^snow$|(^|_)bed$|door$|tall_grass|large_fern|sunflower|lilac|peony|rose_bush|cactus|sugar_cane|bamboo|azalea)	block-kinds	order,client-quick	needs support or is two blocks: breaks or drops when a neighbour is missing or written later
+content	(fence|pane$|wall$|iron_bars|chest$|tripwire)	block-kinds	order	shaped by neighbours: shape must not depend on write order across a chunk border (OrderGameTest in fast checks fences, panes, walls)
