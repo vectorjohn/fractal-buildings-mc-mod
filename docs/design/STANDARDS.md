@@ -422,22 +422,12 @@ drops them, and accepted ones move to the section they belong in.
   a biome line. Prefer materials with slab variants.
 - **Why:** John: roads "look patchy in game. [...] Only use multiple
   materials to use a cracked or mossy variant."
-- **Scope:** all tiers and styles; plaza paving is DS-2's.
-- **For implementers** (Minecraft 26.3 registry; table is agent's; wear
-  share at most 15 %, scattered, agent's number):
-
-| Where | Material | Slab, stairs | Wear |
-  |---|---|---|---|
-| Tracks: paths, hamlet and village streets, roads between settlements below city | `dirt_path`; `gravel` in snowy, mountain, stony and gravelly biomes; `mud_bricks` in desert and badlands | dirt path, gravel: none (full-block steps, DS-31); mud bricks: yes | none |
-| Town streets (no city is non-modern, DS-37) | `stone_bricks`; `mud_bricks` in desert, badlands, savanna | yes | stone: `cracked_stone_bricks` (full blocks only), `mossy_stone_bricks` (any shape; jungle, swamp, taiga, dark forest only) |
-| City and metropolis arterials, main streets, roads between cities | `cobbled_deepslate` ("asphalt") | yes | none exists |
-| City and metropolis streets and lanes | `light_gray_concrete` | yes (new in 26.x) | none exists |
-| Sidewalks (DS-31) | `white_concrete` | yes | none |
-| Bridge decks | the road's material, or one plank species | yes | as the road |
-
+- **Scope:** all tiers and styles; plaza paving is DS-2's. Materials per
+  tier and biome: [styles/README.md](styles/README.md), "Road surfaces".
 - **Enforcement:** code candidate: `road-one-material` (each road's surface
-  cells are one base block, its slab and stairs, plus listed wear variants
-  within the share) in `city-check` and the `roads` report. None today.
+  cells are one base block, its slab and stairs, plus its cracked or mossy
+  variant on at most 15 % of cells, agent's number) in `city-check` and the
+  `roads` report. None today.
 - **Status:** Approved by @John on 2026-10-25. **Source:** John, playtest note 2026-10-25;
   drafted by the architect.
 
@@ -451,35 +441,16 @@ drops them, and accepted ones move to the section they belong in.
   "To do city streets with curbs use slabs to lower the road half a block."
 - **Scope:** smoothing: all roads, streets and lanes. Kerbs: city and
   metropolis arterials, main streets and streets (not lanes, paths or quays).
-- **For implementers:**
-  - Along the line of travel, neighbouring road cells' walking surfaces
-    differ by at most 0.5. Simplest: keep the integer profile and put a
-    bottom slab on every cell of the cross-section just before each 1-block
-    rise (h, h, h+0.5, h+1). The grade limits (streets 1 in 3,
-    `Grading.GRADE_RUN`; roads between settlements 1 in 4, `Profile.MAX_STEP`)
-    keep this within slabs, so carriageways never need stairs. Stairs (the
-    road material's, facing up the slope) only on footpaths and steps steeper
-    than 1 in 2.
-  - Level across the road at every station (kerbs aside); no lone half-block
-    bump or dip; junctions are level, the lesser road eases to them in half
-    steps. A material without a slab (`dirt_path`, `gravel`) keeps full-block
-    steps at least 3 apart, with no stand-in slab of another block.
-  - Kerb: the carriageway cell is always exactly 0.5 below the sidewalk
-    beside it: bottom slab where the sidewalk is a full block, full block
-    where the sidewalk is a slab, so the kerb holds on slopes. Sidewalks 1
-    wide on streets and 2 on main streets and arterials, carriageway at least
-    3 (agent's numbers). A 0.5 kerb is walkable, so no ramps.
-  - Two kerbed streets: the junction is carriageway, sidewalks turn the
-    corner. A lane, path or plaza meets the street at sidewalk level, across
-    the sidewalk; the kerb is the step down. Doors and stoops (DS-4) land on
-    the sidewalk, never the carriageway. Bridges carry carriageway, sidewalks
-    and rails (DS-8); a deck that cannot ends the kerb at the abutment with
-    the carriageway raised to sidewalk level.
-  - Bottom slabs never waterlogged, on solid blocks (gravel and sand fall).
-- **Enforcement:** code candidates: `road-half-steps` (surface step along
-  travel at most 0.5 where the material has a slab), `kerb-height` (exactly
-  0.5 along every kerbed street; kerbs only in city and metropolis). None today.
-- **Status:** Approved by @John on 2026-10-25 - PENDING removal of “for implementers” section. **Source:** John, playtest note 2026-10-25;
+- **Enforcement:** code candidates: `road-half-steps` (along travel,
+  neighbouring surfaces differ by at most 0.5 where the material has a
+  slab; level across the road at every station, kerbs aside; no lone
+  half-block bump or dip; a material without a slab keeps full-block steps
+  at least 3 apart, no stand-in slab of another block), `kerb-height`
+  (carriageway exactly 0.5 below the sidewalk along every kerbed street;
+  kerbs only in city and metropolis; sidewalks 1 wide on streets and 2 on
+  main streets and arterials, carriageway at least 3, agent's numbers).
+  None today. Build notes: [notes/roads.md](notes/roads.md).
+- **Status:** Approved by @John 2026-10-25. **Source:** John, playtest note 2026-10-25;
   drafted by the architect. The architect's question (which cities are
   "modern"?) is answered by DS-37 (John, 2026-10-25): every city and
   metropolis, whatever its style.
