@@ -1,0 +1,10 @@
+{
+  "type": "highrise",
+  "style": "plain",
+  "lot": "28x28",
+  "terrain": "flat:64+biomes:split:0:forest:forest",
+  "front": "north",
+  "seeds": "0..11",
+  "gen": "v1",
+  "cameras": ["front-left", "back-right", "top", "front"]
+}

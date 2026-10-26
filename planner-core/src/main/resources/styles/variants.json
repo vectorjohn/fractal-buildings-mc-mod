@@ -1,6 +1,12 @@
 {
   "format": "fb-style-variants/1",
   "rules": [
+    {"id": "mass-timber-spruce", "types": ["highrise", "block"], "minStoreys": 7, "maxStoreys": 20, "biomes": ["minecraft:taiga", "minecraft:old_growth_pine_taiga", "minecraft:old_growth_spruce_taiga", "minecraft:dark_forest"], "pick": {"mass-timber-spruce": 7, "tall": 3}},
+    {"id": "mass-timber-oak", "types": ["highrise", "block"], "minStoreys": 7, "maxStoreys": 20, "biomes": ["minecraft:forest", "minecraft:flower_forest"], "pick": {"mass-timber-oak": 7, "tall": 3}},
+    {"id": "mass-timber-birch", "types": ["highrise", "block"], "minStoreys": 7, "maxStoreys": 20, "biomes": ["minecraft:birch_forest", "minecraft:old_growth_birch_forest"], "pick": {"mass-timber-birch": 7, "tall": 3}},
+    {"id": "mass-timber-cherry", "types": ["highrise", "block"], "minStoreys": 7, "maxStoreys": 20, "biomes": ["minecraft:cherry_grove"], "pick": {"mass-timber-cherry": 7, "tall": 3}},
+    {"id": "mass-timber-pale-oak", "types": ["highrise", "block"], "minStoreys": 7, "maxStoreys": 20, "biomes": ["minecraft:pale_garden"], "pick": {"mass-timber-pale-oak": 7, "tall": 3}},
+    {"id": "mass-timber-jungle", "types": ["highrise", "block"], "minStoreys": 7, "maxStoreys": 20, "biomes": ["minecraft:jungle", "minecraft:sparse_jungle", "minecraft:bamboo_jungle"], "pick": {"mass-timber-jungle": 7, "tall": 3}},
     {"id": "tall-default", "types": ["highrise", "block"], "minStoreys": 7, "pick": {"tall": 1}},
     {"id": "keep-desert", "styles": ["desert"], "types": ["tower"], "minStoreys": 7, "pick": {"keep-desert": 1}},
     {"id": "keep-jungle", "styles": ["jungle"], "types": ["tower"], "minStoreys": 7, "pick": {"keep-jungle": 1}},

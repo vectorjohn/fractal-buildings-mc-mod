@@ -1,0 +1,39 @@
+{
+  "format": "fb-style/1",
+  "id": "mass-timber",
+  "extends": "tall",
+  "biomes": [],
+
+  "massing": {"plans": {"box": 1, "L": 0, "T": 0}, "jettyChance": 0, "setbackChance": 15},
+  "roof": {"forms": {"flat": 1, "gable": 0}, "parapet": 1},
+  "facade": {"bayMin": 3, "bayMax": 4, "sill": 1, "windowHeight": 3, "windowWidth": 2, "tallGlass": true, "symmetric": true,
+    "plinth": true, "stringCourse": true, "cornice": true, "corners": "post", "timber": "none"},
+
+  "palette": {
+    "wall": ["minecraft:oak_planks"],
+    "floor": ["minecraft:oak_planks"],
+    "trim": ["minecraft:stripped_oak_wood"],
+    "beam": ["minecraft:stripped_oak_wood"],
+    "door": ["minecraft:oak_door"],
+    "foundation": ["minecraft:smooth_stone"],
+    "roof": ["minecraft:smooth_stone"],
+    "deck": ["minecraft:smooth_stone"],
+    "rail": ["minecraft:iron_bars"],
+    "fence": ["minecraft:iron_bars"],
+    "stair": ["minecraft:stone_bricks"]
+  },
+
+  "colours": {
+    "wall": ["#b08a55"],
+    "floor": ["#b08a55"],
+    "trim": ["#b29362"],
+    "beam": ["#b29362"],
+    "door": ["#9a7a4a"],
+    "foundation": ["#9e9e9e"],
+    "roof": ["#9e9e9e"],
+    "deck": ["#9e9e9e"],
+    "rail": ["#8a8a8a"],
+    "fence": ["#8a8a8a"],
+    "stair": ["#7a7a78"]
+  }
+}

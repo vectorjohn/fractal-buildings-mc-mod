@@ -1,0 +1,22 @@
+{
+  "format": "fb-style/1",
+  "id": "mass-timber-spruce",
+  "extends": "mass-timber",
+  "biomes": [],
+
+  "palette": {
+    "wall": ["minecraft:spruce_planks"],
+    "floor": ["minecraft:spruce_planks"],
+    "trim": ["minecraft:stripped_spruce_wood"],
+    "beam": ["minecraft:stripped_spruce_wood"],
+    "door": ["minecraft:spruce_door"]
+  },
+
+  "colours": {
+    "wall": ["#7a5a34"],
+    "floor": ["#7a5a34"],
+    "trim": ["#6e5232"],
+    "beam": ["#6e5232"],
+    "door": ["#6a4a2a"]
+  }
+}
