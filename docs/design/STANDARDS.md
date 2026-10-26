@@ -518,6 +518,49 @@ and Minecraft block facts ([blocks.md](blocks.md), from John's
   core reaching every floor and leave room for an elevator shaft (Create
   integration later, ROADMAP 7.2)."
 
+## DS-46 Streets stay close to the ground
+
+- **Rule:** along a built frontage a street stays within 2 of the ground
+  at the lot fronts; 4 is the hard cap (`MAX_CUT_FILL`), never the norm.
+  How a street meets ground too steep for it depends on its rank:
+  - **Main streets and arterials follow contours or ridges** (a spine
+    along the ridge crest, like Edinburgh's Royal Mile); one that must
+    descend does it along the contour, with switchbacks if needed, within
+    the cart grade, never straight downhill on an embankment.
+  - **Lanes and minor streets that must go straight downhill become
+    stepped lanes** (Gold Hill, Clovelly, Lisbon's *escadinhas*): stair
+    blocks with a level tread at least every 3 risers (DS-45's stair-run
+    number), following the ground within 1. Lots front them at grade;
+    they are pedestrian lanes.
+  - **A stretch with more than 2 of cut or fill gets no lots** (a junction
+    pinned high, a bridge approach). It is faced in the style's
+    foundation stone as a retaining wall with a DS-8 rail on the high
+    side (a terrace or viewpoint), never a raw vertical earth face; or
+    the lots there front a parallel lower lane instead.
+  - **Junction heights come from the ground first**, then grade
+    feasibility: a junction on a ridge does not drag a descending street
+    above the land.
+  - Lots are planned after the final street grade.
+- **Why:** the seed-1 hill town's streets run on 12-14-block embankments
+  ending in vertical faces at lot lines, so houses sit 10-14 below their
+  street with unreachable doors (SHOPLOW plan diagnosis). Hill towns
+  keep streets on the ground by the street hierarchy above (architect).
+- **Scope:** all tiers; streets and lanes inside settlements (not roads
+  between settlements).
+- **Enforcement:** code candidates, none yet: `frontage-grade`
+  (|street surface - ground at the lot front| <= 2 along any frontage
+  with a lot, 4 hard), and the missing half of DS-6's
+  `entrance-reachable`: a walkable path from the street surface to each
+  main door (it would have caught seed 1's `dm10_31.l0`, `dm9_29.l10`
+  and `dm9_28.l19`). SHOPLOW S3's `empty:bank` lots stay as the backstop.
+  ROADMAP 7.19 FALLSTREETS; pairs with polish 6.3 (junction steps).
+- **Status:** accepted. **Source:** John (chat, 2026-10-26: "I agree with
+  both of those earlier rule change suggestions, 3 steps runs and
+  streets stay close to ground"), from the architect's proposed rule
+  "Streets hug the ground along frontage" and its "Streets on falling
+  ground" answer
+  ([shoplow-plan-architect](../review/reports/shoplow-plan-architect.md)).
+
 # Building and facade
 
 Proposed by agents (the design-agents assistant, from the research notes and
