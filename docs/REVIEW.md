@@ -123,7 +123,6 @@ in `.claude/reports/`.
 
 ## Furnishings (7.5)
 
-- [ ] **6.8 Fly-through frames (B9)**: do the settlements read as places from the air and at street level, per tier, in the game itself
 - [x] **6.8 Fly-through frames (B9)**: do the settlements read as places from the air and at street level, per tier, in the game itself
   Where: [docs/review/phase6/flythrough/](review/phase6/flythrough/README.md) (14 of 90 frames; all 90 regenerate with `scripts/flythrough.sh`, about 25 minutes); seeds 987654321, 12345, 1.
   Look for: (1) the metropolis overview on 12345 (towers, plazas, streets, a river) against the one on seed 1 (two towers and some plazas in a forest: is it a city?); (2) the street frame on 987654321 city, which stands under a tree canopy (trees over a street); (3) 12345 city edge, which looks out over frozen sea (is a city in an ocean biome right?); (4) interiors (stairs, windows, a crafting table, dark ceilings); (5) hamlet and village overviews: houses along one street on a hillside.
@@ -139,6 +138,7 @@ in `.claude/reports/`.
       - @assistant 2026-10-26: This sentence is cut off; what did you mean to add? (CITYQ also made this site, `s0_5` at 640,5312, a town, so FLY2's frames will show it as one.)
     - 12345-metropolis-2-overview.jpg looks decent, but the roads are a little wonky. There are a lot of redundant roads, and empty space. If more space was filled _between_ the roads, that would look good, but it’s too sparse.
     - 987654321-hamlet-4-interior.jpg has a staircase made out of stairs. As in, the blocks *under* the stairs are also stairs. Not sure if that was an intentional design (“wine storage”?). Looks like a mistake.
+      - @coordinator 2026-10-26: a mistake, now fixed (STAIRFILL, merged da900b2b): each step was a column of stair blocks; now only the top of each column is a stair and the cells under it are the plain full block of the wall material. A test covers every type and style. Not yet seen in game (next batched heavy run). Tell us if you would rather have a stringer look (open under the flight) instead of solid blocks.
     - The rest of these look quite good.
 
 - [ ] **CITYQ**: small "cities" and "metropolises" become towns; city lattice reaches hilly and river-cut ground
