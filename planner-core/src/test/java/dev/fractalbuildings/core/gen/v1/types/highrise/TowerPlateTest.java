@@ -120,7 +120,7 @@ class TowerPlateTest {
 		}
 		if (kitchens > 1) return kitchens + " kitchens";
 		if (offices > 1) return offices + " lobby offices";
-		if (s.template() == Template.STAIRHOUSE) return p.doors().size() == 1 && p.doors().get(0).span() == 1 ? null : "stairhouse: one door between the stairwell and the machine room expected, got " + p.doors().size();
+		if (s.template() == Template.STAIRHOUSE) return p.doors().isEmpty() ? null : "stairhouse: no door between the stairwell and the machine room expected (each has its own roof door), got " + p.doors().size();
 		// the shaft's glass doorway (middle of its hall-side wall) looks into a room, never at a partition
 		if (p.leafAt()[s.shaft()[0] + 1][s.hallZ1() - 1] < 0) return "the shaft doorway faces a partition at x " + (s.shaft()[0] + 1);
 		// stairwell

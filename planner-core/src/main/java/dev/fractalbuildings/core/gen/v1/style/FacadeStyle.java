@@ -28,17 +28,27 @@ import java.util.Map;
  *
  * @param sill window bottom, in blocks above the storey's standing level (y0 of the face)
  * @param windowHeight window height in blocks
+ * @param bayPiers (default off) a {@code beam} column up every pier at a bay line and a flush {@code beam} slab edge on every storey: the frame grid of mass timber (stripped wood), not half-timbering (flush slab-edge beams too; {@code timber})
  * @param tallGlass (default off) glass-rich types (shop, block, hall, high-rise) cut upper-floor windows floor to ceiling (3 tall, sill 0); off for timber-frame and small-window styles (DS-33)
  */
 public record FacadeStyle(int bayMin, int bayMax, int sill, int windowHeight, int windowWidth, boolean symmetric, int bandSize,
 		boolean narrowCorners, boolean blankCorners, int doorWidth, boolean doorSurround, boolean plinth, boolean sills,
 		boolean lintels, boolean shutters, boolean stringCourse, boolean cornice, boolean bressumer, String corners, String timber,
-		boolean unglazed, boolean tallGlass) {
+		boolean unglazed, boolean tallGlass, boolean bayPiers) {
+	/** The keys before {@code bayPiers} (off). */
+	public FacadeStyle(int bayMin, int bayMax, int sill, int windowHeight, int windowWidth, boolean symmetric, int bandSize,
+			boolean narrowCorners, boolean blankCorners, int doorWidth, boolean doorSurround, boolean plinth, boolean sills,
+			boolean lintels, boolean shutters, boolean stringCourse, boolean cornice, boolean bressumer, String corners, String timber,
+			boolean unglazed, boolean tallGlass) {
+		this(bayMin, bayMax, sill, windowHeight, windowWidth, symmetric, bandSize, narrowCorners, blankCorners, doorWidth, doorSurround, plinth, sills,
+				lintels, shutters, stringCourse, cornice, bressumer, corners, timber, unglazed, tallGlass, false);
+	}
+
 	public static final List<String> CORNERS = List.of("none", "post", "quoins");
 	public static final List<String> TIMBER = List.of("none", "upper", "all");
 
 	public static final FacadeStyle DEFAULT = new FacadeStyle(2, 3, 1, 1, 1, false, 3, false, false, 1, false, false, false,
-			false, false, false, false, false, "none", "none", false, false);
+			false, false, false, false, false, "none", "none", false, false, false);
 
 	public static FacadeStyle from(Map<String, Object> o, String path) {
 		FacadeStyle d = DEFAULT;
@@ -64,7 +74,8 @@ public record FacadeStyle(int bayMin, int bayMax, int sill, int windowHeight, in
 				Json.string(o, "corners", d.corners, path),
 				Json.string(o, "timber", d.timber, path),
 				Json.bool(o, "unglazed", d.unglazed, path),
-				Json.bool(o, "tallGlass", d.tallGlass, path));
+				Json.bool(o, "tallGlass", d.tallGlass, path),
+				Json.bool(o, "bayPiers", d.bayPiers, path));
 		if (f.bayMin < 1 || f.bayMax < f.bayMin || f.windowHeight < 1 || f.sill < 0) throw new IllegalArgumentException(path + ": bad facade " + f);
 		if (f.windowWidth < 1 || f.windowWidth > 2 || f.doorWidth < 1 || f.doorWidth > 2 || f.bandSize < 1) throw new IllegalArgumentException(path + ": bad facade " + f);
 		if (!CORNERS.contains(f.corners)) throw new IllegalArgumentException(path + ".corners: one of " + CORNERS);

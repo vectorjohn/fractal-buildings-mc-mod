@@ -28,7 +28,7 @@ import java.util.List;
  *     the core block.</li>
  * <li>BANQUET: the hall rows stay a {@code corridor} foyer, the banquet room is band B behind a 2-3 wide
  *     archway; the stairwell door opens onto the foyer; kitchen and storage beside and behind the core.</li>
- * <li>STAIRHOUSE: the stairwell and a {@code plant} room over the shaft, joined by a door.</li>
+ * <li>STAIRHOUSE: the stairwell and a {@code plant} room over the shaft, each with its own roof door (none between them).</li>
  * </ul>
  *
  * <p>{@link #plan} returns {@code null} when the geometry doesn't fit the template (a band too shallow,
@@ -125,6 +125,11 @@ public final class TowerPlate {
 		void door(int a, int bb, int x, int z) { doorReq.add(new int[] {a, bb, x, z, 1, 0}); }
 
 		void arch(int a, int bb, int x, int z, int span) { doorReq.add(new int[] {a, bb, x, z, span, 1}); }
+
+		boolean windowIn(int x0, int sx, int sz) {
+			for (int x = x0; x < x0 + sx; x++) for (int z = 0; z < sz; z++) if (res[x][z]) return true;
+			return false;
+		}
 
 		boolean window(Leaf l) {
 			for (int x = l.x(); x < l.x() + l.w(); x++) for (int z = l.z(); z < l.z() + l.d(); z++) if (res[x][z]) return true;
@@ -1028,6 +1033,8 @@ public final class TowerPlate {
 			String mainUse = banquet ? "banquet" : g;
 			int[] ant = anterooms(depthG, banquet ? 30 : 25, !banquet);
 			int a = ant[0], c = ant[1];
+			if (a > 0 && !b.windowIn(0, a, depthG)) a = 0; // an anteroom needs a window bay of its own (facade bands are fixed per tier)
+			if (c > 0 && !banquet && !b.windowIn(w - c, c, depthG)) c = 0;
 			pieceAt = new int[w];
 			int left = -1, right = -1;
 			if (a > 0) left = b.leaf(0, 0, a, depthG, "open");
@@ -1240,9 +1247,8 @@ public final class TowerPlate {
 			boolean shaftWest = hx0 == 0 && sx0 == hx1 + 1 && sx1 == w;
 			if (!shaftEast && !shaftWest) return none();
 			stair = b.leaf(sx0, sz0, sx1 - sx0, hh, "stairwell");
-			int plant = b.leaf(hx0, 0, hx1 - hx0, hh, "plant");
-			// the machine room opens off the stair house (the roof doors are the facade's): the room must be reachable
-			b.door(stair, plant, shaftEast ? sx1 : hx1, hh / 2);
+			b.leaf(hx0, 0, hx1 - hx0, hh, "plant");
+			// no door between them: each opens onto the roof by its own door (TowerRoof, B3b)
 			return b.finish(stair, -1);
 		}
 	}

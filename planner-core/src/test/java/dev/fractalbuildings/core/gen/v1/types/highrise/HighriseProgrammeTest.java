@@ -51,21 +51,16 @@ class HighriseProgrammeTest {
 
 	static BuildingIr ir(SceneDoc s) { return s.buildings().get(0).shell(); }
 
-	/** The checks B3a is responsible for are clean; what is left waits for B3b (bands, roof doors, rail ring) and says so. */
+	/** Every design check is clean (B3b closed floor-repeat, roof-reachable and the stair house's doors). */
 	@Test
-	void designChecksPassExceptTheOnesWaitingForTheFacadeStep() {
+	void designChecksPass() {
 		List<String> left = new ArrayList<>();
 		for (int lot : LOTS)
 			for (SceneDoc s : cases(lot))
 				for (Violation v : HighriseChecks.check(s)) {
-					switch (v.invariant()) {
-						case HighriseChecks.ROOF -> { /* B3b: roof doors and the rail ring */ }
-						case HighriseChecks.FLOOR_REPEAT -> { /* B3b: the facade bands move the windows from storey to storey; interiorRepeats below checks the walls */ }
-						case HighriseChecks.STAIRWELL -> assertTrue(v.message().contains("(use plant)") || v.message().contains("same x,z"), "lot " + lot + ": " + v.message()); // B3b: the stair house's roof doors replace the door to the machine room
-						default -> left.add("lot " + lot + " " + v.invariant() + ": " + v.message());
-					}
+					left.add("lot " + lot + " " + v.invariant() + ": " + v.message());
 				}
-		assertEquals(List.of(), left, "design warnings B3a should have fixed");
+		assertEquals(List.of(), left, "design warnings");
 	}
 
 	/** Typical floors repeat: consecutive storeys of equal height and equal rooms have the same partitions, doors and shaft doorway. */
@@ -164,7 +159,7 @@ class HighriseProgrammeTest {
 		int[] st = TowerFloors.STATS.get();
 		int planned = st[0] - st0[0], fell = st[1] - st0[1];
 		System.out.println("TowerPlate fallback rate over " + LOTS.length * SEEDS + " towers: " + fell + " of " + planned + " floor plans");
-		assertTrue(planned > 1000, "planned " + planned);
+		assertTrue(planned > 600, "planned " + planned); // typical floors of a tier share one facade layout since B3b, so the interior pass plans each only once (1155 before, 943 after)
 		assertEquals(0, fell, "floors that fell back to the guillotine planner");
 	}
 

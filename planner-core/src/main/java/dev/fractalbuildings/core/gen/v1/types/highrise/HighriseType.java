@@ -4,11 +4,12 @@ import dev.fractalbuildings.core.gen.v1.BuildContext;
 import dev.fractalbuildings.core.gen.v1.BuildingType;
 import dev.fractalbuildings.core.gen.v1.Program;
 import dev.fractalbuildings.core.gen.v1.TypeLimits;
-import dev.fractalbuildings.core.gen.v1.facade.FacadePass;
+import dev.fractalbuildings.core.gen.v1.facade.OpeningPass;
 import dev.fractalbuildings.core.gen.v1.interior.FloorPlanner;
 import dev.fractalbuildings.core.gen.v1.interior.InteriorPass;
 import dev.fractalbuildings.core.gen.v1.interior.RoomProgram;
 import dev.fractalbuildings.core.gen.v1.model.Massing;
+import dev.fractalbuildings.core.gen.v1.roof.RoofPass;
 import java.util.List;
 
 /**
@@ -39,12 +40,25 @@ public final class HighriseType implements BuildingType {
 	@Override
 	public RoomProgram rooms() { return ROOMS; }
 
-	/** The generic facade pass, then piers where the core block's walls meet the facade ({@link TowerPiers}). */
+	/** The generic facade pass with the programme's bands and taller special-floor windows, then piers ({@link HighriseFacade}, {@link TowerPiers}). */
 	@Override
-	public Program facade() {
+	public Program facade() { return HighriseFacade::run; }
+
+	/** The style's roof rules over the tiers, then the roof guard round the roof the stair house opens onto ({@link TowerRoof}). */
+	@Override
+	public Program roofs() {
 		return c -> {
-			FacadePass.run(c);
-			TowerPiers.apply(c);
+			RoofPass.run(c, c.style().roof().withForms(java.util.Map.of("flat", 1)));
+			TowerRoof.guard(c);
+		};
+	}
+
+	/** The generic openings, then the stair house's two roof doors ({@link TowerRoof}). */
+	@Override
+	public Program openings() {
+		return c -> {
+			OpeningPass.run(c);
+			TowerRoof.doors(c);
 		};
 	}
 
