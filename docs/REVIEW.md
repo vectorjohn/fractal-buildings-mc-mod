@@ -34,63 +34,19 @@ in `.claude/reports/`.
 
 ## Open
 
-- [x] **D1 hamlet and village (p5-d1-villages)**: do the small settlements read as a hamlet and a village?
-  Where: `cd viewer && nix develop -c npm run city-gallery` with `FB_CITIES=hamlet-river,village-river,hamlet-mixed,village-mixed`, then `viewer/out/city/<name>/plan.png` and the `*-overview.png` / `*-street.png` frames.
-  Look for: a hamlet is a short track with a handful of houses and a workshop each side, no square; a village has a straight main street, a cross street on about half, a green at the hub with a temple or hall facing it from the side, lanes, and the houses lining the streets. Bad: a ruler-straight street feels too artificial, the green sits oddly, a village that is all one street.
-  Result:
-  - @John 2026-10-21: notes:
-    - #important do we have anything planned to connect cities with roads of some kind or another? This might be a missed detail. Not absolutely required, but a metropolis with cities nearby that aren’t connected by a road kind of makes no sense. I don’t know what we could do in the planning to connect them though, this is a question for a coder or a spike to consider. **Unless I missed it and this was already accounted for**.
-      - @lead-coder 2026-10-21: You didn't miss it: it isn't planned. Phase 5 stopped the exit roads at the town edge on purpose. I propose a road graph at region scale. Each settlement links to its natural neighbours (a "relative neighbourhood graph" over settlement centres: both ends compute the same links, and no settlement on a landmass is left out). Each link is routed once with the same terrain-aware A* the main roads use, on the coarse 64-block lattice, and the towns' exits are aimed at those roads. In the game the roads would be a per-chunk feature, not structure pieces, because a road is far longer than one structure start can reach. Next step: a spike (S10) to check that it stays deterministic, is cheap per chunk and looks right on the recorded world dumps; then an item in Phase 6 (or 7). Details, alternatives and costs: [intercity-roads.md](plans/intercity-roads.md).
-        - @John 2026-10-22: @coordinator I see the intercity-roads doc and mention of S10, is this actually on the roadmap (the spike I mean)? If not, I approve it going on the roadmap and starting any time. Where the intercity-roads.md suggests slotting it in looks good.
-          - @coordinator 2026-10-22: It wasn't on the ROADMAP yet; it is now, where the plan suggests. Phase 6 in [ROADMAP.md](ROADMAP.md) has "S10 Spike: roads between settlements" (noting your approval) and item "6.10 Roads between settlements", linking [intercity-roads.md](plans/intercity-roads.md). Two spike coders started today, one per half (planner on the world dumps, mod feature in a noise world); results come back as a findings note with a region PNG and a client screenshot for you.
-    - I think hamlets need more houses than this. Not much, I get that they want to be small. The one in the review is ok as one random example, so long as the range allows for larger ones.
-    - The example has a ruler straight road.
-
 ## 4.10 Phase 4 gate
-
-- [x] **5.12 SHOPLAND shopfront landings** (John's note on 5.12): does a lifted shop now read right, a landing at door level across the front instead of the window at the top of a flight?
-  Where: `docs/review/phase5/shopland/` (`shop-slope-front-left.png` shops on a 1 in 9 slope: a terrace across the front, flight down at one end; `shop-flat-front-left.png` and `shop-flat-front.png` seeds 5 and 14 are market halls with a deck on posts, the open floor under still open to the street; `shop-slope-front.png` the same from the front)
-  Look for: enclosed shops: a solid terrace with a tan (stair-coloured) top and no railing yet; market halls: a 2-deep deck on posts (balcony) with the flight coming down on the lot front row at one end;  windows now stand level with the landing.
 
 - [ ] **5.2 DL District layout**: do the streets, blocks and lots read like a city someone planned?
   Where: plan view `viewer/out/plan/districts-synth-city.png`, `districts-mixed-city.png`, `districts-river-town.png` (run `npx playwright test e2e/districts.spec.ts`, fixtures in `viewer/fixtures/settlement/districts/`); 3D `viewer/out/district/dl-d0_0-overview.png`, `dl-d1_0-street.png` (README there for the scene commands)
   Look for: grid streets straight through whole rows of tiles and plain streets on dense borders; organic lanes branching off the roads and crossing tile borders at ports; whole-block buildings only inside grid blocks; houses and shops with their fronts to the street; no lots over water; the hub square with its hall and temple; dead ends and thin empty ground between lots; the straight seam where lots on both sides of a tile border back onto each other
   Result:
 
-- [x] **5.1 D0 City gallery**: do the nine gate cities read as the right size and shape of settlement (hub, main roads, grid core, outskirts), and do the district street views look like streets someone built?
-  Where: `cd viewer && nix develop -c npm run city-gallery` (about 2 minutes), PNGs in `viewer/out/city/<preset>/` (`plan.png`, `<district>-overview.png`, `<district>-street.png`); presets in `viewer/city-presets/`.
-  Look for: main roads that stop short of the hub square (known: the hub-square work should close them), houses on lanes that lead nowhere, terraces where roads cross slopes, highrise canyons in the metropolis cores.
-  Result:
-  - @John 2026-10-21:
-    - It looks like some of the houses lost bedrooms.
-    - We should try to lean towards more square-leaning rooms. E.g. it looks like seed 9 gained a super long skinny “living room” and dropped to one small bedroom.
-    - Lean towards having multiple bedrooms before ever having multiple other types of rooms. As usual, not 100% of the time.
-    - @coordinator 2026-10-21: Agreed. Follow-up item CIRC2 is being coded now: a room aspect limit (nearer square), a bedroom-first room program (more bedrooms before a second room of another kind, not always), and bedrooms per house measured before and after. Results go in the Phase 5 gate pack; noted under ROADMAP 5.11.
-
-- [x] **D2 town walls**: a walled town's plan and gatehouses.
-  Where: `viewer/out/city/town-walled/plan.png` and `dm6_m24-overview.png`, `dm6_m25-overview.png` (`FB_CITIES=town-walled npm run city-gallery`).
-  Look for: does a rectangular ring with crenellated gatehouses and corner towers read as a town wall; roads meeting the gate lots straight; towers too tall or too short next to the wall; the market and hall inside.
-  Result:
-    - @John 2026-10-21: the town-walled looks great. However, when walls connect, a mob/player should probably be able to walk between the segments. That might mean stairs or something. 
-
-- [x] **Waterfront quays and bridges (p5-tr-terrain)**: do the promenades along lakes, rivers and the coast read as a waterfront (stone, shops facing the water), or are they too thin, too many, or running past nothing? Do the plank bridges (role `deck`) look right? Is the steep badlands town (arterials dropped on hills, a main road cut into the slope, houses on stilts) acceptable? Pictures: `docs/review/phase5/terrain/` (README there); live: `npm run city -- tr-coast tr-river tr-steep` then `npm run city-gallery`.
-  - @John 2026-10-21: IMO, any building needs *some* sort of path leading to its door. This is especially true for shops, but even houses should have it. I’m seeing from tr-coast-dm47_m22-overview.png that the actual waterfront looks amazing, but behind the waterfront it looks like shops with pillars, etc, but no path at all getting to them. Actually, I can’t tell, maybe the road to the back is the access point. But there should be a door there at least. So maybe there’s nothing to do.
-  - The tr-river town looks great. 
-
 - [ ] **House kitchen and living room (p5-house-program)**: does every house now have a kitchen and a living room, in sensible places?
   Where: `docs/review/phase5/circulation/house-medieval-plans.md` section "After house program" (seeds 7, 9), numbers in `docs/log/2026-10-21-p5-house-program.md`; gallery `house-medieval`, `house-plains`, `house-desert`.
   Look for: kitchens (hearth) beside the living room or entry; houses that now have too few bedrooms (1.7 per medieval house, was 1.8); a one-room hut that is only a bedroom; a ground floor that is a single kitchen-hall under bedrooms.
   Result:
   - @John 2026-10-21: these look much better, great even. **That said** one thing I want to re-emphasize (I mentioned it but probably it got buried), we should consider partitioning rooms in ways that don’t use doors. Or have “double doors” that are actually air not actual doors. Example, in seed 7, the entryway to living room, to kitchen - the division between kitchen and living room could be open. In real life, sometimes people used to strictly separate the kitchen. Modern houses usually let the kitchen be open to living areas. Maybe that’s the rule - other than medieval, kitchen/living area divisions can and often should be open - archways, wide “air” doors, etc. 
-
-- [x] **Downtown skyline and avenues (p5-d3-city)**: does the metropolis downtown read as a high-rise centre, and do the diagonal avenues and the walled old town look like a real city?
-  Where: `docs/review/phase5/d3/` (plan with storeys colours, skyline transects, 3D frames; presets `d3-metropolis-flat`, `d3-city-walled`, `d3-city-avenues`, `gate-metropolis-temperate`, `gate-metropolis-mixed`; `cd viewer && npm run city -- d3-metropolis-flat && npm run city-gallery` regenerates them).
-  Look for: towers rising towards the centre then mid-rise (10 to 19 storeys) then blocks then houses (it plateaus at 60 storeys over about 0.3 of the radius, is that too flat, too many?); diagonal avenues meeting at the hub square and bending to cross wall gates; the old town inside the wall with only 3 to 5 storey buildings; squares (with a hall) at some arterial crossings; empty park tiles in the downtown (open ground only, no trees or paths yet); the outer arterial ring.
-  Result:
-  - @John 2026-10-21: Notes:
-    * Put on the roadmap a research topic to look into how we could integrate with some other mods. The one I’m thinking of is Create. One issue might be version compatibility, but here is the thing: These highrises are going to be basically non-navigable on foot. We can put in ladders / stairwells, sure. But they need elevators! And _with Create mod_ we could build real functioning elevator shafts. It would be amazing but that is a whole level of complexity. Maybe it’s simple for this mod though - leave a space to put an elevator shaft for now.
-    * It’s looking good. metropolis-flat-plan-height.png clearly shows a much taller downtown. Even has empty sections for parks!
-    * Is the skyline-transects.png showing a kind of height map toward the center? If so, I suppose I’d say the *center* should probably tend to be smaller as a proportion. Like, a smaller area of very tall buildings in the dense core with a longer tail of medium to small buildings. On the other hand, some city centers really are packed with tall buildings. Overall though, I’d like to see more “long tail” of the shorter buildings. It comes off as “oops all highrise”. 
+    - @assistant 2026-10-26: This was done after your note: 5.11 OPENPLAN (p5-openplan) opens kitchens onto the living area through an archway or a 2 to 4 wide gap, per style (plain 85 % of kitchen links, medieval 22 %), rule DS-10 in [STANDARDS.md](design/STANDARDS.md); pictures `docs/review/phase5/circulation/house-plain-cutaway-open-plan.png` and `house-medieval-cutaway-open-plan.png`. Lintels and arches over the wide openings are a Polish backlog line (5.11 OPENPLAN).
 
 - [ ] **IRR1 (5.13)**: do old towns and diagonal avenues read as organic, "people built this", and not as a grid with extra lanes?
   Where: `docs/review/phase5/irregular/old-town-plan.png` (synthetic city seed 1001: the hub tile and the old-town tiles round it, beside grid quarters) and `avenues-plan.png` (the D3 avenue city after, compare `docs/review/phase5/d3/city-avenues-plan.png` before); regenerate with `npm run city -- irr1-old-town d3-city-avenues`, then `FB_CITIES=irr1-old-town,d3-city-avenues CITY_GALLERY=1 npx playwright test e2e/city.spec.ts -g "plan view"`; 3D is not captured for these (plan only).
@@ -107,6 +63,7 @@ in `.claude/reports/`.
   - @John 2026-10-22: This looks much better, love it.
   - @coordinator 2026-10-22 (verifier note; re-filed here 2026-10-26 from the archived S10 item, still unanswered): narrow shops (7 wide) whose floor is 5 blocks above the street now get a plain flight instead of a landing in about half the cases. Before, the landing only fitted because the flight was one step short and floated. Is a plain flight acceptable there, or should those shops sit lower?
     - @John 2026-10-26: this may be a stupid question but WHY are shops 5 blocks above the street? Maybe it’s tricky to solve. I’d like the shops to sit lower if we can do it, they should get closer to the street or there should be a walkway along them. I can’t picture any situation where a storefront has a five meter high staircase straight up to a door. Especially not in half the cases. If we can make the storefront closer to the road, that would read more correct.
+      - @assistant 2026-10-26: Not a stupid question. Every building's ground floor is set at the highest ground under its footprint (the S5 rule: a flat floor on a foundation, never cut into the slope), and its front steps only go down from there. A shop lot usually rises away from the street, so the floor ends up at the level of the back corner: where the ground climbs 4 or 5 blocks from the front of the lot to the back, the door is that far above the street, and a lot that narrow has no room for the landing, so it gets a plain flight. Filed as rule [DS-45](design/STANDARDS.md) "Shops sit near street grade": the door stays within 2 blocks of the street (my number); a bigger difference is taken by cutting the floor into the slope, a split level, or a walkway or terrace along the whole front; never a tall straight flight to a shop door. A coder item is scheduled: ROADMAP 7.17 SHOPLOW.
 
 ## Phase 6 plan decisions
 
