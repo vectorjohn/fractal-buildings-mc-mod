@@ -29,7 +29,7 @@ Steep gable (2:1), 1-block overhang, dormers on half; chimneys.
 
 ## Windows and doors
 
-Small (1x1), lintels, symmetric only where the front is short; doors with a
+Small (1x2, few, wide bays; 1x1 only as accents, DS-33), lintels, symmetric only where the front is short; doors with a
 surround. Kitchens often separate.
 
 ## Avoid

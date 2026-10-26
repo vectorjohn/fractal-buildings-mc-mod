@@ -8,6 +8,7 @@ two reviewer agents catch ugly or implausible ones.
 |---|---|---|
 | Design rules, numbered `DS-<n>` | [STANDARDS.md](STANDARDS.md) | John accepts; agents propose |
 | One brief per style (precedents, materials, roof, windows, avoid) | [styles/](styles/README.md) | agents draft; John accepts |
+| Build notes per topic, linked from the rules (how to build, not rules): [roads](notes/roads.md), [high-rises](notes/highrises.md), [windows](notes/windows.md), [roofs](notes/roofs.md) | `notes/` | agents; implementers may differ |
 | Architect reviewer | `.claude/agents/architect.md` | |
 | Interior-designer reviewer | `.claude/agents/interior-designer.md` | |
 | Research behind both | [research/aesthetics](../research/aesthetics/palettes-and-gradients.md) and its neighbours | |

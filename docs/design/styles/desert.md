@@ -30,7 +30,7 @@ Flat with a parapet in the wall material; no gables, no overhang.
 
 ## Windows and doors
 
-Few, small (1x1), high in the wall, deep in it; blank corners. Doors in a
+Few, small (1x2; 1x1 only as accents, DS-33), high in the wall, deep in it; blank corners. Doors in a
 surround or an arch. Shading over openings (trapdoors, slabs) rather than
 glass areas.
 
