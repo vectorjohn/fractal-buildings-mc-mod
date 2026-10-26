@@ -88,7 +88,7 @@ class HighriseTypeTest {
 			assertEquals("main", main.kind());
 			assertEquals(0, main.from());
 			assertTrue(main.to() >= 1 && main.to() <= 3, "podium storeys " + main.to());
-			assertEquals(5, m.grid().height(0), "ground storey 5 high");
+			assertEquals(6, m.grid().height(0), "lobby storey 6 high");
 			List<Mass> shafts = m.masses().stream().filter(a -> a.kind().equals("shaft")).toList();
 			assertFalse(shafts.isEmpty());
 			for (int i = 0; i < shafts.size() - 1; i++) {
@@ -97,13 +97,13 @@ class HighriseTypeTest {
 				shaftBands.add(len);
 			}
 			if (shafts.size() > 1) withSetbacks[0]++;
-			Mass last = m.masses().get(m.masses().size() - 1);
+			Mass last = m.masses().get(m.masses().size() - (m.cores().isEmpty() ? 1 : 2));
 			if (last.kind().equals("crown")) {
 				withCrown[0]++;
 				assertTrue(last.to() - last.from() <= 3);
 			}
 			// insets 1..4 per side between neighbouring tiers
-			for (int i = 1; i < m.masses().size(); i++) {
+			for (int i = 1; i < m.masses().size() - (m.cores().isEmpty() ? 0 : 1); i++) {
 				Mass a = m.masses().get(i), p = m.masses().get(i - 1);
 				for (int in : new int[] {a.x() - p.x(), a.z() - p.z(), p.maxX() - a.maxX(), p.maxZ() - a.maxZ()}) assertTrue(in >= 0 && in <= 4, "inset " + in);
 			}
