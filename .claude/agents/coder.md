@@ -122,8 +122,12 @@ Each behaviour gets a test at the **cheapest layer that can catch its bugs**
 
 Run the relevant layers once on your final code before you report: after
 merging the integration branch into yours (below), and after your last code
-commit. Run client game tests only if you touched the mod's client side,
-rendering, or worldgen appearance. Don't repeat a passing run just to be sure.
+commit. **Which layers: run what `scripts/test-scope.sh <integration branch>`
+prints** (required ones always; "consider" ones when the printed reason applies,
+and say in the report which you ran or skipped; UNKNOWN files mean every layer,
+and add a row to `scripts/test-scope.tsv`). Policy and edge cases (a building
+change that moves footprints or ground claims, a new block kind):
+`docs/TESTING.md`. Don't repeat a passing run just to be sure.
 Keep tool output small: `tail` or `grep` logs, don't print full Gradle
 output. The scratchpad directory is shared with other subagents, so name
 any log or scratch file you write there after your item (`testall-<slug>.log`),
