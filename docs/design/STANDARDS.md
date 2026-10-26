@@ -468,7 +468,7 @@ drops them, and accepted ones move to the section they belong in.
 - **Enforcement:** code candidates: `road-half-steps` (surface step along
   travel at most 0.5 where the material has a slab), `kerb-height` (exactly
   0.5 along every kerbed street; kerbs only in city and metropolis). None today.
-- **Status:** proposed. **Source:** John, playtest note 2026-10-25;
+- **Status:** Approved by @John on 2026-10-25 - PENDING removal of “for implementers” section. **Source:** John, playtest note 2026-10-25;
   drafted by the architect. The architect's question (which cities are
   "modern"?) is answered by DS-37 (John, 2026-10-25): every city and
   metropolis, whatever its style.
@@ -517,7 +517,7 @@ drops them, and accepted ones move to the section they belong in.
   `floor-repeat` (typical floors in a band have identical partitions),
   `hall-access` (every unit door opens onto a hall, lobby or open floor).
   None today.
-- **Status:** proposed. **Source:** John, playtest notes 2026-10-25;
+- **Status:** Approved by @John on 2026-10-25 - PENDING removal of “For implementers” section. **Source:** John, playtest notes 2026-10-25;
   drafted by the architect (interior programme with the interior-designer's
   lens).
 
@@ -527,7 +527,7 @@ drops them, and accepted ones move to the section they belong in.
   one **stairwell**: the stair core walled on every side on every storey,
   with one door per storey onto the hall, lobby or open floor (never into a
   unit or across a room), stacked in the same place from the lobby to the
-  top; beside it a walled elevator shaft of at least 2x2 (agent's number)
+  top; beside it a walled elevator shaft of at least 3x3 (John's suggestion, flexible)
   with a doorway per storey onto the same hall (Create later, ROADMAP 7.2).
 - **Why:** John: "Highrise should have a defined stairwell as opposed to an
   open staircase sitting in a hallway or a lobby area."
@@ -538,10 +538,8 @@ drops them, and accepted ones move to the section they belong in.
   from below arrives and the next one starts; a window where it meets the
   facade is fine. It is its own room (use `stairwell`), not part of a
   larger `stair` room. Light inside (DS-24).
-- **Enforcement:** code candidate `stairwell-enclosed`: on every storey the
-  core's ring is wall except one door, and the room outside that door is a
-  hall, lobby or open floor. None today.
-- **Status:** proposed (amends accepted DS-22). **Source:** John, playtest
+- **Enforcement:** This is done by feel, and verified by architect.
+- **Status:** Approved by @John 2026-10-25 (amends accepted DS-22). **Source:** John, playtest
   notes 2026-10-25; drafted by the architect.
 
 ## DS-33 Windows are generous
@@ -580,7 +578,7 @@ drops them, and accepted ones move to the section they belong in.
   building's windows are 1x1, outside the accent rooms) and `glazing-share`
   (per facade, by type), next to DS-25's `openings-aligned` (ROADMAP 7.9).
   None today.
-- **Status:** proposed. **Source:** John, playtest notes 2026-10-25;
+- **Status:** Approved by @John on 2026-10-25 PENDING removal of for implementers section. **Source:** John, playtest notes 2026-10-25;
   drafted by the architect.
 
 ## DS-34 High-rises come in several looks
