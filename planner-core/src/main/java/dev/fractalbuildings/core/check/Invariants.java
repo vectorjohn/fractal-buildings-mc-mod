@@ -54,6 +54,60 @@ public final class Invariants {
 		return (x, z) -> p.covers(x, z) ? p.floorY(x, z) : WORLD_MIN_Y;
 	}
 
+	/** A cell people can walk through: air or a doorway (cells outside the grid count as passable). */
+	static boolean walkPassable(VoxelGrid g, int x, int y, int z) {
+		if (!g.inGrid(x, y, z)) return true;
+		Role r = g.get(x, y, z);
+		return r == Role.AIR || r == Role.DOOR;
+	}
+
+	/** A cell a person can stand in: two passable cells over a solid one, all inside the grid. */
+	static boolean walkStanding(VoxelGrid g, int x, int y, int z) {
+		return g.inGrid(x, y, z) && walkPassable(g, x, y, z) && walkPassable(g, x, y + 1, z) && g.inGrid(x, y - 1, z) && walkFloor(g.get(x, y - 1, z));
+	}
+
+	/**
+	 * The walking rules of {@code rooms-reachable}: every cell reachable on foot (four directions, steps of one up or
+	 * down) from the standing cells of the exterior doors. Index of a cell: {@code ((y - minY) * sz + (z - minZ)) * sx + (x - minX)}.
+	 * Shared with the high-rise design checks ({@link HighriseChecks}).
+	 */
+	static boolean[] reachFromStreetDoors(VoxelGrid g, List<Opening> openings) {
+		boolean[] seen = new boolean[g.sx * g.sy * g.sz];
+		int[] queue = new int[seen.length];
+		int head = 0, tail = 0;
+		for (Opening o : openings) {
+			if (o.kind() != OpeningKind.DOOR) continue;
+			if (!o.from().equals(Opening.OUTSIDE) && !o.to().equals(Opening.OUTSIDE)) continue;
+			Box3 q = o.box();
+			for (int y = q.y(); y < q.maxY(); y++)
+				for (int z = q.z(); z < q.maxZ(); z++)
+					for (int x = q.x(); x < q.maxX(); x++)
+						if (walkStanding(g, x, y, z) && !seen[cellIndex(g, x, y, z)]) {
+							seen[cellIndex(g, x, y, z)] = true;
+							queue[tail++] = cellIndex(g, x, y, z);
+						}
+		}
+		int[] hx = {1, -1, 0, 0}, hz = {0, 0, 1, -1};
+		while (head < tail) {
+			int c = queue[head++];
+			int cx = g.minX + c % g.sx, cz = g.minZ + (c / g.sx) % g.sz, cy = g.minY + c / (g.sx * g.sz);
+			for (int d = 0; d < 4; d++) {
+				for (int dy = -1; dy <= 1; dy++) {
+					int nx = cx + hx[d], ny = cy + dy, nz = cz + hz[d];
+					if (!walkStanding(g, nx, ny, nz)) continue;
+					if (dy == 1 && !walkPassable(g, cx, cy + 2, cz)) continue;
+					if (dy == -1 && !walkPassable(g, nx, ny + 2, nz)) continue;
+					int ni = cellIndex(g, nx, ny, nz);
+					if (seen[ni]) continue;
+					seen[ni] = true;
+					queue[tail++] = ni;
+				}
+			}
+		}
+		return seen;
+	}
+
+	static int cellIndex(VoxelGrid g, int x, int y, int z) { return ((y - g.minY) * g.sz + (z - g.minZ)) * g.sx + (x - g.minX); }
 	/** A block a walker can stand on: solid, but not a fence or rail (1.5 high: a player, who steps 0.6, cannot get onto its top). */
 	public static boolean walkFloor(Role r) { return r.solid && r != Role.FENCE && r != Role.RAIL; }
 
@@ -344,38 +398,7 @@ public final class Invariants {
 
 		void roomsReachable() {
 			if (b.shell().rooms().isEmpty()) return;
-			boolean[] seen = new boolean[g.sx * g.sy * g.sz];
-			int[] queue = new int[seen.length];
-			int head = 0, tail = 0;
-			for (Opening o : b.shell().openings()) {
-				if (o.kind() != OpeningKind.DOOR) continue;
-				if (!o.from().equals(Opening.OUTSIDE) && !o.to().equals(Opening.OUTSIDE)) continue;
-				Box3 q = o.box();
-				for (int y = q.y(); y < q.maxY(); y++)
-					for (int z = q.z(); z < q.maxZ(); z++)
-						for (int x = q.x(); x < q.maxX(); x++)
-							if (standing(x, y, z) && !seen[cell(x, y, z)]) {
-								seen[cell(x, y, z)] = true;
-								queue[tail++] = cell(x, y, z);
-							}
-			}
-			int[] hx = {1, -1, 0, 0}, hz = {0, 0, 1, -1};
-			while (head < tail) {
-				int c = queue[head++];
-				int cx = g.minX + c % g.sx, cz = g.minZ + (c / g.sx) % g.sz, cy = g.minY + c / (g.sx * g.sz);
-				for (int d = 0; d < 4; d++) {
-					for (int dy = -1; dy <= 1; dy++) {
-						int nx = cx + hx[d], ny = cy + dy, nz = cz + hz[d];
-						if (!standing(nx, ny, nz)) continue;
-						if (dy == 1 && !passable(cx, cy + 2, cz)) continue;
-						if (dy == -1 && !passable(nx, ny + 2, nz)) continue;
-						int ni = cell(nx, ny, nz);
-						if (seen[ni]) continue;
-						seen[ni] = true;
-						queue[tail++] = ni;
-					}
-				}
-			}
+			boolean[] seen = reachFromStreetDoors(g, b.shell().openings());
 			for (Room r : b.shell().rooms()) {
 				boolean hit = false;
 				for (Box3 p : r.parts()) {

@@ -1,5 +1,6 @@
 package dev.fractalbuildings.cli;
 
+import dev.fractalbuildings.core.check.HighriseChecks;
 import dev.fractalbuildings.core.check.InvariantReport;
 import dev.fractalbuildings.core.check.Invariants;
 import dev.fractalbuildings.core.ir.SceneDoc;
@@ -28,12 +29,19 @@ final class CheckCommand {
 			final long s = seed;
 			@SuppressWarnings("unchecked")
 			List<Violation>[] results = new List[m.cells.size()];
+			@SuppressWarnings("unchecked")
+			List<Violation>[] warnings = new List[m.cells.size()];
 			IntStream.range(0, results.length).parallel().forEach(i -> {
 				var req = m.cells.get(i).request(s);
 				SceneDoc scene = Scenes.generate(req, false, m.gen);
 				results[i] = Invariants.check(scene, req.terrain());
+				warnings[i] = HighriseChecks.check(scene);
 			});
-			for (int i = 0; i < results.length; i++) report.add("seed " + s + " " + m.cells.get(i).label(), results[i]);
+			for (int i = 0; i < results.length; i++) {
+				String label = "seed " + s + " " + m.cells.get(i).label();
+				report.add(label, results[i]);
+				report.addWarnings(label, m.cells.get(i).type().equals(HighriseChecks.TYPE), warnings[i]);
+			}
 		}
 		String md = report.toMarkdown();
 		double secs = (System.nanoTime() - t0) / 1e9;

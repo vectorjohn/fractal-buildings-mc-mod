@@ -1,6 +1,7 @@
 package dev.fractalbuildings.cli;
 
 import dev.fractalbuildings.cli.Main.UsageException;
+import dev.fractalbuildings.core.check.HighriseChecks;
 import dev.fractalbuildings.core.check.SettlementChecks;
 import dev.fractalbuildings.core.gen.v1.GeneratorV1;
 import dev.fractalbuildings.core.ir.Violation;
@@ -42,7 +43,7 @@ final class CityCheckCommand {
 
 	private record Job(String label, long seed, String terrain, int cellSize, String site, int cellCx, int cellCz) {}
 
-	private record Result(Job job, String siteId, String tier, int radius, int cells, int districts, int lots, int scenes, int hubPct, int strays, List<String> problems, String error, double ms, TerrainStats terrain) {}
+	private record Result(Job job, String siteId, String tier, int radius, int cells, int districts, int lots, int scenes, int hubPct, int strays, List<String> problems, List<String> warnings, String error, double ms, TerrainStats terrain) {}
 
 	static int run(String[] args) throws IOException {
 		Opts o = new Opts(args, Set.of("seeds", "terrain", "sites", "scenes", "cell-size", "out", "ignore", "list", "junctions-near"), Set.of("junction"));
@@ -158,6 +159,7 @@ final class CityCheckCommand {
 	private static Result check(Job j, int sceneCount) {
 		long t0 = System.nanoTime();
 		List<String> problems = new ArrayList<>();
+		List<String> warnings = new ArrayList<>(); // design warnings (HighriseChecks): listed, never failing
 		try {
 			ProbeSpecs.Probes p = Scenes.probes(j.terrain());
 			RegionField field = new RegionField(j.seed(), j.cellSize());
@@ -180,13 +182,14 @@ final class CityCheckCommand {
 				DistrictScenes.Built b = CityPlanner.scene(city, id, p.terrain(), p.biome(), true);
 				for (Violation v : b.scene().violations()) problems.add(v.invariant() + ": " + id + " " + v.message());
 				for (Violation v : b.plan().violations()) problems.add(v.invariant() + ": " + id + " scene " + v.message());
+				for (Violation v : HighriseChecks.check(b.scene())) warnings.add(v.invariant() + ": " + id + " " + v.message());
 				built++;
 			}
 			int lots = 0;
 			for (var d : city.districts().values()) lots += (int) d.lots().stream().filter(LotBrief::builds).count();
-			return new Result(j, site.id(), site.tier().json, site.radius(), site.cells().size(), city.districts().size(), lots, built, city.streetColumns() == 0 ? 100 : (int) (100L * city.hubPiece() / city.streetColumns()), city.strays(), problems, null, (System.nanoTime() - t0) / 1e6, TerrainStats.of(city, p.terrain()));
+			return new Result(j, site.id(), site.tier().json, site.radius(), site.cells().size(), city.districts().size(), lots, built, city.streetColumns() == 0 ? 100 : (int) (100L * city.hubPiece() / city.streetColumns()), city.strays(), problems, warnings, null, (System.nanoTime() - t0) / 1e6, TerrainStats.of(city, p.terrain()));
 		} catch (RuntimeException e) {
-			return new Result(j, "?", "?", 0, 0, 0, 0, 0, 0, 0, problems, e.getClass().getSimpleName() + ": " + e.getMessage(), (System.nanoTime() - t0) / 1e6, null);
+			return new Result(j, "?", "?", 0, 0, 0, 0, 0, 0, 0, problems, warnings, e.getClass().getSimpleName() + ": " + e.getMessage(), (System.nanoTime() - t0) / 1e6, null);
 		}
 	}
 
@@ -209,6 +212,17 @@ final class CityCheckCommand {
 			sb.append("| rule | count |\n|---|---|\n");
 			for (var e : byInvariant.entrySet()) sb.append("| ").append(e.getKey()).append(" | ").append(e.getValue()).append(" |\n");
 			sb.append('\n');
+		}
+		TreeMap<String, Integer> design = new TreeMap<>();
+		int designSites = 0;
+		for (Result r : rs) {
+			if (!r.warnings().isEmpty()) designSites++;
+			for (String w : r.warnings()) design.merge(rule(w), 1, Integer::sum);
+		}
+		if (!design.isEmpty()) {
+			sb.append("Design warnings (high-rise checks, not violations; ").append(designSites).append(" sites): ");
+			design.forEach((k, n) -> sb.append(k).append(" ").append(n).append("; "));
+			sb.append("\n\n");
 		}
 		sb.append("| site | id | tier | radius | cells | districts | lots | scenes | hub piece % | strays | violations | ms |\n|---|---|---|---|---|---|---|---|---|---|---|---|\n");
 		for (Result r : rs) {
