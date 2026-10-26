@@ -22,6 +22,13 @@ the code, a brief is the intent, and a gap between the two is a finding.
 Savanna and mass-timber are briefs without a style file yet (John,
 2026-10-25).
 
+Tiers ([DS-37](../STANDARDS.md), John 2026-10-25): cities and
+metropolises are modern, so the older-look styles above (medieval, and the
+biome house styles as they stand) are for hamlets, villages and, by default,
+towns; a city lot gets a modern or tall look, with the biome still tinting
+its colours and local materials (ROADMAP 7.7). Gap: no modern style exists
+yet for low and mid-rise city buildings.
+
 Gaps worth a decision (for John):
 
 - **No material set for tall buildings.** Every style's palette is a house
