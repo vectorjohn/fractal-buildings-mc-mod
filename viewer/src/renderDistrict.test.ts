@@ -75,3 +75,18 @@ describe('mixed-style districts', () => {
     });
   }
 });
+
+describe('dug-in buildings (SHOPLOW S1v)', () => {
+  const cutScene = () => parseScene(JSON.parse(readFileSync(new URL('../fixtures/shoplow/cut-fixture.json', import.meta.url), 'utf8')));
+  it('a single building scene with a cut draws the cut heightfield, not a cube per column, in both mesh modes', () => {
+    for (const mesh of ['instanced', 'faces'] as const) {
+      const root = buildSceneObject(cutScene(), { colour: 'role', mesh });
+      // the heightfield is one top quad per column plus sides: far fewer than 12 triangles per column, and the cut face shows
+      expect(tris(root, 'terrain'), mesh).toBeLessThan(400 * 12);
+      const s = cutScene();
+      const noCut = buildSceneObject({ ...s, buildings: s.buildings.map((b) => ({ ...b, siteBoxes: [], shell: { ...b.shell, volumes: [] } })) }, { colour: 'role', mesh });
+      // 400 columns on the instanced path (12 each) when nothing is cut; the cut scene uses the mesh path
+      if (mesh === 'instanced') expect(tris(noCut, 'terrain')).toBe(400 * 12);
+    }
+  });
+});

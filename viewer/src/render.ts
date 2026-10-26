@@ -162,8 +162,10 @@ export function buildSceneObject(scene: Scene, opts: RenderOptions): THREE.Group
     }
   }
 
-  // Terrain: the heightfield (cut by air ground boxes) for district scenes and the face path, else one cube per column.
-  if (scene.terrain && (district || faces)) {
+  // Terrain: the heightfield (cut by air ground boxes and by buildings dug into the ground) for district scenes, the face path and
+  // any scene a cut changes, else one cube per column.
+  const cut = scene.terrain !== null && tops.some((h, i) => h !== scene.terrain!.floorY[i]);
+  if (scene.terrain && (district || faces || cut)) {
     const t = scene.terrain;
     const groundTop = new Set(ground.map((g) => `${g.x},${g.y},${g.z}`));
     const m = terrainMesh(scene, tops, (x, z) => {
