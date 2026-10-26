@@ -1,10 +1,12 @@
 # Plan: doors near the street (SHOPLOW)
 
 Status: plan, not started (2026-10-26). Author: lead-coder. ROADMAP item
-**7.17 SHOPLOW**; rule [DS-45](../design/STANDARDS.md) as widened by John on
-2026-10-26 (shops, houses, workshops), which tightens DS-7 and leans on DS-4,
+**7.17 SHOPLOW**; rule [DS-45](../design/STANDARDS.md) "Doors sit near the
+street" as widened by John on 2026-10-26 (shops, houses, workshops, with
+deliberate house variants; plan revised to its accepted text the same day),
+which amends DS-7 and leans on DS-4,
 DS-6, DS-8, DS-24 and DS-25. Design input: the architect's answer
-`.claude/reports/shoplow-architect.md` (causes, measurements, an 8-point
+[shoplow-architect.md](../review/reports/shoplow-architect.md) (causes, measurements, an 8-point
 spec) and John's two refinements, passed on by the coordinator:
 
 - (2026-10-26) the house extension is approved: houses rise at most 3 on a
@@ -64,10 +66,12 @@ beard, below) are judged ugly, W6's flattening tool is the existing fallback.
 
 # Goal
 
-Every shop door sits within 2 of the street in front of it (rise -2..2);
-workshops the same (proposed, see questions); houses follow DS-45's house
-limits by default and, for a minority of lots, take one of John's two
-alternatives. No window or door ends up below the ground outside it, every
+Every shop door sits within 2 of the street in front of it (DS-45 says "at
+most 2"; the plan also keeps it at least -2, a door below the street being the
+mirror case). Houses and workshops follow DS-45's default limits (rise at most
+3 as a plain flight, 4-5 with a landing or porch at the door), and a minority
+of house lots take one of DS-45's two deliberate variants, which are checked
+for a door reachable from the street, landings and railings instead. No window or door ends up below the ground outside it, every
 door keeps a path to the street, and the world matches the plan.
 
 # Approach and key choices
@@ -102,8 +106,11 @@ areaway, shops never need it (S3 keeps `M - G <= 6`) and houses up to
 `M - G = 9` stay within DS-45 with a landing; settlement house lots are capped
 at a whole-lot relief of 8 (`Briefs.STEEP_RELIEF`). It needs terrain in the
 shell (windows, room uses and an upper door depend on the buried depth), so a
-spec field and changes to the facade, interior and massing passes. Kept as an
-optional later step (S8), pending the architect's answer to question A3.
+spec field and changes to the facade, interior and massing passes. DS-45's
+text names the bank building as what a steep lot gets; this plan meets DS-45's
+limits without it (partial dig-in plus a landing) and builds it as S8, which
+7.18 BASEMENT needs (it lists SHOPLOW's bank buildings as a dependency), after
+the architect's answer to A3.
 
 ## 2. The cut: site boxes, never over the shell
 
@@ -176,12 +183,15 @@ Deterministic from `Hash64.hash(worldSeed, "site-strategy", lot.x, lot.z)`
 
 Proposed weights (question A1): (c) 20 % of eligible lots, 40 % in jungle; (b)
 25 %, 50 % in jungle and on swamp/mangrove biomes. Shops: dig in only.
-Workshops: dig in only (a cart door wants level ground; question A2).
+Workshops: DS-45 gives them the house limits and allows the variants;
+proposed: dig in only (a cart door wants level ground; question A2).
 
-DS-45's house limits apply in every outcome: a landing at the door from rise 4
-(`TypeLimits.stoop` becomes a minimum rise: shops 2 as today, houses 4), and a
-new rule that no flight runs more than `MAX_RISERS` (5, question A5) without a
-landing.
+Default lots: a landing at the door from rise 4 (`TypeLimits.stoop` becomes a
+minimum rise: shops 2 as today, houses and workshops 4). Variant lots: no rise
+limit, but DS-45's run rule: no straight run of more than `MAX_RISERS` = 3
+risers without a landing or a turn. The checks re-derive whether a lot is a
+variant from the same hash and slope class (the scene carries the world seed,
+the lot and the terrain), so the IR needs no marker.
 
 ## 5. Market halls: the trade is on the street
 
@@ -196,14 +206,20 @@ written to JSON and hashed only when true, so every existing spec hash stays.
 
 ## 6. Checks
 
-- `door-rise` (new invariant, generator v1): for shops and workshops, every
-  entrance-storey exterior door facing the lot front has rise -2..2. Street
+- `door-rise` (new invariant, generator v1; DS-45's enforcement): every
+  entrance-storey exterior door facing the lot front. Shops rise -2..2
+  (4 off a frontage pavement, a later item, so no exemption yet); houses and
+  workshops on default lots at most 5, with a landing at the door above 3;
+  variant lots are exempt from the rise and get `flight-landings`. Street
   level: the scene's ground surface (`StairGround.surfaceLevels`) at the first
   column outside the lot in line with the door, else the effective ground
-  there (CLI `check` scenes have no streets). Stilted buildings are exempt
-  (their trade floor is the open ground). Houses are measured, not failed.
-- `flight-landings` (new invariant): no exterior flight of a house, shop or
-  workshop has more than `MAX_RISERS` risers in a row without a level tread.
+  there (DS-45 says `frontY`, else the door's outside cell; the scene's own
+  street surface is the same street, read where the door meets it, and CLI
+  `check` scenes have no streets). Stilted buildings are exempt (their trade
+  floor is the open ground).
+- `flight-landings` (new invariant): on variant lots, no straight run of more
+  than `MAX_RISERS` (3) risers without a level tread or a turn; reported for
+  every other flight.
 - A **door-rise table** per type (rise buckets <= -3, -2..0, 1, 2, 3, 4, 5, 6-8,
   9+, and the share with a landing) in `check` and `city-check`, like the
   glazing table: the before/after measure.
@@ -277,13 +293,13 @@ written to JSON and hashed only when true, so every existing spec hash stays.
   `ground[s0] < oy` behaviour; houses 4; others never).
 - House strategy pick (section 4) with only (a) wired: the hash and the slope
   classes exist; (b) and (c) return (a) until S6/S7.
-- Promote `door-rise` (shops, workshops) to a failing invariant in
-  `Invariant` (append last, as `window-size` was).
+- Promote `door-rise` (shops; houses and workshops on default lots) to a
+  failing invariant in `Invariant` (append last, as `window-size` was).
 - Tests:
   - `DigInTest` (planner-core), shops and workshops on `plane:64:0:1:N` for N in
     3, 4, 6, 9, 12 and fronts N/E/S/W, seeds 0..15, lots from `testLots`, plus
-    houses on N in 2, 3, 6: invariants clean; rise -2..2 (shops, workshops),
-    <= 5 (houses); cut <= 4 at every column; **no window or door cell has
+    houses on N in 2, 3, 6: invariants clean; rise -2..2 (shops), <= 5 with a
+    landing above 3 (houses, workshops); cut <= 4 at every column; **no window or door cell has
     effective ground above its bottom in the column outside it** (walk every
     exterior opening; mutation: drop the ring and this fails); every site cell
     outside the footprint with earth above `s` is cut; no `AIR` site box
@@ -385,11 +401,11 @@ written to JSON and hashed only when true, so every existing spec hash stays.
 ## S6 (after S2) Raised houses: flights with landings
 
 - `steps()`: the breadth-first search runs over (cell, level, risers since the
-  last level tread) so a flight may put a level tread between risers and must
-  after `MAX_RISERS`; shortest route first, ties as today; a route may not use
+  last level tread or turn) so a flight may put a level tread between risers
+  and must, or turn, after `MAX_RISERS` (3) straight risers; shortest route first, ties as today; a route may not use
   a cell twice. Landings get rails as landings (`RAIL_DROP_LANDING`).
 - Wire strategy (c) in the house pick (`s = s0`); promote `flight-landings` to a
-  failing invariant for houses, shops and workshops.
+  failing invariant for variant lots (DS-45).
 - Tests: `FlightLandingsTest`: house on `plane:64:0:1:2` with (c) forced, rise
   8-12, every run <= `MAX_RISERS`, all treads railed (DS-8), invariants clean;
   the strategy share over 400 uphill lots within 5 points of the weights; the
@@ -411,13 +427,15 @@ written to JSON and hashed only when true, so every existing spec hash stays.
 - Tests: `PostedHouseTest` (invariants clean; no foundation box under an open
   column; door rise 1); a mutation removing a post fails `no-gap-below`.
 
-## S8 (optional, later; after architect answer A3) Bank buildings
+## S8 (after S2 and architect answer A3; before 7.18 BASEMENT) Bank buildings
 
 Houses (and workshops) with `M - G` 6-9 taking rise 1 by burying the back of
 storey 0: spec key `bank` (buried depth at the back wall), facade bays below it
 blank, storey-0 rooms with no window get a non-habitable use and a light, a
-storey-1 back door onto the high ground (DS-35's second door). Plan in detail
-only if the architect prefers it to the landing.
+storey-1 back door onto the high ground (DS-35's second door). DS-45 describes
+this for steep lots, and 7.18 BASEMENT builds on its cut and retaining
+machinery, so it is not optional; it is not needed for DS-45's limits, so it
+follows S2. Plan it in detail (lead-coder) once the architect answers A3.
 
 ## S9 (after S2, S3, S4, S6; S7 if done) Measure and review
 
@@ -454,6 +472,7 @@ only if the architect prefers it to the landing.
   expected; S9 notes the planner `bench` before/after.
 - **7.16 slope term**: reshuffles settlements and every join golden. Whichever
   of 7.16 and S2/S3 merges second regenerates goldens and fixtures.
+- **7.18 BASEMENT** (new, run-phase6): depends on SHOPLOW's floor reference, cut and retaining machinery and bank buildings (S8); its walk-outs (B2) turn the downhill plinth into a storey. `SiteGround` and the cut boxes are what it should build on; keep S2's cut builder reusable (one class, `SiteLevel`).
 - **SHOPLAND (5.12)**, **STAIRGROUND**, **LOTRAIL/MINLOT**, **DOOR2**: their tests
   stay; `ShopStoopTest` changes meaning (S2). MINLOT's rail-room widening could
   relax once fewer flights exist (not here).
@@ -479,16 +498,18 @@ For the **architect**:
   downhill lots, against digging in and the plinth. Proposed: (c) 20 %, 40 % in
   jungle; (b) 25 %, 50 % in jungle and swamp/mangrove; both only from a 4-block
   difference. Does any style rule one out (desert, snowy)?
-- A2. Workshops: dig in only, rise -2..2 like shops (cart door at yard level),
-  or houses' limits?
+- A2. Workshops: DS-45 gives them the house limits and the variants. Proposed:
+  dig in only, no variants (a cart door wants level ground). Agree?
 - A3. Partial dig-in leaves houses with `M - G` 6-9 at rise 2-5 with a landing,
-  instead of a bank building (rise 1, back of storey 0 underground, back door
-  upstairs). Acceptable for now?
+  within DS-45's limits, until S8 adds bank buildings (rise 1, back of storey 0
+  underground, back door upstairs). From what difference should S8 take over?
 - A4. The areaway: 1 cell, natural cut face, `PAVING` floor. A retaining wall
   in foundation material needs a second cell (lots have a 1-cell margin). Is
   the natural face fine; is `PAVING` the right floor; can it go unrailed at the
   top edge (that cell is outside the lot)?
-- A5. Most risers between landings: 5 (proposed)?
+- A5. DS-45 sets at most 3 straight risers on variant stairs. Should default
+  lots at rise 4-5 also break their flight (a turn after the door landing), or
+  is the door landing enough there, as DS-45's default reads?
 - A6. Market hall: stair along a side wall outside the hall (proposed) or
   inside the open floor; share among eligible lots (proposed 50 %, since few
   lots qualify); legs 3/4 confirmed.

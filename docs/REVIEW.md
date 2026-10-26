@@ -87,6 +87,7 @@ in `.claude/reports/`.
   Where: `docs/review/phase6/railings/` (`house-slope`, `shop-slope-deep`, `tower-medieval`, each `-before.png` and `-after.png`).
   Look for: do the rails read as a banister along the open side of front steps, stoops and lookout stairs; is the kerb (a block column of foundation beside the flight, with the rail on top) acceptable, or would you rather the rail stand directly on the step edge (a wider flight)? Rails drop 2 blocks below the tread before they appear (1 on a landing): is that the right threshold? No balconies or wall-walk rails yet.
   Result:
+  - @John 2026-10-26: these railing still look like they are built *at the level* of the stairs which is too low. Or at the level of the balcony! They should be one block above that level in order to do the job of a railing. If this is handled by another item, let me know. The *amount* of railings looks much better now.
 
 - [ ] **A5 release basics (p6-a5-release)**: the files a first release needs, for you to read before C3 uses them. `LICENSE` (MIT, "Copyright (c) 2026 John Reeves"), [CHANGELOG.md](../CHANGELOG.md), the player README draft [release/README-player.md](release/README-player.md) (describes what Phase 6 is building; C3 cuts what does not ship), and the placeholder icon `mod/src/main/resources/assets/fractalbuildings/icon.png`. Build change: `mod/build.gradle` names the jar `fractalbuildings-0.1.0+26.3.jar` and puts `LICENSE` in it.
   Result:
@@ -121,22 +122,28 @@ in `.claude/reports/`.
 
 ## Furnishings (7.5)
 
-- [ ] **7.5 furniture catalogue and authoring (assist-furniture, 2026-10-23)**: your "rooms look sparse" note; a design, nothing built yet.
+- [x] **7.5 furniture catalogue and authoring (assist-furniture, 2026-10-23)**: your "rooms look sparse" note; a design, nothing built yet.
   Where: [plans/furniture.md](plans/furniture.md) ("The catalogue": 25 pieces with sketches, "Which room gets what", "Open questions for John"); [FURNITURE-AUTHORING.md](FURNITURE-AUTHORING.md) (how you would build and hand over your own pieces); research [minecraft-furniture.md](research/aesthetics/minecraft-furniture.md).
   Look for: (1) pieces you would not build, or idioms you like better (chair: stairs with open-trapdoor arms; tables: fence + pressure plate, upside-down stairs; counters: upside-down stone stairs; sink: water cauldron with a tripwire hook tap; fireplace with a campfire and no chimney); (2) the per-style wood, stone, cloth and plant table; (3) whether the authoring route suits you: build in a creative world facing south, oak = main wood, dark oak = accent, stone bricks = stone, white/light gray = cloth colours, bedrock = wall behind, lime stained glass = keep clear, save with a structure block as `fractalbuildings:furniture/<id>`; (4) the four open questions at the end of the plan (sign vs trapdoor arms, job blocks in kitchens, chimneys, how full a room should be).
   - @John 2026-10-26: if we do this, what is the chance we could have optional mod interop, using furniture from other mods? 
     - @assistant 2026-10-26: Feasible as a later optional layer on top of 7.5, not part of it. It would take: detecting other furniture mods at runtime (Fabric Loader `isModLoaded`, no hard dependency); a per-mod mapping from our furniture roles and pieces (chair, table, lamp, shelf) to their block ids and states, used only when the mod is present; vanilla pieces as the fallback, so worlds and seeds stay valid without it. Caveats: their block ids and state properties can change between versions (each mapping needs a version check and a test), and we only reference their blocks, never copy code or assets, so licences matter mainly for that. Candidates on Fabric: Adorn (I believe MIT), Macaw's Furniture and Handcrafted (licences and Fabric support for our Minecraft version not checked). Worth a short research note before 7.5's later steps if you want it.
       - @John 2026-10-26: Great, lets put something in the backlog for a short research item on this.
 
-- [ ] **6.10 C1 roads in game (p6-c1-roads)**: the terraced cut (ADR 0004 Q4, you asked for this screenshot), a short bridge and a road across country, in a real world (seed 987654321).
+- [x] **6.10 C1 roads in game (p6-c1-roads)**: the terraced cut (ADR 0004 Q4, you asked for this screenshot), a short bridge and a road across country, in a real world (seed 987654321).
   Where: `docs/review/phase6/roads-ingame/` (`road-terrace-along.png`, `road-terrace-side.png`, `road-bridge-along.png`, `road-bridge-side.png`, `road-country-along.png`, `road-country-side.png`, README); in game: new world, seed 987654321, `/tp 3764 120 -1315` (terrace), `/tp 3420 90 -1304` (bridge), spectator mode.
   Look for: (1) terraces: 2-high steps with 2-wide grass benches and a dirt riser, first block level with the road: the look you want, or gentler (smaller steps, wider benches), or retaining walls; (2) the bridge: a plain plank span with no rails or piers, fine for 20 blocks; (3) the road beside a vanilla village: it stops at the village pieces and resumes, with a visible kink; (4) road surface mix (dirt path, gravel, coarse dirt per biome style) reads as a track.
   Result:
+  - @John 2026-10-26: these look good. I think we are going to want to build real bridges at some point, so lets not hard code anything about validating the existing bridges, beyond what we already have. These look fine for now.
 
 - [ ] **6.8 Fly-through frames (B9)**: do the settlements read as places from the air and at street level, per tier, in the game itself
   Where: [docs/review/phase6/flythrough/](review/phase6/flythrough/README.md) (14 of 90 frames; all 90 regenerate with `scripts/flythrough.sh`, about 25 minutes); seeds 987654321, 12345, 1.
   Look for: (1) the metropolis overview on 12345 (towers, plazas, streets, a river) against the one on seed 1 (two towers and some plazas in a forest: is it a city?); (2) the street frame on 987654321 city, which stands under a tree canopy (trees over a street); (3) 12345 city edge, which looks out over frozen sea (is a city in an ocean biome right?); (4) interiors (stairs, windows, a crafting table, dark ceilings); (5) hamlet and village overviews: houses along one street on a hillside.
   Result:
+  - @John 2026-10-26: notes:
+    - 1-metropolis-2-overview.jpg is nothing. There is no metropolis here.
+    - I’ve noticed these before but never asked, what are the big square empty pads I’ve seen in some places? One visible in 1-metropolis-2-overview.jpg
+    - 12345-city-6-edge.jpg also contains nothing in view.
+    - 12345-metropolis-2-overview.jpg looks decent, but 
 
 - [ ] **CITYQ**: small "cities" and "metropolises" become towns; city lattice reaches hilly and river-cut ground
   Where: [docs/review/phase6/cityq/](review/phase6/cityq/README.md) (before/after plan views of four fly-through sites); log [2026-10-23-p6-cityq.md](log/2026-10-23-p6-cityq.md). In game: seed 12345 around 1152,-256 (city), seed 12345 640,5312 and seed 1 -1536,4800 (now towns).
@@ -150,4 +157,11 @@ in `.claude/reports/`.
   Result:
 
 - [ ] **P7 B3b: high-rise facade bands, roof doors and roof guard (2026-10-26)**: look at `viewer/out/gallery/highrise-{plain,forest,desert}-{front,back-right,top}.png` and `highrise-cut-lobby-cutaway.png` (seeds 0..15). Windows of a tier stack straight up now, lobby and special floors have taller glass, the stair house has two doors onto a roof with a rail round it. Questions: does the one-block threshold inside each roof door read as a door sill or as an odd step; is the rail ring (iron bars on a 1-high parapet) enough, or should the roof guard be taller; do mass-timber towers with a stripped-wood column at every bay line AND a trim ring at every slab read as a timber grid or as busy (string courses are A3's choice).
+  Result:
+
+## Basements (7.18)
+
+- [ ] **Basements (2026-10-26)**: your question "do we have a plan for basements?" Nothing existed; now filed as ROADMAP 7.18 BASEMENT (steps B0-B4, not started). Work goes ahead on the defaults below; say if you want one changed.
+  Where: ROADMAP 7.18; the architect's answer [basements-architect](review/reports/basements-architect.md) (who gets one, shares, depths, access, worldgen limits) and the interior-designer's [basements-interior](review/reports/basements-interior.md) (rooms, furniture, light).
+  Look for: (a) hidden cellars, or walk-outs and high-rise levels only? The architect recommends cellars (a cellar under a taiga cabin is a discovery that makes a house feel lived in; shares keep it occasional); walk-outs-only avoids the beard, sealing and water-table work for houses. (b) A single skull in a wall niche in temple crypts: yes or no? (c) Finished basements (rec room, high-rise B1 club room): now or later? The interior-designer suggests later. (d) Proposed rules for STANDARDS: basements are service space only (storage, cellar, plant, lockers, laundry, crypt, vault; the desert sardab excepted) and don't count for DS-12; basements are lit throughout (a lantern per room, two over 12 cells wide, corridor lights every 8 or less); "Basements are reachable, lit, dry and sensible" (stacked stair or hatch, no habitable room without an areaway or walk-out window, none below nearby water, high-rise stairwell and shaft continue down); storage rooms may fill to about 50 % (amends DS-13's 40 %). Parking is out of scope (transit stations later, 7.1).
   Result:

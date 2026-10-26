@@ -239,7 +239,11 @@ and Minecraft block facts ([blocks.md](blocks.md), from John's
 - **Scope:** shops; all styles.
 - **Enforcement:** code, likely partial: SHOPLAND (`ShopStoopTest`; not read in
   detail). Narrow shops 5 above the street may still get a plain flight
-  (REVIEW 6.10, open question); answered by DS-45 (shops sit near street grade, John 2026-10-26).
+  (REVIEW 6.10, open question); answered by DS-45 (doors sit near the street, John 2026-10-26).
+  Amended by DS-45 (architect's proposal, approved by John, chat
+  2026-10-26): a shop whose door meets DS-45 (rise at most 2, or 4 off a
+  frontage pavement or arcade) needs no DS-7 terrace; DS-7 still applies
+  to any shop lifted above that.
 - **Status:** accepted. **Source:** John, REVIEW 5.12, 2026-10-21.
 
 ## DS-8 Railings on stairs, landings and balconies
@@ -805,24 +809,71 @@ drops them, and accepted ones move to the section they belong in.
 - **Status:** proposed. **Source:** architect, CITYQ review 2026-10-25
   ([p6-cityq-architect.md](../review/reports/p6-cityq-architect.md), "Proposed rules").
 
-## DS-45 Shops sit near street grade
+## DS-45 Doors sit near the street
 
-- **Rule:** a shopfront's entrance sits near the level of the street it
-  faces: at most a short stoop of 2 blocks up or down from the street
-  (agent's number). A larger level difference is taken by the building,
-  not by a stair: the floor is lowered or cut into the slope, the shop is
-  split-level, or a raised walkway or terrace runs along the whole
-  frontage and meets the street at its ends. Never a tall straight flight
-  up to a shop door.
+- **Rule:** a building's main door sits near the level of the street or
+  pavement it faces. Rise = the entrance-storey floor minus that street
+  surface (rise 1 = one step up).
+  - **Shops** (and the shop ground floor of mixed buildings): rise at most
+    2, or at most 4 when the door opens off a continuous raised pavement
+    or arcade at door level along the whole frontage (railed, DS-8, and
+    met by the street at grade or by a short flight at its ends). Never 5
+    or more.
+    Shops always meet this; they never take the variants below.
+  - **Houses and workshops, by default:** rise at most 3 as a plain
+    flight; 4-5 with a landing or porch at the door. Above that the
+    building **cuts into the slope** instead of lifting to the high
+    ground: the floor goes at door level and the earth stands against the
+    uphill walls; on a steep lot the storey above gets a back door onto
+    the high ground (a bank building). Digging in is the usual answer.
+  - **Houses and workshops, deliberate variants:** the default is not a
+    ban. A minority of lots, chosen per lot, may instead take:
+    - a **stilted or posted house** on a downhill lot: the door at or
+      near street level (within the default limits), the house hanging
+      off the slope on long posts or piers (the hillside houses of
+      Portland, Oregon);
+    - a **raised house with a long stair** on an uphill lot: the house
+      stays up on the high ground and a long stair climbs to the door,
+      broken by landings (no straight run of more than 3 risers without
+      a landing or a turn).
+
+    The architect sets the mix (how many, on which slopes, styles and
+    tiers); DS-8 railings apply to the stair, landings and any raised
+    deck.
+  - **What the rule forbids for houses and workshops** is the accidental
+    case: a single tall straight flight with no landing, or a door left
+    unreachable from the street.
+  - Numbers: the architect's (SHOPLOW answer, 2026-10-26), approved by
+    John; the shop limit of 2 was first the agent's number and the
+    architect kept it.
 - **Why:** "I'd like the shops to sit lower if we can do it, they should
   get closer to the street or there should be a walkway along them. I
   can't picture any situation where a storefront has a five meter high
-  staircase straight up to a door."
-- **Scope:** shops and the shop ground floor of mixed buildings, all
-  styles and tiers. Tightens DS-7 (a landing across a lifted front).
-- **Enforcement:** code candidate, none yet: for every shop entrance door,
-  the door's floor minus the street surface in front of it is at most 2,
-  unless a walkway or terrace at door level spans the frontage and is
-  reached from the street at grade or by a short flight at its end
-  (ROADMAP 7.17 SHOPLOW).
-- **Status:** accepted. **Source:** John, REVIEW STAIRGROUND, 2026-10-26.
+  staircase straight up to a door." Real shop thresholds are 0-2 steps;
+  house stoops run 3-8 (architect). The same highest-ground rule lifts
+  houses (river-town: 23 of 123 at rise 4+) and workshops (11 of 39).
+- **Scope:** shops, houses and workshops, all styles and tiers; not
+  walls, towers or halls for now (market halls on legs have their own
+  spec in the architect's answer). Amends DS-7: a shop that meets this
+  needs no DS-7 terrace.
+- **Enforcement:** code candidate `door-rise`, none yet: entrance-storey
+  floor minus the street surface in front of the main door (`frontY`,
+  else the terrain at the door's outside cell); shops at most 2 (4 off a
+  frontage pavement or arcade), always; houses and workshops at most 5,
+  with a landing above 3, unless the lot is a stilt or long-stair
+  variant, which is checked instead for a door reachable from the street,
+  no straight run of more than 3 risers without a landing or turn, and
+  DS-8 railings (ROADMAP 7.17 SHOPLOW).
+- **Status:** accepted. **Source:** John, REVIEW STAIRGROUND, 2026-10-26
+  (shops); widened to houses and workshops by John (chat, 2026-10-26: "I
+  agree with the architect's suggestion on houses, and widening the
+  rule"), from the architect's proposed rule "Doors sit near the street"
+  (SHOPLOW answer, [shoplow-architect](../review/reports/shoplow-architect.md)).
+  Refined by John (chat, 2026-10-26), making digging in the default for
+  houses and workshops and allowing stilt and long-stair variants: "Can
+  we make the rule not happen all the time? In real life there are
+  certainly houses (e.g. all over the hills in Portland Oregon) where
+  they sit on a hill on long stilts. Or other setups where they don't
+  always cut into the hill. I wouldn't want to make a rule that made that
+  kind of thing impossible, but definitely for shops it shouldn't happen.
+  For houses I could see allowing both."
