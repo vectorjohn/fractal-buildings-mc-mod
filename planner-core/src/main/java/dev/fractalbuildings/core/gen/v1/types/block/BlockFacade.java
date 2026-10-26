@@ -35,7 +35,7 @@ final class BlockFacade {
 				if (!l.face().equals(old.face())) continue;
 				List<String> kinds = new ArrayList<>(l.kinds());
 				for (int b = 0; b < kinds.size(); b++) if (FacadePlan.DOOR.equals(kinds.get(b)) && l.centre(b) == old.pos()) kinds.set(b, FacadePlan.WINDOW);
-				layouts.set(li, new FacadePlan.Layout(l.face(), l.start(), l.bays(), kinds));
+				layouts.set(li, l.withKinds(kinds));
 			}
 			ents.set(i, pick(c, m, layouts, u.id(), want, i));
 			changed = true;
@@ -60,7 +60,7 @@ final class BlockFacade {
 			FacadePlan.Layout l = layouts.get(pick[0]);
 			List<String> kinds = new ArrayList<>(l.kinds());
 			kinds.set(pick[1], FacadePlan.DOOR);
-			layouts.set(pick[0], new FacadePlan.Layout(l.face(), l.start(), l.bays(), kinds));
+			layouts.set(pick[0], l.withKinds(kinds));
 			return new FacadePlan.Entrance(l.face(), l.centre(pick[1]));
 		}
 		List<FacadePlan.Entrance> loose = new ArrayList<>();

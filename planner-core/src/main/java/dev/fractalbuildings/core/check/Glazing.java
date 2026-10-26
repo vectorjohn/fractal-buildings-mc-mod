@@ -25,18 +25,19 @@ public final class Glazing {
 	private Glazing() {}
 
 	/** Cell counts of one building (or the sum over many). {@code wall} includes {@code glass} and doors. */
-	public record Stats(long glass, long wall, long glassGround, long wallGround, long glassUpper, long wallUpper, long windows, long windows1x1, long windows2Tall, long windows2Wide, List<int[]> small) {
-		public static final Stats ZERO = new Stats(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, List.of());
+	public record Stats(long glass, long wall, long glassGround, long wallGround, long glassUpper, long wallUpper, long windows, long windows1x1, long windows2Tall, long windows2Wide, long windows2x2, long north2x2, List<int[]> small) {
+		public static final Stats ZERO = new Stats(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, List.of());
 
 		public Stats plus(Stats o) {
 			return new Stats(glass + o.glass, wall + o.wall, glassGround + o.glassGround, wallGround + o.wallGround, glassUpper + o.glassUpper, wallUpper + o.wallUpper,
-					windows + o.windows, windows1x1 + o.windows1x1, windows2Tall + o.windows2Tall, windows2Wide + o.windows2Wide, small);
+					windows + o.windows, windows1x1 + o.windows1x1, windows2Tall + o.windows2Tall, windows2Wide + o.windows2Wide, windows2x2 + o.windows2x2, north2x2 + o.north2x2, small);
 		}
 
 		public double share() { return wall == 0 ? 0 : (double) glass / wall; }
 		public double ground() { return wallGround == 0 ? 0 : (double) glassGround / wallGround; }
 		public double upper() { return wallUpper == 0 ? 0 : (double) glassUpper / wallUpper; }
 		public double share1x1() { return windows == 0 ? 0 : (double) windows1x1 / windows; }
+		public double share2x2() { return windows == 0 ? 0 : (double) windows2x2 / windows; }
 	}
 
 	private static final int[] DX = {1, -1, 0, 0}, DZ = {0, 0, 1, -1};
@@ -110,7 +111,7 @@ public final class Glazing {
 					}
 				}
 		// windows: connected glass groups on one face (4-neighbourhood in the face plane)
-		long n = 0, n11 = 0, n2t = 0, n2w = 0;
+		long n = 0, n11 = 0, n2t = 0, n2w = 0, n22 = 0, nN22 = 0;
 		List<int[]> small = new ArrayList<>();
 		boolean[] seen = new boolean[glassCell.length];
 		for (int y = y0; y < y1; y++)
@@ -146,8 +147,9 @@ public final class Glazing {
 					if (w == 1 && h == 1) { n11++; if (small.size() < 8) small.add(new int[] {x, y, z}); }
 					if (h >= 2) n2t++;
 					if (w >= 2) n2w++;
+					if (w >= 2 && h >= 2) { n22++; if (f == 3) nN22++; } // f == 3: open air to the north (-z), the front in the local frame
 				}
-		return new Stats(glass, wall, gG, wG, gU, wU, n, n11, n2t, n2w, small);
+		return new Stats(glass, wall, gG, wG, gU, wU, n, n11, n2t, n2w, n22, nN22 > 0 ? 1 : 0, small);
 	}
 
 	/** Accumulates stats by key (building type, style) and renders the DS-33 report. */
@@ -167,21 +169,21 @@ public final class Glazing {
 
 		public String toMarkdown(String keyName) {
 			StringBuilder sb = new StringBuilder();
-			sb.append("| ").append(keyName).append(" | buildings | glass share | ground floor | upper floors | min..max per building | windows | 1x1 | 2+ tall | 2+ wide | DS-33 target |\n|---|---|---|---|---|---|---|---|---|---|---|\n");
+			sb.append("| ").append(keyName).append(" | buildings | glass share | ground floor | upper floors | min..max per building | windows | 1x1 | 2+ tall | 2+ wide | 2x2 | DS-33 target |\n|---|---|---|---|---|---|---|---|---|---|---|---|\n");
 			for (var e : sums.entrySet()) {
 				Stats s = e.getValue();
 				double[] r = range.get(e.getKey());
-				sb.append(String.format(Locale.ROOT, "| %s | %d | %.0f %% | %.0f %% | %.0f %% | %.0f..%.0f %% | %d | %.0f %% | %.0f %% | %.0f %% | %s |\n", e.getKey(), counts.get(e.getKey()),
+				sb.append(String.format(Locale.ROOT, "| %s | %d | %.0f %% | %.0f %% | %.0f %% | %.0f..%.0f %% | %d | %.0f %% | %.0f %% | %.0f %% | %.0f %% | %s |\n", e.getKey(), counts.get(e.getKey()),
 						100 * s.share(), 100 * s.ground(), 100 * s.upper(), 100 * r[0], 100 * r[1], s.windows, 100 * s.share1x1(),
-						s.windows == 0 ? 0 : 100.0 * s.windows2Tall / s.windows, s.windows == 0 ? 0 : 100.0 * s.windows2Wide / s.windows, target(e.getKey())));
+						s.windows == 0 ? 0 : 100.0 * s.windows2Tall / s.windows, s.windows == 0 ? 0 : 100.0 * s.windows2Wide / s.windows, 100 * s.share2x2(), target(e.getKey())));
 			}
 			return sb.toString();
 		}
 
 		private static String target(String type) {
 			return switch (type) {
-				case "house", "workshop", "wall", "temple" -> "15-25 % (cottage)";
-				case "shop" -> "upper 25-40 %, shopfront 50-70 %";
+				case "house", "workshop", "wall", "temple" -> "15-25 % (cottage), 2x2 15-30 % in 2-wide styles";
+				case "shop" -> "upper 25-40 %, shopfront 50-70 %, upper sill +1";
 				case "hall", "block" -> "25-40 %";
 				case "tower" -> "-";
 				case "highrise" -> "35-90 % (7.13)";
