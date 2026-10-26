@@ -116,7 +116,7 @@ class StairRiseTest {
 					Box3 r = o.box();
 					for (int y = r.y(); y < r.maxY(); y++) for (int z = r.z(); z < r.maxZ(); z++) for (int x = r.x(); x < r.maxX(); x++) {
 						String k = p.worldX(x, z) + "," + p.worldY(y) + "," + p.worldZ(x, z);
-						if (roles.get(k) != Role.STAIR || roles.get(p.worldX(x, z) + "," + (p.worldY(y) + 1) + "," + p.worldZ(x, z)) == Role.STAIR) continue; // buried cells take the usual rules
+						if (roles.get(k) != Role.STAIR || roles.get(p.worldX(x, z) + "," + (p.worldY(y) + 1) + "," + p.worldZ(x, z)) == Role.STAIR) continue; // buried cells are full blocks (noStairBlockUnderAStairOfTheSameFlight)
 						steps++;
 						assertNotEquals(Shape.NONE, shapes.get(k), type + " seed " + seed + " step " + k + " is a full block");
 						assertEquals(Shape.stair(up), shapes.get(k), type + " seed " + seed + " step " + k);
@@ -125,5 +125,34 @@ class StairRiseTest {
 				}
 			}
 		assertTrue(steps > 100 && lasts > 10, steps + " steps, " + lasts + " top-row cells");
+	}
+
+	/** STAIRFILL: no stair-shaped block sits directly under another cell of the same flight; the support under each step is a full block. */
+	@Test
+	void noStairBlockUnderAStairOfTheSameFlight() {
+		int supports = 0;
+		for (String type : new String[] {"highrise", "house", "tower", "block", "shop", "hall"})
+			for (String style : new String[] {"medieval", "plain"})
+				for (long seed = 1; seed <= 6; seed++) {
+					SceneDoc s;
+					try { s = generate(type, seed, style); } catch (IllegalArgumentException e) { continue; }
+					PlacedBuilding b = s.buildings().get(0);
+					Map<String, Shape> shapes = new HashMap<>();
+					Map<String, Role> roles = new HashMap<>();
+					PieceRaster.building(b, Box3.of(-1000, -100, -1000, 3000, 600, 3000), (x, y, z, role, id, sh) -> { shapes.put(x + "," + y + "," + z, sh); roles.put(x + "," + y + "," + z, role); });
+					var p = b.placement();
+					for (Opening o : b.shell().openings()) {
+						if (o.kind() != OpeningKind.STAIR) continue;
+						Box3 r = o.box();
+						for (int y = r.y(); y < r.maxY(); y++) for (int z = r.z(); z < r.maxZ(); z++) for (int x = r.x(); x < r.maxX(); x++) {
+							String k = p.worldX(x, z) + "," + p.worldY(y) + "," + p.worldZ(x, z);
+							String above = p.worldX(x, z) + "," + (p.worldY(y) + 1) + "," + p.worldZ(x, z);
+							if (roles.get(k) != Role.STAIR || roles.get(above) != Role.STAIR) continue;
+							supports++;
+							assertEquals(Shape.NONE, shapes.get(k), type + " " + style + " seed " + seed + " support " + k + " must be a full block");
+						}
+					}
+				}
+		assertTrue(supports > 50, supports + " support cells");
 	}
 }

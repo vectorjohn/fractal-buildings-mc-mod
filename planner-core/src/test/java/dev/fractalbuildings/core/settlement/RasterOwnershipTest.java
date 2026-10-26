@@ -201,6 +201,8 @@ class RasterOwnershipTest {
 				} else if (c.role() == Role.STAIR) {
 					if (c.shape() == Shape.NONE) {
 						flat++;
+						Cell over = m.get(key(x, y + 1, z));
+						if (over != null && over.role() == Role.STAIR && over.owner().equals(c.owner())) continue; // support under a step (STAIRFILL): a full block by design
 						// within one building's flight (CITYQ: two neighbouring shops' entry steps at different front levels can stand side by side)
 						for (Facing q : Facing.values()) {
 							Cell hi = m.get(key(x + q.dx, y + 1, z + q.dz));
