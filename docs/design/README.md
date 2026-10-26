@@ -35,6 +35,10 @@ STANDARDS.md cites gets a committed copy in
   floor heights, roofs, materials for the building's size, where the
   entrances, halls and stairs go, and towns: streets, squares, density,
   landmarks.
+  Design taste questions John delegates (John, 2026-10-26: "I want the
+  architect to make the calls") go to the architect, who decides on
+  proportions, whether it would look real in Minecraft, and plausible
+  real-life examples, and records the call where the question was asked.
 - **Ask the interior designer** "does this room make sense?": which rooms a
   building has and how big, how they connect, furniture and its placement,
   light, colours and materials inside.

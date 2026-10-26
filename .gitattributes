@@ -10,4 +10,5 @@ docs/research/INDEX.md  merge=union
 docs/NOTES.md           merge=union
 docs/ASSUMPTIONS.md     merge=union
 docs/REVIEW.md          merge=union
+docs/REVIEW-ARCHIVE.md  merge=union
 planner-core/src/main/resources/styles/index.txt merge=union
