@@ -294,12 +294,13 @@ agent's and is marked "(agent's number)".
 ## DS-22 Tall buildings can be climbed
 
 - **Rule:** towers and high-rises have a stair core reaching every floor and
-  leave room for an elevator shaft (Create integration later, ROADMAP 7.2). The roof should always be accessible if the building has a flat roof.
+  leave room for an elevator shaft (Create integration later, ROADMAP 7.2). The roof should usually be accessible if the building has a flat roof. Some exceptions may include medieval towers. Access could be a ladder and trap door in small buildings, but stairs for larger (high rise, large apartments).
 - **Why:** high-rises "are going to be basically non-navigable on foot ...
   leave a space to put an elevator shaft for now."
 - **Scope:** tower, highrise.
 - **Enforcement:** guideline (stairs: `rooms-reachable`; shaft: none).
 - **Status:** accepted (as a direction). **Source:** John, REVIEW downtown skyline, 2026-10-21.
+- **Updated**: 2026-10-25 by @John to add roof access.
 
 # Building and facade
 
