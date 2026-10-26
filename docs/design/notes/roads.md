@@ -29,6 +29,7 @@ Drafted by the architect, 2026-10-25; materials per tier and biome are in
   corner. A lane, path or plaza meets the street at sidewalk level, across
   the sidewalk; the kerb is the step down.
 - Doors and stoops (DS-4) land on the sidewalk, never the carriageway.
-- Bridges carry carriageway, sidewalks and rails (DS-8); a deck that cannot
+- Bridges carry carriageway, sidewalks and rails (DS-8), the carriageway in
+  the road's own material in cities (DS-44); a deck that cannot
   ends the kerb at the abutment, with the carriageway raised to sidewalk
   level.

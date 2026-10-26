@@ -60,12 +60,29 @@ have slabs and stairs is in [blocks.md](../blocks.md) (`dirt_path` and
 
 | Where | Material | Wear (cracked or mossy, at most 15 % of cells, scattered; agent's number) |
 |---|---|---|
-| Tracks: paths, hamlet and village streets, roads between settlements below city | `dirt_path`; `gravel` in snowy, mountain, stony and gravelly biomes; `mud_bricks` in desert and badlands | none |
-| Town streets (no city is non-modern, DS-37) | `stone_bricks`; `mud_bricks` in desert, badlands, savanna | stone: `cracked_stone_bricks` (full blocks only), `mossy_stone_bricks` (any shape; jungle, swamp, taiga, dark forest only) |
-| City and metropolis arterials, main streets, roads between cities | `cobbled_deepslate` ("asphalt") | none exists |
+| Tracks: paths, hamlet and village streets, roads between settlements below city | `dirt_path`; `gravel` in snowy, mountain, stony and gravelly biomes; `mud_bricks` in desert, badlands, savanna | none |
+| Town streets (no city is non-modern, DS-37) | `stone_bricks`; `smooth_sandstone` in desert, badlands, savanna (John 2026-10-26, ROADS1: keeps the street hierarchy above `mud_bricks` tracks) | stone: `cracked_stone_bricks` (full blocks only), `mossy_stone_bricks` (any shape; jungle, swamp, taiga, dark forest only) |
+| City and metropolis arterials, main streets, roads between cities | `cobbled_deepslate` ("asphalt"; open: check in game against `polished_deepslate` and `gray_concrete`, below) | none exists |
 | City and metropolis streets and lanes | `light_gray_concrete` | none exists |
 | Sidewalks (DS-31) | `white_concrete` | none |
-| Bridge decks | the road's material, or one plank species; bamboo only on an all-bamboo footbridge (proposed DS-30 amendment) | as the road |
+| Bridge decks | city and metropolis, and roads between two cities: the road's own material ([DS-44](../STANDARDS.md)); elsewhere the road's material or one plank species; bamboo only on an all-bamboo footbridge (proposed DS-30 amendment) | as the road |
 
 All-bamboo footbridge (proposed): deck `bamboo_planks` or `bamboo_mosaic`,
 rails `bamboo_fence`, posts `bamboo_block`.
+
+ROADS1 follow-up (architect review 2026-10-26, accepted by John
+2026-10-26, coordinator chat; ROADMAP 7.10):
+
+- **Desert, badlands and savanna** take the desert road set (tracks
+  `mud_bricks`, town streets `smooth_sandstone`, which has slab and stairs
+  and is the vernacular desert-village look) until savanna (7.6) or
+  badlands get their own rows.
+- **Plaza paving is one calm material** ([DS-2](../STANDARDS.md)): one
+  block per style, plus the same wear allowance as roads, not a per-cell
+  mix such as stone bricks with cobblestone. Quays are a street kind, so
+  they get one surface too (DS-30).
+- **Is cobbled deepslate "asphalt"?** Dark enough from 30 blocks, but up
+  close it reads as cobbles. Compare it in game against `polished_deepslate`
+  (smooth, slab and stairs) and `gray_concrete` (slab and stairs, [blocks.md](../blocks.md))
+  next to the light grey streets, and keep whichever reads as asphalt;
+  John has the last look.
