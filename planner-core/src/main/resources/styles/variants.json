@@ -1,6 +1,9 @@
 {
   "format": "fb-style-variants/1",
   "rules": [
-    {"id": "tall-default", "types": ["highrise", "block"], "minStoreys": 7, "pick": {"tall": 1}}
+    {"id": "tall-default", "types": ["highrise", "block"], "minStoreys": 7, "pick": {"tall": 1}},
+    {"id": "keep-desert", "styles": ["desert"], "types": ["tower"], "minStoreys": 7, "pick": {"keep-desert": 1}},
+    {"id": "keep-jungle", "styles": ["jungle"], "types": ["tower"], "minStoreys": 7, "pick": {"keep-jungle": 1}},
+    {"id": "keep", "types": ["tower"], "minStoreys": 7, "pick": {"keep": 1}}
   ]
 }

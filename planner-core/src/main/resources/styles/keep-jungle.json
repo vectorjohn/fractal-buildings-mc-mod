@@ -1,0 +1,30 @@
+{
+  "format": "fb-style/1",
+  "id": "keep-jungle",
+  "extends": "jungle",
+  "biomes": [],
+
+  "palette": {
+    "floor": ["minecraft:stone_bricks"],
+    "wall": ["minecraft:mossy_stone_bricks"],
+    "trim": ["minecraft:stone_bricks"],
+    "beam": ["minecraft:stone_bricks"],
+    "fence": ["minecraft:mossy_cobblestone_wall"],
+    "stair": ["minecraft:mossy_stone_bricks"],
+    "roof": ["minecraft:mossy_stone_bricks", "minecraft:stone_bricks"],
+    "deck": ["minecraft:stone_bricks"],
+    "rail": ["minecraft:mossy_cobblestone_wall"]
+  },
+
+  "colours": {
+    "floor": ["#7a7a78"],
+    "wall": ["#6f7a68"],
+    "trim": ["#7a7a78"],
+    "beam": ["#7a7a78"],
+    "fence": ["#6f7a62"],
+    "stair": ["#6f7a68"],
+    "roof": ["#6f7a68", "#7a7a78"],
+    "deck": ["#7a7a78"],
+    "rail": ["#6f7a62"]
+  }
+}

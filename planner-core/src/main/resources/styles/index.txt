@@ -7,3 +7,6 @@ snowy
 taiga
 plains
 tall
+keep
+keep-desert
+keep-jungle
