@@ -26,10 +26,31 @@ public final class GeneratorV1 implements Generator {
 
 	@Override
 	public SceneDoc generate(GenRequest req) {
-		BuildingSpec spec = SpecPolicyV1.spec(req);
-		PlacedBuilding b = InstancePassV1.place(shells.shell(spec), req);
+		TypeLimits lim = Types.get(req.type()).limits();
+		BuildingSpec spec = SpecPolicyV1.spec(req, lim);
+		InstancePassV1.Placed placed = InstancePassV1.placeChecked(shells.shell(spec), req, lim);
+		// DS-8: a flight or landing that needs a rail on the lot line cannot have one (a rail stays in the lot), so set the building back
+		// one cell from the front first, then from every side, and keep the first placement whose flights are all railed
+		if (!placed.guarded() && !NO_SETBACK.contains(req.type())) {
+			for (int step = 0; step < SETBACKS.length && !placed.guarded(); step++) {
+				int f = SETBACKS[step][0], s = SETBACKS[step][1];
+				TypeLimits back = new TypeLimits(lim.minWidth(), lim.minDepth(), lim.minStoreys(), lim.maxStoreys(), lim.side() + s, lim.front() + f, lim.back() + s, lim.allStreets(), lim.testLots(), lim.propertySeeds(), lim.maxGrade(), lim.stoop());
+				try {
+					BuildingSpec s2 = SpecPolicyV1.spec(req, back);
+					InstancePassV1.Placed p2 = InstancePassV1.placeChecked(shells.shell(s2), req, back);
+					if (p2.guarded()) { placed = p2; spec = s2; lim = back; }
+				} catch (IllegalArgumentException e) { /* no room for a setback: keep the placement as it was */ }
+			}
+		}
+		PlacedBuilding b = placed.building();
 		var lot = req.lot();
 		TerrainPatch terrain = TerrainPatch.sample(req.terrain(), lot.x() - 2, lot.z() - 2, lot.w() + 4, lot.d() + 4);
-		return new SceneDoc(GEN_VERSION, req.worldSeed(), terrain, List.of(spec.lead() > 0 ? lot.withAir(spec.lead() - Types.get(spec.type()).limits().front(), req.brief().frontY()) : lot), List.of(b), List.of());
+		return new SceneDoc(GEN_VERSION, req.worldSeed(), terrain, List.of(spec.lead() > 0 ? lot.withAir(spec.lead() - lim.front(), req.brief().frontY()) : lot), List.of(b), List.of());
 	}
+
+	/** Extra margin tried in turn: {front, sides and back}. */
+	private static final int[][] SETBACKS = {{1, 0}, {1, 1}, {2, 1}, {2, 2}};
+
+	/** Town-wall types stand on the ring's walk and keep their margins. */
+	private static final java.util.Set<String> NO_SETBACK = java.util.Set.of("wall", "curtain", "bastion");
 }
