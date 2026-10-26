@@ -91,6 +91,14 @@ tasks.named('runClientGameTest') {
 	}
 }
 
+// Server game tests start from a fresh world (TESTISO): Fabric's runner opens the run dir's `world` as it is, so without this
+// the chunks, villagers and POIs one run saved are loaded into the next (vanilla's GameTestMainUtil resets its universe too).
+tasks.named('runGameTest') {
+	doFirst { delete layout.buildDirectory.dir('run/gameTest/world') }
+	// -Pfb.gametestFilter=<selector> runs only the matching server tests (e.g. 'fractalbuildings-test:worldgen_game_test_*')
+	if (findProperty('fb.gametestFilter')) systemProperty 'fabric-api.gametest.filter', findProperty('fb.gametestFilter')
+}
+
 // Forward -Dfb.* options to the test JVM (e.g. -Dfb.dump=12345:0:0:64:384:384:name).
 tasks.named('test') {
 	useJUnitPlatform()
@@ -164,6 +172,16 @@ def gametestScan = {
 		if (text.contains('gametest-order:')) ordered << entry[1]
 	}
 	def fmt = { list -> list.sort { a, b -> a[0] <=> b[0] ?: a[1] <=> b[1] }.collect { '"' + it[1] + '"' }.join(', ') }
+	// -Pfb.serverTestOrder=reverse | shuffle:<seed> reorders the server test classes (an isolation check: no test may depend on
+	// the order; TESTISO). The registration order also decides which test starts first among those whose chunks are ready.
+	def order = findProperty('fb.serverTestOrder')?.toString()
+	if (order) {
+		server.sort { a, b -> a[0] <=> b[0] ?: a[1] <=> b[1] }
+		if (order == 'reverse') server = server.reverse()
+		else if (order.startsWith('shuffle:')) Collections.shuffle(server, new Random(order.substring(8) as long))
+		else throw new GradleException("fb.serverTestOrder must be reverse or shuffle:<seed>, got ${order}")
+		server = server.withIndex().collect { e, i -> [i, e[1]] }
+	}
 	// Guards: a scan that finds nothing, or misses a class that carries the order marker, must fail the build, not run no tests.
 	if (server.isEmpty() || client.isEmpty()) throw new GradleException("game test scan found ${server.size()} server and ${client.size()} client test classes under src/gametest/java: the scan patterns in mod/build.gradle are broken")
 	def missing = ordered.findAll { n -> !server.any { it[1] == n } && !client.any { it[1] == n } }
@@ -173,6 +191,7 @@ def gametestScan = {
 tasks.matching { it.name == 'processGametestResources' }.configureEach { t ->
 	// the computed lists are inputs, so a change to the scan itself (not only to the sources) reruns the task
 	t.inputs.property('gametestServerList', providers.provider { gametestScan().server })
+	t.inputs.property('gametestServerOrder', providers.provider { findProperty('fb.serverTestOrder')?.toString() ?: '' })
 	t.inputs.property('gametestClientList', providers.provider { gametestScan().client })
 	t.filesMatching('fabric.mod.json') {
 		filter { String line ->

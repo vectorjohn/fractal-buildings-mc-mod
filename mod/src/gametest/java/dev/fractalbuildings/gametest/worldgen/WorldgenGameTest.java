@@ -137,17 +137,23 @@ public class WorldgenGameTest {
 
 	// ------------------------------------------------------------------------------------------------------------------ placement
 
-	@GameTest
-	public void fixtureTownPlacesIdenticallyInAnyChunkOrder(GameTestHelper helper) {
-		with(FixtureWorldPlanner.sample(), () -> placesInAnyOrder(helper.getLevel(), fixtureTarget(WorldPlanners.of(helper.getLevel(), helper.getLevel().getChunkSource().getGenerator()).orElseThrow())));
-		helper.succeed();
+	/** The world area of a target tile: its building start's and ground start's boxes. */
+	static List<BoundingBox> area(ServerLevel level, WorldPlanner w, Target t) {
+		return TestArea.boxes(level, w, t.chunk(), t.structure(), "district_ground");
 	}
 
-	@GameTest
+	@GameTest(maxTicks = TestArea.TICKS)
+	public void fixtureTownPlacesIdenticallyInAnyChunkOrder(GameTestHelper helper) {
+		WorldPlanner w = FixtureWorldPlanner.sample();
+		Target t = fixtureTarget(w);
+		TestArea.run(helper, area(helper.getLevel(), w, t), () -> with(w, () -> placesInAnyOrder(helper.getLevel(), t)));
+	}
+
+	@GameTest(maxTicks = TestArea.TICKS)
 	public void flatPlainsTownPlacesIdenticallyInAnyChunkOrder(GameTestHelper helper) {
 		WorldPlanner w = flatPlanner();
-		with(w, () -> placesInAnyOrder(helper.getLevel(), flatTarget(w)));
-		helper.succeed();
+		Target t = flatTarget(w);
+		TestArea.run(helper, area(helper.getLevel(), w, t), () -> with(w, () -> placesInAnyOrder(helper.getLevel(), t)));
 	}
 
 	/** Both starts of a tile, ascending, reversed and shuffled; then a save and a load. */
@@ -178,15 +184,22 @@ public class WorldgenGameTest {
 			check(t.tile().contains(dev.fractalbuildings.mod.worldgen.PieceLedger.x(k), dev.fractalbuildings.mod.worldgen.PieceLedger.z(k)), "cell outside the tile: " + dev.fractalbuildings.mod.worldgen.PieceLedger.x(k) + "," + dev.fractalbuildings.mod.worldgen.PieceLedger.z(k));
 		}
 		long worldAsc = StartSupport.worldHash(level, b, g);
+		StartSupport.Snapshot snapAsc = StartSupport.snapshot(level, b, g);
 		checkDoorsAndStairs(level, b);
 
-		for (var order : List.of(reversed(asc), shuffled(asc, 7), shuffled(asc, 99))) {
+		String[] names = {"reversed", "shuffled(7)", "shuffled(99)"};
+		List<List<ChunkPos>> orders = List.of(reversed(asc), shuffled(asc, 7), shuffled(asc, 99));
+		for (int i = 0; i < orders.size(); i++) {
+			var order = orders.get(i);
 			StartSupport.clear(level, b);
 			StartSupport.clear(level, g);
 			StartSupport.Placed again = placeBoth(level, b, g, order, order.hashCode());
 			check(again.digest().equals(both.digest()), "ledger digest differs in another chunk order");
 			check(again.outsideChunk() == 0 && again.duplicates() == 0, "outside/dups in another order");
-			check(StartSupport.worldHash(level, b, g) == worldAsc, "world blocks differ in another chunk order");
+			if (StartSupport.worldHash(level, b, g) != worldAsc) {
+				throw new IllegalStateException("world blocks differ in another chunk order: ascending (expected) vs " + names[i] + " (actual) for " + t.structure() + " at " + t.chunk() + ": "
+						+ StartSupport.diff(snapAsc, StartSupport.snapshot(level, b, g), both.cells(), 20));
+			}
 		}
 
 		// save and load: a reloaded start places the same blocks
@@ -255,12 +268,12 @@ public class WorldgenGameTest {
 
 	// ------------------------------------------------------------------------------------------------------------------ mutants
 
-	@GameTest
+	@GameTest(maxTicks = TestArea.TICKS)
 	public void mutantReadingTheRandomBreaksOrderIndependence(GameTestHelper helper) {
 		ServerLevel level = helper.getLevel();
 		WorldPlanner w = FixtureWorldPlanner.sample();
-		with(w, () -> {
-			Target t = fixtureTarget(w);
+		Target t = fixtureTarget(w);
+		TestArea.run(helper, area(level, w, t), () -> with(w, () -> {
 			StructureStart b = StartSupport.start(level, t.structure(), t.chunk());
 			List<ChunkPos> asc = StartSupport.chunks(b);
 			String clean = StartSupport.place(level, b, asc, 1).digest();
@@ -268,21 +281,19 @@ public class WorldgenGameTest {
 			String one = StartSupport.place(level, b, asc, 1).digest();
 			String two = StartSupport.place(level, b, reversed(asc), 2).digest();
 			check(!one.equals(clean) && !one.equals(two), "the mutant (blocks depend on the random) should differ from the clean run and between orders");
-		});
-		helper.succeed();
+		}));
 	}
 
-	@GameTest
+	@GameTest(maxTicks = TestArea.TICKS)
 	public void mutantWithoutChunkClipIsCaught(GameTestHelper helper) {
 		ServerLevel level = helper.getLevel();
 		WorldPlanner w = FixtureWorldPlanner.sample();
-		with(w, () -> {
-			Target t = fixtureTarget(w);
+		Target t = fixtureTarget(w);
+		TestArea.run(helper, area(level, w, t), () -> with(w, () -> {
 			StructureStart b = StartSupport.start(level, t.structure(), t.chunk());
 			check(StartSupport.place(level, b, StartSupport.chunks(b), 1).outsideChunk() == 0, "the clean run stays in its chunks");
 			Mutations.mode = Mutations.NO_CHUNK_CLIP;
 			check(StartSupport.place(level, b, StartSupport.chunks(b), 1).outsideChunk() > 0, "the mutant writes outside the chunk and the check sees it");
-		});
-		helper.succeed();
+		}));
 	}
 }

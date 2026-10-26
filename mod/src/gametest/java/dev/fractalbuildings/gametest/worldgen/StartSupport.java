@@ -92,6 +92,51 @@ public final class StartSupport {
 		}
 	}
 
+	/** The block states of the starts' boxes, in the order and over the cells {@link #worldHash} reads, so a mismatch can be explained cell by cell. */
+	public record Snapshot(List<BoundingBox> boxes, int minY, int[] ids) {}
+
+	public static Snapshot snapshot(ServerLevel level, StructureStart... starts) {
+		List<BoundingBox> boxes = new ArrayList<>();
+		int n = 0;
+		for (StructureStart s : starts) {
+			BoundingBox b = s.getBoundingBox();
+			boxes.add(b);
+			n += b.getXSpan() * b.getZSpan() * (b.maxY() + 2 - Math.max(level.getMinY(), b.minY() - 16) + 1);
+		}
+		int[] ids = new int[n];
+		int i = 0;
+		BlockPos.MutableBlockPos p = new BlockPos.MutableBlockPos();
+		for (BoundingBox b : boxes)
+			for (int y = Math.max(level.getMinY(), b.minY() - 16); y <= b.maxY() + 2; y++)
+				for (int z = b.minZ(); z <= b.maxZ(); z++)
+					for (int x = b.minX(); x <= b.maxX(); x++) ids[i++] = Block.getId(level.getBlockState(p.set(x, y, z)));
+		return new Snapshot(boxes, level.getMinY(), ids);
+	}
+
+	/**
+	 * The cells where {@code now} differs from {@code before} (both {@link #snapshot}s of the same starts), at most {@code max} of them, each with
+	 * the state the ledger {@code claimed} for it (or "unclaimed"): a self-explaining failure message. Empty when they agree.
+	 */
+	public static String diff(Snapshot before, Snapshot now, java.util.Map<Long, Integer> claimed, int max) {
+		StringBuilder sb = new StringBuilder();
+		int i = 0, count = 0;
+		for (BoundingBox b : before.boxes())
+			for (int y = Math.max(before.minY(), b.minY() - 16); y <= b.maxY() + 2; y++)
+				for (int z = b.minZ(); z <= b.maxZ(); z++)
+					for (int x = b.minX(); x <= b.maxX(); x++, i++) {
+						if (before.ids()[i] == now.ids()[i]) continue;
+						if (count++ < max) {
+							Integer c = claimed == null ? null : claimed.get(PieceLedger.pack(x, y, z));
+							sb.append("\n  ").append(x).append(',').append(y).append(',').append(z)
+									.append(" expected ").append(Block.stateById(before.ids()[i]))
+									.append(" actual ").append(Block.stateById(now.ids()[i]))
+									.append(c == null ? " (unclaimed)" : " (claimed " + Block.stateById(c) + ")");
+						}
+					}
+		if (count == 0) return "";
+		return count + " cells differ (first " + Math.min(count, max) + "; a cell in two boxes counts twice):" + sb;
+	}
+
 	/** Hash of the blocks of the starts' boxes (and 16 below them, for foundations): pass the building start and the ground start. */
 	public static long worldHash(ServerLevel level, StructureStart... starts) {
 		long h = 1125899906842597L;

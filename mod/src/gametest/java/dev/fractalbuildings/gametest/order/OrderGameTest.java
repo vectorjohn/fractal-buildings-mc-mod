@@ -12,6 +12,7 @@ import dev.fractalbuildings.core.world.WorldConfig;
 import dev.fractalbuildings.core.world.WorldPlanner;
 import dev.fractalbuildings.core.world.WorldProbes;
 import dev.fractalbuildings.gametest.worldgen.StartSupport;
+import dev.fractalbuildings.gametest.worldgen.TestArea;
 import dev.fractalbuildings.mod.FractalBuildingsMod;
 import dev.fractalbuildings.mod.worldgen.Mutations;
 import dev.fractalbuildings.mod.worldgen.PieceLedger;
@@ -92,6 +93,19 @@ public class OrderGameTest {
 		return last;
 	}
 
+	/** The world area of the towns {@link #town} makes for these seeds: each one's settlement start and ground start boxes (see {@link TestArea}). */
+	private static List<BoundingBox> area(ServerLevel level, int... seeds) {
+		List<BoundingBox> out = new ArrayList<>();
+		for (int seed : seeds) {
+			WorldPlanner w = flatPlanner(seed);
+			SettlementInfo n = w.nearest(0, 0, Tier.HAMLET, 2).orElseThrow(() -> new IllegalStateException("flat plains with seed " + seed + " should have a settlement near the origin"));
+			DistrictGrid.Tile t = w.grid().tileAt(n.site().centre().x(), n.site().centre().z());
+			TileInfo info = w.tile(t.ix(), t.iz()).orElseThrow();
+			out.addAll(TestArea.boxes(level, w, new ChunkPos(t.originChunkX(), t.originChunkZ()), info.tier().json, "district_ground"));
+		}
+		return out;
+	}
+
 	/** Places both starts, chunk by chunk in {@code order}; the merged ledger cells. */
 	private static StartSupport.Placed placeBoth(ServerLevel level, Town t, List<ChunkPos> order) {
 		TreeMap<Long, Integer> cells = new TreeMap<>();
@@ -170,50 +184,53 @@ public class OrderGameTest {
 		return new Readback(cells, bad, conn, connBorder, connBad, connBorderBad, first, hook);
 	}
 
-	@GameTest
+	@GameTest(maxTicks = TestArea.TICKS)
 	public void worldStatesEqualTheRasterAcrossChunkBorders(GameTestHelper helper) {
 		ServerLevel level = helper.getLevel();
-		for (boolean reversed : new boolean[] {false, true}) {
-			Readback r = readTowns(level, reversed, null);
-			FractalBuildingsMod.LOGGER.info("[B2] flag readback (reversed={}): {}", reversed, r);
-			check(r.connecting() > 100 && r.connectingOnBorder() > 0, "the towns have fences, panes or walls (" + r.connecting() + ") on chunk borders (" + r.connectingOnBorder() + ")");
-			check(r.hook().ok() && r.hook().beds() > 0, "hook readback (beds must exist and have both halves): " + r.hook());
-			check(r.mismatches() == 0, r.mismatches() + " of " + r.cells() + " blocks differ from the raster, first " + r.firstMismatch());
-		}
-		helper.succeed();
+		TestArea.run(helper, area(level, CONNECTING_SEEDS), () -> {
+			for (boolean reversed : new boolean[] {false, true}) {
+				Readback r = readTowns(level, reversed, null);
+				FractalBuildingsMod.LOGGER.info("[B2] flag readback (reversed={}): {}", reversed, r);
+				check(r.connecting() > 100 && r.connectingOnBorder() > 0, "the towns have fences, panes or walls (" + r.connecting() + ") on chunk borders (" + r.connectingOnBorder() + ")");
+				check(r.hook().ok() && r.hook().beds() > 0, "hook readback (beds must exist and have both halves): " + r.hook());
+				check(r.mismatches() == 0, r.mismatches() + " of " + r.cells() + " blocks differ from the raster, first " + r.firstMismatch());
+			}
+		});
 	}
 
-	@GameTest
+	@GameTest(maxTicks = TestArea.TICKS)
 	public void mutantWithFlag2AloneIsCaughtByTheReadback(GameTestHelper helper) {
 		ServerLevel level = helper.getLevel();
-		Readback r = readTowns(level, true, Mutations.FLAG2);
-		FractalBuildingsMod.LOGGER.info("[B2] flag2 mutant readback: {}", r);
-		check(r.connectingMismatches() > 0 && r.connectingBorderMismatches() > 0, "flag 2 alone should re-shape fences, panes or walls, some on chunk borders, so they differ from the raster; got (" + r + ")");
-		helper.succeed();
+		TestArea.run(helper, area(level, CONNECTING_SEEDS), () -> {
+			Readback r = readTowns(level, true, Mutations.FLAG2);
+			FractalBuildingsMod.LOGGER.info("[B2] flag2 mutant readback: {}", r);
+			check(r.connectingMismatches() > 0 && r.connectingBorderMismatches() > 0, "flag 2 alone should re-shape fences, panes or walls, some on chunk borders, so they differ from the raster; got (" + r + ")");
+		});
 	}
 
-	@GameTest
+	@GameTest(maxTicks = TestArea.TICKS)
 	public void hooksAreWhatTheLedgerSaysInAnyChunkOrder(GameTestHelper helper) {
 		ServerLevel level = helper.getLevel();
-		int totalBeds = 0;
-		for (int seed : new int[] {6, 2, 12}) {
-			WorldPlanner w = flatPlanner(seed);
-			final int[] beds = {0};
-			with(w, () -> {
-				Town t = town(level, w);
-				for (int i = 0; i < 12; i++) {
-					StartSupport.clear(level, t.building());
-					StartSupport.clear(level, t.ground());
-					HookReadback.Result r = HookReadback.check(level, placeBoth(level, t, i == 0 ? t.chunks() : shuffled(t.chunks(), i)).hooks());
-					FractalBuildingsMod.LOGGER.info("[B2] hooks seed {} order {}: {}", seed, i, r);
-					beds[0] += r.beds();
-					check(r.ok(), "hook readback in order " + i + " of seed " + seed + ": " + r);
-				}
-			});
-			totalBeds += beds[0];
-		}
-		check(totalBeds > 1000, "beds were read back: " + totalBeds);
-		helper.succeed();
+		TestArea.run(helper, area(level, 6, 2, 12), () -> {
+			int totalBeds = 0;
+			for (int seed : new int[] {6, 2, 12}) {
+				WorldPlanner w = flatPlanner(seed);
+				final int[] beds = {0};
+				with(w, () -> {
+					Town t = town(level, w);
+					for (int i = 0; i < 12; i++) {
+						StartSupport.clear(level, t.building());
+						StartSupport.clear(level, t.ground());
+						HookReadback.Result r = HookReadback.check(level, placeBoth(level, t, i == 0 ? t.chunks() : shuffled(t.chunks(), i)).hooks());
+						FractalBuildingsMod.LOGGER.info("[B2] hooks seed {} order {}: {}", seed, i, r);
+						beds[0] += r.beds();
+						check(r.ok(), "hook readback in order " + i + " of seed " + seed + ": " + r);
+					}
+				});
+				totalBeds += beds[0];
+			}
+			check(totalBeds > 1000, "beds were read back: " + totalBeds);
+		});
 	}
 
 	/** Fills the building start's box with stone, places, and counts the claimed-air cells that did not become air. */
@@ -237,58 +254,62 @@ public class OrderGameTest {
 		return new int[] {air, notAir};
 	}
 
-	@GameTest
+	@GameTest(maxTicks = TestArea.TICKS)
 	public void roomInteriorsAreAirEvenWhenTheTileWasSolid(GameTestHelper helper) {
 		ServerLevel level = helper.getLevel();
-		WorldPlanner w = flatPlanner();
-		with(w, () -> {
-			int[] r = solidInteriorTest(level, w);
-			FractalBuildingsMod.LOGGER.info("[B2] solid-tile air clearing: {} claimed air cells, {} not air", r[0], r[1]);
-			check(r[0] > 1000, "the town claims air (rooms): " + r[0]);
-			check(r[1] == 0, r[1] + " of " + r[0] + " claimed air cells are still solid");
+		TestArea.run(helper, area(level, 6), () -> {
+			WorldPlanner w = flatPlanner();
+			with(w, () -> {
+				int[] r = solidInteriorTest(level, w);
+				FractalBuildingsMod.LOGGER.info("[B2] solid-tile air clearing: {} claimed air cells, {} not air", r[0], r[1]);
+				check(r[0] > 1000, "the town claims air (rooms): " + r[0]);
+				check(r[1] == 0, r[1] + " of " + r[0] + " claimed air cells are still solid");
+			});
 		});
-		helper.succeed();
 	}
 
-	@GameTest
+	@GameTest(maxTicks = TestArea.TICKS)
 	public void mutantSkippingAirWritesIsCaught(GameTestHelper helper) {
 		ServerLevel level = helper.getLevel();
-		WorldPlanner w = flatPlanner();
-		with(w, () -> {
-			Mutations.mode = Mutations.SKIP_AIR;
-			int[] r = solidInteriorTest(level, w);
-			FractalBuildingsMod.LOGGER.info("[B2] skip-air mutant: {} claimed air cells, {} not air", r[0], r[1]);
-			check(r[1] > 0, "skipping air writes should leave solid cells inside claimed air; none did");
+		TestArea.run(helper, area(level, 6), () -> {
+			WorldPlanner w = flatPlanner();
+			with(w, () -> {
+				Mutations.mode = Mutations.SKIP_AIR;
+				int[] r = solidInteriorTest(level, w);
+				FractalBuildingsMod.LOGGER.info("[B2] skip-air mutant: {} claimed air cells, {} not air", r[0], r[1]);
+				check(r[1] > 0, "skipping air writes should leave solid cells inside claimed air; none did");
+			});
 		});
-		helper.succeed();
 	}
 
-	@GameTest
+	@GameTest(maxTicks = TestArea.TICKS)
 	public void mutantWithSharedCounterIsCaught(GameTestHelper helper) {
 		ServerLevel level = helper.getLevel();
-		WorldPlanner w = flatPlanner();
-		with(w, () -> {
-			Town t = town(level, w);
-			List<ChunkPos> asc = t.chunks();
-			String clean = placeBoth(level, t, asc).digest();
-			Mutations.mode = Mutations.COUNTER;
-			String one = placeBoth(level, t, asc).digest();
-			String two = placeBoth(level, t, shuffled(asc, 5)).digest();
-			check(!one.equals(clean) && !one.equals(two), "a counter shared by all writes must change the digests between runs");
+		TestArea.run(helper, area(level, 6), () -> {
+			WorldPlanner w = flatPlanner();
+			with(w, () -> {
+				Town t = town(level, w);
+				List<ChunkPos> asc = t.chunks();
+				String clean = placeBoth(level, t, asc).digest();
+				Mutations.mode = Mutations.COUNTER;
+				String one = placeBoth(level, t, asc).digest();
+				String two = placeBoth(level, t, shuffled(asc, 5)).digest();
+				check(!one.equals(clean) && !one.equals(two), "a counter shared by all writes must change the digests between runs");
+			});
 		});
-		helper.succeed();
 	}
 
-	@GameTest
+	@GameTest(maxTicks = TestArea.TICKS)
 	public void mutantClaimingCellsTwiceIsCaught(GameTestHelper helper) {
 		ServerLevel level = helper.getLevel();
-		WorldPlanner w = flatPlanner();
-		with(w, () -> {
-			Town t = town(level, w);
-			check(placeBoth(level, t, t.chunks()).duplicates() == 0, "the clean run claims every cell once");
-			Mutations.mode = Mutations.TWICE;
-			check(placeBoth(level, t, t.chunks()).duplicates() > 0, "the mutant claims ground cells twice and the ledger counts them");
+		TestArea.run(helper, area(level, 6), () -> {
+			WorldPlanner w = flatPlanner();
+			with(w, () -> {
+				Town t = town(level, w);
+				check(placeBoth(level, t, t.chunks()).duplicates() == 0, "the clean run claims every cell once");
+				Mutations.mode = Mutations.TWICE;
+				check(placeBoth(level, t, t.chunks()).duplicates() > 0, "the mutant claims ground cells twice and the ledger counts them");
+			});
 		});
-		helper.succeed();
 	}
 }

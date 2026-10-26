@@ -75,47 +75,49 @@ public class WarmingGameTest {
 		return new StartSupport.Placed(merged, outside, dups);
 	}
 
-	@GameTest
-	public void warmedAndColdWorldsPlaceTheSameBlocks(GameTestHelper helper) throws Exception {
+	@GameTest(maxTicks = TestArea.TICKS)
+	public void warmedAndColdWorldsPlaceTheSameBlocks(GameTestHelper helper) {
 		ServerLevel level = helper.getLevel();
-		Result cold = placeTile(level, planner(null));
-		check(cold.cells() > 2000, "cells claimed " + cold.cells());
+		WorldPlanner area = planner(null);
+		TestArea.run(helper, WorldgenGameTest.area(level, area, WorldgenGameTest.flatTarget(area)), () -> {
+			Result cold = placeTile(level, planner(null));
+			check(cold.cells() > 2000, "cells claimed " + cold.cells());
 
-		ThreadPoolExecutor pool = Workers.create(4);
-		try {
-			// (1) warmed and settled: region, skeletons, tile plans and buildings are all done ahead
-			WorldPlanner w = planner(pool);
-			WorldgenGameTest.Target t = WorldgenGameTest.flatTarget(planner(null));
-			int cx = (t.tile().minX() + t.tile().maxX()) / 2, cz = (t.tile().minZ() + t.tile().maxZ()) / 2;
-			w.warm(cx, cz, 2 * w.config().cellSize());
-			w.prefetch(t.tile().ix(), t.tile().iz());
-			check(Workers.awaitIdle(pool, 120_000), "the workers did not finish the prefetch");
-			LaneStats.enable(true);
-			LaneStats.reset();
-			w.observeBuildings(LaneStats::lookup);
-			Result warm = placeTile(level, w);
-			check(warm.equals(cold), "warmed world differs from the cold one: " + warm + " against " + cold);
-			System.out.println("LANE after settled warm: " + LaneStats.report().replace('\n', '|'));
-			check(LaneStats.done() > 0 && LaneStats.inline() == 0, "after prefetch every building lookup should be served ahead: done " + LaneStats.done() + " inline " + LaneStats.inline());
+			ThreadPoolExecutor pool = Workers.create(4);
+			try {
+				// (1) warmed and settled: region, skeletons, tile plans and buildings are all done ahead
+				WorldPlanner w = planner(pool);
+				WorldgenGameTest.Target t = WorldgenGameTest.flatTarget(planner(null));
+				int cx = (t.tile().minX() + t.tile().maxX()) / 2, cz = (t.tile().minZ() + t.tile().maxZ()) / 2;
+				w.warm(cx, cz, 2 * w.config().cellSize());
+				w.prefetch(t.tile().ix(), t.tile().iz());
+				check(Workers.awaitIdle(pool, 120_000), "the workers did not finish the prefetch");
+				LaneStats.enable(true);
+				LaneStats.reset();
+				w.observeBuildings(LaneStats::lookup);
+				Result warm = placeTile(level, w);
+				check(warm.equals(cold), "warmed world differs from the cold one: " + warm + " against " + cold);
+				System.out.println("LANE after settled warm: " + LaneStats.report().replace('\n', '|'));
+				check(LaneStats.done() > 0 && LaneStats.inline() == 0, "after prefetch every building lookup should be served ahead: done " + LaneStats.done() + " inline " + LaneStats.inline());
 
-			// (2) a race: prefetch queued, the lane asks at once (it joins a worker or computes inline); still the same blocks
-			WorldPlanner r = planner(pool);
-			r.prefetch(t.tile().ix(), t.tile().iz());
-			Result raced = placeTile(level, r);
-			check(raced.equals(cold), "a world planned while the prefetch ran differs from the cold one");
-			check(Workers.awaitIdle(pool, 120_000), "the workers did not finish");
+				// (2) a race: prefetch queued, the lane asks at once (it joins a worker or computes inline); still the same blocks
+				WorldPlanner r = planner(pool);
+				r.prefetch(t.tile().ix(), t.tile().iz());
+				Result raced = placeTile(level, r);
+				check(raced.equals(cold), "a world planned while the prefetch ran differs from the cold one");
+				check(Workers.awaitIdle(pool, 120_000), "the workers did not finish");
 
-			// (3) a world warmed through the warmer, as the server tick does it, then evicted: the next ask recomputes the same
-			WorldPlanner e = planner(pool);
-			check(RegionWarmer.warmPlayer(e, UUID.randomUUID(), cx, cz, pool), "the warm was refused");
-			check(Workers.awaitIdle(pool, 120_000), "the workers did not finish the warm");
-			e.evictAll();
-			check(placeTile(level, e).equals(cold), "a warmed then evicted world differs from the cold one");
-		} finally {
-			LaneStats.enable(false);
-			Workers.shutdown(pool);
-		}
-		helper.succeed();
+				// (3) a world warmed through the warmer, as the server tick does it, then evicted: the next ask recomputes the same
+				WorldPlanner e = planner(pool);
+				check(RegionWarmer.warmPlayer(e, UUID.randomUUID(), cx, cz, pool), "the warm was refused");
+				check(Workers.awaitIdle(pool, 120_000), "the workers did not finish the warm");
+				e.evictAll();
+				check(placeTile(level, e).equals(cold), "a warmed then evicted world differs from the cold one");
+			} finally {
+				LaneStats.enable(false);
+				Workers.shutdown(pool);
+			}
+		});
 	}
 
 	@GameTest

@@ -21,14 +21,10 @@ public class TeleportHoldGameTest {
 		return new TeleportTransition(level, new Vec3(x, 80, z), Vec3.ZERO, 0f, 0f, TeleportTransition.DO_NOTHING);
 	}
 
-	/** Polls each tick; when ready runs the checks and ends the test (the sequence API only retries on its own assertion type). */
+	/** Waits (wall-clock bound, see TestArea.waitThen) until ready, then runs the checks and ends the test; the test hooks are reset either way. */
 	private static void waitThen(GameTestHelper helper, java.util.function.BooleanSupplier ready, Runnable verify) {
-		boolean[] done = {false};
-		helper.onEachTick(() -> {
-			if (done[0] || !ready.getAsBoolean()) return;
-			done[0] = true;
+		TestArea.waitThen(helper, 600_000, ready, () -> {
 			try { verify.run(); } finally { reset(); }
-			helper.succeed();
 		});
 	}
 
@@ -38,7 +34,7 @@ public class TeleportHoldGameTest {
 		TeleportHold.timeoutMillis = 30_000;
 	}
 
-	@GameTest(maxTicks = 60000)
+	@GameTest(maxTicks = TestArea.TICKS)
 	public void longJumpWaitsForFullChunks(GameTestHelper helper) {
 		ServerLevel level = helper.getLevel();
 		ServerPlayer p = helper.makeMockServerPlayerInLevel();
@@ -49,7 +45,12 @@ public class TeleportHoldGameTest {
 		TeleportHold.testReleased = (pl, full, timedOut) -> {
 			seen.set("full=" + full + " timedOut=" + timedOut + " movedYet=" + (pl.position().distanceTo(start) > 1));
 		};
+		// the hold measures its deadline in wall time, and another test may block the server thread for longer than 30 s (B7 Veto scans for
+		// ~50 s in one tick on a busy machine); this test is about waiting for FULL chunks, timeoutTeleportsAnyway covers the timeout
+		TeleportHold.timeoutMillis = 600_000;
 		p.teleport(to(level, tx, tz));
+		TeleportHold.timeoutMillis = 30_000;
+		TeleportHold.testReleased = null; // captured by the hold; a test hook left set leaks into holds other tests start later
 		check(p.position().equals(start), "the player must stay put while the hold runs: " + p.position());
 		check(TeleportHold.holding(p), "the teleport must be held");
 		waitThen(helper, () -> seen.get() != null, () -> {
@@ -59,7 +60,7 @@ public class TeleportHoldGameTest {
 		});
 	}
 
-	@GameTest(maxTicks = 400)
+	@GameTest(maxTicks = TestArea.TICKS)
 	public void timeoutTeleportsAnyway(GameTestHelper helper) {
 		ServerLevel level = helper.getLevel();
 		ServerPlayer p = helper.makeMockServerPlayerInLevel();
@@ -69,7 +70,9 @@ public class TeleportHoldGameTest {
 		AtomicInteger timedOut = new AtomicInteger();
 		TeleportHold.testReleased = (pl, full, to) -> { if (to) timedOut.incrementAndGet(); };
 		p.teleport(to(level, tx, tz));
-		TeleportHold.timeoutMillis = 30_000; // the hold captured its own deadline; do not leak 300 ms into other tests
+		TeleportHold.timeoutMillis = 30_000; // the hold captured its own deadline, load and callback; do not leak them into other tests
+		TeleportHold.testLoad = null;
+		TeleportHold.testReleased = null;
 		check(TeleportHold.holding(p), "the teleport must be held");
 		waitThen(helper, () -> timedOut.get() > 0, () -> {
 			check(timedOut.get() == 1, "the timeout must fire once, was " + timedOut.get());
@@ -121,7 +124,7 @@ public class TeleportHoldGameTest {
 		helper.succeed();
 	}
 
-	@GameTest(maxTicks = 60000)
+	@GameTest(maxTicks = TestArea.TICKS)
 	public void relativeLongJumpIsHeldOnTheRightChunks(GameTestHelper helper) {
 		ServerLevel level = helper.getLevel();
 		ServerPlayer p = helper.makeMockServerPlayerInLevel();
@@ -139,7 +142,7 @@ public class TeleportHoldGameTest {
 		waitThen(helper, () -> !TeleportHold.holding(p), () -> check(p.position().distanceTo(dest) < 2, "the player must arrive at the resolved destination: " + p.position()));
 	}
 
-	@GameTest(maxTicks = 60000)
+	@GameTest(maxTicks = TestArea.TICKS)
 	public void newerTeleportReplacesTheWaitingOne(GameTestHelper helper) {
 		ServerLevel level = helper.getLevel();
 		ServerPlayer p = helper.makeMockServerPlayerInLevel();
