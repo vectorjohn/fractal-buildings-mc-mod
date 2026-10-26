@@ -643,7 +643,7 @@ drops them, and accepted ones move to the section they belong in.
   `rail-height`: every edge cell of a door-reached roof has a wall with a
   rail above it. None today.
 - **Status:** proposed. **Source:** architect, high-rise plan review
-  2026-10-25 (`.claude/reports/highrise-plan-architect.md`, answer 3).
+  2026-10-25 ([highrise-plan-architect.md](../review/reports/highrise-plan-architect.md), answer 3).
 
 ## DS-8 amendment: flights, corners and the lot line
 
@@ -672,7 +672,7 @@ drops them, and accepted ones move to the section they belong in.
   no room to set back and keep the old placement (known issue).
 - **Status:** proposed (amends the proposed DS-8 amendment). **Source:**
   architect, RAILFIX review 2026-10-25
-  (`.claude/reports/p6-railfix-architect.md`, "Proposed rules").
+  ([p6-railfix-architect.md](../review/reports/p6-railfix-architect.md), "Proposed rules").
 
 ## DS-39 Floor-to-ceiling glazing is a per-style-and-type choice
 
@@ -691,7 +691,7 @@ drops them, and accepted ones move to the section they belong in.
   - @John 2026-10-26: Appr
   **Source:**
   architect, 7.12 review 2026-10-25
-  (`.claude/reports/p7-windows-architect.md`, "Proposed rules").
+  ([p7-windows-architect.md](../review/reports/p7-windows-architect.md), "Proposed rules").
 
 ## DS-40 Settlement tier follows built lots
 
@@ -704,4 +704,4 @@ drops them, and accepted ones move to the section they belong in.
 - **Scope:** city, metropolis.
 - **Enforcement:** code candidate (planner, after district planning).
 - **Status:** proposed. **Source:** architect, CITYQ review 2026-10-25
-  (`.claude/reports/p6-cityq-architect.md`, "Proposed rules").
+  ([p6-cityq-architect.md](../review/reports/p6-cityq-architect.md), "Proposed rules").

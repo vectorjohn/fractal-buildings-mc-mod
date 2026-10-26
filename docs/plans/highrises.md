@@ -9,10 +9,10 @@ DS-22 (amended), DS-23..25, DS-29, DS-32, DS-33, DS-37; build notes
 [notes/highrises.md](../design/notes/highrises.md); briefs
 [styles/mass-timber.md](../design/styles/mass-timber.md) and
 [styles/README.md](../design/styles/README.md). Reviews this revision folds
-in: `.claude/reports/highrise-plan-architect.md` and
-`.claude/reports/highrise-plan-interior.md` (2026-10-25); earlier the
+in: [highrise-plan-architect.md](../review/reports/highrise-plan-architect.md) and
+[highrise-plan-interior.md](../review/reports/highrise-plan-interior.md) (2026-10-25); earlier the
 architect's tall-styles recommendation
-(`.claude/reports/design-tall-styles-architect.md`).
+([design-tall-styles-architect.md](../review/reports/design-tall-styles-architect.md)).
 
 # What the generator does today (checked 2026-10-25, base 88219f92)
 
