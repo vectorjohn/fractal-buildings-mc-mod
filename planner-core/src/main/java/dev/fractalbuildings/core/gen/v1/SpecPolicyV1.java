@@ -5,6 +5,7 @@ import dev.fractalbuildings.core.gen.Brief;
 import dev.fractalbuildings.core.gen.GenRequest;
 import dev.fractalbuildings.core.gen.v1.style.StyleLibrary;
 import dev.fractalbuildings.core.gen.v1.style.StyleRules;
+import dev.fractalbuildings.core.gen.v1.style.StyleVariants;
 import dev.fractalbuildings.core.ir.BuildingSpec;
 import dev.fractalbuildings.core.ir.Facing;
 import dev.fractalbuildings.core.ir.Lot;
@@ -77,6 +78,7 @@ public final class SpecPolicyV1 {
 			if (!lim.allStreets()) streets = brief.streets() | BuildingSpec.STREET_FRONT;
 		}
 		int storeys = r.range(lo, hi);
+		style = StyleLibrary.get(StyleVariants.select(style.id(), t.id(), storeys, req.biome().biome(lot.x() + lot.w() / 2, lot.z() + lot.d() / 2), null, specSeed)); // tier: null until the high-rise tiers (docs/plans/highrises.md A5)
 		int lead = 0;
 		if (brief != null && airType(t.id()) && storeys >= 2 && brief.airRights() > 0 && brief.frontY() != Brief.NO_FRONT_Y
 				&& style.massing().jetty() > 0 && minFloor >= brief.frontY()) {

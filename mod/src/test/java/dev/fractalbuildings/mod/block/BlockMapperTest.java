@@ -93,6 +93,8 @@ class BlockMapperTest {
 		// Vanilla has no stairs or slabs of these: they stay full blocks (a new entry here needs a decision).
 		var full = new TreeSet<String>();
 		for (String b : new String[] {"brown_terracotta", "moss_block", "red_terracotta", "terracotta"}) { full.add("stair:minecraft:" + b); full.add("slab:minecraft:" + b); }
+		// smooth_stone (the tall style's roof) has slabs but no stairs: ShapeTable falls back to a full block while cornices are full blocks (docs/plans/highrises.md, r2 decisions)
+		full.add("stair:minecraft:smooth_stone");
 		assertEquals(full, missing);
 	}
 

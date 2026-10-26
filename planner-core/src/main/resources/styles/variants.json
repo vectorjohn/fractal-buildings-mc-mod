@@ -1,0 +1,6 @@
+{
+  "format": "fb-style-variants/1",
+  "rules": [
+    {"id": "tall-default", "types": ["highrise", "block"], "minStoreys": 7, "pick": {"tall": 1}}
+  ]
+}
