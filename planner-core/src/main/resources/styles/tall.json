@@ -1,0 +1,40 @@
+{
+  "format": "fb-style/1",
+  "id": "tall",
+  "extends": "plain",
+  "biomes": [],
+
+  "massing": {"plans": {"box": 1, "L": 0, "T": 0}, "jettyChance": 0, "setbackChance": 15},
+
+  "roof": {"forms": {"flat": 1, "gable": 0}, "parapet": 1},
+
+  "facade": {"bayMin": 2, "bayMax": 3, "sill": 1, "windowHeight": 2, "symmetric": true},
+
+  "palette": {
+    "foundation": ["minecraft:polished_andesite"],
+    "floor": ["minecraft:polished_andesite"],
+    "wall": ["minecraft:light_gray_concrete"],
+    "trim": ["minecraft:smooth_stone"],
+    "beam": ["minecraft:smooth_stone"],
+    "fence": ["minecraft:iron_bars"],
+    "door": ["minecraft:dark_oak_door"],
+    "deck": ["minecraft:smooth_stone"],
+    "roof": ["minecraft:smooth_stone"],
+    "stair": ["minecraft:stone_bricks"],
+    "rail": ["minecraft:iron_bars"]
+  },
+
+  "colours": {
+    "foundation": ["#848786"],
+    "floor": ["#848786"],
+    "wall": ["#7d7d73"],
+    "trim": ["#9e9e9e"],
+    "beam": ["#9e9e9e"],
+    "fence": ["#8a8a8a"],
+    "door": ["#4b3621"],
+    "deck": ["#9e9e9e"],
+    "roof": ["#9e9e9e"],
+    "stair": ["#7a7a78"],
+    "rail": ["#8a8a8a"]
+  }
+}
