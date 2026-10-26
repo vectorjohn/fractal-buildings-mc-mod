@@ -179,3 +179,33 @@ How to use it:
 - **Decision**: open.
 - **Improve**: split SettlementDeterminismTest; a faster post-merge set; run
   the long client order test only nightly or before merges to `main`.
+
+### In-game tests render on the CPU (lavapipe)
+
+- **What**: every client test, `scripts/perf.sh`'s world half and the
+  fly-through render with Mesa's software Vulkan (lavapipe) under Xvfb. No
+  `perf.sh` row measures rendering (no FPS or frame time): all rows are
+  server-side or planner numbers. The planner half (`PerfPlannerTest`: cold
+  plans, region layer, recomputes) runs without a client at all. The world half
+  (locate, flight ticks, chunk ratio, postProcess, region growth, heap) runs in
+  the integrated server of a client at render distance 4, so its timing rows
+  share the 20 cores with lavapipe and with other agents; counts, bytes and
+  heap are not affected. What we cannot measure today: client frame time and
+  stutter when a city's chunks arrive.
+- **Measured**: render distance is set by the tests, not capped: 6 in the
+  worldgen/terrain client tests, 4 in `PerfClientGameTest`, 10 in the
+  fly-through (`--rd`), 8 in `server-only-test.sh`; vanilla allows 32. The
+  fly-through clamps its cameras to it (approach at most `rd*16 - 16` blocks,
+  overview offset at most `rd*8`). Chunks to generate and mesh grow as
+  (2rd+1)^2: 441 at 10, 4,225 at 32 (9.6x); at the NOTES rate of about 13 s
+  per 576 chunks that is about 95 s of generation per new camera site before
+  lavapipe draws anything. Not measured at 32. Screenshots are 854x480 by
+  default. Host GPUs (2026-10-26, read-only query): RTX 3060 12 GB (John's
+  desktop uses it, about 2.6 GB in use), Intel UHD 770 iGPU; both render nodes
+  are world-accessible.
+- **Budget**: none.
+- **Decision**: open (John: GPU for tests, and which).
+- **Improve**: move the world half's server-side rows to a dedicated server or
+  server game test (no renderer in the loop); fly-through at a higher render
+  distance with clouds off and larger shots; GPU options in the assistant's
+  2026-10-26 answer (gpu-perf).
