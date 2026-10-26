@@ -167,7 +167,7 @@ class GlazingTest {
 	@Test
 	void tallGlassOnlyInModernStyles() {
 		for (String id : StyleLibrary.ids())
-			assertEquals(java.util.Set.of("plain", "plains", "tall").contains(id) || id.startsWith("mass-timber"), StyleLibrary.get(id).facade().tallGlass(), id);
+			assertEquals(java.util.Set.of("plain", "plains", "tall").contains(id) || id.startsWith("mass-timber") || id.startsWith("tall-"), StyleLibrary.get(id).facade().tallGlass(), id);
 	}
 
 	/** The window-size invariant fires on a wall of 1x1 windows and not on one of 1x2 windows (the other invariants fire on the bare wall either way). */
@@ -190,5 +190,27 @@ class GlazingTest {
 		PlacedBuilding g = scene("house", 1, "plains", 14, 12).buildings().get(0);
 		BuildingIr ir = new BuildingIr(g.shell().spec(), Box3.of(0, 0, 0, 12, 4, 3), List.of(new dev.fractalbuildings.core.ir.Storey(0, 0, 4)), List.of(), List.of(), List.of(), List.of(), boxes);
 		return new PlacedBuilding("t", g.lots(), 0, 70, 0, 0, ir, List.of());
+	}
+
+	/** A7 round 2: bay lengths a style cannot tile (3..4 on an inner length of 5) fall back to narrower bays, so no side of a tall-style high-rise is left without windows. */
+	@Test
+	void everySideOfATallHighriseHasWindows() {
+		int[][] lots = {{17, 17}, {19, 23}, {20, 20}, {24, 20}, {28, 28}, {36, 36}, {11, 13}};
+		int towers = 0;
+		for (String style : List.of("tall-brick", "tall-stone", "tall-terracotta", "tall-concrete", "mass-timber-oak"))
+			for (int[] lot : lots)
+				for (long seed = 1; seed <= 8; seed++) {
+					SceneDoc s;
+					try { s = scene("highrise", seed, style, lot[0], lot[1]); } catch (RuntimeException e) { continue; }
+					for (PlacedBuilding b : s.buildings()) {
+						if (b.shell().storeys().size() < 7) continue;
+						towers++;
+						for (Facing f : Facing.values()) {
+							boolean any = b.shell().openings().stream().anyMatch(o -> o.facing() == f && o.kind() == dev.fractalbuildings.core.ir.OpeningKind.WINDOW);
+							assertTrue(any, style + " " + lot[0] + "x" + lot[1] + " seed " + seed + ": no windows facing " + f);
+						}
+					}
+				}
+		assertTrue(towers > 20, "towers measured " + towers);
 	}
 }

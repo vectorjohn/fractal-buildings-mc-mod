@@ -17,3 +17,7 @@ mass-timber-cherry
 keep
 keep-desert
 keep-jungle
+tall-brick
+tall-stone
+tall-terracotta
+tall-concrete

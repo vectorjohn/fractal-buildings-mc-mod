@@ -1,0 +1,34 @@
+{
+  "format": "fb-style/1",
+  "id": "tall-concrete",
+  "extends": "tall",
+  "biomes": [],
+
+  "palette": {
+    "wall": ["minecraft:white_concrete"],
+    "beam": ["minecraft:light_gray_concrete"],
+    "trim": ["minecraft:smooth_stone"],
+    "floor": ["minecraft:polished_andesite"],
+    "door": ["minecraft:dark_oak_door"],
+    "foundation": ["minecraft:polished_andesite"],
+    "roof": ["minecraft:smooth_stone"],
+    "deck": ["minecraft:smooth_stone"],
+    "stair": ["minecraft:stone_bricks"],
+    "fence": ["minecraft:iron_bars"],
+    "rail": ["minecraft:iron_bars"]
+  },
+
+  "colours": {
+    "wall": ["#cfd5d6"],
+    "beam": ["#7d7d73"],
+    "trim": ["#9e9e9e"],
+    "floor": ["#848786"],
+    "door": ["#4b3621"],
+    "foundation": ["#848786"],
+    "roof": ["#9e9e9e"],
+    "deck": ["#9e9e9e"],
+    "stair": ["#7a7a78"],
+    "fence": ["#8a8a8a"],
+    "rail": ["#8a8a8a"]
+  }
+}

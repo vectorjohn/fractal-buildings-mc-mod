@@ -1,0 +1,10 @@
+{
+  "type": "highrise",
+  "style": "jungle",
+  "lot": "36x36",
+  "terrain": "noise:7:64:6:32",
+  "front": "north",
+  "seeds": "0..15",
+  "gen": "v1",
+  "cameras": ["front-left", "back-right", "top", "front"]
+}
