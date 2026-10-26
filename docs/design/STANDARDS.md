@@ -819,14 +819,30 @@ drops them, and accepted ones move to the section they belong in.
     or arcade at door level along the whole frontage (railed, DS-8, and
     met by the street at grade or by a short flight at its ends). Never 5
     or more.
-  - **Houses:** rise at most 3 as a plain flight; 4-5 with a landing or
-    porch at the door.
-  - **Workshops:** as houses.
-  - Above those limits the building **cuts into the slope** instead of
-    lifting to the high ground: the floor goes at door level and the earth
-    stands against the uphill walls; on a steep lot the storey above gets
-    a back door onto the high ground (a bank building). Never a tall
-    straight flight up to a door.
+    Shops always meet this; they never take the variants below.
+  - **Houses and workshops, by default:** rise at most 3 as a plain
+    flight; 4-5 with a landing or porch at the door. Above that the
+    building **cuts into the slope** instead of lifting to the high
+    ground: the floor goes at door level and the earth stands against the
+    uphill walls; on a steep lot the storey above gets a back door onto
+    the high ground (a bank building). Digging in is the usual answer.
+  - **Houses and workshops, deliberate variants:** the default is not a
+    ban. A minority of lots, chosen per lot, may instead take:
+    - a **stilted or posted house** on a downhill lot: the door at or
+      near street level (within the default limits), the house hanging
+      off the slope on long posts or piers (the hillside houses of
+      Portland, Oregon);
+    - a **raised house with a long stair** on an uphill lot: the house
+      stays up on the high ground and a long stair climbs to the door,
+      broken by landings (no straight run of more than 3 risers without
+      a landing or a turn).
+
+    The architect sets the mix (how many, on which slopes, styles and
+    tiers); DS-8 railings apply to the stair, landings and any raised
+    deck.
+  - **What the rule forbids for houses and workshops** is the accidental
+    case: a single tall straight flight with no landing, or a door left
+    unreachable from the street.
   - Numbers: the architect's (SHOPLOW answer, 2026-10-26), approved by
     John; the shop limit of 2 was first the agent's number and the
     architect kept it.
@@ -843,10 +859,21 @@ drops them, and accepted ones move to the section they belong in.
 - **Enforcement:** code candidate `door-rise`, none yet: entrance-storey
   floor minus the street surface in front of the main door (`frontY`,
   else the terrain at the door's outside cell); shops at most 2 (4 off a
-  frontage pavement or arcade), houses and workshops at most 5, with a
-  landing above 3 (ROADMAP 7.17 SHOPLOW).
+  frontage pavement or arcade), always; houses and workshops at most 5,
+  with a landing above 3, unless the lot is a stilt or long-stair
+  variant, which is checked instead for a door reachable from the street,
+  no straight run of more than 3 risers without a landing or turn, and
+  DS-8 railings (ROADMAP 7.17 SHOPLOW).
 - **Status:** accepted. **Source:** John, REVIEW STAIRGROUND, 2026-10-26
   (shops); widened to houses and workshops by John (chat, 2026-10-26: "I
   agree with the architect's suggestion on houses, and widening the
   rule"), from the architect's proposed rule "Doors sit near the street"
   (SHOPLOW answer, `.claude/reports/shoplow-architect.md`, not committed).
+  Refined by John (chat, 2026-10-26), making digging in the default for
+  houses and workshops and allowing stilt and long-stair variants: "Can
+  we make the rule not happen all the time? In real life there are
+  certainly houses (e.g. all over the hills in Portland Oregon) where
+  they sit on a hill on long stilts. Or other setups where they don't
+  always cut into the hill. I wouldn't want to make a rule that made that
+  kind of thing impossible, but definitely for shops it shouldn't happen.
+  For houses I could see allowing both."
