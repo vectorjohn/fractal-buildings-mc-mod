@@ -180,6 +180,34 @@ How to use it:
 - **Improve**: split SettlementDeterminismTest; a faster post-merge set; run
   the long client order test only nightly or before merges to `main`.
 
+### Prefetch grades the neighbour tiles' ground (CITYQ r2)
+
+- **What**: `WorldPlanner.prefetch` now also computes the ground (street grading) of the eight neighbour tiles on the workers, because
+  `SpillClear` re-writes street air up to 4 blocks into neighbour chunks and must not grade a neighbour on the worldgen lane. It costs
+  extra worker time only where the neighbour tile never generates (the edge of explored land); elsewhere the work moves earlier.
+- **Measured**: not measured.
+- **Budget**: none set.
+- **Decision**: open.
+- **Improve**: grade only the border strip a neighbour needs, or prefetch only the four edge neighbours.
+
+### SpillClear runs from RoadFeature in chunks beside a settlement (CITYQ r5)
+
+- **What**: `RoadFeature.place` runs in every overworld chunk. For a chunk with a settlement within `DISTRICT_REACH` (`WorldPlanner.districtsNear`), it checks `SpillClear.hasGround`. When the chunk holds no ground piece of ours, it runs `SpillClear.run`, which reads the planned street air of neighbouring tiles' ground within 4 blocks of the chunk.
+  - With intercity roads off, `districtsNear` is always true (no road net to ask), so every overworld chunk pays the `hasGround` tile lookups.
+  - It can also compute a neighbour tile's plan and ground on the generation thread, when the prefetch has not.
+- **Measured**: not measured. B8 (`scripts/perf.sh`) should show any cost in chunk time.
+- **Budget**: none set.
+- **Decision**: open.
+- **Improve**: with roads off, answer `districtsNear` from the region view (settlement sites near the chunk) instead of `true`. Run the pass only for chunks that touch a tile border of a planned tile.
+
+### SpillClear also removes late leaves (CITYQ r7)
+
+- **What**: `SpillClear.run` now reads the street air of neighbour ground pieces up to 12 blocks out (was 4), removing only natural leaves past 4; and `SpillClear.roadLeaves` runs from `RoadFeature` in every overworld chunk with roads on, reading the 4 headroom cells of every road column in the 8 neighbour chunks (plus `districtColumns` of a neighbour that has road columns). Both remove a standing neighbour tree's crown grown after the street or road was cleared.
+- **Measured**: not measured; the street window has about 2.8 times the columns of the old one, each air cell read once (plus the existing `overridden` scan). B2's 7 orders took 18-82 s each at load about 2, in line with r3.
+- **Budget**: none set.
+- **Decision**: open.
+- **Improve**: skip box columns that cannot hold a leaf; cache the neighbours' `districtColumns`.
+
 ### In-game tests render on the CPU (lavapipe)
 
 - **What**: every client test, `scripts/perf.sh`'s world half and the

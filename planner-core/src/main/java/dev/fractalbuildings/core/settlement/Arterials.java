@@ -67,7 +67,7 @@ public final class Arterials {
 
 	/**
 	 * Terrain response (TR 5.3): an arterial runs only where a road can be graded along it, so no two coarse samples 32 blocks apart
-	 * differ by more than {@link CoarseTerrain#ROAD_STEEP_PER_32} (1 in 2; the road grade limit is 1 in 3, but the cut and fill beside a
+	 * differ by more than {@link CoarseTerrain#ROAD_STEEP_PER_32} (24 per 32, 3 in 4; the road grade limit is 1 in 3, but the cut and fill beside a
 	 * nine-wide road on steeper ground would shear the hill). Bridged spans are exempt. Pointwise.
 	 */
 	boolean gradeOk(DistrictGrid.Segment s) { return gradeOk(s, CoarseTerrain.ROAD_STEEP_PER_32); }

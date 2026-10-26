@@ -304,8 +304,15 @@ public class DistrictOrderClientGameTest implements FabricClientGameTest {
 							solidBad++;
 							if (have.is(net.minecraft.tags.BlockTags.LOGS) || have.is(net.minecraft.tags.BlockTags.LEAVES)) solidTrees++;
 							String kind = Spill.solidKind(want, have, level.getBlockState(p.set(PieceLedger.x(k), PieceLedger.y(k) + 1, PieceLedger.z(k))), level.getBlockState(p.set(PieceLedger.x(k), PieceLedger.y(k) + 2, PieceLedger.z(k))));
+							if (kind.equals("unknown") && Spill.lakeBarrier(have, level, PieceLedger.x(k), PieceLedger.y(k), PieceLedger.z(k))) kind = "lake";
 							hist.merge(blockName(want) + "->" + blockName(have) + " [" + kind + "]", 1, Integer::sum);
-							if (kind.equals("unknown")) unknownSolid++;
+							if (kind.equals("unknown")) {
+								unknownSolid++;
+								if (unknownSolid <= 10) { // CITYQ r6: where they are (cobblestone->stone in 5 of 7 orders)
+									int ux = PieceLedger.x(k), uy = PieceLedger.y(k), uz = PieceLedger.z(k);
+									dev.fractalbuildings.mod.FractalBuildingsMod.LOGGER.info("[B2] unknown solid cell {},{},{} want {} has {}; above {}; below {}; around N {} E {} S {} W {}", ux, uy, uz, blockName(want), blockName(have), blockName(level.getBlockState(p.set(ux, uy + 1, uz))), blockName(level.getBlockState(p.set(ux, uy - 1, uz))), blockName(level.getBlockState(p.set(ux, uy, uz - 1))), blockName(level.getBlockState(p.set(ux + 1, uy, uz))), blockName(level.getBlockState(p.set(ux, uy, uz + 1))), blockName(level.getBlockState(p.set(ux - 1, uy, uz))));
+								}
+							}
 							if (firstBad.isEmpty()) firstBad = PieceLedger.x(k) + "," + PieceLedger.y(k) + "," + PieceLedger.z(k) + " want " + want + " have " + have;
 						}
 					}

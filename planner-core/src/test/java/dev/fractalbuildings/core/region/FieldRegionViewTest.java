@@ -165,7 +165,7 @@ class FieldRegionViewTest {
 					if (w == null) {
 						assertNull(r.claimedBy());
 						assertNull(r.site());
-						assertEquals(p.decide(cx, cz), r.decision(), "alone " + k);
+						assertEquals(p.decide(cx, cz).sizedAlone(), r.decision(), "alone " + k);
 					} else if (w.equals(k)) {
 						owners++;
 						assertNull(r.claimedBy());
@@ -279,16 +279,61 @@ class FieldRegionViewTest {
 
 	@Test
 	void smallMaxRadiusKeepsTheOldBehaviour() {
-		// no radius above 0.4 cells: nothing claims, every cell equals its grow decision
+		// no radius above 0.4 cells: nothing claims, every cell equals its grow decision (with its tier fitted to its radius, CITYQ)
 		RegionPlanner p = planner(3, PLAINS);
 		p.maxRadius = 400;
 		FieldRegionView v = new FieldRegionView(p);
 		for (var row : batch(v, 5)) for (var r : row) {
 			assertNull(r.site());
-			assertEquals(p.decide(r.decision().cx(), r.decision().cz()), r.decision());
+			assertEquals(p.decide(r.decision().cx(), r.decision().cz()).sizedAlone(), r.decision());
 		}
 	}
 
+
+	/**
+	 * CITYQ: a city or metropolis that decides alone (a dropped claimant, clamped to half a cell) never keeps a tier its radius is
+	 * below the band of; winners keep their tier and drawn radius. On the plains world some do get demoted, and to the tier whose
+	 * band holds their radius. Fails if {@code sizedAlone} is skipped in {@code FieldRegionView.compute} (the 228-radius "city" of
+	 * seed 987654321 cell 3,0 in the B9 fly-through was one).
+	 */
+	@Test
+	void aBigTierThatDecidesAloneFitsItsRadius() {
+		int demoted = 0, keptBig = 0;
+		for (long seed : new long[] {1, 12345, 987654321L}) {
+			RegionPlanner p = planner(seed, PLAINS);
+			FieldRegionView v = new FieldRegionView(p);
+			for (var row : batch(v, 12)) {
+				for (var r : row) {
+					CellDecision d = r.decision();
+					if (!d.settled() || r.member()) continue;
+					CellDecision raw = p.decide(d.cx(), d.cz());
+					if (r.site() != null) {
+						assertEquals(raw.tier(), d.tier(), "a winner keeps its tier");
+						continue;
+					}
+					if (raw.tier().atLeast(dev.fractalbuildings.core.settlement.Tier.CITY) && d.tier().atLeast(dev.fractalbuildings.core.settlement.Tier.CITY)) keptBig++;
+					if (d.tier().atLeast(dev.fractalbuildings.core.settlement.Tier.CITY)) assertTrue(d.radius() >= d.tier().minRadius, "alone " + d.cx() + "," + d.cz() + " " + d.tier() + " r" + d.radius());
+					if (d.tier() != raw.tier()) {
+						demoted++;
+						assertEquals(Tiers.forRadius(d.radius()), d.tier());
+						assertTrue(d.tier().compareTo(raw.tier()) < 0);
+						assertEquals(raw.withRadius(d.radius()).radius(), d.radius(), "only the tier changes");
+					}
+				}
+			}
+		}
+		assertTrue(demoted >= 3, "demoted big tiers: " + demoted + " (kept " + keptBig + ")");
+	}
+
+	@Test
+	void forRadiusPicksTheBandThatStartsBelow() {
+		assertEquals(dev.fractalbuildings.core.settlement.Tier.HAMLET, Tiers.forRadius(10));
+		assertEquals(dev.fractalbuildings.core.settlement.Tier.VILLAGE, Tiers.forRadius(180));
+		assertEquals(dev.fractalbuildings.core.settlement.Tier.TOWN, Tiers.forRadius(418));
+		assertEquals(dev.fractalbuildings.core.settlement.Tier.CITY, Tiers.forRadius(450));
+		assertEquals(dev.fractalbuildings.core.settlement.Tier.CITY, Tiers.forRadius(512));
+		assertEquals(dev.fractalbuildings.core.settlement.Tier.METROPOLIS, Tiers.forRadius(1000));
+	}
 	@Test
 	void goldenSites() throws Exception {
 		List<String> stale = new ArrayList<>();

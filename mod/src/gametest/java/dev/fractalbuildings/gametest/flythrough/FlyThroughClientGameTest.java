@@ -197,6 +197,13 @@ public class FlyThroughClientGameTest implements FabricClientGameTest {
 						world.getServer().runCommand(tpCommand(f));
 						settle(context, f);
 						String name = seed + "-" + p.site().tier().json + "-" + n + "-" + f.label();
+						// a camera inside a block draws mostly void: say so next to the frame's numbers
+						String[] at = {""};
+						context.runOnClient(c -> {
+							BlockState st = c.level.getBlockState(BlockPos.containing(c.player.getEyePosition()));
+							if (!st.isAir()) at[0] = st.getBlock().getDescriptionId();
+						});
+						if (!at[0].isEmpty()) FractalBuildingsMod.LOGGER.warn("[B9] {}: the camera is inside {}", name, at[0]);
 						Path png = stableShot(context, world, name);
 						if (f.label().equals("interior")) interiors++;
 						String res = analyse(png, out.resolve(name + ".jpg"));
@@ -359,8 +366,10 @@ public class FlyThroughClientGameTest implements FabricClientGameTest {
 		}
 		if (in != null) fr.add(new Frame("interior", in[0], in[1], in[2], in[0] + in[3] * 6, in[1] + 1.2, in[2] + in[4] * 6, 30));
 		else notes.add("no door with a roofed free side in the picked tile; no interior frame");
-		// 5 slope: the most uneven planned tile near the centre, seen from its lowest sampled corner side
-		int bestRelief = -1; DistrictGrid.Tile slope = null; double[] low = null;
+		// 5 slope: the most uneven planned tile near the centre, seen from its lowest sampled corner side, 60 blocks out. Only a tile whose
+		// camera clears the ridge on the way (by 14) below the cloud cap counts: on the 12345 metropolis (tile 49,-13, relief 135) the cap
+		// held the camera under the ridge and the frame was 85 % one colour (CITYQ r3).
+		int bestRelief = -1; DistrictGrid.Tile slope = null; double[] cam = null;
 		for (int dz = -4; dz <= 4; dz++) for (int dx = -4; dx <= 4; dx++) {
 			int ix = ct.ix() + dx, iz = ct.iz() + dz;
 			if (planner.tile(ix, iz).isEmpty()) continue;
@@ -371,19 +380,39 @@ public class FlyThroughClientGameTest implements FabricClientGameTest {
 				if (fy < lo) { lo = fy; lp = new double[]{x, z}; }
 				hi = Math.max(hi, fy);
 			}
-			if (hi - lo > bestRelief) { bestRelief = hi - lo; slope = t; low = lp; }
+			if (hi - lo <= bestRelief) continue;
+			double tx = (t.minX() + t.maxX()) / 2.0, tz = (t.minZ() + t.maxZ()) / 2.0;
+			double ddx = lp[0] - tx, ddz = lp[1] - tz, dl = Math.max(1, Math.hypot(ddx, ddz));
+			double kx = tx + ddx / dl * 60, kz = tz + ddz / dl * 60;
+			double ty = exact.floorY((int) tx, (int) tz), rg = ridge(exact, kx, kz, tx, tz);
+			if (rg + 14 > CLOUDS) continue;
+			// at most 70 above the target (but always 14 over the ridge): a camera much higher sees mostly past the render distance
+			double sy = Math.max(rg + 14, Math.min(rg + 14 + 18 * site.tier().ordinal(), ty + 70));
+			bestRelief = hi - lo; slope = t; cam = new double[]{kx, sy, kz, tx, ty, tz, rg, exact.floorY((int) kx, (int) kz)};
 		}
 		if (slope != null) {
-			double tx = (slope.minX() + slope.maxX()) / 2.0, tz = (slope.minZ() + slope.maxZ()) / 2.0;
-			double dx = low[0] - tx, dz = low[1] - tz, dl = Math.max(1, Math.hypot(dx, dz));
-			double kx = tx + dx / dl * 60, kz = tz + dz / dl * 60;
-			double ty = exact.floorY((int) tx, (int) tz);
-			fr.add(new Frame("slope", kx, Math.min(CLOUDS, ridge(exact, kx, kz, tx, tz) + 14 + 18 * site.tier().ordinal()), kz, tx, ty + 4, tz, 50));
-			notes.add("slope tile " + slope.ix() + "," + slope.iz() + " relief " + bestRelief);
+			fr.add(new Frame("slope", cam[0], cam[1], cam[2], cam[3], cam[4] + 4, cam[5], 50));
+			notes.add("slope tile " + slope.ix() + "," + slope.iz() + " relief " + bestRelief + String.format(java.util.Locale.ROOT,
+					": camera %.0f,%.0f,%.0f (ridge %.0f, ground %.0f) target y %.0f", cam[0], cam[1], cam[2], cam[6], cam[7], cam[4]));
 		}
-		// 6 edge: outside the footprint on the origin's far side, looking in
-		double ex = cx + ox * (r + 40), ez = cz + oz * (r + 40);
-		double ix = cx + ox * (r - 40), iz = cz + oz * (r - 40);
+		// 6 edge: outside the built footprint on the origin's far side, looking in. The built edge is the farthest tile with buildings
+		// along the outward ray, not the drawn radius: a coastal city's disk can run hundreds of blocks out over open sea (12345 city,
+		// r 807, east rim frozen ocean: the frame showed only ice, which the sky test also reads as sky).
+		// A lot to build within 16 blocks of the ray counts (a tile is too coarse: its lots can be far off the ray).
+		int rb = 0;
+		for (int d = 0; d <= r; d += 8) {
+			int px = (int) Math.floor(cx + ox * d), pz = (int) Math.floor(cz + oz * d);
+			DistrictGrid.TileId t = planner.grid().tileOf(px, pz);
+			if (planner.tile(t.ix(), t.iz()).isEmpty()) continue;
+			for (dev.fractalbuildings.core.settlement.LotBrief l : planner.plan(t.ix(), t.iz()).plan().lots()) {
+				if (!dev.fractalbuildings.core.settlement.LotBrief.BUILD.equals(l.status())) continue;
+				if (px >= l.x() - 16 && px < l.x() + l.w() + 16 && pz >= l.z() - 16 && pz < l.z() + l.d() + 16) { rb = d; break; }
+			}
+		}
+		rb = Math.max(rb, 40);
+		notes.add("edge: built to " + rb + " of radius " + r + " along the outward ray");
+		double ex = cx + ox * (rb + 40), ez = cz + oz * (rb + 40);
+		double ix = cx + ox * (rb - 40), iz = cz + oz * (rb - 40);
 		fr.add(new Frame("edge", ex, Math.min(CLOUDS, ridge(exact, ex, ez, ix, iz) + 14 + 8 * site.tier().ordinal()), ez, ix, exact.floorY((int) ix, (int) iz) + 6, iz, 60));
 		notes.add("centre " + cx + "," + cz + " radius " + site.radius() + ", picked tile " + pick.ix() + "," + pick.iz());
 		return new Prepared(seed, site, fr, notes);

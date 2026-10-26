@@ -732,6 +732,46 @@ public final class SettlementChecks {
 	}
 
 
+	public static final String EDGE_TAPER = "edge-taper";
+	/** How far outward a tall lot must see another built lot (the architect's tally on the 12345 coast city, CITYQ r4). */
+	public static final int EDGE_REACH = 120;
+
+	/**
+	 * DS-18 (cities taper; built edges taper too): the built lots of {@code types} with no other built lot whose centre lies within
+	 * {@link #EDGE_REACH} blocks outward, i.e. away from {@code centre} within 45 degrees. Such a lot stands at the edge of the built-up
+	 * area with nothing beyond it. Lots in plan order (tiles as given, then lot order).
+	 */
+	public static List<LotBrief> edgeLots(java.util.Collection<DistrictPlan> plans, Pt centre, java.util.Set<String> types) {
+		List<LotBrief> built = new ArrayList<>();
+		for (DistrictPlan d : plans) for (LotBrief l : d.lots()) if (l.builds()) built.add(l);
+		List<LotBrief> out = new ArrayList<>();
+		for (LotBrief l : built) {
+			if (!types.contains(l.type())) continue;
+			double px = l.x() + l.w() / 2.0, pz = l.z() + l.d() / 2.0, ux = px - centre.x(), uz = pz - centre.z(), ul = StrictMath.sqrt(ux * ux + uz * uz);
+			if (ul < 1) continue;
+			ux /= ul;
+			uz /= ul;
+			boolean seen = false;
+			for (LotBrief o : built) {
+				if (o == l) continue;
+				double vx = o.x() + o.w() / 2.0 - px, vz = o.z() + o.d() / 2.0 - pz, vl = StrictMath.sqrt(vx * vx + vz * vz);
+				if (vl < 1 || vl > EDGE_REACH) continue;
+				if (vx * ux + vz * uz >= vl * StrictMath.cos(StrictMath.PI / 4)) { seen = true; break; }
+			}
+			if (!seen) out.add(l);
+		}
+		return out;
+	}
+
+	/** {@link #EDGE_TAPER}: a high-rise at the built edge (see {@link #edgeLots}). */
+	public static List<Violation> cityEdgeTaper(java.util.Collection<DistrictPlan> plans, Pt centre, java.util.function.IntBinaryOperator maskDepth) {
+		List<Violation> out = new ArrayList<>();
+		for (LotBrief l : edgeLots(plans, centre, java.util.Set.of("highrise")))
+			out.add(v(EDGE_TAPER, "high-rise " + l.id() + " (" + l.minStoreys() + "-" + l.maxStoreys() + " storeys) at " + l.x() + "," + l.z()
+					+ " has no built lot within " + EDGE_REACH + " blocks outward (the built-up mask goes on " + maskDepth.applyAsInt(l.x() + l.w() / 2, l.z() + l.d() / 2) + "): the built-up area ends at a tower", l.x(), l.z(), l.w(), l.d()));
+		return out;
+	}
+
 	private static Violation v(String id, String msg, int x, int z, int w, int d) {
 		return new Violation(id, null, msg, List.of(new Box3(x, 0, z, w, 1, d)));
 	}
