@@ -1020,7 +1020,7 @@ public final class Districts {
 			for (Facing f : new Facing[] {Facing.SOUTH, Facing.NORTH, Facing.EAST, Facing.WEST}) if (f != first) sides.add(f);
 			for (Facing front : sides) {
 				boolean alongX = front == Facing.NORTH || front == Facing.SOUTH;
-				int along = Math.max(alongX ? r.w() : r.d(), lim.minLotWidth()), deep = Math.max(alongX ? r.d() : r.w(), lim.minLotDepth());
+				int along = Math.max(alongX ? r.w() : r.d(), lim.minLotWidth() + SpecPolicyV1.RAIL_ROOM_WIDTH), deep = Math.max(alongX ? r.d() : r.w(), lim.minLotDepth() + SpecPolicyV1.RAIL_ROOM_DEPTH); // with room for a setback on a slope (MINLOT)
 				int w = alongX ? along : deep, d = alongX ? deep : along;
 				int sqLo = alongX ? sq.x() : sq.z(), sqLen = alongX ? sq.w() : sq.d();
 				int want = (alongX ? lcx : lcz) - along / 2;
@@ -2643,19 +2643,29 @@ public final class Districts {
 			QuarterKind q = qf.at(sx, sz, dens);
 			int lotX = f.x(u, 0), lotZ = f.z(u, 0);
 			int relief = 0;
-			for (int attempt = 0; attempt < 3; attempt++) {
-				Optional<ClassTable.Pick> p = ClassTable.pick(seed, lotX, lotZ, dens, q, relief, Math.min(wa, 100), dmaxFirst);
+			java.util.Set<String> excluded = new java.util.TreeSet<>(); // types this frontage could not take once the lot had grown for its setback
+			for (int attempt = 0; attempt < 6; attempt++) {
+				Optional<ClassTable.Pick> p = ClassTable.pick(seed, lotX, lotZ, dens, q, relief, Math.min(wa, 100), dmaxFirst, excluded);
 				if (p.isEmpty()) return null;
 				String type = p.get().type();
 				TypeLimits lim = Types.get(type).limits();
 				if (lim.allStreets()) return null;
-				int[] dims = dims(f, dep, u, wa, lim, Hash64.hash(seed, "lot-size", lotX, lotZ));
-				if (dims == null) return null;
+				int[] dims = dims(f, dep, u, wa, type, lim, relief, Hash64.hash(seed, "lot-size", lotX, lotZ));
+				if (dims == null) {
+					if (relief == 0) return null;
+					excluded.add(type); // the grown lot does not fit this frontage: try a smaller type
+					continue;
+				}
 				Rect r = f.rect(u, dims[0], dims[1]);
 				if (!dry(r)) return null;
-				int rel = relief(r);
-				if (!SpecPolicyV1.reliefOk(lim, rel, r.w(), r.d())) {
-					if (rel == relief) return null;
+				int rel = Math.max(relief(r), exactRelief(r)); // the brief stage measures every column: plan with the same relief (MINLOT)
+				boolean alongX = f.front == Facing.NORTH || f.front == Facing.SOUTH;
+				if (!SpecPolicyV1.reliefOk(lim, rel, r.w(), r.d()) || !SpecPolicyV1.railRoomOk(type, lim, rel, alongX ? r.w() : r.d(), alongX ? r.d() : r.w())) {
+					if (rel == relief) {
+						if (relief == 0) return null;
+						excluded.add(type); // still too steep or too small once grown: try another type
+						continue;
+					}
 					relief = rel;
 					continue;
 				}
@@ -2665,10 +2675,11 @@ public final class Districts {
 		}
 
 		/** Width along the street and depth for a type: a test lot that fits, widened to absorb a leftover too small for a lot. */
-		int[] dims(Frame f, int[] dep, int u, int wa, TypeLimits lim, long h) {
-			int minW = lim.minLotWidth(), minD = lim.minLotDepth();
-			List<int[]> cands = new ArrayList<>();
-			for (int[] t : lim.testLots()) {
+		int[] dims(Frame f, int[] dep, int u, int wa, String type, TypeLimits lim, int relief, long h) {
+			boolean room = !SpecPolicyV1.railRoomOk(type, lim, relief, lim.minLotWidth(), lim.minLotDepth()); // sloping ground: the lot grows to leave room for a setback (MINLOT)
+			int minW = lim.minLotWidth() + (room ? SpecPolicyV1.RAIL_ROOM_WIDTH : 0), minD = lim.minLotDepth() + (room ? SpecPolicyV1.RAIL_ROOM_DEPTH : 0);
+			List<int[]> cands = new ArrayList<>(); // a lot grown for its setback stays near the grown minimum: slope lots are small and many (MINLOT)
+			for (int[] t : room ? List.<int[]>of() : lim.testLots()) {
 				if (t[0] < minW || t[1] < minD || t[0] > wa || t[1] > MAX_DEPTH) continue;
 				if (minDepth(f, dep, u, t[0]) >= t[1]) cands.add(t);
 			}
@@ -2686,9 +2697,12 @@ public final class Districts {
 				w = cands.get(k)[0];
 				d = cands.get(k)[1];
 			}
-			w += Hash64.below(Hash64.hash(h, "k", 1), Math.min(4, wa - w) + 1);
+			w += Hash64.below(Hash64.hash(h, "k", 1), Math.min(room ? 1 : 4, wa - w) + 1);
 			if (wa - w < MIN_W) w = Math.min(wa, w + MIN_W);
 			w = Math.min(w, wa);
+			// a strip left beside the lot that is too narrow to take a lot grown for its setback, on sloping ground: this lot gives up width for it when it can, else takes it (MINLOT)
+			int left = wa - w, grown = lim.minLotWidth() + SpecPolicyV1.RAIL_ROOM_WIDTH;
+			if (left > 0 && left < grown && exactRelief(f.rect(u + w, left, Math.max(minD, 12))) >= SpecPolicyV1.RAIL_ROOM_RELIEF) w = wa - grown >= minW ? wa - grown : wa;
 			int dm = minDepth(f, dep, u, w);
 			d = Math.min(MAX_DEPTH, d + Hash64.below(Hash64.hash(h, "k", 2), Math.max(0, Math.min(4, dm - d)) + 1));
 			if (dm < d) d = dm;

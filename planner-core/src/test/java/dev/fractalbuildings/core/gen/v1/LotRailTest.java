@@ -37,6 +37,7 @@ class LotRailTest {
 					for (long seed = 0; seed < 6; seed++) {
 						int[] l = t.limits().oriented(l0, Facing.NORTH);
 						ProbeSpecs.Probes p = ProbeSpecs.parse(terrain);
+						if (!SpecPolicyV1.railRoomOk(t.id(), t.limits(), relief(p, l), l[0], l[1])) continue; // the lot planner never makes this lot (MINLOT)
 						GenRequest rq = new GenRequest(seed, new Lot("lot0", 0, 0, l[0], l[1], Facing.NORTH), t.id(), "medieval", p.terrain(), p.biome());
 						SceneDoc s;
 						try { s = new GeneratorV1().generate(rq); } catch (IllegalArgumentException e) { continue; }
@@ -49,27 +50,48 @@ class LotRailTest {
 		return runs;
 	}
 
+	static int relief(ProbeSpecs.Probes p, int[] l) {
+		int lo = Integer.MAX_VALUE, hi = Integer.MIN_VALUE;
+		for (int x = 0; x < l[0]; x++) for (int z = 0; z < l[1]; z++) { int y = p.terrain().floorY(x, z); lo = Math.min(lo, y); hi = Math.max(hi, y); }
+		return hi - lo;
+	}
+
 	private record BuildingSpecBounds(int w, int d) {}
 
 	@Test
 	void everyFlightIsRailedInsideTheLotAndInvariantsHold() {
-		int total = 0, setBack = 0, unguarded = 0, noRoom = 0;
-		java.util.Map<String, Integer> byType = new java.util.TreeMap<>();
+		int total = 0, setBack = 0, unguarded = 0;
 		List<String> bad = new ArrayList<>();
 		for (Run r : matrix()) {
 			total++;
 			if (r.setBack()) setBack++;
 			PlacedBuilding b = r.scene().buildings().get(0);
 			List<String> u = RailingTest.unguardedEdges(b, r.rq());
-			TypeLimits lim = Types.get(r.rq().type()).limits();
-			boolean room = r.rq().lot().w() - 2 * lim.side() - 2 >= lim.minWidth() && r.rq().lot().d() - lim.front() - lim.back() - 1 >= lim.minDepth();
-			if (!u.isEmpty() && !room) { noRoom++; byType.merge(r.rq().type(), 1, Integer::sum); }
-			else if (!u.isEmpty()) { unguarded++; if (bad.size() < 10) bad.add(r.rq().type() + " " + r.rq().lot().w() + "x" + r.rq().lot().d() + " seed " + r.rq().worldSeed() + " " + u.get(0)); }
+			if (!u.isEmpty()) { unguarded++; if (bad.size() < 10) bad.add(r.rq().type() + " " + r.rq().lot().w() + "x" + r.rq().lot().d() + " seed " + r.rq().worldSeed() + " " + u.get(0)); }
 			assertEquals(List.of(), Invariants.check(r.scene(), r.rq().terrain()), r.rq().type() + " seed " + r.rq().worldSeed());
 		}
-		System.out.println("LOTRAIL matrix: " + total + " buildings, " + setBack + " set back, " + unguarded + " with an unguarded edge, " + noRoom + " more with no room for a setback " + byType + " " + bad);
+		System.out.println("LOTRAIL matrix: " + total + " buildings, " + setBack + " set back, " + unguarded + " with an unguarded edge, " + " " + bad);
 		assertTrue(total > 500, "only " + total);
 		assertEquals(List.of(), bad, "unguarded " + unguarded + " of " + total);
+	}
+
+	/** MINLOT: a lot at the type minimum needs more room on ground that needs a railed flight, and needs the room on a slope for a setback. */
+	@Test
+	void lotsAtTheMinimumNeedRoomOnSlopesAndAreRailedWithIt() {
+		for (String type : List.of("house", "tower", "highrise")) {
+			TypeLimits lim = Types.get(type).limits();
+			for (long seed = 0; seed < 4; seed++) {
+				ProbeSpecs.Probes slope = ProbeSpecs.parse("plane:64:0:1:2"), flat = ProbeSpecs.parse("flat:64");
+				int w = lim.minLotWidth(), d = lim.minLotDepth();
+				org.junit.jupiter.api.Assertions.assertFalse(SpecPolicyV1.railRoomOk(type, lim, relief(slope, new int[] {w, d}), w, d), type);
+				org.junit.jupiter.api.Assertions.assertTrue(SpecPolicyV1.railRoomOk(type, lim, relief(slope, new int[] {w + 2, d + 1}), w + 2, d + 1), type);
+				org.junit.jupiter.api.Assertions.assertTrue(SpecPolicyV1.railRoomOk(type, lim, 0, w, d), type);
+				SceneDoc fs = new GeneratorV1().generate(new GenRequest(seed, new Lot("l", 0, 0, w, d, Facing.NORTH), type, "medieval", flat.terrain(), flat.biome()));
+				assertEquals(List.of(), Invariants.check(fs, flat.terrain()), type + " flat seed " + seed);
+				SceneDoc s = new GeneratorV1().generate(new GenRequest(seed, new Lot("l", 0, 0, w + 2, d + 1, Facing.NORTH), type, "medieval", slope.terrain(), slope.biome()));
+				assertEquals(List.of(), RailingTest.unguardedEdges(s.buildings().get(0), new GenRequest(seed, new Lot("l", 0, 0, w + 2, d + 1, Facing.NORTH), type, "medieval", slope.terrain(), slope.biome())), type + " seed " + seed);
+			}
+		}
 	}
 
 	/** Every cell in front of a door wider than one cell is level with the door or a step down at most, or a landing tread. */

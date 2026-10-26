@@ -16,8 +16,8 @@
     {"id": "d54_m23.l1", "x": 8655, "z": -3563, "w": 23, "d": 23, "front": "south", "type": "house", "style": "desert", "storeys": [2, 3], "streets": 1, "airRights": 2, "frontY": 68, "density": 63, "status": "build"},
     {"id": "d54_m23.l2", "x": 8678, "z": -3553, "w": 16, "d": 13, "front": "south", "type": "house", "style": "plains", "storeys": [2, 3], "streets": 1, "airRights": 2, "frontY": 67, "density": 60, "status": "build"},
     {"id": "d54_m23.l3", "x": 8694, "z": -3557, "w": 9, "d": 17, "front": "south", "type": "shop", "style": "desert", "storeys": [2, 4], "streets": 1, "airRights": 2, "frontY": 67, "density": 60, "status": "build"},
-    {"id": "d54_m23.l4", "x": 8709, "z": -3547, "w": 10, "d": 7, "front": "south", "type": "house", "style": "desert", "storeys": [2, 3], "streets": 1, "airRights": 2, "frontY": 67, "density": 56, "status": "build"},
-    {"id": "d54_m23.l5", "x": 8723, "z": -3550, "w": 15, "d": 10, "front": "south", "type": "house", "style": "desert", "storeys": [2, 3], "streets": 1, "airRights": 2, "frontY": 69, "density": 56, "status": "build"}
+    {"id": "d54_m23.l4", "x": 8705, "z": -3551, "w": 10, "d": 11, "front": "south", "type": "house", "style": "desert", "storeys": [2, 3], "streets": 1, "airRights": 2, "frontY": 67, "density": 60, "status": "build"},
+    {"id": "d54_m23.l5", "x": 8715, "z": -3556, "w": 17, "d": 16, "front": "south", "type": "workshop", "style": "desert", "storeys": [2, 2], "streets": 1, "airRights": 2, "frontY": 67, "density": 56, "status": "build"}
   ],
   "scene": null,
   "violations": []

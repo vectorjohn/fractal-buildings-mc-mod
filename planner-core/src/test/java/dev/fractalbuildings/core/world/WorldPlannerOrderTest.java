@@ -199,7 +199,7 @@ class WorldPlannerOrderTest {
 	/** The biome answer depends on how many questions came before (order dependence). */
 	static WorldProbes counting(WorldProbes p) {
 		AtomicInteger calls = new AtomicInteger();
-		BiomeProbe b = (x, z) -> calls.incrementAndGet() % 311 == 0 ? "minecraft:desert" : p.biome().biome(x, z);
+		BiomeProbe b = (x, z) -> calls.incrementAndGet() % 97 == 0 ? "minecraft:desert" : p.biome().biome(x, z);
 		return new WorldProbes(p.region(), p.coarse(), p.exact(), b, p.window());
 	}
 

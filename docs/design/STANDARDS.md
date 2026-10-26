@@ -766,8 +766,10 @@ drops them, and accepted ones move to the section they belong in.
   LOTRAIL (2026-10-25): enforced in code: the site pass sets a building back
   (front, then every side, up to 2 cells) until every flight and landing is
   railed inside the lot; a door wider than one cell gets a landing as wide as
-  the door. Tests: `RailingTest`, `LotRailTest`. Lots at the type minimum have
-  no room to set back and keep the old placement (known issue).
+  the door. Tests: `RailingTest`, `LotRailTest`. MINLOT (2026-10-26): on ground with relief 2 or more a lot must be 2 wider and
+  1 deeper than the type minimum (`SpecPolicyV1.railRoomOk`); the lot planner
+  sizes and picks types accordingly, the generator still builds on any lot that fits, and
+  `LOT_GRADE` checks it.
 - **Status:** proposed (amends the proposed DS-8 amendment). **Source:**
   architect, RAILFIX review 2026-10-25
   ([p6-railfix-architect.md](../review/reports/p6-railfix-architect.md), "Proposed rules").

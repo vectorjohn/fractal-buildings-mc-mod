@@ -118,13 +118,19 @@ public final class ClassTable {
 	 * @param lotW width of the lot in blocks (either orientation may be used by the front chosen later)
 	 */
 	public static Optional<Pick> pick(long seed, int lotX, int lotZ, int density, QuarterKind quarter, int relief, int lotW, int lotD) {
+		return pick(seed, lotX, lotZ, density, quarter, relief, lotW, lotD, java.util.Set.of());
+	}
+
+	/** As above, without the types in {@code excluded} (a type the street frontage could not take). */
+	public static Optional<Pick> pick(long seed, int lotX, int lotZ, int density, QuarterKind quarter, int relief, int lotW, int lotD, java.util.Set<String> excluded) {
 		if (quarter == QuarterKind.PARK) return Optional.empty();
 		List<Entry> left = new ArrayList<>();
 		for (Entry en : entries(density, quarter)) {
-			if (en.weight() <= 0) continue;
+			if (en.weight() <= 0 || excluded.contains(en.type())) continue;
 			TypeLimits lim = Types.get(en.type()).limits();
 			boolean fits = (lotW >= lim.minLotWidth() && lotD >= lim.minLotDepth()) || (lotD >= lim.minLotWidth() && lotW >= lim.minLotDepth());
-			if (!fits || !SpecPolicyV1.reliefOk(lim, relief, lotW, lotD) || !reliefAllows(en.type(), relief)) continue;
+			boolean room = SpecPolicyV1.railRoomOk(en.type(), lim, relief, lotW, lotD) || SpecPolicyV1.railRoomOk(en.type(), lim, relief, lotD, lotW);
+			if (!fits || !room || !SpecPolicyV1.reliefOk(lim, relief, lotW, lotD) || !reliefAllows(en.type(), relief)) continue;
 			int min = Math.max(en.min(), lim.minStoreys()), max = Math.min(en.max(), lim.maxStoreys());
 			if (max < min) continue;
 			if (en.type().equals("highrise")) {

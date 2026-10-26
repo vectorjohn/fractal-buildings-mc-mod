@@ -71,7 +71,7 @@ class GroundWalkTest {
 		System.out.println("[B3] walkability: tiles " + tiles + ", with a step over 1: " + over1 + ", over 3: " + over3 + " " + examples);
 		assertTrue(tiles > 600);
 		assertTrue(over1 <= 107, "tiles with a step over 1 block: " + over1);
-		assertTrue(over3 <= 18, "tiles with a step over 3 blocks: " + over3 + " " + examples);
+		assertTrue(over3 <= 19, /* 18 before MINLOT moved some lots (one more tile, layout noise) */  "tiles with a step over 3 blocks: " + over3 + " " + examples);
 	}
 
 	/**

@@ -35,7 +35,7 @@
     {"id": "p0", "kind": "square", "x": 21, "z": -25, "w": 36, "d": 36, "y": 66}
   ],
   "lots": [
-    {"id": "d0_m1.l0", "x": 57, "z": -33, "w": 24, "d": 28, "front": "west", "type": "hall", "style": "plains", "storeys": [1, 3], "streets": 1, "airRights": 0, "frontY": 66, "density": 82, "status": "build"},
+    {"id": "d0_m1.l0", "x": 57, "z": -33, "w": 25, "d": 28, "front": "west", "type": "hall", "style": "plains", "storeys": [1, 3], "streets": 1, "airRights": 0, "frontY": 66, "density": 82, "status": "build"},
     {"id": "d0_m1.l1", "x": 21, "z": -139, "w": 15, "d": 10, "front": "west", "type": "shop", "style": "plains", "storeys": [3, 4], "streets": 3, "airRights": 2, "frontY": 71, "density": 84, "status": "build"},
     {"id": "d0_m1.l2", "x": 21, "z": -129, "w": 18, "d": 12, "front": "west", "type": "shop", "style": "plains", "storeys": [3, 4], "streets": 1, "airRights": 2, "frontY": 70, "density": 84, "status": "build"},
     {"id": "d0_m1.l3", "x": 21, "z": -117, "w": 18, "d": 10, "front": "west", "type": "shop", "style": "plains", "storeys": [4, 4], "streets": 1, "airRights": 2, "frontY": 69, "density": 85, "status": "build"},
