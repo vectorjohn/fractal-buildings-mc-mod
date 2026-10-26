@@ -49,7 +49,7 @@ class FloorplanCommandTest {
 	void multiStoreyStairsGolden() throws IOException {
 		String t = run("floorplan", "--seed", "5", "--lot", "20x16", "--style", "medieval", "--type", "house");
 		golden("medieval-house-s5-3storeys.txt", t);
-		assertTrue(t.contains("## Storey 2") && t.contains("goes UP from r2 to r4") && t.contains("arrives from below"));
+		assertTrue(t.contains("## Storey 2") && t.contains("goes UP from r3 to r6") && t.contains("arrives from below"));
 	}
 
 	@Test

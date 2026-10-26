@@ -70,7 +70,7 @@ public final class FacadePass {
 		// (mass index, side, band) -> variant, drawn band by band so each differs from the ones below
 		Map<String, Variant> variants = new TreeMap<>();
 		TreeSet<String> done = new TreeSet<>();
-		List<Variant> all = variants(st);
+		List<Variant> all = variants(st, glassRich(c));
 		for (int fi = 0; fi < faces.size(); fi++) {
 			Face f = faces.get(fi);
 			Mass mass = m.mass(f.mass());
@@ -104,18 +104,28 @@ public final class FacadePass {
 				if (f.convexA()) kinds.set(0, FacadePlan.BLANK);
 				if (f.convexB()) kinds.set(bays.length - 1, FacadePlan.BLANK);
 			}
-			int h = Math.min(st.windowHeight(), f.height() - st.sill());
+			boolean tall = glassRich(c) && st.tallGlass() && f.storey() >= 1; // upper floors of civic and commercial buildings in styles that allow it (not timber-frame or small-window ones): floor to ceiling
+			int sill = tall ? 0 : st.sill();
+			int h = Math.min(tall ? 3 : st.windowHeight(), f.height() - sill);
 			if (h < 1) continue; // no room for a window on this face
-			out.add(new FacadePlan.Layout(f, f.a() + 1, bays, kinds, new FacadePlan.Win(v.width(), h, st.sill())));
+			out.add(new FacadePlan.Layout(f, f.a() + 1, bays, kinds, new FacadePlan.Win(v.width(), h, sill)));
 		}
 		return out;
 	}
 
-	private static List<Variant> variants(FacadeStyle st) {
+	/** Types whose facades are glass-rich (DS-33: town houses, shops' upper floors, civic, commercial and high-rise): bays of 2 with a 1-wide window or of 4 with a 2-wide one, in styles that allow 2-wide windows. */
+	private static final java.util.Set<String> RICH = java.util.Set.of("shop", "block", "hall", "highrise");
+
+	static boolean glassRich(BuildContext c) { return RICH.contains(c.type().id()) && c.style().facade().windowWidth() >= 2 && c.style().facade().bayMax() >= 4; }
+
+	private static List<Variant> variants(FacadeStyle st, boolean rich) {
+		// a 2-wide window needs an even bay of 4+: in styles that have them, a band draws bays of 2 with 1x2 windows or bays of 4 with 2x2 windows, so 2x2 is common
+		boolean wide = st.windowWidth() >= 2 && st.bayMax() >= 4;
 		List<Variant> out = new ArrayList<>();
 		for (int t = st.bayMin(); t <= st.bayMax(); t++)
 			for (int w = 1; w <= st.windowWidth(); w++)
-				for (int cw = 0; cw < (st.symmetric() ? 2 : 1); cw++) out.add(new Variant(t, w, cw == 1));
+				if (wide ? ((t == 2 && w == 1) || (t == 4 && w == 2)) : true)
+					for (int cw = 0; cw < (st.symmetric() ? 2 : 1); cw++) out.add(new Variant(t, w, cw == 1));
 		return out;
 	}
 

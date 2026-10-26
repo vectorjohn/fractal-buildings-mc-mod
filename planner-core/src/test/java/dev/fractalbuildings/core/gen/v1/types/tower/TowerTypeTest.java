@@ -304,9 +304,9 @@ class TowerTypeTest {
 		assertEquals(new TreeSet<String>(), fired(s));
 		BuildingIr ir = s.buildings().get(0).shell();
 		Opening w = ir.openings().stream().filter(o -> o.kind() == OpeningKind.WINDOW).findFirst().orElseThrow();
-		// air one cell above the window column, in the wall, declared by no opening
+		// air one cell below the window column (a windows head can be the ceiling slab), in the wall, declared by no opening
 		SceneDoc leak = withBoxes(s, l -> {
-			l.add(new Box(Box3.of(w.box().x(), w.box().maxY(), w.box().z(), 1, 1, 1), Role.AIR, dev.fractalbuildings.core.ir.Layer.SHELL, 0));
+			l.add(new Box(Box3.of(w.box().x(), w.box().y() - 1, w.box().z(), 1, 1, 1), Role.AIR, dev.fractalbuildings.core.ir.Layer.SHELL, 0));
 			return l;
 		});
 		TreeSet<String> got = fired(leak);
