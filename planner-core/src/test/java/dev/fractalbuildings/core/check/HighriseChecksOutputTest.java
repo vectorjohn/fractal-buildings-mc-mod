@@ -17,9 +17,8 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 /**
- * The B0 checks over real generator output: 32 V1 high-rise cases (8 seeds x 4 lots). B3 enables the pass test
- * ({@code @Disabled} below) once the generator passes the checks; until then the baseline is
- * recorded in docs/log/2026-10-25-p7-hr-b0.md.
+ * The B0 checks over real generator output: 32 V1 high-rise cases (8 seeds x 4 lots). B3a passes the checks it owns; the full pass
+ * test below is enabled by B3b (baseline in docs/log/2026-10-25-p7-hr-b0.md, after B3a in docs/log/2026-10-26-p7-hr-b3a.md).
  */
 class HighriseChecksOutputTest {
 	static final int[] LOTS = {20, 28, 36, 44};
@@ -50,7 +49,16 @@ class HighriseChecksOutputTest {
 		System.out.println("high-rise design warnings over 32 cases: " + first);
 	}
 
-	@Disabled("until B3: today's generator has no lobby, stairwell or shaft")
+	/** B3a's checks pass: lobby, hall access, shaft, windows, lights. Floor repeat (window bands), roof reachability and the stair house's door wait for B3b. */
+	@Test
+	void generatedHighrisesPassTheChecksOfTheInteriorStep() {
+		Map<String, Integer> n = counts(cases());
+		for (String id : List.of(HighriseChecks.LOBBY, HighriseChecks.HALL_ACCESS, HighriseChecks.SHAFT, HighriseChecks.ROOM_WINDOW, HighriseChecks.ROOM_LIGHT))
+			assertEquals(0, n.get(id), id + " warnings; all: " + n);
+		System.out.println("high-rise design warnings left for B3b: " + n);
+	}
+
+	@Disabled("until B3b: facade bands (floor-repeat), roof doors and the rail ring (roof-reachable, stairwell-enclosed on the stair house)")
 	@Test
 	void generatedHighrisesPassEveryDesignCheck() {
 		Map<String, Integer> n = counts(cases());

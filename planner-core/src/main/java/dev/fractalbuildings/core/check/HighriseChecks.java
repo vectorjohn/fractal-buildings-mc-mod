@@ -231,16 +231,29 @@ public final class HighriseChecks {
 			entryAndBedrooms(out);
 			List<Box3> cells = new ArrayList<>();
 			List<String> ids = new ArrayList<>();
+			// a unit room is fine with a door onto a hall, or onto another room of its own unit's use that has one (an office tenancy's
+			// second room, a wrap-around flat); the IR has no unit ids, so "own unit" is: same use, reached through doors of such rooms
+			java.util.Set<String> ok = new java.util.TreeSet<>();
 			for (Room r : ir.rooms()) {
-				if (!UNITS.contains(r.use())) continue;
-				boolean hall = false;
+				if (!UNITS.contains(r.use()) && !r.use().equals("kitchen")) continue;
 				for (Opening o : ir.openings()) {
 					if (!passage(o)) continue;
 					String x = other(o, r.id());
-					if (x != null && UNIT_HALLS.contains(use(x))) hall = true;
+					if (x != null && UNIT_HALLS.contains(use(x))) ok.add(r.id());
 				}
-				if (!hall) { ids.add(r.id()); cells.addAll(r.parts()); }
 			}
+			for (boolean grew = true; grew; ) {
+				grew = false;
+				for (Room r : ir.rooms()) {
+					if (!UNITS.contains(r.use()) || ok.contains(r.id())) continue;
+					for (Opening o : ir.openings()) {
+						if (!passage(o)) continue;
+						String x = other(o, r.id());
+						if (x != null && ok.contains(x) && (use(x).equals(r.use()) || use(x).equals("kitchen"))) { ok.add(r.id()); grew = true; break; }
+					}
+				}
+			}
+			for (Room r : ir.rooms()) if (UNITS.contains(r.use()) && !ok.contains(r.id())) { ids.add(r.id()); cells.addAll(r.parts()); }
 			if (!ids.isEmpty()) out.add(v(HALL_ACCESS, ids.size() + " unit room(s) (living, office) have no door onto a corridor, lobby, banquet or open floor, e.g. " + ids.get(0), cells));
 			cells = new ArrayList<>();
 			ids = new ArrayList<>();
