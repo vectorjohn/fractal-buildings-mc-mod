@@ -1,5 +1,6 @@
 import { execFileSync } from 'node:child_process';
 import { defineConfig } from '@playwright/test';
+import { timeoutFactor } from './e2e/load';
 
 // `npm run screenshot` builds the viewer, serves it with `vite preview` and runs e2e/*.spec.ts.
 // Browsers come from the Nix dev shell (PLAYWRIGHT_BROWSERS_PATH); WebGL is software (SwiftShader).
@@ -18,6 +19,9 @@ const { DISPLAY: _display, ...browserEnv } = process.env;
 
 export default defineConfig({
   testDir: 'e2e',
+  // Playwright's default 30 s per test (it covers fixture setup too), stretched up to 4x when the host is
+  // loaded (e2e/load.ts); explicit test.setTimeout calls override it.
+  timeout: Math.round(30_000 * timeoutFactor()),
   outputDir: 'out/test-results',
   reporter: 'list',
   use: {
