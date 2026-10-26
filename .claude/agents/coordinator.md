@@ -177,7 +177,7 @@ and at least every few merges.
 **1. Think about it first.** How does it fit the goal and the items around it?
 What did earlier work decide (ADRs, `docs/ASSUMPTIONS.md`, `docs/NOTES.md`)?
 What could go wrong (determinism, the core/Minecraft boundary, 26.x API
-changes, rendering under lavapipe)? What evidence would convince you it works
+changes, headless rendering on the Intel iGPU or lavapipe)? What evidence would convince you it works
 (a test, a gallery, a measurement)? Turn this into a short brief. The roadmap
 carries the detail; the brief names the item, adds context, says what "done"
 means under the **completion bar** (CLAUDE.md), and names the agents working in
