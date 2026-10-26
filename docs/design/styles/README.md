@@ -45,7 +45,6 @@ Gaps worth a decision (for John):
   2026-10-25); the style file is ROADMAP 7.6, desert stands in until then.
 - **Wealth and building type** don't change materials yet (a hall or temple
   in dressed stone, a cottage in rough).
-
 To add a brief: copy a short one, keep the headings (Precedents, Materials,
 Proportions and massing, Roof, Windows and doors, Avoid), stay under a page,
 and add a row here.

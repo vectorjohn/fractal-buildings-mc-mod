@@ -519,28 +519,15 @@ drops them, and accepted ones move to the section they belong in.
 - **Scope:** all styles and types. Small-window styles (desert, snowy,
   taiga, savanna) stay small by **width and count** (1x2, few, wide bays),
   not by 1x1.
-- **For implementers** (agent's numbers):
-  - Glass share of a facade's wall area: cottages and vernacular houses
-    15-25 %; town houses, shops' upper floors and blocks 25-40 %; masonry
-    high-rises 35-50 %; frame towers 50-70 %; glass towers 75-90 % (DS-34);
-    shopfront ground floors 50-70 %.
-  - In a 3-clear storey a 1x2 window runs from sill +1 to the ceiling (the
-    slab above is its lintel); in 4+ clear storeys the head stays one below
-    the ceiling, or the window grows to 3 tall. Openings wider than 2 get a
-    pier or mullion every 2-3, or a lintel (DS-27).
-  - Glass panes are the default (thin, joined; the writer sets their
-    connections); full `glass` only where a flush face is wanted;
-    `tinted_glass` has no pane and blocks light, so never in a habitable
-    room's only window.
-  - Today every style has `windowHeight` 1 (all windows are 1 tall) and
-    only medieval allows width 2, which gives it 2x1 windows, the opposite
-    of its brief. Briefs to update if accepted: plain, taiga, snowy and
-    desert (1x1 to 1x2), medieval (2x1 to 1x2 and 2x2).
 - **Enforcement:** code candidates `window-size` (at most 25 % of a
   building's windows are 1x1, outside the accent rooms) and `glazing-share`
-  (per facade, by type), next to DS-25's `openings-aligned` (ROADMAP 7.9).
-  None today.
-- **Status:** Approved by @John on 2026-10-25 PENDING removal of for implementers section. **Source:** John, playtest notes 2026-10-25;
+  (glass share of each facade's wall area: cottages and vernacular houses
+  15-25 %; town houses, shops' upper floors and blocks 25-40 %; masonry
+  high-rises 35-50 %; frame towers 50-70 %; glass towers 75-90 %, DS-34;
+  shopfront ground floors 50-70 %; agent's numbers), next to DS-25's
+  `openings-aligned` (ROADMAP 7.9). None today (every style's windows are 1
+  tall). Build notes: [notes/windows.md](notes/windows.md).
+- **Status:** Approved by @John 2026-10-25. **Source:** John, playtest notes 2026-10-25;
   drafted by the architect.
 
 ## DS-34 High-rises come in several looks

@@ -27,7 +27,7 @@ Gable 1:1, no overhang, no dormers.
 
 ## Windows and doors
 
-1x1 windows, one per bay, aligned; a plain door. Kitchens usually open onto
+1x2 windows (DS-33), one per bay, aligned; a plain door. Kitchens usually open onto
 the living room (DS-10).
 
 ## Avoid
