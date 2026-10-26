@@ -48,6 +48,7 @@
               pkgs.playwright-driver.browsers # Chromium for viewer screenshots (see PLAYWRIGHT_* below)
               pkgs.silverbullet # for viewing markdown files locally
               pkgs.imagemagick # `import -window root` screenshots of Xvfb (scripts/server-only-test.sh)
+              pkgs.vulkan-tools # vulkaninfo / vkcube: which Vulkan device a renderer setting picks (scripts/client-test.sh FB_VK)
             ];
 
             # Playwright: browsers come from nixpkgs, so the npm `playwright` / `@playwright/test` version in
