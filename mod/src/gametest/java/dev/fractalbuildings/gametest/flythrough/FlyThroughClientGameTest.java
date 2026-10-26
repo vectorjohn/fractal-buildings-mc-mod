@@ -100,6 +100,62 @@ public class FlyThroughClientGameTest implements FabricClientGameTest {
 		context.waitTicks(20);
 	}
 
+	/** Per-cell mean colours of a frame (48 x 27 grid), then its sky fraction, for comparing two captures. */
+	private static double[] signature(Path png) {
+		try {
+			BufferedImage img = ImageIO.read(png.toFile());
+			int w = img.getWidth(), h = img.getHeight(), gx = 48, gy = 27;
+			double[] sig = new double[gx * gy * 3 + 1];
+			long sky = 0, tot = 0;
+			for (int cy = 0; cy < gy; cy++) for (int cx = 0; cx < gx; cx++) {
+				int x0 = cx * w / gx, x1 = (cx + 1) * w / gx, y0 = cy * h / gy, y1 = (cy + 1) * h / gy;
+				double r = 0, g = 0, b = 0; int k = 0;
+				for (int y = y0; y < y1; y += 2) for (int x = x0; x < x1; x += 2) {
+					int c = img.getRGB(x, y), cr = c >> 16 & 255, cg = c >> 8 & 255, cb = c & 255;
+					r += cr; g += cg; b += cb; k++;
+					if (cb > 150 && cb > cr + 30 && cb >= cg) sky++;
+					tot++;
+				}
+				int i = (cy * gx + cx) * 3;
+				if (k > 0) { sig[i] = r / k; sig[i + 1] = g / k; sig[i + 2] = b / k; }
+			}
+			sig[sig.length - 1] = sky / (double) Math.max(1, tot);
+			return sig;
+		} catch (IOException e) { throw new IllegalStateException(e); }
+	}
+
+	/** Two captures agree: mean absolute colour difference per channel under 4 of 255, and sky fractions within 0.02. */
+	static boolean agree(double[] a, double[] b) {
+		double d = 0;
+		for (int i = 0; i < a.length - 1; i++) d += Math.abs(a[i] - b[i]);
+		d /= a.length - 1;
+		return d < 4 && Math.abs(a[a.length - 1] - b[b.length - 1]) < 0.02;
+	}
+
+	/**
+	 * The renderer can say "all sections rendered" while sections are still being compiled (frames with a patch of world floating in sky).
+	 * Takes a screenshot every 20 ticks until two in a row agree (at most 8 tries; a cap only logs and keeps the last), pinning the time of
+	 * day each round. The last capture is the frame; earlier probe captures are deleted.
+	 */
+	private static Path stableShot(ClientGameTestContext context, TestSingleplayerContext world, String name) {
+		Path prev = null; double[] prevSig = null;
+		for (int i = 0; i < 8; i++) {
+			Path png = context.takeScreenshot("fly-" + name + (i == 0 ? "" : "-r" + i));
+			double[] sig = signature(png);
+			boolean ok = prevSig != null && agree(prevSig, sig);
+			if (prev != null) try { Files.deleteIfExists(prev); } catch (IOException e) { /* a stray probe file */ }
+			if (ok) {
+				if (i > 1) FractalBuildingsMod.LOGGER.info("[B9] {}: stable after {} captures", name, i + 1);
+				return png;
+			}
+			prev = png; prevSig = sig;
+			world.getServer().runCommand("time set noon");
+			context.waitTicks(20);
+		}
+		FractalBuildingsMod.LOGGER.warn("[B9] {}: two captures never agreed after 8 tries; keeping the last", name);
+		return prev;
+	}
+
 	private static String tpCommand(Frame f) {
 		double dx = f.tx() - f.x(), dy = f.ty() - f.y(), dz = f.tz() - f.z();
 		double yaw = Math.toDegrees(Math.atan2(-dx, dz)), pitch = -Math.toDegrees(Math.atan2(dy, Math.sqrt(dx * dx + dz * dz)));
@@ -137,10 +193,11 @@ public class FlyThroughClientGameTest implements FabricClientGameTest {
 					int n = 0;
 					for (Frame f : p.frames()) {
 						n++;
+						world.getServer().runCommand("time set noon"); // the clock runs on while we wait: pin it per frame
 						world.getServer().runCommand(tpCommand(f));
 						settle(context, f);
 						String name = seed + "-" + p.site().tier().json + "-" + n + "-" + f.label();
-						Path png = context.takeScreenshot("fly-" + name);
+						Path png = stableShot(context, world, name);
 						if (f.label().equals("interior")) interiors++;
 						String res = analyse(png, out.resolve(name + ".jpg"));
 						String[] r = res.split("\t");
