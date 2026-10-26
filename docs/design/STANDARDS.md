@@ -561,6 +561,34 @@ and Minecraft block facts ([blocks.md](blocks.md), from John's
   ground" answer
   ([shoplow-plan-architect](../review/reports/shoplow-plan-architect.md)).
 
+## DS-47 Dense cores are filled
+
+- **Rule:** in city and metropolis areas of density 70 and up, buildings
+  line at least 80 % of every street edge; block interiors are filled by
+  lots (rear yards, wings, courtyards) rather than left over; and no two
+  roads run within one lot depth (16 blocks) of each other with nothing
+  between. Outer areas taper (DS-18) but keep gardens inside lots.
+- **Why:** "a lot of redundant roads, and empty space ... too sparse"
+  (John, REVIEW 6.8; the second time after backlog 5.7 D3). The gate
+  metropolis centres measured 51-52 % empty ground and 43-46 % of street
+  edge built (architect).
+- **Scope:** city and metropolis tiers, areas of density 70 and up.
+- **Enforcement:** code, planned: `core-fill` (street edge built,
+  block interiors filled), `road-sliver` (parallel roads within 16 with
+  nothing between) and `road-hierarchy` in `city-check`; ROADMAP 7.20
+  METROFILL. Diagonal avenues: fill the blocks up to them first (flatiron
+  corners, pocket-park triangles); whether to drop diagonals inside
+  cities is still open (John, below).
+- **Status:** accepted. **Source:** John (chat, 2026-10-26: "Yes, I
+  approve a 'Dense cores are filled' rule"), from the architect's
+  proposed rule; the numbers are the architect's, approved by John
+  ([metro-sparse-architect](../review/reports/metro-sparse-architect.md)).
+  On diagonals John added: "If the nearby perpendicular roads can fill in
+  their blocks up to the diagonals it will look right, but this is making
+  me think maybe we will want to nix the diagonal roads inside cities.
+  It's minecraft, we don't do diagonals! But I want to wait and see how
+  we can do with the new density rules."
+
 # Building and facade
 
 Proposed by agents (the design-agents assistant, from the research notes and
