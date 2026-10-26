@@ -838,24 +838,31 @@ can come any time before B4 (a constant in `TowerFloors`).
 - **Hooks before 7.5** read only by counts (one block each on wall cells);
   no head table or stage until 7.5's sets.
 
-# Open for John (both answers kept cheap)
+# Open for John (answered 2026-10-26)
 
 1. **Stairwell 3 or 4 deep.** Does the proposed DS-8 amendment ("railings
    that hold") cover the open well inside a stairwell? No/unanswered: 3 deep,
    open well (drops 1-3, 4-5 under 6-high floors). Yes: 4 deep with a guard
    row and a 2-high rail screen. `TowerBlock.SD`, one constant; best decided
    before B1 merges.
+   *Answered 2026-10-26 (John: "default (no)"): 3 deep, open well.*
 2. **Deep apartments: windowless private hallway, or fewer wider units?**
    Default: a private `entry` strip on the hall side (as real deep-plan flats
    do). Alternative: no strip, units widened until rooms are square enough
    (fewer flats per floor). `TowerFloors.ENTRY_STRIP`, one constant.
+   *2026-10-26: John delegated this to the architect ("I want the architect
+   to make the calls here"): architect decides, on proportions, whether it
+   would look real in Minecraft and plausible real-life examples.*
 3. Tall buildings outside forests: per-style tall tint over a shared default,
    or one shared urban style everywhere? Data in `variants.json` (A4); A1-A3
    ship the shared default.
+   *Answered 2026-10-26: per-style tall tint over a shared default (DS-41).*
 4. Glass towers in the metropolis (DS-34 still proposed): one look across
    biomes over 20 storeys, tinted only at the base? A rule either way.
+   *Answered 2026-10-26: yes, one shared look (DS-41).*
 5. Cherry grove mass timber: birch walls with cherry trim (assumed, A3), or
    pink cherry walls?
+   *Answered 2026-10-26: birch walls with cherry trim.*
 
 # Proposed rule (architect, for John)
 
