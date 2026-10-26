@@ -29,6 +29,17 @@ records the reviewers' proposals) and update the Enforcement line when a test
 lands. Where a rule gives a number and the source didn't, the number is an
 agent's and is marked "(agent's number)".
 
+**What a rule holds** (John, 2026-10-25). Only the **Rule** (the outcome,
+in John's words), the **Why** (his quote or the reason), the **Scope**, and
+a short checkable condition in **Enforcement** (what a test or reviewer
+measures, and whether a check exists today), plus Status and Source. Not in
+a rule: how to build it (the implementer's call, and it goes stale; build
+guidance worth keeping is one short note per topic in `docs/design/notes/`,
+e.g. [notes/roads.md](notes/roads.md), linked from the rule), materials and
+blocks per style (the style briefs, [styles/README.md](styles/README.md)),
+and Minecraft block facts ([blocks.md](blocks.md), from John's
+[blocks-notes.md](blocks-notes.md)).
+
 # Materials and colour
 
 ## DS-1 High-rise materials
