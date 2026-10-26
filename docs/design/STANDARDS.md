@@ -263,6 +263,28 @@ agent's and is marked "(agent's number)".
 - **Enforcement:** guideline (SKYLINE tuning in `DensityField`, `ClassTable`; no test of the shape).
 - **Status:** accepted. **Source:** John, REVIEW whole-city roads and downtown skyline, 2026-10-21.
 
+## DS-37 Cities are modern, villages are older
+
+- **Rule:** settlements of tier city and metropolis are modern (asphalt,
+  concrete and kerbed streets, DS-30 and DS-31; modern and tall styles).
+  Hamlets and villages have the older look (today's biome house styles and
+  what the docs call "medieval": tracks, timber and stone, no concrete).
+  There is no per-world choice of modern versus medieval, and no city or
+  metropolis is in a medieval style. Wherever a rule, brief or item says
+  "modern city", read city and metropolis. Biome still picks colours and
+  local materials within either look (DS-3, DS-29).
+- **Open (John didn't say): towns.** Agent's default until John decides
+  ([ASSUMPTIONS.md](../ASSUMPTIONS.md), 2026-10-25): a town keeps the older
+  look (biome house styles, stone-brick streets per DS-30, no kerbs or
+  concrete); only a lot over 6 storeys takes a tall style (ROADMAP 7.7).
+- **Why:** "it doesn't really make sense to have worlds that mix medieval
+  and modern, so lets just say it's all modern, and we just have older
+  looking villages"; "It's too much to decide if we have a world that has
+  modern vs medieval."
+- **Scope:** all tiers; styles and road materials.
+- **Enforcement:** guideline (style choice ignores tier today; ROADMAP 7.7).
+- **Status:** accepted. **Source:** John, coordinator chat, 2026-10-25.
+
 ## DS-19 No causeways or long bridges (for now)
 
 - **Rule:** roads cross water only by a single span of at most 20 blocks;
@@ -396,7 +418,7 @@ drops them, and accepted ones move to the section they belong in.
 | Where | Material | Slab, stairs | Wear |
   |---|---|---|---|
 | Tracks: paths, hamlet and village streets, roads between settlements below city | `dirt_path`; `gravel` in snowy, mountain, stony and gravelly biomes; `mud_bricks` in desert and badlands | dirt path, gravel: none (full-block steps, DS-31); mud bricks: yes | none |
-| Town streets, and city streets in a non-modern style | `stone_bricks`; `mud_bricks` in desert, badlands, savanna | yes | stone: `cracked_stone_bricks` (full blocks only), `mossy_stone_bricks` (any shape; jungle, swamp, taiga, dark forest only) |
+| Town streets (no city is non-modern, DS-37) | `stone_bricks`; `mud_bricks` in desert, badlands, savanna | yes | stone: `cracked_stone_bricks` (full blocks only), `mossy_stone_bricks` (any shape; jungle, swamp, taiga, dark forest only) |
 | City and metropolis arterials, main streets, roads between cities | `cobbled_deepslate` ("asphalt") | yes | none exists |
 | City and metropolis streets and lanes | `light_gray_concrete` | yes (new in 26.x) | none exists |
 | Sidewalks (DS-31) | `white_concrete` | yes | none |
@@ -411,8 +433,8 @@ drops them, and accepted ones move to the section they belong in.
 ## DS-31 Smooth roads; kerbed city streets
 
 - **Rule:** roads climb in half blocks: slabs, and stairs only where a path
-  must be steeper than slabs allow. In modern cities and metropolises,
-  streets have kerbs: the carriageway is half a block below full-block
+  must be steeper than slabs allow. In cities and metropolises (all
+  modern, DS-37), streets have kerbs: the carriageway is half a block below full-block
   sidewalks of white concrete.
 - **Why:** John: "smooth out roads using slabs and stairs (if necessary)";
   "To do city streets with curbs use slabs to lower the road half a block."
@@ -447,7 +469,9 @@ drops them, and accepted ones move to the section they belong in.
   travel at most 0.5 where the material has a slab), `kerb-height` (exactly
   0.5 along every kerbed street; kerbs only in city and metropolis). None today.
 - **Status:** proposed. **Source:** John, playtest note 2026-10-25;
-  drafted by the architect.
+  drafted by the architect. The architect's question (which cities are
+  "modern"?) is answered by DS-37 (John, 2026-10-25): every city and
+  metropolis, whatever its style.
 
 ## DS-32 High-rise floor programme
 
