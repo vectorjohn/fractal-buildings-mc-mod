@@ -821,7 +821,9 @@ drops them, and accepted ones move to the section they belong in.
     or more.
     Shops always meet this; they never take the variants below.
   - **Houses and workshops, by default:** rise at most 3 as a plain
-    flight; 4-5 with a landing or porch at the door. Above that the
+    flight; 4-5 with a landing or porch at the door, and the flight below
+    it also broken after at most 3 risers (see **Stair runs** below).
+    Above that the
     building **cuts into the slope** instead of lifting to the high
     ground: the floor goes at door level and the earth stands against the
     uphill walls; on a steep lot the storey above gets a back door onto
@@ -834,8 +836,7 @@ drops them, and accepted ones move to the section they belong in.
       Portland, Oregon);
     - a **raised house with a long stair** on an uphill lot: the house
       stays up on the high ground and a long stair climbs to the door,
-      broken by landings (no straight run of more than 3 risers without
-      a landing or a turn).
+      broken by landings (**Stair runs** below).
 
     The architect sets the mix (how many, on which slopes, styles and
     tiers); DS-8 railings apply to the stair, landings and any raised
@@ -843,6 +844,19 @@ drops them, and accepted ones move to the section they belong in.
   - **What the rule forbids for houses and workshops** is the accidental
     case: a single tall straight flight with no landing, or a door left
     unreachable from the street.
+  - **Stair runs, every lot:** no exterior flight on any lot (default or
+    variant, any building type) has more than 3 risers in a straight run
+    without a level tread: a landing, or a turn at a level quarter
+    landing (a winder does not count as a turn). At rise 4-5 that means
+    straight 3, a 1-cell level landing, then 1-2 more; or an L turned
+    along the facade at a level corner cell. A landing at the door alone
+    is not enough. The earlier default-lot allowance of a straight 4-5 to
+    a door landing is dropped. The architect also offered a fallback for
+    lots where no such route fits (a straight 4-5 to a door landing,
+    counted in SHOPLOW S9); it is **not** part of the rule, because the
+    report gives it as an implementation fallback, not a measured
+    exception (no counts exist yet). If lots turn out to need it, it
+    comes back to John with the counts.
   - Numbers: the architect's (SHOPLOW answer, 2026-10-26), approved by
     John; the shop limit of 2 was first the agent's number and the
     architect kept it.
@@ -852,18 +866,24 @@ drops them, and accepted ones move to the section they belong in.
   staircase straight up to a door." Real shop thresholds are 0-2 steps;
   house stoops run 3-8 (architect). The same highest-ground rule lifts
   houses (river-town: 23 of 123 at rise 4+) and workshops (11 of 39).
+  Stair runs: one riser is 1 m, so 5 straight risers is the 5 m straight
+  flight John objected to; a real flight tops out at about 3.7 m
+  (architect).
 - **Scope:** shops, houses and workshops, all styles and tiers; not
   walls, towers or halls for now (market halls on legs have their own
-  spec in the architect's answer). Amends DS-7: a shop that meets this
-  needs no DS-7 terrace.
+  spec in the architect's answer). The stair-run limit covers every
+  exterior flight of every building type. Amends DS-7: a shop that meets
+  this needs no DS-7 terrace.
 - **Enforcement:** code candidate `door-rise`, none yet: entrance-storey
   floor minus the street surface in front of the main door (`frontY`,
   else the terrain at the door's outside cell); shops at most 2 (4 off a
   frontage pavement or arcade), always; houses and workshops at most 5,
   with a landing above 3, unless the lot is a stilt or long-stair
-  variant, which is checked instead for a door reachable from the street,
-  no straight run of more than 3 risers without a landing or turn, and
-  DS-8 railings (ROADMAP 7.17 SHOPLOW).
+  variant, which is checked instead for a door reachable from the street
+  and DS-8 railings. Stair runs: code candidate `flight-landings` with
+  one constant `MAX_RISERS = 3`, on every exterior flight of every lot
+  (the SHOPLOW plan had it on variant lots only), none yet (ROADMAP 7.17
+  SHOPLOW).
 - **Status:** accepted. **Source:** John, REVIEW STAIRGROUND, 2026-10-26
   (shops); widened to houses and workshops by John (chat, 2026-10-26: "I
   agree with the architect's suggestion on houses, and widening the
@@ -877,3 +897,12 @@ drops them, and accepted ones move to the section they belong in.
   always cut into the hill. I wouldn't want to make a rule that made that
   kind of thing impossible, but definitely for shops it shouldn't happen.
   For houses I could see allowing both."
+- **Amended 2026-10-26** (stair runs, every lot): approved by John (chat,
+  2026-10-26: "I agree with both of those earlier rule change
+  suggestions, 3 steps runs and streets stay close to ground"), from the
+  architect's proposed amendment (SHOPLOW plan answer A5,
+  [shoplow-plan-architect](../review/reports/shoplow-plan-architect.md)).
+  The default-lot text read "rise at most 3 as a plain flight; 4-5 with
+  a landing or porch at the door", which allowed a straight 4-5 to a door
+  landing; the long-stair variant's "no straight run of more than 3
+  risers without a landing or a turn" now applies to every flight.
