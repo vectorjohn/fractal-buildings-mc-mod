@@ -75,6 +75,12 @@ count. No panel means no violations. `?fixture=sample-house-violations` shows on
 - `colour: role`: one debug colour per material role (wall beige, roof red, floor blue,
   stair green, door orange, window cyan, trim and beam brown, foundation grey, fence
   light grey; magenta = unknown role). Terrain is green.
+- **Dug-in buildings** (SHOPLOW): the terrain is lowered where a building cuts it, so no earth shows inside a slab set below the ground
+  or in its areaway. A column drops to the slab under any footprint volume (local y 0), and to the bottom of any building `air` site box
+  that spans the surface; world `air` ground boxes cut as before (`terrainTops` in `src/mesh.ts`, mirror of the planner's SiteGround).
+  Paving and ground site boxes draw as voxels on top. A scene with any cut uses the heightfield terrain even for one building. Fixture:
+  `viewer/fixtures/shoplow/cut-fixture.json` (`node scripts/gen-cut-fixture.mjs`); `npx playwright test e2e/shoplow-cut.spec.ts` writes
+  `out/shoplow-cut-1..3.png` (top, street, east side).
 - `colour: palette`: each style file lists real blocks per role and one hand-picked
   colour per block. Every cell takes one entry, picked by a hash of its position, so a
   role with four blocks shows an even per-cell scatter of four colours. The colours

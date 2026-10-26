@@ -2,6 +2,7 @@
 // A face is emitted only between a solid voxel and a non-solid neighbour. The instanced path (render.ts) stays for
 // small scenes; this one is for scenes above FACE_MESH_THRESHOLD voxels or `?mesh=faces`.
 import type { Box, Scene } from './ir';
+import { placeColumn } from './voxels';
 
 /** Voxel count above which a scene is meshed as faces instead of instanced cubes. */
 export const FACE_MESH_THRESHOLD = 200_000;
@@ -105,21 +106,50 @@ export function groundCells(boxes: readonly Box[]): { x: number; y: number; z: n
 }
 
 /**
- * Effective terrain top per column (exclusive y of the topmost solid block, i.e. `floorY`) after ground `air` boxes
- * cut it: a cut lowers a column to the cut's lowest y. Other ground boxes do not change it (they are voxels on top).
+ * Effective terrain top per column (exclusive y of the topmost solid block, i.e. `floorY`) after cuts. A cut lowers a
+ * column: a world `air` ground box to its lowest y; a building's footprint (volumes starting at local y 0) to the slab
+ * (`min(top, origin.y)`); a building `air` site box that spans the surface (it starts below the top and reaches it) to
+ * its bottom. Other ground and site boxes (paving, ground, foundation) are voxels on top and change nothing. This is
+ * the TypeScript mirror of the planner's SiteGround probe (docs/plans/shoplow.md section 3); buildings whose slab is at
+ * or above the ground, which is every building before SHOPLOW, change nothing.
  */
 export function terrainTops(scene: Scene): number[] {
   const t = scene.terrain;
   if (!t) return [];
   const tops = t.floorY.slice();
+  const index = (x: number, z: number): number =>
+    x < t.x0 || z < t.z0 || x >= t.x0 + t.nx || z >= t.z0 + t.nz ? -1 : (z - t.z0) * t.nx + (x - t.x0);
   for (const b of scene.ground) {
     if (b.role !== 'air') continue;
     for (let z = b.min[2]; z < b.min[2] + b.size[2]; z++)
       for (let x = b.min[0]; x < b.min[0] + b.size[0]; x++) {
-        if (x < t.x0 || z < t.z0 || x >= t.x0 + t.nx || z >= t.z0 + t.nz) continue;
-        const i = (z - t.z0) * t.nx + (x - t.x0);
-        if (b.min[1] < tops[i]!) tops[i] = b.min[1];
+        const i = index(x, z);
+        if (i >= 0 && b.min[1] < tops[i]!) tops[i] = b.min[1];
       }
+  }
+  // Building cuts read the raw heights, so one building's cut never changes what another's box "spans".
+  const raw = t.floorY;
+  for (const b of scene.buildings) {
+    const [ox, oy, oz] = b.origin;
+    const [sx, , sz] = b.shell.bounds.size;
+    const world = (lx: number, lz: number): number => { const [wx, wz] = placeColumn(b.rotation, ox, oz, sx, sz, lx, lz); return index(wx, wz); };
+    for (const v of b.shell.volumes) {
+      if (v.min[1] !== 0) continue;
+      for (let z = 0; z < v.size[2]; z++)
+        for (let x = 0; x < v.size[0]; x++) {
+          const i = world(v.min[0] + x, v.min[2] + z);
+          if (i >= 0 && oy < tops[i]!) tops[i] = oy;
+        }
+    }
+    for (const box of b.siteBoxes) {
+      if (box.role !== 'air') continue;
+      const y0 = oy + box.min[1], y1 = y0 + box.size[1] - 1;
+      for (let z = 0; z < box.size[2]; z++)
+        for (let x = 0; x < box.size[0]; x++) {
+          const i = world(box.min[0] + x, box.min[2] + z);
+          if (i >= 0 && y0 <= raw[i]! - 1 && y1 >= raw[i]! && y0 < tops[i]!) tops[i] = y0;
+        }
+    }
   }
   return tops;
 }
