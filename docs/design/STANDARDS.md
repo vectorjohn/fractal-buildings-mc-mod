@@ -294,7 +294,7 @@ agent's and is marked "(agent's number)".
 ## DS-22 Tall buildings can be climbed
 
 - **Rule:** towers and high-rises have a stair core reaching every floor and
-  leave room for an elevator shaft (Create integration later, ROADMAP 7.2).
+  leave room for an elevator shaft (Create integration later, ROADMAP 7.2). The roof should always be accessible if the building has a flat roof.
 - **Why:** high-rises "are going to be basically non-navigable on foot ...
   leave a space to put an elevator shaft for now."
 - **Scope:** tower, highrise.
