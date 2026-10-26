@@ -105,6 +105,7 @@ in `.claude/reports/`.
   Look for: does each flight now end on the ground in front of the door (last step level with the ground, no gap under it)? Do the added steps and landings look natural, or too many on slopes? Anything still hanging in the air in the city views (tell me where), including the wall ramps between curtain sections, which this check does not cover.
   Result:
   - @John 2026-10-22: This looks much better, love it.
+  - @coordinator 2026-10-22 (verifier note; re-filed here 2026-10-26 from the archived S10 item, still unanswered): narrow shops (7 wide) whose floor is 5 blocks above the street now get a plain flight instead of a landing in about half the cases. Before, the landing only fitted because the flight was one step short and floated. Is a plain flight acceptable there, or should those shops sit lower?
 
 ## Phase 6 plan decisions
 
