@@ -22,30 +22,30 @@ import java.util.TreeMap;
  * @param leafAt room index of each cell, -1 for a partition cell
  * @param corridor index of the corridor room, or -1
  */
-record FloorPlan(int w, int d, List<Leaf> leaves, List<Cut> cuts, List<Door> doors, int[][] leafAt, int corridor) {
+public record FloorPlan(int w, int d, List<Leaf> leaves, List<Cut> cuts, List<Door> doors, int[][] leafAt, int corridor) {
 	/** A room rectangle. */
-	record Leaf(int x, int z, int w, int d) {
-		int area() { return w * d; }
+	public record Leaf(int x, int z, int w, int d) {
+		public int area() { return w * d; }
 
-		boolean contains(int cx, int cz) { return cx >= x && cx < x + w && cz >= z && cz < z + d; }
+		public boolean contains(int cx, int cz) { return cx >= x && cx < x + w && cz >= z && cz < z + d; }
 	}
 
 	/** A partition line: {@code constX}: cells (c, lo..lo+len-1); else cells (lo..lo+len-1, c). */
-	record Cut(boolean constX, int c, int lo, int len) {}
+	public record Cut(boolean constX, int c, int lo, int len) {}
 
 	/**
 	 * A door through the partition cell (x, z), from room {@code from} to {@code to}, walking {@code facing}.
 	 * An {@code arch} is a doorless opening {@code span} cells wide along the partition, starting at (x, z)
 	 * and running +z for a partition along z (facing east or west), else +x.
 	 */
-	record Door(int x, int z, int from, int to, Facing facing, int span, boolean arch) {
-		Door(int x, int z, int from, int to, Facing facing) { this(x, z, from, to, facing, 1, false); }
+	public record Door(int x, int z, int from, int to, Facing facing, int span, boolean arch) {
+		public Door(int x, int z, int from, int to, Facing facing) { this(x, z, from, to, facing, 1, false); }
 
-		boolean alongZ() { return facing == Facing.EAST || facing == Facing.WEST; }
+		public boolean alongZ() { return facing == Facing.EAST || facing == Facing.WEST; }
 
-		int cellX(int k) { return alongZ() ? x : x + k; }
+		public int cellX(int k) { return alongZ() ? x : x + k; }
 
-		int cellZ(int k) { return alongZ() ? z + k : z; }
+		public int cellZ(int k) { return alongZ() ? z + k : z; }
 	}
 
 	/** One room, no partitions. */
