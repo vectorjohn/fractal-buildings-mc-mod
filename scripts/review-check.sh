@@ -10,7 +10,11 @@
 #     in REVIEW.md that is also an item title in REVIEW-ARCHIVE.md;
 #   - a `## ` heading in REVIEW.md that is also in REVIEW-ARCHIVE.md and is
 #     new against --base (its REVIEW.md lacks it), or, without --base, that
-#     has no item under it except archived ones (a resurrected empty section).
+#     has no item under it except archived ones (a resurrected empty section);
+#   - two top-level items in REVIEW.md with the same bold title, whatever their
+#     ticks or text (the union merge restores a stale `- [ ]` copy of an item
+#     that was since ticked or edited; the lines differ, so an exact-line
+#     duplicate check misses it).
 #
 # Usage:
 #   scripts/review-check.sh [-C <checkout>] [--source worktree|index|<rev>] [--base <rev>]
@@ -20,7 +24,7 @@
 #     --base    a commit whose REVIEW.md is the "before" (e.g. the run branch
 #               tip before a merge); enables the new-heading check
 # Coders: run it after merging the run branch into yours, before handing back.
-# Exit: 0 clean | 1 archived items found (named on stdout) | 2 usage/read error.
+# Exit: 0 clean | 1 archived or duplicate items found (named on stdout) | 2 usage/read error.
 set -u
 C=$(cd "$(dirname "$0")/.." && pwd) SRC=worktree BASE=
 while [ $# -gt 0 ]; do
@@ -42,13 +46,31 @@ get() { # <path> <out>
   esac > "$2" 2>/dev/null
 }
 get "$R" "$TMP/review" || { echo "review-check: cannot read $R ($SRC)" >&2; exit 2; }
-# No archive yet: nothing can be resurrected.
-get "$A" "$TMP/archive" || exit 0
 : > "$TMP/base"
 if [ -n "$BASE" ]; then
   git -C "$C" show "$BASE:$R" > "$TMP/base" 2>/dev/null \
     || { echo "review-check: cannot read $R at $BASE" >&2; exit 2; }
 fi
+
+# Same bold title on two top-level items (checked with or without an archive).
+# With --base, only titles that occur more often than in the base's REVIEW.md
+# (a duplicate the base already had is not this merge's fault).
+dup=0
+dups=$(awk -v base="$TMP/base" '
+  function title(l) { sub(/^- \[[ xX]\] \*\*/, "", l); sub(/\*\*.*/, "", l); sub(/[ \t]+$/, "", l); return l }
+  BEGIN { while ((getline l < base) > 0) if (l ~ /^- \[[ xX]\] \*\*/) b[title(l)]++ }
+  /^- \[[ xX]\] \*\*/ { t = title($0); n[t]++; at[t] = at[t] (n[t] > 1 ? ", " : "") NR " " substr($0, 1, 5) }
+  END { for (t in n) if (n[t] > 1 && n[t] > b[t] + 0) print t "   (lines " at[t] ")" }' "$TMP/review" | sort)
+if [ -n "$dups" ]; then
+  dup=1
+  echo "DUPLICATE ITEM in $R (same bold title on more than one top-level item${BASE:+; more copies than at $BASE}):"
+  printf '%s\n' "$dups" | sed 's/^/  - /'
+  echo "A union merge restored a stale copy of an item. Keep the current one (usually the"
+  echo "ticked or newer line, with its sub-items) and delete the other; then re-run scripts/review-check.sh."
+fi
+
+# No archive yet: nothing can be resurrected.
+get "$A" "$TMP/archive" || exit $dup
 
 titles() { sed -n 's/^- \[[ xX]\] \*\*\([^*]*\)\*\*.*/\1/p' "$1" | sed 's/[[:space:]]*$//' | sort -u; }
 headings() { sed -n 's/^## \(.*\)/\1/p' "$1" | sed 's/[[:space:]]*$//' | sort -u; }
@@ -86,4 +108,4 @@ if [ $bad -ne 0 ]; then
   echo "section) from $R; keep only your own new entries. Then re-run scripts/review-check.sh."
   exit 1
 fi
-exit 0
+exit $dup

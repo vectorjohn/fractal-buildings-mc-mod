@@ -21,7 +21,8 @@
 # Exit codes: 0 merged (sha printed) | 2 checkout not clean / wrong branch |
 #   3 merge conflict (reset; files printed) | 4 commit failed (reset) |
 #   5 merged, but post-merge tests failed (commit kept) | 6 lock not acquired |
-#   7 merge would bring back items archived in docs/REVIEW-ARCHIVE.md (reset;
+#   7 merge would bring back items archived in docs/REVIEW-ARCHIVE.md, or a
+#     second copy of a docs/REVIEW.md item title (reset;
 #     items printed; fix the feature branch, see scripts/review-check.sh).
 set -u
 I=$1 IB=$2 FB=$3 MSG=$4 TEST=${5:-}
@@ -53,7 +54,8 @@ for f in docs/research/INDEX.md docs/NOTES.md docs/ASSUMPTIONS.md docs/REVIEW.md
 done
 
 # Union merge of REVIEW.md can resurrect archived items (edited or ticked
-# copies the exact DUPLICATE check above misses). Refuse the merge if it does.
+# copies the exact DUPLICATE check above misses), or a stale second copy of an
+# item with the same title. Refuse the merge if it does.
 if ! "$(cd "$(dirname "$0")" && pwd)/review-check.sh" -C "$I" --source index --base HEAD; then
   echo "REVIEW CHECK FAILED: not merged; resetting. Remove the items above from"
   echo "docs/REVIEW.md on $FB (run scripts/review-check.sh there) and merge again."
