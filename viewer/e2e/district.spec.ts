@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test';
 import type { Page } from '@playwright/test';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { budget, loadFactor, timeoutFactor } from './load';
 
 // District 3D view (V2): the P0 sample district scene (12 buildings, a river, road boxes) in the main viewer page,
 // face-meshed, with the fly camera at three stops. Screenshots go to out/district/. Software WebGL: keep it light.
@@ -107,11 +108,12 @@ test('ground and water are layers that can be switched off', async ({ page }) =>
 });
 
 test('large synthetic district at ?exterior=1 loads within budget (voxels, triangles, frame time recorded)', async ({ page }) => {
-  test.setTimeout(180_000);
+  test.setTimeout(Math.round(180_000 * timeoutFactor()));
   const errors: string[] = [];
   page.on('pageerror', (e) => errors.push(String(e)));
   const k = Number(process.env['FB_TILES'] ?? 6);
   const url = await serve(page, 'big.json', tiled(k));
+  const f0 = loadFactor();
   const t0 = Date.now();
   await page.goto(`/?ir=${url}&exterior=1&camera=fly&stops=${k * 72},${110 + k * 6},${k * 160 + 60},0,-35`);
   const r = await ready(page);
@@ -120,10 +122,12 @@ test('large synthetic district at ?exterior=1 loads within budget (voxels, trian
   expect(r.stats!.mode).toBe('faces'); // above the 200k-voxel threshold
   const m = await page.evaluate(() => window.__viewer!.measure(5));
   const load = readFileSync('/proc/loadavg', 'utf8').trim();
-  console.log(JSON.stringify({ meshTriangles: r.stats!.triangles, tiles: k * k, buildings: k * k * 12, voxels: r.voxels, loadMs, ...m, loadavg: load }));
+  // 20 s on a quiet machine (5-7 s measured at load 25, V2 2026-10-21), stretched by load per CPU (e2e/load.ts).
+  const loadBudgetMs = budget(20_000, f0);
+  console.log(JSON.stringify({ meshTriangles: r.stats!.triangles, tiles: k * k, buildings: k * k * 12, voxels: r.voxels, loadMs, loadBudgetMs, ...m, loadavg: load }));
   writeFileSync('out/district/big.png', await page.screenshot());
   expect(r.voxels).toBeGreaterThan(200_000);
-  expect(loadMs).toBeLessThan(20_000);
+  expect(loadMs).toBeLessThan(loadBudgetMs);
   expect(errors).toEqual([]);
 });
 
@@ -132,7 +136,7 @@ test('large synthetic district at ?exterior=1 loads within budget (voxels, trian
 const dir = process.env['FB_DISTRICT_DIR'];
 test('real district scenes render', async ({ page }) => {
   test.skip(!dir, 'FB_DISTRICT_DIR not set');
-  test.setTimeout(240_000);
+  test.setTimeout(Math.round(240_000 * timeoutFactor()));
   const { readdirSync } = await import('node:fs');
   mkdirSync('out/district', { recursive: true });
   for (const f of readdirSync(dir!).filter((n) => n.endsWith('.json')).sort()) {

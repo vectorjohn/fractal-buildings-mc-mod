@@ -3,6 +3,7 @@ import type { Page } from '@playwright/test';
 import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
 import { loadavg } from 'node:os';
+import { budget, loadFactor } from './load';
 import { join, resolve } from 'node:path';
 
 // Plan view (plan.html) over the sample fixture and a synthetic big city (`fractal-cli sample-city --big N`, generated
@@ -126,6 +127,7 @@ test.describe('big city', () => {
   test(`sample-city --big ${BIG_SIZE}: overview in under 3 s, zoomed pan frames under 100 ms`, async ({ page }) => {
     const errors = trackErrors(page);
     const dir = await serveCity(page, 'big', BIG);
+    const f0 = loadFactor();
     const t0 = Date.now();
     await page.goto(`/plan.html?city=${dir}&layers=+density`);
     const r = await settled(page);
@@ -134,7 +136,7 @@ test.describe('big city', () => {
     expect(r.districts).toBeGreaterThan(900);
     expect(r.lod).toBe('overview');
     expect(r.loaded).toBe(0);
-    expect(overviewMs).toBeLessThan(3000);
+    expect(overviewMs).toBeLessThan(budget(3000, f0)); // quiet-machine budget, stretched by load (e2e/load.ts)
     writeFileSync('out/plan/big-overview.png', await page.screenshot());
 
     // zoom in: only visible districts load
@@ -151,8 +153,8 @@ test.describe('big city', () => {
       return ms;
     });
     const worst = Math.max(...frames);
-    console.log(`big ${BIG_SIZE}: overview ${overviewMs} ms, worst pan frame ${worst.toFixed(1)} ms, ${d.loaded} districts / ${d.lots} lots drawn, load ${loadavg()[0]!.toFixed(1)}`);
-    expect(worst).toBeLessThan(100);
+    console.log(`big ${BIG_SIZE}: overview ${overviewMs} ms, worst pan frame ${worst.toFixed(1)} ms, ${d.loaded} districts / ${d.lots} lots drawn, load ${loadavg()[0]!.toFixed(1)} (budget x${Math.max(f0, loadFactor()).toFixed(2)})`);
+    expect(worst).toBeLessThan(budget(100, f0));
     expect(errors).toEqual([]);
   });
 });
