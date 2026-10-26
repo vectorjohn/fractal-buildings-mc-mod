@@ -5,8 +5,10 @@
 #   scripts/test-scope.sh --files [--explain] [--layers]    file paths on stdin (no content check)
 #   scripts/test-scope.sh --check-table                     tracked files no row maps, and rows that match nothing
 #
-#   <base>      a branch or commit: the range is merge-base(<base>, HEAD)..HEAD. Default: the newest claude/run-* branch.
-#   <A>..<B>    an explicit range (B defaults to HEAD when empty).
+#   <base>      a branch or commit: the range is merge-base(<base>, HEAD)..HEAD, HEAD being the checkout you run it IN (the
+#               current directory), wherever the script itself lives. Default: the newest claude/run-* branch.
+#   <A>..<B>    the files B changed since it left A: merge-base(A, B)..B (B defaults to HEAD when empty). Use it to scope a
+#               branch without checking it out, e.g. scripts/test-scope.sh claude/run-phase6..claude/p7-foo from any checkout.
 #   --dirty     also count uncommitted and untracked files in the working tree.
 #   --explain   print every file with the row that matched it.
 #   --layers    print only the required layer names, one per line (for scripts).
@@ -18,7 +20,10 @@ set -o pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 TABLE="$ROOT/scripts/test-scope.tsv"
-usage() { sed -n '2,17p' "$0" | sed 's/^# \{0,1\}//'; }
+# Git reads come from the checkout you run it in (HEAD there), not the one the script lives in, so a verifier can run
+# the integration checkout's copy from a coder worktree. Outside a git checkout, fall back to the script's own.
+REPO="$(git rev-parse --show-toplevel 2>/dev/null)" || REPO="$ROOT"; [[ -z "$REPO" ]] && REPO="$ROOT"
+usage() { sed -n '2,/^set -o pipefail/p' "$0" | sed '$d' | sed 's/^# \{0,1\}//'; }
 
 ARG="" DIRTY=0 EXPLAIN=0 ONLY_LAYERS=0 FROM_STDIN=0 CHECK=0
 for a in "$@"; do
@@ -69,7 +74,7 @@ if (( CHECK )); then
 	while IFS= read -r f; do
 		i=$(match "$f")
 		if (( i < 0 )); then echo "unmapped: $f"; miss=$((miss + 1)); else HIT[$i]=1; fi
-	done < <(git -C "$ROOT" ls-files)
+	done < <(git -C "$REPO" ls-files)
 	for i in "${!P_GLOB[@]}"; do [[ -z "${HIT[$i]:-}" ]] && echo "row matches no tracked file: ${P_GLOB[$i]}"; done
 	echo "$miss tracked file(s) unmapped"
 	exit 0
@@ -83,18 +88,19 @@ if (( FROM_STDIN )); then
 else
 	if [[ "$ARG" == *..* ]]; then
 		BASE="${ARG%%..*}"; HEAD_REV="${ARG#*..}"; HEAD_REV="${HEAD_REV#.}"; [[ -z "$HEAD_REV" ]] && HEAD_REV=HEAD
-		BASE=$(git -C "$ROOT" merge-base "$BASE" "$HEAD_REV") || { echo "test-scope: bad range $ARG" >&2; exit 2; }
+		BASE=$(git -C "$REPO" merge-base "$BASE" "$HEAD_REV") || { echo "test-scope: bad range $ARG" >&2; exit 2; }
 	else
 		ref="$ARG"
-		[[ -z "$ref" ]] && ref=$(git -C "$ROOT" for-each-ref --sort=-committerdate --format='%(refname:short)' 'refs/heads/claude/run-*' | head -1)
+		[[ -z "$ref" ]] && ref=$(git -C "$REPO" for-each-ref --sort=-committerdate --format='%(refname:short)' 'refs/heads/claude/run-*' | head -1)
 		[[ -z "$ref" ]] && { echo "test-scope: no base given and no claude/run-* branch" >&2; exit 2; }
-		BASE=$(git -C "$ROOT" merge-base "$ref" HEAD) || { echo "test-scope: no merge base with $ref" >&2; exit 2; }
+		BASE=$(git -C "$REPO" merge-base "$ref" HEAD) || { echo "test-scope: no merge base with $ref" >&2; exit 2; }
 		ARG="$ref"
 	fi
-	RANGE="$(git -C "$ROOT" rev-parse --short "$BASE")..$HEAD_REV (base: ${ARG%%..*})"
+	RANGE="$(git -C "$REPO" rev-parse --short "$BASE")..$HEAD_REV (base: ${ARG%%..*})"
+	[[ "$REPO" != "$ROOT" ]] && RANGE+=" in $REPO"
 	mapfile -t FILES < <(
-		git -C "$ROOT" diff --name-only "$BASE" "$HEAD_REV"
-		if (( DIRTY )); then git -C "$ROOT" diff --name-only HEAD; git -C "$ROOT" ls-files --others --exclude-standard; fi
+		git -C "$REPO" diff --name-only "$BASE" "$HEAD_REV"
+		if (( DIRTY )); then git -C "$REPO" diff --name-only HEAD; git -C "$REPO" ls-files --others --exclude-standard; fi
 	)
 	mapfile -t FILES < <(printf '%s\n' "${FILES[@]}" | grep -v '^$' | sort -u)
 	(( DIRTY )) && RANGE+=" + working tree"
@@ -134,14 +140,14 @@ done
 # "door" or "wall") is new: no block id in the base tree's planner-core/src/main matched that regex with the same text.
 if (( ! FROM_STDIN )) && (( ${#C_RE[@]} )); then
 	paths=(planner-core/src/main)
-	if (( DIRTY )); then diff_out=$(git -C "$ROOT" diff -U0 "$BASE" -- "${paths[@]}")
-	else diff_out=$(git -C "$ROOT" diff -U0 "$BASE" "$HEAD_REV" -- "${paths[@]}"); fi
+	if (( DIRTY )); then diff_out=$(git -C "$REPO" diff -U0 "$BASE" -- "${paths[@]}")
+	else diff_out=$(git -C "$REPO" diff -U0 "$BASE" "$HEAD_REV" -- "${paths[@]}"); fi
 	mapfile -t ADDED < <(printf '%s\n' "$diff_out" | grep '^+[^+]' | grep -oE 'minecraft:[a-z0-9_]+' | sed 's/^minecraft://' | sort -u)
 	if (( ${#ADDED[@]} )); then
 		declare -A SEEN_KIND
 		while IFS= read -r id; do
 			for j in "${!C_RE[@]}"; do [[ "$id" =~ ${C_RE[$j]} ]] && { SEEN_KIND["$j:${BASH_REMATCH[0]}"]=1; break; }; done
-		done < <(git -C "$ROOT" grep -h -o -E 'minecraft:[a-z0-9_]+' "$BASE" -- "${paths[@]}" 2>/dev/null | sed 's/^minecraft://' | sort -u)
+		done < <(git -C "$REPO" grep -h -o -E 'minecraft:[a-z0-9_]+' "$BASE" -- "${paths[@]}" 2>/dev/null | sed 's/^minecraft://' | sort -u)
 		for id in "${ADDED[@]}"; do
 			for j in "${!C_RE[@]}"; do
 				[[ "$id" =~ ${C_RE[$j]} ]] || continue
