@@ -65,7 +65,10 @@ assistant.
 
 Each layer has its own test, and most checks run without starting Minecraft.
 Each feature lands with tests at the cheapest layer that can catch its bugs.
-Commands are in CLAUDE.md, "Build and test commands".
+Commands are in CLAUDE.md, "Build and test commands". Which layers a given
+change must run: `scripts/test-scope.sh` and [TESTING.md](TESTING.md) (heavy
+in-world layers only when the change can affect them; the batched heavy run
+and merges to main run everything).
 
 | Layer | Checked by | Runs | Parallel? |
 |---|---|---|---|
