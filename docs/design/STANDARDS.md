@@ -392,14 +392,14 @@ drops them, and accepted ones move to the section they belong in.
 - **For implementers** (Minecraft 26.3 registry; table is agent's; wear
   share at most 15 %, scattered, agent's number):
 
-  | Where | Material | Slab, stairs | Wear |
+| Where | Material | Slab, stairs | Wear |
   |---|---|---|---|
-  | Tracks: paths, hamlet and village streets, roads between settlements below city | `dirt_path`; `gravel` in snowy, mountain, stony and gravelly biomes; `mud_bricks` in desert and badlands | dirt path, gravel: none (full-block steps, DS-31); mud bricks: yes | none |
-  | Town streets, and city streets in a non-modern style | `stone_bricks`; `mud_bricks` in desert, badlands, savanna | yes | stone: `cracked_stone_bricks` (full blocks only), `mossy_stone_bricks` (any shape; jungle, swamp, taiga, dark forest only) |
-  | City and metropolis arterials, main streets, roads between cities | `cobbled_deepslate` ("asphalt") | yes | none exists |
-  | City and metropolis streets and lanes | `light_gray_concrete` | yes (new in 26.x) | none exists |
-  | Sidewalks (DS-31) | `white_concrete` | yes | none |
-  | Bridge decks | the road's material, or one plank species | yes | as the road |
+| Tracks: paths, hamlet and village streets, roads between settlements below city | `dirt_path`; `gravel` in snowy, mountain, stony and gravelly biomes; `mud_bricks` in desert and badlands | dirt path, gravel: none (full-block steps, DS-31); mud bricks: yes | none |
+| Town streets, and city streets in a non-modern style | `stone_bricks`; `mud_bricks` in desert, badlands, savanna | yes | stone: `cracked_stone_bricks` (full blocks only), `mossy_stone_bricks` (any shape; jungle, swamp, taiga, dark forest only) |
+| City and metropolis arterials, main streets, roads between cities | `cobbled_deepslate` ("asphalt") | yes | none exists |
+| City and metropolis streets and lanes | `light_gray_concrete` | yes (new in 26.x) | none exists |
+| Sidewalks (DS-31) | `white_concrete` | yes | none |
+| Bridge decks | the road's material, or one plank species | yes | as the road |
 
 - **Enforcement:** code candidate: `road-one-material` (each road's surface
   cells are one base block, its slab and stairs, plus listed wear variants
