@@ -13,6 +13,8 @@ surface Y. Total committed size is about 0.6 MB.
 | `world-987654321-s64.json.gz` | 987654321 | same | 64 | 234 KB | second coarse world map |
 | `w12345-river-s8.json.gz` | 12345 | x -1408..632, z -4160..-2120 (256 x 256) | 8 | 59 KB | around (-384, -3136), the crop's city: rivers, a bay, coast to the south |
 | `w1-mixed-s8.json.gz` | 1 | x 7936..9976, z -4672..-2632 (256 x 256) | 8 | 63 KB | around the land city (8960, -3648) of S4's map: savanna, temperate and jungle mix, many rivers, a lake |
+| `fly-12345-coast-city.json.gz` | 12345 | x 64..2232, z -1344..824 (272 x 272) | 8 | 72 KB | B9 fly-through city `s1_m1` (1152, -256, r807): snowy coast, frozen rivers (CITYQ, `CityFillTest`) |
+| `fly-1-hill-town.json.gz` | 1 | x -2240..-848, z 4096..5488 (176 x 176) | 8 | 32 KB | B9 fly-through "metropolis" `sm2_4` (-1536, 4800, r418), a town since CITYQ: steep, lakes (`CityFillTest`) |
 
 ## Regenerating, or making larger windows
 

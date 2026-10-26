@@ -312,7 +312,7 @@ public class WorldPlanner {
 	}
 
 	/**
-	 * Asks the workers to compute the buildings and ground of this tile and the plans of its eight neighbours. Returns at once and never
+	 * Asks the workers to compute the buildings and ground of this tile and the plans and ground of its eight neighbours. Returns at once and never
 	 * changes any answer: a later call for a tile a worker is computing waits for it, one a worker has not started computes it itself.
 	 */
 	public void prefetch(int ix, int iz) {
@@ -326,7 +326,7 @@ public class WorldPlanner {
 						try {
 							if (tile(x, z).isEmpty()) return;
 							if (self) { buildings(x, z); ground(x, z); }
-							else plan(x, z);
+							else { plan(x, z); ground(x, z); } // CITYQ: the mod's spill clear reads the neighbours' ground near the shared border
 						} catch (RuntimeException ignored) {
 							// a failing prefetch fails again, visibly, in the call that needs the tile
 						}
@@ -463,6 +463,11 @@ public class WorldPlanner {
 
 	/** A road column may lie in a district's piece only near a settlement: its rim + the port offset + one tile, plus the chunk. */
 	private static final int DISTRICT_REACH = RoadNet.PORT_OFFSET + 160 + 32;
+
+	/** Can a settlement's district reach chunk (cx, cz)? False only when the road net knows of no settlement within {@link #DISTRICT_REACH}: a cheap test for passes that run in every chunk. */
+	public boolean districtsNear(int chunkX, int chunkZ) {
+		return roads == null || !roads.settlementsNear(chunkX * 16 + 8, chunkZ * 16 + 8, DISTRICT_REACH).isEmpty();
+	}
 
 	/**
 	 * The columns of a chunk that a district draws (D5: the district wins where a road and a district meet): the xz extent of every

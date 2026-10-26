@@ -47,6 +47,13 @@ public final class Tiers {
 		return (int) Math.min((long) maxRadius, Math.round(r));
 	}
 
+	/** CITYQ: the largest tier whose radius band starts at or below {@code r} (a hamlet below every band). */
+	public static Tier forRadius(int r) {
+		Tier[] all = Tier.values();
+		for (int i = all.length - 1; i > 0; i--) if (r >= all[i].minRadius) return all[i];
+		return all[0];
+	}
+
 	// ---- water bias (5.10) ----
 
 	/** Reach of the water search, in blocks; the bias weight falls linearly to 0 there. */

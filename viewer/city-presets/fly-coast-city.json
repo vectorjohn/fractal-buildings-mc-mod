@@ -1,0 +1,7 @@
+{
+  "seed": 12345,
+  "terrain": "recorded:fixtures/terrain/fly-12345-coast-city.json.gz",
+  "site": {"at": [1152, -256], "tier": "city", "radius": 807},
+  "scenes": "auto:2",
+  "camera": {"plan": {"x": 1152, "z": -256, "zoom": 0.5, "layers": "+mask,-tiles"}}
+}

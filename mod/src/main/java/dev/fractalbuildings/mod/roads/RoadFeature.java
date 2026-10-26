@@ -10,6 +10,7 @@ import dev.fractalbuildings.core.road.RoadSurface;
 import dev.fractalbuildings.core.world.WorldPlanner;
 import dev.fractalbuildings.mod.FractalBuildingsMod;
 import dev.fractalbuildings.mod.block.BlockMapper;
+import dev.fractalbuildings.mod.worldgen.FoliageClear;
 import dev.fractalbuildings.mod.worldgen.PieceLedger;
 import dev.fractalbuildings.mod.worldgen.WorldPlanners;
 import java.util.ArrayList;
@@ -90,8 +91,20 @@ public final class RoadFeature implements Feature {
 	public boolean place(WorldGenLevel level, ChunkGenerator gen, RandomSource random, BlockPos origin) {
 		if (level.getLevel().dimension() != Level.OVERWORLD) return false;
 		WorldPlanner planner = WorldPlanners.of(level.getLevel(), gen).orElse(null);
-		if (planner == null || !planner.roadsEnabled()) return false;
+		if (planner == null) return false;
 		ChunkPos cp = ChunkPos.containing(origin);
+		// CITYQ r5: street air beside a chunk with no ground piece of ours (the settlement's outer tile border) is re-cleared from here,
+		// since TilePiece runs the pass only where a ground piece is; this feature runs in every overworld chunk, after its own features
+		try {
+			if (planner.districtsNear(cp.x(), cp.z()) && !dev.fractalbuildings.mod.worldgen.SpillClear.hasGround(planner, cp.x(), cp.z()))
+				dev.fractalbuildings.mod.worldgen.SpillClear.run(level, planner, cp.x(), cp.z());
+			// r7: and natural leaves this chunk's trees put into the headroom of the neighbours' roads (before the draw: its foliage pass then takes what they held)
+			if (planner.roadsEnabled()) dev.fractalbuildings.mod.worldgen.SpillClear.roadLeaves(level, planner, cp.x(), cp.z());
+		} catch (RuntimeException e) {
+			WorldPlanners.FAILURES.incrementAndGet();
+			FractalBuildingsMod.LOGGER.error("Re-clearing the street air beside chunk {} failed", cp, e);
+		}
+		if (!planner.roadsEnabled()) return false;
 		long t0 = System.nanoTime(); // det-ok: report only
 		try {
 			boolean drew = draw(level, planner, cp);
@@ -148,6 +161,7 @@ public final class RoadFeature implements Feature {
 		BlockState dirt = Blocks.DIRT.defaultBlockState();
 		int airId = Block.BLOCK_STATE_REGISTRY.getId(air);
 		long written = 0;
+		FoliageClear.Cuts cuts = new FoliageClear.Cuts("road");
 		int x0 = cp.getMinBlockX(), z0 = cp.getMinBlockZ();
 		for (int dz = 0; dz < 16; dz++) {
 			for (int dx = 0; dx < 16; dx++) {
@@ -170,20 +184,24 @@ public final class RoadFeature implements Feature {
 				written += put(level, pos.set(x, surf, z), top);
 				// the claimed air above: up to the old ground or the headroom, whichever is higher; foreign blocks inside it go
 				int clearTo = Math.max(g, surf + RoadSurface.HEADROOM);
-				int scanned = ground.scanTop(x, z);
 				for (int y = surf + 1; y <= clearTo; y++) {
 					pos.set(x, y, z);
 					PieceLedger.recordRoad(x, y, z, airId);
-					if (y <= scanned) {
-						BlockState old = level.getBlockState(pos);
-						if (!old.isAir() && old.getFluidState().isEmpty()) {
-							level.setBlock(pos, air, WRITE_FLAGS);
-							written++;
-						}
+					// every cell, not only those up to the heightmap top: the world-surface heightmap of this stage is the terrain's (it does not
+					// see the trees and plants the features grew), so a bound by it left every canopy and bush above the old ground standing over the road
+					BlockState old = level.getBlockState(pos);
+					if (!old.isAir() && old.getFluidState().isEmpty()) {
+						cuts.note(old, x, y, z);
+						level.setBlock(pos, air, WRITE_FLAGS);
+						written++;
 					}
 				}
 			}
 		}
+		// the trees the clear cut: leaves and logs above the clear that nothing holds any more go too
+		boolean[] own = new boolean[256];
+		for (int i = 0; i < 256; i++) own[i] = plan.kind[i] != RoadSurface.NONE;
+		written += FoliageClear.run(level, cp.x(), cp.z(), own, plan.surf, cuts);
 		BLOCKS.addAndGet(written);
 		return true;
 	}

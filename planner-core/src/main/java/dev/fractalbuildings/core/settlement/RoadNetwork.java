@@ -12,8 +12,8 @@ import java.util.TreeSet;
  * tile plus {@link Districts#MARGIN}), as centre lines on a block raster, and the part of it that reaches the hub (8-connected,
  * from the hub column of the cell that holds the site centre).
  *
- * <p>The lattice (ROADS2). A tile-border segment is <i>eligible</i> when it is an arterial candidate, or when both its ends are
- * urban, it crosses no water run over 40 blocks, it is no steeper than an arterial may be and it does not cut the old-town wall.
+ * <p>The lattice (ROADS2). A tile-border segment is <i>eligible</i> when it is an arterial candidate, or when two of its three sample points
+ * are inside the footprint, dry and not a peak, it crosses no water run over 40 blocks, it rises at most 1 in 2 and it does not cut the old-town wall.
  * A segment is <i>present</i> (drawn: an arterial when the arterial rule picked it, else a plain street) when a chain of eligible
  * segments meeting at tile corners links it to a live road (a main road, a path or a present segment that reaches the hub). So every
  * arterial and every border street is attached to the settlement's network, a chain of arterials that never met a main road is
@@ -174,14 +174,20 @@ public final class RoadNetwork {
 		return n;
 	}
 
-	/** Largest rise over 32 blocks along a plain lattice street (1 in 4; arterials keep the arterial rule's 3 in 4). */
-	public static final int STREET_STEEP_PER_32 = 8;
+	/** Largest rise over 32 blocks along a plain lattice street (1 in 2; it was 1 in 4 before CITYQ, which cut hilly tiles off the hub; arterials keep the arterial rule's 3 in 4). */
+	public static final int STREET_STEEP_PER_32 = 16;
 
-	/** A plain lattice street needs this many of its three sample points (both ends and the middle) urban. */
+	/** A plain lattice street needs this many of its three sample points (both ends and the middle) to be {@link #streetPoint}s. */
 	public static final int URBAN_POINTS = 2;
 
 	/** Longest distance between a lattice segment's centre line and a live column for the segment to count as touching it (the two footprints meet). */
 	private static final int TOUCH = 3;
+
+	/** A lattice sample point a plain street may count (CITYQ): inside the footprint, dry, not a peak. Unlike the urban test it ignores the 4-neighbour steepness: the grade test along the street ({@link #STREET_STEEP_PER_32}) judges slope, and counting it twice left urban tiles on rolling ground with no street. */
+	static boolean streetPoint(DensityField den, int x, int z) {
+		CoarseTerrain t = den.terrain();
+		return den.inside(x, z) && !t.water(x, z) && !t.peak(x, z);
+	}
 
 	private static boolean touches(BitSet live, List<int[]> cols, int x0, int z0, int w, int d) {
 		for (int k = 0; k < cols.size(); k += 2) {
@@ -212,7 +218,7 @@ public final class RoadNetwork {
 			boolean arterial = art.is(s);
 			if (!arterial) {
 				int mid = Math.floorDiv(s.from() + s.to(), 2), urban = 0;
-				for (int q : new int[] {s.from(), mid, s.to()}) if (den.urban(Arterials.ax(s, q), Arterials.az(s, q))) urban++;
+				for (int q : new int[] {s.from(), mid, s.to()}) if (streetPoint(den, Arterials.ax(s, q), Arterials.az(s, q))) urban++;
 				if (urban < URBAN_POINTS) continue;
 				if (city && den.oldTown().cuts(s)) continue;
 				if (!art.waterOk(s) || !art.gradeOk(s, STREET_STEEP_PER_32)) continue;

@@ -246,6 +246,7 @@ public final class Districts {
 		final String id;
 		final TerrainProbe exact;
 		final DensityField den;
+		final BuiltEdge edge;
 		final QuarterField qf;
 		final long seed;
 		final Tier tier;
@@ -278,6 +279,7 @@ public final class Districts {
 			this.tr = tile.rect();
 			this.id = Ids.district(ix, iz);
 			this.den = src.density();
+			this.edge = new BuiltEdge(src);
 			this.qf = src.quarters();
 			this.seed = src.seed();
 			this.tier = src.site().tier();
@@ -1590,6 +1592,8 @@ public final class Districts {
 				boolean ok = false;
 				for (int z = pz.z() - 1; z <= pz.z() + pz.d() && !ok; z++) {
 					for (int x = pz.x() - 1; x <= pz.x() + pz.w() && !ok; x++) {
+						// 4-adjacency, as the city's roads-attached rule floods: a street that meets the plaza only at a corner does not reach it (CITYQ)
+						if ((x == pz.x() - 1 || x == pz.x() + pz.w()) && (z == pz.z() - 1 || z == pz.z() + pz.d())) continue;
 						if (!inR(x, z)) continue;
 						int a = tmp[(z - rz0) * rw + (x - rx0)];
 						if (a != 0 && rooted[find(parent, a - 1)]) ok = true;
@@ -2641,6 +2645,7 @@ public final class Districts {
 			int dens = den.at(sx, sz);
 			if (dens <= 0) return null;
 			QuarterKind q = qf.at(sx, sz, dens);
+			dens = edge.cap(dens, sx, sz); // DS-18: no tall class near the built edge (BuiltEdge); the quarter keeps the field density
 			int lotX = f.x(u, 0), lotZ = f.z(u, 0);
 			int relief = 0;
 			java.util.Set<String> excluded = new java.util.TreeSet<>(); // types this frontage could not take once the lot had grown for its setback
@@ -2754,6 +2759,7 @@ public final class Districts {
 					int dens = den.at(cx, cz);
 					if (dens < BLOCK_DENSITY || !den.urban(cx, cz)) continue;
 					QuarterKind q = qf.at(cx, cz, dens);
+					dens = edge.cap(dens, cx, cz); // DS-18: no tall class near the built edge (BuiltEdge); the quarter keeps the field density
 					Optional<ClassTable.Pick> p = ClassTable.pick(seed, r.x(), r.z(), dens, q, relief(r), w, d);
 					if (p.isEmpty() || !p.get().type().equals("block")) continue;
 					Facing front = Facing.values()[Hash64.below(Hash64.hash(seed, "block-front", r.x(), r.z()), 4)];

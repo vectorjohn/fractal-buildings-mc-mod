@@ -179,6 +179,9 @@ final class CityCheckCommand {
 				}
 			}
 			for (Violation v : CityPlanner.check(city)) problems.add(v.invariant() + ": " + v.message());
+			// DS-18 edge taper (CITYQ r4): a high-rise with no built lot within 120 blocks outward. A warning, since the per-tile cap (BuiltEdge) cannot see
+			// other tiles' lots and leaves a few; EdgeTaperTest holds the count down.
+			for (Violation v : dev.fractalbuildings.core.check.SettlementChecks.cityEdgeTaper(city.districts().values(), site.centre(), new dev.fractalbuildings.core.settlement.BuiltEdge(src)::depth)) warnings.add(v.invariant() + ": " + v.message());
 			int built = 0;
 			List<String> ids = CityPlanner.autoScenes(city, sceneCount);
 			for (String id : ids) {

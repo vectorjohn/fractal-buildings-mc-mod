@@ -1,0 +1,7 @@
+{
+  "seed": 1,
+  "terrain": "recorded:fixtures/terrain/fly-1-hill-town.json.gz",
+  "site": {"at": [-1536, 4800], "tier": "town", "radius": 418},
+  "scenes": "auto:2",
+  "camera": {"plan": {"x": -1536, "z": 4800, "zoom": 0.9, "layers": "+mask,-tiles"}}
+}
