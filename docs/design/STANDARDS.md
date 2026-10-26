@@ -628,3 +628,42 @@ drops them, and accepted ones move to the section they belong in.
   bridge is patchy bamboo ([styles/jungle.md](styles/jungle.md)).
 - **Status:** proposed (amends DS-30). **Source:** John, playtest
   notes 2026-10-25; drafted by the architect.
+
+## DS-38 Guarded roofs
+
+- **Rule:** a roof reached by a door (the top roof a stair house opens
+  onto, sky-lobby terraces) has a 1-high wall parapet with a 1-high rail
+  (iron bars) on top, unbroken round the edge: 2 above the roof surface,
+  see-through at eye level. Setback roofs with no door keep a 1-high
+  parapet.
+- **Why:** stops a walker (jump 1.25, meets the DS-8 amendment's 1.5)
+  while keeping the view from a roof climbed to (eye height 1.62).
+- **Scope:** accessible flat roofs and terraces, all types.
+- **Enforcement:** code candidate, folds into the DS-8 amendment's
+  `rail-height`: every edge cell of a door-reached roof has a wall with a
+  rail above it. None today.
+- **Status:** proposed. **Source:** architect, high-rise plan review
+  2026-10-25 (`.claude/reports/highrise-plan-architect.md`, answer 3).
+
+## DS-8 amendment: flights, corners and the lot line
+
+- **Proposed additions** to the proposed DS-8 amendment ("railings that
+  hold"), replacing its "step up beside a flight one block above each
+  step": (1) beside a flight, the rail's top is at least 1.5 above every
+  walking surface next to it (its own tread, the tread above, any kerb or
+  cheek wall); rails turning a corner, diagonal ones included, meet in a
+  corner post; no gap between rail posts wider than 0.5. (2) Flights and
+  landings that need a rail sit one cell inside the lot line, so the rail
+  fits in the lot.
+- **Why:** Minecraft steps 0.6 and the player is 0.6 wide, so stepped and
+  diagonal fence posts are not barriers; the lot edge is where the street
+  drop is (6.9 known issue, RAILFIX review).
+- **Scope:** all exterior flights, landings, terraces and bridges; (2) the
+  site pass, all types.
+- **Enforcement:** code, extend `RailingTest`: no standable surface within
+  0.6 below a rail top on the open side, corner posts, and a flight
+  against the lot edge. The first two pass since RAILFIX r2; the lot-line
+  case still fails in the galleries.
+- **Status:** proposed (amends the proposed DS-8 amendment). **Source:**
+  architect, RAILFIX review 2026-10-25
+  (`.claude/reports/p6-railfix-architect.md`, "Proposed rules").

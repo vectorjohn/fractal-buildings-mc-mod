@@ -432,3 +432,9 @@ work becomes a ROADMAP item or a Polish backlog line. Settled items move to
   - P3 DS-29 measure: in a city-check run, lots of 1-3 storeys with a wood wall are at least 50 % in forested biomes and at most 20 % in open ones (agent's numbers).
   Proposed block notes change: in [blocks-notes.md](design/blocks-notes.md), jungle planks High-rise `N` to `timber` (they are as tame as oak), then rerun `scripts/design-blocks.sh`; gives jungles a plank option besides bamboo.
   Result:
+
+- [ ] **High-rise plan questions (2026-10-25)**: two open choices in the high-rise plan, each one constant, both with a default the coders follow until you answer. Sources: [plans/highrises.md](plans/highrises.md) ("Open for John"), `.claude/reports/highrise-plan-architect.md` (answer 2), `.claude/reports/highrise-plan-interior.md` (Q3, "For John").
+  1. Stairwell 3 or 4 deep: does the proposed DS-8 amendment ("railings that hold") cover the open well inside an indoor stairwell? Default (no or unanswered): 3 deep, open well, drops 1-3 (4-5 under 6-high storeys). Yes: 4 deep with a guard row and a 2-high rail screen. Decided in `TowerBlock.SD`; answer before plan step B1 merges (afterwards it is a rewrite).
+  2. Deep flats: windowless private entry hall on the corridor side (default, as real deep-plan flats do), or fewer, wider units with no hall? Decided in `TowerFloors.ENTRY_STRIP` (step B2/B3a).
+  The plan's other three questions (tall styles outside forests, glass towers, cherry grove mass timber) are the "Tall styles" entry above.
+  Result:
