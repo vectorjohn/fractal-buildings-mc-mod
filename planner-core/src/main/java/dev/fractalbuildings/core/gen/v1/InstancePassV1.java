@@ -226,6 +226,8 @@ public final class InstancePassV1 {
 					if (ok) candidates.add(strip);
 				}
 			}
+			// a landing never covers a cell an earlier door's flight or landing already uses (DOOR2: it overwrote the end of a neighbour's flight, leaving its steps short of the ground)
+			candidates.removeIf(cand -> { for (int c : cand) if (flightTop[c] != Integer.MIN_VALUE) return true; return false; });
 			// the same landings without the cells on the lot line that need a rail (only pass 0 takes these): the landing stays inside the lot
 			for (int ci = 0, n = candidates.size(); ci < n; ci++) {
 				int[] full = candidates.get(ci);
