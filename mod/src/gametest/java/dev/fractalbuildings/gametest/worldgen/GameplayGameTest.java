@@ -91,19 +91,36 @@ public class GameplayGameTest {
 		return new Found(beds, chests, work, loot, vill, vs.size(), StartSupport.worldHash(level, s));
 	}
 
+	/** The villagers the start's box holds, with their positions, for failure messages. */
+	static String villagersAt(ServerLevel level, StructureStart s) {
+		StringBuilder sb = new StringBuilder("[");
+		for (Villager v : level.getEntitiesOfClass(Villager.class, aabb(s))) sb.append(v.getUUID().toString(), 0, 8).append('@').append(v.blockPosition().toShortString()).append(' ');
+		return sb.append(']').toString();
+	}
+
 	private static void reset(ServerLevel level, StructureStart s) {
 		for (Villager v : level.getEntitiesOfClass(Villager.class, aabb(s))) v.discard();
 		StartSupport.clear(level, s);
 	}
 
-	private static void run(Runnable body) {
-		boolean villagers = Gameplay.villagersEnabled();
-		try {
-			body.run();
-		} finally {
-			WorldPlanners.overrideForTests(null);
-			Gameplay.setVillagersForTests(villagers);
-		}
+	/** Runs {@code body} alone on the clean {@code area} (see {@link TestArea}; it ends the test), then restores the planner and the villager switch. */
+	private static void run(GameTestHelper helper, List<BoundingBox> area, Runnable body) {
+		TestArea.run(helper, area, () -> {
+			boolean villagers = Gameplay.villagersEnabled();
+			try {
+				body.run();
+			} finally {
+				WorldPlanners.overrideForTests(null);
+				Gameplay.setVillagersForTests(villagers);
+			}
+		});
+	}
+
+	/** The world area of these tiles: each one's settlement start and ground start boxes. */
+	private static List<BoundingBox> area(ServerLevel level, Tile... tiles) {
+		List<BoundingBox> out = new ArrayList<>();
+		for (Tile t : tiles) out.addAll(TestArea.boxes(level, t.w(), t.chunk(), t.info().tier().json, "district_ground"));
+		return out;
 	}
 
 	private static List<ChunkPos> order(StructureStart s, int mode) {
@@ -120,10 +137,10 @@ public class GameplayGameTest {
 		return out;
 	}
 
-	@GameTest
+	@GameTest(maxTicks = TestArea.TICKS)
 	public void hamletGetsBedsChestsWorkstationsAndAtMostTenVillagers(GameTestHelper helper) {
 		ServerLevel level = helper.getLevel();
-		run(() -> {
+		run(helper, area(level, tileOf(planner(1))), () -> {
 			Tile tl = tileOf(planner(1));
 			check(tl.info().tier() == Tier.HAMLET, "seed 1 should give a hamlet, got " + tl.info().tier());
 			WorldPlanners.overrideForTests(tl.w());
@@ -162,13 +179,12 @@ public class GameplayGameTest {
 			}
 			reset(level, s);
 		});
-		helper.succeed();
 	}
 
-	@GameTest
+	@GameTest(maxTicks = TestArea.TICKS)
 	public void villagersAreOffInTownsAndWhenConfigured(GameTestHelper helper) {
 		ServerLevel level = helper.getLevel();
-		run(() -> {
+		run(helper, area(level, tileOf(planner(6)), tileOf(planner(5))), () -> {
 			Tile town = tileOf(planner(6));
 			check(town.info().tier() == Tier.TOWN, "seed 6 should give a town, got " + town.info().tier());
 			WorldPlanners.overrideForTests(town.w());
@@ -194,19 +210,20 @@ public class GameplayGameTest {
 			check(on.villagerCount() == 10, "village with villagers on: " + on.villagerCount());
 			reset(level, v);
 		});
-		helper.succeed();
 	}
 
-	@GameTest
+	@GameTest(maxTicks = TestArea.TICKS)
 	public void hooksAndLootAreTheSameInAnyChunkOrder(GameTestHelper helper) {
 		ServerLevel level = helper.getLevel();
-		run(() -> {
+		run(helper, area(level, tileOf(planner(5))), () -> {
 			Tile tl = tileOf(planner(5));
 			WorldPlanners.overrideForTests(tl.w());
 			Gameplay.setVillagersForTests(true);
 			StructureStart s = StartSupport.start(level, "village", tl.chunk());
 			StartSupport.Placed first = StartSupport.place(level, s, order(s, 0), 1);
 			Found a = scan(level, s);
+			StartSupport.Snapshot snapA = StartSupport.snapshot(level, s);
+			String villA = villagersAt(level, s);
 			check(a.chests() > 0 && a.villagerCount() > 0, "something to compare: chests " + a.chests() + " villagers " + a.villagerCount());
 			// the loot seed is the hash of (world seed, position), not anything random
 			for (BuildingPiece b : tl.w().buildings(tl.t().ix(), tl.t().iz())) for (WorldHook h : WorldHooks.of(b)) {
@@ -221,13 +238,12 @@ public class GameplayGameTest {
 				StartSupport.Placed again = StartSupport.place(level, s, order(s, mode), 100 + mode);
 				Found b = scan(level, s);
 				check(again.digest().equals(first.digest()), "ledger digest differs in order " + mode);
-				check(b.hash() == a.hash(), "world blocks differ in order " + mode);
+				if (b.hash() != a.hash()) throw new IllegalStateException("world blocks differ in order " + mode + ": " + StartSupport.diff(snapA, StartSupport.snapshot(level, s), first.cells(), 20));
 				check(b.beds().equals(a.beds()) && b.loot().equals(a.loot()), "beds or loot differ in order " + mode);
-				check(b.villagers().equals(a.villagers()), "villager ids differ in order " + mode + ": " + b.villagers() + " vs " + a.villagers());
+				check(b.villagers().equals(a.villagers()), "villager ids differ in order " + mode + ": " + villagersAt(level, s) + " vs order 0 " + villA);
 			}
 			reset(level, s);
 		});
-		helper.succeed();
 	}
 
 	@GameTest
