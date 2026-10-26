@@ -49,7 +49,10 @@ and Minecraft block facts ([blocks.md](blocks.md), from John's
   deepslate, tuff, blackstone, iron, copper and glass. Never logs, wool or
   other light materials as walls or structure, and no planks or bamboo except
   under the mass-timber exception below. The local style may tint the
-  cladding (sandstone in a desert, mossy stone in a jungle).
+  cladding (sandstone in a desert, mossy stone in a jungle). The rule
+  governs the `wall`, `beam` (frame) and `roof` cladding roles; `trim`,
+  `door`, `floor`, `fence`/`rail` and interiors are exempt. Storeys are
+  counted above ground.
 - **Mass-timber exception:** a building of 7 to 20 storeys may have a timber
   structure and wooden exterior only in the distinct mass-timber look
   ([styles/mass-timber.md](styles/mass-timber.md)): planks and stripped wood,
@@ -59,7 +62,8 @@ and Minecraft block facts ([blocks.md](blocks.md), from John's
   deliberate pattern (uniform vertical boards, or a repeating pattern of
   board orientations), never as random or mixed cladding. Over 20 storeys
   no timber walls or structure at all. The 6-storey line for everything
-  else is unchanged.
+  else is unchanged. A mass-timber building under 7 storeys needs no
+  exception (the rule only starts over 6 storeys).
 - **Why:** "You don't build a 50 story skyscraper out of bamboo." Mass timber
   does go tall but rarely: the tallest, Ascent in Milwaukee, is 25 storeys
   ([Dezeen, 2023](https://www.dezeen.com/2023/03/29/worlds-tallest-buildings-mass-timber-revolution/)), so John set 20.
@@ -69,8 +73,16 @@ and Minecraft block facts ([blocks.md](blocks.md), from John's
   only from the biome (`Briefs` / `StyleField`), so a jungle high-rise likely
   gets bamboo walls (inferred from the code, not checked in output); ROADMAP
   7.7 adds the mass-timber style and style choice by height.
-- **Status:** accepted; amended 2026-10-25. **Source:** John, 2026-10-25
-  (design-agents request); amendment John 2026-10-25 (coordinator chat).
+- **Status:** accepted; amended 2026-10-25 and 2026-10-26. **Source:** John, 2026-10-25
+  (design-agents request); amendment John 2026-10-25 (coordinator chat);
+  amendment 2026-10-26 below.
+- **Amended 2026-10-26**, John approved the architect's amendment
+  (REVIEW-ARCHIVE "Tall styles (architect, 2026-10-25)": "approved all
+  suggestions"; report
+  [design-tall-styles-architect.md](../review/reports/design-tall-styles-architect.md)):
+  the roles governed, storeys counted above ground, and no exception needed
+  for mass timber under 7 storeys (the sentences added to the rule above).
+  Which tall palette a building gets is DS-41.
 - **Amended 2026-10-25**, John: "there are some examples of pretty tall mass
   timber structures. The tallest is 25 storeys, and I don't think a timber
   building that tall is common. So lets say 20 storeys. But we should have a
@@ -117,11 +129,74 @@ and Minecraft block facts ([blocks.md](blocks.md), from John's
 - **Why:** local materials: "I think there should be a higher prevelance of
   wooden buildings in biomes with a lot of trees, as that is one of the
   advantages in real life."
-- **Scope:** all tiers; styles of forested biomes. The biome list and "clearly
-  larger" are agent's; a measure could be the share of lots whose `wall` role
-  is wood, per biome, over a city-check run.
-- **Enforcement:** guideline today; code candidate (ROADMAP 7.8).
-- **Status:** accepted. **Source:** John 2026-10-25 (coordinator chat).
+- **Scope:** all tiers; styles of forested biomes. The biome list is the
+  agent's; "clearly larger" is measured by DS-43 (agent's numbers, approved
+  by John 2026-10-26).
+- **Enforcement:** guideline today; code candidate: the DS-43 report in
+  city-check (ROADMAP 7.8).
+- **Status:** accepted; amended 2026-10-26. **Source:** John 2026-10-25
+  (coordinator chat).
+- **Amended 2026-10-26**, John approved the architect's amendment (REVIEW-ARCHIVE
+  "Tall styles (architect, 2026-10-25)": "approved all suggestions"): "clearly
+  larger" gets a number, DS-43.
+
+## DS-41 Tall buildings keep their style's tint
+
+- **Rule:** a building over 6 storeys uses its style's `tall` variant:
+  high-rise materials (DS-1) in the style's colours, mass timber in
+  forested styles within DS-1's limits. A style that defines no `tall`
+  variant gets the shared plain default. Later, over about 20 storeys in a
+  metropolis core, one shared glass-dominant tower look for every biome,
+  tinted only at the base.
+- **Why:** keeps each biome's look in its downtown instead of every city
+  looking alike, with one default to tune for styles that need nothing
+  special. John approved the per-style variant over a shared default, the
+  shared glass tower over 20 storeys and birch walls with cherry trim for
+  cherry grove mass timber.
+- **Scope:** city and metropolis; buildings over 6 storeys; all styles.
+- **Enforcement:** code candidate: a static test that every `tall` palette
+  passes DS-1; DS-1's `highrise-materials` check on output (ROADMAP 7.9).
+- **Status:** accepted. **Source:** architect, tall-styles review
+  2026-10-25 (P1,
+  [design-tall-styles-architect.md](../review/reports/design-tall-styles-architect.md));
+  approved by John 2026-10-26 (REVIEW-ARCHIVE "Tall styles (architect,
+  2026-10-25)", questions 1-3).
+
+## DS-42 One wall material per building
+
+- **Rule:** a building's walls are one material on every face, unless an
+  architectural reason calls for different materials on different faces
+  (for example a stone base under
+  timber walls, or a declared pattern; agent's examples). The roof is
+  an obvious exception and is often different. The wall material is picked
+  per building, not per block; slight variation only within one family and
+  tone (DS-2).
+- **Why:** John: "if you're saying building faces can all be different, I
+  don't think so. [All] faces the same unless it makes sense from an
+  architecture POV to have different materials on different faces. Roof an
+  obvious exception, those are often different."
+- **Scope:** all styles and types; needed first for mass timber and tall
+  buildings (ROADMAP 7.7).
+- **Enforcement:** code candidate (one wall block or declared pattern per
+  building in the IR); none today (walls are picked per block).
+- **Status:** accepted. **Source:** architect, tall-styles review
+  2026-10-25 (P2, "one wall material per building face"), reworded by John
+  2026-10-26 (REVIEW-ARCHIVE "Tall styles (architect, 2026-10-25)").
+
+## DS-43 Wooden share of small buildings (DS-29 measure)
+
+- **Rule:** in a city-check run, of the lots with 1-3 storeys, at least
+  50 % have a wood `wall` role in forested biomes and at most 20 % in open
+  ones (agent's numbers). Forested and open biomes as listed in DS-29.
+- **Why:** gives DS-29's "clearly larger share" a number a check can test.
+- **Scope:** all tiers; lots of 1-3 storeys.
+- **Enforcement:** code candidate: a report in `city-check` (ROADMAP 7.8);
+  none today.
+- **Status:** accepted. **Source:** architect, tall-styles review
+  2026-10-25 (P3,
+  [design-tall-styles-architect.md](../review/reports/design-tall-styles-architect.md));
+  approved by John 2026-10-26 (REVIEW-ARCHIVE "Tall styles (architect,
+  2026-10-25)").
 
 # Access and circulation
 
@@ -520,6 +595,28 @@ DS-25 with an exception for deliberate repeating patterns.
 - **Status:** Approved by @John 2026-10-25. **Source:** John, playtest notes 2026-10-25;
   drafted by the architect.
 
+## DS-39 Floor-to-ceiling glazing is a per-style-and-type choice
+
+- **Rule:** windows from the floor (sill 0) to the ceiling only on civic
+  halls, high-rises, shopfront ground floors and modern or classical town
+  styles, or where a balcony or rail (DS-28, DS-8) stands outside. Never
+  on timber-frame vernacular (medieval) or small-window styles (DS-33).
+  Flats and rooms over shops (the upper floors of city blocks and shops)
+  get 1x2 or 2x2 windows at sill +1, head at the ceiling, unless a balcony
+  or rail stands outside.
+- **Why:** one `glassRich` switch turns on for any style with 2-wide
+  windows, so medieval shops and halls got Georgian glass and a brief's
+  "avoid large glass areas" cannot be said. A 3-tall pane from the floor
+  of a flat or bedroom with nothing outside reads as a missing balcony.
+- **Scope:** all styles, upper floors.
+- **Enforcement:** code candidate: a style flag, checked by the Glazing
+  report per style and type.
+- **Status:** accepted 2026-10-26 (John: "Appr"); the plain-block case
+  answered the same day ("approved", REVIEW-ARCHIVE "Open questions from
+  reviews (2026-10-25 evening)", question 1: sill +1 on flats until
+  balconies arrive). **Source:** architect, 7.12 review 2026-10-25
+  ([p7-windows-architect.md](../review/reports/p7-windows-architect.md), "Proposed rules").
+
 # Proposed by agents
 
 New proposals go here (`proposed`, with the source); John accepts, edits or
@@ -542,8 +639,9 @@ drops them, and accepted ones move to the section they belong in.
   some are biome dependent, I'll have to look at real pictures."
 - **Scope:** type `highrise` and buildings over 6 storeys; glass towers in
   the metropolis only. Biome tint follows DS-1 and the tall-styles
-  recommendation (masonry and frame take the style's tint); whether glass
-  towers vary by biome waits for John (see Status).
+  recommendation (masonry and frame take the style's tint); glass towers
+  over about 20 storeys share one look across biomes, tinted only at the
+  base (John 2026-10-26, DS-41).
 - **Enforcement:** guideline; code candidates: the look recorded in the IR,
   `glazing-share` ranges per look (DS-33), DS-1's `highrise-materials`; in
   a glass tower every room lit (DS-24) and the hall and lobby furnished.
@@ -643,7 +741,7 @@ drops them, and accepted ones move to the section they belong in.
   `rail-height`: every edge cell of a door-reached roof has a wall with a
   rail above it. None today.
 - **Status:** proposed. **Source:** architect, high-rise plan review
-  2026-10-25 (`.claude/reports/highrise-plan-architect.md`, answer 3).
+  2026-10-25 ([highrise-plan-architect.md](../review/reports/highrise-plan-architect.md), answer 3).
 
 ## DS-8 amendment: flights, corners and the lot line
 
@@ -672,26 +770,7 @@ drops them, and accepted ones move to the section they belong in.
   no room to set back and keep the old placement (known issue).
 - **Status:** proposed (amends the proposed DS-8 amendment). **Source:**
   architect, RAILFIX review 2026-10-25
-  (`.claude/reports/p6-railfix-architect.md`, "Proposed rules").
-
-## DS-39 Floor-to-ceiling glazing is a per-style-and-type choice
-
-- **Rule:** windows from the floor (sill 0) to the ceiling only on civic
-  halls, high-rises, shopfront ground floors and modern or classical town
-  styles, or where a balcony or rail (DS-28, DS-8) stands outside. Never
-  on timber-frame vernacular (medieval) or small-window styles (DS-33).
-- **Why:** one `glassRich` switch turns on for any style with 2-wide
-  windows, so medieval shops and halls got Georgian glass and a brief's
-  "avoid large glass areas" cannot be said.
-- **Scope:** all styles, upper floors.
-- **Enforcement:** code candidate: a style flag, checked by the Glazing
-  report per style and type.
-- **Status:** proposed; the plain-block case waits for John (REVIEW.md,
-  "Open questions from reviews (2026-10-25 evening)").
-  - @John 2026-10-26: Appr
-  **Source:**
-  architect, 7.12 review 2026-10-25
-  (`.claude/reports/p7-windows-architect.md`, "Proposed rules").
+  ([p6-railfix-architect.md](../review/reports/p6-railfix-architect.md), "Proposed rules").
 
 ## DS-40 Settlement tier follows built lots
 
@@ -704,4 +783,4 @@ drops them, and accepted ones move to the section they belong in.
 - **Scope:** city, metropolis.
 - **Enforcement:** code candidate (planner, after district planning).
 - **Status:** proposed. **Source:** architect, CITYQ review 2026-10-25
-  (`.claude/reports/p6-cityq-architect.md`, "Proposed rules").
+  ([p6-cityq-architect.md](../review/reports/p6-cityq-architect.md), "Proposed rules").

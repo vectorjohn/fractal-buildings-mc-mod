@@ -27,12 +27,18 @@ should-fix theme that recurs across items becomes one) and items for John
 (REVIEW.md). Each review ends with a verdict: `meets the standard`,
 `should-fix round needed` or `needs John`; the reviewer decides what is good
 enough, and a re-review checks only the listed items. Their review files are `.claude/reports/<item>-architect.md`
-and `<item>-interior.md`.
+and `<item>-interior.md` (untracked scratch); a report that REVIEW.md or
+STANDARDS.md cites gets a committed copy in
+[review/reports/](../review/reports/README.md), linked from there.
 
 - **Ask the architect** "does this look right?": massing, facades, windows,
   floor heights, roofs, materials for the building's size, where the
   entrances, halls and stairs go, and towns: streets, squares, density,
   landmarks.
+  Design taste questions John delegates (John, 2026-10-26: "I want the
+  architect to make the calls") go to the architect, who decides on
+  proportions, whether it would look real in Minecraft, and plausible
+  real-life examples; the coordinator records the call where it was asked.
 - **Ask the interior designer** "does this room make sense?": which rooms a
   building has and how big, how they connect, furniture and its placement,
   light, colours and materials inside.
