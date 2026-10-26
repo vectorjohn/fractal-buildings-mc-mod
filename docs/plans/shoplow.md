@@ -18,6 +18,12 @@ spec) and John's two refinements, passed on by the coordinator:
   deterministic per-lot choice between (a) dig in, (b) posts on the downhill
   side with the door at street level (Portland's downhill lots), (c) on uphill
   lots a raised house with a long stair broken by landings, railed per DS-8.
+- (2026-10-26, DS-45 amended after the architect's A5 answer) no exterior
+  flight on any lot, default or variant, any type, has more than 3 risers in
+  a straight run without a landing or a turn: a default house at rise 4-5
+  breaks or turns its flight below the door landing too. The architect's
+  fallback (a straight 4-5 to a door landing where no route fits) is not
+  part of the accepted rule.
 
 # What happens today (checked 2026-10-26, base c5327e23)
 
@@ -188,8 +194,13 @@ proposed: dig in only (a cart door wants level ground; question A2).
 
 Default lots: a landing at the door from rise 4 (`TypeLimits.stoop` becomes a
 minimum rise: shops 2 as today, houses and workshops 4). Variant lots: no rise
-limit, but DS-45's run rule: no straight run of more than `MAX_RISERS` = 3
-risers without a landing or a turn. The checks re-derive whether a lot is a
+limit. Every lot, default or variant: DS-45's run rule (amended 2026-10-26):
+no straight run of more than `MAX_RISERS` = 3 risers without a landing or a
+turn, so a default flight at rise 4-5 is 3 + a level landing + 1-2, or an L
+turned at a level corner cell (a winder does not count). That needs S6's
+`steps()` search for default lots too, so it lands with S2 or S6 moves ahead
+of it (coordinator's call; the plan text below was written before the
+amendment). The checks re-derive whether a lot is a
 variant from the same hash and slope class (the scene carries the world seed,
 the lot and the terrain), so the IR needs no marker.
 
@@ -217,9 +228,10 @@ written to JSON and hashed only when true, so every existing spec hash stays.
   street surface is the same street, read where the door meets it, and CLI
   `check` scenes have no streets). Stilted buildings are exempt (their trade
   floor is the open ground).
-- `flight-landings` (new invariant): on variant lots, no straight run of more
-  than `MAX_RISERS` (3) risers without a level tread or a turn; reported for
-  every other flight.
+- `flight-landings` (new invariant): on every exterior flight of every lot
+  (DS-45 as amended 2026-10-26; this plan first had it on variant lots only),
+  no straight run of more than `MAX_RISERS` (3) risers without a level tread
+  or a turn.
 - A **door-rise table** per type (rise buckets <= -3, -2..0, 1, 2, 3, 4, 5, 6-8,
   9+, and the share with a landing) in `check` and `city-check`, like the
   glazing table: the before/after measure.
@@ -510,6 +522,8 @@ For the **architect**:
 - A5. DS-45 sets at most 3 straight risers on variant stairs. Should default
   lots at rise 4-5 also break their flight (a turn after the door landing), or
   is the door landing enough there, as DS-45's default reads?
+  *Answered:* break it; the architect's A5, accepted by John 2026-10-26 as a
+  DS-45 amendment (3 straight risers at most on every flight of every lot).
 - A6. Market hall: stair along a side wall outside the hall (proposed) or
   inside the open floor; share among eligible lots (proposed 50 %, since few
   lots qualify); legs 3/4 confirmed.
