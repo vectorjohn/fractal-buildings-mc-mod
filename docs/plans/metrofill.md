@@ -1,9 +1,8 @@
 # Plan: dense city cores are filled (METROFILL)
 
 Status: plan, not started (2026-10-26). Author: lead-coder. ROADMAP item
-**7.20 METROFILL**. Rule: "Dense cores are filled" (approved by John
-2026-10-26; an assistant is filing it under the next DS number, so this plan
-refers to it by name). Design input: the architect's answer
+**7.20 METROFILL**. Rule: [DS-47](../design/STANDARDS.md) "Dense cores are
+filled" (approved by John 2026-10-26). Design input: the architect's answer
 [metro-sparse-architect.md](../review/reports/metro-sparse-architect.md)
 (measurements, causes, targets, a 5-point spec, three `city-check` checks)
 and its prototype scripts in
@@ -95,7 +94,7 @@ Towns, villages and hamlets do not change (every fill rule is gated on
 
 1. **Measure first** (M0), in Java, from the plan alone: the architect's
    rasters and gap scan ported into a core class, zones by **density band**
-   (what the rule says) as well as by ring (to compare with the architect's
+   (what DS-47 says) as well as by ring (to compare with the architect's
    tables). Every later step reports its before/after table.
 2. **Depth after frontage.** Lots are still packed along the street first, at
    the type's own size; a second pass grows each lot backwards to the block
@@ -165,7 +164,7 @@ hand-merge.
     core zone: empty > 15 % or frontage < 80 %), `road-sliver` (one per
     sliver, with its box), `road-hierarchy` (city or metropolis: arterial plus
     main > 30 % of street length). Numbers as constants in `FillStats`,
-    javadoc pointing to the rule.
+    javadoc pointing to DS-47.
 - `CityCheckCommand`: build `FillStats` per site after planning; add a `## Fill`
   section (one table per zone kind: site, land, road, lot, plaza, empty,
   frontage; then a line per site with arterial+main %, sliver count, dead
@@ -546,7 +545,7 @@ loose per DS-18).
 - Galleries: `npm run city-gallery` with `FB_CITIES` = the 9 gates (plans plus
   two district scenes each), compared with the run-branch gallery from before
   M0; open the plans and one street frame per metropolis.
-- Reviews: architect (plans, overviews, street frames; the rule's checks;
+- Reviews: architect (plans, overviews, street frames; DS-47's checks;
   diagonal pair if DX2 is still open), interior-designer (deep shop with rear
   wing, high-rise podium at cap 30, block lots: `floorplan --in` on two
   district scenes).

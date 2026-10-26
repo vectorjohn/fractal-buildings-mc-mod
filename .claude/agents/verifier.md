@@ -74,14 +74,22 @@ Work by path: `cd <worktree> && ...` or `git -C <worktree> ...`.
      always, plus CLI, viewer and server game tests (`:mod:runGameTest`) as
      the change touches them (`scripts/test-all.sh --no-client` runs them
      all). **Don't run heavy layers** (client game tests, `scripts/perf.sh`,
-     `scripts/flythrough.sh`): if the item needed one (it touches the mod's
-     client side, rendering or worldgen appearance), check the coder's pinned
+     `scripts/flythrough.sh`): if the item needed one (`scripts/test-scope.sh` requires
+     it), check the coder's pinned
      evidence by the **evidence rule** below. Only if the evidence fails the
      rule, run that layer yourself with
      `scripts/evidence.sh <slug> <command>`. Everything else heavy is left
      to the batched heavy run on the run branch.
-   - `level: full`: the fast layers, **and** every heavy layer the change
-     touches, run yourself through `scripts/evidence.sh <slug> <command>`
+   - **Scope** (either level): run `scripts/test-scope.sh <integration branch>`
+     in the worktree and check the coder ran every **required** layer it
+     prints (heavy ones as evidence) and justified skipped "consider" ones
+     (`docs/TESTING.md`). When unsure whether a layer applies (a "consider"
+     reason that plausibly fits, a change whose reach the paths don't show,
+     UNKNOWN files), escalate: run it or ask the coordinator. A layer the
+     table doesn't require is not a gap; the batched heavy run and to-main
+     run everything.
+   - `level: full`: the fast layers, **and** every heavy layer `scripts/test-scope.sh`
+     requires, run yourself through `scripts/evidence.sh <slug> <command>`
      (an independent run; the coder's evidence doesn't replace it).
    Report the summary lines with counts; quote the relevant error for a
    failure. A failure that passes on rerun is a **flake**: see "Flakes".
