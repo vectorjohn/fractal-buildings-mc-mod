@@ -456,13 +456,20 @@ public final class RoadNet {
 	 * either way: the function is pure. The graph below is acyclic (a cell's links need routes, a route needs ports and settlements,
 	 * never the other way), so a waiter cannot wait on itself. A failure reaches every waiter and leaves nothing cached.
 	 */
-	private static <K, V> V flight(java.util.concurrent.ConcurrentHashMap<K, java.util.concurrent.CompletableFuture<V>> inflight, BoundedCache<K, V> cache, K key, java.util.function.Function<K, V> fn) {
+	static <K, V> V flight(java.util.concurrent.ConcurrentHashMap<K, java.util.concurrent.CompletableFuture<V>> inflight, BoundedCache<K, V> cache, K key, java.util.function.Function<K, V> fn) {
 		return cache.get(key, k -> {
 			java.util.concurrent.CompletableFuture<V> mine = new java.util.concurrent.CompletableFuture<>();
 			java.util.concurrent.CompletableFuture<V> other = inflight.putIfAbsent(k, mine);
 			if (other != null) return other.join();
 			try {
-				V v = fn.apply(k);
+				// The value is stored before the flight is removed (finally), and re-checked after winning the claim: a thread that
+				// missed the cache just before another's store and claims just after its remove finds the value, not a recompute.
+				V cached = cache.peek(k);
+				if (cached != null) {
+					mine.complete(cached);
+					return cached;
+				}
+				V v = cache.putIfAbsent(k, fn.apply(k));
 				mine.complete(v);
 				return v;
 			} catch (Throwable e) {

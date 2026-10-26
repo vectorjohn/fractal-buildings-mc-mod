@@ -63,4 +63,15 @@ class BoundedCacheTest {
 		assertTrue(fib.size() <= 2);
 		assertThrows(IllegalArgumentException.class, () -> new BoundedCache<Integer, Integer>(0));
 	}
+
+	@Test
+	void peekCountsNothingAndPutIfAbsentKeepsTheFirstInstance() {
+		BoundedCache<Integer, String> c = new BoundedCache<>(4);
+		assertNull(c.peek(1));
+		String first = c.putIfAbsent(1, new String("a"));
+		assertSame(first, c.putIfAbsent(1, new String("a")));
+		assertSame(first, c.peek(1));
+		assertEquals(0, c.hits());
+		assertEquals(0, c.misses());
+	}
 }

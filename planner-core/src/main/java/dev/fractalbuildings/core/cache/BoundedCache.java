@@ -80,6 +80,29 @@ public final class BoundedCache<K, V> {
 		return v;
 	}
 
+	/** The cached value or null; counts no hit or miss and leaves the retention timestamp alone, but (access-order map) moves the entry to the LRU tail. */
+	public V peek(K key) {
+		synchronized (map) {
+			Slot<V> s = map.get(key);
+			return s == null ? null : s.value;
+		}
+	}
+
+	/** Stores {@code v} unless a value is already there; returns the value now cached (the first instance wins). */
+	public V putIfAbsent(K key, V v) {
+		synchronized (map) {
+			long now = clock.getAsLong();
+			Slot<V> prev = map.get(key);
+			if (prev != null) {
+				prev.lastUse = now;
+				return prev.value;
+			}
+			map.put(key, new Slot<>(v, now));
+			trim(now);
+			return v;
+		}
+	}
+
 	/** Drops every entry (memory pressure, tests); what is asked next is recomputed, so answers do not change. */
 	public void clear() {
 		synchronized (map) { map.clear(); }
