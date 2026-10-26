@@ -668,3 +668,33 @@ drops them, and accepted ones move to the section they belong in.
 - **Status:** proposed (amends the proposed DS-8 amendment). **Source:**
   architect, RAILFIX review 2026-10-25
   (`.claude/reports/p6-railfix-architect.md`, "Proposed rules").
+
+## DS-39 Floor-to-ceiling glazing is a per-style-and-type choice
+
+- **Rule:** windows from the floor (sill 0) to the ceiling only on civic
+  halls, high-rises, shopfront ground floors and modern or classical town
+  styles, or where a balcony or rail (DS-28, DS-8) stands outside. Never
+  on timber-frame vernacular (medieval) or small-window styles (DS-33).
+- **Why:** one `glassRich` switch turns on for any style with 2-wide
+  windows, so medieval shops and halls got Georgian glass and a brief's
+  "avoid large glass areas" cannot be said.
+- **Scope:** all styles, upper floors.
+- **Enforcement:** code candidate: a style flag, checked by the Glazing
+  report per style and type.
+- **Status:** proposed; the plain-block case waits for John (REVIEW.md,
+  "Open questions from reviews (2026-10-25 evening)"). **Source:**
+  architect, 7.12 review 2026-10-25
+  (`.claude/reports/p7-windows-architect.md`, "Proposed rules").
+
+## DS-40 Settlement tier follows built lots
+
+- **Rule:** after its districts are planned, a city needs a minimum number
+  of built lots and a contiguous core of mid-rise or taller, and a
+  metropolis a high-rise downtown; otherwise it takes the tier its built
+  form fits.
+- **Why:** sparse "cities" on poor ground (seed 1: about 6 buildings at
+  r 454). Extends CITYQ's tier-follows-radius.
+- **Scope:** city, metropolis.
+- **Enforcement:** code candidate (planner, after district planning).
+- **Status:** proposed. **Source:** architect, CITYQ review 2026-10-25
+  (`.claude/reports/p6-cityq-architect.md`, "Proposed rules").
