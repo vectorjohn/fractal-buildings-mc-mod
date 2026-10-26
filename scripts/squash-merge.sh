@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Squash-merge a feature branch into the integration checkout. Holds
 # <repo root>/.claude/merge.lock only for the merge itself, in this one process:
-# clean-checkout check, squash, duplicate check, commit. Nothing is left
+# clean-checkout check, squash, duplicate check, review-archive check, commit. Nothing is left
 # half-merged: on a conflict or a failed commit the checkout is reset to HEAD
 # before the lock is released. The lock is released when the commit is made
 # (or the script exits or is killed), so a crashed caller can't hold it.
@@ -20,7 +20,9 @@
 #
 # Exit codes: 0 merged (sha printed) | 2 checkout not clean / wrong branch |
 #   3 merge conflict (reset; files printed) | 4 commit failed (reset) |
-#   5 merged, but post-merge tests failed (commit kept) | 6 lock not acquired.
+#   5 merged, but post-merge tests failed (commit kept) | 6 lock not acquired |
+#   7 merge would bring back items archived in docs/REVIEW-ARCHIVE.md (reset;
+#     items printed; fix the feature branch, see scripts/review-check.sh).
 set -u
 I=$1 IB=$2 FB=$3 MSG=$4 TEST=${5:-}
 [ -s "$MSG" ] || { echo "message file $MSG missing or empty"; exit 4; }
@@ -49,6 +51,15 @@ for f in docs/research/INDEX.md docs/NOTES.md docs/ASSUMPTIONS.md docs/REVIEW.md
         [ "$n" -gt 1 ] && echo "DUPLICATE in $f ($n x): $line"
       done
 done
+
+# Union merge of REVIEW.md can resurrect archived items (edited or ticked
+# copies the exact DUPLICATE check above misses). Refuse the merge if it does.
+if ! "$(cd "$(dirname "$0")" && pwd)/review-check.sh" -C "$I" --source index --base HEAD; then
+  echo "REVIEW CHECK FAILED: not merged; resetting. Remove the items above from"
+  echo "docs/REVIEW.md on $FB (run scripts/review-check.sh there) and merge again."
+  git -C "$I" reset --merge
+  exit 7
+fi
 
 # Commit only the index (never -a); docs/runs edits stay uncommitted.
 if ! git -C "$I" commit -F "$MSG"; then
