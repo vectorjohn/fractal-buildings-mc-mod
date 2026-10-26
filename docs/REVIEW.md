@@ -21,6 +21,9 @@ work becomes a ROADMAP item or a Polish backlog line. Settled items move to
   Result:
 ```
 
+## Cleanup 
+When items are resolved, an agent should migrate the old content into a REVIEW-ARCHIVE.md to keep the record, but keep this file containing only items to review
+
 ## Open
 
 - [x] **0.1a**: mod licence and author in fabric.mod.json (placeholder MIT, author John Reeves)
@@ -442,5 +445,7 @@ work becomes a ROADMAP item or a Polish backlog line. Settled items move to
 - [ ] **Open questions from reviews (2026-10-25 evening)**: three questions the architect's reviews left for you; none holds back the item it came from.
   1. Plain block flats: the upper floors of plain/plains city blocks and shops (flats and rooms over shops) now get floor-to-ceiling 3-tall windows at sill 0, with no balcony or rail outside. Keep them, or use 1x2/2x2 at sill +1 (head at the ceiling) until DS-28 balconies arrive? The architect finds them right on halls and high-rises, acceptable as French windows on a terrace, but in a flat or bedroom they look like a missing balcony. Look at `.claude/reports/p7-windows-gallery/after/block-plain-front.png` (seed 0, top left). Source: `.claude/reports/p7-windows-architect.md` ("For John"); proposed rule DS-39 in [STANDARDS.md](design/STANDARDS.md).
   2. Woodland inside cities: may city and metropolis districts clear trees from block interiors and unbuilt plots, so the core reads as town and not forest (extends DS-20's "err towards clearing")? Recommended: yes for city and metropolis, keep woods in villages and hamlets, keep shade trees at the edge. A new item extending FOLIAGE. Look at the fly-through frames 1-city-2-overview and 12345-city-2-overview. Source: `.claude/reports/p6-cityq-architect.md` ("For John").
-  3. Slope in the region screen: should settlement siting prefer flat ground, so big settlements (downtowns) avoid mountains? It changes which settlements exist in every existing world seed (all join goldens move), so it would be a scheduled item. Recommended: yes. Look at 12345-metropolis-2-overview (a lone house on the peak, towers at its foot). Source: `.claude/reports/p6-cityq-architect.md` ("For John").
+     - @John 2026-10-25: no I didn't think so! If you clear the foliage it just looks empty. Foliage looks like deliberate tree cover. At a later time we may want to make more manucured parks but for now the leftover plants kind of look like parks. Unless you mean floating tree pieces. We could “thin” foliage if it's easy. Say a random chance to remove any given tree, but then you have to find trees. Let's not thin unless it's easy.
+  4. Slope in the region screen: should settlement siting prefer flat ground, so big settlements (downtowns) avoid mountains? It changes which settlements exist in every existing world seed (all join goldens move), so it would be a scheduled item. Recommended: yes. Look at 12345-metropolis-2-overview (a lone house on the peak, towers at its foot). Source: `.claude/reports/p6-cityq-architect.md` ("For John").
   Result:
+     - @John 2026-10-25: yes

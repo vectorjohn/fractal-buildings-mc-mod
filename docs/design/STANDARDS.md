@@ -687,7 +687,9 @@ drops them, and accepted ones move to the section they belong in.
 - **Enforcement:** code candidate: a style flag, checked by the Glazing
   report per style and type.
 - **Status:** proposed; the plain-block case waits for John (REVIEW.md,
-  "Open questions from reviews (2026-10-25 evening)"). **Source:**
+  "Open questions from reviews (2026-10-25 evening)").
+
+   **Source:**
   architect, 7.12 review 2026-10-25
   (`.claude/reports/p7-windows-architect.md`, "Proposed rules").
 
