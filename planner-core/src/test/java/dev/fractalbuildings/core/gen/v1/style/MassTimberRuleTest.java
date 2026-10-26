@@ -14,6 +14,7 @@ import org.junit.jupiter.api.Test;
 
 /** Mass timber (docs/design/styles/mass-timber.md, DS-1 exception): forest high-rises of 7..20 storeys only. */
 class MassTimberRuleTest {
+	private static final List<String> TALL = List.of("tall-brick", "tall-stone", "tall-terracotta", "tall-concrete");
 	private static final Map<String, String> BIOME_WOOD = Map.ofEntries(
 			Map.entry("minecraft:taiga", "spruce"), Map.entry("minecraft:old_growth_pine_taiga", "spruce"),
 			Map.entry("minecraft:old_growth_spruce_taiga", "spruce"), Map.entry("minecraft:dark_forest", "spruce"),
@@ -49,9 +50,9 @@ class MassTimberRuleTest {
 			var seen = new TreeSet<String>();
 			for (long s = 0; s < 300; s++) {
 				for (int storeys : new int[] {7, 15, 20}) seen.add(StyleVariants.select("plain", "highrise", storeys, e.getKey(), null, s));
-				for (int storeys : new int[] {21, 30, 60}) assertEquals("tall", StyleVariants.select("plain", "highrise", storeys, e.getKey(), null, s), e.getKey() + " " + storeys);
+				for (int storeys : new int[] {21, 30, 60}) assertTrue(TALL.contains(StyleVariants.select("plain", "highrise", storeys, e.getKey(), null, s)), e.getKey() + " " + storeys);
 			}
-			assertEquals(new TreeSet<>(List.of(want, "tall")), seen, e.getKey());
+			assertEquals(new TreeSet<>(List.of(want, "tall-stone")), seen, e.getKey());
 		}
 	}
 

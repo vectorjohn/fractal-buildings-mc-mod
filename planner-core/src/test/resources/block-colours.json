@@ -16,5 +16,5 @@
   "minecraft:bamboo_block": "#a89a40", "minecraft:stripped_acacia_log": "#8f5c3a", "minecraft:acacia_log": "#6e5a4a",
   "minecraft:stripped_oak_wood": "#b29362", "minecraft:pale_oak_planks": "#e3d6cd", "minecraft:stripped_pale_oak_wood": "#ebe1da", "minecraft:stripped_jungle_wood": "#ab8458", "minecraft:stripped_cherry_wood": "#d9a5a0",
   "minecraft:moss_block": "#596e2d", "minecraft:snow_block": "#f4f8fa", "minecraft:deepslate_bricks": "#4a4a52",
-  "minecraft:polished_andesite": "#848786", "minecraft:light_gray_concrete": "#7d7d73"
+  "minecraft:polished_andesite": "#848786", "minecraft:light_gray_concrete": "#7d7d73", "minecraft:white_concrete": "#cfd5d6"
 }

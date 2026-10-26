@@ -98,6 +98,7 @@ public final class FacadePass {
 			Draws r = c.draws("facade/tile", mi, f.side().ordinal(), b, f.a(), f.b());
 			int[] bays = tile(f.length() - 2, v.target(), st.symmetric(), v.centreWide(), mainFront && st.symmetric(), st.bayMin(), st.bayMax(),
 					st.narrowCorners() && f.convexA(), st.narrowCorners() && f.convexB(), r);
+			if (bays == null && st.bayMin() > 2) bays = tile(f.length() - 2, v.target(), st.symmetric(), v.centreWide(), mainFront && st.symmetric(), 2, st.bayMax(), st.narrowCorners() && f.convexA(), st.narrowCorners() && f.convexB(), r); // a face the style's bays cannot tile (length 5 with 3..4) still gets windows
 			if (bays == null) continue;
 			int shift = 0;
 			boolean houseFront = c.type().id().equals("house") && mi == 0 && f.side() == Facing.NORTH && houseFront(c, st, mi, f) != null;

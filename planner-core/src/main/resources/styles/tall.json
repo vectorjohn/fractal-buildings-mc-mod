@@ -8,7 +8,8 @@
 
   "roof": {"forms": {"flat": 1, "gable": 0}, "parapet": 1},
 
-  "facade": {"bayMin": 2, "bayMax": 4, "sill": 1, "windowHeight": 2, "windowWidth": 2, "tallGlass": true, "symmetric": true},
+  "facade": {"bayMin": 3, "bayMax": 4, "sill": 1, "windowHeight": 3, "windowWidth": 2, "tallGlass": true, "symmetric": true, "bandSize": 99, "doorWidth": 2,
+    "plinth": true, "stringCourse": false, "cornice": true, "corners": "none", "timber": "none"},
 
   "palette": {
     "foundation": ["minecraft:polished_andesite"],
