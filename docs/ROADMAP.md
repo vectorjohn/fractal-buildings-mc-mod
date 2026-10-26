@@ -472,8 +472,8 @@ After the first release; no plan yet. Items wait for Phase 6 unless noted.
   Depends on 7.17 SHOPLOW (floor reference, cut and retaining machinery, bank buildings); B3 also on [plans/highrises.md](plans/highrises.md) B1-B2 (core, plates). Furniture pieces: under 7.5. Open questions and proposed rules: REVIEW "Basements (2026-10-26)". M-L.
 
 ---
-
 - [ ] **7.19 FALLSTREETS: streets on falling ground stay near the ground** (coordinator 2026-10-26, from the SHOPLOW plan diagnosis: seed-1 hill-town streets run on 12-14-block embankments ending in vertical faces at lot lines, so houses sit 10-14 below their street with unreachable doors). Design: [shoplow-plan-architect](review/reports/shoplow-plan-architect.md) "Streets on falling ground": along a built frontage the street stays within 2 of the ground (4 at most); main streets follow contours/ridges (switchbacks if needed); lanes straight downhill become stepped lanes (a level tread at least every 3 risers); any stretch with more than 2 of cut or fill gets no lots and is faced in stone with a rail; junction heights from the ground first. Checks: `frontage-grade` and a walkable street-to-main-door path (the untested half of DS-6). Pairs with polish 6.3 (junction steps) and 7.17 S3 (`empty:bank` lots). Proposed rule for John: streets stay close to the ground along their frontage. Not started; needs a lead-coder plan.
+
 ## Polish backlog
 
 Non-breaking known issues from verified items, one line each with the item id.
