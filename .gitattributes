@@ -5,7 +5,9 @@
 # Append-only, one-entry-per-line docs that many parallel branches add to.
 # `union` keeps both sides' lines instead of conflicting. After a merge, check
 # these for duplicated entries (an entry edited on both sides shows up twice).
-# See CLAUDE.md "Parallel work".
+# See CLAUDE.md "Parallel work". REVIEW.md: a union merge can also bring back
+# items already moved to REVIEW-ARCHIVE.md; scripts/review-check.sh finds them
+# (squash-merge.sh runs it).
 docs/research/INDEX.md  merge=union
 docs/NOTES.md           merge=union
 docs/ASSUMPTIONS.md     merge=union

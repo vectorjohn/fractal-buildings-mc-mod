@@ -187,7 +187,8 @@ the lock after the commit**, and then runs step 6 on a snapshot worktree.
 timeout 3600 I/scripts/squash-merge.sh I <integration branch> \
     claude/<slug> <message file> ['<step-6 test command>']
 # exit 0 merged | 2 not clean / wrong branch | 3 conflict (reset) |
-#      4 commit failed (reset) | 5 tests failed after commit | 6 no lock
+#      4 commit failed (reset) | 5 tests failed after commit | 6 no lock |
+#      7 archived REVIEW items brought back (reset; send it back to the coder)
 ```
 
 The lock belongs to that process, so it's released when the script ends or is
@@ -209,7 +210,12 @@ call. The steps:
 4. Check the union-merged files (`docs/research/INDEX.md`, `docs/NOTES.md`,
    `docs/ASSUMPTIONS.md`, `docs/REVIEW.md`) for duplicated entries in the
    staged result (the script prints `DUPLICATE` lines); mention any in your
-   report.
+   report. Then run `scripts/review-check.sh -C I --source index --base HEAD`:
+   a union merge of `docs/REVIEW.md` can bring back items already moved to
+   `docs/REVIEW-ARCHIVE.md` (ticked or edited copies the duplicate check
+   misses); on exit 1 reset and report it like a MERGE CONFLICT, naming the
+   items, so the coder deletes them on their branch. The script does this
+   itself (exit 7).
 5. Commit **only the index** (never `commit -a`) with a summary message
    (the message file, `git -C I commit -F <file>`):
    ```
