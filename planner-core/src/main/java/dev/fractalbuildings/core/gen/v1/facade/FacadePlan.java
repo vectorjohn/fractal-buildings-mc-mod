@@ -32,7 +32,9 @@ public record FacadePlan(List<Layout> layouts, Entrance entrance, List<Entrance>
 	}
 
 	/** Window shape of a layout: {@code width} (1 or 2; 2 only fits even bays of 4+), {@code height}, {@code sill} above the face's y0. */
-	public record Win(int width, int height, int sill) {
+	public record Win(int width, int height, int sill, boolean piered) {
+		public Win(int width, int height, int sill) { this(width, height, sill, false); }
+
 		public Win {
 			if (width < 1 || height < 1 || sill < 0) throw new IllegalArgumentException("window " + width + "x" + height + " sill " + sill);
 		}
@@ -67,10 +69,10 @@ public record FacadePlan(List<Layout> layouts, Entrance entrance, List<Entrance>
 		public int centre(int i) { return bayStart(i) + (bays[i] - 1) / 2; }
 
 		/** Width of bay i's window or double door: 2 in an even bay of 4+ when the window shape is 2 wide, else 1. */
-		public int windowWidth(int i) { return win != null && win.width() >= 2 && bays[i] >= 4 && bays[i] % 2 == 0 ? 2 : 1; }
+		public int windowWidth(int i) { return win != null && win.width() >= 2 && (win.piered() ? bays[i] == 3 : bays[i] >= 4 && bays[i] % 2 == 0) ? 2 : 1; }
 
 		/** First position of bay i's window, centred in the bay (left of centre for even widths). */
-		public int windowStart(int i) { return bayStart(i) + (bays[i] - windowWidth(i)) / 2; }
+		public int windowStart(int i) { return win != null && win.piered() && windowWidth(i) == 2 ? bayStart(i) + 1 : bayStart(i) + (bays[i] - windowWidth(i)) / 2; }
 
 		@Override
 		public boolean equals(Object o) {

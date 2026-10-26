@@ -80,8 +80,9 @@ public final class FacadePass {
 			TreeSet<Integer> bands = new TreeSet<>();
 			for (Face g : faces) if (g.mass().equals(f.mass()) && g.side() == f.side()) bands.add(band(mass, g.storey(), st.bandSize()));
 			Variant p1 = null, p2 = null;
+			Variant front = houseFront(c, st, mi, f);
 			for (int b : bands) {
-				Variant v = pick(c, all, mi, f.side(), b, p1, p2);
+				Variant v = front != null ? front : pick(c, all, mi, f.side(), b, p1, p2, wideWeights(c, mi, f));
 				variants.put(group + "/" + b, v);
 				p2 = p1;
 				p1 = v;
@@ -98,20 +99,80 @@ public final class FacadePass {
 			int[] bays = tile(f.length() - 2, v.target(), st.symmetric(), v.centreWide(), mainFront && st.symmetric(), st.bayMin(), st.bayMax(),
 					st.narrowCorners() && f.convexA(), st.narrowCorners() && f.convexB(), r);
 			if (bays == null) continue;
+			int shift = 0;
+			boolean houseFront = c.type().id().equals("house") && mi == 0 && f.side() == Facing.NORTH && houseFront(c, st, mi, f) != null;
+			if (houseFront && v.width() >= 2) { // one 2x2 variant for the whole front: bays of exactly 4, the spare cells (0-3) as wider end piers
+				int len = f.length() - 2, extra = len % 4;
+				if (len >= 4) {
+					bays = new int[len / 4];
+					java.util.Arrays.fill(bays, 4);
+					shift = extra / 2 + (extra % 2 == 1 ? c.draws("facade/shift", mi, f.side().ordinal(), f.a(), f.b()).below(2) : 0);
+				}
+			} else if (c.type().id().equals("house") && v.width() >= 2 && !hasFour(bays)) { // a house's 2x2 windows need a bay of 4: give up one or two cells of pier (one at a drawn end, or one each end) to get one
+				for (int extra = 1; extra <= 2; extra++) {
+					int[] alt = tile(f.length() - 2 - extra, v.target(), st.symmetric(), v.centreWide(), false, st.bayMin(), st.bayMax(),
+							st.narrowCorners() && f.convexA(), st.narrowCorners() && f.convexB(), r);
+					if (alt == null || !hasFour(alt)) continue;
+					bays = alt;
+					shift = extra == 2 ? 1 : c.draws("facade/shift", mi, f.side().ordinal(), b, f.a(), f.b()).below(2);
+					break;
+				}
+			}
 			List<String> kinds = new ArrayList<>();
 			for (int i = 0; i < bays.length; i++) kinds.add(FacadePlan.WINDOW);
 			if (st.blankCorners() && bays.length >= 4) {
 				if (f.convexA()) kinds.set(0, FacadePlan.BLANK);
 				if (f.convexB()) kinds.set(bays.length - 1, FacadePlan.BLANK);
 			}
-			boolean tall = glassRich(c) && st.tallGlass() && f.storey() >= 1; // upper floors of civic and commercial buildings in styles that allow it (not timber-frame or small-window ones): floor to ceiling
+			boolean tall = glassRich(c) && st.tallGlass() && f.storey() >= 1 && TALL_TYPES.contains(c.type().id()); // floor to ceiling: halls and high-rises only, in styles that allow it
 			int sill = tall ? 0 : st.sill();
-			int h = Math.min(tall ? 3 : st.windowHeight(), f.height() - sill);
+			boolean headAtCeiling = glassRich(c) && f.storey() >= 1 && !tall && (c.type().id().equals("shop") || c.type().id().equals("block")); // shops and blocks above the shopfront: sill +1, head at the ceiling
+			int h = Math.min(tall ? 3 : headAtCeiling ? Math.max(st.windowHeight(), Math.min(3, f.height() - sill)) : st.windowHeight(), f.height() - sill);
 			if (h < 1) continue; // no room for a window on this face
-			out.add(new FacadePlan.Layout(f, f.a() + 1, bays, kinds, new FacadePlan.Win(v.width(), h, sill)));
+			boolean piered = false;
+			int len = f.length() - 2;
+			if (headAtCeiling && st.tallGlass() && len >= 4) { // shop and block upper floors: 2-wide windows between 1-cell piers, P (WW P) x n, the same on every storey so they stack (DS-33, FACADE2 round 2)
+				int n = (len - 1) / 3, rem = (len - 1) % 3;
+				bays = new int[n];
+				java.util.Arrays.fill(bays, 3);
+				kinds = new ArrayList<>();
+				for (int i = 0; i < n; i++) kinds.add(FacadePlan.WINDOW);
+				shift = rem == 2 ? 1 : rem == 1 ? c.draws("facade/shift", mi, f.side().ordinal(), f.a(), f.b()).below(2) : 0;
+				piered = true;
+			}
+			out.add(new FacadePlan.Layout(f, f.a() + 1 + shift, bays, kinds, new FacadePlan.Win(piered ? 2 : v.width(), h, sill, piered)));
 		}
 		return out;
 	}
+
+	/**
+	 * The one variant of a house's street front, for every band (null: not a house front, or a style without 2-wide windows). 2x2 (bay 4, window 2) when the inner length is 12+, so the
+	 * ground floor holds the door and a 2x2 each side; otherwise 1x2. Medieval fronts that long draw one or the other once (the tier is not known).
+	 */
+	static Variant houseFront(BuildContext c, FacadeStyle st, int mi, Face f) {
+		if (!c.type().id().equals("house") || mi != 0 || f.side() != Facing.NORTH || st.windowWidth() < 2 || st.bayMax() < 4) return null;
+		boolean wide = f.length() - 2 >= 12;
+		if (wide && c.style().id().equals("medieval")) wide = c.draws("facade/front-wide").below(2) == 0;
+		return wide ? new Variant(4, 2, false) : new Variant(2, 1, false);
+	}
+
+	private static boolean hasFour(int[] bays) { for (int w : bays) if (w == 4) return true; return false; }
+
+	/** Types that may have sill-0, 3-tall upper-floor glass (in styles with {@code tallGlass}); shops and blocks use sill +1 (DS-39, architect decision 3). */
+	private static final java.util.Set<String> TALL_TYPES = java.util.Set.of("hall", "highrise");
+
+	/**
+	 * Weights {wide, narrow[, 1 if bands may repeat the variant below]} of the 2-wide-window variant (bay 4) against the 1-wide one (bay 2) for a face: a house's street front (mass 0, north, 8+ wide) draws 2x2
+	 * nine times in ten (weight 9 per variant against 1; the architect said 3:1, which gave 48-57 % of fronts with a 2x2 where 60 % was wanted, since the ground door takes a bay), its sides, backs and narrow faces one in four (DS-33 "2x2 common in town houses", architect decision 2). Medieval would take the front weighting
+	 * only in town tier and up, but the tier is not in the spec, so medieval fronts are 1:1. Other types 1:1.
+	 */
+	static int[] wideWeights(BuildContext c, int mi, Face f) {
+		if (!c.type().id().equals("house")) return new int[] {1, 1};
+		if (!(mi == 0 && f.side() == Facing.NORTH && f.length() >= 8)) return new int[] {1, 3};
+		return c.style().id().equals("medieval") ? new int[] {1, 1} : new int[] {9, 1, 1};
+	}
+
+	private static int weight(Variant v, int[] w) { return v.width() >= 2 ? w[0] : w[1]; }
 
 	/** Types whose facades are glass-rich (DS-33: town houses, shops' upper floors, civic, commercial and high-rise): bays of 2 with a 1-wide window or of 4 with a 2-wide one, in styles that allow 2-wide windows. */
 	private static final java.util.Set<String> RICH = java.util.Set.of("shop", "block", "hall", "highrise");
@@ -129,10 +190,11 @@ public final class FacadePass {
 		return out;
 	}
 
-	private static Variant pick(BuildContext c, List<Variant> all, int mi, Facing side, int band, Variant p1, Variant p2) {
+	private static Variant pick(BuildContext c, List<Variant> all, int mi, Facing side, int band, Variant p1, Variant p2, int[] wideWeights) {
 		List<Choice.Option> opts = new ArrayList<>();
-		for (Variant v : all) if (!v.equals(p1) && !v.equals(p2)) opts.add(Choice.opt(v.key(), 1));
-		if (opts.isEmpty()) for (Variant v : all) if (!v.equals(p1)) opts.add(Choice.opt(v.key(), 1));
+		if (wideWeights.length > 2) { p1 = null; p2 = null; } // a house front keeps its wide windows band after band (stacked, DS-25)
+		for (Variant v : all) if (!v.equals(p1) && !v.equals(p2)) opts.add(Choice.opt(v.key(), weight(v, wideWeights)));
+		if (opts.isEmpty()) for (Variant v : all) if (!v.equals(p1)) opts.add(Choice.opt(v.key(), weight(v, wideWeights)));
 		if (opts.isEmpty()) return all.get(0);
 		String key = Choice.pick(c.hash("facade/band", mi, side.ordinal(), band), "variant", opts);
 		for (Variant v : all) if (v.key().equals(key)) return v;

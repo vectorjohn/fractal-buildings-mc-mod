@@ -61,6 +61,95 @@ class GlazingTest {
 		}
 	}
 
+	/** Lengths of runs of adjacent window columns, one entry per run, grouped by face (facing, fixed coordinate) and row (y); {@code upper} only above the ground storey; {@code facing} null for every face. */
+	private static java.util.List<int[]> runs(PlacedBuilding b, Facing facing, boolean upper) {
+		int y1 = b.shell().storeys().size() > 1 ? b.shell().storeys().get(1).y() : Integer.MAX_VALUE;
+		java.util.TreeMap<String, java.util.TreeSet<Integer>> cols = new java.util.TreeMap<>();
+		for (var o : b.shell().openings()) {
+			if (o.kind() != dev.fractalbuildings.core.ir.OpeningKind.WINDOW || (facing != null && o.facing() != facing) || (upper && o.box().y() < y1)) continue;
+			boolean ns = o.facing() == Facing.NORTH || o.facing() == Facing.SOUTH;
+			cols.computeIfAbsent(o.facing() + "/" + (ns ? o.box().z() : o.box().x()) + "/" + o.box().y(), k -> new java.util.TreeSet<>()).add(ns ? o.box().x() : o.box().z());
+		}
+		java.util.List<int[]> out = new ArrayList<>();
+		for (var e : cols.entrySet()) {
+			int run = 0, prev = Integer.MIN_VALUE;
+			for (int u : e.getValue()) {
+				if (u == prev + 1) run++; else { if (run > 0) out.add(new int[] {run, e.getKey().hashCode()}); run = 1; }
+				prev = u;
+			}
+			if (run > 0) out.add(new int[] {run, e.getKey().hashCode()});
+		}
+		return out;
+	}
+
+	/**
+	 * DS-33 (FACADE2): a house's street front draws one window variant for all its floors: 2x2 when the inner length is 12 or more (the door and a 2x2 each side), else 1x2. In styles with 2-wide windows, 2x2 is 10-30 % of house windows and at least 80 % of long fronts carry one (medieval draws, so not asserted).
+	 */
+	@Test
+	void housesCarryTwoByTwoWindowsOnTheirFront() {
+		for (String style : List.of("plain", "plains", "medieval", "jungle")) {
+			Glazing.Stats sum = Glazing.Stats.ZERO;
+			int withFront = 0, longFronts = 0;
+			for (int[] lot : new int[][] {{14, 12}, {18, 14}, {22, 16}, {26, 18}})
+				for (long seed = 1; seed <= 25; seed++)
+					for (PlacedBuilding b : scene("house", seed, style, lot[0], lot[1]).buildings()) {
+						Glazing.Stats g = Glazing.measure(b);
+						sum = sum.plus(g);
+						if (b.shell().volumes().get(0).box().sx() - 2 >= 12) { longFronts++; withFront += (int) g.north2x2(); }
+					}
+			System.out.printf("house %s: 2x2 %.1f %% of windows, %d/%d long fronts with a 2x2%n", style, 100 * sum.share2x2(), withFront, longFronts);
+			assertTrue(sum.share2x2() >= 0.10 && sum.share2x2() <= 0.30, style + " 2x2 share " + sum.share2x2());
+			if (!style.equals("medieval")) assertTrue(withFront >= 0.8 * longFronts, style + " long fronts with 2x2: " + withFront + "/" + longFronts);
+		}
+	}
+
+	/** DS-33 (FACADE2 round 2): shop and block upper floors in tallGlass styles are 2-wide windows between 1-cell piers, no glass run wider than 2, glass share of upper floors at least 20 % (blocks; party and stair walls cost some of the 24 % of the full rhythm) and 28 % (shops). */
+	@Test
+	void shopAndBlockUpperFloorsHavePieredTwoByTwoWindows() {
+		for (String type : List.of("shop", "block")) {
+			int[] lot = dev.fractalbuildings.core.gen.v1.Types.get(type).limits().testLots().get(0);
+			for (String style : List.of("plain", "plains", "tall")) {
+				Glazing.Stats sum = Glazing.Stats.ZERO;
+				for (long seed = 1; seed <= 10; seed++)
+					for (PlacedBuilding b : scene(type, seed, style, lot[0], lot[1]).buildings()) {
+						sum = sum.plus(Glazing.measure(b));
+						for (int[] r : runs(b, null, true)) assertTrue(r[0] <= 2, type + " " + style + " " + seed + ": glass run " + r[0]);
+					}
+				System.out.printf("%s %s upper %.1f %%%n", type, style, 100 * sum.upper());
+				assertTrue(sum.upper() >= (type.equals("block") ? 0.20 : 0.28), type + " " + style + " upper share " + sum.upper());
+			}
+		}
+	}
+
+	/** DS-39 (FACADE2): upper floors of shops and blocks have sill +1 in every style; halls (and high-rises) alone may have sill 0, and only in tallGlass styles, so the layout must honour the flag. */
+	@Test
+	void floorToCeilingGlassOnlyOnHallsAndHighrisesInTallGlassStyles() {
+		for (String type : List.of("shop", "block", "hall", "highrise"))
+			for (String style : List.of("plain", "plains", "medieval", "tall")) {
+				int[] lot = dev.fractalbuildings.core.gen.v1.Types.get(type).limits().testLots().get(0);
+				int sill0 = 0, upper = 0;
+				for (long seed = 1; seed <= 10; seed++)
+					for (PlacedBuilding b : scene(type, seed, style, lot[0], lot[1]).buildings()) {
+						var storeys = b.shell().storeys();
+						for (var o : b.shell().openings()) {
+							if (o.kind() != dev.fractalbuildings.core.ir.OpeningKind.WINDOW || Math.max(o.box().sx(), o.box().sz()) > 1) continue; // not the 3-wide arcade arches
+							int s = 0;
+							for (int i = 0; i < storeys.size(); i++) if (storeys.get(i).y() < o.box().y()) s = i;
+							if (s < 1) continue;
+							upper++;
+							if (o.box().y() == storeys.get(s).y() + 1) sill0++;
+						}
+					}
+				boolean may = (type.equals("hall") || type.equals("highrise")) && StyleLibrary.get(style).facade().tallGlass();
+				String msg = type + " " + style + ": " + sill0 + " of " + upper + " upper windows at sill 0";
+				if (type.equals("shop") || type.equals("block")) assertEquals(0, sill0, msg);
+				else if (type.equals("hall")) { // the high-rise curtain wall is its own program (7.13); a hall's only sill-0 glass in a non-tallGlass style is its 3-wide arcade arches (19 %)
+					if (may) assertTrue(sill0 >= 0.8 * upper, msg);
+					else assertTrue(sill0 <= 0.3 * upper, msg);
+				}
+			}
+	}
+
 	/** A hand-made wall of six 1x1 or six 1x2 windows: the measurement counts the cells. */
 	@Test
 	void measuresAHandBuiltFacade() {
