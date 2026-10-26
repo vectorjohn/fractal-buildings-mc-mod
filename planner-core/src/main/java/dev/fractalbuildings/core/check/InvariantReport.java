@@ -24,6 +24,29 @@ public final class InvariantReport {
 		}
 	}
 
+	/** Design warnings (not violations): per check id, how many were reported and in how many cases. */
+	private final Map<String, Integer> warnings = new java.util.TreeMap<>();
+	private final List<String> warningCases = new ArrayList<>();
+	private final Map<String, String> firstWarning = new java.util.TreeMap<>();
+	private int highriseCases;
+	private final Map<String, Integer> warningBuildings = new java.util.TreeMap<>();
+
+	/** Records the design warnings of one case; { applicable} says whether the case has a building the checks apply to. */
+	public void addWarnings(String label, boolean applicable, List<Violation> found) {
+		if (applicable) highriseCases++;
+		for (String id : new java.util.TreeSet<>(found.stream().map(Violation::invariant).toList())) warningBuildings.merge(id, 1, Integer::sum);
+		boolean any = false;
+		for (Violation v : found) {
+			warnings.merge(v.invariant(), 1, Integer::sum);
+			firstWarning.putIfAbsent(v.invariant(), label + ": " + v.message());
+			any = true;
+		}
+		if (any) warningCases.add(label);
+	}
+
+	public int warningCount(String id) { return warnings.getOrDefault(id, 0); }
+	public int warningCases() { return warningCases.size(); }
+
 	public int cases() { return cases; }
 	public int failingCases() { return failingCases; }
 	public int violationCount() { return failures.size(); }
@@ -35,6 +58,12 @@ public final class InvariantReport {
 		sb.append("Cases checked: ").append(cases).append(", failing: ").append(failingCases).append("\n\n");
 		sb.append("| invariant | violations |\n|---|---|\n");
 		for (Invariant i : Invariant.values()) sb.append("| ").append(i.id).append(" | ").append(count(i)).append(" |\n");
+		if (highriseCases > 0) {
+			sb.append("\n## Design warnings (not violations)\n\nHigh-rise design checks (DS-22, DS-32): ").append(highriseCases).append(" cases with a high-rise, ").append(warningCases.size()).append(" with warnings.\n\n| check | cases failing | warnings |\n|---|---|---|\n");
+			for (String id : HighriseChecks.IDS) sb.append("| ").append(id).append(" | ").append(warningBuildings.getOrDefault(id, 0)).append(" | ").append(warningCount(id)).append(" |\n");
+			sb.append("\n");
+			for (var e : firstWarning.entrySet()) sb.append("- first ").append(e.getKey()).append(" `").append(e.getValue()).append("`\n");
+		}
 		if (!failures.isEmpty()) {
 			sb.append("\nFirst failing cases:\n\n");
 			int seen = 0;
