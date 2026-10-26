@@ -156,6 +156,16 @@ public final class InstancePassV1 {
 				ground[i] = t.floorY(p.worldX(x, z), p.worldZ(x, z));
 				blocked[i] = x >= 0 && z >= 0 && x < fp.length && z < fp[0].length && fp[x][z];
 			}
+		int[] outG = new int[nx * nz]; // lowest ground just outside the lot beside each edge cell, MAX_VALUE for inner cells: a rail there would stand outside the lot
+		java.util.Arrays.fill(outG, Integer.MAX_VALUE);
+		for (int z = z0; z <= z1; z++)
+			for (int x = x0; x <= x1; x++)
+				for (Facing f : Facing.values()) {
+					int ax = x + f.dx, az = z + f.dz;
+					if (ax >= x0 && ax <= x1 && az >= z0 && az <= z1) continue;
+					int i = (z - z0) * nx + (x - x0);
+					outG[i] = Math.min(outG[i], t.floorY(p.worldX(ax, az), p.worldZ(ax, az)));
+				}
 		int[] flightTop = new int[nx * nz]; // highest solid of a placed flight's cell, MIN_VALUE where there is none
 		java.util.Arrays.fill(flightTop, Integer.MIN_VALUE);
 		for (Opening o : doors) { // keep every door's own outside cell free of other flights
@@ -189,8 +199,12 @@ public final class InstancePassV1 {
 			nDeck = candidates.size();
 			candidates.add(new int[] {s0});
 			boolean[] deck = null;
+			for (int strictPass = 0; strictPass < 3 && found < 0; strictPass++) { // pass 0: only landings and flights whose open sides lie inside the lot (every one can be railed); pass 1: flights only (a landing on the lot line stays); pass 2: any route
+			boolean strict = strictPass <= 1, strictLanding = strictPass == 0;
 			for (int ci = 0; ci < candidates.size(); ci++) {
 				int[] srcs = candidates.get(ci);
+				if (strictPass == 0 && nDeck > 0 && ci >= nDeck) continue; // a stoop door keeps its landing while one is possible
+				if (strictLanding && ci < nDeck) { boolean edge = false; for (int c : srcs) edge |= oy - outG[c] >= RAIL_DROP_LANDING; if (edge) continue; }
 				boolean[] saved = blocked.clone();
 				for (int c : srcs) blocked[c] = false;
 				// pass 1: a flight of its own to the terrain. Pass 2 (only if pass 1 found none, e.g. earlier flights wall
@@ -219,6 +233,7 @@ public final class InstancePassV1 {
 						for (int y = top - base; y <= top + 3 - base && free; y++) free = grid.get(cx, y, cz) == Role.AIR;
 						if (!free) continue;
 						if (ends) { found = c; break; }
+						if (strict && !(ci < nDeck && d == 0 && !strictLanding) && oy - d - outG[c] >= (ci < nDeck && d == 0 ? RAIL_DROP_LANDING : RAIL_DROP_FLIGHT)) continue; // a rail would have to stand outside the lot: this cell is not railable
 						if (g > h + 2) continue;
 						for (Facing f : dirs) {
 							int nxx = cx + f.dx, nzz = cz + f.dz;
@@ -248,6 +263,7 @@ public final class InstancePassV1 {
 				}
 				System.arraycopy(saved, 0, blocked, 0, blocked.length);
 				merged = false;
+			}
 			}
 			if (found < 0) {
 				unreachable.add(o);
@@ -283,7 +299,19 @@ public final class InstancePassV1 {
 				}
 			}
 		}
-		rails(treads, lot, p, x0, x1, z0, z1, nx, ground, blocked, grid, base, site);
+		boolean[] doorFront = new boolean[nx * nz]; // every cell in front of a door leaf (a wide door has several): a rail there would wall the door
+		for (Opening o : doors) {
+			Facing f = outward(o);
+			Box3 ob = o.box();
+			for (int x = ob.x(); x < ob.maxX(); x++)
+				for (int z = ob.z(); z < ob.maxZ(); z++) {
+					int fx = x + f.dx, fz = z + f.dz;
+					if (fx >= x0 && fx <= x1 && fz >= z0 && fz <= z1) doorFront[(fz - z0) * nx + (fx - x0)] = true;
+				}
+		}
+		List<Opening> extDoors = new ArrayList<>(); // every exterior door of any storey: no rail stands in front of one at its own height
+		for (Opening o : shell.openings()) if (o.kind() == OpeningKind.DOOR && o.to().equals(Opening.OUTSIDE) != o.from().equals(Opening.OUTSIDE)) extDoors.add(o);
+		rails(treads, lot, p, x0, x1, z0, z1, nx, ground, blocked, doorFront, extDoors, grid, base, site);
 	}
 
 	/** Least drop (blocks, tread level minus the ground beside it) that gets a rail: along a flight, and along a landing. */
@@ -291,12 +319,12 @@ public final class InstancePassV1 {
 
 	/**
 	 * Railings (6.9): for each free cell beside a step or landing where the ground is far enough below the tread, a kerb of
-	 * foundation up to the tread level with a {@link Role#RAIL} block on it, so the rail stands one block above the tread. Rails
+	 * foundation up to the tread's walking surface (tread y + 1) with a {@link Role#RAIL} block on it, so the rail stands one block above the surface it guards (fence collision 1.5: a player, who steps 0.6, cannot get onto it). Rails
 	 * go only on cells that are not part of any flight, landing or door approach ({@code blocked}), are inside the lot and are
 	 * free of the building, so they never cross the line of travel; a walker could only step sideways onto ground at most one
 	 * block below the tread, and no rail stands there. Where several treads touch a cell the highest decides.
 	 */
-	private static void rails(List<int[]> treads, Lot lot, Placement p, int x0, int x1, int z0, int z1, int nx, int[] ground, boolean[] blocked, VoxelGrid grid, int base, List<Box> site) {
+	private static void rails(List<int[]> treads, Lot lot, Placement p, int x0, int x1, int z0, int z1, int nx, int[] ground, boolean[] blocked, boolean[] doorFront, List<Opening> extDoors, VoxelGrid grid, int base, List<Box> site) {
 		int[] level = new int[blocked.length];
 		java.util.Arrays.fill(level, Integer.MIN_VALUE);
 		for (int[] t : treads) {
@@ -308,15 +336,50 @@ public final class InstancePassV1 {
 				level[i] = Math.max(level[i], t[2]);
 			}
 		}
+		// corner posts: a free cell diagonal to a tread with a rail on both its sides along x and z would leave a gap between two
+		// rails that meet diagonally (wider than a player), so it gets a post too
+		int[] corner = new int[blocked.length];
+		java.util.Arrays.fill(corner, Integer.MIN_VALUE);
+		for (int i = 0; i < level.length; i++) {
+			if (level[i] != Integer.MIN_VALUE || blocked[i] || doorFront[i]) continue;
+			int cx = x0 + i % nx, cz = z0 + i / nx;
+			if (!lot.containsColumn(p.worldX(cx, cz), p.worldZ(cx, cz))) continue;
+			int lx = Math.max(railLevel(level, x0, x1, z0, z1, nx, cx - 1, cz), railLevel(level, x0, x1, z0, z1, nx, cx + 1, cz));
+			int lz = Math.max(railLevel(level, x0, x1, z0, z1, nx, cx, cz - 1), railLevel(level, x0, x1, z0, z1, nx, cx, cz + 1));
+			if (lx != Integer.MIN_VALUE && lz != Integer.MIN_VALUE) corner[i] = Math.max(lx, lz);
+		}
+		for (int i = 0; i < level.length; i++) if (corner[i] != Integer.MIN_VALUE) level[i] = corner[i];
+		// a rail's top must be 1.5 above every tread within one cell of it (a player steps 0.6 and may cut a corner), not only the
+		// tread it guards: beside a flight the rail takes the level of the highest tread around it
+		int[] raised = level.clone();
+		for (int[] t : treads)
+			for (int dz = -1; dz <= 1; dz++)
+				for (int dx = -1; dx <= 1; dx++) {
+					int x = t[0] + dx, z = t[1] + dz;
+					if (x < x0 || x > x1 || z < z0 || z > z1) continue;
+					int i = (z - z0) * nx + (x - x0);
+					if (level[i] != Integer.MIN_VALUE) raised[i] = Math.max(raised[i], t[2]);
+				}
+		level = raised;
 		for (int i = 0; i < level.length; i++) {
 			if (level[i] == Integer.MIN_VALUE) continue;
 			int cx = x0 + i % nx, cz = z0 + i / nx, h = level[i], g = ground[i];
 			boolean free = true;
 			for (int y = g - base; y <= h + 1 - base && free; y++) free = grid.get(cx, y, cz) == Role.AIR;
 			if (!free) continue;
-			site.add(new Box(Box3.of(cx, g - base, cz, 1, h - g, 1), Role.FOUNDATION, Layer.FOUNDATION, Box.NO_STOREY));
-			site.add(new Box(Box3.of(cx, h - base, cz, 1, 1, 1), Role.RAIL, Layer.FOUNDATION, Box.NO_STOREY));
+			for (Opening o : extDoors) { // a door at the rail's height is not walled in
+				Facing f = outward(o);
+				Box3 ob = o.box();
+				if (h + 1 - base >= ob.y() && h + 1 - base < ob.maxY() && cx - f.dx >= ob.x() && cx - f.dx < ob.maxX() && cz - f.dz >= ob.z() && cz - f.dz < ob.maxZ()) free = false;
+			}
+			if (!free) continue;
+			site.add(new Box(Box3.of(cx, g - base, cz, 1, h + 1 - g, 1), Role.FOUNDATION, Layer.FOUNDATION, Box.NO_STOREY));
+			site.add(new Box(Box3.of(cx, h + 1 - base, cz, 1, 1, 1), Role.RAIL, Layer.FOUNDATION, Box.NO_STOREY));
 		}
+	}
+
+	private static int railLevel(int[] level, int x0, int x1, int z0, int z1, int nx, int x, int z) {
+		return x < x0 || x > x1 || z < z0 || z > z1 ? Integer.MIN_VALUE : level[(z - z0) * nx + (x - x0)];
 	}
 
 

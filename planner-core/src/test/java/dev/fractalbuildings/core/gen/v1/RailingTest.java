@@ -43,6 +43,16 @@ class RailingTest {
 		return r;
 	}
 
+	/** A cell in front of a door leaf: the approach is kept free, no rail is expected there. */
+	private static boolean nearDoor(PlacedBuilding b, int cx, int cz) {
+		for (var o : b.shell().openings())
+			if (o.kind() == dev.fractalbuildings.core.ir.OpeningKind.DOOR) {
+				Facing out = o.to().equals(dev.fractalbuildings.core.ir.Opening.OUTSIDE) ? o.facing() : o.facing().rotate(2);
+				for (int x = o.box().x(); x < o.box().maxX(); x++) for (int z = o.box().z(); z < o.box().maxZ(); z++) if (cx == x + out.dx && cz == z + out.dz) return true;
+			}
+		return false;
+	}
+
 	private static SceneDoc without(SceneDoc s, boolean rails) {
 		List<PlacedBuilding> bs = new ArrayList<>();
 		for (PlacedBuilding b : s.buildings()) {
@@ -74,13 +84,13 @@ class RailingTest {
 						for (Box x : b.siteBoxes()) {
 							Box3 c = x.box();
 							if (x.role() == Role.STAIR && c.x() == q.x() && c.z() == q.z()) assertTrue(false, what + ": rail in the column of a step at " + q);
-							if (x.role() == Role.STAIR && c.y() == q.y() && Math.abs(c.x() - q.x()) + Math.abs(c.z() - q.z()) == 1) beside = true;
+							if (x.role() == Role.STAIR && c.y() + 1 <= q.y() && Math.abs(c.x() - q.x()) <= 1 && Math.abs(c.z() - q.z()) <= 1) beside = true;
 							if (x.role() == Role.FOUNDATION && c.x() == q.x() && c.z() == q.z() && c.maxY() == q.y()) kerb = true;
 						}
 						assertTrue(beside, what + ": rail " + q + " has no step beside it at its level");
 						assertTrue(kerb, what + ": rail " + q + " has no kerb under it");
 						int wx = b.placement().worldX(q.x(), q.z()), wz = b.placement().worldZ(q.x(), q.z());
-						assertTrue(b.oy() + q.y() - rq.terrain().floorY(wx, wz) >= InstancePassV1.RAIL_DROP_LANDING, what + ": rail on ground level with the tread");
+						assertTrue(b.oy() + q.y() - rq.terrain().floorY(wx, wz) >= InstancePassV1.RAIL_DROP_LANDING + 1, what + ": rail on ground level with the tread");
 					}
 				}
 		assertTrue(scenes > 60, "only " + scenes + " scenes generated");
@@ -104,6 +114,73 @@ class RailingTest {
 		assertTrue(checked > 60);
 	}
 
+
+	/**
+	 * Rails that hold: a player steps 0.6 and a fence collides to 1.5, so a rail block must stand one block above the walking
+	 * surface of the tread it guards (top 1.5 above the feet), and every open edge of a deep flight or landing, inside the lot
+	 * and outside the building, has one (no gap to step through).
+	 */
+	@Test
+	void railsStandOneBlockAboveTheSurfaceAndLeaveNoGap() {
+		int rails = 0, edges = 0, diag = 0, shopLotLine = 0;
+		for (String type : TYPES)
+			for (String slope : SLOPES)
+				for (long seed = 1; seed <= 8; seed++) {
+					GenRequest rq = request(type, seed, slope);
+					SceneDoc s = generate(rq);
+					if (s == null) continue;
+					PlacedBuilding b = s.buildings().get(0);
+					String what = type + " " + slope + " seed " + seed;
+					java.util.Set<Long> columns = new java.util.HashSet<>(), railCols = new java.util.HashSet<>();
+					for (Box x : b.siteBoxes()) {
+						long k = ((long) x.box().x() << 32) ^ (x.box().z() & 0xffffffffL);
+						if (x.role() == Role.RAIL) {
+							railCols.add(k);
+							rails++;
+							// a player steps 0.6 and may cut a corner: the rail top is 1.5 above every tread within one cell, so rail y >= tread y + 1
+							boolean near = false;
+							for (Box t : b.siteBoxes())
+								if (t.role() == Role.STAIR && Math.abs(t.box().x() - x.box().x()) <= 1 && Math.abs(t.box().z() - x.box().z()) <= 1) {
+									near = true;
+									assertTrue(x.box().y() >= t.box().y() + 1, what + ": rail " + x.box() + " top is under 1.5 above tread " + t.box());
+								}
+							assertTrue(near, what + ": rail " + x.box() + " guards no tread");
+						} else if (x.role() == Role.STAIR) columns.add(k);
+					}
+					Box3 bd = b.shell().bounds();
+					for (Box t : b.siteBoxes()) { // no diagonal gap: two rails diagonal to each other that share a tread cell need a rail (or the building) in the other shared cell
+						if (t.role() != Role.STAIR) continue;
+						for (int dx = -1; dx <= 1; dx += 2)
+							for (int dz = -1; dz <= 1; dz += 2) {
+								int ax = t.box().x() + dx, az = t.box().z(), bx = t.box().x(), bz = t.box().z() + dz, cx = t.box().x() + dx, cz = t.box().z() + dz;
+								long ka = ((long) ax << 32) ^ (az & 0xffffffffL), kb = ((long) bx << 32) ^ (bz & 0xffffffffL), kc = ((long) cx << 32) ^ (cz & 0xffffffffL);
+								if (railCols.contains(ka) && railCols.contains(kb)) { diag++; assertTrue(railCols.contains(kc) || columns.contains(kc) || cx >= 0 && cz >= 0 && cx < bd.maxX() && cz < bd.maxZ(), what + ": rails at (" + ax + "," + az + ") and (" + bx + "," + bz + ") meet diagonally with no corner post at (" + cx + "," + cz + ")"); }
+							}
+					}
+					for (Box t : b.siteBoxes()) {
+						if (t.role() != Role.STAIR) continue;
+						for (Facing f : Facing.values()) {
+							int cx = t.box().x() + f.dx, cz = t.box().z() + f.dz;
+							long k = ((long) cx << 32) ^ (cz & 0xffffffffL);
+							int wx = b.placement().worldX(cx, cz), wz = b.placement().worldZ(cx, cz);
+							boolean inShell = cx >= 0 && cz >= 0 && cx < bd.maxX() && cz < bd.maxZ();
+							if (inShell || nearDoor(b, cx, cz) || columns.contains(k)) continue;
+							if (b.oy() + t.box().y() - rq.terrain().floorY(wx, wz) < InstancePassV1.RAIL_DROP_FLIGHT) continue;
+							edges++;
+							if (!railCols.contains(k) && !rq.lot().containsColumn(wx, wz) && type.equals("shop")) { shopLotLine++; continue; } /* known issue: a shop whose only margin row is the lot line has no inner row for a railed landing */ assertTrue(railCols.contains(k), what + (rq.lot().containsColumn(wx, wz) ? "" : " (lot line)") + ": open edge beside tread " + t.box() + " at (" + cx + "," + cz + ") has no rail");
+						}
+					}
+				}
+		assertTrue(rails >= 50 && edges >= 50 && diag >= 10 && shopLotLine < 250, rails + " rails, " + edges + " edges, " + diag + " corners, " + shopLotLine + " unguarded shop lot-line edges");
+	}
+
+	/** The walk model: the top of a rail or fence is not a floor. */
+	@Test
+	void aRailTopIsNotStandable() {
+		assertFalse(dev.fractalbuildings.core.check.Invariants.walkFloor(Role.RAIL));
+		assertFalse(dev.fractalbuildings.core.check.Invariants.walkFloor(Role.FENCE));
+		assertTrue(dev.fractalbuildings.core.check.Invariants.walkFloor(Role.FOUNDATION));
+	}
 	@Test
 	void deterministic() {
 		GenRequest rq = request("house", 3, "plane:70:1:1:12");
