@@ -30,7 +30,7 @@ roofs.
 
 ## Windows and doors
 
-1x1 or 1x2 windows with shutters, symmetric fronts, a door with a surround
+1x2 windows (2x2 on bigger fronts, DS-33) with shutters, symmetric fronts, a door with a surround
 and a step or porch. Open-plan kitchen and living room usual (DS-10).
 
 ## Avoid

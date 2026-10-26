@@ -30,7 +30,7 @@ houses (DS-15).
 
 ## Windows and doors
 
-Few and small (1x1, sometimes 1x2), wide bays, blank corners, shutters.
+Few and small (1x2; 1x1 only as accents, DS-33), wide bays, blank corners, shutters.
 Kitchens more often separate (warmth).
 
 ## Avoid

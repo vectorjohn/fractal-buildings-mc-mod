@@ -45,7 +45,25 @@ Gaps worth a decision (for John):
   2026-10-25); the style file is ROADMAP 7.6, desert stands in until then.
 - **Wealth and building type** don't change materials yet (a hall or temple
   in dressed stone, a cottage in rough).
-
 To add a brief: copy a short one, keep the headings (Precedents, Materials,
 Proportions and massing, Roof, Windows and doors, Avoid), stay under a page,
 and add a row here.
+
+# Road surfaces
+
+One material per road ([DS-30](../STANDARDS.md)), by tier and biome. The
+table is the architect's (2026-10-25), moved here from DS-30; which blocks
+have slabs and stairs is in [blocks.md](../blocks.md) (`dirt_path` and
+`gravel` have none, so they keep full-block steps, DS-31).
+
+| Where | Material | Wear (cracked or mossy, at most 15 % of cells, scattered; agent's number) |
+|---|---|---|
+| Tracks: paths, hamlet and village streets, roads between settlements below city | `dirt_path`; `gravel` in snowy, mountain, stony and gravelly biomes; `mud_bricks` in desert and badlands | none |
+| Town streets (no city is non-modern, DS-37) | `stone_bricks`; `mud_bricks` in desert, badlands, savanna | stone: `cracked_stone_bricks` (full blocks only), `mossy_stone_bricks` (any shape; jungle, swamp, taiga, dark forest only) |
+| City and metropolis arterials, main streets, roads between cities | `cobbled_deepslate` ("asphalt") | none exists |
+| City and metropolis streets and lanes | `light_gray_concrete` | none exists |
+| Sidewalks (DS-31) | `white_concrete` | none |
+| Bridge decks | the road's material, or one plank species; bamboo only on an all-bamboo footbridge (proposed DS-30 amendment) | as the road |
+
+All-bamboo footbridge (proposed): deck `bamboo_planks` or `bamboo_mosaic`,
+rails `bamboo_fence`, posts `bamboo_block`.
