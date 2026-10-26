@@ -33,7 +33,7 @@ Ignore: petrified_oak_slab
 | oak | oak_planks oak_log stripped_oak_log | auto | plains, forest, meadow; medieval, plains villages | all-round walls and floors; log as timber frame and posts | timber |
 | spruce | spruce_planks spruce_log stripped_spruce_log | auto | taiga, snowy, grove, mountains | roofs, timber frame, cabins, dark floors | timber |
 | birch | birch_planks birch_log stripped_birch_log | auto | birch forest, meadow, plains | light walls and floors, bright interiors | timber |
-| jungle | jungle_planks jungle_log stripped_jungle_log | auto | jungle, bamboo jungle | huts, treehouses, stilts, warm floors | N |
+| jungle | jungle_planks jungle_log stripped_jungle_log | auto | jungle, bamboo jungle | huts, treehouses, stilts, warm floors | timber |
 | acacia | acacia_planks acacia_log stripped_acacia_log | auto | savanna, badlands edge | orange walls/roofs with grey bark posts | N |
 | dark oak | dark_oak_planks dark_oak_log stripped_dark_oak_log | auto | dark forest; mansions, gothic, taiga | roofs, framing, rich floors, furniture | accent |
 | mangrove | mangrove_planks mangrove_log stripped_mangrove_log mangrove_roots:  | auto | mangrove swamp, swamp | red-brown walls; roots as stilt/lattice screens | N |

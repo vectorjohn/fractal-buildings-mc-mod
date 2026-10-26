@@ -37,10 +37,12 @@ Gaps worth a decision (for John):
   [DS-1](../STANDARDS.md). Partly answered (John, 2026-10-25): in forested
   biomes, tall buildings use the [mass-timber](mass-timber.md) style (wood
   allowed up to 20 storeys in that look only), and ROADMAP 7.7 makes style
-  choice depend on height and tier. Still open for other biomes: a
-  per-style `tall` palette (stone, brick, terracotta, concrete, glass in the
-  style's colours), or a shared urban/modern style that dense quarters use
-  whatever the biome.
+  choice depend on height and tier. Answered for other biomes (John,
+  2026-10-26, [DS-41](../STANDARDS.md)): each style gets a `tall` variant
+  (stone, brick, terracotta, concrete, glass in the style's colours) that
+  inherits a shared plain default, so a style without one gets the shared
+  look; later, over about 20 storeys in a metropolis core, one shared glass
+  tower look tinted only at the base.
 - **Savanna** now has its own brief ([savanna.md](savanna.md); John,
   2026-10-25); the style file is ROADMAP 7.6, desert stands in until then.
 - **Wealth and building type** don't change materials yet (a hall or temple

@@ -32,9 +32,9 @@ species per building (at least per facade), picked by biome:
 | birch forests | birch planks | stripped birch |
 | dark forest | spruce planks | stripped spruce; dark oak only as a thin frame |
 | pale garden | pale oak planks | stripped pale oak |
-| cherry grove | birch planks | cherry as trim only (a 15-storey pink tower reads as a toy; John to confirm) |
+| cherry grove | birch planks | cherry as trim only (a 15-storey pink tower reads as a toy; confirmed by John 2026-10-26) |
 | dappled forest | birch planks (poplar once checked in game) | stripped birch |
-| jungles | patterned bamboo, or jungle planks (as tame as oak; proposed as `timber` in the block notes, see REVIEW) | stripped bamboo or stripped jungle |
+| jungles | patterned bamboo, or jungle planks (as tame as oak; `timber` in the block notes, John 2026-10-26) | stripped bamboo or stripped jungle |
 
 **Frame one tone from the wall.** The frame is the same or a neighbouring
 species (stripped birch on birch planks, stripped oak on spruce), never a
