@@ -32,6 +32,7 @@ public final class StyleLibrary {
 	/** The style, or {@link IllegalArgumentException} naming the known ids. */
 	public static StyleRules get(String id) {
 		StyleRules s = all().get(id);
+		if (s == null && id.startsWith("test-") && StyleLibrary.class.getResource("/styles/" + id + ".json") != null) return StyleRules.from(id, merged(id, new ArrayList<>())); // unindexed test-only styles (test classpath), never in ids()
 		if (s == null) throw new IllegalArgumentException("unknown style '" + id + "', expected one of " + ids() + " or " + AUTO);
 		return s;
 	}
