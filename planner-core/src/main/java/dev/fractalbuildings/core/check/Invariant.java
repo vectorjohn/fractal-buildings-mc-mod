@@ -17,7 +17,9 @@ public enum Invariant {
 	/** Generator v1 only: from every exterior ground-floor door a walker gets down onto the real ground (terrain, road or paving) with no drop over a block and no rise over half a block (STAIRGROUND). */
 	STEPS_REACH_GROUND("steps-reach-ground"),
 	/** Generator v1 only: walking an interior flight from one floor to the next never needs a rise over half a block (STAIRS). */
-	STAIR_RISE("stair-rise");
+	STAIR_RISE("stair-rise"),
+	/** Generator v1 only (DS-33): at most 25 % of a building's windows are 1x1 (the accent size), for buildings with 4 or more windows. */
+	WINDOW_SIZE("window-size");
 
 	public final String id;
 

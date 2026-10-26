@@ -3,6 +3,7 @@
   "id": "keep",
   "extends": "plain",
   "biomes": [],
+  "facade": {"tallGlass": false},
 
   "palette": {
     "foundation": ["minecraft:cobblestone"],

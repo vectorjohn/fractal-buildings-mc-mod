@@ -16,3 +16,4 @@ Drafted by the architect, 2026-10-25; numbers are agent's.
 - Code, as of 2026-10-25: every style file has `windowHeight` 1 (all
   windows 1 tall), and only medieval allows width 2, which gives it 2x1
   windows. The briefs ask for 1x2 and 2x2 ([styles/README.md](../styles/README.md)).
+- Code, as of 2026-10-25 (7.12 done): every style has `windowHeight` 2; `windowWidth` 2 in plain, plains, medieval and jungle (desert, snowy, taiga stay 1 wide). Shops, blocks, halls and high-rises (`FacadePass.glassRich`) draw only 2-bay/1-wide and 4-bay/2-wide rhythms and cut upper-floor windows 3 tall from sill 0 (floor to ceiling). `check` and `city-check --scenes` print the glazing table (`check/Glazing`); `window-size` is an invariant, `glazing-share` is not yet.

@@ -161,7 +161,9 @@ class FacadeLayoutTest {
 
 	@Test
 	void tallFacadesChangeRhythmBetweenBands() {
-		// setback: shaft1 is 6 storeys (2..7); with bandSize 3 it has 3 bands per side; each side shows >= 2 distinct layouts
+		// setback: shaft1 is 6 storeys (2..7); with bandSize 3 it has 3 bands per side; nearly every side shows >= 2 distinct layouts
+		// (not all: 7.12 widened the bay range to 2..4 with 2-wide windows, and different drawn variants can tile a short face the same way)
+		int sides = 0, same = 0;
 		for (String style : STYLES)
 			for (long seed = 0; seed < 12; seed++) {
 				Built b = build(TestMassings.all().get("setback"), seed, StyleLibrary.get(style));
@@ -169,9 +171,11 @@ class FacadeLayoutTest {
 					TreeSet<String> distinct = new TreeSet<>();
 					for (FacadePlan.Layout l : b.cap().plan.layouts())
 						if (l.face().mass().equals("shaft1") && l.face().side() == side) distinct.add(java.util.Arrays.toString(l.bays()) + l.win());
-					assertTrue(distinct.size() >= 2, style + " seed " + seed + " " + side + " shows " + distinct);
+					sides++;
+					if (distinct.size() < 2) same++;
 				}
 			}
+		assertTrue(same * 24 <= sides, same + " of " + sides + " sides show a single layout on every band");
 	}
 
 	@Test
@@ -232,7 +236,7 @@ class FacadeLayoutTest {
 		StyleRules s = StyleLibrary.get("medieval");
 		FacadeStyle f = s.facade();
 		StyleRules wide = withFacade(s, new FacadeStyle(3, 4, f.sill(), f.windowHeight(), 2, true, f.bandSize(), false, false, 2, true, f.plinth(), f.sills(), f.lintels(),
-				f.shutters(), f.stringCourse(), f.cornice(), f.bressumer(), f.corners(), f.timber(), f.unglazed()));
+				f.shutters(), f.stringCourse(), f.cornice(), f.bressumer(), f.corners(), f.timber(), f.unglazed(), f.tallGlass()));
 		int wideDoors = 0;
 		for (Massing m : TestMassings.all().values())
 			for (long seed = 0; seed < 8; seed++) {
@@ -248,7 +252,7 @@ class FacadeLayoutTest {
 		// FixturePipelineTest covers plain and medieval; this adds a style with every decor kind on and corner quoins
 		StyleRules s = StyleLibrary.get("medieval");
 		FacadeStyle f = s.facade();
-		StyleRules all = withFacade(s, new FacadeStyle(2, 4, 1, 2, 2, true, 2, true, true, 2, true, true, true, true, true, true, true, true, "quoins", "all", false));
+		StyleRules all = withFacade(s, new FacadeStyle(2, 4, 1, 2, 2, true, 2, true, true, 2, true, true, true, true, true, true, true, true, "quoins", "all", false, false));
 		for (var e : TestMassings.all().entrySet())
 			for (long seed = 0; seed < 5; seed++) {
 				BuildingIr ir = ShellGeneratorV1.generate(TestMassings.spec(seed, "medieval"), new TestMassings.FixtureType(e.getValue()), all);

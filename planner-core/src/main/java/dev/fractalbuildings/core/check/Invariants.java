@@ -143,6 +143,16 @@ public final class Invariants {
 			entranceReachable();
 			stepsReachGround();
 			stairRise();
+			windowSize();
+		}
+
+		void windowSize() {
+			if (scene.genVersion() < 2) return;
+			Glazing.Stats s = Glazing.measure(b, g);
+			if (s.windows() < 4 || s.windows1x1() * 4 <= s.windows()) return;
+			List<Box3> cells = new ArrayList<>();
+			for (int[] c : s.small()) cells.add(g.worldCell(c[0], c[1], c[2]));
+			report(Invariant.WINDOW_SIZE, s.windows1x1() + " of " + s.windows() + " windows are 1x1 (DS-33: at most a quarter)", cells, cells.size());
 		}
 
 		void stairRise() {
