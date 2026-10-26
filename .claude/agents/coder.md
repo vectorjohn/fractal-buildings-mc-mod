@@ -117,7 +117,7 @@ Each behaviour gets a test at the **cheapest layer that can catch its bugs**
    (server) or `implements FabricClientGameTest` (client) under
    `mod/src/gametest/java` is picked up by the build. Do not edit the gametest
    `fabric.mod.json`.
-5. **In-game appearance**: Fabric client game tests under Xvfb with lavapipe,
+5. **In-game appearance**: Fabric client game tests under Xvfb (`scripts/client-test.sh`; Intel iGPU, lavapipe fallback),
    with screenshots. **Heavy: always under the heavy lock** (CLAUDE.md).
 
 Run the relevant layers once on your final code before you report: after
@@ -178,8 +178,8 @@ and mention them in the ROADMAP testing section.
   `pkill -f "[K]notClient"` only when you're sure no one else's client is
   running (`pgrep -af '[K]notClient'` and check the working directory is your
   worktree: `ls -l /proc/<pid>/cwd`).
-- OpenAL/sound errors are expected. Rendering is lavapipe (slow); if something
-  is too slow to test that way, say so rather than switching to the GPU.
+- OpenAL/sound errors are expected. Client tests render on the Intel iGPU (lavapipe if it is unusable; a `FALLBACK` line in the log says so). Never use the NVIDIA GPU; if something
+  is too slow to test that way, say so.
 - **Before you report, leave nothing running** that you started (test runs,
   waiter loops, clients, dev servers, Gradle daemons you started with special
   flags). Never kill a process you didn't start.

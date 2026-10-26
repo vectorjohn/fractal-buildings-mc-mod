@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# B9 (6.8): the fly-through screenshots. Heavy (takes the heavy lock through client-test.sh); minutes per seed on lavapipe.
+# B9 (6.8): the fly-through screenshots. Heavy (takes the heavy lock through client-test.sh); minutes per seed (renderer: client-test.sh FB_VK, Intel iGPU by default).
 #
 #   scripts/flythrough.sh [--seeds 987654321,12345,1] [--out DIR] [--rd 10] [--cells 6] [--all] [extra gradle args]
 #

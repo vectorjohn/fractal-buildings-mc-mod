@@ -418,6 +418,20 @@ in `.claude/reports/`.
 ## Furnishings (7.5)
 
 - [ ] **6.8 Fly-through frames (B9)**: do the settlements read as places from the air and at street level, per tier, in the game itself
+- [x] **7.5 furniture catalogue and authoring (assist-furniture, 2026-10-23)**: your "rooms look sparse" note; a design, nothing built yet.
+  Where: [plans/furniture.md](plans/furniture.md) ("The catalogue": 25 pieces with sketches, "Which room gets what", "Open questions for John"); [FURNITURE-AUTHORING.md](FURNITURE-AUTHORING.md) (how you would build and hand over your own pieces); research [minecraft-furniture.md](research/aesthetics/minecraft-furniture.md).
+  Look for: (1) pieces you would not build, or idioms you like better (chair: stairs with open-trapdoor arms; tables: fence + pressure plate, upside-down stairs; counters: upside-down stone stairs; sink: water cauldron with a tripwire hook tap; fireplace with a campfire and no chimney); (2) the per-style wood, stone, cloth and plant table; (3) whether the authoring route suits you: build in a creative world facing south, oak = main wood, dark oak = accent, stone bricks = stone, white/light gray = cloth colours, bedrock = wall behind, lime stained glass = keep clear, save with a structure block as `fractalbuildings:furniture/<id>`; (4) the four open questions at the end of the plan (sign vs trapdoor arms, job blocks in kitchens, chimneys, how full a room should be).
+  - @John 2026-10-26: if we do this, what is the chance we could have optional mod interop, using furniture from other mods? 
+    - @assistant 2026-10-26: Feasible as a later optional layer on top of 7.5, not part of it. It would take: detecting other furniture mods at runtime (Fabric Loader `isModLoaded`, no hard dependency); a per-mod mapping from our furniture roles and pieces (chair, table, lamp, shelf) to their block ids and states, used only when the mod is present; vanilla pieces as the fallback, so worlds and seeds stay valid without it. Caveats: their block ids and state properties can change between versions (each mapping needs a version check and a test), and we only reference their blocks, never copy code or assets, so licences matter mainly for that. Candidates on Fabric: Adorn (I believe MIT), Macaw's Furniture and Handcrafted (licences and Fabric support for our Minecraft version not checked). Worth a short research note before 7.5's later steps if you want it.
+      - @John 2026-10-26: Great, lets put something in the backlog for a short research item on this.
+
+- [x] **6.10 C1 roads in game (p6-c1-roads)**: the terraced cut (ADR 0004 Q4, you asked for this screenshot), a short bridge and a road across country, in a real world (seed 987654321).
+  Where: `docs/review/phase6/roads-ingame/` (`road-terrace-along.png`, `road-terrace-side.png`, `road-bridge-along.png`, `road-bridge-side.png`, `road-country-along.png`, `road-country-side.png`, README); in game: new world, seed 987654321, `/tp 3764 120 -1315` (terrace), `/tp 3420 90 -1304` (bridge), spectator mode.
+  Look for: (1) terraces: 2-high steps with 2-wide grass benches and a dirt riser, first block level with the road: the look you want, or gentler (smaller steps, wider benches), or retaining walls; (2) the bridge: a plain plank span with no rails or piers, fine for 20 blocks; (3) the road beside a vanilla village: it stops at the village pieces and resumes, with a visible kink; (4) road surface mix (dirt path, gravel, coarse dirt per biome style) reads as a track.
+  Result:
+  - @John 2026-10-26: these look good. I think we are going to want to build real bridges at some point, so lets not hard code anything about validating the existing bridges, beyond what we already have. These look fine for now.
+
+- [x] **6.8 Fly-through frames (B9)**: do the settlements read as places from the air and at street level, per tier, in the game itself
   Where: [docs/review/phase6/flythrough/](review/phase6/flythrough/README.md) (14 of 90 frames; all 90 regenerate with `scripts/flythrough.sh`, about 25 minutes); seeds 987654321, 12345, 1.
   Look for: (1) the metropolis overview on 12345 (towers, plazas, streets, a river) against the one on seed 1 (two towers and some plazas in a forest: is it a city?); (2) the street frame on 987654321 city, which stands under a tree canopy (trees over a street); (3) 12345 city edge, which looks out over frozen sea (is a city in an ocean biome right?); (4) interiors (stairs, windows, a crafting table, dark ceilings); (5) hamlet and village overviews: houses along one street on a hillside.
   Result:
@@ -430,6 +444,9 @@ in `.claude/reports/`.
       - @assistant 2026-10-26: Known. The old edge frame looked outward from the built edge, here over open frozen sea (CITYQ question 3). FLY2 drops it and aims every frame at built footprints.
     - 12345-metropolis-2-overview.jpg looks decent, but 
       - @assistant 2026-10-26: This sentence is cut off; what did you mean to add? (CITYQ also made this site, `s0_5` at 640,5312, a town, so FLY2's frames will show it as one.)
+    - 12345-metropolis-2-overview.jpg looks decent, but the roads are a little wonky. There are a lot of redundant roads, and empty space. If more space was filled _between_ the roads, that would look good, but it’s too sparse.
+    - 987654321-hamlet-4-interior.jpg has a staircase made out of stairs. As in, the blocks *under* the stairs are also stairs. Not sure if that was an intentional design (“wine storage”?). Looks like a mistake.
+    - The rest of these look quite good.
 
 - [ ] **CITYQ**: small "cities" and "metropolises" become towns; city lattice reaches hilly and river-cut ground
   Where: [docs/review/phase6/cityq/](review/phase6/cityq/README.md) (before/after plan views of four fly-through sites); log [2026-10-23-p6-cityq.md](log/2026-10-23-p6-cityq.md). In game: seed 12345 around 1152,-256 (city), seed 12345 640,5312 and seed 1 -1536,4800 (now towns).
@@ -438,6 +455,7 @@ in `.claude/reports/`.
 - [ ] **FOLIAGE (floating leaves over roads)**: do roads and streets under trees read as built, with no floating leaves, trunks or vines
   Where: [docs/review/phase6/foliage/](review/phase6/foliage/README.md) (before/after for seeds 1 and 31337); in game, walk the roads of seed 1 (taiga hamlet near 320,-1728) and 31337 through forest.
   Look for: no leaf or log hanging over a road or street; shade trees at the road edge keep their crowns (it errs on clearing more, so check no crown looks sawn off); no hole in a tree at a chunk border; building logs and hedges untouched.
+  - @John 2026-10-26: Much improved (based on screenshots)
 
 - [ ] **P7 A3: mass-timber high-rises (2026-10-26)**: look at `viewer/out/gallery/highrise-forest{,-oak,-pale}-*.png` (seeds 0..11; the 7-20 storey seeds are timber). Does it read as a CLT office tower, not a log cabin or Tudor frame? Corner posts and floor bands in stripped wood are one tone off the planks; windows are mostly 1 wide until the facade work (B3b). Is the band projection too deep? Cherry grove: birch tower with pink trim (`mass-timber-cherry`) or plain birch (one data edit in `variants.json`)?
   Result:
