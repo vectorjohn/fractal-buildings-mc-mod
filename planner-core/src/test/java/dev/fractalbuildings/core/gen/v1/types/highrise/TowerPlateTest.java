@@ -115,12 +115,14 @@ class TowerPlateTest {
 			if (uses[i].equals("office") && s.template() == Template.GRAND && s.grandUse().equals("lobby")) offices++;
 			if (uses[i].equals("banquet") && asp > 3.0) return "banquet room aspect " + asp;
 			if (s.template() == Template.GRAND && (uses[i].equals("lobby") || uses[i].equals("open")) && asp > 2.5) return uses[i] + " aspect " + asp + " " + l;
-			if (uses[i].equals("entry") && Math.min(l.w(), l.d()) > 3) return "entry strip deeper than 3: " + l;
+			if (uses[i].equals("entry") && Math.min(l.w(), l.d()) > 6) return "entry wider than 6: " + l; // foyers in front of a flat (3 deep) or a private passage beside the core
 			if (uses[i].equals("entry") && s.unitUse().equals("office") && s.template() == Template.CORRIDOR) return "office floor with an entry strip";
 		}
 		if (kitchens > 1) return kitchens + " kitchens";
 		if (offices > 1) return offices + " lobby offices";
-		if (s.template() == Template.STAIRHOUSE) return p.doors().isEmpty() ? null : "stairhouse has doors";
+		if (s.template() == Template.STAIRHOUSE) return p.doors().size() == 1 && p.doors().get(0).span() == 1 ? null : "stairhouse: one door between the stairwell and the machine room expected, got " + p.doors().size();
+		// the shaft's glass doorway (middle of its hall-side wall) looks into a room, never at a partition
+		if (p.leafAt()[s.shaft()[0] + 1][s.hallZ1() - 1] < 0) return "the shaft doorway faces a partition at x " + (s.shaft()[0] + 1);
 		// stairwell
 		Leaf sl = p.leaves().get(res.stairwell());
 		int[] sw = s.stairwell();
@@ -307,7 +309,7 @@ class TowerPlateTest {
 			if (c != null) for (int i = 0; i < c.uses().length; i++) if (c.uses()[i].equals("entry")) {
 				Leaf lf = c.plan().leaves().get(i);
 				strips++;
-				if (lf.w() * lf.d() > 0 && Math.min(lf.w(), lf.d()) > 3) bigStrips++;
+				if (lf.w() * lf.d() > 0 && Math.min(lf.w(), lf.d()) > 6) bigStrips++;
 			}
 		}
 		System.out.println("TowerPlate rates: banquets with two kitchens " + dupK + "/" + banq + ", lobbies with two offices " + dupO + "/" + lob + ", strips deeper than 3 " + bigStrips + "/" + strips + ", grand rooms over 2.5:1 " + longGrand + "/" + grandRooms);
@@ -318,13 +320,8 @@ class TowerPlateTest {
 	}
 	@Test
 	void unitDepthTable() {
-		assertEquals(0, TowerPlate.stripDepth(7));
-		assertEquals(2, TowerPlate.stripDepth(8));
-		assertEquals(2, TowerPlate.stripDepth(10));
-		assertEquals(3, TowerPlate.stripDepth(11));
-		assertEquals(3, TowerPlate.stripDepth(12));
-		assertEquals(3, TowerPlate.stripDepth(13));
-		assertEquals(3, TowerPlate.stripDepth(16));
+		for (int d = 3; d <= 10; d++) assertEquals(0, TowerPlate.stripDepth(d), "no strip up to 10 deep (fewer, wider units)");
+		for (int d = 11; d <= 16; d++) assertEquals(3, TowerPlate.stripDepth(d));
 	}
 
 	/** Dev printer: three plate sizes per template into the build dir (and the log), read by humans. */

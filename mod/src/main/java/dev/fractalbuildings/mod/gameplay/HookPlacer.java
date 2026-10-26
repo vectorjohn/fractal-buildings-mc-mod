@@ -106,6 +106,7 @@ public final class HookPlacer {
 				case "counter" -> { set(level, at, facing(Blocks.BARREL.defaultBlockState(), Direction.UP)); other++; }
 				case "bench" -> { set(level, at, stool(h)); other++; }
 				case "light" -> { light(level, at, h, seed); lights++; }
+				case "ceiling_light" -> { ceilingLight(level, at); lights++; }
 				default -> { /* unknown kinds from a newer generator: nothing */ }
 			}
 		}
@@ -173,6 +174,24 @@ public final class HookPlacer {
 		if (s.hasProperty(BlockStateProperties.HORIZONTAL_FACING) && f.getAxis().isHorizontal()) return s.setValue(BlockStateProperties.HORIZONTAL_FACING, f);
 		if (s.hasProperty(BlockStateProperties.FACING)) return s.setValue(BlockStateProperties.FACING, f);
 		return s;
+	}
+
+	/**
+	 * A lantern hung from the ceiling on an iron chain (DS-24, the high-rise's ceiling_light): the ceiling is the first solid block within 8 above the
+	 * hook; see {@link CeilingLight} for the chain and lantern heights (lantern at y + 2 from 3 clear up, y + 1 with 2 clear); a floor lantern when
+	 * there is no ceiling to hang from.
+	 */
+	private static void ceilingLight(WorldGenLevel level, BlockPos at) {
+		for (int clear = 1; clear <= 8; clear++) {
+			BlockPos ceiling = at.above(clear);
+			if (level.getBlockState(ceiling).isAir()) continue;
+			if (!CeilingLight.fits(clear) || !level.getBlockState(ceiling).isFaceSturdy(level, ceiling, Direction.DOWN)) break;
+			int len = CeilingLight.chain(clear);
+			for (int i = 0; i < len; i++) set(level, ceiling.below(1 + i), Blocks.IRON_CHAIN.defaultBlockState());
+			set(level, ceiling.below(1 + len), Blocks.LANTERN.defaultBlockState().setValue(LanternBlock.HANGING, true));
+			return;
+		}
+		set(level, at, Blocks.LANTERN.defaultBlockState());
 	}
 
 	/** A lantern hung from the ceiling when there is one within three cells above (half of them), else standing on the floor. */

@@ -54,7 +54,7 @@ public final class InteriorPass {
 	private record Band(int start, Info info, FloorPlan plan, String[] uses, List<Site> hooks) {}
 
 	/** A band before the whole-building program has run: plan and uses, no archways or hooks yet. */
-	private record Draft(int start, int idx, Info info, FloorPlan plan, RoomProgram.Role[] roles, int[] areas, String[] uses) {}
+	private record Draft(int start, int idx, Info info, FloorPlan plan, RoomProgram.Role[] roles, int[] areas, String[] uses, boolean[] needsBed) {}
 
 	/** A band's plan placed on one storey of one mass. */
 	private record Placed(Band band, String[] ids, int ox, int oz) {
@@ -71,6 +71,7 @@ public final class InteriorPass {
 		StoreyGrid g = m.grid();
 		List<Mass> ms = m.masses();
 		RoomProgram prog = c.type().rooms();
+		FloorPlanner planner = c.type().floors();
 		InteriorStyle st = c.style().interior();
 		Placed[][] placed = new Placed[ms.size()][g.count()];
 		Draft[][] drafts = new Draft[ms.size()][g.count()];
@@ -81,8 +82,8 @@ public final class InteriorPass {
 			for (int s = a.from(); s < a.to(); s++) {
 				if (!a.floorAt(s)) continue;
 				Info info = info(c, m, i, a, s);
-				if (cur == null || !cur.info().same(info) || drafts[i][s - 1] != cur || prog.newBand(s)) {
-					cur = draft(c, prog, st, i, a, s, info);
+				if (cur == null || !cur.info().same(info) || drafts[i][s - 1] != cur || prog.newBand(s) || (planner != null && planner.newBand(c, i, a, s))) {
+					cur = draft(c, prog, planner, st, i, a, s, info);
 					all.add(cur);
 				}
 				drafts[i][s] = cur;
@@ -189,7 +190,35 @@ public final class InteriorPass {
 		return a.interior(x - 1, z) ? new int[] {x - 1, z} : new int[] {x + 1, z};
 	}
 
-	private static Draft draft(BuildContext c, RoomProgram prog, InteriorStyle st, int idx, Mass a, int s, Info info) {
+	/** Facade cells of mass {@code a} on storey {@code s} that a partition must not end on: the inside cells of window bays (the full width of each window) and entrances. Relative to the mass's interior. */
+	public static boolean[][] windowCells(BuildContext c, Mass a, int s) {
+		int w = a.sx() - 2, d = a.sz() - 2, ox = a.x() + 1, oz = a.z() + 1;
+		boolean[][] out = new boolean[w][d];
+		FacadePlan fp = c.facadePlan();
+		for (FacadePlan.Layout l : fp.layouts()) {
+			Face f = l.face();
+			if (!f.mass().equals(a.id()) || f.storey() != s) continue;
+			for (int b = 0; b < l.bays().length; b++) {
+				String kind = l.kinds().get(b);
+				if (FacadePlan.BLANK.equals(kind) || FacadePlan.DOOR.equals(kind)) continue;
+				int lo = FacadePlan.WINDOW.equals(kind) ? l.windowStart(b) : l.bayStart(b);
+				int hi = FacadePlan.WINDOW.equals(kind) ? lo + l.windowWidth(b) : l.bayStart(b) + l.bays()[b];
+				for (int p = lo; p < hi; p++) mark(out, f.insideX(p) - ox, f.insideZ(p) - oz);
+			}
+		}
+		for (FacadePlan.Entrance e : fp.entrances()) {
+			Face f = e.face();
+			if (!f.mass().equals(a.id()) || f.storey() != s) continue;
+			for (int k = 0; k < e.width(); k++) mark(out, f.insideX(e.pos() + k) - ox, f.insideZ(e.pos() + k) - oz);
+		}
+		return out;
+	}
+
+	private static Draft draft(BuildContext c, RoomProgram prog, FloorPlanner planner, InteriorStyle st, int idx, Mass a, int s, Info info) {
+		if (planner != null && !a.open()) {
+			FloorPlanner.Planned p = planner.plan(c, idx, a, s, info.reserved(), info.core());
+			if (p != null) return planned(c, idx, s, info, p);
+		}
 		int w = a.sx() - 2, d = a.sz() - 2;
 		FloorPlan plan = a.open() ? FloorPlan.single(w, d) : FloorPlan.plan(w, d, info.reserved(), info.core(), arrivals(info), st, c.hash("interior/plan", idx, s));
 		int n = plan.leaves().size();
@@ -210,7 +239,20 @@ public final class InteriorPass {
 			uses[l] = prog.use(role, a.kind(), lf.area(), new RoomProgram.Where(s, g.count()), c.draws("interior/use", idx, s, l));
 		}
 		prog.refine(roles, areas, uses, new RoomProgram.Where(s, c.massing().grid().count()), c.draws("interior/refine", idx, s));
-		return new Draft(s, idx, info, plan, roles, areas, uses);
+		return new Draft(s, idx, info, plan, roles, areas, uses, null);
+	}
+
+	/** A draft from the type's own floor planner: its uses are final; roles are corridor, stair (use {@code stairwell}) or room. */
+	private static Draft planned(BuildContext c, int idx, int s, Info info, FloorPlanner.Planned p) {
+		int n = p.plan().leaves().size();
+		if (p.uses().length != n) throw new IllegalStateException("floor planner gave " + p.uses().length + " uses for " + n + " rooms");
+		RoomProgram.Role[] roles = new RoomProgram.Role[n];
+		int[] areas = new int[n];
+		for (int l = 0; l < n; l++) {
+			areas[l] = p.plan().leaves().get(l).area();
+			roles[l] = l == p.plan().corridor() ? RoomProgram.Role.CORRIDOR : p.uses()[l].equals("stairwell") ? RoomProgram.Role.STAIR : RoomProgram.Role.ROOM;
+		}
+		return new Draft(s, idx, info, p.plan(), roles, areas, p.uses().clone(), p.needsBed());
 	}
 
 	/** The whole-building pass: lets the type revise uses across masses and storeys (a house's one kitchen and living room). */
@@ -248,7 +290,7 @@ public final class InteriorPass {
 		int s = dr.start(), idx = dr.idx();
 		FloorPlan plan = dr.plan().withArches(prog::openPlan, uses, dr.info().core(), (a, b) -> pct(st, a, b), WIDE_FROM, c.draws("interior/arch", idx, s));
 		List<Site> hooks = new ArrayList<>();
-		for (int l = 0; l < uses.length; l++) hookSites(c, prog, plan, dr.info(), idx, s, l, uses[l], hooks);
+		for (int l = 0; l < uses.length; l++) hookSites(c, prog, plan, dr.info(), idx, s, l, uses[l], dr.needsBed() != null && dr.needsBed()[l], hooks);
 		return new Band(s, dr.info(), plan, uses, hooks);
 	}
 
@@ -270,10 +312,15 @@ public final class InteriorPass {
 	}
 
 	/** Hook cells: against a wall or partition, away from doors, the entrance, strip doors and stair cores. */
-	private static void hookSites(BuildContext c, RoomProgram prog, FloorPlan plan, Info info, int idx, int s, int l, String use, List<Site> out) {
+	private static void hookSites(BuildContext c, RoomProgram prog, FloorPlan plan, Info info, int idx, int s, int l, String use, boolean needsBed, List<Site> out) {
 		FloorPlan.Leaf lf = plan.leaves().get(l);
 		Draws dr = c.draws("interior/hooks", idx, s, l);
-		List<String> kinds = prog.hooks(use, lf.area(), new RoomProgram.Where(s, c.massing().grid().count()), dr);
+		List<String> kinds = new ArrayList<>(prog.hooks(use, lf.area(), new RoomProgram.Where(s, c.massing().grid().count()), dr));
+		if (needsBed) kinds.add(Math.min(1, kinds.size()), "bed"); // a studio sleeps where it lives: the bed comes right after the light
+		if (kinds.contains(CEILING_LIGHT)) {
+			for (int[] p : ceilingGrid(lf)) out.add(new Site(CEILING_LIGHT, l, p[0], p[1], Facing.NORTH));
+			kinds.removeIf(CEILING_LIGHT::equals);
+		}
 		List<int[]> cand = new ArrayList<>(); // {x, z, wall direction}
 		for (int x = lf.x(); x < lf.x() + lf.w(); x++)
 			for (int z = lf.z(); z < lf.z() + lf.d(); z++) {
@@ -297,6 +344,28 @@ public final class InteriorPass {
 			out.add(new Site(kind, l, p[0], p[1], Facing.values()[p[2]].rotate(2)));
 			cand.removeIf(q -> Math.abs(q[0] - p[0]) <= 1 && Math.abs(q[1] - p[1]) <= 1);
 		}
+	}
+
+	/** Hook kind hung from the ceiling on a grid inside the room (not against a wall, door exclusion waived: it never blocks). */
+	public static final String CEILING_LIGHT = "ceiling_light";
+	/** Largest distance between ceiling lights in x or z, and the spacing along a long thin room (a corridor). */
+	static final int LIGHT_PITCH = 10, LIGHT_LINE = 8;
+
+	/**
+	 * Ceiling light cells of a leaf (plan cells): a room whose short side is 3 or less gets a line along its middle every
+	 * {@link #LIGHT_LINE} cells (at least one); other rooms a grid of pitch at most {@link #LIGHT_PITCH}, half a pitch
+	 * from the walls, at least one at the centre.
+	 */
+	static List<int[]> ceilingGrid(FloorPlan.Leaf lf) {
+		List<int[]> out = new ArrayList<>();
+		boolean thin = Math.min(lf.w(), lf.d()) <= 3;
+		boolean alongX = lf.w() >= lf.d();
+		int px = thin && alongX ? LIGHT_LINE : LIGHT_PITCH, pz = thin && !alongX ? LIGHT_LINE : LIGHT_PITCH;
+		int nx = thin && !alongX ? 1 : Math.max(1, (lf.w() + px - 1) / px);
+		int nz = thin && alongX ? 1 : Math.max(1, (lf.d() + pz - 1) / pz);
+		for (int i = 0; i < nx; i++)
+			for (int j = 0; j < nz; j++) out.add(new int[] {lf.x() + (2 * i + 1) * lf.w() / (2 * nx), lf.z() + (2 * j + 1) * lf.d() / (2 * nz)});
+		return out;
 	}
 
 	/** True if a flagged cell lies within one cell (also diagonally) of (x, z). */

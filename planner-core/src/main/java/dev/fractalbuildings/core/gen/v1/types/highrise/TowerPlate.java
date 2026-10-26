@@ -28,7 +28,7 @@ import java.util.List;
  *     the core block.</li>
  * <li>BANQUET: the hall rows stay a {@code corridor} foyer, the banquet room is band B behind a 2-3 wide
  *     archway; the stairwell door opens onto the foyer; kitchen and storage beside and behind the core.</li>
- * <li>STAIRHOUSE: the stairwell and a {@code plant} room over the shaft.</li>
+ * <li>STAIRHOUSE: the stairwell and a {@code plant} room over the shaft, joined by a door.</li>
  * </ul>
  *
  * <p>{@link #plan} returns {@code null} when the geometry doesn't fit the template (a band too shallow,
@@ -55,14 +55,14 @@ public final class TowerPlate {
 	public record Spec(int w, int d, int[] stairwell, int[] shaft, int hallZ0, int hallZ1, boolean[][] reserved, Template template,
 			String grandUse, int unitTarget, String unitUse, boolean entryStrip, int entranceX) {}
 
-	/** @param stairwell leaf index of the stairwell room; @param corridor index of the corridor leaf or -1; @param demoted rooms turned into storage for shape or window */
-	public record Result(FloorPlan plan, String[] uses, int stairwell, int corridor, int demoted) {}
+	/** @param stairwell leaf index of the stairwell room; @param corridor index of the corridor leaf or -1; @param demoted rooms turned into storage for shape or window; @param studio per room: a flat with no bedroom door (it needs a bed hook) */
+	public record Result(FloorPlan plan, String[] uses, int stairwell, int corridor, int demoted, boolean[] studio) {}
 
-	/** Entry strip depth for a band of depth {@code d} (DS-11), 0 for none; capped at 3 (deeper plates are B2b's). */
-	static int stripDepth(int d) {
-		if (d <= 7) return 0;
-		return d <= 10 ? 2 : 3;
-	}
+	/**
+	 * Entry zone depth for a band of depth {@code d}, 0 for none (architect, deep flats, 2026-10-26): none up to 10 deep (fewer, wider
+	 * units; the hall door opens into the flat), 3 from 11 (the entry in front of the flat only); capped at 3 (deeper plates are B2b's).
+	 */
+	static int stripDepth(int d) { return d <= 10 ? 0 : 3; }
 
 	/** Test aid: when true, {@link #WHY} records where a {@code plan} call gave up (costs a stack trace per failure). */
 	static volatile boolean DEBUG;
@@ -136,7 +136,273 @@ public final class TowerPlate {
 			return true;
 		}
 
+		/** What the floor is for: {@code office}, {@code flat}, {@code banquet}, {@code grand}; picks the use of a big windowed store room. */
+		/** Leaves that may be galley kitchens (3:1): the rest of a wrap-around strip with no window pair. */
+		final java.util.Set<Integer> galleys = new java.util.HashSet<>(); // det-ok: membership only
+
+		String kind = "";
+
+		/** Largest store room (cells, a 6x6 room): beyond it a leftover is split into closets or takes a habitable use. */
+		static final int CLOSET = 36;
+
+		/**
+		 * Store rooms are closets (DS-32 review): at most {@link #CLOSET} cells and 2:1. A bigger leftover with a window takes the
+		 * floor's habitable use when it has a door to a room of that kind; else it is cut into closets, chained by doors from the
+		 * piece that had the original door. A banquet floor's kitchen is the biggest windowless-or-not leftover if its own is small.
+		 */
+		void refineStores() {
+			if (kind.equals("banquet")) bigKitchen();
+			for (int pass = 0; pass < 4; pass++) {
+				boolean changed = false;
+				for (int i = 0; i < leaves.size(); i++) {
+					if (!uses.get(i).equals("storage")) continue;
+					Leaf l = leaves.get(i);
+					int a = l.w() * l.d();
+					boolean thin = Math.max(l.w(), l.d()) > 2 * Math.min(l.w(), l.d());
+					boolean grandFloor = kind.equals("banquet") || kind.equals("grand"); // public floors: a windowed leftover of 24+ cells is a lounge or meeting room, not a store
+					if (!thin && a <= (grandFloor ? 23 : CLOSET)) continue;
+					if (!thin && window(l)) {
+						String u = promoteFor(i);
+						if (u != null) { uses.set(i, u); changed = true; continue; }
+					}
+					if (!thin && a <= CLOSET) continue;
+					if (!hasArch(i) && split(i)) changed = true;
+				}
+				if (!changed) break;
+			}
+		}
+
+		private boolean hasArch(int i) {
+			for (int[] q : doorReq) if ((q[0] == i || q[1] == i) && q[4] > 1) return true;
+			return false;
+		}
+
+		/** An office or flat with no door onto a hall (corridor, lobby, open floor, entry) or through its own use to one that has, is a store room (hall-access). */
+		private void ensureHallAccess() {
+			java.util.Set<String> halls = java.util.Set.of("corridor", "lobby", "open", "entry");
+			boolean[] ok = new boolean[leaves.size()];
+			for (int i = 0; i < ok.length; i++) ok[i] = doorsTo(i, halls);
+			for (boolean grew = true; grew; ) {
+				grew = false;
+				for (int i = 0; i < ok.length; i++) {
+					String u = uses.get(i);
+					if (ok[i] || !(u.equals("office") || u.equals("flat"))) continue;
+					for (int[] q : doorReq) {
+						int o = q[0] == i ? q[1] : q[1] == i ? q[0] : -1;
+						if (o >= 0 && ok[o] && (uses.get(o).equals(u) || uses.get(o).equals("kitchen"))) { ok[i] = true; grew = true; break; } // own use, or the unit's kitchen that opens onto its entry
+					}
+				}
+			}
+			for (int i = 0; i < ok.length; i++) {
+				String u = uses.get(i);
+				if (!ok[i] && (u.equals("office") || u.equals("flat"))) { uses.set(i, "storage"); demoted++; }
+			}
+		}
+
+		private boolean doorsTo(int i, java.util.Set<String> kinds) {
+			for (int[] q : doorReq) {
+				int o = q[0] == i ? q[1] : q[1] == i ? q[0] : -1;
+				if (o >= 0 && kinds.contains(uses.get(o))) return true;
+			}
+			return false;
+		}
+
+		/** True if leaf {@code i} has a door to an office that itself has a door onto a hall: the promoted room is a room of that tenancy. */
+		private boolean officeWithHallDoor(int i) {
+			java.util.Set<String> halls = java.util.Set.of("corridor", "lobby", "open", "entry");
+			for (int[] q : doorReq) {
+				int o = q[0] == i ? q[1] : q[1] == i ? q[0] : -1;
+				if (o < 0 || !uses.get(o).equals("office")) continue;
+				if (doorsTo(o, halls)) return true;
+			}
+			return false;
+		}
+
+		private String promoteFor(int i) {
+			return switch (kind) {
+				case "office" -> officeWithHallDoor(i) ? "office" : null;
+				case "flat" -> doorsTo(i, java.util.Set.of("flat")) ? "bedroom" : null;
+				case "banquet", "grand" -> doorsTo(i, java.util.Set.of("corridor", "banquet", "open", "lobby")) ? "open" : null;
+				default -> null;
+			};
+		}
+
+		/** A banquet floor's kitchen is at least {@link #CLOSET} + 5 cells where a leftover that size has a door to the foyer or banquet room. */
+		private void bigKitchen() {
+			int k = uses.indexOf("kitchen");
+			if (k < 0) return;
+			Leaf kl = leaves.get(k);
+			if (kl.area() >= CLOSET + 5) return;
+			int best = -1;
+			for (int i = 0; i < leaves.size(); i++) {
+				if (!uses.get(i).equals("storage")) continue;
+				Leaf l = leaves.get(i);
+				boolean thin = Math.max(l.w(), l.d()) > 2 * Math.min(l.w(), l.d());
+				if (thin || l.area() <= kl.area() || !doorsTo(i, java.util.Set.of("corridor", "banquet", "open"))) continue;
+				if (best < 0 || l.area() > leaves.get(best).area()) best = i;
+			}
+			if (best < 0) return;
+			uses.set(best, "kitchen");
+			uses.set(k, "storage");
+		}
+
+		/** Cuts leaf {@code i} along its long side into pieces of aspect 2 or less (two pieces if it is only too big). False if no legal cut. */
+		private boolean split(int i) {
+			List<Leaf> sLeaves = new ArrayList<>(leaves);
+			List<String> sUses = new ArrayList<>(uses);
+			List<int[]> sDoors = new ArrayList<>();
+			for (int[] q : doorReq) sDoors.add(q.clone());
+			boolean bad = false;
+			Leaf l = leaves.get(i);
+			boolean alongX = l.w() >= l.d();
+			int len = alongX ? l.w() : l.d(), sh = alongX ? l.d() : l.w();
+			if (sh < 3) return false;
+			int k = Math.max(2, (len + 1 + 2 * sh) / (2 * sh + 1));
+			if (Math.max(l.w(), l.d()) <= 2 * Math.min(l.w(), l.d())) k = 2;
+			if ((len - (k - 1)) / k < 3) k = (len + 1) / 4;
+			if (k < 2) return false;
+			int base = len - (k - 1);
+			int[] cut = new int[k - 1]; // cut cell offsets along the long side
+			int pos = 0;
+			for (int c = 0; c < k - 1; c++) {
+				int pieceLen = base / k + (c < base % k ? 1 : 0);
+				int want = pos + pieceLen, got = -1;
+				for (int dl = 0; dl <= 2 && got < 0; dl++)
+					for (int sg = 1; sg >= -1 && got < 0; sg -= 2) {
+						int o = want + sg * dl;
+						int cell = (alongX ? l.x() : l.z()) + o;
+						boolean free = alongX ? lineFree(true, cell, l.z(), l.z() + l.d()) : lineFree(false, cell, l.x(), l.x() + l.w());
+						if (o - pos >= 3 && len - o - 1 >= 3 * (k - 1 - c) + (k - 2 - c) && free) got = o;
+						if (dl == 0) break;
+					}
+				if (got < 0) return false;
+				cut[c] = got;
+				pos = got + 1;
+			}
+			int[] start = new int[k], size = new int[k];
+			int p = 0;
+			for (int c = 0; c < k; c++) {
+				start[c] = p;
+				size[c] = (c < k - 1 ? cut[c] : len) - p;
+				p = (c < k - 1 ? cut[c] + 1 : len);
+				if (size[c] < 3) return false;
+			}
+			int[] idx = new int[k];
+			for (int c = 0; c < k; c++) {
+				Leaf pl = alongX ? new Leaf(l.x() + start[c], l.z(), size[c], l.d()) : new Leaf(l.x(), l.z() + start[c], l.w(), size[c]);
+				if (c == 0) { leaves.set(i, pl); idx[c] = i; }
+				else { leaves.add(pl); uses.add("storage"); idx[c] = leaves.size() - 1; }
+			}
+			for (int[] q : doorReq) { // doors of the old leaf go to the piece beside the door cell
+				for (int side = 0; side < 2; side++) {
+					if (q[side] != i) continue;
+					boolean moved = false;
+					for (int c = 0; c < k && !moved; c++) if (beside(leaves.get(idx[c]), q[2], q[3])) { q[side] = idx[c]; moved = true; }
+					// the door cell sat on a new cut: slide it one cell to where the old room's piece and the other room both touch it
+					for (int c = 0; c < k && !moved; c++)
+						for (int[] dd : new int[][] {{1, 0}, {-1, 0}, {0, 1}, {0, -1}}) {
+							int nx = q[2] + dd[0], nz = q[3] + dd[1];
+							if (beside(leaves.get(idx[c]), nx, nz) && beside(leaves.get(q[1 - side]), nx, nz) && !leaves.get(idx[c]).contains(nx, nz) && !leaves.get(q[1 - side]).contains(nx, nz)) { q[2] = nx; q[3] = nz; q[side] = idx[c]; moved = true; break; }
+						}
+					if (!moved) bad = true;
+				}
+			}
+			// every closet opens from a non-storage room; a piece that touches none is entered from a neighbouring piece that does (one store behind
+			// another at most); if some piece has neither the leftover stays one bigger store room
+			boolean[] direct = new boolean[k];
+			for (int c = 0; c < k && !bad; c++) {
+				direct[c] = doorsToRoom(idx[c]);
+				if (direct[c]) continue;
+				for (int j = 0; j < leaves.size() && !direct[c]; j++) {
+					String uj = uses.get(j);
+					if (j == idx[c] || isPiece(idx, j) || uj.equals("storage") || uj.equals("stairwell") || uj.equals("plant")) continue;
+					int[] cell = gapCell(leaves.get(idx[c]), leaves.get(j));
+					if (cell != null) { door(idx[c], j, cell[0], cell[1]); direct[c] = true; }
+				}
+			}
+			for (int c = 0; c < k && !bad; c++) { // a store behind a piece that is itself entered through a piece would be two deep
+				if (direct[c]) continue;
+				for (int[] q : doorReq) {
+					int o = q[0] == idx[c] ? q[1] : q[1] == idx[c] ? q[0] : -1;
+					if (o >= 0 && !isPiece(idx, o) && uses.get(o).equals("storage") && !doorsToRoom(o)) bad = true;
+				}
+			}
+			for (int c = 0; c < k && !bad; c++) {
+				if (direct[c]) continue;
+				int n = c > 0 && direct[c - 1] ? c - 1 : c + 1 < k && direct[c + 1] ? c + 1 : -1;
+				if (n < 0) { bad = true; break; }
+				int lo = Math.min(c, n), cellOff = cut[lo];
+				int cell = (alongX ? l.x() : l.z()) + cellOff;
+				int mid = (alongX ? l.z() : l.x()) + (sh - 1) / 2;
+				door(idx[c], idx[n], alongX ? cell : mid, alongX ? mid : cell);
+			}
+			if (bad) {
+				leaves.clear(); leaves.addAll(sLeaves);
+				uses.clear(); uses.addAll(sUses);
+				doorReq.clear(); doorReq.addAll(sDoors);
+				return false;
+			}
+			return true;
+		}
+
+		private boolean doorsToRoom(int i) {
+			for (int[] q : doorReq) {
+				int o = q[0] == i ? q[1] : q[1] == i ? q[0] : -1;
+				if (o >= 0 && !uses.get(o).equals("storage")) return true;
+			}
+			return false;
+		}
+
+		private static boolean isPiece(int[] idx, int j) {
+			for (int x : idx) if (x == j) return true;
+			return false;
+		}
+
+		/** A partition cell one wide between the rectangles of {@code a} and {@code b} where a door can go (the middle of their shared run), or null. */
+		private int[] gapCell(Leaf a, Leaf b) {
+			int[][] cand = new int[0][];
+			if (a.x() + a.w() + 1 == b.x() || b.x() + b.w() + 1 == a.x()) {
+				int x = a.x() + a.w() + 1 == b.x() ? a.x() + a.w() : b.x() + b.w();
+				int lo = Math.max(a.z(), b.z()), hi = Math.min(a.z() + a.d(), b.z() + b.d());
+				if (hi - lo >= 1) cand = new int[][] {{x, lo + (hi - lo - 1) / 2}};
+			} else if (a.z() + a.d() + 1 == b.z() || b.z() + b.d() + 1 == a.z()) {
+				int z = a.z() + a.d() + 1 == b.z() ? a.z() + a.d() : b.z() + b.d();
+				int lo = Math.max(a.x(), b.x()), hi = Math.min(a.x() + a.w(), b.x() + b.w());
+				if (hi - lo >= 1) cand = new int[][] {{lo + (hi - lo - 1) / 2, z}};
+			}
+			for (int[] c : cand) {
+				for (Leaf l : leaves) if (l.contains(c[0], c[1])) return null;
+				if (skip != null && c[0] >= skip[0] && c[0] < skip[2] && c[1] >= skip[1] && c[1] < skip[3]) return null;
+				return c;
+			}
+			return null;
+		}
+
+		private static boolean beside(Leaf l, int x, int z) {
+			return l.contains(x + 1, z) || l.contains(x - 1, z) || l.contains(x, z + 1) || l.contains(x, z - 1);
+		}
+
 		Result finish(int stair, int corridor) {
+			if (fail) return none();
+			// uses that need a shape or a window get demoted (offices, bedrooms, kitchens) or fail (flats)
+			for (int i = 0; i < leaves.size(); i++) {
+				Leaf l = leaves.get(i);
+				String u = uses.get(i);
+				boolean thin = Math.max(l.w(), l.d()) > 2 * Math.min(l.w(), l.d());
+				switch (u) {
+					case "flat" -> {
+						// a living room with no window (a style with few windows, a facade bay blanked by a pier) becomes a store room rather than failing the plan
+						if (thin || !window(l)) { uses.set(i, "storage"); demoted++; }
+					}
+					case "bedroom", "office", "kitchen" -> {
+						if (u.equals("kitchen") && galleys.contains(i) ? Math.max(l.w(), l.d()) > 3 * Math.min(l.w(), l.d()) : thin || ((u.equals("bedroom") || u.equals("office")) && !window(l))) { uses.set(i, "storage"); demoted++; }
+					}
+					default -> {}
+				}
+			}
+			boolean[][] cutCell = new boolean[w][d];
+			ensureHallAccess();
+			refineStores();
 			if (fail) return none();
 			int[][] at = new int[w][d];
 			for (int[] col : at) java.util.Arrays.fill(col, -1);
@@ -148,22 +414,6 @@ public final class TowerPlate {
 						at[x][z] = i;
 					}
 			}
-			// uses that need a shape or a window get demoted (offices, bedrooms, kitchens) or fail (flats)
-			for (int i = 0; i < leaves.size(); i++) {
-				Leaf l = leaves.get(i);
-				String u = uses.get(i);
-				boolean thin = Math.max(l.w(), l.d()) > 2 * Math.min(l.w(), l.d());
-				switch (u) {
-					case "flat" -> {
-						if (thin || !window(l)) return none();
-					}
-					case "bedroom", "office", "kitchen" -> {
-						if (thin || ((u.equals("bedroom") || u.equals("office")) && !window(l))) { uses.set(i, "storage"); demoted++; }
-					}
-					default -> {}
-				}
-			}
-			boolean[][] cutCell = new boolean[w][d];
 			for (int x = 0; x < w; x++)
 				for (int z = 0; z < d; z++)
 					if (at[x][z] < 0 && !(skip != null && x >= skip[0] && x < skip[2] && z >= skip[1] && z < skip[3])) {
@@ -201,7 +451,16 @@ public final class TowerPlate {
 				doors.add(new Door(q[2], q[3], q[0], q[1], f, q[4], q[5] == 1));
 			}
 			FloorPlan plan = new FloorPlan(w, d, List.copyOf(leaves), List.copyOf(cuts), List.copyOf(doors), at, corridor);
-			return new Result(plan, uses.toArray(new String[0]), stair, corridor, demoted);
+			boolean[] studio = new boolean[leaves.size()];
+			for (int i = 0; i < studio.length; i++) {
+				if (!uses.get(i).equals("flat")) continue;
+				studio[i] = true;
+				for (Door dd : doors) {
+					int o = dd.from() == i ? dd.to() : dd.to() == i ? dd.from() : -1;
+					if (o >= 0 && uses.get(o).equals("bedroom")) studio[i] = false;
+				}
+			}
+			return new Result(plan, uses.toArray(new String[0]), stair, corridor, demoted, studio);
 		}
 
 		/** Facing of a door through partition cell (x, z) from room a to b, null if the cell isn't a partition between them. */
@@ -357,7 +616,7 @@ public final class TowerPlate {
 			if (E == 0) return 0;
 			for (int dE : new int[] {0, 1, -1}) {
 				int c = E + dE;
-				if (c >= 2 && c <= 3 && D - c - 1 >= 3 && legalRow(bd, c, a, e)) return c;
+				if (c == 3 && D - c - 1 >= 3 && legalRow(bd, c, a, e)) return c;
 			}
 			return 0;
 		}
@@ -398,8 +657,7 @@ public final class TowerPlate {
 			int F = E > 0 ? D - E - 1 : D;
 			int hx = hallDoorX(xa, xb);
 			if (U < Math.max(4, (F + 1) / 2)) {
-				closets(bd, xa, xb, hall);
-				return -1;
+				return decline(bd, xa, xb, hall, blockSide);
 			}
 			boolean strip = E > 0;
 			boolean endU = xa == 0 || xb == w;
@@ -427,8 +685,7 @@ public final class TowerPlate {
 			}
 			if (rp == null) {
 				// shallow band (a 3-4 deep strip beside the core): no legal flat fits, a store room takes the unit
-				closets(bd, xa, xb, hall);
-				return -1;
+				return decline(bd, xa, xb, hall, blockSide);
 			}
 			n = rp.uses.length;
 			String[] uses = rp.uses;
@@ -439,17 +696,39 @@ public final class TowerPlate {
 			for (int i = 0; i < n; i++) { rx[i] = xx; xx += wd[i] + 1; }
 			int[] id = new int[n];
 			if (strip) {
-				int st = b.leaf(xa, bd.z0(0, E), U, E, "entry");
-				b.door(hall, st, hx, bd.line);
+				// deep unit (D >= 11): only the part in front of the flat is the entry (a foyer, 6 wide at most, the rest a closet);
+				// in front of a bedroom is its wardrobe, reached from the bedroom; the bedrooms open off the flat
+				int pz = bd.z0(0, E);
 				for (int i = 0; i < n; i++) id[i] = b.leaf(rx[i], bd.z0(E + 1, D), wd[i], F, uses[i]);
-				for (int i = 0; i < n; i++) b.door(st, id[i], rx[i] + wd[i] / 2, bd.zAt(E));
+				for (int i = 0; i < n; i++) {
+					if (i == main) {
+						int ew = Math.min(wd[i], 6);
+						int en = b.leaf(rx[i], pz, ew, E, "entry");
+						b.door(hall, en, hallDoorX(rx[i], rx[i] + ew), bd.line);
+						b.door(en, id[i], rx[i] + ew / 2, bd.zAt(E));
+						int rr = wd[i] - ew - 1;
+						if (rr >= 3) {
+							int cl = b.leaf(rx[i] + ew + 1, pz, rr, E, "storage");
+							b.door(en, cl, rx[i] + ew, pz + (E - 1) / 2);
+						}
+					} else {
+						int ward = b.leaf(rx[i], pz, wd[i], E, "storage");
+						b.door(id[i], ward, rx[i] + wd[i] / 2, bd.zAt(E));
+						b.door(id[main], id[i], i < main ? rx[main] - 1 : rx[main] + wd[main], bd.zAt(E + 1 + (F - 1) / 2));
+					}
+				}
 			} else {
 				for (int i = 0; i < n; i++) id[i] = b.leaf(rx[i], bd.z0(0, D), wd[i], D, uses[i]);
 				int dx = Math.max(rx[main], Math.min(rx[main] + wd[main] - 1, hx));
-				b.door(hall, id[main], dx, bd.line);
-				int t = (D - 1) / 2;
-				if (main > 0) b.door(id[main], id[main - 1], rx[main] - 1, bd.zAt(t));
-				if (main < n - 1) b.door(id[main], id[main + 1], rx[main] + wd[main], bd.zAt(t));
+				if (office) {
+					// every office opens on the hall (hall-access: an office is never reached through another)
+					for (int i = 0; i < n; i++) b.door(hall, id[i], i == main ? dx : hallDoorX(rx[i], rx[i] + wd[i]), bd.line);
+				} else {
+					b.door(hall, id[main], dx, bd.line);
+					int t = (D - 1) / 2;
+					if (main > 0) b.door(id[main], id[main - 1], rx[main] - 1, bd.zAt(t));
+					if (main < n - 1) b.door(id[main], id[main + 1], rx[main] + wd[main], bd.zAt(t));
+				}
 			}
 			// does the main room touch the block-side edge?
 			boolean touches = blockSide > 0 ? main == n - 1 : blockSide < 0 && main == 0;
@@ -547,6 +826,7 @@ public final class TowerPlate {
 
 		Result corridor() {
 			int hw = s.hallZ1() - s.hallZ0();
+			b.kind = s.unitUse().equals("office") ? "office" : "flat";
 			hall = b.leaf(0, s.hallZ0(), w, hw, "corridor");
 			stair = b.leaf(sx0, sz0, sx1 - sx0, sz1 - sz0, "stairwell");
 			b.door(hall, stair, stairDoorX(), s.hallZ1());
@@ -558,11 +838,122 @@ public final class TowerPlate {
 			// band A: segments beside the block
 			Band ba = new Band(true);
 			int[] adj = {-1, -1};
+			wrapOk = sz1 < d;
 			if (blockL > 0) bandUnits(ba, 0, blockL, 1, 0, adj);
 			if (blockR < w) bandUnits(ba, blockR + 1, w, -1, 1, adj);
 			if (b.fail) return none();
+			if (declined[0] != null || declined[1] != null) {
+				// a strip beside the block too narrow for a unit: with a unit on the other side it is a closet; else the strips and the
+				// back room are one wrap-around unit (the strip is its entry, or an office of the tenancy, the back room its flat or office)
+				boolean unitBeside = adj[0] >= 0 && declined[0] == null || adj[1] >= 0 && declined[1] == null;
+				boolean wrapped = false;
+				if (!unitBeside) {
+					int mark = b.leaves.size();
+					wrapped = wrap(ba, office);
+					if (!wrapped && b.leaves.size() != mark) return none();
+				}
+				if (!wrapped) for (int[] dcl : declined) if (dcl != null) closets(ba, dcl[0], dcl[1], hall);
+				if (b.fail) return none();
+				if (wrapped) return b.finish(stair, hall);
+			}
 			if (!behind(office ? "office" : "bedroom", new int[][] {mainList(adj[0]), mainList(adj[1])}, -1)) return none();
 			return b.fail ? null : b.finish(stair, hall);
+		}
+
+		int[][] declined = new int[2][];
+		boolean wrapOk;
+
+		/** A beside-the-block unit that is too narrow for a unit: remembered for the wrap-around unit (or closets), nothing built yet. */
+		int decline(Band bd, int xa, int xb, int hall, int blockSide) {
+			if (wrapOk && blockSide != 0 && bd.a) {
+				declined[blockSide > 0 ? 0 : 1] = new int[] {xa, xb};
+				return -1;
+			}
+			closets(bd, xa, xb, hall);
+			return -1;
+		}
+
+		/** True if a window cell lies in the rectangle (x, z, lw, ld). */
+		boolean winIn(int x, int z, int lw, int ld) { return b.window(new Leaf(x, z, lw, ld)); }
+
+		/**
+		 * The wrap-around unit: a side strip beside the block. Flats: the 3-deep part by the hall door (6 wide at most) is the entry, the
+		 * rest of the strip, beside the back room, is a room of the flat (one or two, each with a window); offices: the strip is one
+		 * office or two stacked (cut at 2:1 depth, the second entered from the first). The back room behind the block is the unit's
+		 * flat or office, entered from the strip's last room. The other strip, if too narrow too, is an office (towers) or a closet row.
+		 */
+		boolean wrap(Band ba, boolean office) {
+			int D = ba.depth, zA = ba.z0(0, D), z0 = sz1 + 1, bd = d - z0;
+			int es = declined[0] != null && declined[1] != null ? r.below(2) : declined[0] != null ? 0 : 1;
+			int[] e = declined[es];
+			int W = e[1] - e[0];
+			int x0 = Math.min(sx0, hx0), x1 = Math.max(sx1, hx1);
+			int link;
+			if (!office) {
+				int f = stripSplit(e, z0, bd);
+				String restUse = "flat"; // no window pair beside the back room: the rest of the strip is the flat's kitchen (needs no window), entered from the entry
+				if (f < 0) { f = stripSplit(e, z0, bd, false); restUse = "kitchen"; }
+				int ed = z0 - 1 - zA;
+				if (f < 0 || ed < 2) return false;
+				int ew = Math.min(W, 6);
+				int ex = es == 0 ? e[0] : e[1] - ew; // the spare cells (strip wider than 6) go to the block side, never to the facade
+				int en = b.leaf(ex, zA, ew, Math.min(ed, 3), "entry");
+				b.door(hall, en, hallDoorX(ex, ex + ew), ba.line);
+				link = b.leaf(e[0], z0, W, f, restUse);
+				if (restUse.equals("kitchen")) b.galleys.add(link);
+				b.door(en, link, ex + ew / 2, z0 - 1);
+				if (f < bd) {
+					int r2 = b.leaf(e[0], z0 + f + 1, W, bd - f - 1, restUse);
+					if (restUse.equals("kitchen")) b.galleys.add(r2);
+					b.door(link, r2, e[0] + (W - 1) / 2, z0 + f);
+					link = r2;
+				}
+			} else {
+				link = officeStrip(ba, e);
+				if (link < 0) return false;
+			}
+			int near = backRoom(x0, x1, z0, bd, office ? "office" : "flat", es == 0);
+			if (!join(near, new int[] {link}, es == 0 ? blockL : blockR, z0)) return false;
+			int os = 1 - es;
+			if (declined[os] != null && !(office && officeStrip(ba, declined[os]) >= 0)) closets(ba, declined[os][0], declined[os][1], hall);
+			return true;
+		}
+
+		/**
+		 * Length of the first of one or two stacked rooms over the strip {@code e} from row {@code zTop}, {@code len} rows: the whole strip
+		 * if it is at most 2:1 and has a window, else a cut with each part at most 2:1, with a window, the cut row clear of side windows.
+		 * -1 if none.
+		 */
+		int stripSplit(int[] e, int zTop, int len) { return stripSplit(e, zTop, len, true); }
+
+		int stripSplit(int[] e, int zTop, int len, boolean needWin) {
+			int W = e[1] - e[0];
+			if (W < 3) return -1;
+			if (len <= 2 * W && len >= 3 && (!needWin || winIn(e[0], zTop, W, len))) return len;
+			if (!needWin && len <= 3 * W && len >= 3) return len; // a galley kitchen
+			for (int c = 3; c <= len - 4; c++) {
+				int fc = len / 2 + (c % 2 == 0 ? c / 2 : -(c + 1) / 2); // search outwards from the middle
+				if (fc < 3 || fc > len - 4 || fc > 2 * W || len - fc - 1 > 2 * W) continue;
+				int z = zTop + fc;
+				if ((e[0] == 0 && s.reserved()[0][z]) || (e[1] == w && s.reserved()[w - 1][z])) continue;
+				if (!needWin || winIn(e[0], zTop, W, fc) && winIn(e[0], zTop + fc + 1, W, len - fc - 1)) return fc;
+			}
+			return -1;
+		}
+
+		/** A narrow side strip of band A as offices with a hall door (see {@link #stripSplit}); the last office's leaf, or -1 with nothing built. */
+		int officeStrip(Band ba, int[] e) {
+			int D = ba.depth, zA = ba.z0(0, D), W = e[1] - e[0];
+			int f = stripSplit(e, zA, D);
+			if (f < 0) return -1;
+			int link = b.leaf(e[0], zA, W, f, "office");
+			b.door(hall, link, hallDoorX(e[0], e[1]), ba.line);
+			if (f < D) {
+				int o2 = b.leaf(e[0], zA + f + 1, W, D - f - 1, "office");
+				b.door(link, o2, e[0] + (W - 1) / 2, zA + f);
+				link = o2;
+			}
+			return link;
 		}
 
 		int[] mainList(int m) { return m >= 0 ? new int[] {m} : new int[0]; }
@@ -612,8 +1003,9 @@ public final class TowerPlate {
 					int mw = w - (a > 0 ? a + 1 : 0) - (c > 0 ? c + 1 : 0);
 					if (mw > maxMain || mw < Math.max(6, depthG / 2)) continue;
 					if (a > capTenths * depthG / 10 || c > capTenths * depthG / 10) continue;
-					if (a > 0 && !b.lineFree(true, a, 0, depthG)) continue;
-					if (c > 0 && !b.lineFree(true, w - c - 1, 0, depthG)) continue;
+					int doorway = hx0 + 1; // the shaft's glass doorway looks into the grand room, never at a cut
+					if (a > 0 && (a == doorway || !b.lineFree(true, a, 0, depthG))) continue;
+					if (c > 0 && (w - c - 1 == doorway || !b.lineFree(true, w - c - 1, 0, depthG))) continue;
 					int m0 = a > 0 ? a + 1 : 0, m1 = m0 + mw;
 					int score = ((a > 0 ? 1 : 0) + (c > 0 ? 1 : 0)) * 10 + Math.abs(a - c);
 					if (needStair && (sd < m0 || sd >= m1)) score += 1000;
@@ -627,6 +1019,7 @@ public final class TowerPlate {
 		}
 
 		Result grand(boolean banquet) {
+			b.kind = banquet ? "banquet" : "grand";
 			int hw = s.hallZ1() - s.hallZ0();
 			int bandB = s.hallZ0() - 1;
 			if (bandB < 3) return none();
@@ -751,7 +1144,16 @@ public final class TowerPlate {
 			int z0 = sz1 + 1, bd = d - z0;
 			int x0 = Math.min(sx0, hx0), x1 = Math.max(sx1, hx1); // interior [x0, x1)
 			boolean hasL = adj[0].length > 0 && blockL >= 1, hasR = adj[1].length > 0 && blockR < w;
-			if (!hasL && !hasR) return no();
+			if (!hasL && !hasR) {
+				// no unit stands beside the block (narrow side strips became store rooms): the rooms behind it become a store
+				// reached through one of those closets, the one nearest the middle
+				int[] l = closetBeside(blockL - 1, true, z0), rr = closetBeside(blockR + 1, false, z0);
+				if (l.length == 0 && rr.length == 0) return no();
+				boolean left = rr.length == 0 || l.length > 0 && r.below(2) == 0;
+				int[] cl = left ? l : rr;
+				int room = b.leaf(x0, z0, x1 - x0, bd, "storage");
+				return join(room, cl, left ? blockL : blockR, z0);
+			}
 			int width = x1 - x0;
 			boolean split = hasL && hasR && width >= 9;
 			int m = -1;
@@ -772,6 +1174,17 @@ public final class TowerPlate {
 			boolean left = hasL && hasR ? (prefer >= 0 ? prefer == 0 : r.below(2) == 0) : hasL;
 			int room = backRoom(x0, x1, z0, bd, use, left);
 			return left ? join(room, adj[0], blockL, z0) : join(room, adj[1], blockR, z0);
+		}
+
+		/** Store rooms whose edge column is {@code col} (their right edge for the left side) and that share rows with the back rows from {@code z0}: candidates for a door through the block's end column. */
+		int[] closetBeside(int col, boolean leftSide, int z0) {
+			List<Integer> out = new ArrayList<>();
+			for (int i = 0; i < b.leaves.size(); i++) {
+				Leaf l = b.leaves.get(i);
+				if (!b.uses.get(i).equals("storage") || (leftSide ? l.x() + l.w() - 1 : l.x()) != col || l.z() + l.d() <= z0 || l.z() >= d) continue;
+				out.add(i);
+			}
+			return out.stream().mapToInt(Integer::intValue).toArray();
 		}
 
 		/**
@@ -827,7 +1240,9 @@ public final class TowerPlate {
 			boolean shaftWest = hx0 == 0 && sx0 == hx1 + 1 && sx1 == w;
 			if (!shaftEast && !shaftWest) return none();
 			stair = b.leaf(sx0, sz0, sx1 - sx0, hh, "stairwell");
-			b.leaf(hx0, 0, hx1 - hx0, hh, "plant");
+			int plant = b.leaf(hx0, 0, hx1 - hx0, hh, "plant");
+			// the machine room opens off the stair house (the roof doors are the facade's): the room must be reachable
+			b.door(stair, plant, shaftEast ? sx1 : hx1, hh / 2);
 			return b.finish(stair, -1);
 		}
 	}

@@ -297,7 +297,7 @@ public final class FloorPlanText {
 		}
 	}
 
-	private static boolean kindIsLight(Hook h) { return h.kind().equals("light"); }
+	private static boolean kindIsLight(Hook h) { return h.kind().equals("light") || h.kind().equals("ceiling_light"); }
 
 	private static boolean insideVolume(BuildingIr ir, int x, int z, Storey s) {
 		for (Volume v : ir.volumes()) {

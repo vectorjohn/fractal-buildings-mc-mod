@@ -1,0 +1,11 @@
+{
+  "type": "highrise",
+  "style": "plain",
+  "lot": "36x36",
+  "terrain": "noise:7:64:6:32",
+  "front": "north",
+  "seeds": "0..7",
+  "gen": "v1",
+  "cutStorey": 3,
+  "cameras": ["cutaway"]
+}

@@ -49,6 +49,9 @@ public interface BuildingType {
 	 */
 	default java.util.List<dev.fractalbuildings.core.ir.Box> walkJoins(dev.fractalbuildings.core.ir.BuildingIr shell, dev.fractalbuildings.core.gen.Brief.Walk walk) { return java.util.List.of(); }
 
+	/** The type's own floor planner for the interior pass, or null for the generic one. */
+	default dev.fractalbuildings.core.gen.v1.interior.FloorPlanner floors() { return null; }
+
 	/** Room uses and furnishing hooks for the interior pass (4.5). */
 	default RoomProgram rooms() { return RoomProgram.DEFAULT; }
 }

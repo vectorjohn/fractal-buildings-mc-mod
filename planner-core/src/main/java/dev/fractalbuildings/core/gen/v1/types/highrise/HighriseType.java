@@ -2,7 +2,12 @@ package dev.fractalbuildings.core.gen.v1.types.highrise;
 
 import dev.fractalbuildings.core.gen.v1.BuildContext;
 import dev.fractalbuildings.core.gen.v1.BuildingType;
+import dev.fractalbuildings.core.gen.v1.Program;
 import dev.fractalbuildings.core.gen.v1.TypeLimits;
+import dev.fractalbuildings.core.gen.v1.facade.FacadePass;
+import dev.fractalbuildings.core.gen.v1.interior.FloorPlanner;
+import dev.fractalbuildings.core.gen.v1.interior.InteriorPass;
+import dev.fractalbuildings.core.gen.v1.interior.RoomProgram;
 import dev.fractalbuildings.core.gen.v1.model.Massing;
 import java.util.List;
 
@@ -22,7 +27,33 @@ public final class HighriseType implements BuildingType {
 
 	@Override
 	public TypeLimits limits() { return LIMITS; }
-
 	@Override
 	public Massing mass(BuildContext c) { return HighriseMassing.build(c); }
+
+	private static final TowerFloors FLOORS = new TowerFloors();
+	private static final HighriseRooms ROOMS = new HighriseRooms();
+
+	@Override
+	public FloorPlanner floors() { return FLOORS; }
+
+	@Override
+	public RoomProgram rooms() { return ROOMS; }
+
+	/** The generic facade pass, then piers where the core block's walls meet the facade ({@link TowerPiers}). */
+	@Override
+	public Program facade() {
+		return c -> {
+			FacadePass.run(c);
+			TowerPiers.apply(c);
+		};
+	}
+
+	/** The generic interior pass over the plate plans of {@link TowerFloors}, then the lift shaft and the stairwell lights. */
+	@Override
+	public Program interior() {
+		return c -> {
+			InteriorPass.run(c);
+			TowerShaft.emit(c);
+		};
+	}
 }
