@@ -8,7 +8,7 @@
 
   "roof": {"forms": {"gable": 5, "hip": 1}, "rise": 2, "run": 1, "overhang": 1, "parapet": 1, "tallStoreys": 6, "dormers": 50},
 
-  "facade": {"bayMin": 2, "bayMax": 3, "sill": 1, "windowHeight": 1, "windowWidth": 1, "symmetric": false, "bandSize": 3, "narrowCorners": false,
+  "facade": {"tallGlass": false, "bayMin": 3, "bayMax": 5, "sill": 1, "windowHeight": 2, "windowWidth": 1, "symmetric": false, "bandSize": 3, "narrowCorners": false,
     "doorSurround": true, "plinth": true, "sills": true, "lintels": true, "cornice": false, "bressumer": false,
     "corners": "post", "timber": "none"},
 

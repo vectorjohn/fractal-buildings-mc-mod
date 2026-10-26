@@ -7,7 +7,7 @@
 
   "roof": {"forms": {"gable": 1}, "rise": 1, "run": 1, "overhang": 0, "parapet": 1, "tallStoreys": 6, "dormers": 0},
 
-  "facade": {"bayMin": 2, "bayMax": 3, "sill": 1, "windowHeight": 1, "symmetric": true, "bandSize": 3},
+  "facade": {"bayMin": 2, "bayMax": 4, "sill": 1, "windowHeight": 2, "windowWidth": 2, "tallGlass": true, "symmetric": true, "bandSize": 3},
 
   "interior": {"roomMin": 3, "roomArea": 30, "corridorAbove": 6, "loopPercent": 20, "openPercent": 85},
 

@@ -1,6 +1,7 @@
 package dev.fractalbuildings.cli;
 
 import dev.fractalbuildings.cli.Main.UsageException;
+import dev.fractalbuildings.core.check.Glazing;
 import dev.fractalbuildings.core.check.HighriseChecks;
 import dev.fractalbuildings.core.check.SettlementChecks;
 import dev.fractalbuildings.core.gen.v1.GeneratorV1;
@@ -101,6 +102,8 @@ final class CityCheckCommand {
 
 	/** Violations listed per site in the report ({@code --list}). */
 	private static volatile int listMax = 20;
+	/** Glazing of every building in the scenes built (DS-33 report, 7.12). */
+	private static final Glazing.Report GLAZING = new Glazing.Report();
 	/** {@code --junctions-near X,Z[,R]}: print the junction field's junctions with a pad end within R blocks of (X, Z) (debugging JUNCTION). */
 	private static volatile int[] near;
 
@@ -182,6 +185,7 @@ final class CityCheckCommand {
 				DistrictScenes.Built b = CityPlanner.scene(city, id, p.terrain(), p.biome(), true);
 				for (Violation v : b.scene().violations()) problems.add(v.invariant() + ": " + id + " " + v.message());
 				for (Violation v : b.plan().violations()) problems.add(v.invariant() + ": " + id + " scene " + v.message());
+				for (var pb : b.scene().buildings()) GLAZING.add(pb.shell().spec().type(), Glazing.measure(pb));
 				for (Violation v : HighriseChecks.check(b.scene())) warnings.add(v.invariant() + ": " + id + " " + v.message());
 				built++;
 			}
@@ -242,6 +246,7 @@ final class CityCheckCommand {
 			for (int i = 0; i < Math.min(r.problems().size(), listMax); i++) sb.append("- ").append(r.problems().get(i)).append('\n');
 			if (r.problems().size() > listMax) sb.append("- ... ").append(r.problems().size() - listMax).append(" more\n");
 		}
+		if (scenes > 0) sb.append("\n## Glazing (DS-33, report only)\n\nBuildings in the district scenes built; glass cells over exterior wall-plane cells.\n\n").append(GLAZING.toMarkdown("type"));
 		return sb.toString();
 	}
 }
