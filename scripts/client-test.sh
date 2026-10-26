@@ -54,8 +54,10 @@ GAME_LOG="${FB_CLIENT_GAME_LOG:-$ROOT/mod/build/run/clientGameTest/logs/latest.l
 OUT_DIR="$ROOT/build/client-test"
 OUT_LOG="$OUT_DIR/gradle.log"
 START_MARK="$OUT_DIR/.start"
-# Lines that mean the run has failed and the JVM should exit by itself soon.
-CRASH_RE='Minecraft has crashed|#@!@# Game crashed!|Client gametests failed with an exception|Exception in thread "(Test thread|Render thread|main)"'
+# Lines that mean the run has failed and the JVM should exit by itself soon. "Failed to create backend
+# Vulkan": Vulkan is the last backend tried (after OpenGL, which always fails on Xvfb); without one the
+# client sits on an error and never exits.
+CRASH_RE='Minecraft has crashed|Failed to create backend Vulkan|#@!@# Game crashed!|Client gametests failed with an exception|Exception in thread "(Test thread|Render thread|main)"'
 
 VK="${FB_VK:-lavapipe}"
 case $VK in
@@ -111,12 +113,15 @@ if [[ -n ${FB_CLIENT_CMD:-} ]]; then
 	CMD=(bash -c "$FB_CLIENT_CMD")
 elif [[ $VK == intel ]]; then
 	# VK_DRIVER_FILES comes from the dev shell, so it is swapped inside it: lvp_icd.<arch>.json -> intel_icd.<arch>.json.
+	# Xvfb has no DRI3, which Mesa needs to present a GPU image to an X window ("No DRI3 support detected -
+	# required for presentation"; Minecraft then finds no usable backend). MESA_VK_WSI_DEBUG=sw takes Mesa's
+	# software present path: the GPU renders, each finished frame is copied to the window through the CPU.
 	CMD=(env -u WAYLAND_DISPLAY SDL_VIDEODRIVER=x11
 		xvfb-run -a nix develop "$ROOT" -c bash -c '
 			icd="${VK_DRIVER_FILES/lvp_icd./intel_icd.}"
 			[[ -f $icd ]] || { echo "client-test: Intel Vulkan ICD not found: $icd" >&2; exit 2; }
-			export VK_DRIVER_FILES="$icd"
-			echo "client-test: FB_VK=intel, VK_DRIVER_FILES=$VK_DRIVER_FILES" >&2
+			export VK_DRIVER_FILES="$icd" MESA_VK_WSI_DEBUG="${MESA_VK_WSI_DEBUG:-sw}"
+			echo "client-test: FB_VK=intel, VK_DRIVER_FILES=$VK_DRIVER_FILES MESA_VK_WSI_DEBUG=$MESA_VK_WSI_DEBUG" >&2
 			exec "$@"' client-test ./gradlew --console=plain --no-daemon :mod:runClientGameTest "$@")
 else
 	CMD=(env -u WAYLAND_DISPLAY SDL_VIDEODRIVER=x11
