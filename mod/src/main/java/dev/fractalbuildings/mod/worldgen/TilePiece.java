@@ -95,6 +95,10 @@ public abstract class TilePiece extends StructurePiece {
 		BlockState air = Blocks.AIR.defaultBlockState();
 		BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
 		long lt = 0;
+		boolean ground = ref.kind() == PieceRef.Kind.GROUND;
+		int[] top = ground ? new int[256] : null; // highest solid cell per column of this chunk: where the foliage pass looks (FOLIAGE)
+		if (top != null) java.util.Arrays.fill(top, Integer.MIN_VALUE);
+		FoliageClear.Cuts cuts = ground ? new FoliageClear.Cuts("street") : null;
 		try {
 			lt = LaneStats.postBegin();
 			planner.get().raster(ref, clip, (x, y, z, role, blockId, shape) -> {
@@ -102,17 +106,35 @@ public abstract class TilePiece extends StructurePiece {
 				if (mixRandom && random.nextInt(4) == 0) state = Blocks.STONE.defaultBlockState();
 				if (counter && !state.isAir() && Mutations.COUNTER_VALUE.incrementAndGet() % 7 == 0) state = Blocks.STONE_BRICKS.defaultBlockState();
 				pos.set(x, y, z);
+				if (top != null && !state.isAir()) { int ti = (z & 15) * 16 + (x & 15); if (y > top[ti]) top[ti] = y; }
 				PieceLedger.record(x, y, z, Block.BLOCK_STATE_REGISTRY.getId(state));
 				if (twice) PieceLedger.record(x, y, z, Block.BLOCK_STATE_REGISTRY.getId(state));
 				if (skipAir && state.isAir()) return;
 				if (worldStone && !state.isAir() && Math.floorMod(x * 31 + y * 17 + z * 13, 7) == 0) state = Blocks.STONE.defaultBlockState();
 				// a cell is only written when it changes; a claimed air cell over air costs a read, not a write
-				if (level.getBlockState(pos) != state) level.setBlock(pos, state, flags);
+				BlockState old = level.getBlockState(pos);
+				if (old != state) {
+					if (cuts != null && state.isAir()) cuts.note(old, x, y, z);
+					level.setBlock(pos, state, flags);
+				}
 			});
 		} catch (IllegalArgumentException e) {
 			if (WARNED.put("missing" + ref, true) == null) FractalBuildingsMod.LOGGER.warn("District piece {} no longer exists in its tile (saved by generator v{}, config changed?): nothing placed", ref, genVersion);
 		} finally {
 			LaneStats.postEnd(lt);
+		}
+		if (top != null) {
+			boolean[] own = new boolean[256];
+			boolean anyCol = false;
+			for (int i = 0; i < 256; i++) if (top[i] != Integer.MIN_VALUE) { own[i] = true; anyCol = true; }
+			if (anyCol) {
+				try {
+					FoliageClear.run(level, chunkPos.x(), chunkPos.z(), own, top, cuts);
+				} catch (RuntimeException e) {
+					WorldPlanners.FAILURES.incrementAndGet();
+					FractalBuildingsMod.LOGGER.error("Clearing the foliage round {} failed", ref, e);
+				}
+			}
 		}
 		if (ref.kind() == PieceRef.Kind.BUILDING) {
 			try {

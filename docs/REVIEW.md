@@ -180,6 +180,10 @@ in `.claude/reports/`.
   Look for: (1) the metropolis overview on 12345 (towers, plazas, streets, a river) against the one on seed 1 (two towers and some plazas in a forest: is it a city?); (2) the street frame on 987654321 city, which stands under a tree canopy (trees over a street); (3) 12345 city edge, which looks out over frozen sea (is a city in an ocean biome right?); (4) interiors (stairs, windows, a crafting table, dark ceilings); (5) hamlet and village overviews: houses along one street on a hillside.
   Result:
 
+- [ ] **FOLIAGE (floating leaves over roads)**: do roads and streets under trees read as built, with no floating leaves, trunks or vines
+  Where: [docs/review/phase6/foliage/](review/phase6/foliage/README.md) (before/after for seeds 1 and 31337); in game, walk the roads of seed 1 (taiga hamlet near 320,-1728) and 31337 through forest.
+  Look for: no leaf or log hanging over a road or street; shade trees at the road edge keep their crowns (it errs on clearing more, so check no crown looks sawn off); no hole in a tree at a chunk border; building logs and hedges untouched.
+
 - [ ] **P7 A3: mass-timber high-rises (2026-10-26)**: look at `viewer/out/gallery/highrise-forest{,-oak,-pale}-*.png` (seeds 0..11; the 7-20 storey seeds are timber). Does it read as a CLT office tower, not a log cabin or Tudor frame? Corner posts and floor bands in stripped wood are one tone off the planks; windows are mostly 1 wide until the facade work (B3b). Is the band projection too deep? Cherry grove: birch tower with pink trim (`mass-timber-cherry`) or plain birch (one data edit in `variants.json`)?
   Result:
 
