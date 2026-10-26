@@ -7,7 +7,8 @@
 #    testing only, by John 2026-10-22; online-mode=false; bound to 127.0.0.1:25599 only),
 # 2. starts the server (Loom run config `serverOnly`) with its console on a FIFO,
 # 3. `locate`s a settlement, starts the unmodded client (tools/vanilla-client: Minecraft +
-#    Fabric Loader only, no Fabric API, no fractalbuildings) under Xvfb + lavapipe,
+#    Fabric Loader only, no Fabric API, no fractalbuildings) under Xvfb on the Intel iGPU
+#    (FB_VK, default intel, falls back to lavapipe; scripts/vk-select.sh),
 # 4. teleports the client to the settlement, screenshots the X display,
 # 5. stops both, then checks both logs for disconnects / registry errors.
 # Output: build/server-only/{server.log,client.log,screenshot.png,result.txt}. Exit 0 = pass.
@@ -90,6 +91,9 @@ export DISPLAY_NUM=97
 Xvfb :$DISPLAY_NUM -screen 0 1280x720x24 >"$OUT/xvfb.log" 2>&1 &
 XPID=$!
 sleep 2
+# Renderer for the client: Intel iGPU by default, lavapipe as fallback or with FB_VK=lavapipe.
+source "$ROOT/scripts/vk-select.sh"
+FB_VK_LOG_TAG=server-only-test fb_vk_select 2> >(tee -a "$RES" >&2) || { say "FAIL: bad FB_VK"; exit 2; }
 env -u WAYLAND_DISPLAY DISPLAY=:$DISPLAY_NUM SDL_VIDEODRIVER=x11 setsid ./gradlew --console=plain -p tools/vanilla-client -PserverPort=$PORT runClient > "$OUT/gradle-client.log" 2>&1 &
 CPID=$!
 for i in $(seq 1 180); do grep -q 'Vanilla joined the game' "$SLOG" 2>/dev/null && break; sleep 2; done
