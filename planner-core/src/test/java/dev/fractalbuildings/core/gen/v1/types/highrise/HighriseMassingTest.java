@@ -161,7 +161,7 @@ class HighriseMassingTest {
 				int idx = -1;
 				for (int i = 0; i < b.m.masses().size(); i++) if (b.m.masses().get(i).spans(s)) idx = i;
 				Mass m = b.m.masses().get(idx);
-				assertEquals(s == m.to() - 1 ? TowerProgram.TOP_KEY : 100 + idx, p.band(s), why(b) + " storey " + s);
+				assertEquals(100 + idx, p.band(s), why(b) + " storey " + s);
 			}
 		});
 	}

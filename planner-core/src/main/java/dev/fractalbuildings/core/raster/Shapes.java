@@ -93,6 +93,7 @@ public final class Shapes {
 			Role r = g.role(x + f.dx, y + 1, z + f.dz);
 			if (r == Role.FLOOR || r == Role.PAVING || r == Role.ROAD || r == Role.DECK || r == Role.GROUND) return Shape.stair(f);
 		}
+		for (Facing f : Facing.values()) if (g.role(x + f.dx, y + 1, z + f.dz) == Role.DOOR && g.role(x + f.dx, y, z + f.dz) == Role.WALL) return Shape.stair(f); // a threshold step up to a raised doorway (high-rise roof doors)
 		return Shape.NONE;
 	}
 }

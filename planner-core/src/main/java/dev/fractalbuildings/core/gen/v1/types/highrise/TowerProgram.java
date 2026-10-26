@@ -60,13 +60,13 @@ public final class TowerProgram {
 	}
 
 	/**
-	 * Facade band key of storey {@code s}: 0 the lobby storey, {@link #TOP_KEY} the top storey of its mass,
-	 * else {@code 100 + mass index} for typical and special storeys alike (same bays on every storey of a tier).
+	 * Facade band key of storey {@code s}: 0 the lobby storey (the ground storey of the podium), else {@code 100 + mass index} for every storey of a mass (the top one too: a tier draws its bays once),
+	 * typical and special storeys alike (same bays on every storey of a tier, DS-25).
 	 */
 	public int band(int s) {
 		if (s == 0) return 0;
 		for (int i = 0; i < massFrom.length; i++)
-			if (s >= massFrom[i] && s < massTo[i]) return s == massTo[i] - 1 ? TOP_KEY : 100 + i;
+			if (s >= massFrom[i] && s < massTo[i]) return 100 + i;
 		return TOP_KEY;
 	}
 

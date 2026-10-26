@@ -113,7 +113,8 @@ public final class OpeningPass {
 		for (int k = 0; k < h; k++) {
 			if (c.role(f.x(p), y + k, f.z(p)) != Role.WALL) return null;
 			if (c.role(f.insideX(p), y + k, f.insideZ(p)) != Role.AIR) return null;
-			if (c.role(f.outsideX(p), y + k, f.outsideZ(p)) != Role.AIR) return null;
+			Role out = c.role(f.outsideX(p), y + k, f.outsideZ(p));
+			if (out != Role.AIR && !(out == Role.ROOF && y + k == f.y0())) return null; // a lower roof's deck stands at the first row of the storey above it: a floor-to-ceiling window is cut anyway (the deck block stays outside its bottom pane)
 			String r = c.roomAt(f.insideX(p), y + k, f.insideZ(p));
 			if (r == null || (room != null && !room.equals(r))) return null;
 			room = r;

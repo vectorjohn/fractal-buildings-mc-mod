@@ -7,7 +7,7 @@
   "massing": {"plans": {"box": 1, "L": 0, "T": 0}, "jettyChance": 0, "setbackChance": 15},
   "roof": {"forms": {"flat": 1, "gable": 0}, "parapet": 1},
   "facade": {"bayMin": 3, "bayMax": 4, "sill": 1, "windowHeight": 3, "windowWidth": 2, "tallGlass": true, "symmetric": true,
-    "plinth": true, "stringCourse": true, "cornice": true, "corners": "post", "timber": "none"},
+    "plinth": true, "stringCourse": false, "cornice": true, "corners": "post", "timber": "none", "bayPiers": true},
 
   "palette": {
     "wall": ["minecraft:oak_planks"],

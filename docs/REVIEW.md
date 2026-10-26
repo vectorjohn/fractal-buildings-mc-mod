@@ -192,3 +192,6 @@ in `.claude/reports/`.
 
 - [ ] **P7 A3: mass-timber high-rises (2026-10-26)**: look at `viewer/out/gallery/highrise-forest{,-oak,-pale}-*.png` (seeds 0..11; the 7-20 storey seeds are timber). Does it read as a CLT office tower, not a log cabin or Tudor frame? Corner posts and floor bands in stripped wood are one tone off the planks; windows are mostly 1 wide until the facade work (B3b). Is the band projection too deep? Cherry grove: birch tower with pink trim (`mass-timber-cherry`) or plain birch (one data edit in `variants.json`)?
   Result:
+
+- [ ] **P7 B3b: high-rise facade bands, roof doors and roof guard (2026-10-26)**: look at `viewer/out/gallery/highrise-{plain,forest,desert}-{front,back-right,top}.png` and `highrise-cut-lobby-cutaway.png` (seeds 0..15). Windows of a tier stack straight up now, lobby and special floors have taller glass, the stair house has two doors onto a roof with a rail round it. Questions: does the one-block threshold inside each roof door read as a door sill or as an odd step; is the rail ring (iron bars on a 1-high parapet) enough, or should the roof guard be taller; do mass-timber towers with a stripped-wood column at every bay line AND a trim ring at every slab read as a timber grid or as busy (string courses are A3's choice).
+  Result:

@@ -40,8 +40,15 @@ public final class FacadePass {
 	/** Band key of the top storey of a mass (sorts last). */
 	static final int TOP = 1_000_000;
 
-	public static void run(BuildContext c) {
-		List<FacadePlan.Layout> layouts = layout(c);
+	/** Which band a face belongs to: faces of one mass and side with the same band share a bay layout (the default is {@link #band(Mass, int, int)}). */
+	@FunctionalInterface
+	public interface BandFn { int band(Mass m, int storey); }
+
+	public static void run(BuildContext c) { run(c, null, l -> l); }
+
+	/** As {@link #run(BuildContext)} with the type's own bands (null: the default) and an edit of the layouts (window shapes), applied before the entrances are chosen. */
+	public static void run(BuildContext c, BandFn bandFn, java.util.function.UnaryOperator<List<FacadePlan.Layout>> edit) {
+		List<FacadePlan.Layout> layouts = new ArrayList<>(edit.apply(layout(c, bandFn)));
 		Massing m = c.massing();
 		List<FacadePlan.Entrance> entrances = new ArrayList<>();
 		for (int e = 0; e < m.entrances().size(); e++) entrances.add(entrance(c, m, layouts, m.entrances().get(e), e));
@@ -63,8 +70,12 @@ public final class FacadePass {
 	}
 
 	/** Bay layouts for every face of the massing (all bays {@code window}; no entrance yet). Types may call this and change kinds. */
-	public static List<FacadePlan.Layout> layout(BuildContext c) {
+	public static List<FacadePlan.Layout> layout(BuildContext c) { return layout(c, null); }
+
+	/** As {@link #layout(BuildContext)} with the type's bands (null: the default). */
+	public static List<FacadePlan.Layout> layout(BuildContext c, BandFn bandFn) {
 		FacadeStyle st = c.style().facade();
+		BandFn bandOf = bandFn != null ? bandFn : (mm, s) -> band(mm, s, st.bandSize());
 		Massing m = c.massing();
 		List<Face> faces = c.faces();
 		// (mass index, side, band) -> variant, drawn band by band so each differs from the ones below
@@ -78,7 +89,7 @@ public final class FacadePass {
 			String group = mi + "/" + f.side().ordinal();
 			if (!done.add(group)) continue;
 			TreeSet<Integer> bands = new TreeSet<>();
-			for (Face g : faces) if (g.mass().equals(f.mass()) && g.side() == f.side()) bands.add(band(mass, g.storey(), st.bandSize()));
+			for (Face g : faces) if (g.mass().equals(f.mass()) && g.side() == f.side()) bands.add(bandOf.band(mass, g.storey()));
 			Variant p1 = null, p2 = null;
 			Variant front = houseFront(c, st, mi, f);
 			for (int b : bands) {
@@ -92,7 +103,7 @@ public final class FacadePass {
 		for (Face f : faces) {
 			Mass mass = m.mass(f.mass());
 			int mi = m.masses().indexOf(mass);
-			int b = band(mass, f.storey(), st.bandSize());
+			int b = bandOf.band(mass, f.storey());
 			Variant v = variants.get(mi + "/" + f.side().ordinal() + "/" + b);
 			boolean mainFront = mi == 0 && f.side() == Facing.NORTH && f.storey() == 0;
 			Draws r = c.draws("facade/tile", mi, f.side().ordinal(), b, f.a(), f.b());
@@ -349,6 +360,7 @@ public final class FacadePass {
 			if (!st.corners().equals("none")) corners(d, f);
 			if (st.plinth() && f.storey() == 0) plinth(d, f);
 			if (!st.timber().equals("none") && (st.timber().equals("all") || f.storey() >= 1)) timber(d, plan, f);
+			else if (st.bayPiers()) timber(d, plan, f, true);
 			if (st.bressumer() && mass.parent() != null && f.storey() == mass.from() && overhangs(mass, m.mass(mass.parent()), f.side())) bressumer(d, f, m);
 		}
 		for (Face f : c.faces()) {
@@ -388,7 +400,10 @@ public final class FacadePass {
 	 * free, else the right one), and the slab line below the storey as a beam (the slab edge of storeys
 	 * above the ground).
 	 */
-	private static void timber(Decor d, FacadePlan plan, Face f) {
+	private static void timber(Decor d, FacadePlan plan, Face f) { timber(d, plan, f, true); }
+
+	/** The posts at the bay lines, and with {@code slabLine} the slab line below the storey as a beam. */
+	private static void timber(Decor d, FacadePlan plan, Face f, boolean slabLine) {
 		boolean[][] posts = Decor.mask(f);
 		boolean any = false;
 		for (FacadePlan.Layout l : plan.layouts()) {
@@ -406,7 +421,7 @@ public final class FacadePass {
 			}
 		}
 		if (any) d.emit(f, Role.BEAM, 0, posts, Decor.pa(f), Decor.ya(f));
-		if (f.storey() >= 1) {
+		if (slabLine && f.storey() >= 1) {
 			boolean[][] rail = Decor.mask(f);
 			boolean anyRail = false;
 			int y = f.y0() - 1;
