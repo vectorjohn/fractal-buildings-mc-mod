@@ -447,3 +447,255 @@ drops them, and accepted ones move to the section they belong in.
   0.5 along every kerbed street; kerbs only in city and metropolis). None today.
 - **Status:** proposed. **Source:** John, playtest note 2026-10-25;
   drafted by the architect.
+
+## DS-32 High-rise floor programme
+
+- **Rule:** a high-rise is planned floor by floor. The street door opens into
+  a **lobby**, a grand room 5-7 clear (DS-23) with the stairwell across it.
+  **Typical floors** repeat one plan per band between setbacks: a hall from
+  the stairwell to every unit, units on both sides, regular and the same
+  floor to floor. Towers of 12 storeys or more (agent's number) also get 1-3
+  **special floors**, 5-7 clear and shown on the facade as a taller band:
+  an event space or banquet hall, an open floor, large suites, or a sky
+  lobby with a terrace at a setback.
+- **Why:** John: "Add variation in highrises: diversity in floors.
+  Occasional open floor or special use case floors. Lets say, banquet halls,
+  event spaces, large suites"; "Floors should have halls. Fairly regular
+  design"; "Some floors should be lobbies or event spaces, higher ceilings."
+- **Scope:** type `highrise`; city blocks over 6 storeys for the halls and
+  repeated plan. Houses and towers keep their own plans (DS-11, DS-12).
+- **For implementers** (agent's numbers unless quoted):
+  - Lobby: the whole ground floor of the tower mass or most of it; a
+    reception counter facing the door, seating groups, lights (DS-24); no
+    beds, no units. In towers over 20 storeys it may be a double-height
+    storey (two grid storeys, the upper floor left open as a gallery).
+  - Halls: 2 wide (3 on plates over about 30x30), double-loaded, running
+    from the stairwell door; no unit reached through another; no dead end
+    longer than 4 past the last door. Units are apartments (entry, living
+    with kitchen, 1-3 bedrooms) or offices (open room, desks), by the
+    district's use; one use per tower, the lobby and special floors aside.
+  - Repetition: within a band every typical floor has the same partitions,
+    doors and windows, so the facade's bays (DS-25) match the rooms behind.
+  - Special floors, chosen per building by seeded draw: event space or
+    banquet hall (one room of at least half the plate, around the core;
+    table groups, a head table or stage, chandeliers allowed at 4+ clear),
+    open floor (one room, columns about every 6), large suites (2-4 units of
+    60+ cells), sky lobby (at a setback, a door onto the terrace, rails per
+    DS-8 and DS-28). Positions: just above the podium, at a setback, or under
+    the crown (suites or an event space with a view). No two event floors
+    stacked unless they form one double-height room.
+  - `StoreyGrid` already takes per-storey heights; `Core.length` is the
+    tallest storey plus 1, so one 7-clear floor lengthens the stair core on
+    every floor (accept it, or give tall floors two flights with a landing).
+- **Enforcement:** code candidates: `highrise-lobby` (storey 0 holds a room
+  of use `lobby` touching the entrance and the stairwell door),
+  `floor-repeat` (typical floors in a band have identical partitions),
+  `hall-access` (every unit door opens onto a hall, lobby or open floor).
+  None today.
+- **Status:** proposed. **Source:** John, playtest notes 2026-10-25;
+  drafted by the architect (interior programme with the interior-designer's
+  lens).
+
+## DS-22 amendment: enclosed stairwells
+
+- **Proposed wording** (replaces DS-22's rule): towers and high-rises have
+  one **stairwell**: the stair core walled on every side on every storey,
+  with one door per storey onto the hall, lobby or open floor (never into a
+  unit or across a room), stacked in the same place from the lobby to the
+  top; beside it a walled elevator shaft of at least 2x2 (agent's number)
+  with a doorway per storey onto the same hall (Create later, ROADMAP 7.2).
+- **Why:** John: "Highrise should have a defined stairwell as opposed to an
+  open staircase sitting in a hallway or a lobby area."
+- **Scope:** high-rises, and city blocks over 6 storeys. Defensive and bell
+  towers keep open stairs in their single rooms.
+- **For implementers:** the stairwell is today's `Core` (2 x storey height +
+  1) plus a wall ring, with the door at the landing end where the flight
+  from below arrives and the next one starts; a window where it meets the
+  facade is fine. It is its own room (use `stairwell`), not part of a
+  larger `stair` room. Light inside (DS-24).
+- **Enforcement:** code candidate `stairwell-enclosed`: on every storey the
+  core's ring is wall except one door, and the room outside that door is a
+  hall, lobby or open floor. None today.
+- **Status:** proposed (amends accepted DS-22). **Source:** John, playtest
+  notes 2026-10-25; drafted by the architect.
+
+## DS-33 Windows are generous
+
+- **Rule:** the ordinary window is 1 wide and 2 tall; 2x2 is common in town
+  houses, shops' upper floors, civic and commercial buildings; 1x1 is an
+  accent (gable, attic, stair, pantry, clerestory), not the main window of
+  a room. Windows are taller than wide or square, except shopfronts and the
+  ribbon windows of modern towers. Each building type meets a glass share
+  per facade, and high-rises are glass-rich.
+- **Why:** John: "Bigger, proportional windows. Some buildings have large
+  windows. 1x1 windows are almost always too small even in a house. 1x2 (2
+  tall) windows or 2x2 should be more common for most buildings. Highrises
+  might be mainly glass on the exterior."
+- **Scope:** all styles and types. Small-window styles (desert, snowy,
+  taiga, savanna) stay small by **width and count** (1x2, few, wide bays),
+  not by 1x1.
+- **For implementers** (agent's numbers):
+  - Glass share of a facade's wall area: cottages and vernacular houses
+    15-25 %; town houses, shops' upper floors and blocks 25-40 %; masonry
+    high-rises 35-50 %; frame towers 50-70 %; glass towers 75-90 % (DS-34);
+    shopfront ground floors 50-70 %.
+  - In a 3-clear storey a 1x2 window runs from sill +1 to the ceiling (the
+    slab above is its lintel); in 4+ clear storeys the head stays one below
+    the ceiling, or the window grows to 3 tall. Openings wider than 2 get a
+    pier or mullion every 2-3, or a lintel (DS-27).
+  - Glass panes are the default (thin, joined; the writer sets their
+    connections); full `glass` only where a flush face is wanted;
+    `tinted_glass` has no pane and blocks light, so never in a habitable
+    room's only window.
+  - Today every style has `windowHeight` 1 (all windows are 1 tall) and
+    only medieval allows width 2, which gives it 2x1 windows, the opposite
+    of its brief. Briefs to update if accepted: plain, taiga, snowy and
+    desert (1x1 to 1x2), medieval (2x1 to 1x2 and 2x2).
+- **Enforcement:** code candidates `window-size` (at most 25 % of a
+  building's windows are 1x1, outside the accent rooms) and `glazing-share`
+  (per facade, by type), next to DS-25's `openings-aligned` (ROADMAP 7.9).
+  None today.
+- **Status:** proposed. **Source:** John, playtest notes 2026-10-25;
+  drafted by the architect.
+
+## DS-34 High-rises come in several looks
+
+- **Rule:** high-rises use one of a few distinct looks, so a skyline is not
+  one tower repeated: **masonry** (brick, stone or terracotta, base, shaft
+  and crown, stacked 1x2 and 2x2 windows, setbacks: today's massing),
+  **frame** (an expressed grid of columns and floor bands in concrete,
+  stone or quartz with glass set back between), **glass tower** (walls
+  mostly glass between thin mullions, on a solid podium, with a solid
+  crown or core showing) and **mass timber** (7-20 storeys, DS-1). Glass
+  towers are for the metropolis core and are usually its tallest
+  buildings. No look takes more than about half the high-rises of a
+  district, and neighbours differ in look or tint (agent's numbers).
+- **Why:** John: "For metropolis, a new highrise type where walls are
+  mostly glass"; "Highrises should come in a few different looks. Maybe
+  some are biome dependent, I'll have to look at real pictures."
+- **Scope:** type `highrise` and buildings over 6 storeys; glass towers in
+  the metropolis only. Biome tint follows DS-1 and the tall-styles
+  recommendation (masonry and frame take the style's tint); whether glass
+  towers vary by biome waits for John (see Status).
+- **For implementers:**
+  - The look is a seeded per-building choice that sets the facade system
+    (bay width, window size, glass share per DS-33), the wall, frame and
+    glass roles, the massing bias (setbacks for masonry; straight shafts,
+    slabs or a tower on a podium for glass) and the crown.
+  - Glass tower: glass panes (plain or light grey, grey, light blue or cyan
+    stained) in bays 2-4 wide between 1-wide mullions of iron, concrete or
+    quartz; a solid band at each floor slab (a spandrel) so floors read;
+    the stair and shaft core solid. Through the glass every floor shows, so
+    rooms must be lit (DS-24) and at least the hall and lobby furnished.
+  - Frame: columns every 3-5 and floor bands 1 proud of the glass line,
+    ribbon or 2x2 windows between.
+- **Enforcement:** guideline; code candidates: the look recorded in the IR,
+  `glazing-share` ranges per look, DS-1's `highrise-materials`.
+- **Status:** proposed; biome-dependent looks wait for John's research.
+  **Source:** John, playtest notes 2026-10-25; drafted by the architect.
+
+## DS-35 More entrances
+
+- **Rule:** buildings have more than one way in. A house has a back or side
+  door to the yard (usually from the kitchen); a shop with a dwelling above
+  has the shop door and a separate house door; a corner building has a door
+  on each street; halls and temples have main doors on the axis and side
+  doors; workshops a cart door and a person door; high-rises and city blocks
+  a main entrance of 2-3 wide doors on the main street and at least one
+  more on another face, plus a door every 12-20 blocks of a long street
+  frontage. Secondary doors are smaller and plainer (DS-26).
+- **Why:** John: "More entrances to buildings!"
+- **Scope:** all types; one-room huts, stalls and towers may keep one.
+- **For implementers:** every door gets its step or stoop to the ground
+  (DS-4) and a path (DS-6), opens into a hall, kitchen, lobby or shop floor
+  (never a bedroom), and lands on the sidewalk, not the carriageway (DS-31).
+  Today `Massing.entrances()` is one per mass, so every house, shop,
+  workshop, tower and high-rise checked has exactly one exterior door.
+- **Enforcement:** code candidate `entrance-count` (two or more exterior
+  doors for buildings with 2+ storeys or a footprint of 80+ cells; high-rises
+  on two faces, the main one 2+ wide). None today.
+- **Status:** proposed. **Source:** John, playtest notes 2026-10-25;
+  drafted by the architect.
+
+## DS-36 Smooth pitched roofs
+
+- **Rule:** pitched roofs are laid in stairs (1 up per 1 across) or slabs
+  (gentle, 1 up per 2), never as stepped full blocks. Hips and valleys turn
+  with corner stairs, ridges are capped, eaves end in a stair course. A
+  pitched roof's material has stairs and a slab.
+- **Why:** John: "For pitched roofs, smooth them out. Stairs (or slabs for a
+  gentle pitch)."
+- **Scope:** all pitched roofs (gable, hip, pyramid, shed, mansard, dormers).
+  Flat roofs and parapets are not affected.
+- **For implementers** (26.3 block registry):
+  - 1:1: the top cell of every course is a stair facing up the slope;
+    odd spans cap the ridge row with a bottom slab, even spans meet back to
+    back. 1:2: courses alternate bottom slab and top slab. 2:1 (taiga,
+    snowy): a stair over a full block of the same material on each course
+    (or over an upside-down stair, for a layered look); no smoother shape
+    exists for this pitch.
+  - Hip lines take outer-corner stairs and valleys inner-corner stairs: the
+    writer sets the stair `shape` state itself (no neighbour updates), and
+    `Shape` has no corner field today. Overhangs may show upside-down stairs
+    underneath as a soffit (DS-27).
+  - Roof materials need `_stairs` and `_slab`: every wood's planks, bricks,
+    stone bricks, mud bricks, deepslate tiles and bricks, cut copper (all
+    stages), sandstone and red sandstone, prismarine, quartz, blackstone.
+    Today's palettes break this: plains `red_terracotta` and `terracotta`,
+    taiga `brown_terracotta`, jungle `moss_block` (none have stairs or
+    slabs). Hay thatch (savanna) keeps hay for the body courses with a
+    wood's stairs and slabs at eaves, ridge and verges.
+  - Today the raster gives `ROOF` cells no shape (`Shapes.of`: only
+    `STAIR` cells become stairs), so every roof in game is stepped full
+    blocks; the mod's `ShapeTable` already maps blocks to their stairs and
+    slab. The viewer draws cubes, so check this in game.
+- **Enforcement:** code candidates `roof-smooth` (every exposed top cell of
+  a pitched roof is a stair or slab) and a static style test (every `roof`
+  palette entry has stairs and a slab). None today.
+- **Status:** proposed. **Source:** John, playtest notes 2026-10-25;
+  drafted by the architect.
+
+## DS-8 amendment: railings that hold
+
+- **Proposed addition** to DS-8's rule: a railing stops a walker. The rail
+  block stands on the same level as the walker's feet, in the first air
+  block above the surface it guards, so a fence or wall rises 1.5 above
+  that surface (iron bars and panes, 1.0, only on balconies). Rails run
+  without gaps along the open edge (the path opening aside), join each
+  other, and step up beside a flight one block above each step. Bridges,
+  walkable roofs and terraces count as open edges.
+- **Why:** John: "The railings don't do their one job. They only go up to
+  ground level, they're never functional at keeping you from falling."
+- **For implementers:** `InstancePassV1.rails` places the `RAIL` block at
+  the tread's own y (`Box3.of(cx, h - base, ...)` with `h` the tread
+  block's y), on a kerb up to `h - 1`. Its top is then 0.5 above the walking
+  surface, below the player's 0.6 step height, so a player walks onto the
+  rail and off. Raise the kerb to `h` and the rail to `h + 1`. City bridges
+  have no rails at all today (deck boxes only), and DS-31 wants them.
+- **Enforcement:** code candidate `rail-height`: every `RAIL` cell's y is
+  at least that of the walking surface it guards (the step or deck block's
+  y + 1); every tread, landing or deck cell with the DS-8 drop beside it
+  has a rail or wall there. `RailingTest` exists and should be extended.
+- **Status:** proposed (amends accepted DS-8). **Source:** John, playtest
+  notes 2026-10-25; drafted by the architect.
+
+## DS-30 amendment: bamboo only on footbridges
+
+- **Proposed addition** to DS-30's bridge-deck row: bamboo appears on a
+  bridge only when the bridge is a small footpath (2 wide or less, span 8
+  or less; agent's numbers) and is all bamboo: deck of `bamboo_planks` or
+  `bamboo_mosaic` (both have stairs and slab), rails of `bamboo_fence`,
+  posts of `bamboo_block`. Every other bridge uses the road's material,
+  stone, or one other plank species, never mixed with bamboo.
+- **Why:** John: "No bamboo bridges unless they are small paths and all
+  bamboo."
+- **Scope:** bridges and boardwalks in all tiers.
+- **For implementers:** today the jungle style's `deck` role is
+  `jungle_planks` and `bamboo_planks` mixed cell by cell, so every jungle
+  bridge, on streets and arterials too, is patchy bamboo. Making it
+  `jungle_planks` alone fixes streets now; bamboo footbridges come with
+  paths.
+- **Enforcement:** code candidate, folds into `road-one-material` (DS-30)
+  plus a width check for bamboo decks. None today.
+- **Status:** proposed (amends proposed DS-30). **Source:** John, playtest
+  notes 2026-10-25; drafted by the architect.
