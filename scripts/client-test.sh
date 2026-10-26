@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Run the Minecraft client game tests headless: Xvfb + lavapipe, under the heavy lock,
+# Run the Minecraft client game tests headless: Xvfb + the Intel iGPU (lavapipe fallback), under the heavy lock,
 # with a watchdog so a hung client can never hold the lock for long.
 #
 #   scripts/client-test.sh [extra gradle args]
@@ -31,12 +31,15 @@
 #     does not inherit it), so it is released whenever this script exits; the
 #     EXIT/INT/TERM/HUP traps also kill whatever is left of the group.
 #
-# Renderer (FB_VK, default lavapipe). The dev shell pins the Vulkan loader to Mesa's software
-# driver (lavapipe) with VK_DRIVER_FILES. FB_VK=intel swaps in Mesa's Intel ICD (ANV, same Mesa)
-# so the client renders on the Intel UHD 770 iGPU; John approved that GPU on 2026-10-26
-# (CLAUDE.md otherwise forbids GPUs). Only the Intel ICD is listed, so the loader cannot see any
-# other GPU. The NVIDIA card is not approved: FB_VK=nvidia (or anything else) is refused.
-# Findings and numbers: docs/research/spikes/gpu-intel.md.
+# Renderer (FB_VK, default intel since 2026-10-26; John approved the Intel UHD 770 iGPU that day, CLAUDE.md).
+# scripts/vk-select.sh, sourced inside the dev shell, points the Vulkan loader at Mesa's Intel ICD (ANV)
+# and sets MESA_VK_WSI_DEBUG=sw (Xvfb has no DRI3). If the ICD, an Intel render node or a vulkaninfo
+# check is missing or fails, it logs "client-test: FALLBACK to lavapipe: <why>" and uses lavapipe. If
+# the client then still cannot create its Vulkan backend on Intel ("Failed to create backend Vulkan"),
+# the suite is rerun once on lavapipe (the Intel attempt's log is kept as gradle-intel-failed.log) with
+# a "client-test: FALLBACK" line; a failing test never triggers a rerun. FB_VK=lavapipe forces Mesa's CPU
+# renderer. The NVIDIA card is not approved: FB_VK=nvidia (or anything else) is refused, and only one ICD
+# is ever listed, so the loader cannot see that GPU. Findings: docs/research/spikes/gpu-intel.md.
 #
 # Test hooks (for checking the watchdog without a game; see docs/NOTES.md):
 #   FB_CLIENT_CMD   run this bash command instead of xvfb-run + Gradle
@@ -59,7 +62,7 @@ START_MARK="$OUT_DIR/.start"
 # client sits on an error and never exits.
 CRASH_RE='Minecraft has crashed|Failed to create backend Vulkan|#@!@# Game crashed!|Client gametests failed with an exception|Exception in thread "(Test thread|Render thread|main)"'
 
-VK="${FB_VK:-lavapipe}"
+VK="${FB_VK:-intel}"
 case $VK in
 	lavapipe | intel) ;;
 	*) echo "client-test: FB_VK must be lavapipe or intel, got '$VK' (the NVIDIA GPU is not approved for tests)" >&2; exit 2 ;;
@@ -109,70 +112,82 @@ trap cleanup EXIT
 trap 'log "interrupted"; exit 130' INT
 trap 'log "terminated"; exit 143' TERM HUP
 
-if [[ -n ${FB_CLIENT_CMD:-} ]]; then
-	CMD=(bash -c "$FB_CLIENT_CMD")
-elif [[ $VK == intel ]]; then
-	# VK_DRIVER_FILES comes from the dev shell, so it is swapped inside it: lvp_icd.<arch>.json -> intel_icd.<arch>.json.
-	# Xvfb has no DRI3, which Mesa needs to present a GPU image to an X window ("No DRI3 support detected -
-	# required for presentation"; Minecraft then finds no usable backend). MESA_VK_WSI_DEBUG=sw takes Mesa's
-	# software present path: the GPU renders, each finished frame is copied to the window through the CPU.
-	CMD=(env -u WAYLAND_DISPLAY SDL_VIDEODRIVER=x11
+build_cmd() { # renderer [gradle args]
+	local vk=$1; shift
+	if [[ -n ${FB_CLIENT_CMD:-} ]]; then
+		CMD=(bash -c "$FB_CLIENT_CMD")
+		return
+	fi
+	# The renderer is picked inside the dev shell, where VK_DRIVER_FILES (lavapipe) and vulkaninfo live.
+	CMD=(env -u WAYLAND_DISPLAY SDL_VIDEODRIVER=x11 FB_VK="$vk" FB_VK_LOG_TAG=client-test
 		xvfb-run -a nix develop "$ROOT" -c bash -c '
-			icd="${VK_DRIVER_FILES/lvp_icd./intel_icd.}"
-			[[ -f $icd ]] || { echo "client-test: Intel Vulkan ICD not found: $icd" >&2; exit 2; }
-			export VK_DRIVER_FILES="$icd" MESA_VK_WSI_DEBUG="${MESA_VK_WSI_DEBUG:-sw}"
-			echo "client-test: FB_VK=intel, VK_DRIVER_FILES=$VK_DRIVER_FILES MESA_VK_WSI_DEBUG=$MESA_VK_WSI_DEBUG" >&2
-			exec "$@"' client-test ./gradlew --console=plain --no-daemon :mod:runClientGameTest "$@")
-else
-	CMD=(env -u WAYLAND_DISPLAY SDL_VIDEODRIVER=x11
-		xvfb-run -a nix develop "$ROOT" -c ./gradlew --console=plain --no-daemon :mod:runClientGameTest "$@")
-fi
-
-: > "$OUT_LOG"
-touch "$START_MARK"
-# A background job of a non-interactive shell is not a process-group leader, so
-# setsid makes the new session in place (no fork): $! is the group leader.
-setsid "${CMD[@]}" < /dev/null > "$OUT_LOG" 2>&1 9>&- &
-CHILD=$!
-PGID=$(ps -o pgid= -p "$CHILD" 2> /dev/null | tr -d ' ' || true)
-if [[ $PGID != "$CHILD" ]] || [[ $PGID == "$(ps -o pgid= -p $$ | tr -d ' ')" ]]; then
-	# Never group-kill something we can't prove is ours.
-	log "child $CHILD is not its own process-group leader (pgid '$PGID'); watchdog off for this run"
-	PGID=""
-fi
-tail -n +1 -f --pid="$CHILD" "$OUT_LOG" 9>&- &
-TAILPID=$!
-log "started pid $CHILD (process group ${PGID:-none}); output in $OUT_LOG"
+			source "$1/scripts/vk-select.sh" && fb_vk_select || exit 2
+			shift; exec "$@"' client-test "$ROOT" ./gradlew --console=plain --no-daemon :mod:runClientGameTest "$@")
+}
 
 crash_seen() {
 	grep -qE "$CRASH_RE" "$OUT_LOG" 2> /dev/null && return 0
 	[[ -f $GAME_LOG && $GAME_LOG -nt $START_MARK ]] && grep -qE "$CRASH_RE" "$GAME_LOG" 2> /dev/null
 }
 
-START=$SECONDS CRASH_AT="" REASON=""
-while kill -0 "$CHILD" 2> /dev/null; do
-	sleep "$POLL"
-	kill -0 "$CHILD" 2> /dev/null || break
-	if [[ -z $CRASH_AT ]] && crash_seen; then
-		CRASH_AT=$SECONDS
-		log "crash marker seen; giving the JVM ${GRACE}s to exit"
-	fi
-	if [[ -n $CRASH_AT ]] && (( SECONDS - CRASH_AT >= GRACE )); then
-		REASON=crash
-		kill_group "client still running ${GRACE}s after a crash marker"
-		break
-	fi
-	if (( SECONDS - START >= TIMEOUT )); then
-		REASON=timeout
-		kill_group "overall timeout FB_CLIENT_TIMEOUT=${TIMEOUT}s reached"
-		break
-	fi
-done
+backend_failed() {
+	grep -q 'Failed to create backend Vulkan' "$OUT_LOG" 2> /dev/null && return 0
+	[[ -f $GAME_LOG && $GAME_LOG -nt $START_MARK ]] && grep -q 'Failed to create backend Vulkan' "$GAME_LOG" 2> /dev/null
+}
 
-rc=0
-wait "$CHILD" 2> /dev/null || rc=$?
-wait "$TAILPID" 2> /dev/null || true
-TAILPID=""
+START=$SECONDS
+run_once() { # renderer [gradle args]; sets rc, REASON, CRASH_AT
+	build_cmd "$@"
+	: > "$OUT_LOG"
+	touch "$START_MARK"
+	# A background job of a non-interactive shell is not a process-group leader, so
+	# setsid makes the new session in place (no fork): $! is the group leader.
+	setsid "${CMD[@]}" < /dev/null > "$OUT_LOG" 2>&1 9>&- &
+	CHILD=$!
+	PGID=$(ps -o pgid= -p "$CHILD" 2> /dev/null | tr -d ' ' || true)
+	if [[ $PGID != "$CHILD" ]] || [[ $PGID == "$(ps -o pgid= -p $$ | tr -d ' ')" ]]; then
+		# Never group-kill something we can't prove is ours.
+		log "child $CHILD is not its own process-group leader (pgid '$PGID'); watchdog off for this run"
+		PGID=""
+	fi
+	tail -n +1 -f --pid="$CHILD" "$OUT_LOG" 9>&- &
+	TAILPID=$!
+	log "started pid $CHILD (process group ${PGID:-none}); output in $OUT_LOG"
+
+	CRASH_AT="" REASON=""
+	while kill -0 "$CHILD" 2> /dev/null; do
+		sleep "$POLL"
+		kill -0 "$CHILD" 2> /dev/null || break
+		if [[ -z $CRASH_AT ]] && crash_seen; then
+			CRASH_AT=$SECONDS
+			log "crash marker seen; giving the JVM ${GRACE}s to exit"
+		fi
+		if [[ -n $CRASH_AT ]] && (( SECONDS - CRASH_AT >= GRACE )); then
+			REASON=crash
+			kill_group "client still running ${GRACE}s after a crash marker"
+			break
+		fi
+		if (( SECONDS - START >= TIMEOUT )); then
+			REASON=timeout
+			kill_group "overall timeout FB_CLIENT_TIMEOUT=${TIMEOUT}s reached"
+			break
+		fi
+	done
+
+	rc=0
+	wait "$CHILD" 2> /dev/null || rc=$?
+	wait "$TAILPID" 2> /dev/null || true
+	TAILPID=""
+}
+
+run_once "$VK" "$@"
+# Runtime fallback: the Intel checks passed but the client still found no usable Vulkan backend.
+# Only that exact failure reruns; a failing test never does.
+if [[ $VK == intel && -z ${FB_CLIENT_CMD:-} && $REASON != timeout ]] && { (( rc != 0 )) || [[ -n $CRASH_AT ]]; } && backend_failed; then
+	cp "$OUT_LOG" "$OUT_DIR/gradle-intel-failed.log"
+	log "FALLBACK: the client could not create a Vulkan backend on the Intel iGPU; rerunning once on lavapipe (Intel attempt's log: $OUT_DIR/gradle-intel-failed.log)"
+	run_once lavapipe "$@"
+fi
 
 case $REASON in
 	timeout)
