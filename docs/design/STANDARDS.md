@@ -662,7 +662,8 @@ drops them, and accepted ones move to the section they belong in.
   site pass, all types.
 - **Enforcement:** code, extend `RailingTest`: no standable surface within
   0.6 below a rail top on the open side, corner posts, and a flight
-  against the lot edge. The first two pass since RAILFIX r2; the lot-line
+  against the lot edge. The RAILFIX r2 review scan found no step-over or
+  corner gaps left in the galleries; the lot-line
   case still fails in the galleries.
 - **Status:** proposed (amends the proposed DS-8 amendment). **Source:**
   architect, RAILFIX review 2026-10-25
