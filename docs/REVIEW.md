@@ -400,7 +400,7 @@ When items are resolved, an agent should migrate the old content into a REVIEW-A
 - [ ] **7.5 furniture catalogue and authoring (assist-furniture, 2026-10-23)**: your "rooms look sparse" note; a design, nothing built yet.
   Where: [plans/furniture.md](plans/furniture.md) ("The catalogue": 25 pieces with sketches, "Which room gets what", "Open questions for John"); [FURNITURE-AUTHORING.md](FURNITURE-AUTHORING.md) (how you would build and hand over your own pieces); research [minecraft-furniture.md](research/aesthetics/minecraft-furniture.md).
   Look for: (1) pieces you would not build, or idioms you like better (chair: stairs with open-trapdoor arms; tables: fence + pressure plate, upside-down stairs; counters: upside-down stone stairs; sink: water cauldron with a tripwire hook tap; fireplace with a campfire and no chimney); (2) the per-style wood, stone, cloth and plant table; (3) whether the authoring route suits you: build in a creative world facing south, oak = main wood, dark oak = accent, stone bricks = stone, white/light gray = cloth colours, bedrock = wall behind, lime stained glass = keep clear, save with a structure block as `fractalbuildings:furniture/<id>`; (4) the four open questions at the end of the plan (sign vs trapdoor arms, job blocks in kitchens, chimneys, how full a room should be).
-- [ ] **JUNCTION streets meet at one height (p6-junction)**: every street that meets or crosses another now does so at one level (flat over the shared ground); the minor street ramps to it at 1 in 3, and a lane that cannot is not drawn.
+- [x] **JUNCTION streets meet at one height (p6-junction)**: every street that meets or crosses another now does so at one level (flat over the shared ground); the minor street ramps to it at 1 in 3, and a lane that cannot is not drawn.
   Where: `docs/review/phase6/junction/` (`temperate-a`, `temperate-corner`, `badlands`, each `-before.png` and `-after.png`; the table in its README says where); in game: seed 987654321, `/tp 990 100 -9394` or `/tp 6905 125 -6695`, spectator.
   Look for: do the junctions read as built (a flat crossing, streets ramping to it); are the flat pads at every crossing of the street lattice acceptable; on steep ground the junction is cut deep into the slope (badlands): acceptable, or would you rather such streets end with steps; a few lanes and stretches of promenade near steep junctions are gone (the drop rule): do you miss any?
 - [ ] **6.10 C1 roads in game (p6-c1-roads)**: the terraced cut (ADR 0004 Q4, you asked for this screenshot), a short bridge and a road across country, in a real world (seed 987654321).
@@ -408,10 +408,11 @@ When items are resolved, an agent should migrate the old content into a REVIEW-A
   Look for: (1) terraces: 2-high steps with 2-wide grass benches and a dirt riser, first block level with the road: the look you want, or gentler (smaller steps, wider benches), or retaining walls; (2) the bridge: a plain plank span with no rails or piers, fine for 20 blocks; (3) the road beside a vanilla village: it stops at the village pieces and resumes, with a visible kink; (4) road surface mix (dirt path, gravel, coarse dirt per biome style) reads as a track.
   Result:
 
-- [ ] **STAIRS (your high-rise stair jump)**: interior stairs now reach the next floor with no one-block jump.
+- [x] **STAIRS (your high-rise stair jump)**: interior stairs now reach the next floor with no one-block jump.
   Where: `docs/review/phase6/stairs/` (`highrise-before.png` / `highrise-after.png`, `house-before.png` / `house-after.png`: the same flight from above, roof and upper storeys hidden; the after flights have one more step at floor level). In game: any stair core of a high-rise or house, walk up from floor N and see whether you arrive on floor N+1 without jumping.
   Look for: the last step must be level with the floor above (you step off it sideways onto the landing, not straight ahead); the stair should still read as a stair, not a block; no head bump on the new last step.
   Result:
+  - @John 2026-10-26: looks good
 
 - [ ] **6.8 Fly-through frames (B9)**: do the settlements read as places from the air and at street level, per tier, in the game itself
   Where: [docs/review/phase6/flythrough/](review/phase6/flythrough/README.md) (14 of 90 frames; all 90 regenerate with `scripts/flythrough.sh`, about 25 minutes); seeds 987654321, 12345, 1.
@@ -420,7 +421,8 @@ When items are resolved, an agent should migrate the old content into a REVIEW-A
 
 ## Styles and standards (Phase 7)
 
-- [ ] **Tall styles (architect, 2026-10-25)**: the architect's review of the mass-timber and savanna briefs, DS-1 and DS-29, and ROADMAP 7.7 (verdict: needs John; 0 violations, 4 should-fix, all applied to the briefs). Full review: `.claude/reports/design-tall-styles-architect.md`.
+- [x] **Tall styles (architect, 2026-10-25)**: the architect's review of the mass-timber and savanna briefs, DS-1 and DS-29, and ROADMAP 7.7 (verdict: needs John; 0 violations, 4 should-fix, all applied to the briefs). Full review: `.claude/reports/design-tall-styles-architect.md`.
+      - @John 2026-10-26: this path is inaccessible. Don't we merge most reports into the SB branch?
   Where: [styles/mass-timber.md](design/styles/mass-timber.md) (biome-to-wood table, frame one tone from the wall), [styles/savanna.md](design/styles/savanna.md) (compounds marked later, Sahel pilasters and beam ends), [STANDARDS.md](design/STANDARDS.md) DS-1 and DS-29, ROADMAP 7.7.
   Questions for you:
   1. Tall buildings outside forests: a per-style `tall` variant that inherits a shared plain default (recommended: keeps each biome's tint, as DS-1 already says; a style that defines none gets the shared look), or one shared urban style for every lot over 6 storeys (one palette to tune, but every downtown looks alike)?
@@ -435,17 +437,21 @@ When items are resolved, an agent should migrate the old content into a REVIEW-A
   - P3 DS-29 measure: in a city-check run, lots of 1-3 storeys with a wood wall are at least 50 % in forested biomes and at most 20 % in open ones (agent's numbers).
   Proposed block notes change: in [blocks-notes.md](design/blocks-notes.md), jungle planks High-rise `N` to `timber` (they are as tame as oak), then rerun `scripts/design-blocks.sh`; gives jungles a plank option besides bamboo.
   Result:
+  - @John 2026-10-26: approved all suggestions. For P2 if you're saying building faces can all be different, I don't think so. Ask faces the same unless it makes sense from an architecture POV to have different materials on different faces. Roof an obvious exception, those are often different.
 
-- [ ] **High-rise plan questions (2026-10-25)**: two open choices in the high-rise plan, each one constant, both with a default the coders follow until you answer. Sources: [plans/highrises.md](plans/highrises.md) ("Open for John"), `.claude/reports/highrise-plan-architect.md` (answer 2), `.claude/reports/highrise-plan-interior.md` (Q3, "For John").
+- [x] **High-rise plan questions (2026-10-25)**: two open choices in the high-rise plan, each one constant, both with a default the coders follow until you answer. Sources: [plans/highrises.md](plans/highrises.md) ("Open for John"), `.claude/reports/highrise-plan-architect.md` (answer 2), `.claude/reports/highrise-plan-interior.md` (Q3, "For John").
   1. Stairwell 3 or 4 deep: does the proposed DS-8 amendment ("railings that hold") cover the open well inside an indoor stairwell? Default (no or unanswered): 3 deep, open well, drops 1-3 (4-5 under 6-high storeys). Yes: 4 deep with a guard row and a 2-high rail screen. Decided in `TowerBlock.SD`; answer before plan step B1 merges (afterwards it is a rewrite).
+     - @John 2026-10-26: default (no)
   2. Deep flats: windowless private entry hall on the corridor side (default, as real deep-plan flats do), or fewer, wider units with no hall? Decided in `TowerFloors.ENTRY_STRIP` (step B2/B3a).
   The plan's other three questions (tall styles outside forests, glass towers, cherry grove mass timber) are the "Tall styles" entry above.
   Result:
+  - @John 2026-10-26: I want the **architect to make the calls** here. Consider proportions, would this look (Minecraft) real? Are we making something with some plausible real life examples, etc. 
 
-- [ ] **Open questions from reviews (2026-10-25 evening)**: three questions the architect's reviews left for you; none holds back the item it came from.
+- [x] **Open questions from reviews (2026-10-25 evening)**: three questions the architect's reviews left for you; none holds back the item it came from.
   1. Plain block flats: the upper floors of plain/plains city blocks and shops (flats and rooms over shops) now get floor-to-ceiling 3-tall windows at sill 0, with no balcony or rail outside. Keep them, or use 1x2/2x2 at sill +1 (head at the ceiling) until DS-28 balconies arrive? The architect finds them right on halls and high-rises, acceptable as French windows on a terrace, but in a flat or bedroom they look like a missing balcony. Look at `.claude/reports/p7-windows-gallery/after/block-plain-front.png` (seed 0, top left). Source: `.claude/reports/p7-windows-architect.md` ("For John"); proposed rule DS-39 in [STANDARDS.md](design/STANDARDS.md).
+     - @John 2026-10-26: approved 
   2. Woodland inside cities: may city and metropolis districts clear trees from block interiors and unbuilt plots, so the core reads as town and not forest (extends DS-20's "err towards clearing")? Recommended: yes for city and metropolis, keep woods in villages and hamlets, keep shade trees at the edge. A new item extending FOLIAGE. Look at the fly-through frames 1-city-2-overview and 12345-city-2-overview. Source: `.claude/reports/p6-cityq-architect.md` ("For John").
      - @John 2026-10-25: no I didn't think so! If you clear the foliage it just looks empty. Foliage looks like deliberate tree cover. At a later time we may want to make more manucured parks but for now the leftover plants kind of look like parks. Unless you mean floating tree pieces. We could “thin” foliage if it's easy. Say a random chance to remove any given tree, but then you have to find trees. Let's not thin unless it's easy.
-  4. Slope in the region screen: should settlement siting prefer flat ground, so big settlements (downtowns) avoid mountains? It changes which settlements exist in every existing world seed (all join goldens move), so it would be a scheduled item. Recommended: yes. Look at 12345-metropolis-2-overview (a lone house on the peak, towers at its foot). Source: `.claude/reports/p6-cityq-architect.md` ("For John").
+  3. Slope in the region screen: should settlement siting prefer flat ground, so big settlements (downtowns) avoid mountains? It changes which settlements exist in every existing world seed (all join goldens move), so it would be a scheduled item. Recommended: yes. Look at 12345-metropolis-2-overview (a lone house on the peak, towers at its foot). Source: `.claude/reports/p6-cityq-architect.md` ("For John").
   Result:
      - @John 2026-10-25: yes

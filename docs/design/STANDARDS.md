@@ -688,8 +688,8 @@ drops them, and accepted ones move to the section they belong in.
   report per style and type.
 - **Status:** proposed; the plain-block case waits for John (REVIEW.md,
   "Open questions from reviews (2026-10-25 evening)").
-
-   **Source:**
+  - @John 2026-10-26: Appr
+  **Source:**
   architect, 7.12 review 2026-10-25
   (`.claude/reports/p7-windows-architect.md`, "Proposed rules").
 
