@@ -868,7 +868,7 @@ drops them, and accepted ones move to the section they belong in.
   (shops); widened to houses and workshops by John (chat, 2026-10-26: "I
   agree with the architect's suggestion on houses, and widening the
   rule"), from the architect's proposed rule "Doors sit near the street"
-  (SHOPLOW answer, `.claude/reports/shoplow-architect.md`, not committed).
+  (SHOPLOW answer, [shoplow-architect](../review/reports/shoplow-architect.md)).
   Refined by John (chat, 2026-10-26), making digging in the default for
   houses and workshops and allowing stilt and long-stair variants: "Can
   we make the rule not happen all the time? In real life there are
