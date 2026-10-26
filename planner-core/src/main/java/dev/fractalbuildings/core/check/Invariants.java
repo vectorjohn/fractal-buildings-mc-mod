@@ -54,6 +54,9 @@ public final class Invariants {
 		return (x, z) -> p.covers(x, z) ? p.floorY(x, z) : WORLD_MIN_Y;
 	}
 
+	/** A block a walker can stand on: solid, but not a fence or rail (1.5 high: a player, who steps 0.6, cannot get onto its top). */
+	public static boolean walkFloor(Role r) { return r.solid && r != Role.FENCE && r != Role.RAIL; }
+
 	private static final class BuildingCheck {
 		final SceneDoc scene;
 		final PlacedBuilding b;
@@ -334,8 +337,9 @@ public final class Invariants {
 			return r == Role.AIR || r == Role.DOOR;
 		}
 
+
 		boolean standing(int x, int y, int z) {
-			return g.inGrid(x, y, z) && passable(x, y, z) && passable(x, y + 1, z) && g.inGrid(x, y - 1, z) && g.get(x, y - 1, z).solid;
+			return g.inGrid(x, y, z) && passable(x, y, z) && passable(x, y + 1, z) && g.inGrid(x, y - 1, z) && walkFloor(g.get(x, y - 1, z));
 		}
 
 		void roomsReachable() {
@@ -488,7 +492,7 @@ public final class Invariants {
 
 		boolean walkStanding(int[] top, int x0, int z0, int nx, int x, int y, int z) {
 			if (!walkPassable(top, x0, z0, nx, x, y, z) || !walkPassable(top, x0, z0, nx, x, y + 1, z)) return false;
-			return y - 1 <= top[(z - z0) * nx + (x - x0)] || g.get(x, y - 1, z).solid;
+			return y - 1 <= top[(z - z0) * nx + (x - x0)] || walkFloor(g.get(x, y - 1, z));
 		}
 	}
 }
