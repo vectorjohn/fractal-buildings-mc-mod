@@ -291,7 +291,12 @@ merged items' worktrees. One report, one section per item.
 No item to review: you check the run branch after several merges. Run the
 heavy layers on a snapshot of the integration branch head `H`:
 `scripts/snapshot-test.sh --name heavy I H heavy-<short H> scripts/client-test.sh scripts/flythrough.sh scripts/perf.sh`
-(each takes the heavy lock itself). Open at least two screenshots and the
+(each takes the heavy lock itself; the snapshot's own lock is
+`.claude/snapshot-heavy.lock`, so they don't wait on it). When the local heavy
+lock is busy and `scripts/remote.sh --check` succeeds, the client and
+fly-through layers can go to the worker box instead, from the same snapshot:
+`'scripts/remote.sh -- scripts/client-test.sh' 'scripts/remote.sh -- scripts/flythrough.sh'`
+(keep `scripts/perf.sh` local; say which host ran each). Open at least two screenshots and the
 fly-through frames, and read the perf table. If something fails, rerun only
 that command once (a pass is a flake: see "Flakes"); if it fails again,
 bisect over the squash commits in `<range>` with that command
