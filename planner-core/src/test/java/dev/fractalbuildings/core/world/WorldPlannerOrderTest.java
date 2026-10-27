@@ -196,10 +196,10 @@ class WorldPlannerOrderTest {
 
 	// ---- mutants: the harness must notice these
 
-	/** The biome answer depends on how many questions came before (order dependence). Every 97th answer is wrong (it was every 311th, which CITYQ's denser lattice happened to leave without a visible change). */
+	/** The biome answer depends on how many questions came before (order dependence). Every 31st answer is wrong (it was every 311th, then every 97th: CITYQ and then METROFILL R1 r4 changed the call pattern so those happened to land without a visible change). */
 	static WorldProbes counting(WorldProbes p) {
 		AtomicInteger calls = new AtomicInteger();
-		BiomeProbe b = (x, z) -> calls.incrementAndGet() % 97 == 0 ? "minecraft:desert" : p.biome().biome(x, z);
+		BiomeProbe b = (x, z) -> calls.incrementAndGet() % 31 == 0 ? "minecraft:desert" : p.biome().biome(x, z);
 		return new WorldProbes(p.region(), p.coarse(), p.exact(), b, p.window());
 	}
 

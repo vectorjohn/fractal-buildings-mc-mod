@@ -115,11 +115,46 @@ public final class Districts {
 		return site.id().equals(best);
 	}
 
+	/**
+	 * The quay runs tile (ix, iz) grades ahead of its streets, one line each: every column as {@code x,z:y}, in order. For tests: every
+	 * tile that sees a run must list it alike, whatever its window.
+	 */
+	static List<String> quayRuns(SkeletonSource src, int ix, int iz, TerrainProbe exact) {
+		List<String> out = new ArrayList<>();
+		for (Build.QuayWhole q : new Build(src, ix, iz, exact).quayWholes()) {
+			StringBuilder sb = new StringBuilder();
+			for (int i = 0; i < q.cols().size(); i++) sb.append(i == 0 ? "" : " ").append(q.cols().get(i)[0]).append(',').append(q.cols().get(i)[1]).append(':').append(q.y()[i]);
+			out.add(sb.toString());
+		}
+		return out;
+	}
+
+	/**
+	 * Builds the settlement's quay runs (a value shared by every tile, {@link SkeletonSource#shared}) ahead of the first tile that needs
+	 * them, through the first waterfront tile the settlement plans; nothing when it has none. Never changes any answer.
+	 */
+	public static void warmQuays(SkeletonSource src, TerrainProbe exact) {
+		if (!src.site().tier().atLeast(Tier.TOWN)) return;
+		int r = src.density().maxRadius() + 2 * PAD, cx = src.site().centre().x(), cz = src.site().centre().z();
+		DistrictGrid.TileId lo = src.grid().tileOf(cx - r, cz - r), hi = src.grid().tileOf(cx + r, cz + r);
+		for (int iz = lo.iz(); iz <= hi.iz(); iz++) {
+			for (int ix = lo.ix(); ix <= hi.ix(); ix++) {
+				Build b = new Build(src, ix, iz, exact, false);
+				if (!b.hasWaterfront() || !owns(src, ix, iz)) continue;
+				b.quayWholes();
+				return;
+			}
+		}
+	}
+
 	/** Plans one tile, or nothing if another settlement owns it. */
 	public static Optional<Detail> plan(SkeletonSource src, int ix, int iz, TerrainProbe exact) {
 		if (!owns(src, ix, iz)) return Optional.empty();
 		return Optional.of(new Build(src, ix, iz, exact).run());
 	}
+
+	/** How far (blocks) a square at an arterial crossing may slide along one of its arterials (METROFILL R1 r4): about one lot depth. */
+	static final int CROSS_SLIDE = 40;
 
 	/** Spacing of the cut lanes along a 45-degree run, and the shortest run that gets any. */
 	static final int AVE_GAP_MIN = 20, AVE_GAP_VAR = 17, AVE_MIN_RUN = 20;
@@ -268,7 +303,10 @@ public final class Districts {
 		final List<Integer> lotAir = new ArrayList<>();
 		final List<String> notes = new ArrayList<>();
 
-		Build(SkeletonSource src, int ix, int iz, TerrainProbe exact) {
+		Build(SkeletonSource src, int ix, int iz, TerrainProbe exact) { this(src, ix, iz, exact, true); }
+
+		/** {@code water} false skips the water raster (a tile only screened, or asked for the settlement's shared values). */
+		Build(SkeletonSource src, int ix, int iz, TerrainProbe exact, boolean water) {
 			this.src = src;
 			this.ix = ix;
 			this.iz = iz;
@@ -289,7 +327,7 @@ public final class Districts {
 			this.rd = tile.widthZ() + 2 * PAD;
 			this.flags = new byte[rw * rd];
 			this.owner = new short[rw * rd];
-			markWater();
+			if (water) markWater();
 		}
 
 		// ---- terrain access, memoised
@@ -795,13 +833,30 @@ public final class Districts {
 				Landmark l = found.get(i);
 				if (!open(l.kind())) continue;
 				Rect r = all.get(i);
-				Optional<Grading.PlazaGrade> g = dry(r) ? Grading.plaza(r, exact) : Optional.empty();
+				boolean crossing = l.kind() == LandmarkKind.SQUARE && crossingSquare(r);
+				Optional<Grading.PlazaGrade> g = !dry(r) ? Optional.empty() : crossing ? meetingPlaza(r) : Grading.plaza(r, exact);
 				if (g.isEmpty()) {
 					// Exact terrain disagrees with the coarse probe the skeleton was placed on: search nearby for a spot that grades,
 					// within NEAR_RINGS full size then shrunk (never below MIN_SQUARE), then the same out to SHIFT_RINGS; nearest shifts first. A first round wants dry ground HALL_ROOM blocks all round (room for the hall and temple facing it), a second round takes any grading spot.
 					Rect from = r;
 					search:
 					for (int room = l.kind() == LandmarkKind.SQUARE ? HALL_ROOM : 0; room >= 0; room -= HALL_ROOM)
+					if (crossing) {
+						// METROFILL R1 (architect): a square at an arterial crossing slides only along one of its two arterials, away from the
+						// crossing and at most CROSS_SLIDE blocks, so one side stays on the arterial; shrunk with its crossing corner kept
+						for (Rect c : crossingSlides(from)) {
+							boolean clash = false;
+							for (int j = 0; j < all.size(); j++) if (j != i && open(found.get(j).kind()) && overlaps(c, all.get(j))) clash = true;
+							if (clash || !dry(c) || (room > 0 && !dry(new Rect(c.x() - room, c.z() - room, c.w() + 2 * room, c.d() + 2 * room)))) continue;
+							g = meetingPlaza(c);
+							if (g.isPresent()) {
+								notes.add("plaza " + l.kind().json + " moved from " + from.x() + "," + from.z() + " " + from.w() + "x" + from.d() + " to " + c.x() + "," + c.z() + " " + c.w() + "x" + c.d() + " along its arterial (rough or wet ground)");
+								r = c;
+								if (c.x() != from.x() || c.z() != from.z() || c.w() != from.w()) moved.add(c);
+								break search;
+							}
+						}
+					} else
 					for (int reach = NEAR_RINGS; reach <= (l.kind() == LandmarkKind.SQUARE ? SHIFT_RINGS : NEAR_RINGS); reach += SHIFT_RINGS - NEAR_RINGS)
 					for (int shrink = 0; shrink <= SQUARE_SHRINK_STEPS; shrink++) {
 						Rect base = shrink == 0 ? from : new Rect(from.x() + 4 * shrink, from.z() + 4 * shrink, from.w() - 8 * shrink, from.d() - 8 * shrink);
@@ -978,6 +1033,61 @@ public final class Districts {
 		static boolean open(LandmarkKind k) { return k == LandmarkKind.SQUARE || k == LandmarkKind.MARKET || k == LandmarkKind.GREEN || k == LandmarkKind.PARK; }
 
 		static boolean overlaps(Rect a, Rect b) { return Rect.overlap(a.x(), a.z(), a.w(), a.d(), b.x(), b.z(), b.w(), b.d()); }
+
+		/**
+		 * A square the skeleton placed at an arterial crossing ({@code CityProgram.squareAt}): its corner nearest a tile corner is flush with the
+		 * arterial footprints along both border lines there.
+		 */
+		boolean crossingSquare(Rect r) {
+			int in = rules.arterials().width() / 2 + 1;
+			return (r.x() == tile.minX() + in || r.x() + r.w() == tile.maxX() - in + 1) && (r.z() == tile.minZ() + in || r.z() + r.d() == tile.maxZ() - in + 1);
+		}
+
+		/**
+		 * A crossing square graded to meet the whole streets beside it (their levels, from the junction field, on the cells just outside
+		 * its edges), so the paving and the arterial join without a step. Empty when those levels span more than 2 blocks, or when the
+		 * meeting level needs a cut over the limit; a square with no whole street beside it grades as usual.
+		 */
+		Optional<Grading.PlazaGrade> meetingPlaza(Rect c) {
+			JunctionField jf = junctions();
+			int lo = Integer.MAX_VALUE, hi = Integer.MIN_VALUE;
+			List<int[]> ring = new ArrayList<>();
+			for (int x = c.x(); x < c.x() + c.w(); x++) { ring.add(new int[] {x, c.z() - 1}); ring.add(new int[] {x, c.z() + c.d()}); }
+			for (int z = c.z(); z < c.z() + c.d(); z++) { ring.add(new int[] {c.x() - 1, z}); ring.add(new int[] {c.x() + c.w(), z}); }
+			for (int[] q : ring) {
+				int[] v = jf.levelsAt(q[0], q[1]);
+				if (v == null) continue;
+				lo = Math.min(lo, v[0]);
+				hi = Math.max(hi, v[1]);
+			}
+			if (lo == Integer.MAX_VALUE) return Grading.plaza(c, exact);
+			if (hi - lo > 2) return Optional.empty();
+			return Grading.plaza(c, exact, lo, hi);
+		}
+
+		/**
+		 * Where a crossing square may go when its own spot does not grade: shrunk (4 blocks a side per step, never below
+		 * {@link #MIN_SQUARE}) with its crossing corner kept, then slid away from the crossing along either arterial in 4-block steps up to
+		 * {@link #CROSS_SLIDE}, keeping its side on that arterial. Nearest first (slide, then shrink, then the z-running arterial first).
+		 */
+		List<Rect> crossingSlides(Rect r) {
+			int in = rules.arterials().width() / 2 + 1;
+			boolean west = r.x() == tile.minX() + in, north = r.z() == tile.minZ() + in; // the crossing corner's sides
+			List<Rect> out = new ArrayList<>();
+			for (int t = 0; t <= CROSS_SLIDE; t += 4) {
+				for (int shrink = 0; shrink <= SQUARE_SHRINK_STEPS; shrink++) {
+					int w = r.w() - 8 * shrink, d = r.d() - 8 * shrink;
+					if (w < MIN_SQUARE || d < MIN_SQUARE) break;
+					int x = west ? r.x() : r.x() + r.w() - w, z = north ? r.z() : r.z() + r.d() - d; // the corner kept
+					for (int axis = 0; axis < (t == 0 ? 1 : 2); axis++) {
+						int cx = x + (axis == 1 ? (west ? t : -t) : 0), cz = z + (axis == 0 ? (north ? t : -t) : 0);
+						Rect c = new Rect(cx, cz, w, d);
+						if (tr.containsRect(c.x(), c.z(), c.w(), c.d())) out.add(c);
+					}
+				}
+			}
+			return out;
+		}
 
 		/** Shifted copies of a rectangle on the 16-lattice, nearest first (ring order, then z, then x), inside the tile with a margin. */
 		List<Rect> shifts(Rect r, boolean includeSelf, int reach) {
@@ -1890,9 +2000,12 @@ public final class Districts {
 		}
 
 		/** Some urban column of the tile lies in the waterfront quarter (a cheap screen before any exact probe). */
-		boolean hasWaterfront() {
-			for (int z = Math.floorDiv(tile.minZ(), 32) * 32; z <= tile.maxZ() + 32; z += 32) {
-				for (int x = Math.floorDiv(tile.minX(), 32) * 32; x <= tile.maxX() + 32; x += 32) {
+		boolean hasWaterfront() { return hasWaterfront(tile); }
+
+		/** Some urban column of the given tile lies in the waterfront quarter (pointwise in the tile: the same answer in every tile that asks). */
+		boolean hasWaterfront(DistrictGrid.Tile t) {
+			for (int z = Math.floorDiv(t.minZ(), 32) * 32; z <= t.maxZ() + 32; z += 32) {
+				for (int x = Math.floorDiv(t.minX(), 32) * 32; x <= t.maxX() + 32; x += 32) {
 					if (den.urban(x, z) && qf.at(x, z, den.at(x, z)) == QuarterKind.WATERFRONT) return true;
 				}
 			}
@@ -1949,22 +2062,71 @@ public final class Districts {
 		List<QuayWhole> quayWholes;
 
 		/**
-		 * The promenade runs of the tile's quay window, in contour order, each graded once (JUNCTION): where it overlaps a whole street
-		 * it takes the street's level from the junction field (not from this tile's pieces, so the tiles on both sides of a border grade it
-		 * alike), and where it overlaps another quay it takes the level of the one whose smallest column comes first (a canonical order,
-		 * the same in every tile that sees both). Ahead of the tile's other streets, so a subdivision street or lane laid before the quays
-		 * still meets them at their level.
+		 * The settlement's quay runs that come near the tile (their footprint within the reach of the window quays were once traced in): see
+		 * {@link #settlementQuays}. Ahead of the tile's other streets, so a subdivision street or lane laid before the quays still meets
+		 * them at their level.
 		 */
 		List<QuayWhole> quayWholes() {
 			if (quayWholes != null) return quayWholes;
-			quayWholes = new ArrayList<>();
-			if (!hasWaterfront()) return quayWholes;
-			int pad = Quays.MIN_LEN + MARGIN + 2 * Quays.STEP; // a run seen through the window is as long as the whole run, or already past the minimum
+			if (!hasWaterfront()) return quayWholes = List.of();
+			int m = Quays.MIN_LEN + MARGIN + 2 * Quays.STEP; // the reach of the window the runs were once traced in
+			List<QuayWhole> near = new ArrayList<>();
+			for (QuayWhole q : src.shared("quays", exact, this::settlementQuays)) {
+				int[] b = footprintBox(q.cols(), Quays.WIDTH);
+				if (b[2] >= tile.minX() - m && b[0] <= tile.maxX() + m && b[3] >= tile.minZ() - m && b[1] <= tile.maxZ() + m) near.add(q);
+			}
+			return quayWholes = List.copyOf(near);
+		}
+
+		/**
+		 * Every promenade run of the settlement, each graded once (JUNCTION), in the canonical order: a pure function of the source and the
+		 * probe, so every tile that sees a run grades it, and cuts it where it cannot meet a street, alike. (Traced and graded through each
+		 * tile's own window, a run was clipped where the window ended; its profile, and so where {@link #quayParts} cut it, then depended on
+		 * the window: METROFILL R1, {@code tile-border-agree} where a quay crossed a border street.)
+		 *
+		 * <p>Where a run overlaps a whole street it takes the street's level from the junction field (not from a tile's pieces), and where
+		 * it overlaps another quay it takes the level of the one whose smallest column comes first. The contour is traced over the tiles the
+		 * settlement plans that screen as waterfront ({@link #hasWaterfront(DistrictGrid.Tile)}), and {@value #PAD} blocks round them, and a
+		 * quay column must lie in such a tile, so every quay column is inside the traced area by more than a contour cell, where the contour
+		 * is the unclipped one. (A run that leaves those tiles ends at their border: no tile beyond would draw it.) Any tile may build it,
+		 * through its own terrain memo: the values are the probe's, so the result does not depend on which tile asked.
+		 */
+		List<QuayWhole> settlementQuays() {
+			int reach = den.maxRadius() + 2 * PAD, cx = src.site().centre().x(), cz = src.site().centre().z();
+			DistrictGrid.TileId lo = grid.tileOf(cx - reach, cz - reach), hi = grid.tileOf(cx + reach, cz + reach);
+			TreeSet<Long> wf = new TreeSet<>();
+			int x0 = Integer.MAX_VALUE, z0 = Integer.MAX_VALUE, x1 = Integer.MIN_VALUE, z1 = Integer.MIN_VALUE;
+			for (int iz = lo.iz(); iz <= hi.iz(); iz++) {
+				for (int ix = lo.ix(); ix <= hi.ix(); ix++) {
+					DistrictGrid.Tile t = grid.tile(ix, iz);
+					if (!hasWaterfront(t) || !owns(src, ix, iz)) continue;
+					wf.add(key(ix, iz));
+					x0 = Math.min(x0, t.minX() - PAD); z0 = Math.min(z0, t.minZ() - PAD); x1 = Math.max(x1, t.maxX() + PAD); z1 = Math.max(z1, t.maxZ() + PAD);
+				}
+			}
+			if (wf.isEmpty()) return List.of();
+			TreeMap<Long, Boolean> nearMemo = new TreeMap<>(); // the contour asks each lattice node up to four times
+			Quays.Near traced = (x, z) -> {
+				DistrictGrid.TileId c = grid.tileOf(x, z);
+				boolean in = false;
+				for (int dz = -1; dz <= 1 && !in; dz++) {
+					for (int dx = -1; dx <= 1 && !in; dx++) {
+						if (!wf.contains(key(c.ix() + dx, c.iz() + dz))) continue;
+						DistrictGrid.Tile t = grid.tile(c.ix() + dx, c.iz() + dz);
+						in = x >= t.minX() - PAD && x <= t.maxX() + PAD && z >= t.minZ() - PAD && z <= t.maxZ() + PAD;
+					}
+				}
+				return in && nearMemo.computeIfAbsent(key(x, z), k -> nearWater(x, z));
+			};
+			java.util.function.Predicate<int[]> ok = c -> {
+				DistrictGrid.TileId t = grid.tileOf(c[0], c[1]);
+				return wf.contains(key(t.ix(), t.iz())) && quayOk(c);
+			};
 			List<List<int[]>> runs = new ArrayList<>();
-			for (List<Pt> chain : Quays.contour(this::nearWater, tile.minX() - pad, tile.minZ() - pad, tile.maxX() + pad, tile.maxZ() + pad)) {
+			for (List<Pt> chain : Quays.contour(traced, x0, z0, x1, z1)) {
 				List<int[]> cols = StreetCols.columns(chain);
-				if (chain.get(0).equals(chain.get(chain.size() - 1))) cols = breakRing(cols);
-				for (List<int[]> whole : StreetCols.runs(cols, this::quayOk)) if (whole.size() >= Quays.MIN_LEN) runs.add(whole); // judged before clipping, so the neighbouring tile decides alike
+				if (chain.get(0).equals(chain.get(chain.size() - 1))) cols = breakRing(cols, ok);
+				for (List<int[]> whole : StreetCols.runs(cols, ok)) if (whole.size() >= Quays.MIN_LEN) runs.add(whole);
 			}
 			JunctionField jf = junctions();
 			List<QuayWhole> out = new ArrayList<>();
@@ -1979,8 +2141,7 @@ public final class Districts {
 				}
 				quayParts(whole, layers, false, out);
 			}
-			quayWholes = List.copyOf(out);
-			return quayWholes;
+			return List.copyOf(out);
 		}
 
 		/**
@@ -2037,11 +2198,11 @@ public final class Districts {
 
 		static int[] zs(List<int[]> cols) { int[] o = new int[cols.size()]; for (int i = 0; i < o.length; i++) o[i] = cols.get(i)[1]; return o; }
 
-		/** A closed ring of columns, rotated to start just after a column that is no quay, so a run through the ring's start is not split (the start depends on the window). */
-		List<int[]> breakRing(List<int[]> ring) {
+		/** A closed ring of columns, rotated to start just after a column that is no quay, so a run through the ring's start is not split (the start depends on where the contour was traced from). */
+		List<int[]> breakRing(List<int[]> ring, java.util.function.Predicate<int[]> ok) {
 			List<int[]> cols = new ArrayList<>(ring.subList(0, ring.size() - 1));
 			for (int k = 0; k < cols.size(); k++) {
-				if (quayOk(cols.get(k))) continue;
+				if (ok.test(cols.get(k))) continue;
 				List<int[]> out = new ArrayList<>(cols.subList(k + 1, cols.size()));
 				out.addAll(cols.subList(0, k));
 				return out;

@@ -189,6 +189,8 @@ final class CityCheckCommand {
 			// DS-18 edge taper (CITYQ r4): a high-rise with no built lot within 120 blocks outward. A warning, since the per-tile cap (BuiltEdge) cannot see
 			// other tiles' lots and leaves a few; EdgeTaperTest holds the count down.
 			for (Violation v : dev.fractalbuildings.core.check.SettlementChecks.cityEdgeTaper(city.districts().values(), site.centre(), new dev.fractalbuildings.core.settlement.BuiltEdge(src)::depth)) warnings.add(v.invariant() + ": " + v.message());
+			// proposed rule "arterials form one network" (METROFILL R1): a warning until John accepts it
+			for (Violation v : dev.fractalbuildings.core.check.SettlementChecks.cityArterialsConnected(city.districts().values())) warnings.add(v.invariant() + ": " + v.message());
 			int built = 0;
 			List<String> ids = CityPlanner.autoScenes(city, sceneCount);
 			for (String id : ids) {
@@ -236,7 +238,7 @@ final class CityCheckCommand {
 			for (String w : r.warnings()) design.merge(rule(w), 1, Integer::sum);
 		}
 		if (!design.isEmpty()) {
-			sb.append("Design warnings (high-rise checks, not violations; ").append(designSites).append(" sites): ");
+			sb.append("Design warnings (high-rise and proposed checks, not violations; ").append(designSites).append(" sites): ");
 			design.forEach((k, n) -> sb.append(k).append(" ").append(n).append("; "));
 			sb.append("\n\n");
 		}

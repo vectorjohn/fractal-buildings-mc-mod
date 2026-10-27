@@ -34,8 +34,8 @@ public class CityProgram extends TownProgram {
 	static final int MIN_RAY = 5;
 	/** Cities in {@value} whose avenues are diagonals (else the four axis directions). */
 	static final int DIAGONAL_PCT = 75;
-	/** About one arterial crossing in this many gets a square. */
-	public static final int SQUARE_ONE_IN = 4;
+	/** One arterial crossing in this many gets a square (METROFILL R1: every second tile line carries an arterial, so crossings are 4x rarer and each keeps its square). */
+	public static final int SQUARE_ONE_IN = 1;
 
 	/** The hub square keeps 14 clear of the tile edge, so the 9-wide avenues its reservation clips agree across the border (tile-border-agree). */
 	@Override protected int landmarkMargin() { return 14; }
@@ -216,7 +216,7 @@ public class CityProgram extends TownProgram {
 		long h = Hash64.hash(c.seed, "cross-square", kx, kz);
 		int lx = g.lineBlock(DistrictGrid.AXIS_X, kx), lz = g.lineBlock(DistrictGrid.AXIS_Z, kz);
 		int w = Hash64.range(Hash64.hash(h, "w"), 24, 36), d = Hash64.range(Hash64.hash(h, "d"), 24, 36), inset = c.density.arterials().width() / 2 + 1;
-		int px = sx > 0 ? lx + inset : lx - inset - w, pz = sz > 0 ? lz + inset : lz - inset - d;
+		int px = sx > 0 ? lx + inset : lx - inset + 1 - w, pz = sz > 0 ? lz + inset : lz - inset + 1 - d; // both sides flush with the arterial footprint (centre line +- width / 2); the far sides had a 1-block gap before METROFILL R1 r4
 		int cx = px + w / 2, cz = pz + d / 2;
 		if (!c.density.urban(cx, cz) || c.terrain.waterWithin(cx, cz, 24) || c.density.fabricAt(cx, cz) < 50) return; // ROADS3: squares follow the street fabric (share of the radius), not the skyline
 		if (c.quarters.at(cx, cz, c.density.at(cx, cz)) == QuarterKind.PARK) return; // a park tile stays open ground

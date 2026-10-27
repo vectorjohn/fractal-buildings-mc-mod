@@ -772,6 +772,47 @@ public final class SettlementChecks {
 		return out;
 	}
 
+	/** Proposed rule (METROFILL R1, architect; report-only until accepted): the arterials of a city form one network. */
+	public static final String ARTERIALS_CONNECTED = "arterials-connected";
+
+	/**
+	 * {@code arterials-connected}: the arterial street columns of every planned district, taken together, split into 4-connected pieces
+	 * (crossing arterials share columns); each piece but the largest is one finding (its size and box): an avenue that starts and ends at
+	 * lower-class roads. At most {@link #MAX_LISTED} are listed, then a count. A city with no arterial has none.
+	 */
+	public static List<Violation> cityArterialsConnected(java.util.Collection<DistrictPlan> plans) {
+		List<Violation> out = new ArrayList<>();
+		if (plans.isEmpty()) return out;
+		int x0 = Integer.MAX_VALUE, z0 = Integer.MAX_VALUE, x1 = Integer.MIN_VALUE, z1 = Integer.MIN_VALUE;
+		for (DistrictPlan p : plans) {
+			Rect t = p.district().rect();
+			x0 = Math.min(x0, t.x() - COVER_PAD); z0 = Math.min(z0, t.z() - COVER_PAD);
+			x1 = Math.max(x1, t.x() + t.w() + COVER_PAD); z1 = Math.max(z1, t.z() + t.d() + COVER_PAD);
+		}
+		int w = x1 - x0, d = z1 - z0;
+		byte[] kind = new byte[w * d];
+		boolean[] seen = new boolean[w * d];
+		for (DistrictPlan p : plans) for (Street s : p.streets()) if (s.kind() == RoadKind.ARTERIAL) for (Rect r : footprint(s)) paint(kind, r, x0, z0, w, d, 1);
+		Piece pc = new Piece(kind, seen, w, d, new java.util.TreeMap<>());
+		List<int[]> pieces = new ArrayList<>(); // {size, minX, minZ, maxX, maxZ, first column}
+		for (int i = 0; i < kind.length; i++) {
+			if (kind[i] == 0 || seen[i]) continue;
+			pc.flood(i);
+			pieces.add(new int[] {pc.size, x0 + pc.minX, z0 + pc.minZ, x0 + pc.maxX, z0 + pc.maxZ, i});
+		}
+		if (pieces.size() < 2) return out;
+		int main = 0;
+		for (int k = 1; k < pieces.size(); k++) if (pieces.get(k)[0] > pieces.get(main)[0]) main = k;
+		int listed = 0;
+		for (int k = 0; k < pieces.size(); k++) {
+			if (k == main) continue;
+			int[] q = pieces.get(k);
+			if (listed++ < MAX_LISTED) out.add(v(ARTERIALS_CONNECTED, "an arterial piece of " + q[0] + " columns (x " + q[1] + ".." + q[3] + ", z " + q[2] + ".." + q[4] + ") does not reach the main arterial network", q[1], q[2], q[3] - q[1] + 1, q[4] - q[2] + 1));
+		}
+		if (listed > MAX_LISTED) out.add(v(ARTERIALS_CONNECTED, (listed - MAX_LISTED) + " more arterial pieces do not reach the main network", x0, z0, 1, 1));
+		return out;
+	}
+
 	private static Violation v(String id, String msg, int x, int z, int w, int d) {
 		return new Violation(id, null, msg, List.of(new Box3(x, 0, z, w, 1, d)));
 	}
