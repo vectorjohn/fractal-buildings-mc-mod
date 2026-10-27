@@ -208,7 +208,7 @@ public final class Grading {
 		ArrayList<Item> items = new ArrayList<>();
 		for (int[] c : cells.values()) {
 			int cx = c[0], cz = c[1], lvl = c[2];
-			if (c[3] == 1) {
+			if (c[3] == 1 && exact.waterDepth(cx, cz) > 0) { // a footprint cell of a bridge column that is dry itself (the bank beside the water) stands on earth, not on a deck in the air
 				items.add(new Item(Kind.DECK, cx, lvl - 1, cz, 1));
 				continue;
 			}
