@@ -237,3 +237,69 @@ How to use it:
   server game test (no renderer in the loop); fly-through at a higher render
   distance with clouds off and larger shots; GPU options in the assistant's
   2026-10-26 answer (gpu-perf).
+
+### Idea: deferred interior decoration pass (John 2026-10-26)
+
+- **What**: not a measured problem yet; an option to keep in reserve in case
+  furnishing (7.5) and "lived-in" detail make worldgen too slow. John:
+  "What about the possibility of doing our own 'decoration pass' that can
+  happen on its own thread outside of normal worldgen. Maybe interiors only.
+  By definition, the interiors are almost all invisible to a player for quite
+  some time. We could be updating interiors async. Even updating them as
+  players near (similar to chunk loading). It might prove totally
+  unnecessary. [...] sometimes 'detail' is cheap, as noise looks detailed.
+  But realistic interiors might not be noise. Alternatively, we might
+  procedurally generate floors with details and stamp them for multiple
+  stories."
+- **Measured**: no interior row exists yet. Today interiors are a small part
+  of the cost: our whole postProcess is 1.1 ms cold and 2.0 ms warmed per
+  downtown chunk (budget 5 ms), hooks included (`HookPlacer`, about 2 to 4
+  blocks per room, plus the ~10.8 ms bed checks in bed chunks, see "Bed checks
+  in metropolis chunks"). Most of a downtown chunk's 46 ms extra is vanilla's
+  block updates, heightmaps and light, not our planning (B8). 7.5 (plan
+  [plans/furniture.md](plans/furniture.md)) raises the count to multi-block
+  pieces up to a 40 % floor cap, with signs, cauldrons, smokers and other
+  block entities: that is where cost would grow, mostly in block and light
+  updates, not in planning.
+- **Budget**: none yet. Suggested trigger: add an "interior writes" row to
+  `scripts/perf.sh` with 7.5 (time in `HookPlacer` and the furniture writer
+  per chunk); consider the deferred pass only if that row passes about 5 ms
+  mean per downtown chunk, or the 3x chunk-cost budget above is missed
+  because of furniture.
+- **Decision**: open (an idea, not scheduled).
+- **Improve**, feasibility read (assistant, 2026-10-26; not prototyped):
+  - *How it would work.* Worldgen writes the shell and leaves a marker: a
+    per-chunk attachment (or a list in the structure start) saying "interior
+    pending for these buildings". A server-tick service, like RegionWarmer
+    and the B4 worker lane, finds pending chunks near players, plans the
+    interior on a worker thread (pure core code, safe off-thread), and then
+    writes the blocks on the server thread under a per-tick budget (say 2 ms),
+    then clears the marker. Only the block writes must be on the server
+    thread; the planning can be async.
+  - *Hard parts.* (1) Writes only into FULL, loaded chunks, through the level,
+    so block entities, light and neighbour updates are right; that makes each
+    write dearer than the proto-chunk write worldgen does now, so it moves
+    cost, it does not remove it. (2) Determinism: content from seed and
+    position only, so only *when* it happens varies; it must not read the
+    world state at write time except to skip cells a player changed. (3) The
+    "decorated" flag must be saved with the chunk, written in the same tick
+    as the last block, so a crash or reload neither skips nor doubles a room;
+    a building split across chunks needs per-chunk flags. (4) Players who get
+    there first see a bare room pop into a furnished one, so trigger it at a
+    radius beyond view (a ring outside render distance would need chunk
+    tickets to load the chunk, which costs memory); and never overwrite a
+    block a player placed or broke. (5) Villagers: job blocks (smoker,
+    cauldron, lectern) placed late change which villager claims what; place
+    job blocks in worldgen and defer only decoration. (6) Server-only
+    installs keep working: everything is server side and vanilla blocks, no
+    client mod.
+  - *Cheaper alternatives first.* Stamp one planned floor across repeated
+    storeys: high-rises already repeat one typical floor per band
+    (`TowerProgram`, the `floor-repeat` check, 7.13), so furnishing can plan
+    once per band and copy with a y shift; cache planned interiors per
+    building (a building's plan is already cached per tile). Write cheaper:
+    section-level writes and fewer update flags (see "A downtown chunk costs
+    about 3x"). These cut planning and write cost without the save and
+    timing problems above.
+  - *When it would be worth it.* Only if the interior row above stays over
+    budget after stamping and cheaper writes, measured on a quiet machine.
