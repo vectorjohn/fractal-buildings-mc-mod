@@ -5,7 +5,7 @@
 #
 #   --no-client   skip layer 5 (Minecraft client game tests under Xvfb)
 #   --full        the full client layer (FB_LAYER=full: adds Roads, Foliage, Compat) and the district-order test on dedicated servers
-#                 (scripts/order-test.sh, not heavy; needs the EULA file a human creates, see its header). Default: FB_LAYER=quick, no order test
+#                 (scripts/order-test.sh, not heavy; needs mod/build/run/order/eula.txt, see its header). Default: FB_LAYER=quick, no order test
 #   --perf        also run scripts/perf.sh (the 6.7 budget check, ~10 min, heavy lock; fails above the CI ceilings of mod/perf-budget.json)
 #
 # Works from any cwd and any worktree; re-execs itself inside `nix develop` when
