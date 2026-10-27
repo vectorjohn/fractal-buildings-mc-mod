@@ -70,6 +70,8 @@ public final class RoadFeature implements Feature {
 	public static final AtomicLong CALLS = new AtomicLong(), CALL_NANOS = new AtomicLong();
 	/** Test control (the S10 mutant, permanent): read the ground from MOTION_BLOCKING, leaves included. The digests must then differ. */
 	public static volatile boolean MUTANT_GROUND = false;
+	/** Test control (ROADCLEAR): clear as before the fix (no cell over the old ground, no hanging snow layer). The floating-snow count must then be above 0 on a snowy seed. */
+	public static volatile boolean LEGACY_CLEAR = false;
 	/** Test telemetry, off by default: per chunk {road columns, deck columns, terrace columns, deepest cut, 1 when a foreign structure covers part of it}, keyed by (chunk z << 32) | chunk x. */
 	public static volatile boolean RECORD_STATS = false;
 	public static final Map<Long, int[]> STATS = new ConcurrentHashMap<>();
@@ -183,7 +185,8 @@ public final class RoadFeature implements Feature {
 				}
 				written += put(level, pos.set(x, surf, z), top);
 				// the claimed air above: up to the old ground or the headroom, whichever is higher; foreign blocks inside it go
-				int clearTo = Math.max(g, surf + RoadSurface.HEADROOM);
+				// ROADCLEAR: one cell more over the old ground, since a cut leaves what grew on it (snow layer, grass, a flower) floating over the road
+				int clearTo = Math.max(LEGACY_CLEAR ? g : g + 1, surf + RoadSurface.HEADROOM);
 				for (int y = surf + 1; y <= clearTo; y++) {
 					pos.set(x, y, z);
 					PieceLedger.recordRoad(x, y, z, airId);
@@ -195,6 +198,13 @@ public final class RoadFeature implements Feature {
 						level.setBlock(pos, air, WRITE_FLAGS);
 						written++;
 					}
+				}
+				// ROADCLEAR: the snow layer freeze_top_layer put on a crown (or a bush) the clear just took out sits one cell above the clear: 2113 of
+				// them hung over the roads of the playtest world. Only a snow layer with nothing under it goes, so no order of neighbours changes the result.
+				pos.set(x, clearTo + 1, z);
+				if (!LEGACY_CLEAR && level.getBlockState(pos).is(Blocks.SNOW) && level.getBlockState(pos.below()).isAir()) {
+					level.setBlock(pos, air, WRITE_FLAGS);
+					written++;
 				}
 			}
 		}
