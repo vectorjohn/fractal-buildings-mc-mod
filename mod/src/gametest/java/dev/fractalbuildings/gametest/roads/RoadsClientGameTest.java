@@ -144,6 +144,8 @@ public class RoadsClientGameTest implements FabricClientGameTest {
 		Picked first = null;
 		Map<String, String> digests = new TreeMap<>();
 		Map<String, Map<Long, String>> columns = new TreeMap<>();
+		Map<String, Map<Long, Integer>> cellsByOrder = new TreeMap<>(); // ORDERFAIL: the whole recording per order, to say which cells a differing digest comes from
+		Map<String, java.util.Set<Long>> roadsByOrder = new TreeMap<>();
 		for (int oi = 0; oi < orders.size(); oi++) {
 			String order = orders.get(oi);
 			boolean mutant = order.startsWith("mutant");
@@ -187,7 +189,14 @@ public class RoadsClientGameTest implements FabricClientGameTest {
 							if (evict && ++n % 8 == 0) planner.evictAll(); // the road caches go cold in the middle of the run
 						}
 						say(order + " generated " + seq.size() + " chunks in " + (System.nanoTime() - g0) / 1_000_000 + " ms");
-						digest = rec.digest() + " (" + rec.size() + " cells)";
+						// ORDERFAIL: only the cells of the corridor and the ring its chunks decorate. The client's own chunk loading round the spawn
+						// runs at the same time and puts a nearby settlement's district cells into the recording in some runs and not others
+						// (seen at 175,55,256 in shuffled-evicting, 7548 cells in chunks 10..13,14..16, far from the corridor)
+						java.util.TreeMap<Long, Integer> mine = corridorCells(rec.states(), p.corridor());
+						if (mine.size() != rec.size()) say(order + ": " + (rec.size() - mine.size()) + " recorded cells outside the corridor and its ring are left out of the digest");
+						digest = PieceLedger.digest(mine) + " (" + mine.size() + " cells)";
+						cellsByOrder.put(order, mine);
+						roadsByOrder.put(order, new java.util.TreeSet<>(rec.roadCells()));
 						if (!rec.duplicates().isEmpty()) problem("cells claimed twice: " + rec.duplicates().size());
 						if (firstOrder) readBack(level, planner, p, rec.states());
 					}
@@ -219,6 +228,7 @@ public class RoadsClientGameTest implements FabricClientGameTest {
 		}
 		String ref = digests.get("asc");
 		for (String o : List.of("desc", "shuffled", "shuffled-evicting")) diff("asc", o, columns.get("asc"), columns.get(o));
+		for (String o : List.of("desc", "shuffled", "shuffled-evicting")) if (cellsByOrder.containsKey(o)) cellDiff("asc", o, cellsByOrder.get("asc"), cellsByOrder.get(o), roadsByOrder.get("asc"), roadsByOrder.get(o));
 		for (String o : List.of("desc", "shuffled", "shuffled-evicting")) {
 			if (!ref.equals(digests.get(o))) problem("road digest differs in order " + o + ": " + digests);
 		}
@@ -237,6 +247,46 @@ public class RoadsClientGameTest implements FabricClientGameTest {
 		long face = 0, all = 0;
 		for (int[] v : RoadFeature.STATS.values()) { face += v[5]; all += v[6]; }
 		return face + " of " + all + String.format(" (%.1f %%)", all == 0 ? 0 : 100.0 * face / all);
+	}
+
+	/**
+	 * ORDERFAIL: where two orders' recordings differ, cell by cell: road cells (the road feature's) or district cells (TilePiece), by chunk.
+	 * The road digest covers every recorded cell, so a district piece placed in one order and not in another changes it although every
+	 * road column is equal.
+	 */
+	/** The cells of the corridor chunks and their 8 neighbours (the chunks the corridor's generation decorates, in every order). */
+	static java.util.TreeMap<Long, Integer> corridorCells(Map<Long, Integer> all, List<ChunkPos> corridor) {
+		java.util.TreeSet<Long> chunks = new java.util.TreeSet<>();
+		for (ChunkPos c : corridor) for (int dz = -1; dz <= 1; dz++) for (int dx = -1; dx <= 1; dx++) chunks.add(((long) (c.x() + dx) << 32) ^ ((c.z() + dz) & 0xffffffffL));
+		java.util.TreeMap<Long, Integer> out = new java.util.TreeMap<>();
+		for (var e : all.entrySet()) {
+			long k = e.getKey();
+			if (chunks.contains(((long) Math.floorDiv(PieceLedger.x(k), 16) << 32) ^ (Math.floorDiv(PieceLedger.z(k), 16) & 0xffffffffL))) out.put(k, e.getValue());
+		}
+		return out;
+	}
+
+	static void cellDiff(String a, String b, Map<Long, Integer> ca, Map<Long, Integer> cb, java.util.Set<Long> ra, java.util.Set<Long> rb) {
+		TreeMap<String, int[]> chunks = new TreeMap<>();
+		int road = 0, district = 0, n = 0;
+		java.util.TreeSet<Long> keys = new java.util.TreeSet<>(ca.keySet());
+		keys.addAll(cb.keySet());
+		for (long k : keys) {
+			Integer va = ca.get(k), vb = cb.get(k);
+			if (java.util.Objects.equals(va, vb)) continue;
+			boolean isRoad = ra.contains(k) || rb.contains(k);
+			if (isRoad) road++; else district++;
+			chunks.computeIfAbsent(Math.floorDiv(PieceLedger.x(k), 16) + "," + Math.floorDiv(PieceLedger.z(k), 16), c -> new int[2])[isRoad ? 0 : 1]++;
+			if (n++ < 15) say("CELLDIFF " + a + " vs " + b + " at " + PieceLedger.x(k) + "," + PieceLedger.y(k) + "," + PieceLedger.z(k) + (isRoad ? " road" : " district") + ": " + state(va) + " vs " + state(vb));
+		}
+		StringBuilder sb = new StringBuilder();
+		int shown = 0;
+		for (var e : chunks.entrySet()) if (shown++ < 20) sb.append(' ').append(e.getKey()).append(" road ").append(e.getValue()[0]).append(" district ").append(e.getValue()[1]).append(';');
+		say("cells that differ between " + a + " and " + b + ": " + (road + district) + " (road " + road + ", district " + district + ") in " + chunks.size() + " chunks:" + sb);
+	}
+
+	private static String state(Integer id) {
+		return id == null ? "absent" : String.valueOf(net.minecraft.world.level.block.Block.BLOCK_STATE_REGISTRY.byId(id));
 	}
 
 	/** Says where two orders drew a column differently (the first 25), to find the cause of a digest that differs. */

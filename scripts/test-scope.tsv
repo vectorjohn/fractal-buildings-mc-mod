@@ -130,6 +130,7 @@ path	@mod/compat/*	veto	fast,client-full,compat?,perf?	vanilla structure veto an
 path	@mod/mixin/ChunkGeneratorMixin.java	veto	fast,client-full,compat?	veto at start generation
 path	@mod/mixin/StructureCheckMixin.java	veto	fast,client-full,compat?	veto at /locate
 path	@mod/mixin/ServerPlayerTeleportMixin.java	teleport	fast,client-quick,server-only?	teleport hold
+path	@mod/mixin/LakeFeatureMixin.java	worldgen	fast,order,client-full	lake veto (ORDERFAIL): no vanilla lake where our pieces are; the order test and mutant-lakes check it
 path	@mod/teleport/*	teleport	fast,client-quick,server-only?	teleport hold (TeleportHoldGameTest in fast)
 path	@mod/gameplay/*	gameplay	fast,client-quick	hooks to blocks, villagers, /fb (GameplayGameTest in fast)
 path	@mod/config/*	config	fast,client-quick	config pinned per world (ConfigGameTest in fast)

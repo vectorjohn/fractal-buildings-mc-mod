@@ -375,9 +375,9 @@ public final class OrderServerHarness {
 	}
 
 	/** The run labels, in the order the script runs them: phase 1 has no dependency, phase 2 compares with a phase 1 baseline. */
-	public static final List<String> MUTANT_NAMES = List.of(Mutations.COUNTER, Mutations.TWICE, Mutations.SKIP_AIR, Mutations.EARLY_STEP, Mutations.RANDOM, Mutations.WORLD_STONE);
+	public static final List<String> MUTANT_NAMES = List.of(Mutations.COUNTER, Mutations.TWICE, Mutations.SKIP_AIR, Mutations.EARLY_STEP, Mutations.RANDOM, Mutations.WORLD_STONE, Mutations.LAKES);
 	/** Each mutant counts as caught only by the check it targets (regex over the problem texts). */
-	private static final String[][] MUTANTS = {{Mutations.COUNTER, "ledger differs"}, {Mutations.TWICE, "claimed twice"}, {Mutations.SKIP_AIR, "unknown block|claimed air"}, {Mutations.EARLY_STEP, "top_layer_modification step"}, {Mutations.RANDOM, "ledger differs"}, {Mutations.WORLD_STONE, "not a known vanilla spill"}};
+	private static final String[][] MUTANTS = {{Mutations.COUNTER, "ledger differs"}, {Mutations.TWICE, "claimed twice"}, {Mutations.SKIP_AIR, "unknown block|claimed air"}, {Mutations.EARLY_STEP, "top_layer_modification step"}, {Mutations.RANDOM, "ledger differs"}, {Mutations.WORLD_STONE, "not a known vanilla spill"}, {Mutations.LAKES, "not a known vanilla spill"}};
 
 	private static final Gson GSON = new Gson();
 
@@ -426,6 +426,7 @@ public final class OrderServerHarness {
 		} else {
 			report(describe(r));
 			report("  roads: " + r.roadDigest.substring(0, Math.min(12, r.roadDigest.length())) + r.roadDigest.substring(r.roadDigest.indexOf(" ")) + " cells; histogram: " + r.hist + "; hooks: " + r.hook);
+			report("  lake veto (ORDERFAIL): " + dev.fractalbuildings.mod.worldgen.LakeVeto.VETOED.get() + " lakes not placed in this world");
 			for (String s : p) failures.add(label + ": " + s);
 		}
 		try {
