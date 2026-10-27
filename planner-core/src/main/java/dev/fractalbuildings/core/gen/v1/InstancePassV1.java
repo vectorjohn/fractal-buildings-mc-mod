@@ -213,6 +213,7 @@ public final class InstancePassV1 {
 		}
 		boolean[] deckCells = new boolean[nx * nz]; // cells of a stoop built for an earlier door
 		List<int[]> treads = new ArrayList<>(); // every placed step or landing cell: x, z, tread level, least drop to the ground beside it that gets a rail
+		List<int[]> walk = new ArrayList<>(); // STEPBURY: cells a flight ends on the terrain: x, z, standing level
 		for (int[] cw : causeway) { // the approach causeway (a level forecourt on fill): a landing no flight may cross, railed on its open sides
 			int i = (cw[1] - z0) * nx + (cw[0] - x0);
 			if (cw[0] < x0 || cw[0] > x1 || cw[1] < z0 || cw[1] > z1) continue;
@@ -386,7 +387,7 @@ public final class InstancePassV1 {
 				blocked[c] = true; // other doors' flights keep off this one
 				if (deck != null && deck[c]) continue; // a landing cell, placed above
 				flightTop[c] = c == found && !merged ? ground[c] : oy - depth[c];
-				if (c == found && !merged) continue; // ends on the terrain itself
+				if (c == found && !merged) { walk.add(new int[] {x0 + c % nx, z0 + c / nx, ground[c]}); continue; } // ends on the terrain itself
 				int cx = x0 + c % nx, cz = z0 + c / nx, h = oy - depth[c], g = ground[c];
 				if (h >= g) { // a step on the ground itself (h == g) needs no foundation under it
 					if (h > g) site.add(new Box(Box3.of(cx, g - base, cz, 1, h - g, 1), Role.FOUNDATION, Layer.FOUNDATION, Box.NO_STOREY));
@@ -407,8 +408,56 @@ public final class InstancePassV1 {
 		}
 		List<Opening> extDoors = new ArrayList<>(); // every exterior door of any storey: no rail stands in front of one at its own height
 		for (Opening o : shell.openings()) if (o.kind() == OpeningKind.DOOR && o.to().equals(Opening.OUTSIDE) != o.from().equals(Opening.OUTSIDE)) extDoors.add(o);
+		if (HEADROOM_ENABLED) headroom(treads, walk, doors, x0, x1, z0, z1, nx, ground, oy, base, grid, site);
 		rails(treads, lot, p, x0, x1, z0, z1, nx, ground, blocked, doorFront, extDoors, grid, base, site);
 		return guarded;
+	}
+
+	/** Blocks of claimed air over every step, landing and door approach (STEPBURY: the world's terrain, a beard or a tree must not close a flight). */
+	static final int HEADROOM = 3;
+	/** Test switch (STEPBURY client test control): false leaves the old site boxes, without the claimed headroom. Set before the planner of a world is built. */
+	public static volatile boolean HEADROOM_ENABLED = !Boolean.getBoolean("fb.noheadroom");
+	private static final int NONE = Integer.MIN_VALUE;
+
+	/**
+	 * STEPBURY (ROADMAP 6.13): the {@link #HEADROOM} cells over every tread, over the cell a flight ends on and over the cell in front of each
+	 * door become {@code AIR} site boxes, so the piece claims them and the world-side terrain (a {@code beard_thin} raise toward the slab,
+	 * sand, a tree grown later: {@code mod/worldgen/BuildingAirClear}) cannot bury or close a way in. Only cells the shell leaves free get a
+	 * box, because site boxes raster after the shell and an {@code AIR} box would erase a wall or an eave; the boxes start above the
+	 * standing level, so the effective ground ({@code SiteGround}) is unchanged. They are listed before the rails.
+	 */
+	private static void headroom(List<int[]> treads, List<int[]> walk, List<Opening> doors, int x0, int x1, int z0, int z1, int nx, int[] ground, int oy, int base, VoxelGrid grid, List<Box> site) {
+		boolean[] done = new boolean[ground.length];
+		List<int[]> cells = new ArrayList<>();
+		for (int[] t : treads) cells.add(new int[] {t[0], t[1], t[2]});
+		cells.addAll(walk);
+		for (Box s : site) { // the dig-in's own steps (SiteLevel: the approach's exit steps) too
+			Box3 q = s.box();
+			if (s.role() == Role.STAIR && q.x() >= x0 && q.x() <= x1 && q.z() >= z0 && q.z() <= z1) for (int y = q.y(); y < q.maxY(); y++) cells.add(new int[] {q.x(), q.z(), base + y});
+		}
+		for (Opening o : doors) {
+			Facing f = outward(o);
+			Box3 ob = o.box();
+			for (int x = ob.x(); x < ob.maxX(); x++)
+				for (int z = ob.z(); z < ob.maxZ(); z++) {
+					int fx = x + f.dx, fz = z + f.dz;
+					if (fx >= x0 && fx <= x1 && fz >= z0 && fz <= z1) cells.add(new int[] {fx, fz, Math.max(ground[(fz - z0) * nx + (fx - x0)], oy)});
+				}
+		}
+		for (int[] c : cells) {
+			int i = (c[1] - z0) * nx + (c[0] - x0);
+			if (done[i]) continue;
+			done[i] = true;
+			int run = NONE;
+			for (int y = c[2] + 1; y <= c[2] + 1 + HEADROOM; y++) {
+				boolean air = y <= c[2] + HEADROOM && grid.get(c[0], y - base, c[1]) == Role.AIR;
+				if (air && run == NONE) run = y;
+				if (!air && run != NONE) {
+					site.add(new Box(Box3.of(c[0], run - base, c[1], 1, y - run, 1), Role.AIR, Layer.FOUNDATION, Box.NO_STOREY));
+					run = NONE;
+				}
+			}
+		}
 	}
 
 	/** Most descent in the walker's half blocks between level treads (DS-45 stair runs: {@code MAX_RISERS} 3 blocks, rounded up). */
