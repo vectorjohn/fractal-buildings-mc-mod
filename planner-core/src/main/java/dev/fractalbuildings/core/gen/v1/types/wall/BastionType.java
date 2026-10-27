@@ -13,6 +13,7 @@ import dev.fractalbuildings.core.gen.v1.model.MassingCheck;
 import dev.fractalbuildings.core.gen.v1.model.StoreyGrid;
 import dev.fractalbuildings.core.ir.BuildingSpec;
 import dev.fractalbuildings.core.rand.Draws;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -82,6 +83,14 @@ public final class BastionType implements BuildingType {
 		return new RoomProgram() {
 			@Override
 			public String use(Role role, int area, Draws d) { return RoomProgram.DEFAULT.use(role, area, d); }
+
+			@Override
+			public List<int[]> reserved(BuildContext c, Mass a, int s) {
+				if (s != 1 || a.to() < 2) return List.of();
+				List<int[]> out = new ArrayList<>(WalkOps.endCells(a, true, c.spec().depth(), FRONT, 0));
+				out.addAll(WalkOps.backCells(a, c.spec().width()));
+				return out;
+			}
 
 			@Override
 			public List<String> hooks(String use, int area, Draws d) {

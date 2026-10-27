@@ -239,12 +239,13 @@ final class Shopfront {
 		int y = m.grid().y(0) + 1;
 		int door = c.facadePlan().entrance().pos();
 		counter:
-		for (int z = main.z() + 2; z < main.z() + 5; z++) {
-			for (int dx : new int[] {2, -2, 3, -3, 1, -1, 4, -4, 5, -5}) {
-				int x = door + dx;
-				if (x >= main.x() + 1 && x <= main.maxX() - 2 && hook(c, m, "counter", 0, y, x, z, Facing.NORTH, 1)) break counter;
+		for (boolean strict : new boolean[] {true, false})
+			for (int z = main.z() + 2; z < main.z() + 5; z++) {
+				for (int dx : new int[] {2, -2, 3, -3, 1, -1, 4, -4, 5, -5}) {
+					int x = door + dx;
+					if (x >= main.x() + 1 && x <= main.maxX() - 2 && hook(c, m, "counter", 0, y, x, z, Facing.NORTH, 1, strict)) break counter;
+				}
 			}
-		}
 		if (m.storeys() < 2 || c.hooks().stream().anyMatch(h -> h.kind().equals("bed"))) return;
 		Mass up = null;
 		for (Mass a : m.masses()) {
@@ -253,21 +254,62 @@ final class Shopfront {
 		if (up == null) return;
 		int y1 = m.grid().y(1) + 1;
 		// two cells clear of the stair core if the floor has room, else one (a 7-wide market hall)
-		int[][] bedAt = {{up.x() + 1, up.z() + 1}, {up.maxX() - 2, up.z() + 1}, {up.x() + 1, up.z() + 2}, {up.maxX() - 2, up.z() + 2}};
+		java.util.List<int[]> bedList = new java.util.ArrayList<>(java.util.List.of(new int[] {up.x() + 1, up.z() + 1}, new int[] {up.maxX() - 2, up.z() + 1}, new int[] {up.x() + 1, up.z() + 2}, new int[] {up.maxX() - 2, up.z() + 2}));
+		for (int x = up.x() + 2; x <= up.maxX() - 3; x++) bedList.add(new int[] {x, up.z() + 1}); // any cell along the back wall if the corners are taken
+		int[][] bedAt = bedList.toArray(new int[0][]);
 		int[][] tableAt = {{up.maxX() - 2, up.z() + 1}, {up.x() + 1, up.z() + 1}, {up.maxX() - 2, up.z() + 2}, {up.x() + 1, up.z() + 2}};
 		place:
 		for (int clear = 2; clear >= 1; clear--)
-			for (int[] p : bedAt) if (hook(c, m, "bed", 1, y1, p[0], p[1], Facing.SOUTH, clear)) break place;
+			for (int[] p : bedAt) if (bedHeadFree(c, m, y1, p[0], p[1], clear) && hook(c, m, "bed", 1, y1, p[0], p[1] + 1, Facing.NORTH, clear)) break place; // head to the wall (DS-48): the hook is the foot
+		// no room for it across the back wall: along it, the head in a corner against the side wall
+		if (c.hooks().stream().noneMatch(h -> h.kind().equals("bed")))
+		place:
+		for (int clear = 2; clear >= 1; clear--)
+			for (int[] e : new int[][] {{up.x() + 1, up.z() + 1, 1}, {up.maxX() - 2, up.z() + 1, -1}, {up.x() + 1, up.maxZ() - 2, 1}, {up.maxX() - 2, up.maxZ() - 2, -1}})
+				if (bedHeadFree(c, m, y1, e[0], e[1], clear) && hook(c, m, "bed", 1, y1, e[0] + e[2], e[1], e[2] > 0 ? Facing.WEST : Facing.EAST, clear)) break place;
 		place:
 		for (int clear = 2; clear >= 1; clear--)
 			for (int[] p : tableAt) if (hook(c, m, "table", 1, y1, p[0], p[1], Facing.SOUTH, clear)) break place;
 	}
 
+	/** The head cell of a bed (against the wall at (x, z)) is free standing air. */
+	private static boolean bedHeadFree(BuildContext c, Massing m, int y, int x, int z, int clear) {
+		for (var k : m.cores()) if (x >= k.x() - clear && x < k.maxX() + clear && z >= k.z() - clear && z < k.maxZ() + clear) return false;
+		return c.role(x, y, z) == Role.AIR && c.role(x, y + 1, z) == Role.AIR;
+	}
+
+	/** True if a piece at (x, z) would leave the cell in front of an existing hook with no free neighbour (it would be walled in; DS-48). */
+	private static boolean boxesIn(BuildContext c, int y, int x, int z) {
+		for (var h : c.hooks()) {
+			if (h.y() != y || h.kind().equals("ceiling_light") || h.kind().equals("light")) continue;
+			int fx = h.x() + h.facing().dx, fz = h.z() + h.facing().dz;
+			if (fx == x && fz == z) return true;
+			int free = 0;
+			for (Facing d : Facing.values()) {
+				int nx = fx + d.dx, nz = fz + d.dz;
+				if (nx == x && nz == z || nx == h.x() && nz == h.z()) continue;
+				boolean taken = false;
+				for (var o : c.hooks()) if (o.y() == y && !o.kind().equals("ceiling_light") && (o.x() == nx && o.z() == nz || o.kind().equals("bed") && o.x() + o.facing().dx == nx && o.z() + o.facing().dz == nz)) taken = true;
+				if (!taken && c.role(nx, y, nz) == Role.AIR && c.role(nx, y + 1, nz) == Role.AIR) free++;
+			}
+			if (free == 0) return true;
+		}
+		return false;
+	}
+
 	/** A hook on a free standing cell at least {@code clear} cells from every core and from the other hooks; false if the cell is unsuitable. */
-	private static boolean hook(BuildContext c, Massing m, String kind, int storey, int y, int x, int z, Facing facing, int clear) {
+	private static boolean hook(BuildContext c, Massing m, String kind, int storey, int y, int x, int z, Facing facing, int clear) { return hook(c, m, kind, storey, y, x, z, facing, clear, true); }
+
+	/** {@code strict}: the cell in front must also have no hook within one cell of it (a narrow shop may have to settle for the loose rule). */
+	private static boolean hook(BuildContext c, Massing m, String kind, int storey, int y, int x, int z, Facing facing, int clear, boolean strict) {
 		if (c.role(x, y, z) != Role.AIR || c.role(x, y + 1, z) != Role.AIR) return false;
 		for (var k : m.cores()) if (x >= k.x() - clear && x < k.maxX() + clear && z >= k.z() - clear && z < k.maxZ() + clear) return false;
 		for (var h : c.hooks()) if (h.y() == y && Math.abs(h.x() - x) + Math.abs(h.z() - z) < 2) return false;
+		// the cell in front of a piece (where its user stands) is free and has a free neighbour of its own, so a piece cannot wall itself in (DS-48)
+		int fx = x + facing.dx, fz = z + facing.dz;
+		if (!kind.equals("bed") && (c.role(fx, y, fz) != Role.AIR || c.role(fx, y + 1, fz) != Role.AIR)) return false;
+		if (strict && !kind.equals("bed")) for (var h : c.hooks()) if (h.y() == y && Math.max(Math.abs(h.x() - fx), Math.abs(h.z() - fz)) <= 1) return false;
+		if (boxesIn(c, y, x, z)) return false;
 		String room = c.roomAt(x, y, z);
 		if (room == null) return false;
 		c.hook(kind, room, x, y, z, facing);

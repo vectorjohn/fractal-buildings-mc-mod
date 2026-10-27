@@ -82,7 +82,7 @@ public final class InteriorPass {
 			Draft cur = null;
 			for (int s = a.from(); s < a.to(); s++) {
 				if (!a.floorAt(s)) continue;
-				Info info = info(c, m, i, a, s);
+				Info info = info(c, prog, m, i, a, s);
 				if (cur == null || !cur.info().same(info) || drafts[i][s - 1] != cur || prog.newBand(s) || (planner != null && planner.newBand(c, i, a, s))) {
 					cur = draft(c, prog, planner, st, i, a, s, info);
 					all.add(cur);
@@ -141,7 +141,7 @@ public final class InteriorPass {
 		if (x >= 0 && z >= 0 && x < grid.length && z < grid[0].length) grid[x][z] = true;
 	}
 
-	private static Info info(BuildContext c, Massing m, int idx, Mass a, int s) {
+	private static Info info(BuildContext c, RoomProgram prog, Massing m, int idx, Mass a, int s) {
 		int w = a.sx() - 2, d = a.sz() - 2, ox = a.x() + 1, oz = a.z() + 1;
 		boolean[][] reserved = new boolean[w][d], clear = new boolean[w][d], core = new boolean[w][d];
 		List<int[]> entry = new ArrayList<>(), join = new ArrayList<>();
@@ -160,10 +160,12 @@ public final class InteriorPass {
 		for (FacadePlan.Entrance e : fp.entrances()) {
 			Face f = e.face();
 			if (!f.mass().equals(a.id()) || f.storey() != s) continue;
-			int x = f.insideX(e.pos()) - ox, z = f.insideZ(e.pos()) - oz;
-			mark(reserved, x, z);
-			mark(clear, x, z);
-			entry.add(new int[] {x, z});
+			for (int k = 0; k < e.width(); k++) { // a wide entrance clears every cell inside it (DS-48: nothing beside or in front of a door)
+				int x = f.insideX(e.pos() + k) - ox, z = f.insideZ(e.pos() + k) - oz;
+				mark(reserved, x, z);
+				mark(clear, x, z);
+				entry.add(new int[] {x, z});
+			}
 		}
 		for (Core k : m.cores()) {
 			if (s < k.from() || s >= k.to() || m.interiorContaining(s, k.x(), k.z(), k.sx(), k.sz()) != a) continue;
@@ -173,6 +175,10 @@ public final class InteriorPass {
 					mark(clear, x - ox, z - oz);
 					if (k.contains(x, z)) mark(core, x - ox, z - oz);
 				}
+		}
+		for (int[] cell : prog.reserved(c, a, s)) { // cells a door cut later will use: the layout plans around them
+			mark(reserved, cell[0] - ox, cell[1] - oz);
+			mark(clear, cell[0] - ox, cell[1] - oz);
 		}
 		for (Mass b : m.masses()) {
 			if (b == a) continue;
@@ -295,7 +301,8 @@ public final class InteriorPass {
 		int s = dr.start(), idx = dr.idx();
 		FloorPlan plan = dr.plan().withArches(prog::openPlan, uses, dr.info().core(), (a, b) -> pct(st, a, b), WIDE_FROM, c.draws("interior/arch", idx, s));
 		List<Site> hooks = new ArrayList<>();
-		for (int l = 0; l < uses.length; l++) hookSites(c, prog, plan, dr.info(), idx, s, l, uses[l], dr.needsBed() != null && dr.needsBed()[l], hooks);
+		uses = uses.clone();
+		for (int l = 0; l < uses.length; l++) uses[l] = hookSites(c, prog, plan, dr.info(), idx, s, l, uses[l], dr.needsBed() != null && dr.needsBed()[l], hooks);
 		return new Band(s, dr.info(), plan, uses, hooks);
 	}
 
@@ -316,8 +323,12 @@ public final class InteriorPass {
 		return false;
 	}
 
-	/** Hook cells: against a wall or partition, away from doors, the entrance, strip doors and stair cores. */
-	private static void hookSites(BuildContext c, RoomProgram prog, FloorPlan plan, Info info, int idx, int s, int l, String use, boolean needsBed, List<Site> out) {
+	/**
+	 * Hook cells: against a wall or partition, away from doors, the entrance, strip doors and stair cores, and only where a lane
+	 * stays clear to every door, stair and piece ({@link HookLayout}, DS-48). Returns the use the room ends with: a bedroom
+	 * with no place for its bed is demoted to storage and gets a chest instead (DS-12 looks for the bedroom elsewhere).
+	 */
+	private static String hookSites(BuildContext c, RoomProgram prog, FloorPlan plan, Info info, int idx, int s, int l, String use, boolean needsBed, List<Site> out) {
 		FloorPlan.Leaf lf = plan.leaves().get(l);
 		Draws dr = c.draws("interior/hooks", idx, s, l);
 		List<String> kinds = new ArrayList<>(prog.hooks(use, lf.area(), new RoomProgram.Where(s, c.massing().grid().count()), dr));
@@ -325,30 +336,17 @@ public final class InteriorPass {
 		if (kinds.contains(CEILING_LIGHT)) {
 			for (int[] p : ceilingGrid(lf)) out.add(new Site(CEILING_LIGHT, l, p[0], p[1], Facing.NORTH));
 			kinds.removeIf(CEILING_LIGHT::equals);
+			kinds.removeIf("light"::equals); // a hung light is the room's light; no second one standing on the floor (LAMPS)
 		}
-		List<int[]> cand = new ArrayList<>(); // {x, z, wall direction}
-		for (int x = lf.x(); x < lf.x() + lf.w(); x++)
-			for (int z = lf.z(); z < lf.z() + lf.d(); z++) {
-				if (near(info.clear(), x, z, plan.w(), plan.d())) continue;
-				boolean door = false;
-				for (FloorPlan.Door dd : plan.doors())
-					for (int k = 0; k < dd.span(); k++) if (Math.abs(dd.cellX(k) - x) <= 1 && Math.abs(dd.cellZ(k) - z) <= 1) door = true;
-				if (door) continue;
-				Facing[] fs = Facing.values();
-				for (int f = 0; f < 4; f++) {
-					int nx = x + fs[f].dx, nz = z + fs[f].dz;
-					if (nx < 0 || nz < 0 || nx >= plan.w() || nz >= plan.d() || plan.leafAt()[nx][nz] < 0) {
-						cand.add(new int[] {x, z, f});
-						break;
-					}
-				}
-			}
-		for (String kind : kinds) {
-			if (cand.isEmpty()) break;
-			int[] p = cand.get(dr.below(cand.size()));
-			out.add(new Site(kind, l, p[0], p[1], Facing.values()[p[2]].rotate(2)));
-			cand.removeIf(q -> Math.abs(q[0] - p[0]) <= 1 && Math.abs(q[1] - p[1]) <= 1);
+		HookLayout.Result r = HookLayout.place(plan, l, use, kinds, info.clear(), info.core(), info.entry(), info.join(), dr);
+		boolean bed = r.pieces().stream().anyMatch(p -> p.kind().equals("bed"));
+		if (use.equals("bedroom") && !needsBed && !bed && r.missingRequired().contains("bed")) { // too small for a bed and a lane: a store room
+			r = HookLayout.place(plan, l, "storage", List.of("chest"), info.clear(), info.core(), info.entry(), info.join(), dr);
+			if (r.pieces().isEmpty()) r = HookLayout.place(plan, l, "storage", List.of("chest"), info.clear(), info.core(), info.entry(), info.join(), dr, true); // never an empty store room
+			use = "storage";
 		}
+		for (HookLayout.Piece p : r.pieces()) out.add(new Site(p.kind(), l, p.x(), p.z(), p.facing()));
+		return use;
 	}
 
 	/** Hook kind hung from the ceiling on a grid inside the room (not against a wall, door exclusion waived: it never blocks). */

@@ -61,12 +61,28 @@ final class WalkOps {
 		int ix = east ? t.maxX() - 2 : t.x() + 1, wx = east ? t.maxX() - 1 : t.x();
 		int[] ok = new int[2];
 		int n = 0;
-		for (int z : cells(e, front, back)) if (cellOk(c, m, t, ix, y, z)) ok[n++] = z;
+		for (int z : cells(e, front, back)) if (cellOk(c, m, t, ix, y, z, true)) ok[n++] = z;
+		if (n == 0) for (int z : cells(e, front, back)) if (cellOk(c, m, t, ix, y, z, false)) { ok[n++] = z; c.dropHooksNear(y - 1, ix, z); } // no clear cell: the furniture in the way goes (the room is no use with no way out)
 		if (n == 0) return false;
 		int z0 = ok[0];
 		int sz = n == 2 && ok[1] == ok[0] + 1 ? 2 : 1;
 		cut(c, wx, y, z0, 1, sz, east ? Facing.EAST : Facing.WEST, c.roomAt(ix, y, z0));
 		return true;
+	}
+
+	/** The inside cells {@link #endDoor} may use (both ring-line cells), for the interior pass to keep clear. */
+	static java.util.List<int[]> endCells(Mass t, boolean east, int e, int front, int back) {
+		int ix = east ? t.maxX() - 2 : t.x() + 1;
+		java.util.List<int[]> out = new java.util.ArrayList<>();
+		for (int z : cells(e, front, back)) out.add(new int[] {ix, z});
+		return out;
+	}
+
+	/** The inside cells {@link #backDoor} may use. */
+	static java.util.List<int[]> backCells(Mass t, int w) {
+		java.util.List<int[]> out = new java.util.ArrayList<>();
+		for (int x : cells(w, 0, 0)) out.add(new int[] {x, t.maxZ() - 2});
+		return out;
 	}
 
 	/** As {@link #endDoor} through the back (south) wall, on the two ring-line columns {@code cells(w)}. */
@@ -76,7 +92,8 @@ final class WalkOps {
 		int iz = t.maxZ() - 2, wz = t.maxZ() - 1;
 		int[] ok = new int[2];
 		int n = 0;
-		for (int x : cells(w, 0, 0)) if (cellOk(c, m, t, x, y, iz)) ok[n++] = x;
+		for (int x : cells(w, 0, 0)) if (cellOk(c, m, t, x, y, iz, true)) ok[n++] = x;
+		if (n == 0) for (int x : cells(w, 0, 0)) if (cellOk(c, m, t, x, y, iz, false)) { ok[n++] = x; c.dropHooksNear(y - 1, x, iz); }
 		if (n == 0) return false;
 		int x0 = ok[0];
 		int sx = n == 2 && ok[1] == ok[0] + 1 ? 2 : 1;
@@ -84,10 +101,21 @@ final class WalkOps {
 		return true;
 	}
 
-	private static boolean cellOk(BuildContext c, Massing m, Mass t, int ix, int y, int z) {
+	private static boolean cellOk(BuildContext c, Massing m, Mass t, int ix, int y, int z, boolean strict) {
 		if (ix <= t.x() || ix >= t.maxX() - 1 || z <= t.z() || z >= t.maxZ() - 1) return false;
 		if (c.roomAt(ix, y, z) == null || c.role(ix, y, z) != Role.AIR || c.role(ix, y + 1, z) != Role.AIR || c.role(ix, y - 1, z) != Role.AIR) return false;
+		if (strict && furnished(c, ix, y - 1, z)) return false; // a wall door beside or behind a table or bed would be walled in (DS-48)
 		return !m.inCore(1, ix, z);
+	}
+
+	/** True if a hook (a bed's head cell included) stands on the floor level {@code y} within one cell of (x, z). */
+	private static boolean furnished(BuildContext c, int x, int y, int z) {
+		for (var h : c.hooks()) {
+			if (h.y() != y || h.kind().equals("ceiling_light")) continue;
+			if (Math.max(Math.abs(h.x() - x), Math.abs(h.z() - z)) <= 1) return true;
+			if (h.kind().equals("bed") && Math.max(Math.abs(h.x() + h.facing().dx - x), Math.abs(h.z() + h.facing().dz - z)) <= 1) return true;
+		}
+		return false;
 	}
 
 	private static boolean beside(BuildContext c, int x, int y, int z) {
