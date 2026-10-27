@@ -95,6 +95,7 @@ public final class RegionWarmer {
 				try {
 					int radius = 2 * planner.config().cellSize();
 					warmAt(planner, s, x, z, radius, false);
+					if (Thread.currentThread().isInterrupted()) return; // the pool is stopping
 					warmAt(planner, s, ax, az, radius, true);
 				} catch (RuntimeException e) {
 					FractalBuildingsMod.LOGGER.debug("Warming around {},{} failed; the chunks will compute what they need", x, z, e);

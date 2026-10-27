@@ -41,6 +41,10 @@
 # renderer. The NVIDIA card is not approved: FB_VK=nvidia (or anything else) is refused, and only one ICD
 # is ever listed, so the loader cannot see that GPU. Findings: docs/research/spikes/gpu-intel.md.
 #
+# Layers (TESTLAYERS): FB_LAYER=quick (default here) runs Hello, District (B1), Gameplay (B5), Terrain (B3), TeleportHold; FB_LAYER=full adds
+# Roads, Foliage and the compat world (about twice the time). FB_ONLY=<TestClass> (e.g. RoadsClientGameTest) runs that one client test only, whatever
+# the layer. Fly-through and perf stay opt-in (FB_FLY, FB_PERF). The district-order test (B2) is not a client test: scripts/order-test.sh.
+#
 # Test hooks (for checking the watchdog without a game; see docs/NOTES.md):
 #   FB_CLIENT_CMD   run this bash command instead of xvfb-run + Gradle
 #   FB_HEAVY_LOCK   lock file to use instead of <main root>/.claude/heavy.lock
@@ -72,6 +76,9 @@ START_MARK="$OUT_DIR/.start"
 # client sits on an error and never exits.
 CRASH_RE='Minecraft has crashed|Failed to create backend Vulkan|#@!@# Game crashed!|Client gametests failed with an exception|Exception in thread "(Test thread|Render thread|main)"'
 
+export FB_LAYER="${FB_LAYER:-quick}"
+case $FB_LAYER in quick | full) ;; *) echo "client-test: FB_LAYER must be quick or full, got '$FB_LAYER'" >&2; exit 2 ;; esac
+
 VK="${FB_VK:-intel}"
 case $VK in
 	lavapipe | intel) ;;
@@ -94,7 +101,7 @@ log "waiting for heavy lock $HEAVY_LOCK ..."
 flock 9
 RENDERER="FB_VK=$VK"
 if [[ -n ${FB_VK_DRIVER_FILES:-} ]]; then RENDERER="worker GPU (FB_VK_DRIVER_FILES)"; fi
-log "heavy lock taken (pid $$); timeout ${TIMEOUT}s, crash grace ${GRACE}s, renderer $RENDERER"
+log "heavy lock taken (pid $$); timeout ${TIMEOUT}s, crash grace ${GRACE}s, renderer $RENDERER, layer FB_LAYER=$FB_LAYER${FB_ONLY:+, FB_ONLY=$FB_ONLY}"
 
 CHILD="" PGID="" TAILPID=""
 

@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
 # Run every test layer (ROADMAP "Testing strategy") and print a short summary.
 #
-#   scripts/test-all.sh [--no-client] [--perf] [--help]
+#   scripts/test-all.sh [--no-client] [--full] [--perf] [--help]
 #
 #   --no-client   skip layer 5 (Minecraft client game tests under Xvfb)
+#   --full        the full client layer (FB_LAYER=full: adds Roads, Foliage, Compat) and the district-order test on dedicated servers
+#                 (scripts/order-test.sh, not heavy; needs the EULA file a human creates, see its header). Default: FB_LAYER=quick, no order test
 #   --perf        also run scripts/perf.sh (the 6.7 budget check, ~10 min, heavy lock; fails above the CI ceilings of mod/perf-budget.json)
 #
 # Works from any cwd and any worktree; re-execs itself inside `nix develop` when
@@ -24,14 +26,16 @@
 # slot" line when all are busy; the slot is released before the client and perf layers.
 set -uo pipefail
 
-usage() { sed -n '2,24p' "$0" | sed 's/^# \{0,1\}//'; }
+usage() { sed -n '2,26p' "$0" | sed 's/^# \{0,1\}//'; }
 
 RUN_CLIENT=1
 RUN_PERF=0
+FULL=0
 for arg in "$@"; do
 	case "$arg" in
 		--no-client) RUN_CLIENT=0 ;;
 		--perf) RUN_PERF=1 ;;
+		--full) FULL=1 ;;
 		-h|--help) usage; exit 0 ;;
 		*) echo "test-all: unknown argument: $arg" >&2; usage >&2; exit 2 ;;
 	esac
@@ -249,6 +253,12 @@ else
 	skip viewer-shots "not present yet: no screenshot/e2e/gallery npm script"
 fi
 
+# --- Layer 4b (--full): the district-order test (B2) on dedicated servers, no renderer, not under the heavy lock
+if (( FULL )); then
+	if run_logged order "$ROOT/scripts/order-test.sh"; then st=pass; else st=fail; fi
+	record order $st "$(grep -E "^order-test: [0-9]+ of|^order-test: no eula" "${LOGS[order]}" | tail -n1 | cut -c1-200)"
+fi
+
 # --- Layer 5: client game tests (heavy lock) ----------------------------------
 suite_slot_release   # fast layers done; heavy layers queue on the heavy lock instead
 if (( ! RUN_CLIENT )); then
@@ -263,9 +273,10 @@ else
 	# scripts/client-test.sh takes the heavy lock, hides WAYLAND_DISPLAY (else SDL picks
 	# Wayland over Xvfb), and kills a client left hanging after a crash or past
 	# FB_CLIENT_TIMEOUT, so a failed run can't hold the lock.
+	export FB_LAYER="$( ((FULL)) && echo full || echo "${FB_LAYER:-quick}" )"
 	if run_logged client "$ROOT/scripts/client-test.sh"; then st=pass; else st=fail; fi
 	gt_line=$(grep -oE '(All [0-9]+ required tests? passed|[0-9]+ required tests? failed|[0-9]+ client game tests? [a-z]+)' "${LOGS[client]}" | tail -n1)
-	record client $st "${gt_line:-no count in log}; /proc/loadavg at end: $(cut -d' ' -f1-3 /proc/loadavg)"
+	record client $st "layer $FB_LAYER; ${gt_line:-no count in log}; /proc/loadavg at end: $(cut -d' ' -f1-3 /proc/loadavg)"
 fi
 
 # --- Perf budget (opt-in; heavy lock inside scripts/perf.sh) -------------------
@@ -277,7 +288,7 @@ fi
 # --- Summary --------------------------------------------------------------------
 say ""
 say "=== test-all summary ==="
-declare -A LAYER=([planner-core]="L1" [cli]="L1" [determinism]="L2" [mod]="L4" [viewer]="L1" [viewer-shots]="L3" [client]="L5" [perf]="L5")
+declare -A LAYER=([planner-core]="L1" [cli]="L1" [determinism]="L2" [mod]="L4" [viewer]="L1" [viewer-shots]="L3" [client]="L5" [order]="L4" [perf]="L5")
 for s in "${STEPS[@]}"; do
 	printf '%-3s %-13s %-8s %s\n' "${LAYER[$s]:-}" "$s" "${STATUS[$s]}" "${DETAIL[$s]}"
 done
