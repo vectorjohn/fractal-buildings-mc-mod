@@ -4,13 +4,17 @@ import dev.fractalbuildings.core.probe.BiomeProbe;
 import dev.fractalbuildings.core.probe.CoarseProbe;
 import dev.fractalbuildings.core.probe.TerrainProbe;
 import dev.fractalbuildings.core.region.RegionProbe;
+import dev.fractalbuildings.core.world.WorldProbes;
 import net.minecraft.world.level.levelgen.NoiseBasedChunkGenerator;
 import net.minecraft.world.level.levelgen.RandomState;
 
 /** The four live probes of one world over one shared memo. */
 public final class LiveProbes {
-	/** Chunks kept by the district memo (each is 4 KB): 4096 chunks is 16 MB and covers a 1 km square. */
-	public static final int DEFAULT_CHUNKS = 4096;
+	/**
+	 * Chunks kept by the district memo (each is about 2 KB): 8192 chunks is about 17 MB and covers a 1.4 km square. A metropolis'
+	 * {@code warm} reads its junction field over about 4,900 chunks (regionperf, 2026-10-27); at 4096 a quarter of its fills were refills.
+	 */
+	public static final int DEFAULT_CHUNKS = 8192;
 	/** Sparse columns kept for region (stride 64) and coarse (stride 32) reads. */
 	public static final int DEFAULT_SPARSE = 1 << 17;
 	/** Single columns kept for road stations (about 450 reads per route). */
@@ -27,12 +31,24 @@ public final class LiveProbes {
 
 	public LiveProbes(NoiseBasedChunkGenerator gen, RandomState rs) { this(gen, rs, ChunkFill.DEFAULT); }
 
-	public LiveProbes(NoiseBasedChunkGenerator gen, RandomState rs, ChunkFill fill) {
-		this.exact = new LiveTerrainProbe(gen, rs, fill, DEFAULT_CHUNKS);
+	public LiveProbes(NoiseBasedChunkGenerator gen, RandomState rs, ChunkFill fill) { this(gen, rs, fill, DEFAULT_CHUNKS); }
+
+	/** {@code chunks}: the district memo's capacity (tests and benches; the game uses {@link #DEFAULT_CHUNKS}). */
+	public LiveProbes(NoiseBasedChunkGenerator gen, RandomState rs, ChunkFill fill, int chunks) {
+		this.exact = new LiveTerrainProbe(gen, rs, fill, chunks);
 		this.sparse = new SparseColumns(gen, rs, DEFAULT_SPARSE);
 		this.roadColumns = new SparseColumns(gen, rs, DEFAULT_ROAD_COLUMNS);
 		this.biome = new LiveBiomeProbe(gen, rs, exact::surfaceY);
 		this.sparseBiome = new LiveBiomeProbe(gen, rs, sparse::surface);
+	}
+
+	/**
+	 * What a world's planner reads. The mod's {@code WorldPlanners} and the perf test both build it here, so the perf rows measure the
+	 * game's probes (regionperf: the perf test had read road stations through the chunk memo, which the game never does).
+	 * {@code exact} is {@link #exact()} or a wrapper of it (the perf test counts its calls).
+	 */
+	public WorldProbes world(TerrainProbe exact) {
+		return new WorldProbes(region(), coarse(32), exact, biome(), null, roads());
 	}
 
 	public TerrainProbe exact() { return exact; }
@@ -69,4 +85,13 @@ public final class LiveProbes {
 			@Override public int surfaceY(int x, int z) { return roadColumns.surface(x, z); }
 		};
 	}
+
+	/** Vanilla noise generated so far, by kind (perf rows): whole chunks filled for district reads (refills included). */
+	public long chunkFills() { return exact.memo().fills(); }
+
+	/** Single lattice columns generated (region and coarse reads). */
+	public long sparseColumns() { return sparse.misses(); }
+
+	/** Single road-station columns generated. */
+	public long roadColumns() { return roadColumns.misses(); }
 }

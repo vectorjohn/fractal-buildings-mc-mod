@@ -36,6 +36,27 @@
       "ci": 10000
     },
     {
+      "key": "region.cold.warm.chunkFills",
+      "label": "Same: chunks of exact terrain generated (deterministic; 4,924 at regionperf 2026-10-27)",
+      "unit": "count",
+      "budget": 5000,
+      "ci": 6200
+    },
+    {
+      "key": "region.cold.warm.sparseColumns",
+      "label": "Same: single lattice columns generated (region + coarse; 68,343)",
+      "unit": "count",
+      "budget": 70000,
+      "ci": 85000
+    },
+    {
+      "key": "region.cold.warm.roadColumns",
+      "label": "Same: road-station columns generated (14,587)",
+      "unit": "count",
+      "budget": 15000,
+      "ci": 18500
+    },
+    {
       "expr": "inlineShare",
       "label": "Building lookups inline during an elytra flight",
       "unit": "%",

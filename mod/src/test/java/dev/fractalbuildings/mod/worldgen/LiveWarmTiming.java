@@ -5,7 +5,6 @@ import dev.fractalbuildings.core.settlement.Tier;
 import dev.fractalbuildings.core.world.SettlementInfo;
 import dev.fractalbuildings.core.world.WorldConfig;
 import dev.fractalbuildings.core.world.WorldPlanner;
-import dev.fractalbuildings.core.world.WorldProbes;
 import dev.fractalbuildings.mod.TerrainDumpTool;
 import dev.fractalbuildings.mod.probe.LiveProbes;
 import java.nio.file.Files;
@@ -31,7 +30,7 @@ class LiveWarmTiming {
 
 	private static WorldPlanner planner(NoiseBasedChunkGenerator gen, RandomState rs, ThreadPoolExecutor pool) {
 		LiveProbes lp = new LiveProbes(gen, rs);
-		return new WorldPlanner(SEED, WorldConfig.defaults(), new WorldProbes(lp.region(), lp.coarse(32), lp.exact(), lp.biome()), pool);
+		return new WorldPlanner(SEED, WorldConfig.defaults(), lp.world(lp.exact()), pool);
 	}
 
 	@Test

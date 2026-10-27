@@ -90,6 +90,7 @@ public class WarmingGameTest {
 				WorldgenGameTest.Target t = WorldgenGameTest.flatTarget(planner(null));
 				int cx = (t.tile().minX() + t.tile().maxX()) / 2, cz = (t.tile().minZ() + t.tile().maxZ()) / 2;
 				w.warm(cx, cz, 2 * w.config().cellSize());
+				w.warmQuays(cx, cz, 2 * w.config().cellSize());
 				w.prefetch(t.tile().ix(), t.tile().iz());
 				check(Workers.awaitIdle(pool, 120_000), "the workers did not finish the prefetch");
 				LaneStats.enable(true);

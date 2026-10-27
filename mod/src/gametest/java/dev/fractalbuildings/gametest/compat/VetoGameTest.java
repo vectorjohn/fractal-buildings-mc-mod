@@ -46,7 +46,7 @@ public class VetoGameTest {
 	static WorldPlanner siteAt(VetoWorld w, int x, int z, int radius) {
 		var gen = (NoiseBasedChunkGenerator) w.gen();
 		LiveProbes lp = new LiveProbes(gen, w.rs());
-		WorldProbes probes = new WorldProbes(lp.region(), lp.coarse(32), lp.exact(), lp.biome());
+		WorldProbes probes = lp.world(lp.exact());
 		Cell claimant = CellGeometry.owner(new RegionField(SEED, WorldConfig.DEFAULT_CELL_SIZE), x, z);
 		SettlementSite site = new SettlementSite(Ids.site(claimant.cx(), claimant.cz()), Tier.TOWN, new Pt(x, z), radius, claimant, List.of(claimant));
 		return WorldPlanner.forSite(SEED, WorldConfig.defaults(), probes, null, WorldPlanner.Caches.DEFAULT, site);
