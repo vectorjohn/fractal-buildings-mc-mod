@@ -37,6 +37,9 @@ replay_*.log
 /.claude/reports/
 # Lock files for shared resources (see CLAUDE.md "Parallel work")
 /.claude/*.lock
+/.claude/suite.lock.*
+# scripts/anywhere.sh queue, claims and route log
+/.claude/anywhere/
 
 # editor swap files
 *.swp

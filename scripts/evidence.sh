@@ -10,12 +10,13 @@
 # Writes <main root>/.claude/reports/<label>-evidence/<short sha>-<UTC time>/ with EVIDENCE.md (commit,
 # dirty files if any, command, exit code, start/end, loadavg, copied files) and copies of every known
 # test artifact the command wrote (build/test-all/*.log, build/client-test/gradle.log, the client game
-# test log, mod/build/screenshots/*.png, mod/build/perf/*, mod/build/flythrough/*, build/server-only/*, build/order-test/*,
+# test log, build/anywhere/* (scripts/anywhere.sh: which host ran it; also a "route:" line),
+# build/remote/*.log (scripts/remote.sh job logs), mod/build/screenshots/*.png, mod/build/perf/*, mod/build/flythrough/*, build/server-only/*, build/order-test/*,
 # viewer/out/** screenshots).
 # Prints "EVIDENCE <dir>" and exits with the command's exit code. Takes no lock itself: the commands
 # it runs (client-test.sh, perf.sh, test-all.sh) take the heavy lock where they need it.
 set -uo pipefail
-[ $# -ge 2 ] || { sed -n '2,15p' "$0" | sed 's/^# \{0,1\}//'; exit 2; }
+[ $# -ge 2 ] || { sed -n '2,16p' "$0" | sed 's/^# \{0,1\}//'; exit 2; }
 LABEL=$1; shift
 WT=$(git rev-parse --show-toplevel) || exit 2
 MAIN_ROOT=$(dirname "$(git -C "$WT" rev-parse --path-format=absolute --git-common-dir)")
@@ -32,7 +33,7 @@ START=$(date -u +%FT%TZ); LOAD0=$(cut -d' ' -f1-3 /proc/loadavg)
 END=$(date -u +%FT%TZ); LOAD1=$(cut -d' ' -f1-3 /proc/loadavg)
 # Copy artifacts written by this run (newer than the start mark), keeping their relative paths.
 copied=()
-for rel in build/test-all build/client-test build/server-only build/order-test mod/build/screenshots \
+for rel in build/test-all build/client-test build/server-only build/order-test build/anywhere build/remote mod/build/screenshots \
            mod/build/run/clientGameTest/logs/latest.log mod/build/perf mod/build/flythrough viewer/out; do
   [ -e "$WT/$rel" ] || continue
   while IFS= read -r f; do
@@ -49,6 +50,7 @@ rm -f "$MARK"
   echo "- command: $*"
   echo "- exit: $RC"
   echo "- start: $START (loadavg $LOAD0); end: $END (loadavg $LOAD1)"
+  for r in "${copied[@]}"; do [[ $r == build/anywhere/* ]] && echo "- route: $(cut -c1-400 "$OUT/$r")"; done
   echo "- files (${#copied[@]}):"
   for r in "${copied[@]}"; do echo "    $r"; done
 } > "$OUT/EVIDENCE.md"
