@@ -74,12 +74,16 @@ class RasterOwnershipTest {
 			ds.sort((a, b) -> b.lots().size() - a.lots().size());
 			for (int i = 0; i < Math.min(perCity, ds.size()); i++) {
 				DistrictPlan f = Briefs.fill(ds.get(i), QuarterKind.values()[ds.get(i).district().quarter()], styles, ex[0]);
-				out.add(DistrictScenes.build(f, city.landmarks().getOrDefault(f.district().id(), List.of()), ex[0], biome, exterior).scene());
+				SceneDoc sd = DistrictScenes.build(f, city.landmarks().getOrDefault(f.district().id(), List.of()), ex[0], biome, exterior).scene();
+				probes.put(sd, ex[0]);
+				out.add(sd);
 			}
 		}
 		return out;
 	}
 
+	/** The terrain each scene was built over (scene identity). */
+	static final Map<SceneDoc, TerrainProbe> probes = new java.util.IdentityHashMap<>();
 	static final Map<Boolean, List<SceneDoc>> cache = new HashMap<>();
 
 	/** Full interiors (doors, stairs, rooms). */
@@ -203,6 +207,7 @@ class RasterOwnershipTest {
 						flat++;
 						Cell over = m.get(key(x, y + 1, z));
 						if (over != null && over.role() == Role.STAIR && over.owner().equals(c.owner())) continue; // support under a step (STAIRFILL): a full block by design
+						// A full block is a landing cell (stoop platform); that none sits a block above a lower step is RasterEntranceWalkTest (STEPTOP).
 						// within one building's flight (CITYQ: two neighbouring shops' entry steps at different front levels can stand side by side)
 						for (Facing q : Facing.values()) {
 							Cell hi = m.get(key(x + q.dx, y + 1, z + q.dz));

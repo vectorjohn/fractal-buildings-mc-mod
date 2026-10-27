@@ -95,7 +95,9 @@ public final class Shapes {
 			Role r = g.role(x + f.dx, y + 1, z + f.dz);
 			if (r == Role.FLOOR || r == Role.PAVING || r == Role.ROAD || r == Role.DECK || r == Role.GROUND) return Shape.stair(f);
 		}
-		for (Facing f : Facing.values()) if (g.role(x + f.dx, y + 1, z + f.dz) == Role.DOOR && g.role(x + f.dx, y, z + f.dz) == Role.WALL) return Shape.stair(f); // a threshold step up to a raised doorway (high-rise roof doors)
+		for (Facing f : Facing.values()) if (g.role(x + f.dx, y + 1, z + f.dz) == Role.DOOR) return Shape.stair(f); // a threshold step up to a doorway, whatever stands under the door (a ground-floor door has the slab under it; STEPTOP)
+		// A landing cell entered from a lower step: it stays a stair facing on, away from the step below, because a full block there is a one block jump (STEPTOP).
+		for (Facing f : Facing.values()) if (g.role(x + f.dx, y - 1, z + f.dz) == Role.STAIR && g.role(x, y + 1, z) != Role.STAIR) return Shape.stair(f.rotate(2));
 		return Shape.NONE;
 	}
 }
