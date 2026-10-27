@@ -113,7 +113,7 @@ nix develop -c sh -c 'FB_GALLERY=1 npx vite build && FB_GALLERY=1 GALLERY=1 FB_P
 ```
 
 A preset is a JSON file in `viewer/gallery-presets/` (`type`, `style`, `lot` `WxD`,
-`terrain`, `front`, `seeds` `A..B` up to 16, `gen`, `cutStorey`, `cameras` out of
+`terrain`, `front`, `seeds` `A..B` up to 16, `gen`, `air`, `square` (the CLI's `--square`: the lot is the square's market-hall lot), `cutStorey`, `cameras` out of
 `front-left, back-right, top, front, cutaway`; `"kind": "dump"` uses the core's test
 fixtures instead of the CLI). Add a file to add a gallery.
 

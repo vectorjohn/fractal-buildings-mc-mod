@@ -102,7 +102,7 @@ public final class MassingCheck {
 			}
 			int need = Core.length(g, k.from(), k.to());
 			if (Math.max(k.sx(), k.sz()) < need) out.add("M8 core " + c + " long side " + Math.max(k.sx(), k.sz()) + " < " + need);
-			for (int s = k.from(); s < k.to(); s++) {
+			for (int s = Math.max(k.from(), 0); s < k.to(); s++) { // a leg core's first flight starts under the building
 				Mass host = m.interiorContaining(s, k.x(), k.z(), k.sx(), k.sz());
 				if (host == null) out.add("M8 core " + c + " not inside a mass's walls on storey " + s);
 				else if (host.open()) out.add("M8 core " + c + " in open mass " + host.id());
@@ -168,7 +168,7 @@ public final class MassingCheck {
 					}
 				}
 			for (Core k : m.cores())
-				for (int s = k.from(); s < k.to() - 1; s++) {
+				for (int s = Math.max(k.from(), 0); s < k.to() - 1; s++) {
 					int lo = ms.indexOf(m.interiorContaining(s, k.x(), k.z(), k.sx(), k.sz()));
 					int hi = ms.indexOf(m.interiorContaining(s + 1, k.x(), k.z(), k.sx(), k.sz()));
 					if (lo < 0 || hi < 0) continue;

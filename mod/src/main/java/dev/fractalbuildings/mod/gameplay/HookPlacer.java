@@ -107,6 +107,7 @@ public final class HookPlacer {
 				case "bench" -> { set(level, at, stool(h)); other++; }
 				case "light" -> { light(level, at, h, seed); lights++; }
 				case "ceiling_light" -> { ceilingLight(level, at); lights++; }
+				case "goods" -> { goods(level, at, h, seed); other++; }
 				default -> { /* unknown kinds from a newer generator: nothing */ }
 			}
 		}
@@ -151,6 +152,12 @@ public final class HookPlacer {
 	private static void set(WorldGenLevel level, BlockPos p, BlockState s) {
 		level.setBlock(p, s, FLAGS);
 		PieceLedger.override(p.getX(), p.getY(), p.getZ(), Block.BLOCK_STATE_REGISTRY.getId(s));
+	}
+
+	/** A block of the style's wares on a market stall ({@link StallGoods}). */
+	private static void goods(WorldGenLevel level, BlockPos at, WorldHook h, long seed) {
+		Block b = net.minecraft.core.registries.BuiltInRegistries.BLOCK.getValue(Identifier.withDefaultNamespace(StallGoods.pick(h.style(), h.seed(seed, "goods"))));
+		set(level, at, b.defaultBlockState());
 	}
 
 	/** A bench is a spruce slab seat; plain and with no facing. */

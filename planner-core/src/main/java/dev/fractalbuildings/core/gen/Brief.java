@@ -11,8 +11,9 @@ package dev.fractalbuildings.core.gen;
  * @param airRights how far (blocks) the building may overhang the street, 0 until the jetty step (JT)
  * @param frontY street surface y in front of the lot's front edge, or {@link #NO_FRONT_Y}
  * @param walk the lot's level in the town wall's walk profile, or null
+ * @param square the lot may carry the square's market hall (7.17 S4): the one eligible lot of its square; the spec policy also needs level ground
  */
-public record Brief(int minStoreys, int maxStoreys, int streets, int airRights, int frontY, Walk walk) {
+public record Brief(int minStoreys, int maxStoreys, int streets, int airRights, int frontY, Walk walk, boolean square) {
 	/**
 	 * The level of a town-wall lot in the ring's walk profile (D2 slope step): {@code base} is the world y of the lot's ground slab, which the instance pass uses
 	 * instead of the highest ground under the footprint; {@code prev} and {@code next} are the neighbouring ring lots' levels minus {@code base} (at most {@link #MAX_STEP} blocks either way),
@@ -22,6 +23,11 @@ public record Brief(int minStoreys, int maxStoreys, int streets, int airRights, 
 		public Walk {
 			if (Math.abs(prev) > MAX_STEP || Math.abs(next) > MAX_STEP) throw new IllegalArgumentException("walk steps " + prev + ", " + next);
 		}
+	}
+
+	/** A brief for a lot that does not carry the square's market hall. */
+	public Brief(int minStoreys, int maxStoreys, int streets, int airRights, int frontY, Walk walk) {
+		this(minStoreys, maxStoreys, streets, airRights, frontY, walk, false);
 	}
 
 	/** A brief without a wall-walk level. */

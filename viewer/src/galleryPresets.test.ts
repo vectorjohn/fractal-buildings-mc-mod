@@ -13,6 +13,13 @@ describe('gallery presets', () => {
     expect(batchArgs(p)).toEqual(['batch', '--seeds', '0..15', '--lot', '20x20', '--style', 'medieval', '--terrain', 'flat:64',
       '--front', 'north', '--type', 'house', '--gen', 'v1']);
   });
+  it('passes square lots to the CLI as --square', () => {
+    const p = parsePreset('shop-market', { ...base, type: 'shop', square: true });
+    expect(p.square).toBe(true);
+    expect(batchArgs(p).slice(-1)).toEqual(['--square']);
+    expect(batchArgs(parsePreset('x', base))).not.toContain('--square');
+    expect(() => parsePreset('p', { ...base, square: 'yes' })).toThrow(/"square"/);
+  });
   it('applies defaults and accepts the cutaway camera and a dump preset', () => {
     expect(parsePreset('x', { lot: '8x8' })).toMatchObject({ type: 'house', style: 'medieval', terrain: 'flat:64', front: 'north', gen: 'v1' });
     const d = parsePreset('fixtures', { kind: 'dump', cameras: ['top', 'cutaway'], cutStorey: 1 });

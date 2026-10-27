@@ -7,7 +7,7 @@ public final class Main {
 	static final String USAGE = """
 			usage: fractal-cli <command> [options]
 			  common: [--gen v0|v1] (default v1); v1 adds [--type T] (default house; check/bench: --types T,..) and style "auto"
-			  gen   --seed N --lot WxD [--at X,Z] [--front north|east|south|west] [--style S] [--terrain SPEC] [--air N] [--check] [--out FILE]
+			  gen   --seed N --lot WxD [--at X,Z] [--front north|east|south|west] [--style S] [--terrain SPEC] [--air N] [--square] [--check] [--out FILE]
 		  floorplan (--in FILE [--building ID] | --seed N --lot WxD [gen options]) [--wide] [--out FILE]  (text floor plans: grids, legend, room table, openings, furniture, circulation)
   batch --seeds A..B --lot WxD [--style S] [--terrain SPEC] [--front F] [--no-check] --out-dir DIR
 			  check --seeds A..B [--lots L,..] [--styles S,..] [--terrains T,..] [--fronts F,..] [--out FILE.md]

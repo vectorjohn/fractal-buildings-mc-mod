@@ -17,6 +17,8 @@ export interface GalleryPreset {
   front: string;
   /** Air rights over the street in front of the lot, in blocks (the CLI's --air; 0 = no street brief). */
   air: number;
+  /** The lot is the square's market-hall lot (the CLI's --square; a shop on level ground). */
+  square: boolean;
   /** Inclusive seed range `A..B` (at most 16 cells); for `dump`, the fixture numbers. */
   seeds: [number, number];
   gen: string;
@@ -25,7 +27,7 @@ export interface GalleryPreset {
   cameras: CameraName[];
 }
 
-const KEYS = new Set(['kind', 'type', 'style', 'lot', 'terrain', 'front', 'seeds', 'gen', 'cutStorey', 'cameras', 'air']);
+const KEYS = new Set(['kind', 'type', 'style', 'lot', 'terrain', 'front', 'seeds', 'gen', 'cutStorey', 'cameras', 'air', 'square']);
 const FRONTS = ['north', 'east', 'south', 'west'];
 
 function bad(name: string, what: string): never {
@@ -62,6 +64,8 @@ export function parsePreset(name: string, json: unknown): GalleryPreset {
   }
   const air = o['air'] === undefined ? 0 : o['air'];
   if (typeof air !== 'number' || !Number.isInteger(air) || air < 0 || air > 2) bad(name, '"air" must be an integer 0..2');
+  const square = o['square'] === undefined ? false : o['square'];
+  if (typeof square !== 'boolean') bad(name, '"square" must be a boolean');
   const cutStorey = o['cutStorey'] === undefined ? 0 : o['cutStorey'];
   if (typeof cutStorey !== 'number' || !Number.isInteger(cutStorey) || cutStorey < 0) bad(name, '"cutStorey" must be an integer >= 0');
   let cameras: CameraName[] = [...DEFAULT_CAMERAS];
@@ -73,7 +77,7 @@ export function parsePreset(name: string, json: unknown): GalleryPreset {
     cameras = c as CameraName[];
   }
   return {
-    name, kind, type: str('type', 'house'), style, lot, terrain, front, air, seeds, gen: str('gen', 'v1'),
+    name, kind, type: str('type', 'house'), style, lot, terrain, front, air, square, seeds, gen: str('gen', 'v1'),
     cutStorey, cameras,
   };
 }
@@ -81,5 +85,6 @@ export function parsePreset(name: string, json: unknown): GalleryPreset {
 /** The `fractal-cli batch` arguments for a `cli` preset (output directory excluded). */
 export function batchArgs(p: GalleryPreset): string[] {
   return ['batch', '--seeds', `${p.seeds[0]}..${p.seeds[1]}`, '--lot', p.lot, '--style', p.style, '--terrain', p.terrain,
-    '--front', p.front, '--type', p.type, '--gen', p.gen, ...(p.air > 0 ? ['--air', String(p.air)] : [])];
+    '--front', p.front, '--type', p.type, '--gen', p.gen, ...(p.air > 0 ? ['--air', String(p.air)] : []),
+    ...(p.square ? ['--square'] : [])];
 }

@@ -25,7 +25,7 @@ public final class OpeningPass {
 
 	public static void run(BuildContext c) { run(c, e -> door(c, e)); }
 
-	/** As {@link #run(BuildContext)} with the types own cutter for each entrance (the wall type cuts 3 x 4 gates); it returns the entrance as cut. */
+	/** As {@link #run(BuildContext)} with the types own cutter for each entrance (the wall type cuts 3 x 4 gates); it returns the entrance as cut. A cutter may return null for an entrance that gets no door. */
 	public static void run(BuildContext c, java.util.function.UnaryOperator<FacadePlan.Entrance> cutDoor) { run(c, cutDoor, false); }
 
 	/** As above; {@code unglazed} forces plain window holes (the type's choice) on top of the style's {@code unglazed} key. */
@@ -35,7 +35,10 @@ public final class OpeningPass {
 		Decor d = new Decor(c, plan);
 		boolean holes = unglazed || st.unglazed();
 		List<FacadePlan.Entrance> doors = new ArrayList<>();
-		for (FacadePlan.Entrance e : plan.entrances()) doors.add(cutDoor.apply(e));
+		for (FacadePlan.Entrance e : plan.entrances()) {
+			FacadePlan.Entrance cut = cutDoor.apply(e);
+			if (cut != null) doors.add(cut); // null: the entrance has no door in the wall (a market hall is entered by a stair from the open floor)
+		}
 
 		List<Cut> cuts = new ArrayList<>();
 		for (FacadePlan.Layout l : plan.layouts()) {

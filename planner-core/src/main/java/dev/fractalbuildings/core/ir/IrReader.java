@@ -189,9 +189,10 @@ final class IrReader {
 		int maxHeight = gv >= 2 ? integer(so, spp, "maxHeight") : BuildingSpec.DEFAULT_MAX_HEIGHT;
 		int streets = gv >= 2 ? integer(so, spp, "streets") : BuildingSpec.STREET_FRONT;
 		int lead = so.containsKey("lead") ? integer(so, spp, "lead") : 0;
+		boolean square = so.containsKey("square") && Boolean.TRUE.equals(so.get("square"));
 		BuildingSpec spec = guard(spp, () -> new BuildingSpec(gv, seed(so, spp, "specSeed"), string(so, spp, "style"),
 				string(so, spp, "type"), integer(so, spp, "width"), integer(so, spp, "depth"), integer(so, spp, "storeys"), string(so, spp, "roof"),
-				maxHeight, streets, lead));
+				maxHeight, streets, lead, square));
 		String hash = string(o, p, "specHash");
 		if (!hash.equals(SpecHash.of(spec))) {
 			throw new IllegalArgumentException(p + ".specHash: '" + hash + "' does not match the spec (expected '" + SpecHash.of(spec) + "')");

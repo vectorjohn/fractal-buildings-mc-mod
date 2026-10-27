@@ -10,8 +10,14 @@ import java.util.Objects;
  * {@code "empty:<reason>"}.
  */
 public record LotBrief(String id, int x, int z, int w, int d, Facing front, String type, String style, int minStoreys, int maxStoreys,
-		int streets, int airRights, int frontY, int density, String status, Brief.Walk walk) {
+		int streets, int airRights, int frontY, int density, String status, Brief.Walk walk, boolean square) {
 	public static final String BUILD = "build";
+
+	/** A lot that is not a market-hall lot (7.17 S4: {@code square} marks the one lot per square that may carry the market hall). */
+	public LotBrief(String id, int x, int z, int w, int d, Facing front, String type, String style, int minStoreys, int maxStoreys,
+			int streets, int airRights, int frontY, int density, String status, Brief.Walk walk) {
+		this(id, x, z, w, d, front, type, style, minStoreys, maxStoreys, streets, airRights, frontY, density, status, walk, false);
+	}
 
 	/** A lot without a wall-walk level. */
 	public LotBrief(String id, int x, int z, int w, int d, Facing front, String type, String style, int minStoreys, int maxStoreys,
@@ -38,5 +44,5 @@ public record LotBrief(String id, int x, int z, int w, int d, Facing front, Stri
 	public Rect rect() { return new Rect(x, z, w, d); }
 
 	/** The brief to hand to the generator (the front bit is forced by the spec policy). */
-	public Brief brief() { return new Brief(minStoreys, maxStoreys, streets, airRights, frontY, walk); }
+	public Brief brief() { return new Brief(minStoreys, maxStoreys, streets, airRights, frontY, walk, square); }
 }

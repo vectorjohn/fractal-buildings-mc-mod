@@ -69,7 +69,7 @@ public final class ShellGeneratorV1 {
 		for (Phase p : Phase.values()) {
 			for (Box b : c.boxes(p)) {
 				Box3 q = b.box();
-				if (q.x() < 0 || q.y() < 0 || q.z() < 0 || q.maxX() > spec.width() || q.maxZ() > spec.depth() || q.maxY() + lift > spec.maxHeight()) {
+				if (q.x() < 0 || q.y() + lift < 0 || q.z() < 0 || q.maxX() > spec.width() || q.maxZ() > spec.depth() || q.maxY() + lift > spec.maxHeight()) {
 					throw new IllegalStateException(p + " box " + b + " leaves the envelope " + spec.width() + "x" + spec.maxHeight() + "x" + spec.depth());
 				}
 				top = Math.max(top, q.maxY() + lift);

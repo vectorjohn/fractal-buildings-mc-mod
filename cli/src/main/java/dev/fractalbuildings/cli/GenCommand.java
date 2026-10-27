@@ -14,7 +14,7 @@ final class GenCommand {
 	private GenCommand() {}
 
 	static int run(String[] args) throws IOException {
-		Opts o = new Opts(args, Set.of("seed", "lot", "at", "front", "style", "terrain", "out", "type", "gen", "air"), Set.of("check"));
+		Opts o = new Opts(args, Set.of("seed", "lot", "at", "front", "style", "terrain", "out", "type", "gen", "air"), Set.of("check", "square"));
 		String gen = Scenes.gen(o);
 		long seed = o.longValue("seed");
 		int[] lot = Opts.lot(o.require("lot"));
@@ -23,7 +23,7 @@ final class GenCommand {
 		String style = Scenes.style(o.get("style", "plain"), gen);
 		ProbeSpecs.Probes p = Scenes.probes(o.get("terrain", "flat:64"));
 		int[] at = Scenes.origin(o.get("at", null), p, lot[0], lot[1]);
-		byte[] json = IrJson.write(Scenes.generate(Scenes.request(seed, lot, at, front, type, style, p, o.intValue("air", 0)), o.flag("check"), gen))
+		byte[] json = IrJson.write(Scenes.generate(Scenes.request(seed, lot, at, front, type, style, p, o.intValue("air", 0), o.flag("square")), o.flag("check"), gen))
 				.getBytes(StandardCharsets.UTF_8);
 		if (o.has("out")) {
 			write(Path.of(o.get("out", null)), json);

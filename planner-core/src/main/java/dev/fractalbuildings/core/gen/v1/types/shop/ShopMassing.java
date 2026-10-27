@@ -41,27 +41,26 @@ final class ShopMassing {
 		return new Massing(StoreyGrid.of(1, sp.maxHeight() >= ShopType.GROUND + 2 ? ShopType.GROUND : 4, 4), List.of(main), List.of());
 	}
 
-	/** The market hall: one mass on a row of posts ({@link ShopType#stilts}), storeys up a stair from the entrance flight; null if it does not fit. */
+	/**
+	 * The market hall: one mass on a row of posts ({@link ShopType#stilts}), its floors one room each. The stair is a core along the back edge that
+	 * starts under the building: its first flight rises from the open floor through a hole in the first floor ({@link Core#LEG}), and
+	 * the flights of the storeys above stack on it; null if it does not fit.
+	 */
 	private static Massing market(BuildContext c, int maxStoreys) {
 		BuildingSpec sp = c.spec();
 		int lift = ShopType.legHeight(c);
 		int W = sp.width(), D = sp.depth() - sp.lead();
 		if (lift == 0 || D < 9) return null;
-		int deck = D >= 11 ? 2 : D >= 10 ? 1 : 0; // rows left in front of the hall for the landing the front steps rise to (see InstancePassV1 stoops)
-		D -= deck;
-		for (int n = Math.min(Math.min(sp.storeys(), maxStoreys), 3); n >= 1; n--) {
+		for (int n = 1; n >= 1; n--) { // one hall storey over the open floor (the store, if any, is in the roof space: dropped)
 			Draws r = c.draws("massing/market", n);
 			StoreyGrid g = StoreyGrid.of(n, ShopType.GROUND, Math.max(4, c.style().massing().typical()));
 			if (g.y(n) + 2 > sp.maxHeight() - lift) continue;
 			Mass main = new Mass("main0", ShopType.MARKET_KIND, 0, 0, W, r.range(Math.min(D, 10), Math.min(D, 14)), 0, n, null, false);
-			List<Core> cores = new ArrayList<>();
-			if (n >= 2) {
-				Core k = MassingOps.core(g, List.of(main), List.of(), 0, n, r);
-				if (k == null) k = sideCore(g, List.of(main), List.of(), n, r);
-				if (k == null) continue;
-				cores.add(k);
-			}
-			Massing m = new Massing(g, List.of(main), cores).shiftedZ(sp.lead() + deck);
+			int len = Math.max(lift + 1, n >= 2 ? Core.length(g, 0, n) : 0);
+			if (len > W - 2) continue;
+			int x = r.chance(1, 2) ? main.x() + 1 : main.maxX() - 1 - len; // against a side wall, the back wall on its far side
+			Core k = new Core(x, main.maxZ() - 3, len, 2, Core.LEG, n);
+			Massing m = new Massing(g, List.of(main), List.of(k)).shiftedZ(sp.lead());
 			if (MassingCheck.check(m, W, sp.depth(), sp.maxHeight() - lift).isEmpty()) return m;
 		}
 		return null;

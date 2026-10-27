@@ -84,6 +84,16 @@ final class Scenes {
 		return new GenRequest(seed, lot, type, style, p.terrain(), p.biome(), brief);
 	}
 
+	/** As the street-brief overload, and with {@code square} the lot is the one on its square that may carry the market hall (7.17 S4; a shop on level ground). */
+	static GenRequest request(long seed, int[] lotWd, int[] at, Facing front, String type, String style, ProbeSpecs.Probes p, int air, boolean square) {
+		if (!square) return request(seed, lotWd, at, front, type, style, p, air);
+		GenRequest base = request(seed, lotWd, at, front, type, style, p, air);
+		dev.fractalbuildings.core.gen.Brief b = base.brief();
+		dev.fractalbuildings.core.gen.Brief brief = b == null ? new dev.fractalbuildings.core.gen.Brief(1, 99, 1, 0, dev.fractalbuildings.core.gen.Brief.NO_FRONT_Y, null, true)
+				: new dev.fractalbuildings.core.gen.Brief(b.minStoreys(), b.maxStoreys(), b.streets(), b.airRights(), b.frontY(), b.walk(), true);
+		return new GenRequest(seed, base.lot(), type, style, p.terrain(), p.biome(), brief);
+	}
+
 	/** Generates the scene; with {@code check}, runs the invariants against the real probe and embeds the violations. */
 	static SceneDoc generate(GenRequest req, boolean check, String gen) {
 		SceneDoc s;

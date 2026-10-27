@@ -11,6 +11,7 @@ import dev.fractalbuildings.core.gen.v1.style.InteriorStyle;
 import dev.fractalbuildings.core.ir.Box3;
 import dev.fractalbuildings.core.ir.Facing;
 import dev.fractalbuildings.core.ir.Layer;
+import dev.fractalbuildings.core.ir.Opening;
 import dev.fractalbuildings.core.ir.OpeningKind;
 import dev.fractalbuildings.core.ir.Role;
 import dev.fractalbuildings.core.rand.Draws;
@@ -122,7 +123,11 @@ public final class InteriorPass {
 			for (int s = ms.get(i).from(); s < ms.get(i).to(); s++) if (placed[i][s] != null) hooks(c, g, ms.get(i), s, placed[i][s]);
 		}
 		for (Core k : m.cores()) {
-			for (int s = k.from(); s < k.to() - 1; s++) {
+			if (k.from() == Core.LEG) { // the first flight rises from the open floor under a raised building: it starts outside, in the room that stands on the core's cell on storey 0
+				int hi = ms.indexOf(m.interiorContaining(0, k.x(), k.z(), k.sx(), k.sz()));
+				flight(c, k, Core.LEG, -c.stilts().lift(), c.stilts().lift(), 0, true, Opening.OUTSIDE, placed[hi][0].idAt(k.x(), k.z()));
+			}
+			for (int s = Math.max(k.from(), 0); s < k.to() - 1; s++) {
 				int lo = ms.indexOf(m.interiorContaining(s, k.x(), k.z(), k.sx(), k.sz()));
 				int hi = ms.indexOf(m.interiorContaining(s + 1, k.x(), k.z(), k.sx(), k.sz()));
 				flight(c, g, k, s, placed[lo][s].idAt(k.x(), k.z()), placed[hi][s + 1].idAt(k.x(), k.z()));
@@ -476,25 +481,36 @@ public final class InteriorPass {
 	 * is cut. Plan "Core contract" has the walk-through.
 	 */
 	public static void flight(BuildContext c, StoreyGrid g, Core k, int s, String from, String to) {
-		int h = g.height(s), y = g.y(s);
+		flight(c, k, s, g.y(s), g.height(s), g.y(s + 1), false, from, to);
+	}
+
+	/**
+	 * The flight from {@code y} (the slab it stands on) up {@code h} blocks to {@code top} (the next floor's slab). {@code fromGround}: the
+	 * columns start at the slab layer itself, with no slab under them (the first flight of a building on posts, from the open floor,
+	 * whose local y is below 0 until the stilts lift the building).
+	 */
+	static void flight(BuildContext c, Core k, int s, int y, int h, int top, boolean fromGround, String from, String to) {
 		boolean even = (s - k.from()) % 2 == 0;
+		int y1 = fromGround ? y : y + 1; // lowest block of a column
 		boolean ax = k.alongX();
 		int len = ax ? k.sx() : k.sz();
 		int base = ax ? k.x() : k.z();
 		int row = ax ? (even ? k.maxZ() - 1 : k.z()) : (even ? k.maxX() - 1 : k.x());
 		int first = Integer.MAX_VALUE, cut = Integer.MAX_VALUE; // lowest column of the run, and of the steps under the slab opening
 		for (int i = 0; i <= h - 1; i++) {
-			int col = even ? base + 1 + i : base + len - 2 - i;
+			int col = fromGround ? base + len - h + i : even ? base + 1 + i : base + len - 2 - i; // a flight from the open floor ends on the core's last column, where the flights above begin their landing
 			first = Math.min(first, col);
 			if (i <= h - 2) cut = Math.min(cut, col);
-			if (ax) c.box(Role.STAIR, Layer.INTERIOR, s, col, y + 1, row, 1, i + 1, 1);
-			else c.box(Role.STAIR, Layer.INTERIOR, s, row, y + 1, col, 1, i + 1, 1);
+			Layer layer = fromGround ? Layer.SHELL : Layer.INTERIOR; // the first flight of a market hall stands in the open, in view
+			int st = fromGround ? -1 : s;
+			if (ax) c.box(Role.STAIR, layer, st, col, y1, row, 1, i + 1 + y + 1 - y1, 1);
+			else c.box(Role.STAIR, layer, st, row, y1, col, 1, i + 1 + y + 1 - y1, 1);
 		}
-		int top = g.y(s + 1);
 		// The last step is the slab level itself (its top is flush with the next floor), and the walker leaves it sideways onto the
 		// landing of the next flight; the slab is cut only over the other h - 1 steps, whose headroom needs it.
-		if (ax) c.box(Role.AIR, Layer.INTERIOR, s, cut, top, row, h - 1, 1, 1);
-		else c.box(Role.AIR, Layer.INTERIOR, s, row, top, cut, 1, 1, h - 1);
+		int cutStorey = fromGround ? 0 : s; // the slab it cuts is the first floor of the raised building
+		if (ax) c.box(Role.AIR, Layer.INTERIOR, cutStorey, cut, top, row, h - 1, 1, 1);
+		else c.box(Role.AIR, Layer.INTERIOR, cutStorey, row, top, cut, 1, 1, h - 1);
 		Facing f = ax ? (even ? Facing.EAST : Facing.WEST) : (even ? Facing.SOUTH : Facing.NORTH);
 		Box3 run = ax ? Box3.of(first, y + 1, row, h, h, 1) : Box3.of(row, y + 1, first, 1, h, h);
 		c.opening(OpeningKind.STAIR, run, f, from, to);

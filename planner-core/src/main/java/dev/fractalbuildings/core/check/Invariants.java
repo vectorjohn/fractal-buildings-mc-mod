@@ -76,8 +76,9 @@ public final class Invariants {
 		int[] queue = new int[seen.length];
 		int head = 0, tail = 0;
 		for (Opening o : openings) {
-			if (o.kind() != OpeningKind.DOOR) continue;
-			if (!o.from().equals(Opening.OUTSIDE) && !o.to().equals(Opening.OUTSIDE)) continue;
+			boolean fromOutside = o.kind() == OpeningKind.STAIR && o.from().equals(Opening.OUTSIDE); // the stair up into a market hall from its open floor (7.17 S4) is its way in
+			if (o.kind() != OpeningKind.DOOR && !fromOutside) continue;
+			if (!fromOutside && !o.from().equals(Opening.OUTSIDE) && !o.to().equals(Opening.OUTSIDE)) continue;
 			Box3 q = o.box();
 			for (int y = q.y(); y < q.maxY(); y++)
 				for (int z = q.z(); z < q.maxZ(); z++)
@@ -294,7 +295,8 @@ public final class Invariants {
 			int head = 0, tail = 0;
 			boolean[] hole = new boolean[outside.length];
 			for (Opening o : b.shell().openings()) {
-				if (o.kind() != OpeningKind.WINDOW) continue;
+				// a stair from the open floor under a raised hall (7.17 S4) is the way in: its shaft up to the first floor is open on purpose
+				if (o.kind() != OpeningKind.WINDOW && !(o.kind() == OpeningKind.STAIR && o.from().equals(Opening.OUTSIDE))) continue;
 				Box3 q = o.box();
 				for (int y = q.y(); y < q.maxY(); y++)
 					for (int z = q.z(); z < q.maxZ(); z++)
@@ -441,6 +443,7 @@ public final class Invariants {
 				if (o.to().equals(Opening.OUTSIDE) == o.from().equals(Opening.OUTSIDE)) continue;
 				doors.add(o);
 			}
+			for (Opening o : b.shell().openings()) if (o.kind() == OpeningKind.STAIR && o.from().equals(Opening.OUTSIDE)) doors.add(o); // the foot of a market hall's stair (7.17 S4) must be as reachable from the street as a door
 			List<Lot> lots = new ArrayList<>();
 			for (String id : b.lots()) for (Lot l : scene.lots()) if (l.id().equals(id)) lots.add(l);
 			if (doors.isEmpty() || lots.isEmpty()) return;
@@ -473,8 +476,13 @@ public final class Invariants {
 			List<Box3> bad = new ArrayList<>();
 			List<String> names = new ArrayList<>();
 			for (Opening o : doors) {
-				Facing out = o.to().equals(Opening.OUTSIDE) ? o.facing() : o.facing().rotate(2);
+				boolean stair = o.kind() == OpeningKind.STAIR;
+				Facing out = stair ? o.facing().rotate(2) : o.to().equals(Opening.OUTSIDE) ? o.facing() : o.facing().rotate(2);
 				int sx = o.box().x() + out.dx, sz = o.box().z() + out.dz, sy = o.box().y();
+				if (stair) { // the cell before the first step, on the floor the flight starts from
+					sx = (o.facing().dx < 0 ? o.box().maxX() - 1 : o.box().x()) + out.dx;
+					sz = (o.facing().dz < 0 ? o.box().maxZ() - 1 : o.box().z()) + out.dz;
+				}
 				boolean[] seen = new boolean[nx * ny * nz];
 				int[] queue = new int[seen.length];
 				int head = 0, tail = 0;

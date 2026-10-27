@@ -18,9 +18,12 @@ import java.util.Objects;
  * the type's usual front edge (the type's front margin plus the air rights), so that upper storeys can jetty over
  * the street. Local z = 0 is then {@code lead} blocks in front of where it would be; ground masses keep the
  * usual envelope (they start at z >= {@code lead}).
+ *
+ * <p>{@code square} (7.17 SHOPLOW S4; JSON key written only when true): the lot is the one on its square that may carry the
+ * market hall, on level ground; only the shop type reads it.
  */
 public record BuildingSpec(int genVersion, long specSeed, String style, String type, int width, int depth, int storeys, String roof,
-		int maxHeight, int streets, int lead) {
+		int maxHeight, int streets, int lead, boolean square) {
 	/** {@link #maxHeight} of a spec that does not carry one (genVersion 1): the whole overworld. */
 	public static final int DEFAULT_MAX_HEIGHT = 384;
 	public static final int STREET_FRONT = 1;
@@ -37,6 +40,12 @@ public record BuildingSpec(int genVersion, long specSeed, String style, String t
 		if (maxHeight <= 0) throw new IllegalArgumentException("maxHeight " + maxHeight);
 		if (streets < 1 || streets > 15 || (streets & STREET_FRONT) == 0) throw new IllegalArgumentException("streets " + streets);
 		if (lead < 0 || lead > MAX_LEAD) throw new IllegalArgumentException("lead " + lead);
+	}
+
+	/** A spec that is not a market-hall lot. */
+	public BuildingSpec(int genVersion, long specSeed, String style, String type, int width, int depth, int storeys, String roof,
+			int maxHeight, int streets, int lead) {
+		this(genVersion, specSeed, style, type, width, depth, storeys, roof, maxHeight, streets, lead, false);
 	}
 
 	/** A spec without a lead (everything before the jetty step). */

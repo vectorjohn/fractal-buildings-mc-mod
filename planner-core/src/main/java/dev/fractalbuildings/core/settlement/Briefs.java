@@ -7,6 +7,7 @@ import dev.fractalbuildings.core.gen.v1.TypeLimits;
 import dev.fractalbuildings.core.gen.v1.Types;
 import dev.fractalbuildings.core.ir.Facing;
 import dev.fractalbuildings.core.probe.TerrainProbe;
+import dev.fractalbuildings.core.rand.Hash64;
 import dev.fractalbuildings.core.style.StyleField;
 import java.util.ArrayList;
 import java.util.List;
@@ -49,7 +50,68 @@ public final class Briefs {
 		for (Street s : plan.streets()) streetRects.add(SettlementChecks.footprint(s));
 		List<LotBrief> out = new ArrayList<>();
 		for (LotBrief l : plan.lots()) out.add(fillLot(plan, l, quarters.at(l.x() + l.w() / 2, l.z() + l.d() / 2, l.density()), styles, exact, streetRects, plazas));
+		markSquareLots(plan, out, exact);
 		return new DistrictPlan(plan.genVersion(), plan.seed(), plan.district(), plan.streets(), plan.plazas(), out, plan.scene(), plan.violations());
+	}
+
+	/** Kinds of plaza that carry a market hall: a town's market and a city's square (a green is a village or hamlet's, and has none). */
+	static boolean hallPlaza(Plaza p) { return p.kind().equals("market") || p.kind().equals("square"); }
+
+	/** Percent of eligible squares whose lowest-hash lot carries the market hall (architect, SHOPLOW A6). */
+	public static final int SQUARE_HALL_PCT = 60;
+	/** Widest relief (blocks) of a market-hall lot. */
+	public static final int SQUARE_RELIEF = 1;
+	/** Narrowest front (blocks) of a market-hall lot: an envelope of {@code ShopType.MARKET_MIN_WIDTH} (9) plus the shop's side margins. */
+	public static final int SQUARE_MIN_FRONT = dev.fractalbuildings.core.gen.v1.types.shop.ShopType.MARKET_MIN_WIDTH + 2 * 1;
+
+	/**
+	 * 7.17 S4: in each market or square plaza, the eligible lot with the lowest hash (a shop, level, at least {@link #SQUARE_MIN_FRONT} along a
+	 * front that faces the plaza across the street) is marked {@code square} on {@link #SQUARE_HALL_PCT} percent of the plazas, so a square has one market hall
+	 * at most. A pure function of the plan seed and the plaza and lot positions.
+	 */
+	static void markSquareLots(DistrictPlan plan, List<LotBrief> lots, TerrainProbe exact) {
+		for (Plaza p : plan.plazas()) {
+			if (!hallPlaza(p) || Hash64.below(Hash64.hash(plan.seed(), "square-hall", p.x(), p.z()), 100) >= SQUARE_HALL_PCT) continue;
+			Rect r = new Rect(p.x(), p.z(), p.w(), p.d());
+			boolean taken = false; // a lot marked for a neighbouring plaza that faces this one too counts: one hall per square
+			for (LotBrief l : lots) taken |= l.square() && facesPlaza(l, r);
+			if (taken) continue;
+			int best = -1;
+			long bestHash = 0;
+			for (int i = 0; i < lots.size(); i++) {
+				LotBrief l = lots.get(i);
+				if (!eligible(l, r, exact)) continue;
+				long h = Hash64.hash(plan.seed(), "square-lot", l.x(), l.z());
+				if (best < 0 || Long.compareUnsigned(h, bestHash) < 0) { best = i; bestHash = h; }
+			}
+			if (best < 0) continue;
+			LotBrief l = lots.get(best);
+			lots.set(best, new LotBrief(l.id(), l.x(), l.z(), l.w(), l.d(), l.front(), l.type(), l.style(), l.minStoreys(), l.maxStoreys(), l.streets(), l.airRights(), l.frontY(), l.density(), l.status(), l.walk(), true));
+		}
+	}
+
+	/** The lot may carry the plaza's hall: a shop that builds, a front of at least {@link #SQUARE_MIN_FRONT} that faces the plaza, a footprint with relief of at most {@link #SQUARE_RELIEF}. */
+	static boolean eligible(LotBrief l, Rect plaza, TerrainProbe exact) {
+		if (!l.builds() || !l.type().equals("shop") || (l.front().dx != 0 ? l.d() : l.w()) < SQUARE_MIN_FRONT || !facesPlaza(l, plaza)) return false;
+		int lo = Integer.MAX_VALUE, hi = Integer.MIN_VALUE;
+		for (int z = l.z(); z < l.z() + l.d(); z++)
+			for (int x = l.x(); x < l.x() + l.w(); x++) {
+				int y = exact.floorY(x, z);
+				lo = Math.min(lo, y);
+				hi = Math.max(hi, y);
+			}
+		return hi - lo <= SQUARE_RELIEF;
+	}
+
+	/** Most blocks between a lot's front edge and the plaza it faces: the street along the square (3 to 5 wide) and its margins. */
+	public static final int SQUARE_REACH = 6;
+
+	/** The lot faces the rectangle: straight out from the middle of its front edge, within {@link #SQUARE_REACH} blocks, lies a column of it. */
+	static boolean facesPlaza(LotBrief l, Rect r) {
+		int k = ((l.front().dx != 0 ? l.d() : l.w()) - 1) / 2;
+		int[] c = outside(l, l.front(), k);
+		for (int g = 0; g < SQUARE_REACH; g++) if (r.contains(c[0] + g * l.front().dx, c[1] + g * l.front().dz)) return true;
+		return false;
 	}
 
 	private static LotBrief fillLot(DistrictPlan plan, LotBrief l, QuarterKind quarter, StyleField styles, TerrainProbe exact,

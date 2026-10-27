@@ -37,7 +37,8 @@ final class StairRise {
 			boolean broken = false;
 			for (int k = -1; k < n && !broken; k++) {
 				int x = x0 + k * f.dx, z = z0 + k * f.dz;
-				int[] lv = level(g, x, z, r.y() - 1, yTop);
+				boolean outsideFoot = k < 0 && o.from().equals(Opening.OUTSIDE); // the floor before a flight from the open floor under a raised hall: not the hall's own floor over it
+				int[] lv = level(g, x, z, r.y() - 1, outsideFoot ? r.y() + 1 : yTop);
 				if (lv == null) { fails.add(new Fail(o.id(), Box3.of(x, r.y(), z, 1, 1, 1), "nothing to stand on")); broken = true; }
 				else if (k >= 0 && lv[0] - prevExit > 1) { fails.add(new Fail(o.id(), Box3.of(x, r.y(), z, 1, 1, 1), "rise of " + (lv[0] - prevExit) + " half blocks")); broken = true; }
 				else prevExit = lv[1];

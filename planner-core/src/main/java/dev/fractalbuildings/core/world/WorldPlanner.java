@@ -276,7 +276,7 @@ public class WorldPlanner {
 		boolean changed = false;
 		for (LotBrief l : p.lots()) {
 			if (config.styleEnabled(l.style()) || l.style().equals(StyleLibrary.FALLBACK)) { lots.add(l); continue; }
-			lots.add(new LotBrief(l.id(), l.x(), l.z(), l.w(), l.d(), l.front(), l.type(), StyleLibrary.FALLBACK, l.minStoreys(), l.maxStoreys(), l.streets(), l.airRights(), l.frontY(), l.density(), l.status(), l.walk()));
+			lots.add(new LotBrief(l.id(), l.x(), l.z(), l.w(), l.d(), l.front(), l.type(), StyleLibrary.FALLBACK, l.minStoreys(), l.maxStoreys(), l.streets(), l.airRights(), l.frontY(), l.density(), l.status(), l.walk(), l.square()));
 			changed = true;
 		}
 		return changed ? new DistrictPlan(p.genVersion(), p.seed(), p.district(), p.streets(), p.plazas(), lots, p.scene(), p.violations()) : p;

@@ -9,6 +9,8 @@ import dev.fractalbuildings.core.gen.v1.structure.Posts;
 import dev.fractalbuildings.core.gen.v1.model.Mass;
 import dev.fractalbuildings.core.gen.v1.model.Massing;
 import dev.fractalbuildings.core.gen.v1.model.Face;
+import dev.fractalbuildings.core.gen.v1.model.Core;
+import dev.fractalbuildings.core.ir.Box;
 import dev.fractalbuildings.core.ir.Box3;
 import dev.fractalbuildings.core.ir.Facing;
 import dev.fractalbuildings.core.ir.Layer;
@@ -30,6 +32,10 @@ final class Shopfront {
 	private Shopfront() {}
 
 	static void facade(BuildContext c) {
+		if (market(c)) {
+			marketFacade(c);
+			return;
+		}
 		List<FacadePlan.Layout> layouts = FacadePass.layout(c);
 		Massing m = c.massing();
 		List<FacadePlan.Entrance> others = new ArrayList<>();
@@ -137,6 +143,10 @@ final class Shopfront {
 	static int sill(BuildContext c) { return new Draws(c.hash("shop/sill")).chance(1, 4) ? 0 : 1; }
 
 	static void openings(BuildContext c) {
+		if (market(c)) { // no door in the wall: the hall is entered by the stair from the open floor
+			OpeningPass.run(c, e -> null);
+			return;
+		}
 		OpeningPass.run(c);
 		int sill = sill(c), h = 3 - sill;
 		for (FacadePlan.Layout l : c.facadePlan().layouts()) {
@@ -168,8 +178,61 @@ final class Shopfront {
 	}
 
 
+	/** True for the market hall: one raised mass on posts ({@link ShopType#MARKET_KIND}). */
+	static boolean market(BuildContext c) { return c.massing().main().kind().equals(ShopType.MARKET_KIND); }
+
+	private static Core legCore(Massing m) {
+		for (Core k : m.cores()) if (k.from() == Core.LEG) return k;
+		throw new IllegalStateException("market hall without its stair core");
+	}
+
+	/**
+	 * The market hall's facade: windows on every face of the upper room (no shopfront, DS-45: the street level is the open floor), and an entrance
+	 * that is only the top of the stair: on the back face, at the stair's last column, so that no door is cut there (the openings pass cuts none).
+	 */
+	private static void marketFacade(BuildContext c) {
+		List<FacadePlan.Layout> layouts = FacadePass.layout(c);
+		Massing m = c.massing();
+		Core k = legCore(m);
+		Face back = null;
+		for (Face f : c.faces()) if (f.mass().equals(m.main().id()) && f.storey() == 0 && f.side() == Facing.SOUTH && (back == null || f.length() > back.length())) back = f;
+		if (back == null) throw new IllegalStateException("market hall has no back face");
+		int pos = Math.max(back.a() + 1, Math.min(back.b() - 2, k.maxX() - 1));
+		FacadePlan plan = new FacadePlan(layouts, new FacadePlan.Entrance(back, pos), List.of());
+		c.setFacadePlan(plan);
+		FacadePass.decorate(c, plan);
+	}
+
+	/**
+	 * The market hall's interior: the open floor paved (so the stair's foot and the walker standing in front of it are on a floor), the shared pass (one
+	 * room per floor, the stair core with its first flight from the open floor), a balustrade of fence along both sides of that flight's
+	 * higher steps, and a rail round the opening it makes in the first floor where a walker could step into it.
+	 */
+	private static void marketInterior(BuildContext c) {
+		Massing m = c.massing();
+		Mass main = m.main();
+		Core k = legCore(m);
+		int lift = c.stilts().lift(), ground = -lift; // local y of the open floor, below the raised building's own frame
+		c.box(Role.FOUNDATION, Layer.FOUNDATION, Box.NO_STOREY, main.x(), ground, main.z(), main.sx(), 1, main.sz());
+		InteriorPass.run(c);
+		int row = k.maxZ() - 1, first = k.x() + k.sx() - lift; // the flight is on the core's back row, its last step on the core's last column
+		for (int i = 1; i <= lift - 2; i++) { // sides of the steps above the first, under the floor: a fence column as high as the step and its rail
+			int h = Math.min(i + 2, lift - 1);
+			for (int z : new int[] {row - 1, row + 1}) c.box(Role.RAIL, Layer.SHELL, Box.NO_STOREY, first + i, ground + 1, z, 1, h, 1);
+		}
+		c.box(Role.RAIL, Layer.INTERIOR, 0, first - 1, 1, row, 1, 1, 1); // the slab's end beside the opening
+		if (m.storeys() == 1) c.box(Role.RAIL, Layer.INTERIOR, 0, first, 1, row - 1, lift - 1, 1, 1); // the front side of the opening, open floor of the hall
+		String hall = null;
+		for (var r : c.rooms()) if (r.storey() == 0) hall = r.id();
+		MarketStalls.place(c, main, k, lift, hall);
+	}
+
 	/** The shared interiors, then a counter near the front of the shop room and, if the upper floor planned no bedroom, a bed and a table. */
 	static void interior(BuildContext c) {
+		if (market(c)) {
+			marketInterior(c);
+			return;
+		}
 		InteriorPass.run(c);
 		Massing m = c.massing();
 		Mass main = m.main();

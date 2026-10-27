@@ -22,9 +22,9 @@ import org.junit.jupiter.api.Test;
 
 /**
  * 5.12: shops sometimes have open ground at street level, an arcade (the upper storeys carried over
- * a walkway on posts) or a market hall (the whole building on a row of posts, the floor under it
- * open), and are built only on a level frontage. The geometry rules are checked here per variant;
- * the invariants (no-floating, entrance-reachable...) by V1PropertyTest, which draws all of them.
+ * a walkway on posts), and are built only on a level frontage; the market hall (the whole building on a row of posts, the floor
+ * under it open) is the one shop per square that the brief marks ({@link MarketHallTest}, 7.17 S4). The geometry rules are checked
+ * here per variant; the invariants (no-floating, entrance-reachable...) by V1PropertyTest, which draws all of them.
  */
 class ShopOpenGroundTest {
 	enum Form { ENCLOSED, ARCADE, MARKET }
@@ -55,15 +55,7 @@ class ShopOpenGroundTest {
 					if (v.box().sy() != b.storeys().get(1).y()) p.add(v.id() + " does not reach the floor above");
 				}
 			}
-			case MARKET -> {
-				int lift = b.storeys().get(1).y();
-				if (lift < 4) p.add("market floor only " + lift + " high");
-				for (Box x : b.boxes()) {
-					if (x.box().y() < lift - 1 && x.role() != Role.BEAM) p.add("a " + x.role() + " block below the shop floor at y " + x.box().y());
-				}
-				if (b.volumes().stream().filter(v -> v.id().startsWith("leg")).count() < 6) p.add("fewer than 6 posts");
-				if (b.rooms().stream().anyMatch(r -> r.storey() == 0)) p.add("a room on the open floor");
-			}
+			case MARKET -> p.addAll(MarketHallTest.problems(b)); // the market hall's own rules (S4)
 			case ENCLOSED -> { }
 		}
 		return p;
@@ -83,28 +75,22 @@ class ShopOpenGroundTest {
 					n++;
 				}
 		System.out.println(String.format(Locale.ROOT, "shop forms over %d: enclosed %d, arcade %d, market %d", n, count[0], count[1], count[2]));
-		assertTrue(count[0] >= 0.35 * n, "enclosed " + count[0] + "/" + n);
+		assertTrue(count[0] >= 0.55 * n, "enclosed " + count[0] + "/" + n);
 		assertTrue(count[1] >= 0.15 * n, "arcades " + count[1] + "/" + n);
-		assertTrue(count[2] >= 0.10 * n, "market halls " + count[2] + "/" + n);
+		assertEquals(0, count[2], "a market hall on a shop that is not the square's"); // only a square lot is one (S4)
 	}
 
 	@Test
 	void theChecksCanFail() {
-		BuildingIr arcade = null, market = null;
-		for (long seed = 0; (arcade == null || market == null) && seed < 200; seed++) {
+		BuildingIr arcade = null;
+		for (long seed = 0; arcade == null && seed < 200; seed++) {
 			BuildingIr b = ShopTypeTest.shop("medieval", seed, 10, 20);
-			if (form(b) == Form.ARCADE && arcade == null) arcade = b;
-			if (form(b) == Form.MARKET && market == null) market = b;
+			if (form(b) == Form.ARCADE) arcade = b;
 		}
-		assertTrue(arcade != null && market != null);
-		assertTrue(problems(arcade).isEmpty() && problems(market).isEmpty());
+		assertTrue(arcade != null && problems(arcade).isEmpty());
 		// mutant: an arcade without its posts is one with none
 		List<Volume> noPosts = arcade.volumes().stream().filter(v -> !v.id().startsWith("post")).toList();
 		assertEquals(Form.ENCLOSED, form(new BuildingIr(arcade.spec(), arcade.bounds(), arcade.storeys(), noPosts, arcade.rooms(), arcade.openings(), arcade.roofs(), arcade.boxes(), arcade.hooks())));
-		// mutant: a wall under the market floor
-		List<Box> boxes = new ArrayList<>(market.boxes());
-		boxes.add(new Box(dev.fractalbuildings.core.ir.Box3.of(2, 1, 2, 3, 1, 1), Role.WALL, dev.fractalbuildings.core.ir.Layer.SHELL, 0));
-		assertTrue(!problems(new BuildingIr(market.spec(), market.bounds(), market.storeys(), market.volumes(), market.rooms(), market.openings(), market.roofs(), boxes, market.hooks())).isEmpty());
 	}
 
 	private static GenRequest onSlope(int run) {
