@@ -29,6 +29,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.status.ChunkStatus;
 import net.minecraft.world.level.levelgen.Heightmap;
@@ -48,6 +49,15 @@ public class RoadsClientGameTest implements FabricClientGameTest {
 	static final StringBuilder OUT = new StringBuilder();
 	/** Failed checks: they are collected so the run still takes its screenshots, then reported together. */
 	static final List<String> PROBLEMS = new ArrayList<>();
+	/** Where routes are picked (FB_ROADS_CENTER "x,z", default the origin): a snowy spot of a seed shows the floating-snow check (ROADCLEAR). */
+	static final int[] CENTER = center();
+
+	static int[] center() {
+		String s = System.getenv("FB_ROADS_CENTER");
+		if (s == null) return new int[] {0, 0};
+		String[] p = s.split(",");
+		return new int[] {Integer.parseInt(p[0].trim()), Integer.parseInt(p[1].trim())};
+	}
 
 	static void problem(String s) {
 		PROBLEMS.add(s);
@@ -82,7 +92,7 @@ public class RoadsClientGameTest implements FabricClientGameTest {
 	static Picked pick(WorldPlanner planner) {
 		RoadNet net = planner.roads();
 		TreeMap<EdgeKey, Route> routes = new TreeMap<>();
-		for (Settlement s : net.settlementsNear(0, 0, 2600)) {
+		for (Settlement s : net.settlementsNear(CENTER[0], CENTER[1], 2600)) {
 			for (EdgeKey e : net.edgesOf(s)) {
 				Route r = net.route(e);
 				if (r.ok && !r.touching) routes.put(e, r);
@@ -142,6 +152,7 @@ public class RoadsClientGameTest implements FabricClientGameTest {
 			final boolean firstOrder = oi == 0;
 			if (mutant && System.getenv("FB_ROADS_MUTANT") != null && "0".equals(System.getenv("FB_ROADS_MUTANT"))) continue;
 			RoadFeature.MUTANT_GROUND = mutant;
+			RoadFeature.LEGACY_CLEAR = "1".equals(System.getenv("FB_ROADS_LEGACY"));
 			RoadFeature.CHUNKS.set(0);
 			RoadFeature.BLOCKS.set(0);
 			RoadFeature.NANOS.set(0);
@@ -193,6 +204,7 @@ public class RoadsClientGameTest implements FabricClientGameTest {
 				if (takeShots) screenshots(context, world, first);
 			} finally {
 				RoadFeature.MUTANT_GROUND = false;
+				RoadFeature.LEGACY_CLEAR = false;
 				RoadFeature.RECORD_STATS = false;
 			}
 		}
@@ -279,6 +291,23 @@ public class RoadsClientGameTest implements FabricClientGameTest {
 		say(String.format("read back: %d road columns, %d on the ledger and %d equal to it, %d with a solid deck block, %d over water (%d outside a crossing), "
 			+ "%d with a block in the 3 above, %d inside a settlement", cols, onLedger, deckOk, solidUnder, overWater, overWaterNoSpan, headBlocked, inSettlement));
 		say("blocks in the 3 above the deck: " + blockers);
+		// ROADCLEAR: a snow layer with air under it in a corridor chunk (nothing natural makes one; the clear of a road did, 2113 times in the playtest world)
+		int floating = 0;
+		List<String> floatAt = new ArrayList<>();
+		for (ChunkPos c : p.corridor()) {
+			for (int dz = 0; dz < 16; dz++) for (int dx = 0; dx < 16; dx++) {
+				int x = c.getMinBlockX() + dx, z = c.getMinBlockZ() + dz;
+				int top = level.getHeight(Heightmap.Types.WORLD_SURFACE, x, z);
+				for (int y = top; y > top - 40 && y > level.getMinY() + 1; y--) {
+					if (level.getBlockState(pos.set(x, y, z)).is(Blocks.SNOW) && level.getBlockState(pos.set(x, y - 1, z)).isAir()) {
+						floating++;
+						if (floatAt.size() < 5) floatAt.add(x + "," + y + "," + z);
+					}
+				}
+			}
+		}
+		say("floating snow layers in the corridor chunks: " + floating + " " + floatAt);
+		if (floating > 0 && !RoadFeature.LEGACY_CLEAR) problem("snow layers floating over the roads: " + floating + " " + floatAt);
 		if (cols < 800) problem("only " + cols + " road columns in the corridor");
 		int unclaimed = cols - onLedger;
 		if (unclaimed > 0) say("road columns the feature did not draw (a foreign structure or a district has them): " + unclaimed + ", e.g. " + missing + "; foreign structures seen: " + RoadFeature.FOREIGN_SEEN);
