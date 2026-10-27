@@ -93,6 +93,20 @@ class RoomWalkTest {
 		assertEquals(tried, failed, "a chest on the cell inside a door must fail furnished-rooms-walkable");
 	}
 
+
+	/**
+	 * d15_m36.l12 of the 987654321 world map (metropolis s2_m6, found by city-check --sites cells): in the narrow loose pass the shop counter
+	 * went in a corner whose only free neighbour held a light, so its use cell was walled in. The lot, brief and terrain are the district's.
+	 */
+	@Test
+	void aShopCounterIsNotWalledInByALight() {
+		ProbeSpecs.Probes p = ProbeSpecs.parse("recorded:../fixtures/terrain/world-987654321-s64.json.gz");
+		Lot lot = new Lot("d15_m36.l12", 2403, -5734, 15, 10, Facing.WEST);
+		GenRequest rq = new GenRequest(987654321L, lot, "shop", "plains", p.terrain(), p.biome(), new dev.fractalbuildings.core.gen.Brief(4, 4, 1, 1, 68, null, false));
+		SceneDoc s = new GeneratorV1().generate(rq);
+		assertEquals(List.of(), mine(s, rq));
+	}
+
 	/** Beds: foot (the hook) and head (one cell along the facing) are both in the room's air, and the head is against a wall. */
 	@Test
 	void everyBedHasItsHeadAgainstAWall() {
