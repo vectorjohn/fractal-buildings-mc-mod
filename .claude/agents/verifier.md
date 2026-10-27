@@ -74,7 +74,7 @@ Work by path: `cd <worktree> && ...` or `git -C <worktree> ...`.
      always, plus CLI, viewer and server game tests (`:mod:runGameTest`) as
      the change touches them (`scripts/test-all.sh --no-client` runs them
      all). **Don't run heavy layers** (client game tests, `scripts/perf.sh`,
-     `scripts/flythrough.sh`): if the item needed one (`scripts/test-scope.sh` requires
+     `scripts/flythrough.sh`), locally or on the worker box: if the item needed one (`scripts/test-scope.sh` requires
      it), check the coder's pinned
      evidence by the **evidence rule** below. Only if the evidence fails the
      rule, run that layer yourself with
@@ -90,8 +90,11 @@ Work by path: `cd <worktree> && ...` or `git -C <worktree> ...`.
      run everything.
    - `level: full`: the fast layers, **and** every heavy layer `scripts/test-scope.sh`
      requires, run yourself through `scripts/evidence.sh <slug> <command>`
-     (an independent run; the coder's evidence doesn't replace it).
-   Report the summary lines with counts; quote the relevant error for a
+     (an independent run; the coder's evidence doesn't replace it). Heavy
+     layers can run on the worker box instead of under the local heavy lock
+     (`scripts/evidence.sh <slug> scripts/remote.sh -- <command>`, preferred
+     when `scripts/remote.sh --check` succeeds).
+   Report the summary lines with counts, and which host ran them; quote the relevant error for a
    failure. A failure that passes on rerun is a **flake**: see "Flakes".
    The scratchpad directory is shared with other subagents of the coordinator:
    name any log you write there after the item (`testall-<slug>.log`), or
@@ -318,6 +321,11 @@ path `M`. Don't review each item again.
    the tree is clean apart from `docs/runs/`. Run every layer on a snapshot
    of the run branch head `H`, not in the worktree itself:
    `scripts/snapshot-test.sh --name heavy <worktree> H to-main 'scripts/test-all.sh --perf' scripts/flythrough.sh`.
+   When `scripts/remote.sh --check` succeeds, the client and fly-through
+   layers can go to the worker box instead:
+   `scripts/snapshot-test.sh --name heavy <worktree> H to-main 'scripts/remote.sh -- scripts/test-all.sh' 'scripts/remote.sh -- scripts/flythrough.sh' scripts/perf.sh`.
+   Keep `scripts/perf.sh` local: its budgets were set on this host, and
+   timings across hosts aren't comparable. Say which host ran each layer.
    If the coordinator names a passing batched heavy run at `H` (or with only
    docs after it), check its evidence by the evidence rule and run only
    `'scripts/test-all.sh --no-client'`. If anything fails, don't merge;

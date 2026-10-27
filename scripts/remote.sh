@@ -36,7 +36,8 @@ fi
 HOST=${FB_REMOTE_HOST:-beebox}
 CHECK=0 KEEP=0 GPU=1
 FETCH=(
-	build/test-all
+	build/test-all build/client-test build/server-only
+	mod/build/perf mod/build/flythrough
 	planner-core/build/test-results cli/build/test-results mod/build/test-results
 	mod/build/screenshots
 	mod/build/run/clientGameTest/screenshots mod/build/run/clientGameTest/logs

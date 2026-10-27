@@ -16,7 +16,12 @@
 set -uo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-MAIN_ROOT="$(dirname "$(git -C "$ROOT" rev-parse --path-format=absolute --git-common-dir)")"
+# A copy without .git (scripts/remote.sh on the worker) uses its own root.
+if GIT_COMMON="$(git -C "$ROOT" rev-parse --path-format=absolute --git-common-dir 2>/dev/null)"; then
+	MAIN_ROOT="$(dirname "$GIT_COMMON")"
+else
+	MAIN_ROOT="$ROOT"
+fi
 HEAVY_LOCK="$MAIN_ROOT/.claude/heavy.lock"
 if [ -z "${SERVER_ONLY_LOCKED:-}" ]; then
 	mkdir -p "$(dirname "$HEAVY_LOCK")"

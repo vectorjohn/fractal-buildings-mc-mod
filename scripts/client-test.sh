@@ -45,10 +45,20 @@
 #   FB_CLIENT_CMD   run this bash command instead of xvfb-run + Gradle
 #   FB_HEAVY_LOCK   lock file to use instead of <main root>/.claude/heavy.lock
 #   FB_CLIENT_GAME_LOG, FB_CLIENT_POLL (seconds, default 5)
+#
+# FB_USE_DISPLAY=1 uses the X display in $DISPLAY instead of starting Xvfb.
+# scripts/remote.sh sets it on the worker box, where the display is a headless
+# sway session's Xwayland on the GPU (Xvfb has no DRI3, so GPU drivers can't present),
+# together with FB_VK_DRIVER_FILES (its GPU's ICD), which scripts/vk-select.sh then uses.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-MAIN_ROOT="$(dirname "$(git -C "$ROOT" rev-parse --path-format=absolute --git-common-dir)")"
+# A copy without .git (scripts/remote.sh on the worker) uses its own root.
+if GIT_COMMON="$(git -C "$ROOT" rev-parse --path-format=absolute --git-common-dir 2>/dev/null)"; then
+	MAIN_ROOT="$(dirname "$GIT_COMMON")"
+else
+	MAIN_ROOT="$ROOT"
+fi
 HEAVY_LOCK="${FB_HEAVY_LOCK:-$MAIN_ROOT/.claude/heavy.lock}"
 TIMEOUT="${FB_CLIENT_TIMEOUT:-3600}"
 GRACE="${FB_CLIENT_CRASH_GRACE:-60}"
@@ -118,9 +128,11 @@ build_cmd() { # renderer [gradle args]
 		CMD=(bash -c "$FB_CLIENT_CMD")
 		return
 	fi
+	local xvfb=(xvfb-run -a)
+	[[ ${FB_USE_DISPLAY:-} == 1 ]] && xvfb=()
 	# The renderer is picked inside the dev shell, where VK_DRIVER_FILES (lavapipe) and vulkaninfo live.
 	CMD=(env -u WAYLAND_DISPLAY SDL_VIDEODRIVER=x11 FB_VK="$vk" FB_VK_LOG_TAG=client-test
-		xvfb-run -a nix develop "$ROOT" -c bash -c '
+		"${xvfb[@]}" nix develop "$ROOT" -c bash -c '
 			source "$1/scripts/vk-select.sh" && fb_vk_select || exit 2
 			shift; exec "$@"' client-test "$ROOT" ./gradlew --console=plain --no-daemon :mod:runClientGameTest "$@")
 }
