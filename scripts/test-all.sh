@@ -18,9 +18,13 @@
 # The client step takes the heavy lock (<main repo root>/.claude/heavy.lock) itself
 # and waits for it. Don't run this script under that lock yourself: it would wait
 # on its own lock forever.
+#
+# The fast layers (everything before the client layer) run under one of the machine-wide
+# suite slots (scripts/suite.sh; FB_SUITE_SLOTS, default 2), with a "waiting for suite
+# slot" line when all are busy; the slot is released before the client and perf layers.
 set -uo pipefail
 
-usage() { sed -n '2,20p' "$0" | sed 's/^# \{0,1\}//'; }
+usage() { sed -n '2,24p' "$0" | sed 's/^# \{0,1\}//'; }
 
 RUN_CLIENT=1
 RUN_PERF=0
@@ -70,7 +74,13 @@ run_logged() { # step cmd...
 	local log="$OUT/$step.log"
 	LOGS[$step]="$log"
 	printf '%s\n' "\$ $*" > "$log"
-	"$@" >> "$log" 2>&1
+	# Children don't inherit the suite-slot fd: only this script holds the slot, so a
+	# daemon or server a step leaves behind can't keep it after the script ends.
+	if [[ -n "${SUITE_SLOT_FD:-}" ]]; then
+		"$@" >> "$log" 2>&1 {SUITE_SLOT_FD}>&-
+	else
+		"$@" >> "$log" 2>&1
+	fi
 }
 
 # --- JUnit XML counts -------------------------------------------------------
@@ -102,6 +112,12 @@ determinism_counts() {
 	# shellcheck disable=SC2086
 	junit_counts $files
 }
+
+# --- Suite slot for the fast layers (released before the heavy ones) ----------
+# shellcheck source=lib/suite-slot.sh
+. "$ROOT/scripts/lib/suite-slot.sh"
+suite_slot_acquire "test-all $ROOT" || { say "test-all: no suite slot"; exit 1; }
+[[ -n "$SUITE_SLOT_FD" ]] && say "  suite slot: $SUITE_SLOT_FILE"
 
 # --- Gradle task detection --------------------------------------------------
 say "test-all: $ROOT"
@@ -229,6 +245,7 @@ else
 fi
 
 # --- Layer 5: client game tests (heavy lock) ----------------------------------
+suite_slot_release   # fast layers done; heavy layers queue on the heavy lock instead
 if (( ! RUN_CLIENT )); then
 	skip client "--no-client"
 elif ! has_task 'mod:runClientGameTest'; then
