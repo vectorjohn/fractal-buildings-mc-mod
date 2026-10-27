@@ -178,7 +178,7 @@ source of truth, and update it when a command changes.)*
   client game tests; the script enters the dev shell and takes the heavy lock
   itself, so don't wrap it in either). Per-step logs in `build/test-all/`; ends
   with a per-layer summary, screenshot and log paths; non-zero exit on failure.
-- Planner core (pure, fast): `nix develop -c ./gradlew :planner-core:test`
+- Planner core (pure, fast): `nix develop -c ./gradlew :planner-core:test` (the full run under a suite slot: `scripts/suite.sh nix develop -c ./gradlew :planner-core:test`; see "Parallel work")
 - Mod, incl. server game tests (`:mod:runGameTest`, wired into `check`): `nix develop -c ./gradlew :mod:build` (jar in `mod/build/libs/`, planner-core bundled as jar-in-jar); server tests alone: `nix develop -c ./gradlew :mod:runGameTest`
 - Client game tests (heavy, exits on its own): `scripts/client-test.sh [gradle args]` (enters the dev shell and takes the heavy lock itself; runs `:mod:runClientGameTest` under `xvfb-run` on the Intel iGPU, lavapipe fallback; the bare `xvfb-run -a nix develop -c ./gradlew :mod:runClientGameTest` is also safe (on lavapipe), since the task itself drops `WAYLAND_DISPLAY` and sets `SDL_VIDEODRIVER=x11`); screenshots are copied to `mod/build/screenshots/` (e.g. `hello-hut.png`; the raw ones are in `mod/build/run/clientGameTest/screenshots/`), log in `mod/build/run/clientGameTest/logs/latest.log`
 - Client test renderer: `FB_VK=intel` (default: the Intel iGPU, with an automatic lavapipe fallback and a `FALLBACK` line in `build/client-test/gradle.log`) or `FB_VK=lavapipe`; nvidia refused
@@ -216,6 +216,16 @@ agents can work and test at once. The rules below exist to make that safe.
   Timing numbers taken while other agents are busy are noisy: record the load
   (`cat /proc/loadavg`) next to them, and re-measure on a quiet machine before
   a number decides a gate.
+- **Full fast suites take a suite slot**: at most `FB_SUITE_SLOTS` (default 2)
+  full fast test suites run at once machine-wide, since several overlapping
+  planner-core / mod test runs (each forking and multi-threaded) thrash the
+  20 cores. `scripts/test-all.sh` takes a slot for its fast layers itself
+  (and so do post-merge runs, which run it); run full `:planner-core:test`,
+  `:mod:build`, `:mod:runGameTest` or `build` as `scripts/suite.sh <cmd>` (e.g.
+  `scripts/suite.sh nix develop -c ./gradlew :planner-core:test`). It prints
+  "waiting for suite slot" with the holders and waits. Single-class `--tests X`
+  runs, CLI runs and heavy jobs (heavy lock) don't need it. Locks:
+  `<repo root>/.claude/suite.lock.1..N`, freed when the holder exits or is killed.
 - **Merges into a shared branch take the merge lock**: hold
   `flock <repo root>/.claude/merge.lock` for the merge itself (clean-checkout
   check, merge, commit) in one process, then release it. Two merges into the

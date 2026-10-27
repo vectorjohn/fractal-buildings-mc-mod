@@ -21,8 +21,11 @@
 # screenshots and EVIDENCE.md land in their own folder under .claude/reports/<label>-evidence/.
 # Exit: 0 all passed, else the first failing command's exit code; 2 bad args or no worktree; 6 lock wait
 # timed out (FB_SNAPSHOT_WAIT seconds, default 10800).
+# Suite slots: scripts/test-all.sh takes a machine-wide suite slot for its fast layers itself (FB_SUITE_SLOTS);
+# pass a bare full Gradle run as 'scripts/suite.sh ./gradlew build' so it takes one too. Heavy commands take
+# the heavy lock instead.
 set -uo pipefail
-usage() { sed -n '2,24p' "$0" | sed 's/^# \{0,1\}//'; exit 2; }
+usage() { sed -n '2,26p' "$0" | sed 's/^# \{0,1\}//'; exit 2; }
 NAME=${FB_SNAPSHOT_NAME:-postmerge} COLD=0
 while [ $# -gt 0 ]; do
   case "$1" in

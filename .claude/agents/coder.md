@@ -163,6 +163,12 @@ and mention them in the ROADMAP testing section.
 - Run Minecraft client tests, `runClient` and timing measurements under
   `flock <repo root>/.claude/heavy.lock`. Everything else can run concurrently
   with other agents.
+- Run **full** suites through a suite slot (at most 2 machine-wide):
+  `scripts/suite.sh nix develop -c ./gradlew :planner-core:test` (same for
+  `build`, `:mod:build`, `:mod:runGameTest`). `scripts/test-all.sh` takes one
+  itself, so don't wrap it. Single-class `--tests X` runs don't need it. If it
+  prints "waiting for suite slot", that wait is expected; budget for it in
+  your `timeout`.
 - Tick only your own ROADMAP checkbox; don't touch the status table. Write your
   log as a new file. Append to the union-merged files (NOTES, ASSUMPTIONS,
   REVIEW, INDEX) without editing others' lines. After merging the run branch
