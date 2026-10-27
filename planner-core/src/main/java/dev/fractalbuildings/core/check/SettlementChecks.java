@@ -807,6 +807,21 @@ public final class SettlementChecks {
 		return out;
 	}
 
+	public static final String EXIT_UNPLANNED = "exit-unplanned";
+
+	/**
+	 * 6.15 ROADJOIN {@code exit-unplanned}: an exit gate sits in a district tile that the settlement does not plan, so the road from it
+	 * reaches no street (exits are chosen by cell, districts by tile). {@code planned} says whether the settlement lists the tile of a column.
+	 */
+	public static List<Violation> exitsPlanned(List<Gate> gates, java.util.function.BiPredicate<Integer, Integer> planned) {
+		List<Violation> out = new ArrayList<>();
+		for (Gate g : gates) {
+			if (g.kind() != GateKind.EXIT || planned.test(g.x(), g.z())) continue;
+			out.add(v(EXIT_UNPLANNED, "exit " + g.id() + " at " + g.x() + "," + g.z() + " is in a district tile no one plans: its road reaches no street", g.x(), g.z(), 1, 1));
+		}
+		return out;
+	}
+
 	private static boolean touches(Road o, Pt p) {
 		List<Pt> pts = o.points();
 		for (int i = 0; i < pts.size(); i++) {

@@ -89,6 +89,8 @@ public final class Skeletons {
 			}
 		}
 		Pt hub = program.hub(c);
+		c.view = view;
+		if (hub != null && c.holdsCentre()) c.siteHubTile = grid.tileOf(hub.x(), hub.z());
 
 		// 4. mask: urban where reachable from the hub, bridging water runs up to 40 blocks
 		boolean[] reached = hub == null ? new boolean[nx * nz] : reach(c, hub);
@@ -329,7 +331,8 @@ public final class Skeletons {
 				DistrictGrid.Tile t = seq.get(k);
 				String id = Ids.district(t.ix(), t.iz());
 				own[k] = owned.computeIfAbsent(id, x -> Districts.owns(view, c.site, c.grid, siteHubTile, t.ix(), t.iz()));
-				if (own[k] && (out.containsKey(id) || summary(c, t) != null)) last = k;
+				// ROADJOIN step 3: the tile the road ends in is listed too when the settlement plans it (an exit there must reach a street)
+				if (own[k] && (out.containsKey(id) || k == seq.size() - 1 || summary(c, t) != null)) last = k;
 			}
 			for (int k = 0; k <= last; k++) {
 				DistrictGrid.Tile t = seq.get(k);
@@ -429,7 +432,7 @@ public final class Skeletons {
 		TreeMap<String, DistrictSummary> districts = new TreeMap<>();
 		for (CellSkeleton s : sk) {
 			outlines.add(s.outline());
-			for (DistrictSummary d : s.districts()) districts.putIfAbsent(d.id(), d);
+			for (DistrictSummary d : s.districts()) districts.merge(d.id(), d, (a, b) -> a.styles().isEmpty() && !b.styles().isEmpty() ? b : a); // a road-end stub (no styles) never hides a real listing
 		}
 		List<DistrictSummary> dl = new ArrayList<>(districts.values());
 		dl.sort(Comparator.comparingInt(DistrictSummary::iz).thenComparingInt(DistrictSummary::ix));
@@ -473,6 +476,10 @@ public final class Skeletons {
 		violations.addAll(SettlementChecks.skeletonInCell(sk, field));
 		violations.addAll(SettlementChecks.cellGateAgree(sk));
 		violations.addAll(SettlementChecks.mainRoadEnds(roads, approaches, gl, raster));
+		java.util.Set<String> planned = new java.util.TreeSet<>();
+		for (DistrictSummary d : dl) planned.add(d.id());
+		DistrictGrid exitGrid = new DistrictGrid(seed);
+		violations.addAll(SettlementChecks.exitsPlanned(gl, (x, z) -> { DistrictGrid.Tile t = exitGrid.tileAt(x, z); return planned.contains(Ids.district(t.ix(), t.iz())); }));
 		return new SettlementPlan(genVersion, seed, site, new Rect(x0, z0, nx * step, nz * step), raster, quarters, outlines, dl, roads, gl, ml, walls, violations, approaches);
 	}
 

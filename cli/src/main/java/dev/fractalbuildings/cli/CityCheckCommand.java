@@ -101,7 +101,7 @@ final class CityCheckCommand {
 		double secs = (System.nanoTime() - t0) / 1e9;
 		int bad = 0;
 		for (Result r : results) if (r.error() != null || r.problems().stream().anyMatch(p -> !ignore.contains(rule(p)))) bad++;
-		System.err.printf(Locale.ROOT, "city-check: %d sites, %d failing, %.1f s%n", results.length, bad, secs);
+		System.err.printf(Locale.ROOT, "city-check: %d sites, %d failing, %d gate-cut > 4, %.1f s%n", results.length, bad, GATE_CUTS.get(), secs);
 		if (o.has("fill-json")) GenCommand.write(Path.of(o.get("fill-json", null)), FillReport.json(fillSites(results)).getBytes(StandardCharsets.UTF_8)); // METROFILL M0
 		if (o.has("out")) GenCommand.write(Path.of(o.get("out", null)), md.getBytes(StandardCharsets.UTF_8));
 		else System.out.print(md);
@@ -114,6 +114,7 @@ final class CityCheckCommand {
 	private static final Glazing.Report GLAZING = new Glazing.Report();
 	/** Entrance door rise of every building in the scenes built (DS-45 report, SHOPLOW S0). */
 	private static final DoorRise.Report DOOR_RISE = new DoorRise.Report();
+	private static final java.util.concurrent.atomic.AtomicInteger GATE_CUTS = new java.util.concurrent.atomic.AtomicInteger();
 	/** {@code --door-rise}: also build every scene with interiors and measure door rise (about 2.5x the run time). */
 	private static boolean doorRiseOn;
 	/** {@code --junctions-near X,Z[,R]}: print the junction field's junctions with a pad end within R blocks of (X, Z) (debugging JUNCTION). */
@@ -194,6 +195,11 @@ final class CityCheckCommand {
 			// DS-18 edge taper (CITYQ r4): a high-rise with no built lot within 120 blocks outward. A warning, since the per-tile cap (BuiltEdge) cannot see
 			// other tiles' lots and leaves a few; EdgeTaperTest holds the count down.
 			for (Violation v : dev.fractalbuildings.core.check.SettlementChecks.cityEdgeTaper(city.districts().values(), site.centre(), new dev.fractalbuildings.core.settlement.BuiltEdge(src)::depth)) warnings.add(v.invariant() + ": " + v.message());
+			int gateCuts = 0;
+			for (var row : dev.fractalbuildings.core.check.GateCut.measure(city.plan(), city.districts().values(), p.terrain())) {
+				if (row.over()) { gateCuts++; warnings.add("gate-cut: " + row + " (> " + dev.fractalbuildings.core.check.GateCut.LIMIT + ", fix is 7.19)"); }
+			}
+			if (gateCuts > 0) GATE_CUTS.addAndGet(gateCuts);
 			// proposed rule "arterials form one network" (METROFILL R1): a warning until John accepts it
 			for (Violation v : dev.fractalbuildings.core.check.SettlementChecks.cityArterialsConnected(city.districts().values())) warnings.add(v.invariant() + ": " + v.message());
 			// METROFILL M0: fill metrics and the three DS-47 checks, report only
@@ -234,6 +240,7 @@ final class CityCheckCommand {
 
 	private static String toMarkdown(Result[] rs, int scenes, Set<String> ignore) {
 		StringBuilder sb = new StringBuilder("# city-check\n\n");
+		sb.append("gate-cut > ").append(dev.fractalbuildings.core.check.GateCut.LIMIT).append(" (EXIT gates whose street end is more than that below or above the ground; report only, fix is 7.19): ").append(GATE_CUTS.get()).append("\n\n");
 		int bad = 0, problems = 0;
 		TreeMap<String, Integer> byInvariant = new TreeMap<>();
 		for (Result r : rs) {

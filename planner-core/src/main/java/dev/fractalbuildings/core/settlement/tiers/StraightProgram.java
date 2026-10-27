@@ -41,7 +41,7 @@ abstract class StraightProgram extends DefaultProgram {
 		int n = 0, px = x, pz = z;
 		while (n + SAMPLE <= max) {
 			int qx = px + dx * SAMPLE, qz = pz + dz * SAMPLE;
-			if (!CellGeometry.owns(c.field, c.cell, qx, qz) || !c.urbanCandidate(qx, qz)) break;
+			if (!CellGeometry.owns(c.field, c.cell, qx, qz) || !c.urbanCandidate(qx, qz) || !c.tileOwned(qx, qz)) break; // ROADJOIN step 3: a street ends where the tiles this settlement plans end
 			int dy = Math.abs(c.terrain.surfaceY(qx, qz) - c.terrain.surfaceY(px, pz));
 			if (dy > MAX_DY) break;
 			rough[0] += dy;

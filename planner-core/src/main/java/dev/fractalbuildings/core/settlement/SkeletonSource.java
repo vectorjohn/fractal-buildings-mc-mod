@@ -36,6 +36,15 @@ public interface SkeletonSource {
 	 */
 	default JunctionField junctions(dev.fractalbuildings.core.probe.TerrainProbe exact) { return JunctionField.build(this, exact); }
 
+	/** One approach's drawn centre line (corner nodes, as {@code Curve.stations} takes them) and its road width. */
+	record ApproachLine(java.util.List<int[]> nodes, int width) {}
+
+	/**
+	 * The settlement's approaches, geometry only, for the district planner to keep lots off (ROADJOIN step 4). Empty when the source knows
+	 * none (the CLI without a road graph); {@code WorldPlanner} supplies the curves the road layer draws.
+	 */
+	default java.util.List<ApproachLine> approaches() { return java.util.List.of(); }
+
 	/**
 	 * A value worked out once from the whole settlement over the given exact terrain (the settlement's quay runs), by name. It must be a
 	 * pure function of the source and the probe, whichever tile asks first. This default builds it on every call; sources that serve many
@@ -97,6 +106,18 @@ public interface SkeletonSource {
 		@Override public CellSkeleton skeleton(Cell cell) {
 			if (!site.cells().contains(cell)) throw new IllegalArgumentException("cell " + cell + " is not part of " + site.id());
 			return memo.get(cell, c -> Skeletons.build(seed, view, c, probe, grid, program));
+		}
+
+		private volatile java.util.function.Supplier<java.util.List<ApproachLine>> approachSource = java.util.List::of;
+		private volatile java.util.List<ApproachLine> approachMemo;
+
+		/** Where the approaches come from (the world planner, which owns the road graph); read lazily, by the first tile that plans lots. */
+		public Direct withApproaches(java.util.function.Supplier<java.util.List<ApproachLine>> s) { approachSource = s; approachMemo = null; return this; }
+
+		@Override public java.util.List<ApproachLine> approaches() {
+			java.util.List<ApproachLine> a = approachMemo;
+			if (a == null) approachMemo = a = approachSource.get();
+			return a;
 		}
 
 		private volatile RoadNetwork network;

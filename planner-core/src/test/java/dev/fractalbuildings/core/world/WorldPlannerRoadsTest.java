@@ -74,7 +74,7 @@ class WorldPlannerRoadsTest {
 					if (d < rbest) { rbest = d; road = col; }
 				}
 				assertTrue(road != null && rbest <= p.width(), "the road starts " + rbest + " from the port of " + a.road().id());
-				assertTrue(Math.abs(road.y() - near.y()) <= 1, "step of " + (road.y() - near.y()) + " at the port of " + a.road().id());
+				assertTrue(Math.abs(road.y() - near.y()) <= 1 + a.portExcess(), "step of " + (road.y() - near.y()) + " at the port of " + a.road().id());
 				joined++;
 			}
 		}

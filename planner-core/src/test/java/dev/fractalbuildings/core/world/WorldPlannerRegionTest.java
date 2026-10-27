@@ -52,7 +52,7 @@ class WorldPlannerRegionTest {
 		// the planner draws roads by default, so the CLI side plans with the same road graph (required exits and approaches)
 		dev.fractalbuildings.core.road.RoadNet net = new dev.fractalbuildings.core.road.RoadNet(field, fv, WORLD.window(), WORLD.region(), WORLD.roadExact());
 		FieldSiteView view = new FieldSiteView(fv, field, net);
-		CityPlanner.City city = CityPlanner.plan(new SkeletonSource.Direct(SEED, view, site, WORLD.coarse()), WORLD.coarse(), WORLD.exact(), WORLD.biome(), GeneratorV1.GEN_VERSION);
+		CityPlanner.City city = CityPlanner.plan(new SkeletonSource.Direct(SEED, view, site, WORLD.coarse()).withApproaches(() -> w.approachLines(site)), WORLD.coarse(), WORLD.exact(), WORLD.biome(), GeneratorV1.GEN_VERSION);
 		assertFalse(city.districts().isEmpty());
 		TreeMap<String, Boolean> mine = new TreeMap<>();
 		for (var d : city.districts().values()) {

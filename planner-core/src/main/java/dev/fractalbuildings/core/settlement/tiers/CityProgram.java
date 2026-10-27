@@ -79,7 +79,7 @@ public class CityProgram extends TownProgram {
 		int n = 0, max = c.site.radius() * 13 / 10 / c.step;
 		while (n < max) {
 			Pt q = new Pt(p.x() + dx * c.step, p.z() + dz * c.step);
-			if (!stepOk(c, p, q, null)) break;
+			if (!stepOk(c, p, q, null) || !c.tileOwned(q.x(), q.z())) break; // ROADJOIN step 3: an avenue ends in a tile the city plans
 			p = q;
 			n++;
 		}

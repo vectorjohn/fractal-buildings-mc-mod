@@ -59,6 +59,16 @@ class SettlementChecksTest {
 		assertEquals(List.of(), SettlementChecks.mainRoadEnds(List.of(bridge), List.of(), List.of(gate(64, 64)), raster(-1)), "bridge lands on dry ground");
 	}
 
+
+	/** 6.15 step 3: an exit gate must lie in a tile the settlement lists. */
+	@Test
+	void exitsMustBeInPlannedTiles() {
+		var in = gate(10, 10);
+		var out = gate(500, 10);
+		java.util.function.BiPredicate<Integer, Integer> planned = (x, z) -> x < 100;
+		assertEquals(List.of(), SettlementChecks.exitsPlanned(List.of(in), planned));
+		assertEquals(List.of("exit-unplanned"), ids(SettlementChecks.exitsPlanned(List.of(in, out), planned)));
+	}
 	private static List<String> ids(List<Violation> v) { return v.stream().map(Violation::invariant).distinct().toList(); }
 
 	@Test

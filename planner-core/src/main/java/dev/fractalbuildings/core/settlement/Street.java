@@ -17,6 +17,9 @@ public record Street(String id, RoadKind kind, int width, List<Pt> points, int[]
 
 	@Override public int[] y() { return y.clone(); }
 
+	/** {chebyshev distance, interpolated y} of the centre-line column nearest to (px, pz). */
+	public int[] nearest(int px, int pz) { return Briefs.nearest(this, px, pz); }
+
 	@Override public boolean equals(Object o) {
 		return o instanceof Street s && s.id.equals(id) && s.kind == kind && s.width == width && s.points.equals(points) && java.util.Arrays.equals(s.y, y);
 	}

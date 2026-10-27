@@ -104,6 +104,7 @@ public class WorldPlanner {
 	private final RoadNet roads;
 	/** The approach roads of each settlement (exit to port), by chunk: the road layer draws them, the districts do not. Null with no roads. */
 	private final BoundedCache<String, TreeMap<Long, List<RoadNet.Col>>> approaches;
+	private final BoundedCache<String, List<ApproachNodes>> nodeCache;
 	private final RegionView view;
 	private final StyleField styles;
 	private final Caches caps;
@@ -153,6 +154,7 @@ public class WorldPlanner {
 		this.roads = fixed == null && config.intercityRoads()
 				? new RoadNet(field, fieldView, probes.window(), probes.region(), probes.roadExact(), caps.region()) : null;
 		this.approaches = roads == null ? null : new BoundedCache<>(caps.sources());
+		this.nodeCache = roads == null ? null : new BoundedCache<>(caps.sources());
 		this.view = fixed != null ? new FixedSiteView(fixed, field) : new FieldSiteView(fieldView, field, roads);
 		this.styles = new StyleField(probes.biome(), seed);
 		this.sources = new BoundedCache<>(caps.sources(), caps.graceNanos(), caps.hardFactor(), System::nanoTime); // det-ok: retention only, never an answer
@@ -174,6 +176,7 @@ public class WorldPlanner {
 		this.fieldView = null;
 		this.roads = null;
 		this.approaches = null;
+		this.nodeCache = null;
 		this.view = null;
 		this.styles = null;
 		this.sources = null;
@@ -204,8 +207,12 @@ public class WorldPlanner {
 	private static long key(int ix, int iz) { return ((long) ix << 32) ^ (iz & 0xffffffffL); }
 
 	/** The settlement's source: its skeletons and road network, shared by all its tiles. */
-	private SkeletonSource source(SettlementSite site) {
-		return sources.get(site.id(), id -> new SkeletonSource.Direct(seed, view, site, probes.coarse(), TierPrograms.of(site.tier()), caps.skeletons()));
+	SkeletonSource source(SettlementSite site) {
+		return sources.get(site.id(), id -> {
+			SkeletonSource.Direct d = new SkeletonSource.Direct(seed, view, site, probes.coarse(), TierPrograms.of(site.tier()), caps.skeletons());
+				d.withApproaches(() -> approachLines(site));
+			return d;
+		});
 	}
 
 	private boolean decidable(Cell c) { return fieldView == null || fieldView.decidable(c.cx(), c.cz()); }
@@ -386,6 +393,9 @@ public class WorldPlanner {
 	/** The road graph, or null when {@link #roadsEnabled} is false. */
 	public RoadNet roads() { return roads; }
 
+	/** The probes this planner reads (tests: ROADJOIN harness). */
+	WorldProbes probes() { return probes; }
+
 	/**
 	 * The road columns inside a chunk, sorted by (z, x), where two roads meet the lower edge key's column (RD4). Empty when the world has
 	 * no roads. Pure: the same answer in any call order, on any thread, after any eviction. A cold region cell costs its routes (exact
@@ -441,7 +451,7 @@ public class WorldPlanner {
 	}
 
 	/** One approach road as drawn: its port (null when none matches) and its columns by chunk. */
-	record Approach(dev.fractalbuildings.core.settlement.Road road, dev.fractalbuildings.core.road.RoadPort port, TreeMap<Long, List<RoadNet.Col>> byChunk) {
+	record Approach(dev.fractalbuildings.core.settlement.Road road, dev.fractalbuildings.core.road.RoadPort port, TreeMap<Long, List<RoadNet.Col>> byChunk, int steepJoins, int wetFailures, int alongRuns, int portExcess) {
 		List<RoadNet.Col> columns() {
 			List<RoadNet.Col> all = new ArrayList<>();
 			for (List<RoadNet.Col> l : byChunk.values()) all.addAll(l);
@@ -449,33 +459,261 @@ public class WorldPlanner {
 		}
 	}
 
+	/** How far from a street's centre line the exit itself may lie and still take the street's level, blocks (the gate stands at the street end). */
+	private static final int EXIT_REACH = 6;
+
+	/**
+	 * The surface level (first free y) of the district street or plaza of {@code site} at column (x, z), or empty when none of the tiles
+	 * around it that the site plans has one there: the street whose centre line passes nearest, within {@code width / 2 + 1 + extra}
+	 * (ties by street id), else a plaza containing the column. ROADJOIN: the approach meets the street it joins.
+	 */
+	OptionalInt streetLevel(SettlementSite site, int x, int z, int extra) { return streetLevel(site, x, z, extra, 0); }
+
+	/** As above; a plaza also counts when the column lies within {@code plazaExtra} of its rectangle. */
+	OptionalInt streetLevel(SettlementSite site, int x, int z, int extra, int plazaExtra) {
+		var home = grid.tileOf(x, z);
+		int bestD = Integer.MAX_VALUE, bestY = 0;
+		String bestId = "";
+		for (int dz = -1; dz <= 1; dz++) {
+			for (int dx = -1; dx <= 1; dx++) {
+				int ix = home.ix() + dx, iz = home.iz() + dz;
+				Optional<TileInfo> info = tile(ix, iz);
+				if (info.isEmpty() || !info.get().site().id().equals(site.id())) continue;
+				for (var s : plan(ix, iz).plan().streets()) {
+					int[] hit = s.nearest(x, z);
+					if (hit[0] > s.width() / 2 + 1 + extra) continue;
+					if (hit[0] < bestD || (hit[0] == bestD && s.id().compareTo(bestId) < 0)) { bestD = hit[0]; bestY = hit[1]; bestId = s.id(); }
+				}
+			}
+		}
+		if (bestD != Integer.MAX_VALUE) return OptionalInt.of(bestY);
+		for (int dz = -1; dz <= 1; dz++) {
+			for (int dx = -1; dx <= 1; dx++) {
+				int ix = home.ix() + dx, iz = home.iz() + dz;
+				Optional<TileInfo> info = tile(ix, iz);
+				if (info.isEmpty() || !info.get().site().id().equals(site.id())) continue;
+				for (var p : plan(ix, iz).plan().plazas()) {
+					if (x >= p.x() - plazaExtra && x < p.x() + p.w() + plazaExtra && z >= p.z() - plazaExtra && z < p.z() + p.d() + plazaExtra) return OptionalInt.of(p.y());
+				}
+			}
+		}
+		return OptionalInt.empty();
+	}
+
 	/**
 	 * Every approach of the settlement (exit to port, from its cell skeletons), each with its deck: the averaged exact surface at 8-block
 	 * stations, the end at the port pinned to the road it joins (a graph route's deck, or the exact surface at a meeting point), so the
 	 * two meet. Pure and shared by every chunk that draws it.
 	 */
-	List<Approach> approachRoads(SettlementSite site, RoadNet.Settlement owner) {
-		List<Approach> out = new ArrayList<>();
+	/**
+	 * One approach's drawn centre line, geometry only: the skeleton's corners, or the corners of the dry reroute that replaced them
+	 * ({@link #approachNodes}), plus the exact port as last node. {@code nodes} are what {@code Curve.stations} turns into the road, so the
+	 * district planner (lots off the approaches, ROADJOIN step 4) reads the same curve the road layer draws.
+	 */
+	public record ApproachNodes(dev.fractalbuildings.core.settlement.Road road, dev.fractalbuildings.core.road.RoadPort port, List<int[]> nodes) {}
+
+	/**
+	 * The nodes of every approach of the settlement, after the water rule's reroute (ROADJOIN step 2). Reads no district plan (it must not:
+	 * the districts will read this), only exact water and surface reads at the approach's stations and the graph road's end deck. Cached.
+	 */
+	public List<ApproachNodes> approachNodes(SettlementSite site) {
+		if (roads == null) return List.of();
+		return nodeCache.get(site.id(), id -> {
+			RoadNet.Settlement owner = null;
+			for (Cell c : site.cells()) {
+				var s = roads.settlement(new dev.fractalbuildings.core.region.CellKey(c.cx(), c.cz()));
+				if (s.isPresent()) { owner = s.get(); break; }
+			}
+			return owner == null ? List.of() : computeApproachNodes(site, owner);
+		});
+	}
+
+	/** {@link #approachNodes} as the district planner reads them (the {@code SkeletonSource.approaches()} of this settlement). */
+	public List<SkeletonSource.ApproachLine> approachLines(SettlementSite site) {
+		return approachNodes(site).stream().map(an -> new SkeletonSource.ApproachLine(an.nodes(), an.road().width())).toList();
+	}
+
+	private List<ApproachNodes> computeApproachNodes(SettlementSite site, RoadNet.Settlement owner) {
+		List<ApproachNodes> out = new ArrayList<>();
 		SkeletonSource src = source(site);
 		List<dev.fractalbuildings.core.road.RoadPort> ports = roads.portsOf(owner);
+		boolean air = owner.tier().atLeast(dev.fractalbuildings.core.settlement.Tier.TOWN);
+		List<int[]> exits = new ArrayList<>();
+		for (Cell cell : site.cells()) for (dev.fractalbuildings.core.settlement.Road r : src.skeleton(cell).approaches()) exits.add(new int[] {r.points().get(0).x(), r.points().get(0).z()});
 		for (Cell cell : site.cells()) {
 			for (dev.fractalbuildings.core.settlement.Road r : src.skeleton(cell).approaches()) {
 				dev.fractalbuildings.core.settlement.Pt end = r.points().get(r.points().size() - 1);
 				dev.fractalbuildings.core.road.RoadPort port = null;
 				for (dev.fractalbuildings.core.road.RoadPort p : ports) if (port == null && Math.abs(p.x() - end.x()) <= 32 && Math.abs(p.z() - end.z()) <= 32) port = p;
-				List<int[]> nodes = new ArrayList<>();
-				for (dev.fractalbuildings.core.settlement.Pt p : r.points()) nodes.add(new int[] {p.x(), p.z()});
-				// the skeleton ends on its coarse lattice; the road it joins starts exactly at the port (a meeting point is off the lattice)
-				if (port != null && (port.x() != end.x() || port.z() != end.z())) nodes.add(new int[] {port.x(), port.z()});
-				double[][] st = dev.fractalbuildings.core.road.Curve.stations(nodes);
-				if (st.length < 2) continue;
-				OptionalInt pin = OptionalInt.empty();
-				if (port != null) pin = port.meeting() ? OptionalInt.of(probes.roadExact().surfaceY(port.x(), port.z())) : roads.endDeck(owner, port.other());
-				int[] deck = dev.fractalbuildings.core.road.Profile.approachDeck(st, probes.roadExact(), pin);
-				out.add(new Approach(r, port, RoadNet.raster(st, deck, new boolean[st.length], r.width())));
+				List<int[]> corners = new ArrayList<>();
+				for (dev.fractalbuildings.core.settlement.Pt p : r.points()) corners.add(new int[] {p.x(), p.z()});
+				OptionalInt pin = portDeck(owner, port);
+				List<int[]> bestNodes = null;
+				long bestFail = Long.MAX_VALUE;
+				int bestLong = 0;
+				java.util.TreeSet<Long> banned = new java.util.TreeSet<>();
+				for (int attempt = 0; ; attempt++) {
+					List<int[]> nodes = withPort(corners, port);
+					double[][] st = dev.fractalbuildings.core.road.Curve.stations(nodes);
+					if (st.length < 2) break;
+					java.util.TreeMap<Integer, Integer> pins = new java.util.TreeMap<>();
+					if (pin.isPresent()) pins.put(st.length - 1, pin.getAsInt());
+					var prof = dev.fractalbuildings.core.road.Profile.approach(st, probes.roadExact(), pins, r.width(), air);
+					long score = prof.longRuns() * 1000L + prof.wetFailures();
+					if (score < bestFail) { bestFail = score; bestNodes = nodes; bestLong = prof.longRuns(); }
+					if (prof.wetFailures() == 0 || attempt >= RoadNet.MAX_REROUTES) break;
+					// ADR 0004 N5: steer round the water the exact reads found, as a graph route does (the skeleton saw lattice nodes only)
+					dev.fractalbuildings.core.road.Profile.Crossing bad = null;
+					for (var c : prof.crossings()) if (c.length() > dev.fractalbuildings.core.road.Profile.MAX_CROSSING && (bad == null || c.length() > bad.length())) bad = c;
+					if (bad == null) break;
+					int mid = (bad.first() + bad.last()) / 2;
+					int gx = Math.floorDiv((int) Math.floor(st[mid][0]), LATTICE) * LATTICE, gz = Math.floorDiv((int) Math.floor(st[mid][1]), LATTICE) * LATTICE;
+					int[] from = corners.get(0), to = corners.get(corners.size() - 1);
+					boolean added = false;
+					for (int[] n : new int[][] {{gx, gz}, {gx + LATTICE, gz}, {gx, gz + LATTICE}, {gx + LATTICE, gz + LATTICE}}) {
+						if ((n[0] == from[0] && n[1] == from[1]) || (n[0] == to[0] && n[1] == to[1])) continue;
+						added |= banned.add(((long) n[1] << 32) ^ (n[0] & 0xffffffffL));
+					}
+					if (!added) break;
+					List<int[]> re = rerouteApproach(from, to, banned, exits);
+					if (re.isEmpty()) break;
+					corners = re;
+				}
+				if (bestNodes != null && bestLong == 0) out.add(new ApproachNodes(r, port, bestNodes)); // a run over MAX_DECK_RUN is dropped: the link ends at its port (6.16 DEADMAIN)
 			}
 		}
 		return out;
+	}
+
+	/** The skeleton ends on its coarse lattice; the road it joins starts exactly at the port (a meeting point is off the lattice). */
+	private static List<int[]> withPort(List<int[]> corners, dev.fractalbuildings.core.road.RoadPort port) {
+		List<int[]> nodes = new ArrayList<>(corners);
+		int[] last = corners.get(corners.size() - 1);
+		if (port != null && (port.x() != last[0] || port.z() != last[1])) nodes.add(new int[] {port.x(), port.z()});
+		return nodes;
+	}
+
+	private OptionalInt portDeck(RoadNet.Settlement owner, dev.fractalbuildings.core.road.RoadPort port) {
+		if (port == null) return OptionalInt.empty();
+		return port.meeting() ? OptionalInt.of(probes.roadExact().surfaceY(port.x(), port.z())) : roads.endDeck(owner, port.other());
+	}
+
+	/** Drawn columns over water whose deck is not above the water, outside the graph road's end (the 4 stations round the port, which is its contract). */
+	private int wetLowColumns(TreeMap<Long, List<RoadNet.Col>> byChunk, dev.fractalbuildings.core.road.RoadPort port) {
+		int bad = 0;
+		var t = probes.roadExact();
+		for (List<RoadNet.Col> l : byChunk.values()) for (RoadNet.Col c : l) {
+			if (port != null && Math.max(Math.abs(c.x() - port.x()), Math.abs(c.z() - port.z())) <= 4 * (int) dev.fractalbuildings.core.road.Curve.STATION) continue;
+			if (t.waterDepth(c.x(), c.z()) > 0 && c.y() <= t.surfaceY(c.x(), c.z())) bad++;
+		}
+		return bad;
+	}
+
+	/**
+	 * The ports of the settlement's graph roads that no approach joins (a dry route was not found, the run along water was dropped, or the
+	 * approach had a deck on the water): a road that ends in the open short of the town (6.15 follow-up, 6.16). Counted by tests and reports.
+	 */
+	public List<dev.fractalbuildings.core.road.RoadPort> deadEndPorts(SettlementSite site) {
+		List<dev.fractalbuildings.core.road.RoadPort> out = new ArrayList<>();
+		if (roads == null) return out;
+		RoadNet.Settlement owner = null;
+		for (Cell c : site.cells()) {
+			var s = roads.settlement(new dev.fractalbuildings.core.region.CellKey(c.cx(), c.cz()));
+			if (s.isPresent()) { owner = s.get(); break; }
+		}
+		if (owner == null) return out;
+		List<Approach> drawn = approachRoads(site, owner);
+		for (var p : roads.portsOf(owner)) {
+			boolean joined = false;
+			for (Approach a : drawn) if (p.equals(a.port())) joined = true;
+			if (!joined) out.add(p);
+		}
+		return out;
+	}
+
+	List<Approach> approachRoads(SettlementSite site, RoadNet.Settlement owner) {
+		List<Approach> out = new ArrayList<>();
+		boolean air = owner.tier().atLeast(dev.fractalbuildings.core.settlement.Tier.TOWN);
+		for (ApproachNodes an : approachNodes(site)) {
+			var r = an.road();
+			double[][] st = dev.fractalbuildings.core.road.Curve.stations(an.nodes());
+			if (st.length < 2) continue;
+			java.util.TreeMap<Integer, Integer> pins = new java.util.TreeMap<>();
+			// the exit end meets the district street (ROADJOIN: surfaces within a step); the port end is the graph road's contract
+			int lastRun = -1;
+			for (int k = 0; k < st.length - 1 && k < 24; k++) {
+				OptionalInt lv = streetLevel(site, (int) Math.round(st[k][0]), (int) Math.round(st[k][1]), k == 0 ? EXIT_REACH : 0);
+				if (lv.isEmpty()) { if (k == 0) pins.clear(); break; }
+				pins.put(k, lv.getAsInt());
+				lastRun = k;
+			}
+			OptionalInt pin = portDeck(owner, an.port());
+			// every other street the road crosses or runs beside (a crossing, a street end): the surfaces meet there too (architect, ROADJOIN "joins are level").
+			// A level the grade limit cannot reach from the pin before it, or that would put the port pin out of reach, is left alone.
+			if (!pins.isEmpty()) {
+				int prevK = pins.lastKey(), prevY = pins.get(prevK), half = r.width() / 2 + (int) dev.fractalbuildings.core.road.Curve.STATION / 2;
+				for (int k = lastRun + 1; k < st.length - 1; k++) {
+					OptionalInt lv = streetLevel(site, (int) Math.round(st[k][0]), (int) Math.round(st[k][1]), half, half);
+					if (lv.isEmpty()) continue;
+					int y = lv.getAsInt();
+					if (Math.abs(y - prevY) > dev.fractalbuildings.core.road.Profile.MAX_STEP * (k - prevK)) continue;
+					if (pin.isPresent() && Math.abs(y - pin.getAsInt()) > dev.fractalbuildings.core.road.Profile.MAX_STEP * (st.length - 1 - k)) continue;
+					pins.put(k, y);
+					prevK = k;
+					prevY = y;
+				}
+			}
+			if (pin.isPresent()) pins.put(st.length - 1, pin.getAsInt());
+			var prof = dev.fractalbuildings.core.road.Profile.approach(st, probes.roadExact(), pins, r.width(), air);
+			var byChunk = RoadNet.raster(st, prof.deck(), prof.span(), r.width());
+			// ADR 0004 WR2/WR4: no road column on water outside a deck above it. An approach that still has one (a stream on a slope beside the
+			// gate: the street cannot rise to the water, the water cannot fall to the street) is not built, and its port is a dead end (deadEndPorts).
+			if (wetLowColumns(byChunk, an.port()) > 0) continue;
+			out.add(new Approach(r, an.port(), byChunk, prof.steepJoins(), prof.wetFailures(), prof.alongRuns(), prof.portExcess()));
+		}
+		return out;
+	}
+
+	/**
+	 * A dry lattice path (corners only) from an approach's exit to its port's lattice point, avoiding the banned nodes: the cost of
+	 * {@code LinkExits.approach} (water forbidden at nodes, a grade limit) on the coarse probe, inside the box of the two grown by 128.
+	 * Empty when none exists. The skeleton may read lattice columns only (ADR 0003 D4), which is all this does.
+	 */
+	private List<int[]> rerouteApproach(int[] from, int[] to, java.util.Set<Long> banned, List<int[]> exits) {
+		var coarse = probes.coarse();
+		int step = coarse.stride();
+		int grow = 128;
+		var bounds = new dev.fractalbuildings.core.terrain.LatticePath.Bounds(
+			Math.floorDiv(Math.min(from[0], to[0]) - grow, step) * step, Math.floorDiv(Math.min(from[1], to[1]) - grow, step) * step,
+			Math.floorDiv(Math.max(from[0], to[0]) + grow, step) * step, Math.floorDiv(Math.max(from[1], to[1]) + grow, step) * step);
+		var cost = new dev.fractalbuildings.core.terrain.LatticePath.Cost() {
+			@Override public long step(int x, int z, int nx, int nz) {
+				if (banned.contains(((long) nz << 32) ^ (nx & 0xffffffffL)) || coarse.water(nx, nz)) return FORBIDDEN;
+				// keep clear of the settlement's other gates: an approach touches a street only at its own exit (architect, ROADJOIN)
+				for (int[] e : exits) if ((e[0] != from[0] || e[1] != from[1]) && Math.max(Math.abs(nx - e[0]), Math.abs(nz - e[1])) <= 33) return FORBIDDEN;
+				boolean diag = x != nx && z != nz;
+				int dy = Math.abs(coarse.floorY(nx, nz) - coarse.floorY(x, z));
+				int len = diag ? step * 14 / 10 : step;
+				if (dy * 3 > len) return FORBIDDEN;
+				return (diag ? 14L : 10L) * step + 60L * dy;
+			}
+		};
+		List<dev.fractalbuildings.core.terrain.LatticePath.Pt> path;
+		try {
+			path = dev.fractalbuildings.core.terrain.LatticePath.find(new dev.fractalbuildings.core.terrain.LatticePath.Pt(from[0], from[1]),
+				new dev.fractalbuildings.core.terrain.LatticePath.Pt(to[0], to[1]), cost, bounds, step, -1, dev.fractalbuildings.core.terrain.LatticePath.DEFAULT_MAX_EXPANSIONS, false);
+		} catch (IllegalArgumentException e) {
+			return List.of();
+		}
+		if (path.size() < 2) return List.of();
+		List<int[]> pts = new ArrayList<>();
+		for (int i = 0; i < path.size(); i++) {
+			boolean corner = i == 0 || i == path.size() - 1
+				|| Integer.signum(path.get(i).x() - path.get(i - 1).x()) != Integer.signum(path.get(i + 1).x() - path.get(i).x())
+				|| Integer.signum(path.get(i).z() - path.get(i - 1).z()) != Integer.signum(path.get(i + 1).z() - path.get(i).z());
+			if (corner) pts.add(new int[] {path.get(i).x(), path.get(i).z()});
+		}
+		return pts;
 	}
 
 	/** A road column may lie in a district's piece only near a settlement: its rim + the port offset + one tile, plus the chunk. */

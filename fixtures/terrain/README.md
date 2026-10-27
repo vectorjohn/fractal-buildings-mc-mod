@@ -15,6 +15,8 @@ surface Y. Total committed size is about 0.6 MB.
 | `w1-mixed-s8.json.gz` | 1 | x 7936..9976, z -4672..-2632 (256 x 256) | 8 | 63 KB | around the land city (8960, -3648) of S4's map: savanna, temperate and jungle mix, many rivers, a lake |
 | `fly-12345-coast-city.json.gz` | 12345 | x 64..2232, z -1344..824 (272 x 272) | 8 | 72 KB | B9 fly-through city `s1_m1` (1152, -256, r807): snowy coast, frozen rivers (CITYQ, `CityFillTest`) |
 | `fly-1-hill-town.json.gz` | 1 | x -2240..-848, z 4096..5488 (176 x 176) | 8 | 32 KB | B9 fly-through "metropolis" `sm2_4` (-1536, 4800, r418), a town since CITYQ: steep, lakes (`CityFillTest`) |
+| `pt1709-world-s64.json.gz` | 1709797029209580947 | x, z -12288..12224 (384 x 384) | 64 | 235 KB | John's playtest world of 2026-10-26 (6.15 ROADJOIN): coarse world map; region decisions on it are the game's (the region layer reads 64-block lattice columns only) |
+| `pt1709-join-s2.json.gz` | 1709797029209580947 | x 3136..3776, z 1344..1920 (321 x 289) | 2 | 46 KB | ROADJOIN crop under `pt1709-world-s64`: hamlet `s3_1` (3648, 1408, r55) and metropolis `s1_2`'s north-east exits (3200, 1696) and (3264, 1856); `JoinWorld.playtest()` layers it over the world map |
 
 ## Regenerating, or making larger windows
 
