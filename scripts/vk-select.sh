@@ -15,15 +15,29 @@
 # takes Mesa's software present path (the GPU renders, each frame is copied to the window by the
 # CPU). See docs/research/spikes/gpu-intel.md.
 #
-# After the call: FB_VK_USED=intel|lavapipe (exported), and one "vk-select: ..." line on stderr.
+# The worker box (scripts/remote.sh) sets FB_VK_DRIVER_FILES to its own GPU's ICD; the dev shell's
+# shellHook then exports VK_DRIVER_FILES=$FB_VK_DRIVER_FILES and keeps lavapipe's in FB_VK_LVP. There
+# FB_VK=intel (the default) means "the worker's GPU" (FB_VK_USED=worker), and FB_VK=lavapipe still
+# picks lavapipe. MESA_VK_WSI_DEBUG=sw is only set when not on an existing display (FB_USE_DISPLAY).
+#
+# After the call: FB_VK_USED=intel|lavapipe|worker (exported), and one "vk-select: ..." line on stderr.
 
 fb_vk_select() {
 	local want="${FB_VK:-intel}" tag="${FB_VK_LOG_TAG:-vk-select}"
-	local lvp="${VK_DRIVER_FILES:-}"
+	local lvp="${FB_VK_LVP:-${VK_DRIVER_FILES:-}}"
 	case $want in
 		lavapipe | intel) ;;
 		*) echo "$tag: FB_VK must be lavapipe or intel, got '$want' (the NVIDIA GPU is not approved for tests)" >&2; return 2 ;;
 	esac
+	if [[ -n ${FB_VK_DRIVER_FILES:-} ]]; then
+		if [[ $want == intel ]]; then
+			export VK_DRIVER_FILES="$FB_VK_DRIVER_FILES" FB_VK_USED=worker
+			[[ ${FB_USE_DISPLAY:-} == 1 ]] || export MESA_VK_WSI_DEBUG="${MESA_VK_WSI_DEBUG:-sw}"
+			echo "$tag: renderer worker GPU (FB_VK_DRIVER_FILES), VK_DRIVER_FILES=$VK_DRIVER_FILES" >&2
+			return 0
+		fi
+		export VK_DRIVER_FILES="$lvp"
+	fi
 	if [[ $lvp != *lvp_icd.* ]]; then
 		echo "$tag: VK_DRIVER_FILES is not the dev shell's lavapipe ICD ('$lvp'); run inside nix develop" >&2
 		return 2

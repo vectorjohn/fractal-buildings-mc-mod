@@ -45,7 +45,12 @@ fi
 
 cd "$ROOT" || exit 2
 # The heavy lock lives in the main checkout's .claude/, shared by all worktrees.
-MAIN_ROOT="$(dirname "$(git -C "$ROOT" rev-parse --path-format=absolute --git-common-dir)")"
+# A copy without .git (scripts/remote.sh on the worker) uses its own root.
+if GIT_COMMON="$(git -C "$ROOT" rev-parse --path-format=absolute --git-common-dir 2>/dev/null)"; then
+	MAIN_ROOT="$(dirname "$GIT_COMMON")"
+else
+	MAIN_ROOT="$ROOT"
+fi
 HEAVY_LOCK="$MAIN_ROOT/.claude/heavy.lock"
 
 OUT="$ROOT/build/test-all"
@@ -250,7 +255,7 @@ if (( ! RUN_CLIENT )); then
 	skip client "--no-client"
 elif ! has_task 'mod:runClientGameTest'; then
 	skip client "not present yet: no :mod:runClientGameTest"
-elif ! command -v xvfb-run > /dev/null || ! command -v flock > /dev/null; then
+elif { [[ ${FB_USE_DISPLAY:-} != 1 ]] && ! command -v xvfb-run > /dev/null; } || ! command -v flock > /dev/null; then
 	record client fail "xvfb-run or flock not on PATH"
 else
 	mkdir -p "$(dirname "$HEAVY_LOCK")"

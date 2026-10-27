@@ -60,7 +60,9 @@ claude/<item>        ●  ●  ●      ●  ●  ●                  several i
 - Spike code is never merged; only its findings note is.
 - Shared resources: `.claude/heavy.lock` serialises Minecraft client tests and
   timing runs; `.claude/merge.lock` serialises merges. Everything else runs in
-  parallel.
+  parallel. The worker box `beebox` is a second heavy slot with its own
+  queue: `scripts/remote.sh -- <cmd>` runs a command there and copies the
+  results back (CLAUDE.md "Parallel work").
 
 To watch a run, read the ledger in the coordinator's worktree
 (`.claude/worktrees/run-<slug>/docs/runs/`) or `git log --graph --all`.
