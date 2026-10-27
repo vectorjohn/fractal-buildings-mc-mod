@@ -262,6 +262,12 @@ agents can work and test at once. The rules below exist to make that safe.
     checkout's `build/` directories.
   - Its output is the tail of the log, lines cut to 300 characters; the full
     log is in `build/remote/<job>.log`. Grep that rather than printing it.
+  - **One slot for everyone**, so jobs can wait in its queue for a long
+    time (26 min on its first busy morning). Look at `ssh beebox job status`
+    before sending, run anything long detached (`setsid nohup scripts/remote.sh
+    -- ... > log 2>&1 &`) so a tool timeout can't kill the wait, and watch a
+    running job with `ssh beebox 'timeout 5 job log <ID>'`. Timings and the
+    shortest client run are in `docs/NOTES.md` ("beebox").
 - **Merges into a shared branch take the merge lock**: hold
   `flock <repo root>/.claude/merge.lock` for the merge itself (clean-checkout
   check, merge, commit) in one process, then release it. Two merges into the
