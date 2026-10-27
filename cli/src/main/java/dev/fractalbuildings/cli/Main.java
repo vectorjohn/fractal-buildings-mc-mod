@@ -15,7 +15,7 @@ public final class Main {
 			  diversity --seeds A..B [--lot WxD] [--style S] [--terrain SPEC] [--json] [--out FILE]
 			  region --seed N --terrain SPEC [--cell-size 1024] [--window X0,Z0,W,D] [--max-radius 4096] [--policy join|grow] [--no-water-bias] [--out FILE]  (region map, fb-region-dump/1)
   city --seed N --terrain SPEC (--cell CX,CZ | --site X,Z,TIER,RADIUS) [--cell-size 1024] [--districts] [--roads] [--scenes all|none|auto:N|ID,ID] [--interiors] [--check] --out-dir DIR  (skeleton: settlement.json + terrain.json.gz; --roads (with --cell) reads the road graph: required exits and approaches toward the links; --districts adds districts/*.json, --scenes also district scenes (exterior unless --interiors); --check prints every violation on stdout)
-  city-check --seeds A..B [--terrain T,..] [--sites cells|random:N|gates:FILE] [--scenes auto:N] [--out FILE.md]  (plan every district of each settlement, run all settlement rules; exit 1 on any violation)
+  city-check --seeds A..B [--terrain T,..] [--sites cells|random:N|at:X,Z,TIER,RADIUS|gates:FILE] [--scenes auto:N] [--door-rise] [--out FILE.md]  (plan every district of each settlement, run all settlement rules; exit 1 on any violation)
   roads --seed N --terrain recorded:FILE [--cell-size 1024] [--out FILE]  (road graph and routes over a recorded world, region map with a roads layer; report on stdout)
   city-bench --seed S (--cell CX,CZ | --site X,Z,TIER,R) [--terrain T] [--reps N] [--warm N] [--scenes N] [--cache N] [--region-cache N]  (single-thread scale timings, probe counts and heap of one city; not a test)
   sample-city --out-dir DIR [--big N]   (sample settlement plan + districts + one scene; --big: synthetic N x N grid)

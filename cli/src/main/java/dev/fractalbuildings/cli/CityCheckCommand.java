@@ -1,6 +1,7 @@
 package dev.fractalbuildings.cli;
 
 import dev.fractalbuildings.cli.Main.UsageException;
+import dev.fractalbuildings.core.check.DoorRise;
 import dev.fractalbuildings.core.check.Glazing;
 import dev.fractalbuildings.core.check.HighriseChecks;
 import dev.fractalbuildings.core.check.SettlementChecks;
@@ -37,7 +38,7 @@ import java.util.stream.IntStream;
  * {@code --scenes auto:N}, runs every settlement and building rule, and writes a markdown report. Exit 1 on any violation or
  * planning error. Sites come from {@code --sites cells} (the region planner's settlements in the terrain), {@code random:N} (N
  * hash-drawn sites per seed and terrain) or {@code gates:FILE} (rows of {@code fixtures/terrain/gate-sites.tsv}, each on its own
- * recorded window and seed; {@code --seeds} and {@code --terrain} are ignored).
+ * recorded window and seed; {@code --seeds} and {@code --terrain} are ignored), or {@code at:X,Z,TIER,RADIUS} (one exact site, as `city --site`, per seed and terrain).
  */
 final class CityCheckCommand {
 	private CityCheckCommand() {}
@@ -47,7 +48,8 @@ final class CityCheckCommand {
 	private record Result(Job job, String siteId, String tier, int radius, int cells, int districts, int lots, int scenes, int hubPct, int strays, List<String> problems, List<String> warnings, String error, double ms, TerrainStats terrain) {}
 
 	static int run(String[] args) throws IOException {
-		Opts o = new Opts(args, Set.of("seeds", "terrain", "sites", "scenes", "cell-size", "out", "ignore", "list", "junctions-near"), Set.of("junction"));
+		Opts o = new Opts(args, Set.of("seeds", "terrain", "sites", "scenes", "cell-size", "out", "ignore", "list", "junctions-near"), Set.of("junction", "door-rise"));
+		doorRiseOn = o.flag("door-rise");
 		o.flag("junction"); // junction-height is part of every check now (JUNCTION); the flag that turned it on is accepted and does nothing
 		listMax = o.intValue("list", 20);
 		if (o.has("junctions-near")) {
@@ -81,7 +83,8 @@ final class CityCheckCommand {
 				for (String t : terrains) {
 					if (sites.equals("cells")) addCells(jobs, seed, t, cellSize);
 					else if (sites.startsWith("random:")) addRandom(jobs, seed, t, cellSize, parse(sites.substring(7)));
-					else throw new UsageException("bad --sites " + sites + " (cells | random:N | gates:FILE)");
+					else if (sites.startsWith("at:")) jobs.add(new Job("at-" + seed, seed, t, cellSize, sites.substring(3), 0, 0));
+					else throw new UsageException("bad --sites " + sites + " (cells | random:N | at:X,Z,TIER,RADIUS | gates:FILE)");
 				}
 			}
 		}
@@ -104,6 +107,10 @@ final class CityCheckCommand {
 	private static volatile int listMax = 20;
 	/** Glazing of every building in the scenes built (DS-33 report, 7.12). */
 	private static final Glazing.Report GLAZING = new Glazing.Report();
+	/** Entrance door rise of every building in the scenes built (DS-45 report, SHOPLOW S0). */
+	private static final DoorRise.Report DOOR_RISE = new DoorRise.Report();
+	/** {@code --door-rise}: also build every scene with interiors and measure door rise (about 2.5x the run time). */
+	private static boolean doorRiseOn;
 	/** {@code --junctions-near X,Z[,R]}: print the junction field's junctions with a pad end within R blocks of (X, Z) (debugging JUNCTION). */
 	private static volatile int[] near;
 
@@ -189,6 +196,8 @@ final class CityCheckCommand {
 				for (Violation v : b.scene().violations()) problems.add(v.invariant() + ": " + id + " " + v.message());
 				for (Violation v : b.plan().violations()) problems.add(v.invariant() + ": " + id + " scene " + v.message());
 				for (var pb : b.scene().buildings()) GLAZING.add(pb.shell().spec().type(), Glazing.measure(pb));
+				// doors exist only in scenes built with interiors; the exterior scene above has none (violations of this one are not listed: the interior rules are check's)
+				if (doorRiseOn) DOOR_RISE.add(DoorRise.measure(CityPlanner.scene(city, id, p.terrain(), p.biome(), false).scene(), p.terrain()));
 				for (Violation v : HighriseChecks.check(b.scene())) warnings.add(v.invariant() + ": " + id + " " + v.message());
 				built++;
 			}
@@ -250,6 +259,7 @@ final class CityCheckCommand {
 			if (r.problems().size() > listMax) sb.append("- ... ").append(r.problems().size() - listMax).append(" more\n");
 		}
 		if (scenes > 0) sb.append("\n## Glazing (DS-33, report only)\n\nBuildings in the district scenes built; glass cells over exterior wall-plane cells.\n\n").append(GLAZING.toMarkdown("type"));
+		if (scenes > 0 && doorRiseOn) sb.append("\n## Door rise (DS-45, report only)\n\nEntrance doors of the buildings in the district scenes built; rise = door level minus the street surface in front (limits: shops -2..2, houses and workshops at most 3 or 4-5 with a landing, no run over 3 risers).\n\n").append(DOOR_RISE.toMarkdown());
 		return sb.toString();
 	}
 }
