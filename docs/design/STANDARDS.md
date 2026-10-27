@@ -1003,7 +1003,7 @@ drops them, and accepted ones move to the section they belong in.
   `plans/furniture.md` for 7.5, never built): over today's hooks with the
   bed's head cell, in `check` and `city-check`, and hook placement checks
   the lane after each piece (ROADMAP 6.18 ROOMWALK). None today.
-- **Status:** proposed. **Source:** interior designer, playtest questions
+- **Status:** Approved by @John on 2026-10-27. **Source:** interior designer, playtest questions
   2026-10-27 ([playtest1026-qs-interior.md](../review/reports/playtest1026-qs-interior.md), Q1).
 
 ## DS-35 amendment: workshop doors
@@ -1038,7 +1038,8 @@ drops them, and accepted ones move to the section they belong in.
   from `wall`.
 - **Status:** proposed. **Source:** architect, playtest questions
   2026-10-27 ([playtest1026-qs-architect.md](../review/reports/playtest1026-qs-architect.md), P1).
-
+  - @John 2026-10-27: adjust this to say lighter “weight” material. Rooms don't all have to be light in color although that should be the bias. The rule here is interior walls (use specifics as written) made of a lighter weight material like wood or the other suggestions here. The rule is about the material and a bias towards light colors.
+  - 
 ## DS-50 Roads don't tunnel (for now)
 
 - **Rule:** no road or street is roofed by terrain. A cut is open to the
