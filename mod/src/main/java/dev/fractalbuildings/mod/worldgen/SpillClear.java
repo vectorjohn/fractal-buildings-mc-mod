@@ -93,7 +93,7 @@ public final class SpillClear {
 	private SpillClear() {}
 
 	/** A later box of the piece covers the cell with something other than air (boxes apply in list order). */
-	private static boolean overridden(List<Box> boxes, int i, int x, int y, int z) {
+	static boolean overridden(List<Box> boxes, int i, int x, int y, int z) {
 		for (int j = i + 1; j < boxes.size(); j++) {
 			Box b = boxes.get(j);
 			Box3 q = b.box();

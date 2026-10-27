@@ -58,6 +58,11 @@ public class FoliageClientGameTest implements FabricClientGameTest {
 		say("PROBLEM " + s);
 	}
 
+	/** Where settlements are looked for (FB_FOLIAGE_CENTER "x,z", default the origin): a snowy dark-oak spot shows STREETSNOW and TRUNKDIRT. */
+	static final int[] CENTER = java.util.Arrays.stream(System.getenv().getOrDefault("FB_FOLIAGE_CENTER", "0,0").split(",")).mapToInt(s -> Integer.parseInt(s.trim())).toArray();
+	/** How far from the centre settlements are looked for (FB_FOLIAGE_RADIUS, default 2600). */
+	static final int RADIUS = Integer.parseInt(System.getenv().getOrDefault("FB_FOLIAGE_RADIUS", "2600"));
+
 	static boolean forest(ServerLevel level, int x, int z) {
 		String p = level.getBiome(new BlockPos(x, 70, z)).unwrapKey().map(k -> k.identifier().getPath()).orElse("");
 		return p.contains("forest") || p.contains("taiga") || p.contains("jungle") || p.contains("grove") || p.contains("birch") || p.contains("cherry");
@@ -77,13 +82,13 @@ public class FoliageClientGameTest implements FabricClientGameTest {
 	record Spot(String kind, int x, int y, int z, int orphans) {}
 
 	static final class Count {
-		int columns, leaves, orphanLeaves, orphanLogs, orphanVines, headroom;
+		int columns, leaves, orphanLeaves, orphanLogs, orphanVines, headroom, hangingSnow, streetLogs, streetDirt;
 		final List<int[]> cols = new ArrayList<>();
 		final List<String> headSamples = new ArrayList<>();
 		final List<String> samples = new ArrayList<>();
 		final List<int[]> sampleXyz = new ArrayList<>();
 		Spot worst;
-		String line() { return "foliage in the clear volume (surface+1..4) at the end " + headroom + " (grew in after the chunk pass; SpillClear removes natural leaves there, CITYQ r7); " + columns + " columns, " + leaves + " leaves above them, orphans: " + orphanLeaves + " leaves, " + orphanLogs + " logs, " + orphanVines + " vines"; }
+		String line() { return "STREETSNOW/TRUNKDIRT: snow layers over air above the street clear " + hangingSnow + ", logs in street air " + streetLogs + ", dirt under them " + streetDirt + "; foliage in the clear volume (surface+1..4) at the end " + headroom + " (grew in after the chunk pass; SpillClear removes natural leaves there, CITYQ r7); " + columns + " columns, " + leaves + " leaves above them, orphans: " + orphanLeaves + " leaves, " + orphanLogs + " logs, " + orphanVines + " vines"; }
 		int orphans() { return orphanLeaves + orphanLogs + orphanVines; }
 	}
 
@@ -103,6 +108,10 @@ public class FoliageClientGameTest implements FabricClientGameTest {
 			for (int pass = 0; pass < 2; pass++) {
 				boolean on = pass == 1;
 				FoliageClear.ENABLED = on;
+				dev.fractalbuildings.mod.worldgen.StreetAirFix.ENABLED = on;
+				String off = System.getenv().getOrDefault("FB_FOLIAGE_FIXOFF", ""); // control: "snow" or "trunks" switches that half of StreetAirFix off, the injected defects must then be reported
+				dev.fractalbuildings.mod.worldgen.StreetAirFix.SNOW = !off.equals("snow");
+				dev.fractalbuildings.mod.worldgen.StreetAirFix.TRUNKS = !off.equals("trunks");
 				dev.fractalbuildings.mod.worldgen.SpillClear.LEAF_CLEAR = on; // CITYQ r7: the control also leaves the late crowns, so the headroom check has a signal
 				dev.fractalbuildings.mod.worldgen.SpillClear.LEAVES.set(0);
 				FoliageClear.REMOVED.set(0);
@@ -125,12 +134,15 @@ public class FoliageClientGameTest implements FabricClientGameTest {
 					say("seed " + seed + (on ? " AFTER " : " BEFORE ") + "street " + c[0].line() + " | road " + c[1].line() + " | removed by the pass " + FoliageClear.REMOVED.get() + " | leaves SpillClear removed " + dev.fractalbuildings.mod.worldgen.SpillClear.LEAVES.get() + " | foliage left in the cleared volume by the passes themselves (surface+1..4, own columns): " + FoliageClear.RESIDUAL.get() + " (street pieces " + FoliageClear.RESIDUAL_STREET.get() + ")" + " | trees still standing that the clear cut a cell of (crown notched from below): " + FoliageClear.CUT_KEPT.get());
 					if (on) for (Count cc : c) for (String sm : cc.samples) say("  orphan " + sm);
 					if (on) for (Count cc : c) for (String sm : cc.headSamples) say("  headroom " + sm);
-					if (on) { after = c; if (FoliageClear.RESIDUAL.get() != 0) problem("seed " + seed + ": the passes left " + FoliageClear.RESIDUAL.get() + " foliage blocks in the cleared volume (surface+1..4) of their own columns"); } else { before = c; }
+					if (on) { after = c; if (c[0].hangingSnow + c[0].streetLogs + c[0].streetDirt != 0) problem("seed " + seed + ": street air still holds snow over air " + c[0].hangingSnow + ", logs " + c[0].streetLogs + ", dirt under them " + c[0].streetDirt); if (FoliageClear.RESIDUAL.get() != 0) problem("seed " + seed + ": the passes left " + FoliageClear.RESIDUAL.get() + " foliage blocks in the cleared volume (surface+1..4) of their own columns"); } else { before = c; }
 					shoot(context, world, spots, on ? "after" : "before", seed);
 				} finally {
 					FoliageClear.ENABLED = true;
 					dev.fractalbuildings.mod.worldgen.SpillClear.LEAF_CLEAR = true;
 					FoliageClear.MEASURE = false;
+					dev.fractalbuildings.mod.worldgen.StreetAirFix.ENABLED = true;
+					dev.fractalbuildings.mod.worldgen.StreetAirFix.SNOW = true;
+					dev.fractalbuildings.mod.worldgen.StreetAirFix.TRUNKS = true;
 				}
 			}
 			String[] names = {"street", "road"};
@@ -158,10 +170,10 @@ public class FoliageClientGameTest implements FabricClientGameTest {
 				ServerLevel level = server.overworld();
 				WorldPlanner planner = WorldPlanners.of(level, level.getChunkSource().getGenerator()).orElseThrow();
 				RoadNet net = planner.roads();
-				for (Settlement s : net.settlementsNear(0, 0, 2600)) {
+				for (Settlement s : net.settlementsNear(CENTER[0], CENTER[1], RADIUS)) {
 					say(String.format("scan seed %s settlement %s at %d,%d r %d forest %.2f", seed, s.tier(), s.x(), s.z(), s.r(), forestShare(level, s.x(), s.z(), s.r())));
 				}
-				for (Settlement s : net.settlementsNear(0, 0, 2600)) {
+				for (Settlement s : net.settlementsNear(CENTER[0], CENTER[1], RADIUS)) {
 					for (EdgeKey e : net.edgesOf(s)) {
 						Route r = net.route(e);
 						if (!r.ok || r.touching) continue;
@@ -180,7 +192,7 @@ public class FoliageClientGameTest implements FabricClientGameTest {
 		RoadNet net = planner.roads();
 		Settlement best = null;
 		double bestF = -1;
-		for (Settlement s : net.settlementsNear(0, 0, 2600)) {
+		for (Settlement s : net.settlementsNear(CENTER[0], CENTER[1], RADIUS)) {
 			if (s.r() < 30 || s.r() > 120) continue;
 			double f = forestShare(level, s.x(), s.z(), s.r());
 			if (f > bestF) { bestF = f; best = s; }
@@ -212,12 +224,69 @@ public class FoliageClientGameTest implements FabricClientGameTest {
 				if (v[0] == Integer.MIN_VALUE || v[1] <= v[0]) continue;
 				int x = PieceLedger.x(e.getKey()), z = PieceLedger.z(e.getKey());
 				if (Math.hypot(x - best.x(), z - best.z()) > best.r() + 8) continue;
-				if (seen.add(e.getKey())) measure(level, c, x, v[0], z, "street", on);
+				if (seen.add(e.getKey())) { measure(level, c, x, v[0], z, "street", on); streetAir(level, c, rec.states(), airId, x, v[0], v[1], z); }
 			}
+			if (on) inject(level, planner, col, airId, best.x(), best.z(), best.r());
 		}
 		c.headroom = headroom(level, c, false);
 		spots[0] = c.worst;
 		return c;
+	}
+
+	/** STREETSNOW / TRUNKDIRT: a snow layer over air just above the claimed street air; a log in a claimed air cell of the column, and dirt under the lowest. */
+	static void streetAir(ServerLevel level, Count c, Map<Long, Integer> states, int airId, int x, int top, int max, int z) {
+		BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+		if (level.getBlockState(pos.set(x, max + 1, z)).is(Blocks.SNOW) && level.getBlockState(pos.set(x, max, z)).isAir()) c.hangingSnow++;
+		for (int y = top + 1; y <= max; y++) {
+			Integer claimed = states.get(PieceLedger.pack(x, y, z));
+			if (claimed == null || claimed != airId) continue;
+			if (!level.getBlockState(pos.set(x, y, z)).is(net.minecraft.tags.BlockTags.LOGS)) continue;
+			c.streetLogs++;
+			net.minecraft.world.level.block.state.BlockState below = level.getBlockState(pos.set(x, y - 1, z));
+			if (y == top + 1 && (below.is(Blocks.DIRT) || below.is(Blocks.PODZOL) || below.is(Blocks.COARSE_DIRT))) c.streetDirt++;
+		}
+	}
+
+	/**
+	 * Control for STREETSNOW / TRUNKDIRT that does not need a snowy dark-oak seed: put the defects in by hand on street columns of the generated
+	 * settlement (a snow layer over air above the claimed air; a dark oak log on the street surface with podzol under it in place of the surface block),
+	 * run {@code StreetAirFix} for the chunk, and require the snow and the log gone and the surface block back.
+	 */
+	static void inject(ServerLevel level, WorldPlanner planner, Map<Long, int[]> col, int airId, int sx, int sz, int sr) {
+		BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+		int snowN = 0, snowFixed = 0, trunkN = 0, trunkFixed = 0, trunkRestored = 0, trunkBad = 0, step = 0;
+		for (var e : col.entrySet()) {
+			int[] v = e.getValue();
+			if (v[0] == Integer.MIN_VALUE || v[1] <= v[0] + 2 || (step++ % 37) != 0) continue;
+			int x = PieceLedger.x(e.getKey()), z = PieceLedger.z(e.getKey());
+			if (Math.hypot(x - sx, z - sz) > sr) continue;
+			if (!level.getBlockState(pos.set(x, v[0] + 1, z)).isAir() || !level.getBlockState(pos.set(x, v[1], z)).isAir() || !level.getBlockState(pos.set(x, v[1] + 1, z)).isAir()) continue;
+			ChunkPos cp = ChunkPos.containing(new BlockPos(x, 0, z));
+			if ((snowN + trunkN) % 2 == 0 && snowN < 12) {
+				level.setBlock(pos.set(x, v[1] + 1, z), Blocks.SNOW.defaultBlockState(), 2);
+				snowN++;
+				dev.fractalbuildings.mod.worldgen.StreetAirFix.run(level, planner, cp.x(), cp.z());
+				if (level.getBlockState(pos.set(x, v[1] + 1, z)).isAir()) snowFixed++;
+				else level.setBlock(pos.set(x, v[1] + 1, z), Blocks.AIR.defaultBlockState(), 2);
+			} else if (trunkN < 12) {
+				BlockState surface = level.getBlockState(pos.set(x, v[0], z));
+				if (surface.is(Blocks.PODZOL) || surface.isAir()) continue;
+				level.setBlock(pos.set(x, v[0], z), Blocks.PODZOL.defaultBlockState(), 2);
+				level.setBlock(pos.set(x, v[0] + 1, z), Blocks.DARK_OAK_LOG.defaultBlockState(), 2);
+				trunkN++;
+				dev.fractalbuildings.mod.worldgen.StreetAirFix.run(level, planner, cp.x(), cp.z());
+				if (level.getBlockState(pos.set(x, v[0] + 1, z)).isAir()) trunkFixed++;
+				boolean gone = level.getBlockState(pos.set(x, v[0] + 1, z)).isAir();
+				if (level.getBlockState(pos.set(x, v[0], z)).equals(surface)) trunkRestored++;
+				else { if (gone) trunkBad++; say("  trunk base not restored at " + x + "," + v[0] + "," + z + ": " + level.getBlockState(pos.set(x, v[0], z)) + " wanted " + surface); level.setBlock(pos.set(x, v[0], z), surface, 2); }
+				level.setBlock(pos.set(x, v[0] + 1, z), Blocks.AIR.defaultBlockState(), 2);
+			}
+		}
+		say("injected defects: snow " + snowFixed + "/" + snowN + " removed, trunks " + trunkFixed + "/" + trunkN + " removed, " + trunkRestored + " bases restored");
+		if (snowN == 0 || trunkN == 0) problem("no street column to inject the STREETSNOW/TRUNKDIRT control into (snow " + snowN + ", trunks " + trunkN + ")");
+		// a column under a building (its lot or air rights) is the building's: the pass leaves it, so 3 in 4 is the bar; a removed trunk must always get its base back
+		if (snowFixed * 4 < snowN * 3) problem("StreetAirFix left " + (snowN - snowFixed) + " of " + snowN + " injected snow layers over air");
+		if (trunkFixed * 4 < trunkN * 3 || trunkBad > 0) problem("StreetAirFix: " + trunkFixed + "/" + trunkN + " injected trunks removed, " + trunkRestored + " bases restored, " + trunkBad + " removed without the base back");
 	}
 
 	// ---- intercity roads
@@ -226,7 +295,7 @@ public class FoliageClientGameTest implements FabricClientGameTest {
 		RoadNet net = planner.roads();
 		Route best = null;
 		int bestF = -1, bestFrom = 0;
-		for (Settlement s : net.settlementsNear(0, 0, 2600)) {
+		for (Settlement s : net.settlementsNear(CENTER[0], CENTER[1], 2600)) {
 			for (EdgeKey e : net.edgesOf(s)) {
 				Route r = net.route(e);
 				if (!r.ok || r.touching) continue;

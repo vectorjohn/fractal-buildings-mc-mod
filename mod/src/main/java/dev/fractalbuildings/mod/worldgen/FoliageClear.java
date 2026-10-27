@@ -76,6 +76,8 @@ public final class FoliageClear {
 
 		public Cuts(String label) { this.label = label; }
 
+		public int size() { return n; }
+
 		/** Call with the block that is about to be replaced by air. */
 		public void note(BlockState old, int x, int y, int z) {
 			if (!old.is(BlockTags.LEAVES) && !old.is(BlockTags.LOGS)) return;
@@ -236,7 +238,7 @@ public final class FoliageClear {
 				removed += erase(level, pos.set(x0 - REACH + wx, yLo + h, z0 - REACH + wz), air);
 			}
 		}
-		if (MEASURE) {
+		if (MEASURE && cuts != null && !cuts.label.endsWith("-fix")) { // BuildingAirClear (no cuts) and the air-fix passes name columns that are not a street or road clear: not a measure of one
 			int left = 0;
 			for (int i = 0; i < 256; i++) {
 				if (!own[i]) continue;

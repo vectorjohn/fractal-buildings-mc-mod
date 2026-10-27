@@ -104,6 +104,8 @@ public final class RoadFeature implements Feature {
 			if (planner.roadsEnabled()) dev.fractalbuildings.mod.worldgen.SpillClear.roadLeaves(level, planner, cp.x(), cp.z());
 			// TREEIN: and the leaves, vines and trunks of trees grown after a building's pass into the air it claims (rooms, steps, door approaches)
 			dev.fractalbuildings.mod.worldgen.BuildingAirClear.run(level, planner, cp.x(), cp.z());
+			// STREETSNOW, TRUNKDIRT: snow hanging over a street clear; trunks (and their dirt) a neighbour tree put on a street
+			dev.fractalbuildings.mod.worldgen.StreetAirFix.run(level, planner, cp.x(), cp.z());
 		} catch (RuntimeException e) {
 			WorldPlanners.FAILURES.incrementAndGet();
 			FractalBuildingsMod.LOGGER.error("Re-clearing the street air beside chunk {} failed", cp, e);
