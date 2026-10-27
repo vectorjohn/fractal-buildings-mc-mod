@@ -112,6 +112,12 @@ public final class BuildContext {
 
 	public List<Hook> hooks() { return Collections.unmodifiableList(hooks); }
 
+	/** Drops the floor furniture on level {@code y} within one cell of (x, z), a bed whose head is that near included (a doorway cut later needs its inside cell and the cells beside it clear; DS-48). */
+	public void dropHooksNear(int y, int x, int z) {
+		hooks.removeIf(h -> h.y() == y && !h.kind().equals("ceiling_light") && (Math.max(Math.abs(h.x() - x), Math.abs(h.z() - z)) <= 1
+				|| h.kind().equals("bed") && Math.max(Math.abs(h.x() + h.facing().dx - x), Math.abs(h.z() + h.facing().dz - z)) <= 1));
+	}
+
 	/** Free-standing volumes added by passes (posts of an arcade or a porch), listed after the massing volumes in the IR. */
 	public List<Volume> extraVolumes() { return Collections.unmodifiableList(extraVolumes); }
 

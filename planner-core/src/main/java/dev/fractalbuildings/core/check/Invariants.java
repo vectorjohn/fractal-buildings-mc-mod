@@ -146,7 +146,21 @@ public final class Invariants {
 			stepsReachGround();
 			stairRise();
 			windowSize();
+			roomWalk();
 			doorRise();
+		}
+
+		void roomWalk() {
+			if (scene.genVersion() < 2) return;
+			List<RoomWalk.Fail> fails = RoomWalk.check(b, g);
+			if (fails.isEmpty()) return;
+			List<Box3> cells = new ArrayList<>();
+			StringBuilder names = new StringBuilder();
+			for (RoomWalk.Fail f : fails) {
+				for (Box3 c : f.cells()) cells.add(g.placement().toWorld(c));
+				if (names.length() < 80) names.append(names.length() > 0 ? ", " : "").append(f.room()).append(" (").append(f.use()).append(')');
+			}
+			report(Invariant.FURNISHED_ROOMS_WALKABLE, fails.size() + " furnished room(s) with no clear lane to every door, stair and piece (DS-48): " + names, cells, cells.size());
 		}
 
 		void doorRise() {

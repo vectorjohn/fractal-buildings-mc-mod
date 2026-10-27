@@ -10,13 +10,13 @@ grid is the building's local frame: x to the right, z down, the front (z = 0, th
   0 |``````````````````
   1 |``````````````````
   2 |!#~~##%###~~#!````
-  3 |~...+...c..t.~````
-  4 |#h..+........#````
+  3 |~c..+...t..h.~````
+  4 |#...+........#````
   5 |#...#.......t#````
-  6 |~cA.:...B....~````
+  6 |~tA.:...B....~````
   7 |#...#........#````
   8 |~...+........~````
-  9 |#..t+h...>>>>#````
+  9 |#..h+c...>>>>#````
  10 |!~#~#~#~#~###!````
  11 |``````````````````
  12 |``````````````````
@@ -49,12 +49,12 @@ o23  window at x=0..0 z=6..6 y=2..3 (1..3 above floor surface), faces west, r0 -
 o24  window at x=0..0 z=8..8 y=2..3 (1..3 above floor surface), faces west, r0 -> outside, sill +1 head +3
 
 Furniture hooks:
-h0    h hearth     room r0   at x=1 z=4 y=1 facing east
-h1    t table      room r0   at x=3 z=9 y=1 facing west
-h2    c chest      room r0   at x=1 z=6 y=1 facing east
-h3    t table      room r1   at x=11 z=3 y=1 facing south
-h4    h hearth     room r1   at x=5 z=9 y=1 facing north
-h5    c chest      room r1   at x=8 z=3 y=1 facing south
+h0    h hearth     room r0   at x=3 z=9 y=1 facing north
+h1    c chest      room r0   at x=1 z=3 y=1 facing east
+h2    t table      room r0   at x=1 z=6 y=1 facing east
+h3    h hearth     room r1   at x=11 z=3 y=1 facing south
+h4    c chest      room r1   at x=5 z=9 y=1 facing north
+h5    t table      room r1   at x=8 z=3 y=1 facing south
 h6    t table      room r1   at x=12 z=5 y=1 facing west
 
 ## Storey 1: floor slab y=4 (standing y=5), floor-to-floor height 4, clear air about 3 blocks, ceiling at y=8
@@ -63,13 +63,13 @@ h6    t table      room r1   at x=12 z=5 y=1 facing west
   0 |``````````````````
   1 |``##``##``##``````
   2 |!#~~!#~~!#~~#!````
-  3 |#..b.+.b.+.b.#````
-  4 |~cA../.C.+.D.~#```
+  3 |#..c.+...+.b.#````
+  4 |~bA../.Cb+.D.~#```
   5 |!....+...+...!````
   6 |#++/+++/+++/+#````
-  7 |~c...+...E...~#```
-  8 |~.B../..<<<<.~#```
-  9 |#..b.+...OOO@#````
+  7 |~....+...E...~#```
+  8 |~bB../..<<<<.~#```
+  9 |#..c.+...OOO@#````
  10 |!#~~!#~~!#~~#!````
  11 |``##``##``##``````
  12 |``````````````````
@@ -112,12 +112,12 @@ o41  window at x=0..0 z=7..7 y=6..7 (1..3 above floor surface), faces west, r3 -
 o42  window at x=0..0 z=8..8 y=6..7 (1..3 above floor surface), faces west, r3 -> outside, sill +1 head +3
 
 Furniture hooks:
-h7    b bed        room r2   at x=3 z=3 y=5 facing south
-h8    c chest      room r2   at x=1 z=4 y=5 facing east
-h9    b bed        room r3   at x=3 z=9 y=5 facing north
-h10   c chest      room r3   at x=1 z=7 y=5 facing south
-h11   b bed        room r4   at x=7 z=3 y=5 facing south
-h12   b bed        room r5   at x=11 z=3 y=5 facing south
+h7    b bed        room r2   at x=1 z=4 y=5 facing south
+h8    c chest      room r2   at x=3 z=3 y=5 facing south
+h9    b bed        room r3   at x=1 z=8 y=5 facing south
+h10   c chest      room r3   at x=3 z=9 y=5 facing north
+h11   b bed        room r4   at x=8 z=4 y=5 facing north
+h12   b bed        room r5   at x=11 z=3 y=5 facing east
 
 ## Storey 2: floor slab y=8 (standing y=9), floor-to-floor height 4, clear air about 3 blocks, ceiling at y=12
      0         1
@@ -125,12 +125,12 @@ h12   b bed        room r5   at x=11 z=3 y=5 facing south
   0 |``````````````````
   1 |``##``##``##``````
   2 |!#~~!#~~!#~~#!````
-  3 |~t.b+..b.....~#```
-  4 |!...+b......c!````
-  5 |#c..+........#````
+  3 |~..c+.......c~#```
+  4 |!...+b.b.....!````
+  5 |#..t+........#````
   6 |~.A.+...B....~#```
   7 |!.../........!````
-  8 |~...+...@OOO.~#```
+  8 |~.b.+...@OOO.~#```
   9 |#...+t.......#````
  10 |!~!~!~!~!~!~#!````
  11 |`#`#`#`#`#`#``````
@@ -166,13 +166,13 @@ o59  window at x=0..0 z=6..6 y=10..11 (1..3 above floor surface), faces west, r7
 o60  window at x=0..0 z=8..8 y=10..11 (1..3 above floor surface), faces west, r7 -> outside, sill +1 head +3
 
 Furniture hooks:
-h13   b bed        room r7   at x=3 z=3 y=9 facing south
-h14   c chest      room r7   at x=1 z=5 y=9 facing east
-h15   t table      room r7   at x=1 z=3 y=9 facing south
-h16   b bed        room r8   at x=7 z=3 y=9 facing south
-h17   c chest      room r8   at x=12 z=4 y=9 facing west
-h18   b bed        room r8   at x=5 z=4 y=9 facing east
-h19   t table      room r8   at x=5 z=9 y=9 facing north
+h13   b bed        room r7   at x=2 z=8 y=9 facing south
+h14   c chest      room r7   at x=3 z=3 y=9 facing west
+h15   t table      room r7   at x=3 z=5 y=9 facing west
+h16   b bed        room r8   at x=7 z=4 y=9 facing north
+h17   c chest      room r8   at x=12 z=3 y=9 facing west
+h18   b bed        room r8   at x=5 z=4 y=9 facing north
+h19   t table      room r8   at x=5 z=9 y=9 facing east
 
 ## Circulation
 Entrances from outside:

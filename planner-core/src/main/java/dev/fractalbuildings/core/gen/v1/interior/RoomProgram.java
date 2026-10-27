@@ -1,5 +1,7 @@
 package dev.fractalbuildings.core.gen.v1.interior;
 
+import dev.fractalbuildings.core.gen.v1.BuildContext;
+import dev.fractalbuildings.core.gen.v1.model.Mass;
 import dev.fractalbuildings.core.rand.Draws;
 import java.util.List;
 
@@ -57,6 +59,9 @@ public interface RoomProgram {
 	 * A chance to revise the uses of every room of the building at once, after each floor plan has its own
 	 * (a house gives itself one kitchen and one living room across its wings). Default: no change.
 	 */
+	/** World cells {x, z} on storey {@code s} of mass {@code a} that a door cut after the interior pass will use (a wall-walk doorway): the floor plan and the furniture keep clear of them. */
+	default List<int[]> reserved(BuildContext c, Mass a, int s) { return List.of(); }
+
 	default void refineBuilding(List<Slot> rooms, Where where, Draws d) {}
 
 	/** True if a floor plan must not be shared between storey {@code storey - 1} and {@code storey} of a mass (a type whose ground floor differs in use from the upper ones). */

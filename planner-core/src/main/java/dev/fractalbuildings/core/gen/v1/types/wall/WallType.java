@@ -284,6 +284,15 @@ public final class WallType implements BuildingType {
 	/** The passage and galleries are bare; tower rooms hold guard furniture. */
 	private static final RoomProgram ROOMS = new RoomProgram() {
 		@Override
+		public List<int[]> reserved(BuildContext c, Mass a, int s) {
+			if (s != 1 || !a.kind().equals("tower") || a.to() < 2) return List.of();
+			List<int[]> out = new ArrayList<>();
+			if (a.x() == 0) out.addAll(WalkOps.endCells(a, false, c.spec().depth(), 1, 1));
+			if (a.maxX() == c.spec().width()) out.addAll(WalkOps.endCells(a, true, c.spec().depth(), 1, 1));
+			return out;
+		}
+
+		@Override
 		public String use(Role role, int area, Draws d) {
 			return switch (role) {
 				case HALL -> area > 40 ? "gallery" : "passage";
