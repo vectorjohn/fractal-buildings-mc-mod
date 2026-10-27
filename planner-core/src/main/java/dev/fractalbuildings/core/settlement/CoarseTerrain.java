@@ -32,6 +32,14 @@ public final class CoarseTerrain {
 
 	public boolean water(int x, int z) { return probe.water(snap(x), snap(z)); }
 
+	/** The column and its eight lattice neighbours are all dry. */
+	public boolean dryAround(int x, int z) {
+		for (int dz = -1; dz <= 1; dz++) {
+			for (int dx = -1; dx <= 1; dx++) if (water(x + dx * step, z + dz * step)) return false;
+		}
+		return true;
+	}
+
 	public boolean peak(int x, int z) {
 		int sx = snap(x), sz = snap(z);
 		return probe.floorY(sx, sz) >= PEAK_Y || BiomeIds.isPeak(probe.biome(sx, sz));

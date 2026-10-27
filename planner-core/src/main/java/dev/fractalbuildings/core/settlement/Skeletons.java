@@ -139,6 +139,10 @@ public final class Skeletons {
 		int n = 0;
 		for (int t = 0; t < targets.size(); t++) {
 			TierProgram.Route r = t < routes.size() ? routes.get(t) : null;
+			if (r != null && t >= cellGates.size()) {
+				final Pt exit = targets.get(t);
+				if (!c.solid(exit.x(), exit.z()) && links.stream().noneMatch(l -> l.exit().equals(exit))) r = trimBridgeEnd(r);
+			}
 			String roadId = null;
 			if (r != null && r.points().size() >= 2) {
 				roadId = Ids.road(cell.cx(), cell.cz(), n++);
@@ -148,7 +152,7 @@ public final class Skeletons {
 				Gate g = cellGates.get(t);
 				gates.add(new Gate(g.id(), g.kind(), g.x(), g.z(), g.cells(), roadId));
 			} else if (roadId != null) {
-				Pt e = targets.get(t);
+				Pt e = r.points().get(r.points().size() - 1);
 				gates.add(new Gate("g?", GateKind.EXIT, e.x(), e.z(), List.of(), roadId));
 			}
 		}
@@ -188,6 +192,22 @@ public final class Skeletons {
 		int m = Integer.MIN_VALUE;
 		for (Pt q : p) m = Math.max(m, x ? q.x() : q.z());
 		return m;
+	}
+
+	/**
+	 * 6.16: an exit road whose last bridge runs to its final point lands on a shore spit with nothing beyond (the player's "road
+	 * doesn't connect"); the road stops at the land before the bridge and the exit moves there. Only shore exits (no water-free 3 x 3), and no link exit, are trimmed.
+	 */
+	static TierProgram.Route trimBridgeEnd(TierProgram.Route r) {
+		List<Pt> pts = r.points();
+		int n = pts.size();
+		for (int[] b : r.bridges()) {
+			if (b[1] != n - 1 || b[0] < 1) continue; // a bridge from the hub itself would leave no road
+			List<int[]> keep = new ArrayList<>();
+			for (int[] o : r.bridges()) if (o[1] <= b[0]) keep.add(o);
+			return new TierProgram.Route(pts.get(b[0]), pts.subList(0, b[0] + 1), keep);
+		}
+		return r;
 	}
 
 	/** The gate column between two cells, or null when they share no edge or every try lands on water or a peak (slopes are the road's business). */
@@ -452,6 +472,7 @@ public final class Skeletons {
 		List<Violation> violations = new ArrayList<>();
 		violations.addAll(SettlementChecks.skeletonInCell(sk, field));
 		violations.addAll(SettlementChecks.cellGateAgree(sk));
+		violations.addAll(SettlementChecks.mainRoadEnds(roads, approaches, gl, raster));
 		return new SettlementPlan(genVersion, seed, site, new Rect(x0, z0, nx * step, nz * step), raster, quarters, outlines, dl, roads, gl, ml, walls, violations, approaches);
 	}
 
