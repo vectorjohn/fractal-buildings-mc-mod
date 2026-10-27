@@ -17,3 +17,5 @@ reports into the SB branch?").
 | [p6-railfix-architect.md](p6-railfix-architect.md) | RAILFIX railings review (2026-10-25) |
 | [p7-windows-architect.md](p7-windows-architect.md) | 7.12 windows review (2026-10-25, r2 2026-10-26) |
 | [p7-windows-block-plain-front.png](p7-windows-block-plain-front.png) | plain city blocks after 7.12, front (seeds 0-15; seed 0 top left) |
+| [playtest1026-qs-architect.md](playtest1026-qs-architect.md) | playtest 2026-10-26 design questions, architect: partitions, tunnels, switchbacks, dormers, inn siting, road joins, door frames; P1-P5 (2026-10-27) |
+| [playtest1026-qs-interior.md](playtest1026-qs-interior.md) | playtest 2026-10-26 design questions, interior designer: walkable rooms (DS-48), inn programme, workshop lean-to, attic stairs (2026-10-27) |
