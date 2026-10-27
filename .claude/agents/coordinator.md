@@ -55,7 +55,9 @@ time.
   plus their verifiers and any number of research or docs agents. The human
   can change the cap in the ledger. Fewer if items are heavy (Minecraft
   client tests share the heavy lock, so several of those in parallel mostly
-  queue).
+  queue). When the worker box is up (`scripts/remote.sh --check`), there are
+  two heavy slots: the local heavy lock and the worker's queue (CLAUDE.md
+  "Parallel work"). Tell heavy items' agents to send their heavy runs there.
 - **Split for parallelism.** When you or a plan break work into steps, prefer
   steps that can run side by side (planner vs viewer against a fixture JSON;
   one building type per item; one spike per question) over a long chain.
@@ -88,8 +90,8 @@ it first; that bloats your context.
 Start it with `subagent_type: "assistant"` and a short prompt:
 - the human's message, quoted as written
 - `slug: <short-slug>`, the run branch and the integration checkout path
-- `heavy: busy` if a client game test or measurement is running, else
-  `heavy: free`
+- `heavy: busy` if a client game test or measurement is running locally, else
+  `heavy: free` (the worker box has its own queue: `scripts/remote.sh`)
 - at most a line or two of run state, only if the message refers to it
 
 Relay its final message to the human. Then:

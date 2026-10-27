@@ -111,6 +111,11 @@ that works in all three. Full conventions: `docs/SILVERBULLET.md`.
 - LAN (`192.168.0.0/16` etc.) and the tailnet (`100.64.0.0/10`) are **blocked by
   a per-user firewall**. This is intentional; don't try to work around it.
   Loopback and DNS are open.
+- **One exception: SSH to the worker box `beebox`**, for running builds and
+  tests there through `scripts/remote.sh` (see "Parallel work"). Use it only
+  for that; nothing else on the LAN or tailnet is reachable, and that's on
+  purpose. It may not be set up on every host: `scripts/remote.sh --check`
+  says whether it is.
 - If a DNS lookup fails, report it rather than switching URLs to dodge it.
 
 ## Dev shell
@@ -147,9 +152,12 @@ that works in all three. Full conventions: `docs/SILVERBULLET.md`.
 - **NVIDIA stays off limits** without asking (it's shared with the human's
   desktop); the scripts refuse `FB_VK=nvidia` and only ever list one ICD.
   Other ad-hoc runs (a bare `xvfb-run ... ./gradlew`, Xvnc) stay on the dev
-  shell's lavapipe unless you source `scripts/vk-select.sh`.
+  shell's lavapipe unless you source `scripts/vk-select.sh`. If the Intel
+  iGPU or lavapipe is too slow for something, say so, or run it on the worker
+  box, which renders on its own GPU (`scripts/remote.sh`, see "Parallel work").
 - **Automated runs:** `xvfb-run -a nix develop -c ./gradlew <task>`, under the
-  heavy lock (see "Parallel work").
+  heavy lock, or on the worker box with `scripts/remote.sh` (see "Parallel
+  work").
 - **When the human wants to watch:** a VNC display on `:1`, localhost only:
   ```sh
   Xvnc :1 -localhost -geometry 1920x1080 -SecurityTypes None &
@@ -195,6 +203,7 @@ source of truth, and update it when a command changes.)*
 - Design block reference: `scripts/design-blocks.sh` regenerates `docs/design/blocks.md` and the table between `<!-- BLOCKS:BEGIN -->` and `<!-- BLOCKS:END -->` in `.claude/agents/*.md` from Minecraft's own `blocks.json` report and textures plus `docs/design/blocks-notes.md` (needs Loom's cached jars for the `minecraft_version` in `gradle.properties`; any mod build fetches them; enters the dev shell itself); `--check` writes nothing and exits 1 if stale (2 if the jars are missing); rerun after a Minecraft version bump or an edit to `blocks-notes.md`; `scripts/test-all.sh` runs the check
 - Whole Gradle build (all three modules + boundary check): `nix develop -c ./gradlew build`
 - Boundary check alone: `nix develop -c ./gradlew :planner-core:checkNoMinecraft` (also part of `check` and run before `compileJava`)
+- **Any of the above on the worker box:** `scripts/remote.sh -- <command>`, the command exactly as you'd run it from the worktree root but without a `flock .../heavy.lock` prefix (e.g. `scripts/remote.sh -- scripts/test-all.sh`, `scripts/remote.sh -- scripts/client-test.sh`, `scripts/remote.sh -- nix develop -c ./gradlew :planner-core:test`). It copies the worktree (no `.git`, nothing gitignored), queues the command, prints the last 40 lines and saves the full log to `build/remote/<job>.log`, copies results back to the same paths (`build/test-all/`, JUnit XML, `mod/build/screenshots/`, client test logs, `viewer/out/`; `--fetch PATH` for more) and exits with the command's status. Output written elsewhere doesn't come back unless you `--fetch` it. `scripts/remote.sh --check` exits 0 if the worker is reachable; `--help` for the rest.
 
 ## Parallel work (a priority)
 
@@ -226,6 +235,33 @@ agents can work and test at once. The rules below exist to make that safe.
   "waiting for suite slot" with the holders and waits. Single-class `--tests X`
   runs, CLI runs and heavy jobs (heavy lock) don't need it. Locks:
   `<repo root>/.claude/suite.lock.1..N`, freed when the holder exits or is killed.
+- **The worker box (`beebox`) is a second heavy slot.** It runs one job at a
+  time from its own queue, so it doesn't use the heavy lock, and a busy local
+  heavy lock doesn't block it. When `scripts/remote.sh --check` succeeds, send
+  heavy jobs and long runs there with `scripts/remote.sh -- <cmd>`: client
+  game tests, `scripts/test-all.sh`, the ~10 min `:planner-core:test`,
+  galleries. Run quick builds and tests locally as before; copying the
+  worktree over costs a few seconds. If the check fails, use the local heavy
+  lock as above.
+  - **It renders on its GPU**, not lavapipe: there's no desktop on it to
+    share the GPU with. `scripts/remote.sh` runs the command in a headless
+    sway session and the test scripts use its Xwayland display instead of
+    Xvfb (`FB_USE_DISPLAY=1`), so Minecraft gets hardware OpenGL (radeonsi;
+    the log says "Using graphics device: AMD Radeon Graphics"). Screenshots can
+    differ slightly from lavapipe ones. If a run fails in a way that looks
+    like a GPU or display problem, retry with `scripts/remote.sh --cpu`
+    (Xvfb + lavapipe, as locally) and add a line to `docs/NOTES.md`.
+  - It runs one job at a time, so it's quiet, which suits measurements, but
+    **timings from different hosts or renderers aren't comparable**: record
+    the host (`beebox` or this one) and renderer with every number, and
+    compare like with like.
+  - Interactive runs (`runClient` you or the human watch, VNC, the desktop
+    launch) stay local.
+  - In the integration checkout, a remote run still holds the merge lock like
+    a local Gradle run (`docs/NOTES.md`): it copies results back into the
+    checkout's `build/` directories.
+  - Its output is the tail of the log, lines cut to 300 characters; the full
+    log is in `build/remote/<job>.log`. Grep that rather than printing it.
 - **Merges into a shared branch take the merge lock**: hold
   `flock <repo root>/.claude/merge.lock` for the merge itself (clean-checkout
   check, merge, commit) in one process, then release it. Two merges into the

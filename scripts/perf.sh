@@ -12,7 +12,12 @@
 # Quiet-machine rule: numbers that decide a budget need loadavg under 2; the check prints the load measured.
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-MAIN_ROOT="$(dirname "$(git -C "$ROOT" rev-parse --path-format=absolute --git-common-dir)")"
+# A copy without .git (scripts/remote.sh on the worker) uses its own root.
+if GIT_COMMON="$(git -C "$ROOT" rev-parse --path-format=absolute --git-common-dir 2>/dev/null)"; then
+	MAIN_ROOT="$(dirname "$GIT_COMMON")"
+else
+	MAIN_ROOT="$ROOT"
+fi
 HEAVY_LOCK="$MAIN_ROOT/.claude/heavy.lock"
 mkdir -p "$(dirname "$HEAVY_LOCK")" "$ROOT/mod/build/perf"
 cd "$ROOT"

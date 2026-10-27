@@ -118,7 +118,8 @@ Each behaviour gets a test at the **cheapest layer that can catch its bugs**
    `mod/src/gametest/java` is picked up by the build. Do not edit the gametest
    `fabric.mod.json`.
 5. **In-game appearance**: Fabric client game tests under Xvfb (`scripts/client-test.sh`; Intel iGPU, lavapipe fallback),
-   with screenshots. **Heavy: always under the heavy lock** (CLAUDE.md).
+   with screenshots. **Heavy: always under the heavy lock**, or on the worker
+   box with `scripts/remote.sh -- scripts/client-test.sh` (CLAUDE.md).
 
 Run the relevant layers once on your final code before you report: after
 merging the integration branch into yours (below), and after your last code
@@ -162,7 +163,9 @@ and mention them in the ROADMAP testing section.
   verifier's squash merge goes through cleanly.
 - Run Minecraft client tests, `runClient` and timing measurements under
   `flock <repo root>/.claude/heavy.lock`. Everything else can run concurrently
-  with other agents.
+  with other agents. When the worker box is up (`scripts/remote.sh --check`),
+  prefer it for client tests and long runs like `scripts/test-all.sh`:
+  `scripts/remote.sh -- <cmd>` (CLAUDE.md "Parallel work").
 - Run **full** suites through a suite slot (at most 2 machine-wide):
   `scripts/suite.sh nix develop -c ./gradlew :planner-core:test` (same for
   `build`, `:mod:build`, `:mod:runGameTest`). `scripts/test-all.sh` takes one
