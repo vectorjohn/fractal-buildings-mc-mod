@@ -28,6 +28,18 @@ public final class Briefs {
 	/** Relief above which an optional fill lot (house, workshop) is left empty. */
 	public static final int STEEP_RELIEF = 8;
 
+	/** SHOPLOW (DS-45): a street whose surface is more than this from the lot's front-edge ground runs on an embankment or in a cutting along it; the lot stays empty ({@code empty:bank}). */
+	public static final int BANK_LIMIT = 4;
+
+	/** SHOPLOW: a shop or workshop door sits within 2 of the street, so the lot's highest ground may stand at most this above the street (S2 digs in by at most 4). */
+	public static final int SHOP_FRONT_RISE = 6;
+
+	/** SHOPLOW S2: a house's door sits at most 5 above the street (DS-45, a landing above 3); the dug-in slab stands 5 below the highest ground of the site, so the lot may rise at most 9 above the street until the bank buildings (S8) take the steeper ones. */
+	public static final int HOUSE_FRONT_RISE = 9;
+
+	/** SHOPLOW S2: the ground in a house lot's front rows, where its door stands, may rise at most this far above the street (a rise of 5 is the most DS-45 gives a house door). */
+	public static final int HOUSE_FRONT_ROW = 4;
+
 	/**
 	 * @param quarter kind of the district's quarter (the plan holds only its index)
 	 * @param exact exact terrain, for the relief of each lot
@@ -129,17 +141,49 @@ public final class Briefs {
 			}
 		int relief = hi - lo;
 		String type = l.type();
-		if (!buildable(type, l, relief)) {
+		int[] fc = outside(l, l.front(), ((l.front().dx != 0 ? l.d() : l.w()) - 1) / 2);
+		int fr = exact.floorY(fc[0], fc[1]); // the raw ground of the street column in front of the lot (the same column frontY looks out from)
+		boolean frontKnown = frontY != Brief.NO_FRONT_Y;
+		int street = frontKnown ? frontY : fr;
+		java.util.Set<String> excluded = java.util.Set.of();
+		if (frontKnown && Math.abs(frontY - fr) > BANK_LIMIT && frontType(type)) return empty(l, style, mask, frontY, "empty:bank");
+		if (shopRiseTooHigh(type, hi, street) || houseFrontRowTooHigh(type, l, exact, street)) excluded = java.util.Set.of(type);
+		if (excluded.contains(type) || !buildable(type, l, relief)) {
 			if (dev.fractalbuildings.core.settlement.tiers.WallRing.isRingLotId(l.id())) return empty(l, style, mask, frontY, "empty:no-fit"); // a wall lot is never swapped for another type
 			boolean alongX = l.front() == Facing.NORTH || l.front() == Facing.SOUTH;
-			Optional<ClassTable.Pick> p = ClassTable.pick(plan.seed(), l.x(), l.z(), l.density(), quarter, relief, alongX ? l.w() : l.d(), alongX ? l.d() : l.w());
-			if (p.isPresent() && buildable(p.get().type(), l, relief)) type = p.get().type();
+			Optional<ClassTable.Pick> p = ClassTable.pick(plan.seed(), l.x(), l.z(), l.density(), quarter, relief, alongX ? l.w() : l.d(), alongX ? l.d() : l.w(), excluded);
+			if (p.isPresent() && buildable(p.get().type(), l, relief) && !shopRiseTooHigh(p.get().type(), hi, street) && !houseFrontRowTooHigh(p.get().type(), l, exact, street)) type = p.get().type();
 			else return empty(l, style, mask, frontY, relief > STEEP_RELIEF ? "empty:steep" : "empty:no-fit");
+			if (frontKnown && Math.abs(frontY - fr) > BANK_LIMIT && frontType(type)) return empty(l, style, mask, frontY, "empty:bank");
 		}
 		if ((type.equals("house") || type.equals("workshop")) && relief > STEEP_RELIEF) return empty(l, style, mask, frontY, "empty:steep");
 		int[] range = storeys(type, l.density(), quarter);
 		if (type.equals("highrise")) range = ClassTable.lotStoreys(plan.seed(), l.x(), l.z(), l.density(), range[0], range[1]);
 		return new LotBrief(l.id(), l.x(), l.z(), l.w(), l.d(), l.front(), type, style, range[0], range[1], mask, l.airRights(), frontY, l.density(), LotBrief.BUILD, l.walk());
+	}
+
+	/** The street-front types DS-45 limits the door rise of. */
+	static boolean frontType(String type) { return type.equals("house") || type.equals("workshop") || type.equals("shop"); }
+
+	/** A shop or workshop lot whose highest ground stands more than {@link #SHOP_FRONT_RISE} above the street (or front ground) cannot hold its door within 2 of the street; a house lot more than {@link #HOUSE_FRONT_RISE} cannot hold it within 5. */
+	static boolean shopRiseTooHigh(String type, int hi, int street) { return (type.equals("shop") || type.equals("workshop")) && hi - street > SHOP_FRONT_RISE || type.equals("house") && hi - street > HOUSE_FRONT_RISE; }
+
+	/** A house lot whose front rows (two deep, the middle three columns) stand more than {@link #HOUSE_FRONT_ROW} above the street. */
+	static boolean houseFrontRowTooHigh(String type, LotBrief l, dev.fractalbuildings.core.probe.TerrainProbe exact, int street) {
+		if (!type.equals("house")) return false;
+		int k0 = ((l.front().dx != 0 ? l.d() : l.w()) - 1) / 2, hi = Integer.MIN_VALUE;
+		for (int row = 0; row < 2; row++)
+			for (int k = Math.max(0, k0 - 1); k <= Math.min((l.front().dx != 0 ? l.d() : l.w()) - 1, k0 + 1); k++) {
+				int x, z;
+				switch (l.front()) {
+					case NORTH -> { x = l.x() + k; z = l.z() + row; }
+					case SOUTH -> { x = l.x() + k; z = l.z() + l.d() - 1 - row; }
+					case WEST -> { x = l.x() + row; z = l.z() + k; }
+					default -> { x = l.x() + l.w() - 1 - row; z = l.z() + k; }
+				}
+				hi = Math.max(hi, exact.floorY(x, z));
+			}
+		return hi - street > HOUSE_FRONT_ROW;
 	}
 
 	private static LotBrief empty(LotBrief l, String style, int mask, int frontY, String status) {
@@ -215,9 +259,46 @@ public final class Briefs {
 		return false;
 	}
 
+	/**
+	 * The ground a lot's building generator sees: {@code exact}, except in the row of columns just outside the lot's front edge, where it reads the street's own surface
+	 * (its first free y, from the street's centre line as {@link #frontY} reads it, but column by column along the front: a street on a slope steps by a block every few
+	 * cells, so the street at a door near the end of a wide front is not the street at the middle) or the plaza's level, where a street or plaza covers the column.
+	 * SHOPLOW S2: a building that digs in to the street needs the street level where its door meets it. Depends on the plan alone, so any order of lots gives the same bytes.
+	 */
+	public static TerrainProbe withStreetFront(DistrictPlan plan, LotBrief l, TerrainProbe exact) {
+		if (plan.streets().isEmpty() && plan.plazas().isEmpty()) return exact;
+		List<List<Rect>> streetRects = new ArrayList<>();
+		for (Street st : plan.streets()) streetRects.add(SettlementChecks.footprint(st));
+		int len = l.front().dx != 0 ? l.d() : l.w();
+		int[] ys = new int[len];
+		boolean any = false;
+		for (int k = 0; k < len; k++) {
+			ys[k] = frontYAt(plan, l, streetRects, k);
+			any |= ys[k] != Brief.NO_FRONT_Y;
+		}
+		if (!any) return exact;
+		return new TerrainProbe() {
+			@Override public int floorY(int x, int z) {
+				int k = switch (l.front()) {
+					case NORTH -> z == l.z() - 1 ? x - l.x() : -1;
+					case SOUTH -> z == l.z() + l.d() ? x - l.x() : -1;
+					case WEST -> x == l.x() - 1 ? z - l.z() : -1;
+					case EAST -> x == l.x() + l.w() ? z - l.z() : -1;
+				};
+				return k >= 0 && k < len && ys[k] != Brief.NO_FRONT_Y ? ys[k] : exact.floorY(x, z);
+			}
+
+			@Override public int waterDepth(int x, int z) { return exact.waterDepth(x, z); }
+		};
+	}
+
 	/** Street surface y just outside the middle of the front edge (street centre-line y nearest to it; plaza y on a plaza), or {@link Brief#NO_FRONT_Y}. */
 	static int frontY(DistrictPlan plan, LotBrief l, List<List<Rect>> streetRects) {
-		int k = ((l.front().dx != 0 ? l.d() : l.w()) - 1) / 2;
+		return frontYAt(plan, l, streetRects, ((l.front().dx != 0 ? l.d() : l.w()) - 1) / 2);
+	}
+
+	/** The same at the k-th column along the front edge. */
+	static int frontYAt(DistrictPlan plan, LotBrief l, List<List<Rect>> streetRects, int k) {
 		int[] c = outside(l, l.front(), k);
 		int best = Brief.NO_FRONT_Y, bestDist = Integer.MAX_VALUE;
 		for (int i = 0; i < plan.streets().size(); i++) {

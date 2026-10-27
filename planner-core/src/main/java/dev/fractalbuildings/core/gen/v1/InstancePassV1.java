@@ -58,17 +58,48 @@ public final class InstancePassV1 {
 		boolean[][] fp = footprint(shell);
 		Placement p0 = new Placement(ox, 0, oz, r, w, d);
 		TerrainProbe t = req.terrain();
-		int oy = Integer.MIN_VALUE;
+		int oy0 = Integer.MIN_VALUE;
 		for (int lx = 0; lx < w; lx++)
-			for (int lz = 0; lz < d; lz++) if (fp[lx][lz]) oy = Math.max(oy, t.floorY(p0.worldX(lx, lz), p0.worldZ(lx, lz)));
-		// a door whose outside ground is higher than the slab would be buried: lift the slab to it
-		for (Opening o : entranceDoors(shell)) {
-			Facing f = outward(o);
-			int wx = p0.worldX(o.box().x() + f.dx, o.box().z() + f.dz), wz = p0.worldZ(o.box().x() + f.dx, o.box().z() + f.dz);
-			if (lot.containsColumn(wx, wz)) oy = Math.max(oy, t.floorY(wx, wz) - entranceStorey(shell).y());
-		}
+			for (int lz = 0; lz < d; lz++) if (fp[lx][lz]) oy0 = Math.max(oy0, t.floorY(p0.worldX(lx, lz), p0.worldZ(lx, lz)));
 		dev.fractalbuildings.core.gen.Brief.Walk walk = req.brief() == null ? null : req.brief().walk();
-		if (walk != null) oy = Math.max(oy, walk.base()); // a town-wall lot stands at its level in the ring's walk profile (the ground under it is filled up to it)
+		// SHOPLOW: a street-front building digs in to the street instead of standing at the highest ground under its footprint
+		SiteLevel dig = SiteLevel.applies(shell, req.brief()) ? new SiteLevel(shell, req, p0, fp) : null;
+		int oy = dig == null ? oy0 : dig.level(oy0);
+		Site placedSite = null;
+		// a door whose outside ground is higher than the slab would be buried: lift the slab to it (the ground as the site leaves it, cut included)
+		for (int round = 0; ; round++) {
+			placedSite = site(shell, lot, p0, fp, t, dig, oy, ox, oz, r);
+			TerrainProbe eff = dev.fractalbuildings.core.terrain.SiteGround.probe(placedSite.provisional(), t);
+			int need = oy;
+			for (Opening o : entranceDoors(shell)) {
+				Facing f = outward(o);
+				int wx = p0.worldX(o.box().x() + f.dx, o.box().z() + f.dz), wz = p0.worldZ(o.box().x() + f.dx, o.box().z() + f.dz);
+				if (lot.containsColumn(wx, wz)) need = Math.max(need, eff.floorY(wx, wz) - entranceStorey(shell).y());
+			}
+			if (need <= oy || round >= 4) break;
+			oy = need;
+		}
+		if (walk != null && walk.base() > oy) { // a town-wall lot stands at its level in the ring's walk profile (the ground under it is filled up to it)
+			oy = walk.base();
+			placedSite = site(shell, lot, p0, fp, t, dig, oy, ox, oz, r);
+		}
+		List<Box> site = placedSite.boxes();
+		PlacedBuilding provisional = placedSite.provisional();
+		List<Box> all = new ArrayList<>(site);
+		List<Opening> unreachable = new ArrayList<>();
+		boolean guarded = steps(provisional, lot, t, all, stoopRise(shell, lim), placedSite.causeway(), placedSite.open(), unreachable) && unreachable.isEmpty();
+		BuildingIr built = shell;
+		if (walk != null) all.addAll(Types.get(shell.spec().type()).walkJoins(shell, walk));
+		if (!unreachable.isEmpty() && WALL_TYPES.contains(shell.spec().type())) built = sealed(shell, unreachable); // a wall tower or gatehouse standing high above steep ground: no way down in the lot, so no door
+
+		return new Placed(new PlacedBuilding("b0", List.of(lot.id()), ox, oy, oz, r, built, all), guarded);
+	}
+
+	/** The site boxes of a placement at slab level {@code oy} (foundation under the footprint, then the dig-in's cut and fill) and the provisional building they make. */
+	private record Site(List<Box> boxes, List<int[]> causeway, List<int[]> open, PlacedBuilding provisional) {}
+
+	private static Site site(BuildingIr shell, Lot lot, Placement p0, boolean[][] fp, TerrainProbe t, SiteLevel dig, int oy, int ox, int oz, int r) {
+		int w = shell.bounds().maxX(), d = shell.bounds().maxZ();
 		List<Box> site = new ArrayList<>();
 		for (int lz = 0; lz < d; lz++) {
 			int runStart = 0, runH = 0;
@@ -81,15 +112,15 @@ public final class InstancePassV1 {
 				}
 			}
 		}
-		PlacedBuilding provisional = new PlacedBuilding("b0", List.of(lot.id()), ox, oy, oz, r, shell, site);
-		List<Box> all = new ArrayList<>(site);
-		List<Opening> unreachable = new ArrayList<>();
-		boolean guarded = steps(provisional, lot, t, all, lim.stoop(), unreachable) && unreachable.isEmpty();
-		BuildingIr built = shell;
-		if (walk != null) all.addAll(Types.get(shell.spec().type()).walkJoins(shell, walk));
-		if (!unreachable.isEmpty() && WALL_TYPES.contains(shell.spec().type())) built = sealed(shell, unreachable); // a wall tower or gatehouse standing high above steep ground: no way down in the lot, so no door
-
-		return new Placed(new PlacedBuilding("b0", List.of(lot.id()), ox, oy, oz, r, built, all), guarded);
+		List<int[]> causeway = List.of(), open = List.of();
+		if (dig != null) {
+			PlacedBuilding bare = new PlacedBuilding("b0", List.of(lot.id()), ox, oy, oz, r, shell, List.of());
+			SiteLevel.Cut c = dig.cut(oy, VoxelGrid.of(bare));
+			site.addAll(c.boxes());
+			causeway = c.causeway();
+			open = c.open();
+		}
+		return new Site(site, causeway, open, new PlacedBuilding("b0", List.of(lot.id()), ox, oy, oz, r, shell, site));
 	}
 
 	/** The shell with these doors walled up: their boxes become wall and the openings go. */
@@ -140,7 +171,7 @@ public final class InstancePassV1 {
 	 * below, the slab needs none. When no route exists the door is left as it is and the
 	 * {@code entrance-reachable} invariant reports it.
 	 */
-	private static boolean steps(PlacedBuilding provisional, Lot lot, TerrainProbe t, List<Box> site, boolean stoop, List<Opening> unreachable) {
+	private static boolean steps(PlacedBuilding provisional, Lot lot, TerrainProbe t, List<Box> site, int stoopRise, List<int[]> causeway, List<int[]> open, List<Opening> unreachable) {
 		BuildingIr shell = provisional.shell();
 		List<Opening> doors = entranceDoors(shell);
 		if (doors.isEmpty()) return true;
@@ -182,6 +213,17 @@ public final class InstancePassV1 {
 		}
 		boolean[] deckCells = new boolean[nx * nz]; // cells of a stoop built for an earlier door
 		List<int[]> treads = new ArrayList<>(); // every placed step or landing cell: x, z, tread level, least drop to the ground beside it that gets a rail
+		for (int[] cw : causeway) { // the approach causeway (a level forecourt on fill): a landing no flight may cross, railed on its open sides
+			int i = (cw[1] - z0) * nx + (cw[0] - x0);
+			if (cw[0] < x0 || cw[0] > x1 || cw[1] < z0 || cw[1] > z1) continue;
+			blocked[i] = true;
+			flightTop[i] = oy;
+			treads.add(new int[] {cw[0], cw[1], oy, RAIL_DROP_LANDING});
+		}
+		for (int[] oc : open) { // the exit cells of the approach: no rail stands on them
+			if (oc[0] < x0 || oc[0] > x1 || oc[1] < z0 || oc[1] > z1) continue;
+			blocked[(oc[1] - z0) * nx + (oc[0] - x0)] = true;
+		}
 		boolean posted = shell.volumes().stream().anyMatch(v -> v.id().startsWith("leg")); // a hall on posts: its landing is a deck on posts
 		for (Opening o : doors) {
 			Facing out = outward(o);
@@ -215,7 +257,7 @@ public final class InstancePassV1 {
 					lowFront |= ground[fi] < oy;
 				}
 			boolean wide = front.size() > 1 && lowFront;
-			if (stoop && ground[s0] < oy || wide) {
+			if (ground[s0] <= oy + 1 - stoopRise || wide) {
 				for (int[] cand : stoopCandidates(out, sx, sz, x0, x1, z0, z1, nx, ground, oy, base, grid, fp)) {
 					if (wide) { boolean covers = true; for (int fi : front) if (ground[fi] < oy) { boolean in = false; for (int c : cand) in |= c == fi; covers &= in; } if (!covers) continue; }
 					candidates.add(cand);
@@ -241,6 +283,8 @@ public final class InstancePassV1 {
 			boolean[] deck = null;
 			int foundPass = -1, foundCi = -1;
 			for (int strictPass = 0; strictPass < 3 && found < 0; strictPass++) { // pass 0: only landings and flights whose open sides lie inside the lot (every one can be railed); pass 1: flights only (a landing on the lot line stays); pass 2: any route
+			for (int runLimit = SiteLevel.LEGACY.get() ? 1 : 0; runLimit < 2 && found < 0; runLimit++) { // 0: DS-45 stair runs (at most 3 risers without a level tread); 1: where no such route fits at this rail pass, today's shortest flight (a railed long run before an unrailed short one)
+			boolean limited = runLimit == 0;
 			boolean strict = strictPass <= 1, strictLanding = strictPass == 0;
 			for (int ci = 0; ci < candidates.size(); ci++) {
 				int[] srcs = candidates.get(ci);
@@ -253,6 +297,12 @@ public final class InstancePassV1 {
 				// down or level, and share the rest of its way down.
 				for (int pass = 0; pass < 2 && found < 0; pass++) {
 					java.util.Arrays.fill(parent, -2);
+					if (limited) {
+						boolean[] mg = {false};
+						found = searchRuns(srcs, s0, ci, nDeck, strict, strictLanding, pass, nx, nz, x0, x1, z0, z1, oy, base, ground, outG, blocked, flightTop, grid, out, sx, sz, nOut, parent, depth, mg);
+						merged = mg[0];
+						continue;
+					}
 					int[] queue = new int[nx * nz];
 					int head = 0, tail = 0;
 					for (int c : srcs) {
@@ -308,6 +358,7 @@ public final class InstancePassV1 {
 				merged = false;
 			}
 			}
+			}
 			if (found < 0) {
 				unreachable.add(o);
 				continue;
@@ -340,7 +391,7 @@ public final class InstancePassV1 {
 				if (h >= g) { // a step on the ground itself (h == g) needs no foundation under it
 					if (h > g) site.add(new Box(Box3.of(cx, g - base, cz, 1, h - g, 1), Role.FOUNDATION, Layer.FOUNDATION, Box.NO_STOREY));
 					site.add(new Box(Box3.of(cx, h - base, cz, 1, 1, 1), Role.STAIR, Layer.FOUNDATION, Box.NO_STOREY));
-					treads.add(new int[] {cx, cz, h, RAIL_DROP_FLIGHT});
+					treads.add(new int[] {cx, cz, h, parent[c] >= 0 && depth[parent[c]] == depth[c] ? RAIL_DROP_LANDING : RAIL_DROP_FLIGHT});
 				}
 			}
 		}
@@ -358,6 +409,164 @@ public final class InstancePassV1 {
 		for (Opening o : shell.openings()) if (o.kind() == OpeningKind.DOOR && o.to().equals(Opening.OUTSIDE) != o.from().equals(Opening.OUTSIDE)) extDoors.add(o);
 		rails(treads, lot, p, x0, x1, z0, z1, nx, ground, blocked, doorFront, extDoors, grid, base, site);
 		return guarded;
+	}
+
+	/** Most descent in the walker's half blocks between level treads (DS-45 stair runs: {@code MAX_RISERS} 3 blocks, rounded up). */
+	static final int MAX_RISERS = 3, MAX_CUR = 2 * MAX_RISERS;
+
+	/**
+	 * The run-aware flight search (DS-45 "Stair runs", the plan's S6 search): a breadth-first search over (cell, descent so far, half blocks
+	 * of descent since the last level tread). A move is a descent (one block down: 2 half blocks), a level move onto a landing cell (resets the
+	 * run: a landing, or the corner cell of a turn), or the end onto the ground. The walker model is {@code DoorRise.run}'s: the first cell out of the
+	 * door is a half block below the door floor (1), each step down adds 2, the last step onto ground one half block lower adds 1; a run is
+	 * (half blocks + 1) / 2 blocks and may not pass {@code MAX_RISERS}. Routes never use a cell twice. Returns the cell the route ends at (or, for
+	 * a merge onto an earlier flight, the last step), or -1; {@code parent} and {@code depth} (per cell) hold the route.
+	 */
+	private static int searchRuns(int[] srcs, int s0, int ci, int nDeck, boolean strict, boolean strictLanding, int pass, int nx, int nz, int x0, int x1, int z0, int z1,
+			int oy, int base, int[] ground, int[] outG, boolean[] blocked, int[] flightTop, VoxelGrid grid, Facing out, int sx, int sz, int nOut, int[] parent, int[] depth, boolean[] merged) {
+		int maxD = 2;
+		for (int gi : ground) maxD = Math.max(maxD, oy - gi + 3);
+		maxD = Math.min(maxD, 40);
+		final int curN = MAX_CUR + 1, stride = (maxD + 1) * curN;
+		int ns = nx * nz * stride;
+		boolean[] seen = new boolean[ns];
+		int[] from = new int[ns];
+		int[] queue = new int[ns];
+		int head = 0, tail = 0;
+		boolean[] isSrc = new boolean[nx * nz]; // the landing (stoop) cells are the route's start: no route comes back through them
+		for (int c : srcs) isSrc[c] = true;
+		for (int c : srcs) {
+			int st = c * stride + (c == s0 ? 1 : 0);
+			seen[st] = true;
+			from[st] = -1;
+			queue[tail++] = st;
+		}
+		Facing[] dirs = {out, out.rotate(1), out.rotate(3), out.rotate(2)};
+		while (head < tail) {
+			int st = queue[head++];
+			int c = st / stride, rest = st % stride, d = rest / curN, cur = rest % curN;
+			int cx = x0 + c % nx, cz = z0 + c / nx;
+			int g = ground[c], h = oy - d;
+			boolean arrivedLevel = cur == 0;
+			boolean row = (cx - sx) * out.dx + (cz - sz) * out.dz == nOut;
+			if (d == 0 && !arrivedLevel) { // the source cell itself standing on ground: no flight
+				boolean ends = g >= oy && g <= oy + 1 && !(ci < nDeck && !row);
+				boolean free = true;
+				int y0 = grid.get(cx, g - base, cz) == Role.STAIR ? g + 1 - base : g - base; // the step below the door (a stair block the dig-in put there) is what the walker stands on
+				for (int y = y0; y <= g + 3 - base && free; y++) free = grid.get(cx, y, cz) == Role.AIR;
+				if (ends && free) { chain(st, from, stride, curN, parent, depth, c, null); return c; }
+			}
+			boolean free = true;
+			for (int y = h - base; y <= h + 3 - base && free; y++) free = grid.get(cx, y, cz) == Role.AIR;
+			if (!free) continue;
+			int thr = arrivedLevel || ci < nDeck && d == 0 ? RAIL_DROP_LANDING : RAIL_DROP_FLIGHT;
+			if (strict && !(ci < nDeck && d == 0 && !strictLanding) && h - outG[c] >= thr) continue;
+			if (g > h + 2) continue;
+			for (Facing f : dirs) {
+				int nxx = cx + f.dx, nzz = cz + f.dz;
+				if (nxx < x0 || nxx > x1 || nzz < z0 || nzz > z1) continue;
+				int ni = (nzz - z0) * nx + (nxx - x0);
+				if (blocked[ni]) {
+					if (pass == 1 && flightTop[ni] != Integer.MIN_VALUE && (flightTop[ni] == h - 1 || flightTop[ni] == h) && !onRoute(st, ni, from, stride)) {
+						chain(st, from, stride, curN, parent, depth, c, null);
+						merged[0] = true;
+						return c;
+					}
+					continue;
+				}
+				if (isSrc[ni] || onRoute(st, ni, from, stride)) continue;
+				// the end: ground at most a block below the last step and at most half a block above it, on the lot's street row when the flight starts from a landing
+				int gn = ground[ni];
+				boolean endsHere = gn >= h && gn <= h + 1 && !(ci < nDeck && (nxx - sx) * out.dx + (nzz - sz) * out.dz != nOut) && (gn > h || cur + 1 <= MAX_CUR);
+				if (endsHere && !endTouchesOk(st, c, ni, gn, from, stride, curN, oy, nx, isSrc, nz)) endsHere = false;
+				if (endsHere && routeLength(st, from) + 1 > d + 1 + (d + 1) / 3 + 3) endsHere = false; // a route much longer than the descent needs (a landing every 3 risers and a corner or two) is a walk across the lot, not a flight
+				if (endsHere) {
+					boolean fr = true;
+					for (int y = gn - base; y <= gn + 3 - base && fr; y++) fr = grid.get(nxx, y, nzz) == Role.AIR;
+					if (fr) { chain(st, from, stride, curN, parent, depth, ni, new int[] {c, d + 1}); return ni; }
+				}
+				if (d + 1 <= maxD && cur + 2 <= MAX_CUR && touchesRouteOk(st, c, ni, oy - d - 1, false, from, stride, curN, oy, nx, isSrc, nz, ground)) { // a step down
+					int ns1 = ni * stride + (d + 1) * curN + cur + 2;
+					if (!seen[ns1]) { seen[ns1] = true; from[ns1] = st; queue[tail++] = ns1; }
+				}
+				int nl = ni * stride + d * curN; // a level landing cell: ends the run
+				if (!seen[nl] && touchesRouteOk(st, c, ni, h, true, from, stride, curN, oy, nx, isSrc, nz, ground)) { seen[nl] = true; from[nl] = st; queue[tail++] = nl; }
+			}
+		}
+		return -1;
+	}
+
+	/**
+	 * A new tread at level {@code lvl} may touch (four ways) an earlier cell of the route other than the one it comes from only if no open edge is left
+	 * between them: no rail can stand on a route cell, so two treads side by side must be within a block of each other's level, and a tread beside a cell
+	 * where the route walks on the natural ground (its step is buried) may stand no more than the rail threshold above that ground. The landing cells (the
+	 * stoop) count as treads at the door's level.
+	 */
+	private static boolean touchesRouteOk(int st, int cur0, int cell, int lvl, boolean levelMove, int[] from, int stride, int curN, int oy, int nx, boolean[] isSrc, int nz, int[] ground) {
+		int cx = cell % nx, cz = cell / nx;
+		int thrN = levelMove ? RAIL_DROP_LANDING : RAIL_DROP_FLIGHT, topN = Math.max(lvl + 1, ground[cell]);
+		for (int[] dd : new int[][] {{1, 0}, {-1, 0}, {0, 1}, {0, -1}}) { // the landing cells are treads at the door's level
+			int ax = cx + dd[0], az = cz + dd[1];
+			if (ax < 0 || az < 0 || ax >= nx || az >= nz || !isSrc[az * nx + ax] || az * nx + ax == cur0) continue;
+			if (!edgeOk(oy, RAIL_DROP_LANDING, oy + 1, lvl, thrN, topN)) return false;
+		}
+		for (int s = from[st]; s >= 0; s = from[s]) {
+			int rc = s / stride;
+			if (Math.abs(rc % nx - cx) + Math.abs(rc / nx - cz) != 1) continue;
+			int d = (s % stride) / curN, cur = s % curN, rl = oy - d;
+			if (!edgeOk(rl, cur == 0 || d == 0 ? RAIL_DROP_LANDING : RAIL_DROP_FLIGHT, Math.max(rl + 1, ground[rc]), lvl, thrN, topN)) return false;
+		}
+		return true;
+	}
+
+	/** The ground cell a route ends on ({@code ground} first free level): it may not stand a rail threshold or more below an earlier tread beside it, which has no rail there (the end cell is part of the route). */
+	private static boolean endTouchesOk(int st, int cur0, int cell, int ground, int[] from, int stride, int curN, int oy, int nx, boolean[] isSrc, int nz) {
+		int cx = cell % nx, cz = cell / nx;
+		for (int[] dd : new int[][] {{1, 0}, {-1, 0}, {0, 1}, {0, -1}}) {
+			int ax = cx + dd[0], az = cz + dd[1];
+			if (ax < 0 || az < 0 || ax >= nx || az >= nz || !isSrc[az * nx + ax] || az * nx + ax == cur0) continue;
+			if (oy - ground >= RAIL_DROP_LANDING) return false;
+		}
+		for (int s = from[st]; s >= 0; s = from[s]) {
+			int rc = s / stride;
+			if (Math.abs(rc % nx - cx) + Math.abs(rc / nx - cz) != 1) continue;
+			int d = (s % stride) / curN, cur = s % curN;
+			if (oy - d - ground >= (cur == 0 || d == 0 ? RAIL_DROP_LANDING : RAIL_DROP_FLIGHT)) return false;
+		}
+		return true;
+	}
+
+	/** Two adjacent route cells (a tread at level {@code lm} with rail threshold {@code thrM} whose first free level is {@code topM}, and a tread {@code ln}): within a block of level, and neither stands a threshold or more above the other's top. */
+	private static boolean edgeOk(int lm, int thrM, int topM, int ln, int thrN, int topN) {
+		return Math.abs(lm - ln) <= 1 && lm - topN < thrM && ln - topM < thrN;
+	}
+
+	private static int routeLength(int st, int[] from) {
+		int n = 0;
+		for (int s = st; s >= 0; s = from[s]) n++;
+		return n;
+	}
+
+	private static boolean onRoute(int st, int cell, int[] from, int stride) {
+		for (int s = st; s >= 0; s = from[s]) if (s / stride == cell) return true;
+		return false;
+	}
+
+	/** Writes the route ending at state {@code st} (and, for a ground end, the extra last cell {cell parent, depth}) into the per-cell arrays. */
+	private static void chain(int st, int[] from, int stride, int curN, int[] parent, int[] depth, int endCell, int[] last) {
+		if (last != null) { parent[endCell] = last[0]; depth[endCell] = last[1]; }
+		for (int s = st; s >= 0; s = from[s]) {
+			int c = s / stride, d = (s % stride) / curN;
+			parent[c] = from[s] < 0 ? -1 : from[s] / stride;
+			depth[c] = d;
+		}
+	}
+
+	/** The door rise from which a landing across the front is tried first: shops 2, houses and workshops 4 (DS-45: a landing at the door above a plain flight of 3), other types never. */
+	static int stoopRise(BuildingIr shell, TypeLimits lim) {
+		if (lim.stoop()) return 2;
+		String type = shell.spec().type();
+		return type.equals("house") || type.equals("workshop") ? 4 : Integer.MAX_VALUE;
 	}
 
 	/** Least drop (blocks, tread level minus the ground beside it) that gets a rail: along a flight, and along a landing. */

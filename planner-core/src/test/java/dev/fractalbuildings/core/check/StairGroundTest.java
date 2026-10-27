@@ -53,13 +53,17 @@ class StairGroundTest {
 		assertTrue(checked > 60, "only " + checked + " scenes generated");
 	}
 
-	/** Control: take a house whose flight has at least two steps and drop the step nearest the ground; the check must fail. */
+	/** Types whose doors still stand above the ground on a steep slope (houses, shops and workshops dig in to the street since SHOPLOW S2, so their flights are rare). */
+	private static final String[] FLIGHT_TYPES = {"temple", "tower", "hall"};
+
+	/** Control: take a building whose flight has at least two steps and drop the step nearest the ground; the check must fail. */
 	@Test
 	void aFlightCutShortFails() {
 		int failed = 0, tried = 0;
-		for (long seed = 1; seed <= 6; seed++) {
-			GenRequest rq = request("house", seed, "plane:70:1:1:12");
-			SceneDoc s = new GeneratorV1().generate(rq);
+		for (long seed = 1; seed <= 18; seed++) {
+			GenRequest rq = request(FLIGHT_TYPES[(int) (seed % FLIGHT_TYPES.length)], seed, "plane:70:1:1:12");
+			SceneDoc s;
+			try { s = new GeneratorV1().generate(rq); } catch (IllegalArgumentException e) { continue; }
 			PlacedBuilding b = s.buildings().get(0);
 			Box lowest = null;
 			for (Box x : b.siteBoxes()) if (x.role() == Role.STAIR && (lowest == null || x.box().y() < lowest.box().y())) lowest = x;
@@ -72,15 +76,21 @@ class StairGroundTest {
 			if (!mine(Invariants.check(c, rq.terrain())).isEmpty()) failed++;
 		}
 		assertTrue(tried >= 3, "tried " + tried);
-		assertEquals(tried, failed, "every house with its lowest step removed must fail steps-reach-ground");
+		assertEquals(tried, failed, "every building with its lowest step removed must fail steps-reach-ground");
 	}
 
 	/** Control: no steps at all in front of a door two blocks above the ground fails. */
 	@Test
 	void aDoorWithoutStepsFails() {
-		GenRequest rq = request("house", 1, "plane:70:1:0:6");
-		SceneDoc s = new GeneratorV1().generate(rq);
-		PlacedBuilding b = s.buildings().get(0);
+		GenRequest rq = null;
+		SceneDoc s = null;
+		PlacedBuilding b = null;
+		for (long seed = 1; seed <= 12 && b == null; seed++) {
+			rq = request(FLIGHT_TYPES[(int) (seed % FLIGHT_TYPES.length)], seed, "plane:70:1:0:6");
+			try { s = new GeneratorV1().generate(rq); } catch (IllegalArgumentException e) { continue; }
+			if (s.buildings().get(0).siteBoxes().stream().anyMatch(x -> x.role() == Role.STAIR)) b = s.buildings().get(0);
+		}
+		assertTrue(b != null, "no building with a flight");
 		boolean[][] fp = InstancePassV1.footprint(b.shell());
 		List<Box> site = new ArrayList<>(b.siteBoxes());
 		site.removeIf(x -> x.box().x() < 0 || x.box().z() < 0 || x.box().x() >= fp.length || x.box().z() >= fp[0].length || !fp[x.box().x()][x.box().z()]); // the whole flight, steps and their foundations

@@ -69,7 +69,7 @@ class CityFillTest {
 	@Test
 	void theHillTownReachesMoreOfItsTiles() throws Exception {
 		Fill f = plan("fly-1-hill-town.json.gz", 1, -1536, 4800, Tier.TOWN, 418);
-		assertTrue(f.built() >= 110, "built lots " + f.built() + " (59 before CITYQ)");
+		assertTrue(f.built() >= 100, "built lots " + f.built() + " (59 before CITYQ; 109 once SHOPLOW S3 left embankment lots empty)");
 		assertTrue(f.served() >= 0.45, "urban mask in tiles with lots " + f.served() + " (0.29 before)");
 	}
 

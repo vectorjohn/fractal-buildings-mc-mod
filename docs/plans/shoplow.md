@@ -334,6 +334,8 @@ written to JSON and hashed only when true, so every existing spec hash stays.
 - Docs: ASSUMPTIONS row superseding 2026-10-16 ("slab at the highest ground");
   NOTES line for `SiteGround`.
 
+**Deviations (S2 done 2026-10-26, [log](../log/2026-10-26-p7-shoplow-s2.md)):** the run-aware `steps()` search of S6 is here (DS-45 amendment: every type, every lot; `searchRuns`, `MAX_RISERS` 3 in the walker's half blocks, fallback to the old flight counted as a `flight-landings` design warning, not a failing check); the areaway floor is one lower than the plan's "paving at s - 1" (first free block = the slab); `SiteLevel` also builds the corridor, the forecourt (A7; a causeway of foundation from fill 2) and exit cells, and `Briefs.withStreetFront` gives it the street level at each door column; `door-rise` fails only within the planner's contract (shops and workshops: lot at most 6 above the street; houses 9 and the front rows 4, new `Briefs` limits) and is a warning beyond it; `check/DoorChecks` sits on S0 core's `DoorRise`; the architect's A4 wall torch and the shop/workshop street-edge cut cap are not built; the DigInTest names differ from the plan's list (cut at most 4 above the standing level, no opening below the ground outside, ring columns cut, no AIR over the shell, flat unchanged, water falls back).
+
 ## S3 [P] Lot planner: shop front rise, embankment lots
 
 - `Briefs.fillLot`: `fr` = floorY at the lot's front-edge middle column

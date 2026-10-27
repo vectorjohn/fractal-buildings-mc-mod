@@ -19,7 +19,9 @@ import java.util.List;
  *   <li>a column where a building {@code AIR} site box spans the surface ({@code worldY(box.y) <= raw - 1}
  *       and {@code worldMaxY >= raw}): the box's bottom;
  *   <li>then, where {@code PAVING} / {@code GROUND} site boxes stack from that ground up: one above their top.
- *       {@code FOUNDATION} stays "not ground", so a flight cannot stand on its own kerb.
+ *       A {@code FOUNDATION} box may carry the stack up to a {@code PAVING} / {@code GROUND} top (a causeway of foundation stone paved over:
+ *       SHOPLOW's forecourt on fill), but a column that ends in foundation (the kerb under a tread or a rail) stays "not ground", so a flight
+ *       cannot stand on its own kerb.
  * </ul>
  * For a building that never cuts into the terrain the result equals the raw probe.
  */
@@ -44,7 +46,7 @@ public final class SiteGround {
 		List<Box> air = new ArrayList<>(), stack = new ArrayList<>();
 		for (Box s : b.siteBoxes()) {
 			if (s.role() == Role.AIR) air.add(s);
-			else if (s.role() == Role.PAVING || s.role() == Role.GROUND) stack.add(s);
+			else if (s.role() == Role.PAVING || s.role() == Role.GROUND || s.role() == Role.FOUNDATION) stack.add(s);
 		}
 		int oy = b.oy();
 		return new TerrainProbe() {
@@ -57,15 +59,20 @@ public final class SiteGround {
 					var q = a.box();
 					if (lx >= q.x() && lx < q.maxX() && lz >= q.z() && lz < q.maxZ() && oy + q.y() <= r - 1 && oy + q.maxY() >= r) g = Math.min(g, oy + q.y());
 				}
+				int top = g; // the ground as the paved stack leaves it; foundation under it only carries the stack
 				boolean again = !stack.isEmpty();
 				while (again) {
 					again = false;
 					for (Box s : stack) {
 						var q = s.box();
-						if (lx >= q.x() && lx < q.maxX() && lz >= q.z() && lz < q.maxZ() && oy + q.y() <= g && oy + q.maxY() > g) { g = oy + q.maxY(); again = true; }
+						if (lx >= q.x() && lx < q.maxX() && lz >= q.z() && lz < q.maxZ() && oy + q.y() <= g && oy + q.maxY() > g) {
+							g = oy + q.maxY();
+							if (s.role() != Role.FOUNDATION) top = g;
+							again = true;
+						}
 					}
 				}
-				return g;
+				return top;
 			}
 
 			@Override public int waterDepth(int x, int z) { return raw.waterDepth(x, z); }

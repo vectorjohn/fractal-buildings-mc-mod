@@ -17,7 +17,7 @@
   ],
   "plazas": [],
   "lots": [
-    {"id": "d53_m23.l0", "x": 8480, "z": -3549, "w": 17, "d": 9, "front": "south", "type": "house", "style": "plains", "storeys": [2, 3], "streets": 1, "airRights": 2, "frontY": 71, "density": 69, "status": "build"},
+    {"id": "d53_m23.l0", "x": 8480, "z": -3555, "w": 17, "d": 15, "front": "south", "type": "shop", "style": "plains", "storeys": [2, 4], "streets": 1, "airRights": 2, "frontY": 71, "density": 69, "status": "build"},
     {"id": "d53_m23.l1", "x": 8560, "z": -3572, "w": 28, "d": 32, "front": "south", "type": "highrise", "style": "plains", "storeys": [10, 14], "streets": 1, "airRights": 2, "frontY": 70, "density": 70, "status": "empty:steep"},
     {"id": "d53_m23.l2", "x": 8609, "z": -3680, "w": 13, "d": 12, "front": "east", "type": "house", "style": "desert", "storeys": [1, 3], "streets": 1, "airRights": 1, "frontY": 77, "density": 27, "status": "build"},
     {"id": "d53_m23.l3", "x": 8610, "z": -3668, "w": 12, "d": 9, "front": "east", "type": "house", "style": "desert", "storeys": [1, 3], "streets": 1, "airRights": 1, "frontY": 77, "density": 38, "status": "build"},

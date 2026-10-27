@@ -48,7 +48,7 @@
     {"id": "dm1_m1.l7", "x": -2, "z": -66, "w": 14, "d": 12, "front": "east", "type": "shop", "style": "plains", "storeys": [4, 4], "streets": 9, "airRights": 2, "frontY": 68, "density": 85, "status": "build"},
     {"id": "dm1_m1.l8", "x": -2, "z": -54, "w": 14, "d": 10, "front": "east", "type": "shop", "style": "plains", "storeys": [4, 4], "streets": 1, "airRights": 2, "frontY": 67, "density": 85, "status": "build"},
     {"id": "dm1_m1.l9", "x": -141, "z": -6, "w": 11, "d": 18, "front": "south", "type": "shop", "style": "plains", "storeys": [4, 4], "streets": 3, "airRights": 2, "frontY": 71, "density": 85, "status": "build"},
-    {"id": "dm1_m1.l10", "x": -96, "z": -14, "w": 15, "d": 26, "front": "south", "type": "shop", "style": "plains", "storeys": [4, 4], "streets": 1, "airRights": 2, "frontY": 74, "density": 85, "status": "build"},
+    {"id": "dm1_m1.l10", "x": -96, "z": -14, "w": 15, "d": 26, "front": "south", "type": "shop", "style": "plains", "storeys": [4, 4], "streets": 1, "airRights": 2, "frontY": 74, "density": 85, "status": "empty:bank"},
     {"id": "dm1_m1.l11", "x": -141, "z": -141, "w": 17, "d": 9, "front": "west", "type": "shop", "style": "plains", "storeys": [3, 4], "streets": 3, "airRights": 1, "frontY": 72, "density": 80, "status": "build"},
     {"id": "dm1_m1.l12", "x": -141, "z": -132, "w": 18, "d": 12, "front": "west", "type": "shop", "style": "plains", "storeys": [3, 4], "streets": 1, "airRights": 1, "frontY": 72, "density": 80, "status": "build"},
     {"id": "dm1_m1.l13", "x": -141, "z": -117, "w": 15, "d": 12, "front": "west", "type": "shop", "style": "plains", "storeys": [3, 4], "streets": 1, "airRights": 1, "frontY": 71, "density": 80, "status": "build"},
