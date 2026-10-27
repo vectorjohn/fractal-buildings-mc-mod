@@ -102,6 +102,8 @@ public final class RoadFeature implements Feature {
 				dev.fractalbuildings.mod.worldgen.SpillClear.run(level, planner, cp.x(), cp.z());
 			// r7: and natural leaves this chunk's trees put into the headroom of the neighbours' roads (before the draw: its foliage pass then takes what they held)
 			if (planner.roadsEnabled()) dev.fractalbuildings.mod.worldgen.SpillClear.roadLeaves(level, planner, cp.x(), cp.z());
+			// TREEIN: and the leaves, vines and trunks of trees grown after a building's pass into the air it claims (rooms, steps, door approaches)
+			dev.fractalbuildings.mod.worldgen.BuildingAirClear.run(level, planner, cp.x(), cp.z());
 		} catch (RuntimeException e) {
 			WorldPlanners.FAILURES.incrementAndGet();
 			FractalBuildingsMod.LOGGER.error("Re-clearing the street air beside chunk {} failed", cp, e);
