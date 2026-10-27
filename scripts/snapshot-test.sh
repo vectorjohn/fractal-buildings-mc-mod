@@ -10,8 +10,12 @@
 #
 # Warm (default): one persistent detached worktree <main root>/.claude/worktrees/<N> (default N=postmerge, or
 # $FB_SNAPSHOT_NAME, which squash-merge.sh passes through),
-# reused across runs and guarded by <main root>/.claude/<N>.lock (not the merge lock; a second caller waits
-# its turn). Each run moves it to <rev> with `checkout --detach -f` + `clean -fd`: tracked files match the
+# reused across runs and guarded by <main root>/.claude/snapshot-<N>.lock (not the merge lock; a second
+# caller waits its turn). N=postmerge keeps its old lock name, .claude/postmerge.lock, so older copies of
+# this script and squash-merge.sh on other branches still share it. The snapshot- prefix keeps the lock
+# apart from the machine-wide ones: it used to be .claude/<N>.lock, so --name heavy held heavy.lock and
+# every heavy command in the batch waited on it forever. A name whose worktree is on a branch (an agent's
+# or the run's checkout) is refused, as is one that would map to the heavy, merge or suite locks. Each run moves it to <rev> with `checkout --detach -f` + `clean -fd`: tracked files match the
 # commit exactly and untracked files go, but ignored build output stays (Gradle build/ and .gradle/,
 # viewer/node_modules), so Gradle's up-to-date checks reuse what the source change didn't touch. If
 # viewer/package-lock.json changed, node_modules is deleted (test-all.sh then runs npm ci).
@@ -23,9 +27,9 @@
 # timed out (FB_SNAPSHOT_WAIT seconds, default 10800).
 # Suite slots: scripts/test-all.sh takes a machine-wide suite slot for its fast layers itself (FB_SUITE_SLOTS);
 # pass a bare full Gradle run as 'scripts/suite.sh ./gradlew build' so it takes one too. Heavy commands take
-# the heavy lock instead.
+# the heavy lock instead (or go to the worker box: 'scripts/remote.sh -- scripts/client-test.sh').
 set -uo pipefail
-usage() { sed -n '2,26p' "$0" | sed 's/^# \{0,1\}//'; exit 2; }
+usage() { sed -n '2,30p' "$0" | sed 's/^# \{0,1\}//'; exit 2; }
 NAME=${FB_SNAPSHOT_NAME:-postmerge} COLD=0
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -47,8 +51,16 @@ if [ "$COLD" = 1 ]; then
   git -C "$ROOT" worktree add --detach "$WT" "$SHA" > /dev/null 2>&1 || { echo "could not create $WT"; exit 2; }
 else
   WT="$ROOT/.claude/worktrees/$NAME"
-  exec 8>"$ROOT/.claude/$NAME.lock"
-  echo "waiting for $ROOT/.claude/$NAME.lock ..."
+  if [ "$NAME" = postmerge ]; then LOCKF="$ROOT/.claude/postmerge.lock"; else LOCKF="$ROOT/.claude/snapshot-$NAME.lock"; fi
+  case "${LOCKF##*/}" in
+    heavy.lock|merge.lock|suite.lock*) echo "--name $NAME would take the machine-wide ${LOCKF##*/}"; exit 2 ;;
+  esac
+  if [ -e "$WT/.git" ] && git -C "$WT" symbolic-ref -q HEAD > /dev/null 2>&1; then
+    echo "--name $NAME: $WT is on branch $(git -C "$WT" symbolic-ref --short HEAD), not a snapshot; pick another name"
+    exit 2
+  fi
+  exec 8>"$LOCKF"
+  echo "waiting for $LOCKF ..."
   flock -w "${FB_SNAPSHOT_WAIT:-10800}" 8 || { echo "snapshot lock $NAME not acquired"; exit 6; }
   if [ -e "$WT/.git" ]; then
     OLD=$(git -C "$WT" rev-parse HEAD 2>/dev/null || echo none)
