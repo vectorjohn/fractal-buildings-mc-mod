@@ -977,3 +977,130 @@ drops them, and accepted ones move to the section they belong in.
   a landing or porch at the door", which allowed a straight 4-5 to a door
   landing; the long-stair variant's "no straight run of more than 3
   risers without a landing or a turn" now applies to every flight.
+
+## DS-48 Rooms are walkable
+
+- **Rule:** in every furnished room, the clear floor (floor below, 2 air,
+  nothing that blocks) is one connected lane joining the inside cell of
+  every door and arch, the foot and top of every stair, and each piece's
+  use cell (a bed's free long side, the front of a chest, workstation,
+  stove or counter, a chair's seat). The lane is 1 wide in houses,
+  bedrooms, kitchens and storage, and 2 wide in halls, shops, lobbies,
+  banquet rooms, taprooms and a workshop's path from the cart door
+  (agent's numbers). Carpets, pressure plates, open trapdoors, wall signs
+  and lanterns hung at y2 or above don't block. Nothing stands on a door
+  cell, its two neighbours along the wall or the cell in front of it on
+  either side. In a room whose short side is 3, furniture goes on one long
+  wall and the end wall away from the door. A bed's head is against the
+  wall, both its cells are reserved and one long side is free. When a
+  room is too small: drop optional pieces that break the lane, then use a
+  smaller piece, then demote the room (a bedroom becomes storage; DS-12
+  finds the bedroom elsewhere), and only then change the floor plan.
+- **Why:** John, playtest 2026-10-26 (20.02.15): "not really walkable".
+  Puts numbers on DS-13's "never blocking a door, stair or path".
+- **Scope:** all rooms, all types.
+- **Enforcement:** code candidate `furnished-rooms-walkable` (planned in
+  `plans/furniture.md` for 7.5, never built): over today's hooks with the
+  bed's head cell, in `check` and `city-check`, and hook placement checks
+  the lane after each piece (ROADMAP 6.18 ROOMWALK). None today.
+- **Status:** proposed. **Source:** interior designer, playtest questions
+  2026-10-27 ([playtest1026-qs-interior.md](../review/reports/playtest1026-qs-interior.md), Q1).
+
+## DS-35 amendment: workshop doors
+
+- **Proposed addition** to proposed DS-35: a workshop's lean-to and its
+  living wing each get their own exterior person door (the lean-to's onto
+  the yard on its back or side face; the living wing's from its kitchen),
+  besides the cart door.
+- **Why:** John, playtest 2026-10-26 (21.27.38), "back door to the
+  lean-to"; in 124 CLI workshop plans the cart door is the only way out.
+- **Scope:** type `workshop`.
+- **Enforcement:** code candidate, folds into DS-35's `entrance-count`.
+  None today.
+- **Status:** proposed (amends the proposed DS-35). **Source:** interior
+  designer, playtest questions 2026-10-27
+  ([playtest1026-qs-interior.md](../review/reports/playtest1026-qs-interior.md), Q3).
+
+## DS-49 Partitions lighter than the shell
+
+- **Rule:** the stair and lift core, party walls between flats or units
+  and chimney walls are masonry (the facade brick or stone, or grey
+  concrete in modern towers). Every other interior wall is a pale
+  partition: plaster (white concrete, calcite or smooth quartz) in city,
+  metropolis and tall styles; the facade infill in timber-frame and
+  medieval styles; planks in log and wood styles. Solid-masonry vernacular
+  (desert, adobe, stone cottage) keeps its masonry inside. A converted
+  warehouse or loft may keep brick inside as a deliberate variant.
+- **Why:** John, playtest 2026-10-26 (19.59.37): a high-rise corridor in
+  exposed brick on both sides reads as a service tunnel.
+- **Scope:** all types with interiors; mostly high-rises and city blocks.
+- **Enforcement:** guideline; code candidate: a `partition` role separate
+  from `wall`.
+- **Status:** proposed. **Source:** architect, playtest questions
+  2026-10-27 ([playtest1026-qs-architect.md](../review/reports/playtest1026-qs-architect.md), P1).
+
+## DS-50 Roads don't tunnel (for now)
+
+- **Rule:** no road or street is roofed by terrain. A cut is open to the
+  sky (terraced or faced sides), or the route goes round or the link is
+  dropped. Future tunnels, if any, need portals, a lining, headroom of 4
+  or more (3 on paths) and lights every 8 blocks or fewer.
+- **Why:** an unlined bore is ugly and a mob spawner (John, playtest
+  2026-10-26, 21.37.41; DS-24).
+- **Scope:** all roads and streets.
+- **Enforcement:** code candidate `road-open-sky` (no solid block in the
+  headroom-to-sky column over a road cell, outside bridges and designed
+  covers). None today.
+- **Status:** proposed. **Source:** architect, playtest questions
+  2026-10-27 ([playtest1026-qs-architect.md](../review/reports/playtest1026-qs-architect.md), P2).
+
+## DS-45 amendment: run and turn sizes
+
+- **Proposed addition** to accepted DS-45's **Stair runs**: exterior
+  straight runs are at least 2 risers (a single last step to a door
+  landing excepted); turns are at least 2 risers apart; a quarter landing
+  is W x W and a half landing 2W x W, level full blocks at walking height;
+  prefer an L to a U (a U only for a rise of 6 or more that doesn't fit
+  along the facade); headroom 3 over every tread and landing; no rail post
+  or wall in a landing cell (agent's numbers).
+- **Why:** John, playtest 2026-10-26 (21.38.53): "hard to walk up ...
+  more generous on the switchbacks".
+- **Scope:** every exterior flight.
+- **Enforcement:** code candidate: extend the planned `flight-landings`
+  check (`MIN_RUN = 2`). None today.
+- **Status:** proposed (amends accepted DS-45). **Source:** architect,
+  playtest questions 2026-10-27
+  ([playtest1026-qs-architect.md](../review/reports/playtest1026-qs-architect.md), P3).
+
+## DS-51 Glass ends on something solid
+
+- **Rule:** every door in a glazed wall has a solid jamb on each side and
+  a head, in the trim or frame role (a double door on its two outer sides
+  only). Every pane run ends on a solid block or another pane: no lone
+  panes, no panes at a wall top or an outer corner, and no glass blocks
+  mixed with panes in one opening.
+- **Why:** John, playtest 2026-10-26 (20.44.34, 20.49.13, 20.50.01,
+  19.45.26): panes stop short of shop doors, and a lone pane sticks out
+  of a facade.
+- **Scope:** all styles.
+- **Enforcement:** code candidate `pane-attached` on the raster. None
+  today.
+- **Status:** proposed; John may prefer glass blocks beside doors
+  (REVIEW). **Source:** architect, playtest questions 2026-10-27
+  ([playtest1026-qs-architect.md](../review/reports/playtest1026-qs-architect.md), P4).
+
+## DS-52 Roads step down one rank at a time
+
+- **Rule:** a link that ends at a settlement becomes its main street at
+  the gate, and meets a junction, never a lane or path. A through road
+  keeps its width through smaller settlements. At any join the width
+  drops by at most 2; a larger drop tapers by 1 per side over at least 4
+  blocks (agent's numbers). The material changes only at the gate (DS-30).
+- **Why:** John, playtest 2026-10-26 (21.32.46): "transition from tiny
+  path to this huge road is pretty abrupt".
+- **Scope:** roads between settlements and settlement exits.
+- **Enforcement:** code candidate in `city-check` (width at each gate and
+  junction), folding into the planned `road-hierarchy` check (DS-47).
+  None today.
+- **Status:** proposed. **Source:** architect, playtest questions
+  2026-10-27 ([playtest1026-qs-architect.md](../review/reports/playtest1026-qs-architect.md), P5).
