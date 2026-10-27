@@ -325,6 +325,7 @@ public class WorldPlanner {
 					workers.execute(() -> {
 						try {
 							if (tile(x, z).isEmpty()) return;
+							if (Thread.currentThread().isInterrupted()) return; // the pool is stopping (Workers.shutdown): do not start a multi-second step
 							if (self) { buildings(x, z); ground(x, z); }
 							else { plan(x, z); ground(x, z); } // CITYQ: the mod's spill clear reads the neighbours' ground near the shared border
 						} catch (RuntimeException ignored) {

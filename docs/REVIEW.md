@@ -415,6 +415,10 @@ in `.claude/reports/`.
   Where: `docs/review/phase6/palette/` (`house-<style>-before.png` / `-after.png` for medieval, plains, desert, jungle, snowy, taiga, and `shop-medieval`, `shop-plain`; in game: `docs/review/phase6/palette/street-after.png`, a plains street of seed 987654321 from the terrain client test; `street-bamboo-patches.png` is the intermediate run where bamboo walls showed as yellow patches; the yellow bands still visible in `street-after.png` were bamboo floor edges, since changed to birch/oak without a new game shot). Walls, roofs and foundations now use near-identical colours per style (texture variation only, e.g. sandstone + cut + smooth; stone bricks + a little cracked), with at most one rare accent (a moss block on jungle roofs). Timber framing unchanged. Log: [log/2026-10-23-p6-palette.md](log/2026-10-23-p6-palette.md).
   Look for: (1) do the walls now read as one material in game (not only in the viewer); (2) is anything now too plain or too dark (taiga roofs are all dark oak, snowy walls are all grey brick; plains walls are now birch only with a stripped-birch variant); (3) do you want the variation to be intentional patches or bands (per face, per storey) instead of per-block scatter? I left the selection per block, since calm colours make it read as texture.
 
+- [ ] **REGIONPERF: the region layer is 36 s, budget 6 s (2026-10-27)**: decide the budget and the teleport-hold tradeoff (the 4 s you accepted is now about 36 s plus 69 s of quays on a waterfront metropolis, and TPHOLD gives up at 30 s).
+  Where: [review/regionperf-decision.md](review/regionperf-decision.md) (who pays it, why it is slow, what each piece buys, options, a recommendation); numbers in [PERFORMANCE.md](PERFORMANCE.md), "Region layer row".
+  Result:
+
 ## Furnishings (7.5)
 
 - [x] **6.8 Fly-through frames (B9)**: do the settlements read as places from the air and at street level, per tier, in the game itself

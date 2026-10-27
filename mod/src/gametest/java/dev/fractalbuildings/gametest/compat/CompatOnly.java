@@ -13,7 +13,13 @@ public final class CompatOnly {
 
 	/** True (and logs it) when this test is to be skipped. */
 	public static boolean skip(String test) {
+		if (ClientLayers.skip(test)) return true; // TESTLAYERS: FB_LAYER=quick leaves the slow tests out
 		// B9: FB_FLY=only runs the fly-through alone; every other client test steps aside
+		String only = System.getenv("FB_ONLY"); // run just the named client test (any one), e.g. FB_ONLY=RoadsClientGameTest
+		if (only != null && !only.isEmpty() && !only.equals(test)) {
+			FractalBuildingsMod.LOGGER.info("[B9] {} skipped (FB_ONLY={})", test, only);
+			return true;
+		}
 		if (!on()) {
 			if (!test.equals("FlyThroughClientGameTest") && dev.fractalbuildings.gametest.flythrough.FlyThroughClientGameTest.skipOthers()) {
 				FractalBuildingsMod.LOGGER.info("[B9] {} skipped (FB_FLY=only)", test);

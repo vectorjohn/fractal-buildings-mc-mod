@@ -99,6 +99,24 @@ tasks.named('runGameTest') {
 	if (findProperty('fb.gametestFilter')) systemProperty 'fabric-api.gametest.filter', findProperty('fb.gametestFilter')
 }
 
+// TESTLAYERS: the district-order test (B2) on a renderer-free dedicated server, one fresh world per run. scripts/order-test.sh runs
+// :mod:runOrderServer once per run label (-Pfb.orderRun=<label>, own run dir build/run/order/<label>, results in -Pfb.orderOut=<dir>),
+// several Gradle processes at a time. OrderServerHarness is loaded by the mod's -Dfb.testHook (shared with the PERFSRV harness) and
+// halts the server when its verdict is written. The hook text in FractalBuildingsMod is identical in PERFSRV's branch.
+def orderRun = (findProperty('fb.orderRun') ?: 'forward').toString()
+loom.runs {
+	orderServer {
+		server()
+		source sourceSets.gametest
+		runDir "build/run/order/${orderRun}"
+		ideConfigGenerated false
+		property 'fb.testHook', 'dev.fractalbuildings.gametest.order.OrderServerHarness'
+		property 'fb.order.run', orderRun
+		property 'fb.order.out', (findProperty('fb.orderOut') ?: layout.buildDirectory.dir('order').get().asFile.path).toString()
+		property 'fb.order.radius', (findProperty('fb.orderRadius') ?: '1').toString()
+	}
+}
+
 // Forward -Dfb.* options to the test JVM (e.g. -Dfb.dump=12345:0:0:64:384:384:name).
 tasks.named('test') {
 	useJUnitPlatform()

@@ -25,12 +25,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.TreeMap;
+import com.google.gson.Gson;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import net.fabricmc.fabric.api.client.gametest.v1.FabricClientGameTest;
-import net.fabricmc.fabric.api.client.gametest.v1.context.ClientGameTestContext;
-import net.fabricmc.fabric.api.client.gametest.v1.context.TestSingleplayerContext;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerChunkCache;
@@ -48,11 +47,13 @@ import net.minecraft.world.level.chunk.status.ChunkStatus;
  * (vanilla trees can still get into our air, ADR 0003 D5). Mutants (switches in {@link Mutations}) must each fail one of those checks.
  * Vanilla whole-chunk hashes are never compared: vanilla features overlap chunk borders and differ between runs of one order (S3).
  *
- * <p>Environment: {@code FB_ORDER_RADIUS} (default 1) takes the tiles within that many tiles of the settlement's centre tile;
- * {@code FB_ORDER_ONLY} (a comma list of run labels) limits the runs, for development.
+ * <p>Runs on a renderer-free dedicated server (TESTLAYERS; it was a client test, 20 min of fresh worlds): one JVM and one fresh world per run label,
+ * started by {@code scripts/order-test.sh} through {@code :mod:runOrderServer}; the label-by-label verdicts are files in {@code -Pfb.orderOut}.
+ * {@code -Pfb.orderRadius} (default 1) takes the tiles within that many tiles of the settlement's centre tile.
  */
-// gametest-order: 7
-public class DistrictOrderClientGameTest implements FabricClientGameTest {
+public final class OrderServerHarness {
+	private OrderServerHarness() {}
+
 	private static final long SEED = 987654321L;
 	private static final int SITE_X = 1280, SITE_Z = -9600;
 	private static final double SOLID_LIMIT = 0.01;
@@ -92,7 +93,6 @@ public class DistrictOrderClientGameTest implements FabricClientGameTest {
 		}
 	}
 
-	private static final Map<String, Run> RUNS = new java.util.LinkedHashMap<>();
 	private static final StringBuilder REPORT = new StringBuilder();
 
 	private static void report(String line) {
@@ -203,12 +203,10 @@ public class DistrictOrderClientGameTest implements FabricClientGameTest {
 		if (o == Order.THREADS_EVICT) FractalBuildingsMod.LOGGER.info("[B2] evictor cleared the planner caches {} times during generation", evictions.get());
 	}
 
-	/** One world: generate the settlement's tiles in {@code o}, then measure. */
-	private static Run runOne(ClientGameTestContext context, String label, Order o, String mutation, int radius, boolean checkConfig) {
-		long[] t0 = {0};
+	/** One world: generate the settlement's tiles in {@code o}, then measure (on the server thread). */
+	private static Run runOne(MinecraftServer srv0, String label, Order o, String mutation, int radius, boolean checkConfig) {
 		Run[] result = new Run[1];
-		try (TestSingleplayerContext world = context.worldBuilder().setUseConsistentSettings(false).adjustSettings(c -> c.setSeed(Long.toString(SEED))).create()) {
-			world.getServer().runOnServer(server -> {
+		java.util.function.Consumer<MinecraftServer> body = server -> {
 				ServerLevel level = server.overworld();
 				WorldPlanner planner = WorldPlanners.of(level, level.getChunkSource().getGenerator()).orElseThrow(() -> new IllegalStateException("no planner in a normal world"));
 				SettlementInfo site = planner.nearest(SITE_X, SITE_Z, Tier.HAMLET, 1).orElseThrow(() -> new IllegalStateException("no settlement near the gate site"));
@@ -222,7 +220,7 @@ public class DistrictOrderClientGameTest implements FabricClientGameTest {
 				for (TileInfo t : tiles) for (int cz = t.tile().minZ() >> 4; cz <= (t.tile().maxZ() - 1) >> 4; cz++) for (int cx = t.tile().minX() >> 4; cx <= (t.tile().maxX() - 1) >> 4; cx++) chunkSet.put(ChunkPos.pack(cx, cz), new ChunkPos(cx, cz));
 				List<ChunkPos> asc = new ArrayList<>(chunkSet.values());
 				asc.sort((a, b) -> a.z() != b.z() ? Integer.compare(a.z(), b.z()) : Integer.compare(a.x(), b.x()));
-				if (RUNS.isEmpty()) report("site " + site.site().id() + " " + site.site().tier() + " at " + site.site().centre() + ", " + tiles.size() + " tiles, " + asc.size() + " chunks");
+				report("site " + site.site().id() + " " + site.site().tier() + " at " + site.site().centre() + ", " + tiles.size() + " tiles, " + asc.size() + " chunks");
 				WorldPlanners.FAILURES.set(0);
 				String loadBefore = load();
 				long start = System.nanoTime();
@@ -330,10 +328,8 @@ public class DistrictOrderClientGameTest implements FabricClientGameTest {
 						WorldPlanners.FAILURES.get(), genMs, loadBefore + " -> " + load(), firstBad, unknownSolid, vegAir, unknownAir, hist.toString(), PieceLedger.digest(hooks), hookResult, stepOk[0], roadDigest[0]);
 				if (checkConfig) checkPinnedConfig(server, level);
 				for (ChunkPos c : asc) level.setChunkForced(c.x(), c.z(), false);
-			});
-			// let the server drain the ticks it fell behind while the task ran, and the client catch up, before the world closes (closing a world 700 ticks behind hung the framework)
-			context.waitTicks(60);
-		}
+			};
+		body.accept(srv0);
 		return result[0];
 	}
 
@@ -341,31 +337,13 @@ public class DistrictOrderClientGameTest implements FabricClientGameTest {
 	 * Gap 3: a world created while the config file says {@code cellSize 2048} saves that value, and the planner the world builds for itself
 	 * (nothing here pins or clears anything) uses it. Deleting the LOAD hook in {@code ModWorldgen} makes the planner use the defaults and fails this.
 	 */
-	private static void savedConfigWorld(ClientGameTestContext context) {
-		Path file = dev.fractalbuildings.mod.config.FbConfig.path();
-		String old = null;
-		try {
-			if (Files.exists(file)) old = Files.readString(file);
-			Files.writeString(file, "{\"cellSize\": 2048}\n");
-		} catch (java.io.IOException e) {
-			throw new IllegalStateException(e);
-		}
-		try (TestSingleplayerContext world = context.worldBuilder().setUseConsistentSettings(false).adjustSettings(c -> c.setSeed(Long.toString(SEED))).create()) {
-			world.getServer().runOnServer(server -> {
-				ServerLevel level = server.overworld();
-				WorldConfig saved = WorldConfigData.get(server).settings().world();
-				if (saved.cellSize() != 2048) throw new IllegalStateException("the new world did not save the file's cell size: " + saved);
-				WorldConfig live = WorldPlanners.of(level, level.getChunkSource().getGenerator()).orElseThrow().config();
-				if (!live.equals(saved)) throw new IllegalStateException("the world's own planner uses " + live + ", the world saved " + saved);
-				report("saved config: a world saved with cellSize 2048 plans with cellSize " + live.cellSize());
-			});
-		} finally {
-			try {
-				if (old == null) Files.deleteIfExists(file); else Files.writeString(file, old);
-			} catch (java.io.IOException e) {
-				FractalBuildingsMod.LOGGER.warn("[B2] could not restore {}", file, e);
-			}
-		}
+	private static void savedConfigWorld(MinecraftServer server) {
+		ServerLevel level = server.overworld();
+		WorldConfig saved = WorldConfigData.get(server).settings().world();
+		if (saved.cellSize() != 2048) throw new IllegalStateException("the new world did not save the file's cell size: " + saved);
+		WorldConfig live = WorldPlanners.of(level, level.getChunkSource().getGenerator()).orElseThrow().config();
+		if (!live.equals(saved)) throw new IllegalStateException("the world's own planner uses " + live + ", the world saved " + saved);
+		report("saved config: a world saved with cellSize 2048 plans with cellSize " + live.cellSize());
 	}
 
 	/** The live planner uses the world's pinned config, not the defaults and not the config file. */
@@ -396,50 +374,90 @@ public class DistrictOrderClientGameTest implements FabricClientGameTest {
 		}
 	}
 
-	@Override
-	public void runTest(ClientGameTestContext context) {
-		if (dev.fractalbuildings.gametest.compat.CompatOnly.skip("DistrictOrderClientGameTest")) return;
-		if (dev.fractalbuildings.gametest.perf.PerfGate.skipOthers()) return; // B8: a perf-only run
-		int radius = Integer.parseInt(System.getenv().getOrDefault("FB_ORDER_RADIUS", "1"));
-		String only = System.getenv("FB_ORDER_ONLY");
+	/** The run labels, in the order the script runs them: phase 1 has no dependency, phase 2 compares with a phase 1 baseline. */
+	public static final List<String> MUTANT_NAMES = List.of(Mutations.COUNTER, Mutations.TWICE, Mutations.SKIP_AIR, Mutations.EARLY_STEP, Mutations.RANDOM, Mutations.WORLD_STONE);
+	/** Each mutant counts as caught only by the check it targets (regex over the problem texts). */
+	private static final String[][] MUTANTS = {{Mutations.COUNTER, "ledger differs"}, {Mutations.TWICE, "claimed twice"}, {Mutations.SKIP_AIR, "unknown block|claimed air"}, {Mutations.EARLY_STEP, "top_layer_modification step"}, {Mutations.RANDOM, "ledger differs"}, {Mutations.WORLD_STONE, "not a known vanilla spill"}};
+
+	private static final Gson GSON = new Gson();
+
+	private static Run readRun(Path out, String label) {
+		try {
+			return GSON.fromJson(Files.readString(out.resolve(label + ".run.json")), Run.class);
+		} catch (java.io.IOException e) {
+			throw new IllegalStateException("the baseline run '" + label + "' left no result in " + out + " (run it first)", e);
+		}
+	}
+
+	private static String describe(Run r) {
+		return String.format("%-14s cells %d (reference %d) digest %.12s chunks %d, duplicates %d, ledger missing/extra/wrong %d/%d/%d, world solid %d bad %d (trees %d), air %d bad %d, failures %d, %d ms, load %s%s", r.label, r.cells, r.refCells,
+				r.digest, r.chunkDigests.size(), r.duplicates, r.missing, r.extra, r.wrong, r.solid, r.solidBad, r.solidTrees, r.air, r.airBad, r.failures, r.genMs, r.load, r.detail.isEmpty() ? "" : " first bad: " + r.detail);
+	}
+
+	/**
+	 * One run label on the started server; the failures (empty when it passes). Labels: an order name ({@code forward} is the baseline of
+	 * the others), {@code config}, {@code clean-centre} / {@code reverse-centre} (the mutants' baselines, centre tile only), {@code mutant-<name>}.
+	 */
+	static List<String> runLabel(MinecraftServer server, String label, int radius, Path out) {
 		List<String> failures = new ArrayList<>();
-		if (only == null || only.contains("config")) savedConfigWorld(context);
-		Run base = null;
-		for (Order o : Order.values()) {
-			String label = o.name().toLowerCase();
-			if (only != null && !List.of(only.split(",")).contains(label)) continue;
-			Run r = runOne(context, label, o, null, radius, o == Order.FORWARD);
-			RUNS.put(label, r);
-			if (base == null) base = r;
-			List<String> p = r.problems(o == Order.FORWARD ? null : base);
-			report(String.format("%-14s cells %d (reference %d) digest %.12s chunks %d, duplicates %d, ledger missing/extra/wrong %d/%d/%d, world solid %d bad %d (trees %d), air %d bad %d, failures %d, %d ms, load %s%s", label, r.cells, r.refCells,
-					r.digest, r.chunkDigests.size(), r.duplicates, r.missing, r.extra, r.wrong, r.solid, r.solidBad, r.solidTrees, r.air, r.airBad, r.failures, r.genMs, r.load, r.detail.isEmpty() ? "" : " first bad: " + r.detail));
+		if (label.equals("config")) {
+			savedConfigWorld(server);
+			return failures;
+		}
+		if (label.startsWith("mutant-")) {
+			String m = label.substring("mutant-".length());
+			String[] mu = java.util.Arrays.stream(MUTANTS).filter(x -> x[0].equals(m)).findFirst().orElseThrow(() -> new IllegalArgumentException("unknown mutant " + m));
+			Run r = runOne(server, label, Order.FORWARD, m, 0, false);
+			List<String> p = r.problems(null);
+			boolean caught = p.stream().anyMatch(s -> s.matches(".*(" + mu[1] + ").*"));
+			report(String.format("mutant %-12s caught=%s (own check %s) %s | solid %d bad %d (trees %d), air %d bad %d, duplicates %d, ledger %d/%d/%d", m, caught, mu[1], p, r.solid, r.solidBad, r.solidTrees, r.air, r.airBad, r.duplicates, r.missing, r.extra, r.wrong));
+			report("  histogram: " + r.hist);
+			if (!caught) failures.add("mutant " + m + " was not caught by its own check (" + mu[1] + "): " + p);
+			return failures;
+		}
+		boolean centre = label.endsWith("-centre");
+		Order o = centre ? (label.startsWith("reverse") ? Order.REVERSE : Order.FORWARD) : Order.valueOf(label.toUpperCase());
+		Run r = runOne(server, label, o, null, centre ? 0 : radius, o == Order.FORWARD && !centre);
+		Run base = o == Order.FORWARD ? null : readRun(out, centre ? "clean-centre" : "forward");
+		List<String> p = r.problems(base);
+		if (centre) {
+			report(r.label + " (baseline of the mutants): solid bad " + r.solidBad + ", air bad " + r.airBad + ", histogram " + r.hist + "; hooks " + r.hook);
+			for (String s : p) failures.add((o == Order.FORWARD ? "clean centre run: " : "reverse centre run: ") + s);
+		} else {
+			report(describe(r));
 			report("  roads: " + r.roadDigest.substring(0, Math.min(12, r.roadDigest.length())) + r.roadDigest.substring(r.roadDigest.indexOf(" ")) + " cells; histogram: " + r.hist + "; hooks: " + r.hook);
 			for (String s : p) failures.add(label + ": " + s);
 		}
-		// mutants: each must be caught by one of the checks above, on the centre tile only
-		// each mutant counts as caught only by the check it targets (regex over the problem texts)
-		String[][] mutants = {{Mutations.COUNTER, "ledger differs"}, {Mutations.TWICE, "claimed twice"}, {Mutations.SKIP_AIR, "unknown block|claimed air"}, {Mutations.EARLY_STEP, "top_layer_modification step"}, {Mutations.RANDOM, "ledger differs"}, {Mutations.WORLD_STONE, "not a known vanilla spill"}};
-		if (only == null || only.contains("mutants")) {
-			Run clean = runOne(context, "clean-centre", Order.FORWARD, null, 0, false);
-			Run cleanRev = runOne(context, "reverse-centre", Order.REVERSE, null, 0, false);
-			for (Run b : List.of(clean, cleanRev)) report(b.label + " (baseline of the mutants): solid bad " + b.solidBad + ", air bad " + b.airBad + ", histogram " + b.hist + "; hooks " + b.hook);
-			if (!clean.problems(null).isEmpty()) failures.add("clean centre run: " + clean.problems(null));
-			if (!cleanRev.problems(clean).isEmpty()) failures.add("reverse centre run: " + cleanRev.problems(clean));
-			for (String[] m : mutants) {
-				Run r = runOne(context, "mutant-" + m[0], Order.FORWARD, m[0], 0, false);
-				List<String> p = r.problems(null);
-				report(String.format("mutant %-12s caught=%s (own check %s) %s | solid %d bad %d (trees %d), air %d bad %d, duplicates %d, ledger %d/%d/%d", m[0], p.stream().anyMatch(s -> s.matches(".*(" + m[1] + ").*")), m[1], p, r.solid, r.solidBad, r.solidTrees, r.air, r.airBad, r.duplicates, r.missing, r.extra, r.wrong));
-				boolean caught = p.stream().anyMatch(s -> s.matches(".*(" + m[1] + ").*"));
-				report("  histogram: " + r.hist);
-				if (!caught) failures.add("mutant " + m[0] + " was not caught by its own check (" + m[1] + "): " + p);
-			}
-		}
 		try {
-			Files.writeString(Path.of("order-report.txt"), REPORT.toString());
-		} catch (Exception e) {
-			FractalBuildingsMod.LOGGER.warn("[B2] could not write the report", e);
+			Files.writeString(out.resolve(label + ".run.json"), GSON.toJson(r));
+		} catch (java.io.IOException e) {
+			throw new IllegalStateException(e);
 		}
-		if (!failures.isEmpty()) throw new AssertionError("district order test: " + failures);
+		return failures;
+	}
+
+	/** Entry point of the mod's test hook ({@code -Dfb.testHook}): runs one label in this JVM's fresh world and halts the server. */
+	public static void install() {
+		final String label = System.getProperty("fb.order.run", "forward");
+		final int radius = Integer.parseInt(System.getProperty("fb.order.radius", "1"));
+		final Path out = Path.of(System.getProperty("fb.order.out", "build/order"));
+		ServerLifecycleEvents.SERVER_STARTED.register(server -> server.execute(() -> {
+			List<String> failures;
+			try {
+				Files.createDirectories(out);
+				failures = runLabel(server, label, radius, out);
+			} catch (Throwable t) {
+				FractalBuildingsMod.LOGGER.error("[B2] {} failed", label, t);
+				failures = List.of("exception " + t);
+			}
+			try {
+				Files.writeString(out.resolve(label + ".report"), REPORT.toString());
+				Files.writeString(out.resolve(label + ".verdict"), failures.isEmpty() ? "PASS\n" : "FAIL " + failures + "\n");
+			} catch (java.io.IOException e) {
+				FractalBuildingsMod.LOGGER.error("[B2] could not write the result", e);
+			}
+			FractalBuildingsMod.LOGGER.info("[B2] {} {}", label, failures.isEmpty() ? "PASS" : "FAIL " + failures);
+			server.halt(false);
+		}));
 	}
 }

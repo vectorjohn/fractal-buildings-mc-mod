@@ -10,7 +10,7 @@
 # Writes <main root>/.claude/reports/<label>-evidence/<short sha>-<UTC time>/ with EVIDENCE.md (commit,
 # dirty files if any, command, exit code, start/end, loadavg, copied files) and copies of every known
 # test artifact the command wrote (build/test-all/*.log, build/client-test/gradle.log, the client game
-# test log, mod/build/screenshots/*.png, mod/build/perf/*, mod/build/flythrough/*, build/server-only/*,
+# test log, mod/build/screenshots/*.png, mod/build/perf/*, mod/build/flythrough/*, build/server-only/*, build/order-test/*,
 # viewer/out/** screenshots).
 # Prints "EVIDENCE <dir>" and exits with the command's exit code. Takes no lock itself: the commands
 # it runs (client-test.sh, perf.sh, test-all.sh) take the heavy lock where they need it.
@@ -32,7 +32,7 @@ START=$(date -u +%FT%TZ); LOAD0=$(cut -d' ' -f1-3 /proc/loadavg)
 END=$(date -u +%FT%TZ); LOAD1=$(cut -d' ' -f1-3 /proc/loadavg)
 # Copy artifacts written by this run (newer than the start mark), keeping their relative paths.
 copied=()
-for rel in build/test-all build/client-test build/server-only mod/build/screenshots \
+for rel in build/test-all build/client-test build/server-only build/order-test mod/build/screenshots \
            mod/build/run/clientGameTest/logs/latest.log mod/build/perf mod/build/flythrough viewer/out; do
   [ -e "$WT/$rel" ] || continue
   while IFS= read -r f; do

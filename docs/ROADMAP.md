@@ -77,8 +77,10 @@ and merges to main run everything).
 | 3. Look | seed galleries rendered by the viewer via Playwright; agents open the PNGs and compare before/after | on change; reviewed by agents and John | yes |
 | 4. Placement in world | Fabric server game tests | every mod build | yes |
 | 5. In-game appearance | Fabric client game tests with fixed-seed screenshots (Xvfb + lavapipe) | before each review gate, and on worldgen/rendering changes | **heavy lock** |
+| 4b. Order independence (B2) | `scripts/order-test.sh`: dedicated-server JVMs, one fresh world per chunk order and mutant, run in parallel; no renderer (was a client test, 20 min) | on worldgen changes, full runs and before main | no heavy lock |
 
 Notes:
+- Client layers (TESTLAYERS): `FB_LAYER=quick` (default: Hello, B1 District, B5 Gameplay, B3 Terrain, TPHOLD) or `full` (adds Roads, Foliage, Compat); `FB_ONLY=<TestClass>` runs one; the full layer and `scripts/order-test.sh` run on `test-all.sh --full` and the to-main path.
 - Screenshots are compared coarsely (invariant overlay, bounding boxes, colour
   fractions), never pixel-exact: lavapipe output drifts.
 - Property tests must be able to fail: each new rule lands with a test that a

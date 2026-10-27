@@ -59,13 +59,45 @@ public final class Workers {
 		return p;
 	}
 
-	/** Drops queued work, interrupts and waits a few seconds for the threads to end. */
+	/** How long the stopping thread waits for the workers before it hands the wait to a reaper. */
+	static final long GRACE_MS = 250;
+
+	/**
+	 * Drops queued work and interrupts the threads. The planner's tasks are pure CPU (a tile's plan or ground, seconds each, cold and under load
+	 * many seconds) and only look at the interrupt flag between steps ({@code WorldPlanner.prefetch}, {@code RegionWarmer}), so a task that is
+	 * mid-step cannot be stopped; it ends with the step, touches no world state, and its thread is a daemon. TESTLAYERS: the server thread used to
+	 * wait 10 s for it at every world close (nine times in the client suite, "workers did not stop within 10 s"); now it waits {@link #GRACE_MS}
+	 * and a daemon reaper thread reports a straggler that outlives {@link #REAP_SECONDS}. A pool that is idle (the normal case) is gone at once.
+	 */
 	public static void shutdown(ExecutorService p) {
 		p.shutdownNow();
 		try {
-			if (!p.awaitTermination(10, TimeUnit.SECONDS)) FractalBuildingsMod.LOGGER.warn("Fractal Buildings workers did not stop within 10 s");
+			if (p.awaitTermination(GRACE_MS, TimeUnit.MILLISECONDS)) return;
 		} catch (InterruptedException e) {
 			Thread.currentThread().interrupt();
+			return;
+		}
+		FractalBuildingsMod.LOGGER.debug("Fractal Buildings workers are finishing their current step; the stop does not wait for them");
+		Thread reaper = new Thread(() -> {
+			try {
+				if (!p.awaitTermination(REAP_SECONDS, TimeUnit.SECONDS)) FractalBuildingsMod.LOGGER.warn("Fractal Buildings workers still running {} s after the stop", REAP_SECONDS);
+			} catch (InterruptedException ignored) {
+				// the JVM is going down
+			}
+		}, "fractalbuildings-reaper");
+		reaper.setDaemon(true);
+		reaper.start();
+	}
+
+	static final long REAP_SECONDS = 120;
+
+	/** Tests: waits until the pool has terminated, up to the timeout in ms. */
+	public static boolean awaitTerminated(ExecutorService p, long timeoutMs) {
+		try {
+			return p.awaitTermination(timeoutMs, TimeUnit.MILLISECONDS);
+		} catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+			return false;
 		}
 	}
 
