@@ -212,10 +212,11 @@ class CityProgramTest {
 				if (touch) touching++;
 			}
 		}
-		assertTrue(crossings > 100, "crossings " + crossings);
+		assertTrue(crossings > 40, "crossings " + crossings); // METROFILL R1: arterials on every second line only (71 over these cities, 100+ before)
 		double share = squares / (double) crossings;
-		assertTrue(share > 0.12 && share < 0.4, squares + " squares at " + crossings + " arterial crossings: " + share);
-		assertTrue(touching >= squares * 0.65, touching + " of " + squares + " squares touch an arterial (the rest were moved by the ground)");
+		assertTrue(share > 0.5 && share < 1.2, // METROFILL R1: arterial crossings are 4x rarer, so every one gets a square (SQUARE_ONE_IN 1); share includes the few non-crossing squares
+				 squares + " squares at " + crossings + " arterial crossings: " + share);
+		assertTrue(touching >= squares * 0.8, touching + " of " + squares + " squares touch an arterial"); // METROFILL R1 r4: crossing squares sit flush with both arterials (68 of 80; the rest are old-town small squares and joined cells' squares); 0.65 before. How district detail moves them: CrossingSquareTest
 	}
 
 	// ---- the metropolis
@@ -417,6 +418,7 @@ class CityProgramTest {
 				int mid = Math.floorDiv(s.from() + s.to(), 2), mx = Arterials.ax(s, mid), mz = Arterials.az(s, mid);
 				if (!den.urban(Arterials.ax(s, s.from()), Arterials.az(s, s.from())) || !den.urban(Arterials.ax(s, s.to()), Arterials.az(s, s.to()))) continue;
 				if (den.fabric(mx, mz) < 80) continue;
+				if (!art.parityLine(s) && !art.outerRing(s)) continue; // METROFILL R1: arterials only on every second tile line
 				sure++;
 				if (den.base(mx, mz) < 80) outsideCore++;
 				assertTrue(art.is(s), "seed " + p.setup().seed() + " segment " + s + " fabric " + den.fabric(mx, mz) + " is no arterial");

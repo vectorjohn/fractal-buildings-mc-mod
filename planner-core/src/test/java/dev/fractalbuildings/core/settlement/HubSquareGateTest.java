@@ -61,7 +61,9 @@ class HubSquareGateTest {
 			}
 			// the first tile of a settlement also builds its junction field (JUNCTION: every whole street of the settlement, read once,
 			// ~130k calls in the 8-cell metropolis, ~15k in a one-cell city); 150k before it
-			assertTrue(calls.get() < 220_000, name + ": " + calls.get() + " probe calls");
+			// and, when it lies on the waterfront, the settlement's quay runs (METROFILL R1: traced and graded once, not per tile window; the
+			// desert-badlands hub tile now 371k (under 220k before), while the whole settlement reads 28 % less: 1.88M -> 1.35M); 220k before it
+			assertTrue(calls.get() < 450_000, name + ": " + calls.get() + " probe calls");
 			System.out.println("HUBGATE " + name + " probe calls " + calls.get());
 		}
 	}

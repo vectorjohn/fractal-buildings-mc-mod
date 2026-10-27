@@ -36,6 +36,13 @@ public interface SkeletonSource {
 	 */
 	default JunctionField junctions(dev.fractalbuildings.core.probe.TerrainProbe exact) { return JunctionField.build(this, exact); }
 
+	/**
+	 * A value worked out once from the whole settlement over the given exact terrain (the settlement's quay runs), by name. It must be a
+	 * pure function of the source and the probe, whichever tile asks first. This default builds it on every call; sources that serve many
+	 * tiles memoise it (per probe).
+	 */
+	default <T> T shared(String key, dev.fractalbuildings.core.probe.TerrainProbe exact, java.util.function.Supplier<T> build) { return build.get(); }
+
 	/** Builds skeletons directly from a coarse probe, once per cell. */
 	final class Direct implements SkeletonSource {
 		private final long seed;
@@ -118,6 +125,25 @@ public interface SkeletonSource {
 				}
 			}
 			return (JunctionField) j[1];
+		}
+
+		/** Copy on write: a published map is never changed, so a cache hit reads it without the lock. */
+		private volatile java.util.TreeMap<String, Object[]> shared = new java.util.TreeMap<>();
+
+		/** Built once per name and exact probe, by the first thread that asks (as {@link #network}); a hit takes no lock. */
+		@SuppressWarnings("unchecked")
+		@Override public <T> T shared(String key, dev.fractalbuildings.core.probe.TerrainProbe exact, java.util.function.Supplier<T> build) {
+			Object[] v = shared.get(key);
+			if (v != null && v[0] == exact) return (T) v[1];
+			synchronized (this) {
+				v = shared.get(key);
+				if (v == null || v[0] != exact) {
+					java.util.TreeMap<String, Object[]> next = new java.util.TreeMap<>(shared);
+					next.put(key, v = new Object[] {exact, build.get()});
+					shared = next;
+				}
+				return (T) v[1];
+			}
 		}
 	}
 }

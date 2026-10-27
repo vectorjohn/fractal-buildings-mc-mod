@@ -91,9 +91,60 @@ class RoadLatticeTest {
 				if (net.kind(s) == RoadKind.ARTERIAL) drawn++;
 			}
 		}
-		assertTrue(picked > 0 && drawn < picked, drawn + " of " + picked + " picked arterial segments drawn");
+		assertTrue(picked > 0 && drawn <= picked, drawn + " of " + picked + " picked arterial segments drawn"); // METROFILL R1: spaced arterials all link, so none is dropped on the gates any more
 		// arterials are only ever dropped when nothing attaches them: the nine gates keep most of them
 		assertTrue(drawn * 10 > picked * 6, drawn + " of " + picked + " picked arterial segments drawn");
+	}
+
+	/**
+	 * The drop path itself (since METROFILL R1 every picked arterial on the gates links, so the test above no longer drops any): a
+	 * synthetic city whose planned tiles are cut down to the hub's 3 x 3 block and one tile far away. The far tile's arterial borders are
+	 * picked by the rule but nothing drawn reaches them, so the network leaves them out; with every tile planned it draws them.
+	 */
+	@Test
+	void anArterialOnATileNothingReachesIsNotDrawn() {
+		SkeletonsTest.Case c = SkeletonsTest.syntheticCase(1);
+		SkeletonSource full = new SkeletonSource.Direct(c.seed(), new FixedSiteView(c.site(), c.field()), c.site(), c.probe());
+		assertTrue(full.site().tier().atLeast(Tier.CITY));
+		Arterials art = full.density().arterials();
+		RoadNetwork all = full.network();
+		DistrictGrid g = full.grid();
+		DistrictGrid.TileId hub = g.tileOf(all.hub().x(), all.hub().z());
+		DistrictSummary far = null;
+		List<DistrictSummary> every = new ArrayList<>();
+		for (Cell cell : full.site().cells()) every.addAll(full.skeleton(cell).districts());
+		every.sort(java.util.Comparator.comparing(DistrictSummary::id));
+		for (DistrictSummary d : every) {
+			if (Math.max(Math.abs(d.ix() - hub.ix()), Math.abs(d.iz() - hub.iz())) < 3) continue;
+			for (DistrictGrid.Segment s : g.segments(d.ix(), d.iz())) if (art.is(s) && all.kind(s) == RoadKind.ARTERIAL) far = d;
+			if (far != null) break;
+		}
+		assertNotNull(far, "a far tile with a drawn arterial border");
+		DistrictSummary keepFar = far;
+		SkeletonSource cut = new SkeletonSource() {
+			@Override public long seed() { return full.seed(); }
+			@Override public RegionView view() { return full.view(); }
+			@Override public SettlementSite site() { return full.site(); }
+			@Override public DistrictGrid grid() { return full.grid(); }
+			@Override public TierProgram program() { return full.program(); }
+			@Override public DensityField density() { return full.density(); }
+			@Override public QuarterField quarters() { return full.quarters(); }
+			@Override public CellSkeleton skeleton(Cell cell) {
+				CellSkeleton k = full.skeleton(cell);
+				List<DistrictSummary> ds = new ArrayList<>();
+				for (DistrictSummary d : k.districts()) if (d == keepFar || d.id().equals(keepFar.id()) || Math.max(Math.abs(d.ix() - hub.ix()), Math.abs(d.iz() - hub.iz())) <= 1) ds.add(d);
+				return new CellSkeleton(k.cell(), k.outline(), k.coarse(), k.hub(), k.roads(), k.gates(), k.landmarks(), ds, k.walls(), k.approaches());
+			}
+		};
+		RoadNetwork net = cut.network();
+		int picked = 0, drawn = 0;
+		for (DistrictGrid.Segment s : g.segments(far.ix(), far.iz())) {
+			if (!art.is(s) || all.kind(s) != RoadKind.ARTERIAL) continue;
+			picked++;
+			if (net.kind(s) == RoadKind.ARTERIAL) drawn++;
+		}
+		assertTrue(picked > 0);
+		assertEquals(0, drawn, drawn + " of " + picked + " arterial borders of the cut-off tile " + far.id() + " drawn");
 	}
 
 	/** The built-up area tapers: streets and low-density lots reach the outer quarter of the footprint, and nothing tall stands there. */

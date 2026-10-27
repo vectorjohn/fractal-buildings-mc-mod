@@ -238,6 +238,14 @@ How to use it:
   distance with clouds off and larger shots; GPU options in the assistant's
   2026-10-26 answer (gpu-perf).
 
+### Quays front-load probes on a waterfront settlement's first tile
+
+- **What**: METROFILL R1 (r3) made a settlement's quay runs a settlement-wide value (traced over every waterfront tile it plans and graded once, cached per source and probe like the junction field), because grading a run through each tile's own window made neighbouring tiles cut it differently (`tile-border-agree`). The first waterfront tile asked pays for the whole settlement's quays.
+- **Measured** (recorded probe calls, planner-core test, load ~10 to 20, 2026-10-26): hub tile of gate-desert-badlands (city r827) 371k calls (budget in `HubSquareGateTest` was 220k, now 450k); whole settlement 1.88M -> 1.35M calls (gate-desert-badlands, 64 tiles), 3.39M -> 2.86M (s7_m3 metropolis on world 12345, 120 tiles); wall time unchanged (1.5 s / 1.8 s).
+- **Budget**: none of its own; the cold-tile budget above.
+- **Decision**: open.
+- **Improve**: trace lazily from the asking tile: follow only the contour chains that reach it, plus the earlier runs (canonical order) that overlap them.
+
 ### Idea: deferred interior decoration pass (John 2026-10-26)
 
 - **What**: not a measured problem yet; an option to keep in reserve in case

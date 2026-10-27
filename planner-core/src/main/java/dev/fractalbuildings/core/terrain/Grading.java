@@ -229,6 +229,14 @@ public final class Grading {
 
 	/** Levels a rectangle at the median of a 4-block lattice of exact heights; empty if it is too rough or wet. */
 	public static Optional<PlazaGrade> plaza(Rect rect, TerrainProbe exact) {
+		return plaza(rect, exact, Integer.MIN_VALUE, Integer.MAX_VALUE);
+	}
+
+	/**
+	 * As {@link #plaza(Rect, TerrainProbe)}, with the level held within one block of every level in {@code [lo, hi]} (the streets the
+	 * plaza touches; {@code hi - lo} at most 2), so it meets them without a step. Empty when that level needs a cut over the limit.
+	 */
+	public static Optional<PlazaGrade> plaza(Rect rect, TerrainProbe exact, int lo, int hi) {
 		ArrayList<Integer> samples = new ArrayList<>();
 		for (int zz = rect.z(); zz < rect.z() + rect.d(); zz += 4) {
 			for (int xx = rect.x(); xx < rect.x() + rect.w(); xx += 4) samples.add(exact.floorY(xx, zz));
@@ -244,6 +252,7 @@ public final class Grading {
 		samples.sort(null);
 		int level = samples.get(samples.size() / 2);
 		level = Math.max(level, maxG - MAX_CUT_FILL); // fill first: no cut deeper than the limit
+		if (lo != Integer.MIN_VALUE) level = Math.max(hi - 1, Math.min(lo + 1, level)); // meet the streets it touches (the cut check below still holds)
 		ArrayList<Item> items = new ArrayList<>();
 		for (int zz = rect.z(); zz < rect.z() + rect.d(); zz++) {
 			for (int xx = rect.x(); xx < rect.x() + rect.w(); xx++) {

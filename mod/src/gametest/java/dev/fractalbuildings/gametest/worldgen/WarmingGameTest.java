@@ -145,17 +145,24 @@ public class WarmingGameTest {
 
 	@GameTest
 	public void shuttingTheWorkersDownLeavesNoThreads(GameTestHelper helper) throws Exception {
-		long before = Thread.getAllStackTraces().keySet().stream().filter(th -> th.getName().startsWith(Workers.PREFIX) && th.isAlive()).count();
+		// only this pool's own threads: other game tests run their pools in the same JVM at the same time (flake 00d70622, which counted
+		// every worker thread alive), so the threads are recorded as the pool's factory makes them
 		ThreadPoolExecutor pool = Workers.create(4);
+		java.util.concurrent.ThreadFactory made = pool.getThreadFactory();
+		List<Thread> mine = java.util.Collections.synchronizedList(new ArrayList<>());
+		pool.setThreadFactory(r -> { Thread th = made.newThread(r); mine.add(th); return th; });
 		java.util.concurrent.CountDownLatch l = new java.util.concurrent.CountDownLatch(8);
 		for (int i = 0; i < 8; i++) pool.execute(l::countDown);
 		check(l.await(10, java.util.concurrent.TimeUnit.SECONDS), "tasks did not run");
-		long during = Thread.getAllStackTraces().keySet().stream().filter(th -> th.getName().startsWith(Workers.PREFIX) && th.isAlive()).count();
-		check(during > before, "the pool should have started threads");
-		check(Thread.getAllStackTraces().keySet().stream().filter(th -> th.getName().startsWith(Workers.PREFIX)).allMatch(th -> th.isDaemon()), "workers are daemons");
+		List<Thread> threads;
+		synchronized (mine) { threads = new ArrayList<>(mine); }
+		check(!threads.isEmpty(), "the pool should have started threads");
+		check(threads.stream().allMatch(th -> th.getName().startsWith(Workers.PREFIX) && th.isDaemon()), "workers are daemons named " + Workers.PREFIX);
 		Workers.shutdown(pool);
-		long after = Thread.getAllStackTraces().keySet().stream().filter(th -> th.getName().startsWith(Workers.PREFIX) && th.isAlive()).count();
-		check(after == before, "worker threads left: " + (after - before));
+		// a terminated pool's last workers may still be leaving run(); a leaked one never ends, so a short join tells them apart
+		for (Thread th : threads) th.join(2_000);
+		long left = threads.stream().filter(Thread::isAlive).count();
+		check(left == 0, "worker threads left: " + left);
 		helper.succeed();
 	}
 }

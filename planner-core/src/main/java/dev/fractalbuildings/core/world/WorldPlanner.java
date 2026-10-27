@@ -339,7 +339,7 @@ public class WorldPlanner {
 	}
 
 	/**
-	 * Resolves the region cells within {@code radius} blocks of the point and builds the road network and the junction field of every settlement found there,
+	 * Resolves the region cells within {@code radius} blocks of the point and builds the road network, the junction field and the quay runs of every settlement found there,
 	 * on the calling thread. Never changes any answer; call it from a worker ahead of travellers.
 	 */
 	public void warm(int blockX, int blockZ, int radius) {
@@ -353,6 +353,7 @@ public class WorldPlanner {
 		for (SettlementSite site : found.values()) {
 			source(site).network();
 			source(site).junctions(probes.exact()); // JUNCTION: the settlement's junction field reads its whole streets' terrain once, ahead of the first tile
+			dev.fractalbuildings.core.settlement.Districts.warmQuays(source(site), probes.exact()); // METROFILL R1: the settlement's quay runs, traced once, ahead of its first waterfront tile
 		}
 		if (roads != null) {
 			for (int cz = Math.floorDiv(blockZ - radius, s); cz <= Math.floorDiv(blockZ + radius, s); cz++) {
