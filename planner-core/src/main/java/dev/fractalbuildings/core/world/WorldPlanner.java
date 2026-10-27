@@ -510,6 +510,52 @@ public class WorldPlanner {
 		return any[0] ? mask : null;
 	}
 
+	/** How far below a road column's deck its fill and the ground it reads can reach (the embankment and the scanned ground of {@code RoadSurface}). */
+	static final int ROAD_DEPTH = 24;
+
+	/** What a building piece writes into a world: its box and the deep foundation {@code Pieces.deepen} adds under it (not in {@link BuildingPiece#box}). */
+	private static Box3 rastered(Box3 b) {
+		return new Box3(b.x(), b.y() - Pieces.FOUNDATION_BELOW, b.z(), b.sx(), b.sy() + Pieces.FOUNDATION_BELOW, b.sz());
+	}
+
+	/**
+	 * Could a piece of ours own a cell inside {@code box}, or read the world there? True when a building piece's box or a ground
+	 * piece's box of a planned tile intersects it, or when a road column lies within
+	 * {@link dev.fractalbuildings.core.road.RoadSurface#CUT_REACH} + 1 blocks of it (its shoulders and terraces) and the box reaches
+	 * higher than {@link #ROAD_DEPTH} under the deck (a road reads its ground and fills and clears down and up to it). Pure, like every
+	 * answer here.
+	 *
+	 * <p>For vanilla features that write across a chunk border and have no structure check, such as {@code LakeFeature} (ORDERFAIL): a
+	 * lake from a neighbour chunk decorated after ours overwrites our pieces, one decorated before is overwritten by them, so the world
+	 * would depend on chunk order. The mod cancels such a feature when this answers true for its box, a function of position only.
+	 */
+	public boolean claimsNear(Box3 box) {
+		int cx0 = Math.floorDiv(box.x(), 16), cx1 = Math.floorDiv(box.maxX() - 1, 16);
+		int cz0 = Math.floorDiv(box.z(), 16), cz1 = Math.floorDiv(box.maxZ() - 1, 16);
+		java.util.TreeSet<Long> seen = new java.util.TreeSet<>();
+		for (int cz = cz0; cz <= cz1; cz++) {
+			for (int cx = cx0; cx <= cx1; cx++) {
+				if (!districtsNear(cx, cz)) continue;
+				DistrictGrid.TileId id = grid.tileOf(cx * 16 + 8, cz * 16 + 8);
+				if (!seen.add(key(id.ix(), id.iz())) || tile(id.ix(), id.iz()).isEmpty()) continue;
+				for (BuildingPiece b : buildings(id.ix(), id.iz())) if (rastered(b.box()).intersects(box)) return true;
+				for (GroundPiece g : ground(id.ix(), id.iz())) if (g.box().intersects(box)) return true;
+			}
+		}
+		if (roads == null) return false;
+		int reach = dev.fractalbuildings.core.road.RoadSurface.CUT_REACH + 1;
+		int rx0 = box.x() - reach, rx1 = box.maxX() - 1 + reach, rz0 = box.z() - reach, rz1 = box.maxZ() - 1 + reach;
+		for (int cz = Math.floorDiv(rz0, 16); cz <= Math.floorDiv(rz1, 16); cz++) {
+			for (int cx = Math.floorDiv(rx0, 16); cx <= Math.floorDiv(rx1, 16); cx++) {
+				for (RoadNet.Col c : roadColumns(cx, cz)) {
+					if (c.x() < rx0 || c.x() > rx1 || c.z() < rz0 || c.z() > rz1) continue;
+					if (box.maxY() - 1 >= c.y() - ROAD_DEPTH) return true;
+				}
+			}
+		}
+		return false;
+	}
+
 	private static void mark(boolean[] mask, boolean[] any, int x0, int z0, int ax, int az, int bx, int bz) {
 		for (int z = Math.max(az, z0); z < Math.min(bz, z0 + 16); z++) {
 			for (int x = Math.max(ax, x0); x < Math.min(bx, x0 + 16); x++) {

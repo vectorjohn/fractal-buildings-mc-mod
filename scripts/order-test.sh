@@ -7,7 +7,7 @@
 # (OrderServerHarness, loaded by the mod's -Dfb.testHook; :mod:runOrderServer), up to N at a time (default 6), NOT under the heavy lock
 # (no renderer; timings are not measured). Same assertions as before: all seven chunk orders (forward, reverse, shuffle1, shuffle2,
 # spiral, threads, threads_evict) give the same ledger digest as forward and equal the core's reference raster, hooks/roads/ledger 0/0/0,
-# unknown-spill classification, the saved-config world, and the six mutants (counter, twice, skip-air, early-step, random, world-stone)
+# unknown-spill classification, the saved-config world, and the seven mutants (counter, twice, skip-air, early-step, random, world-stone, lakes)
 # each caught by its own check, against the centre-tile baselines (clean-centre, reverse-centre).
 #   phase 1 (independent): forward clean-centre config mutant-*     phase 2 (compare with a phase 1 baseline): the other orders, reverse-centre
 # Results: build/order-test/<label>.{verdict,report,run.json,log,server.log}; exit 0 only when every run says PASS.
@@ -40,7 +40,7 @@ if [ -z "$EULA" ]; then
 fi
 
 OUT="$ROOT/build/order-test"
-PHASE1=(forward clean-centre config mutant-counter mutant-twice mutant-skip-air mutant-early-step mutant-random mutant-world-stone)
+PHASE1=(forward clean-centre config mutant-counter mutant-twice mutant-skip-air mutant-early-step mutant-random mutant-world-stone mutant-lakes)
 PHASE2=(reverse shuffle1 shuffle2 spiral threads threads_evict reverse-centre)
 ALL=("${PHASE1[@]}" "${PHASE2[@]}")
 if [ -n "$ONLY" ]; then

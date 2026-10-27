@@ -24,6 +24,9 @@ public final class Mutations {
 	/** The world gets stone in some solid cells while the ledger records the correct state, so only a world-versus-raster check can see it. */
 	public static final String WORLD_STONE = "world-stone";
 
+	/** Vanilla lakes are placed where our pieces are ({@link LakeVeto} off): a later neighbour's lake then writes lava and cave air into them. */
+	public static final String LAKES = "lakes";
+
 	public static volatile String mode;
 	/** The shared counter of {@link #COUNTER}. */
 	static final java.util.concurrent.atomic.AtomicInteger COUNTER_VALUE = new java.util.concurrent.atomic.AtomicInteger();
