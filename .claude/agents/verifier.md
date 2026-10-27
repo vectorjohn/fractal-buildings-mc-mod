@@ -65,8 +65,10 @@ Work by path: `cd <worktree> && ...` or `git -C <worktree> ...`.
    and test commands": the layers the change touches, and always planner-core
    and determinism. Client game tests only if the range touches the mod's
    client side, rendering or worldgen appearance, and then **under the heavy
-   lock**. Report the summary lines with counts; quote the relevant error for a
-   failure. A failure that passes on rerun is still a finding (a flake).
+   lock**, or on the worker box (`scripts/remote.sh -- <cmd>`, preferred when
+   `--check` succeeds). Report the summary lines with counts, and which host
+   ran them; quote the relevant error for a failure. A failure that passes on
+   rerun is still a finding (a flake).
    The scratchpad directory is shared with other subagents of the coordinator:
    name any log you write there after the item (`testall-<slug>.log`), or
    read the worktree's own `build/test-all/` logs instead.
@@ -198,7 +200,8 @@ the coordinator's branch (`claude/run-*`) and worktree, and the main checkout
 path `M`. Don't review each item again.
 1. In the coordinator's worktree: the status table reflects the outcomes, and
    the tree is clean apart from `docs/runs/`. Run every test layer (client
-   tests under the heavy lock). If anything fails, don't merge; report FAILING.
+   tests under the heavy lock, or the whole `scripts/test-all.sh` on the
+   worker box with `scripts/remote.sh`). If anything fails, don't merge; report FAILING.
    Exception: a flake already recorded in `docs/NOTES.md` that passes on an
    identical rerun; say so in the report and message.
 2. Steps 2–4 run as **one** `flock <repo root>/.claude/merge.lock bash -c

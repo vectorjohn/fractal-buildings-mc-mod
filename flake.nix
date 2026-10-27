@@ -63,6 +63,14 @@
             # No GPU access here: restrict the Vulkan loader to Mesa's software driver (lavapipe).
             VK_DRIVER_FILES = "${pkgs.mesa}/share/vulkan/icd.d/lvp_icd.${pkgs.stdenv.hostPlatform.uname.processor}.json";
 
+            # ...unless FB_VK_DRIVER_FILES picks another driver. scripts/remote.sh sets it to the
+            # worker box's GPU driver (radv), where there's no desktop to share the GPU with.
+            shellHook = ''
+              if [ -n "''${FB_VK_DRIVER_FILES:-}" ]; then
+                export VK_DRIVER_FILES="$FB_VK_DRIVER_FILES"
+              fi
+            '';
+
             # Xvnc's pointer device claims relative axes but reports absolute positions in XI2 raw
             # motion events, so SDL3's XInput2 relative mode sees every move as a huge jump (the view
             # spins and pins to the ground). Without XInput2, SDL emulates relative mode by warping.
