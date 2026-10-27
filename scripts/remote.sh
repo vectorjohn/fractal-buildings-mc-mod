@@ -11,7 +11,7 @@
 # minus any `flock .../heavy.lock` prefix: the worker runs one job at a time from
 # its own queue, so the local heavy lock doesn't apply there.
 #
-# What it does: copies this worktree (minus .git, .claude and everything
+# What it does: copies this worktree (minus .git, .claude but its agents/, and everything
 # .gitignore'd: build/, run/, node_modules/, ...) to the worker, queues CMD,
 # waits, saves the full output to build/remote/<job>.log and prints its tail,
 # copies results back to the same paths here (build/test-all/, JUnit XML,
@@ -98,7 +98,10 @@ trap 'rm -f "$RUNNER"' EXIT
 } > "$RUNNER"
 
 echo "remote: copying $ROOT to $HOST:jobs/$NAME ..." >&2
-rsync -a --filter=':- .gitignore' --exclude=/.git --exclude=/.claude/ \
+# .claude/agents/ is tracked and needed (design-blocks --check reads it); the
+# rest of .claude/ (worktrees, locks, reports, settings) stays here.
+rsync -a --filter=':- .gitignore' --exclude=/.git \
+	--include=/.claude/ --include='/.claude/agents/***' --exclude='/.claude/*' \
 	-e "${SSH[*]}" "$ROOT/" "$HOST:jobs/$NAME/"
 rsync -a -e "${SSH[*]}" "$RUNNER" "$HOST:jobs/$NAME/.fb-remote-run.sh"
 
