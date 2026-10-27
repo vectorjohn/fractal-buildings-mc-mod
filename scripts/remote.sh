@@ -110,7 +110,9 @@ echo "remote: queued as $HOST job $ID; waiting (log: $LOG) ..." >&2
 
 # From here on, stopping this script stops the remote job too.
 # shellcheck disable=SC2329 # called from the trap
+WAITPID=""
 cleanup_remote() {
+	[[ -n $WAITPID ]] && kill "$WAITPID" 2>/dev/null || true
 	"${SSH[@]}" "$HOST" job kill "$ID" >/dev/null 2>&1 || true
 	(( KEEP )) || "${SSH[@]}" "$HOST" job clean "$NAME" >/dev/null 2>&1 || true
 }
@@ -121,7 +123,12 @@ trap 'rm -f "$RUNNER"; cleanup_remote; exit 130' INT TERM
 status=255
 for _ in 1 2 3 4 5; do
 	set +e
-	"${SSH[@]}" "$HOST" job wait "$ID"
+	# In the background + `wait`: bash runs the INT/TERM trap only after a
+	# foreground child exits, so a foreground ssh would make stopping this
+	# script wait for the whole remote job instead of cancelling it.
+	"${SSH[@]}" "$HOST" job wait "$ID" &
+	WAITPID=$!
+	wait "$WAITPID"
 	status=$?
 	set -e
 	(( status != 255 )) && break
