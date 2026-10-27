@@ -203,3 +203,18 @@ The architect and interior designer answered the design questions from your play
   Result:
 - [ ] **7.20 METROFILL R1: quays end at the settlement's own waterfront tiles (2026-10-27)**: acceptable at settlement edges? (from the R1 merge commit 4516ce4b)
   Result:
+
+## Steps, roads and rooms (2026-10-27)
+
+- [ ] **6.12 STEPTOP: stairs at the door (2026-10-27)**: a step beside a door now turns to face the door, and a landing cell with a lower stair beside it stays a stair (merged f5d24090). Does a stair turned to face the door, and a stair on the landing edge, look right?
+  Where: in game, world seed 1709797029209580947, walk up to the door at 1266,79,2411 (desert high-rise, the playtest spot) and at 2725,68,2689; verifier's report `.claude/reports/p6-steptop-verify.md`.
+  Look for: a flight you walk straight up into the door without a jump; on a 2-wide landing, one stair cell beside full blocks (reads as a step, or as a mistake?).
+  Result:
+- [ ] **7.10 ROADS1: city arterial surface (2026-10-27)**: which block reads as a city arterial next to the light grey concrete streets? The architect recommends `gray_concrete` (it reads as tarmac; `cobbled_deepslate`, today's choice, reads as cobbled setts; `polished_deepslate` as square tiles).
+  Where: `.claude/reports/p7-roads1-roadlook-evidence/66dd2efc0b-20261027T103023Z/mod/build/flythrough/987654321-asphalt-5-asphalt-joint.jpg` (cobbled deepslate left, polished deepslate middle, gray concrete right, each meeting light grey concrete); also `987654321-asphalt-1-asphalt-overview.jpg` there; architect's re-review `.claude/reports/p7-roads1-architect.md`, suggestion 2.
+  Look for: which of the three you'd call a road a city paves; does it sit well against the light grey streets? Doesn't block the item.
+  Result:
+- [ ] **6.18 ROOMWALK: a bed into the middle of a small bedroom (2026-10-27)**: in a 3x3 bedroom the bed lies with its head on one wall and its foot in the room's centre cell. It is walkable, but is it acceptable, or should the room be re-planned (bigger bedroom, or the bed along a wall)?
+  Where: `fractal-cli floorplan --seed 25 --lot 16x12 --style medieval --type house` (the 3x3 bedroom); interior designer's review `.claude/reports/p6-roomwalk-interior.md` (beds across 3-wide rooms, 43 of 125).
+  Look for: does a bed reaching into the centre of a 3x3 room read as a bedroom, or as cramped and wrong?
+  Result:
