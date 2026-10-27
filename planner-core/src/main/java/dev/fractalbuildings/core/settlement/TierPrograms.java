@@ -12,7 +12,16 @@ public final class TierPrograms {
 
 	private static final TierProgram HAMLET = new HamletProgram(), VILLAGE = new VillageProgram(), TOWN = new TownProgram(), CITY = new CityProgram(), METROPOLIS = new MetropolisProgram();
 
-	public static TierProgram of(Tier tier) {
+	private static final TierProgram CITY_AXIS = new CityProgram(false), METROPOLIS_AXIS = new MetropolisProgram(false);
+
+	public static TierProgram of(Tier tier) { return of(tier, PlanOptions.DEFAULT); }
+
+	/** The tier's program under the options; they only matter for a city or metropolis. */
+	public static TierProgram of(Tier tier, PlanOptions o) {
+		if (!o.diagonals()) {
+			if (tier == Tier.CITY) return CITY_AXIS;
+			if (tier == Tier.METROPOLIS) return METROPOLIS_AXIS;
+		}
 		return switch (tier) {
 			case HAMLET -> HAMLET;
 			case VILLAGE -> VILLAGE;

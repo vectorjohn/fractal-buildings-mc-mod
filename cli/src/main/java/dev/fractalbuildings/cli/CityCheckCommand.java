@@ -20,7 +20,9 @@ import dev.fractalbuildings.core.settlement.FixedSiteView;
 import dev.fractalbuildings.core.settlement.LotBrief;
 import dev.fractalbuildings.core.settlement.RegionView;
 import dev.fractalbuildings.core.settlement.SettlementSite;
+import dev.fractalbuildings.core.settlement.PlanOptions;
 import dev.fractalbuildings.core.settlement.SkeletonSource;
+import dev.fractalbuildings.core.settlement.TierPrograms;
 import dev.fractalbuildings.core.settlement.TerrainStats;
 import dev.fractalbuildings.core.settlement.Tier;
 import java.io.IOException;
@@ -49,7 +51,7 @@ final class CityCheckCommand {
 	private record Result(Job job, String siteId, String tier, int radius, int cells, int districts, int lots, int scenes, int hubPct, int strays, List<String> problems, List<String> warnings, String error, double ms, TerrainStats terrain, FillStats fill, long roofCols, long roofDry) {}
 
 	static int run(String[] args) throws IOException {
-		Opts o = new Opts(args, Set.of("seeds", "terrain", "sites", "scenes", "cell-size", "out", "ignore", "list", "junctions-near", "fill-json"), Set.of("junction", "door-rise"));
+		Opts o = new Opts(args, Set.of("seeds", "terrain", "sites", "scenes", "cell-size", "out", "ignore", "list", "junctions-near", "fill-json", "diagonals"), Set.of("junction", "door-rise"));
 		doorRiseOn = o.flag("door-rise");
 		o.flag("junction"); // junction-height is part of every check now (JUNCTION); the flag that turned it on is accepted and does nothing
 		listMax = o.intValue("list", 20);
@@ -93,7 +95,8 @@ final class CityCheckCommand {
 		long t0 = System.nanoTime();
 		Result[] results = new Result[jobs.size()];
 		final int sceneCount = scenes;
-		IntStream.range(0, results.length).parallel().forEach(i -> results[i] = check(jobs.get(i), sceneCount));
+		final PlanOptions opts = CityCommand.planOptions(o);
+		IntStream.range(0, results.length).parallel().forEach(i -> results[i] = check(jobs.get(i), sceneCount, opts));
 		String md = toMarkdown(results, scenes, ignore);
 		double secs = (System.nanoTime() - t0) / 1e9;
 		int bad = 0;
@@ -168,7 +171,7 @@ final class CityCheckCommand {
 		}
 	}
 
-	private static Result check(Job j, int sceneCount) {
+	private static Result check(Job j, int sceneCount, PlanOptions opts) {
 		long t0 = System.nanoTime();
 		List<String> problems = new ArrayList<>();
 		List<String> warnings = new ArrayList<>(); // design warnings (HighriseChecks): listed, never failing
@@ -178,7 +181,7 @@ final class CityCheckCommand {
 			SettlementSite site = CityCommand.fromSite(field, j.site());
 			RegionView view = new FixedSiteView(site, field);
 			CoarseProbe coarse = CoarseProbe.of(p.terrain(), p.biome(), 32);
-			SkeletonSource.Direct src = new SkeletonSource.Direct(j.seed(), view, site, coarse);
+			SkeletonSource.Direct src = new SkeletonSource.Direct(j.seed(), view, site, coarse, TierPrograms.of(site.tier(), opts));
 			CityPlanner.City city = CityPlanner.plan(src, coarse, p.terrain(), p.biome(), GeneratorV1.GEN_VERSION);
 			if (near != null) {
 				for (var jn : src.junctions(p.terrain()).junctions()) {

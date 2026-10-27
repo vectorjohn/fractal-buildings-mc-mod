@@ -120,7 +120,7 @@ public class DefaultProgram implements TierProgram {
 			@Override public boolean water(int x, int z) { return c.terrain.water(x, z); }
 		};
 		List<LatticePath.Pt> path = LatticePath.find(new LatticePath.Pt(hub.x(), hub.z()), new LatticePath.Pt(target.x(), target.z()), cost,
-				c.bounds(), step, Arterials.MAX_BRIDGE, LatticePath.DEFAULT_MAX_EXPANSIONS, false);
+				c.bounds(), step, Arterials.MAX_BRIDGE, LatticePath.DEFAULT_MAX_EXPANSIONS, false, diagonals());
 		if (path.size() < 2) return new Route(target, List.of(), List.of());
 		return simplify(c, path, target);
 	}

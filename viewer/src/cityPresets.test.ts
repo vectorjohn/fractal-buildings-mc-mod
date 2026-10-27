@@ -14,6 +14,11 @@ describe('city presets', () => {
     expect(cityArgs(p)).toContain('--cell');
     expect(cityArgs(p).slice(-2)).toEqual(['--scenes', 'd0_0,dm1_2']);
   });
+  it('passes diagonals off to the CLI and omits it by default', () => {
+    expect(cityArgs(parseCityPreset('a', base))).not.toContain('--diagonals');
+    expect(cityArgs(parseCityPreset('a', { ...base, diagonals: 'off' })).slice(-2)).toEqual(['--diagonals', 'off']);
+    expect(() => parseCityPreset('a', { ...base, diagonals: 'maybe' })).toThrow(/diagonals/);
+  });
   it('rejects bad input', () => {
     expect(() => parseCityPreset('Bad', base)).toThrow(/file name/);
     expect(() => parseCityPreset('x', { ...base, extra: 1 })).toThrow(/unknown key/);
