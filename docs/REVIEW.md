@@ -518,3 +518,5 @@ The architect and interior designer answered the design questions from your play
   Where: `fractal-cli floorplan --seed 25 --lot 16x12 --style medieval --type house` (the 3x3 bedroom); interior designer's review `.claude/reports/p6-roomwalk-interior.md` (beds across 3-wide rooms, 43 of 125).
   Look for: does a bed reaching into the centre of a 3x3 room read as a bedroom, or as cramped and wrong?
   Result:
+- [ ] **ORDERFAIL: no lakes near settlements and roads (2026-10-27)**: vanilla lava/water lakes overwrote dug-in buildings depending on chunk order, so a lake is now not placed when its 16x8x16 grid (+1) meets our buildings, ground pieces or roads (mixin `LakeVeto` at `LakeFeature.place`, merged 46007d6f; about 9 lakes vetoed at the gate city). Keep that, or allow lakes but seal them against our pieces? Also: the road veto has no upper bound (a lake far above a deep road cut is vetoed too).
+  Result:

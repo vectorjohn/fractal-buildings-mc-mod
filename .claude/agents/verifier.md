@@ -328,7 +328,7 @@ path `M`. Don't review each item again.
    `scripts/snapshot-test.sh --name heavy <worktree> H to-main 'scripts/test-all.sh --full --perf' scripts/flythrough.sh`.
    When `scripts/remote.sh --check` succeeds, the client and fly-through
    layers can go to the worker box instead:
-   `scripts/snapshot-test.sh --name heavy <worktree> H to-main 'scripts/remote.sh -- scripts/test-all.sh' 'scripts/remote.sh -- scripts/flythrough.sh' scripts/perf.sh`.
+   `scripts/snapshot-test.sh --name heavy <worktree> H to-main 'scripts/remote.sh -- scripts/test-all.sh --full' 'scripts/remote.sh -- scripts/flythrough.sh' scripts/perf.sh`.
    Keep `scripts/perf.sh` local: its budgets were set on this host, and
    timings across hosts aren't comparable. Say which host ran each layer.
    If the coordinator names a passing batched heavy run at `H` (or with only
