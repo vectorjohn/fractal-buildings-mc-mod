@@ -297,6 +297,18 @@ final class Shopfront {
 		return false;
 	}
 
+	/** True if the cell (fx, fz) has a free standing neighbour other than (px, pz) that holds no hook (a bed's head included). */
+	private static boolean hasFreeNeighbour(BuildContext c, int y, int fx, int fz, int px, int pz) {
+		for (Facing d : Facing.values()) {
+			int nx = fx + d.dx, nz = fz + d.dz;
+			if (nx == px && nz == pz) continue;
+			boolean taken = false;
+			for (var o : c.hooks()) if (o.y() == y && !o.kind().equals("ceiling_light") && (o.x() == nx && o.z() == nz || o.kind().equals("bed") && o.x() + o.facing().dx == nx && o.z() + o.facing().dz == nz)) taken = true;
+			if (!taken && c.role(nx, y, nz) == Role.AIR && c.role(nx, y + 1, nz) == Role.AIR) return true;
+		}
+		return false;
+	}
+
 	/** A hook on a free standing cell at least {@code clear} cells from every core and from the other hooks; false if the cell is unsuitable. */
 	private static boolean hook(BuildContext c, Massing m, String kind, int storey, int y, int x, int z, Facing facing, int clear) { return hook(c, m, kind, storey, y, x, z, facing, clear, true); }
 
@@ -309,6 +321,7 @@ final class Shopfront {
 		int fx = x + facing.dx, fz = z + facing.dz;
 		if (!kind.equals("bed") && (c.role(fx, y, fz) != Role.AIR || c.role(fx, y + 1, fz) != Role.AIR)) return false;
 		if (strict && !kind.equals("bed")) for (var h : c.hooks()) if (h.y() == y && Math.max(Math.abs(h.x() - fx), Math.abs(h.z() - fz)) <= 1) return false;
+		if (!kind.equals("bed") && !hasFreeNeighbour(c, y, fx, fz, x, z)) return false; // a light or other piece beside the cell in front could wall it in too
 		if (boxesIn(c, y, x, z)) return false;
 		String room = c.roomAt(x, y, z);
 		if (room == null) return false;
