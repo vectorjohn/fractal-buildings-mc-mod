@@ -181,10 +181,12 @@ The architect and interior designer answered the design questions from your play
 - [ ] **Door frame or glass blocks (playtest 2026-10-26)**: the architect chose a solid frame round every door in a glazed wall: a jamb on each side and a head in the trim or frame role, so the panes butt a solid block and connect. The glass-block option was the one you placed in [20.50.01](review/phase6/playtest-comments/2026-10-26_20.50.01.jpg). It reads thicker and brighter than the panes beside it, and the door would hang on glass. Say if you preferred that look.
   Where: [architect report](review/reports/playtest1026-qs-architect.md), question 7; ROADMAP polish lines DOORGLASS and GLASSSTUB.
   Result:
+  - @John 2026-10-27: I approve the architect call here. I was leaning that way.
 
 - [ ] **Inn type or bigger hamlet house (playtest 2026-10-26)**: about half of the hamlets on a road between settlements (3+ lots, away from both ends) get one inn. Should that be a real `inn` building type (taproom with bar and fire, kitchen, 3-5 guest rooms upstairs, stable yard on the road), which both reviewers recommend? The cheaper option is the largest hamlet house with a taproom front room and more bedrooms. That reads as a house, with no bar and no stable yard. Filed as ROADMAP 7.22 INN, pending this answer.
   Where: [architect report](review/reports/playtest1026-qs-architect.md), question 5 (siting); [interior report](review/reports/playtest1026-qs-interior.md), question 2 (rooms).
   Result:
+  - @John 2026-10-27: I think a real inn building type. 
 
 - [ ] **Proposed rules from the playtest answers (2026-10-27)**: accept, edit or reject each one. The full text is in [STANDARDS.md](design/STANDARDS.md), "Proposed by agents".
   - P1, **DS-49 Partitions lighter than the shell** (architect): the core, party walls and chimneys are masonry. Other interior walls are pale plaster, or planks in wood styles. Desert, adobe and stone keep masonry inside. From your brick corridor, 19.59.37. [Report](review/reports/playtest1026-qs-architect.md) question 1.
