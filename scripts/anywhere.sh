@@ -58,7 +58,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 CLAUDE_DIR=$(suite_slot_dir)
 
 PREFER=local ONLY="" KIND="" DRY=0 STATUS=0 WAIT_MAX=""
-LOAD_MAX=${FB_ANY_LOAD_MAX:-14} DEPTH=${FB_ANY_DEPTH:-2} POLL=${FB_ANY_POLL:-20}
+LOAD_MAX=${FB_ANY_LOAD_MAX:-18} DEPTH=${FB_ANY_DEPTH:-2} POLL=${FB_ANY_POLL:-20}
 HOST=${FB_REMOTE_HOST:-beebox}
 REMOTE_ARGS=()
 while [[ $# -gt 0 ]]; do
