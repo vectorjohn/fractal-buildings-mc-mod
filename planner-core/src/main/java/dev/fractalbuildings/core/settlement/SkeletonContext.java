@@ -62,6 +62,11 @@ public final class SkeletonContext {
 		return k >= 0 ? candidate[k] : density.urban(x, z);
 	}
 
+	/** An exit column that road traffic can leave from: the column and its eight lattice neighbours are all dry, so no bridge ends on it (6.16 DEADMAIN). */
+	public boolean solid(int x, int z) {
+		return terrain.dryAround(x, z);
+	}
+
 	/** The final mask value at a window column (see {@link CoarseRaster}); -1 outside the window. */
 	public int mask(int x, int z) {
 		int k = index(x, z);

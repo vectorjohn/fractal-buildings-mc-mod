@@ -27,6 +27,38 @@ class SettlementChecksTest {
 		return new DistrictPlan(2, 1, new DistrictInfo("d0_0", 0, 0, 0, 0, 128, 128, 0, 20), streets, plazas, List.of(lots), null, List.of());
 	}
 
+	private static dev.fractalbuildings.core.settlement.CoarseRaster raster(int waterAt) {
+		int n = 25; // 5 x 5, step 32 from 0,0
+		int[] z = new int[n], w = new int[n], m = new int[n];
+		java.util.Arrays.fill(m, 1);
+		if (waterAt >= 0) { w[waterAt] = 5; m[waterAt] = 2; }
+		return new dev.fractalbuildings.core.settlement.CoarseRaster(0, 0, 32, 5, 5, z, w, z, List.of("plains"), m, z, z);
+	}
+
+	private static dev.fractalbuildings.core.settlement.Road road(String id, int bridgeEnd, int... xz) {
+		List<Pt> pts = new java.util.ArrayList<>();
+		for (int i = 0; i < xz.length; i += 2) pts.add(new Pt(xz[i], xz[i + 1]));
+		return new dev.fractalbuildings.core.settlement.Road(id, RoadKind.MAIN, 5, pts, bridgeEnd < 0 ? List.of() : List.of(new int[] {1, bridgeEnd}));
+	}
+
+	private static dev.fractalbuildings.core.settlement.Gate gate(int x, int z) {
+		return new dev.fractalbuildings.core.settlement.Gate("g", dev.fractalbuildings.core.settlement.GateKind.EXIT, x, z, List.of(), null);
+	}
+
+	/** 6.16: a main road must end at a gate or another road, and a bridge may not land on a shore column with nothing beyond. */
+	@Test
+	void mainRoadEndsAreChecked() {
+		var open = road("r0", -1, 0, 0, 64, 0);
+		assertEquals(List.of("main-dead-end"), ids(SettlementChecks.mainRoadEnds(List.of(open), List.of(), List.of(), raster(-1))), "ends in the open");
+		assertEquals(List.of(), SettlementChecks.mainRoadEnds(List.of(open), List.of(), List.of(gate(64, 0)), raster(-1)), "ends at a gate");
+		var other = road("r1", -1, 32, -32, 32, 64);
+		var tee = road("r2", -1, 0, 0, 32, 0);
+		assertEquals(List.of(), SettlementChecks.mainRoadEnds(List.of(other, tee), List.of(), List.of(gate(32, 64)), raster(-1)).stream().filter(v -> v.message().contains("r2")).toList(), "ends on the middle of another road");
+		var bridge = road("r3", 2, 0, 64, 32, 64, 64, 64);
+		assertEquals(List.of("bridge-dead-end"), ids(SettlementChecks.mainRoadEnds(List.of(bridge), List.of(), List.of(gate(64, 64)), raster(2 * 5 + 1))), "bridge lands beside water (water at column 1,2)");
+		assertEquals(List.of(), SettlementChecks.mainRoadEnds(List.of(bridge), List.of(), List.of(gate(64, 64)), raster(-1)), "bridge lands on dry ground");
+	}
+
 	private static List<String> ids(List<Violation> v) { return v.stream().map(Violation::invariant).distinct().toList(); }
 
 	@Test
