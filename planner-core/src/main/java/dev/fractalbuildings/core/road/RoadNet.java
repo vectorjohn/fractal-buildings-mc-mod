@@ -69,7 +69,13 @@ public final class RoadNet {
 	}
 
 	/** One road column: world x, z, the deck's y (the block the player stands on, the first free block above it), whether it lies on a crossing, and the road width. */
-	public record Col(int x, int z, int y, boolean crossing, int width) {}
+	/**
+	 * @param road the block of the road surface, @param deck the block of a bridge deck on this column (one per route, DS-30); null when the
+	 *     route has none decided (tests), the world then picks by biome
+	 */
+	public record Col(int x, int z, int y, boolean crossing, int width, String road, String deck) {
+		public Col(int x, int z, int y, boolean crossing, int width) { this(x, z, y, crossing, width, null, null); }
+	}
 
 	/** The finished route of one link (or the reason it has none). Read-only after construction. */
 	public static final class Route {
@@ -680,7 +686,11 @@ public final class RoadNet {
 		rt.length = len;
 		if (MUTANT_CACHE_STATE) for (int k = 0; k < pr.deck().length; k++) pr.deck()[k] += (int) (routes.misses() & 1);
 		rt.maxGrade = mg;
-		rt.byChunk = raster(st, pr.deck(), pr.span(), rt.width);
+		int s = RegionProbe.STRIDE;
+		String biomeA = coarse == null ? null : coarse.biome(Math.floorDiv(rt.a.x(), s) * s, Math.floorDiv(rt.a.z(), s) * s);
+		String biomeB = coarse == null ? null : coarse.biome(Math.floorDiv(rt.b.x(), s) * s, Math.floorDiv(rt.b.z(), s) * s);
+		RoadMaterials.Surface mat = RoadMaterials.of(rt.a.tier(), biomeA, rt.b.tier(), biomeB); // the lower tier's biome decides the track (DS-30)
+		rt.byChunk = raster(st, pr.deck(), pr.span(), rt.width, mat);
 		for (List<Col> l : rt.byChunk.values()) rt.columns += l.size();
 	}
 
@@ -688,7 +698,10 @@ public final class RoadNet {
 	 * The columns of a road of {@code width} along the stations, by chunk: each column takes the nearest segment (the lower segment on a
 	 * tie), its deck height interpolated along it; {@code span} marks the stations of a crossing. Pure.
 	 */
-	public static TreeMap<Long, List<Col>> raster(double[][] st, int[] deck, boolean[] span, int width) {
+	public static TreeMap<Long, List<Col>> raster(double[][] st, int[] deck, boolean[] span, int width) { return raster(st, deck, span, width, new RoadMaterials.Surface(null, null)); }
+
+	/** As above, every column carrying the route's one surface and deck block. */
+	public static TreeMap<Long, List<Col>> raster(double[][] st, int[] deck, boolean[] span, int width, RoadMaterials.Surface mat) {
 		TreeMap<Long, List<Col>> byChunk = new TreeMap<>();
 		double hw = width / 2.0;
 		TreeMap<Long, double[]> best = new TreeMap<>(); // column -> {dist, segment, y, crossing}
@@ -717,7 +730,7 @@ public final class RoadNet {
 			int x = (int) ((en.getKey() & 0xffffffffL) - (1 << 30)), z = (int) ((en.getKey() >>> 32) - (1 << 30));
 			double[] v = en.getValue();
 			byChunk.computeIfAbsent(chunkKey(Math.floorDiv(x, 16), Math.floorDiv(z, 16)), kk -> new ArrayList<>())
-				.add(new Col(x, z, (int) StrictMath.floor(v[2] + 0.5), v[3] == 1, width));
+				.add(new Col(x, z, (int) StrictMath.floor(v[2] + 0.5), v[3] == 1, width, mat.road(), mat.deck()));
 		}
 		return byChunk;
 	}

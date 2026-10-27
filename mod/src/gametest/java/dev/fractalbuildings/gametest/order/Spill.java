@@ -19,6 +19,10 @@ final class Spill {
 	/** Natural ground our raster may want (terrain-following fill, roads of gravel and sand). */
 	private static final Set<String> GROUND = Set.of("dirt", "coarse_dirt", "rooted_dirt", "grass_block", "podzol", "mycelium", "stone", "andesite", "diorite", "granite", "deepslate", "tuff",
 			"gravel", "sand", "red_sand", "clay", "mud", "moss_block", "pale_moss_block", "sandstone", "red_sandstone", "calcite", "dripstone_block", "snow_block", "packed_ice", "ice", "terracotta", "water");
+	/** DS-30 road surfaces that are not natural ground. Only a cell whose raster role is a road surface may be spill of these, and only where a carver of a later neighbouring chunk opened it (seen: cobbled_deepslate to lava; to stone only through {@link #lakeBarrier}). */
+	private static final Set<String> ROAD_BLOCKS = Set.of("cobbled_deepslate", "stone_bricks", "mud_bricks", "light_gray_concrete", "oak_planks");
+	/** What a carver leaves in a road cell it opens (not stone, ground or dirt: those are not carver output for a road). */
+	private static final Set<String> ROAD_CARVED = Set.of("cave_air", "lava", "magma_block", "water");
 	/** The base a tree feature puts under its trunk, whatever it replaces. */
 	private static final Set<String> TREE_BASE = Set.of("dirt", "podzol", "rooted_dirt", "coarse_dirt", "grass_block");
 	/** What a carver of a later neighbouring chunk leaves where it cuts into our ground (caves run per chunk, not in a global order): cave openings, lava, magma, stone. */
@@ -34,9 +38,10 @@ final class Spill {
 	private static boolean ground(BlockState s) { String n = name(s); return GROUND.contains(n) || n.endsWith("_ore"); }
 
 	/** "spill" (known vanilla), "shape" (same connecting block, other connections) or "unknown". {@code above} is the world block over the cell. */
-	static String solidKind(BlockState want, BlockState have, BlockState above, BlockState above2) {
+	static String solidKind(BlockState want, BlockState have, BlockState above, BlockState above2, boolean roadCell) {
 		if (want.getBlock() == have.getBlock() && (want.getBlock() instanceof CrossCollisionBlock || want.getBlock() instanceof WallBlock)) return "shape";
 		boolean natural = ground(want) || name(want).equals("dirt_path");
+		if (roadCell && ROAD_BLOCKS.contains(name(want)) && ROAD_CARVED.contains(name(have))) return "spill";
 		if (natural && ground(have)) return "spill";
 		if (natural && (TREE_BASE.contains(name(have)) || CARVER.contains(name(have)))) return "spill";
 		// a tree's dirt base under a log may replace a block that is not ground (a road edge, a wall foot)

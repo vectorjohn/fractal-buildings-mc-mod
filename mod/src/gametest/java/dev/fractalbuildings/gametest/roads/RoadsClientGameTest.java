@@ -367,7 +367,14 @@ public class RoadsClientGameTest implements FabricClientGameTest {
 				});
 				float yaw = (float) Math.toDegrees(Math.atan2(s == 0 ? -dx : -(v[0] - cx), s == 0 ? dz : (v[1] - cz)));
 				world.getServer().runCommand(String.format("tp @p %.1f %d %.1f %.1f %d", cx, y[0] + (s == 0 ? 22 : 30), cz, yaw, s == 0 ? 30 : 42));
-				context.waitTicks(20);
+				// a far teleport is held until the terrain there is FULL (TPHOLD): wait until the client player stands at the camera, or the shot shows "Generating terrain..."
+				final double[] want = {cx, y[0] + (s == 0 ? 22 : 30), cz};
+				for (int w = 0; w < 120; w++) {
+					context.waitTicks(20);
+					java.util.concurrent.atomic.AtomicBoolean there = new java.util.concurrent.atomic.AtomicBoolean();
+					context.runOnClient(client -> there.set(client.player != null && client.player.distanceToSqr(want[0], want[1], want[2]) < 9));
+					if (there.get()) break;
+				}
 				try {
 					world.getConnection().waitForChunksRender();
 				} catch (AssertionError e) {

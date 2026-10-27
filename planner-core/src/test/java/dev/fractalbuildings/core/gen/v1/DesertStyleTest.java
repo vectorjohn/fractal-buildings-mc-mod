@@ -23,7 +23,7 @@ class DesertStyleTest {
 			"minecraft:chiseled_sandstone", "minecraft:acacia_planks", "minecraft:yellow_terracotta", "minecraft:orange_terracotta",
 			"minecraft:terracotta", "minecraft:stripped_acacia_log", "minecraft:acacia_log", "minecraft:acacia_fence", "minecraft:sandstone_wall",
 			"minecraft:glass_pane", "minecraft:acacia_door", "minecraft:jungle_door",
-			"minecraft:sand");
+			"minecraft:sand", "minecraft:mud_bricks", "minecraft:cobbled_deepslate", "minecraft:light_gray_concrete");
 
 	@Test
 	void paletteIdsAreVanillaAndGradientsAreThreeToFiveOrSingle() {

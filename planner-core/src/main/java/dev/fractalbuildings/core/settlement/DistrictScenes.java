@@ -56,6 +56,11 @@ public final class DistrictScenes {
 	 *     views); the building invariants still run
 	 */
 	public static Built build(DistrictPlan plan, List<Landmark> landmarks, TerrainProbe exact, BiomeProbe biome, boolean exterior) {
+		return build(plan, landmarks, exact, biome, exterior, DEFAULT_TIER);
+	}
+
+	/** As above, for a settlement of {@code tier}: the tier picks the street surfaces ({@link #roadRole}). */
+	public static Built build(DistrictPlan plan, List<Landmark> landmarks, TerrainProbe exact, BiomeProbe biome, boolean exterior, Tier tier) {
 		Rect t = plan.district().rect();
 		TerrainPatch patch = TerrainPatch.sampleWithWater(exact, t.x() - MARGIN, t.z() - MARGIN, t.w() + 2 * MARGIN, t.d() + 2 * MARGIN);
 		Lots gen = generateLots(plan, exact, biome);
@@ -67,7 +72,7 @@ public final class DistrictScenes {
 		}
 		List<LotBrief> newLots = gen.lots();
 		List<String> fallbacks = gen.fallbacks();
-		Ground g = ground(plan, exact);
+		Ground g = ground(plan, exact, tier);
 		List<Violation> settlement = new ArrayList<>(g.settlement());
 		List<Box> ground = g.boxes();
 		DistrictPlan filled = new DistrictPlan(plan.genVersion(), plan.seed(), plan.district(), plan.streets(), plan.plazas(), newLots, plan.scene(), List.of());
@@ -152,7 +157,25 @@ public final class DistrictScenes {
 	public record Ground(List<Box> boxes, List<Violation> settlement) {}
 
 	/** The ground boxes of the plan's streets and plazas ({@link Grading}), with the grade violations. */
-	public static Ground ground(DistrictPlan plan, TerrainProbe exact) {
+	public static Ground ground(DistrictPlan plan, TerrainProbe exact) { return ground(plan, exact, DEFAULT_TIER); }
+
+	/** The tier a plan is built as when the caller does not say (village: dirt or gravel tracks). */
+	public static final Tier DEFAULT_TIER = Tier.VILLAGE;
+
+	/**
+	 * The street surface role of a road kind in a settlement of {@code tier} (DS-30, ROADMAP 7.10): tracks below town, stone streets in a town,
+	 * and in a city or metropolis cobbled deepslate for arterials and main streets, light grey concrete for streets and lanes. A path is always a
+	 * track; a quay is paving. One role per street, so a road changes material only where it meets another kind.
+	 */
+	public static Role roadRole(Tier tier, RoadKind kind) {
+		if (kind == RoadKind.QUAY) return Role.PAVING;
+		if (kind == RoadKind.PATH || tier.compareTo(Tier.TOWN) < 0) return Role.ROAD;
+		if (tier == Tier.TOWN) return Role.ROAD_TOWN;
+		return kind == RoadKind.ARTERIAL || kind == RoadKind.MAIN ? Role.ROAD_MAIN : Role.ROAD_CITY;
+	}
+
+	/** The ground boxes of the plan's streets and plazas for a settlement of {@code tier}. */
+	public static Ground ground(DistrictPlan plan, TerrainProbe exact, Tier tier) {
 		List<Violation> settlement = new ArrayList<>();
 		List<Box> ground = new ArrayList<>();
 		// pieces of one whole street (a road cut by a square into "r", "r.1"): a cell two of them cover is built by the first, as the whole
@@ -172,12 +195,12 @@ public final class DistrictScenes {
 					for (int dz = 0; dz < s.width(); dz++) for (int dx = 0; dx < s.width(); dx++) done.add(((long) (g.profile().z()[i] - h + dz) << 32) ^ ((g.profile().x()[i] - h + dx) & 0xffffffffL));
 				}
 			}
-			addBoxes(g.boxes(), ground, s.kind() == RoadKind.QUAY);
+			addBoxes(g.boxes(), ground, roadRole(tier, s.kind()), tier.atLeast(Tier.CITY)); // DS-44: city decks carry the street surface; piers stay deck
 			settlement.addAll(SettlementChecks.roadGrade(s.id(), g.profile().x(), g.profile().z(), g.profile().y()));
 		}
 		for (Plaza p : plan.plazas()) {
 			Optional<Grading.PlazaGrade> g = Grading.plaza(new Rect(p.x(), p.z(), p.w(), p.d()), exact);
-			if (g.isPresent()) addBoxes(g.get().boxes(), ground, false);
+			if (g.isPresent()) addBoxes(g.get().boxes(), ground, Role.ROAD, false);
 			else settlement.add(new Violation("plaza-grade", null, "plaza " + p.id() + " cannot be graded (too rough or wet)", List.of(new Box3(p.x(), p.y() - 1, p.z(), p.w(), 1, p.d()))));
 		}
 		// Boxes apply in list order and a later one wins. Surfaces go last, so one street's air (headroom, cut) or earth can never remove the
@@ -214,8 +237,14 @@ public final class DistrictScenes {
 	/** Maps TA's ground box kinds to roles: road and plaza surfaces, cuts are air, fill is ground, bridge decks and piers are deck. */
 	static Role role(GroundBox.Kind k) { return k.role(); }
 
-	/** @param paved the road surface is paving, not road material (a quay is stone). */
-	private static void addBoxes(List<GroundBox> boxes, List<Box> out, boolean paved) {
-		for (GroundBox g : boxes) out.add(new Box(g.box(), paved && g.kind() == GroundBox.Kind.ROAD ? Role.PAVING : role(g.kind()), Layer.GROUND, Box.NO_STOREY));
+	/** The role of a ground box: road surfaces take {@code surface}; so does a bridge deck (not a pier) when {@code deckIsRoad} (DS-44, city and metropolis). */
+	static Role boxRole(GroundBox.Kind k, Role surface, boolean deckIsRoad) { return k == GroundBox.Kind.ROAD || (deckIsRoad && k == GroundBox.Kind.DECK) ? surface : role(k); }
+
+	/** @param surface the role of the road surface of these boxes (paving for a quay, else by tier and kind). */
+	private static void addBoxes(List<GroundBox> boxes, List<Box> out, Role surface, boolean deckIsRoad) {
+		for (GroundBox g : boxes) {
+			Role r = boxRole(g.kind(), surface, deckIsRoad);
+			out.add(new Box(g.box(), r, Layer.GROUND, Box.NO_STOREY));
+		}
 	}
 }

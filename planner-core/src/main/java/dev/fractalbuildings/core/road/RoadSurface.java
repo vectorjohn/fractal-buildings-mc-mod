@@ -45,6 +45,8 @@ public final class RoadSurface {
 		public final byte[] kind = new byte[256];
 		public final int[] surf = new int[256];
 		public final int[] ground = new int[256];
+		/** The surface block id of each ROAD or DECK column: its route's one material (DS-30); null where the route carries none. */
+		public final String[] block = new String[256];
 		public int roads, decks, terraces;
 
 		public boolean empty() { return roads + decks + terraces == 0; }
@@ -124,6 +126,7 @@ public final class RoadSurface {
 				if (c != null) {
 					boolean wet = ground.wet(x, z);
 					p.kind[i] = wet || c.crossing() ? DECK : ROAD;
+					p.block[i] = p.kind[i] == DECK ? c.deck() : c.road();
 					p.surf[i] = c.y() - 1;
 					p.ground[i] = ground.topY(x, z);
 					if (p.kind[i] == DECK) p.decks++; else p.roads++;

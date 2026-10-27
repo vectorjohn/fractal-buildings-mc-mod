@@ -25,10 +25,10 @@
     "door": ["minecraft:spruce_door"],
     "roof": ["minecraft:bricks", "minecraft:bricks", "minecraft:bricks", "minecraft:mud_bricks"],
     "stair": ["minecraft:spruce_planks"],
-    "road": ["minecraft:dirt_path", "minecraft:gravel", "minecraft:coarse_dirt"],
-    "paving": ["minecraft:stone_bricks", "minecraft:cobblestone"],
+    "road": ["minecraft:dirt_path"],
+    "paving": ["minecraft:stone_bricks"],
     "ground": ["minecraft:dirt"],
-    "deck": ["minecraft:oak_planks", "minecraft:spruce_planks"],
+    "deck": ["minecraft:oak_planks"],
     "rail": ["minecraft:dark_oak_fence"]
   },
 
@@ -43,10 +43,10 @@
     "door": ["#9c7a46"],
     "roof": ["#96574a", "#96574a", "#96574a", "#8a6a52"],
     "stair": ["#9c7a46"],
-    "road": ["#9a7f55", "#8c8782", "#76593a"],
-    "paving": ["#8a8a8a", "#7f7f7f"],
+    "road": ["#9a7f55"],
+    "paving": ["#8a8a8a"],
     "ground": ["#6b4f33"],
-    "deck": ["#a07a48", "#8a6a3e"],
+    "deck": ["#a07a48"],
     "rail": ["#3e2c18"]
   }
 }

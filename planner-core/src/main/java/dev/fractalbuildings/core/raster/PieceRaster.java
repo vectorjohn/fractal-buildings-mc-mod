@@ -41,7 +41,7 @@ public final class PieceRaster {
 			Grid e = Grid.of(all.get(i), clip);
 			if (e != null) earlier.add(e);
 		}
-		emit(g, clip, b.shell().spec().style(), null, earlier, out);
+		emit(g, clip, b.shell().spec().style(), null, null, earlier, out);
 	}
 
 	/** Cells of one building alone (no other building to yield to). */
@@ -59,10 +59,10 @@ public final class PieceRaster {
 			Grid e = Grid.of(b, clip);
 			if (e != null) yield.add(e);
 		}
-		emit(g, clip, null, style, yield, out);
+		emit(g, clip, null, style, StyleAt.dominant(buildings, null), yield, out);
 	}
 
-	private static void emit(Grid g, Box3 clip, String style, StyleAt styleAt, List<Grid> yield, CellSink out) {
+	private static void emit(Grid g, Box3 clip, String style, StyleAt styleAt, String roadStyle, List<Grid> yield, CellSink out) {
 		Box3 r = intersect(g.region, clip);
 		if (r == null) return;
 		for (int y = r.y(); y < r.maxY(); y++)
@@ -74,7 +74,7 @@ public final class PieceRaster {
 					for (Grid e : yield) if (e.val(x, y, z) != 0) { taken = true; break; }
 					if (taken) continue;
 					Role role = v < 0 ? Role.AIR : g.roles[v - 1];
-					String st = style != null ? style : styleAt.at(x, z);
+					String st = style != null ? style : roadStyle != null && role.isCarriageway() ? roadStyle : styleAt.at(x, z); // one style for all roads of a tile (DS-30)
 					// both halves of a door must pick the same block: hash the lower half's height for the upper one
 					int py = role == Role.DOOR && g.role(x, y - 1, z) == Role.DOOR ? y - 1 : y;
 					String id = Variant.pick(st, role, x, py, z);

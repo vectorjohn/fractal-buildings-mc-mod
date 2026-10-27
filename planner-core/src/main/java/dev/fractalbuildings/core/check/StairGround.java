@@ -38,7 +38,7 @@ final class StairGround {
 	static Map<Long, Integer> surfaceLevels(SceneDoc scene) {
 		Map<Long, Integer> m = new TreeMap<>();
 		for (Box b : scene.ground()) {
-			if (b.role() != Role.ROAD && b.role() != Role.PAVING && b.role() != Role.DECK) continue;
+			if (!b.role().isRoad() && b.role() != Role.PAVING && b.role() != Role.DECK) continue;
 			Box3 q = b.box();
 			for (int z = q.z(); z < q.maxZ(); z++)
 				for (int x = q.x(); x < q.maxX(); x++) m.merge(key(x, z), q.maxY(), Math::max);

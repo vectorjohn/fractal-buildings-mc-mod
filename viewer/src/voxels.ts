@@ -131,3 +131,20 @@ export function styleLocator(scene: Scene, override?: string): (x: number, z: nu
     return styles[best]!;
   };
 }
+
+/** Roles that take one style per scene (DS-30): street surfaces and bridge decks; the Java side is `Role.isCarriageway`. */
+export const CARRIAGEWAY_ROLES: ReadonlySet<string> = new Set(['road', 'road_town', 'road_main', 'road_city', 'deck']);
+
+/**
+ * The one style the roads and bridge decks of a scene take: the most used style among its buildings (ties: the smallest id), as
+ * `StyleAt.dominant` in the planner, so the surface never changes where the nearest building's style does. Tall, mass-timber and keep
+ * styles do not vote (their deck is smooth stone, DS-30).
+ */
+export function dominantStyle(scene: Scene, override?: string): string {
+  if (override) return override;
+  const n = new Map<string, number>();
+  for (const b of scene.buildings) if (!/^(tall|mass-timber|keep)/.test(b.shell.spec.style)) n.set(b.shell.spec.style, (n.get(b.shell.spec.style) ?? 0) + 1);
+  let best = 'plain', bn = 0;
+  for (const id of [...n.keys()].sort()) if (n.get(id)! > bn) { bn = n.get(id)!; best = id; }
+  return best;
+}

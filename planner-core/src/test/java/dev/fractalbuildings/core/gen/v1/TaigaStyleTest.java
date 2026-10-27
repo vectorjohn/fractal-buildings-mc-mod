@@ -26,7 +26,7 @@ class TaigaStyleTest {
 			"minecraft:spruce_planks", "minecraft:dark_oak_planks", "minecraft:stripped_spruce_wood", "minecraft:stripped_spruce_log",
 			"minecraft:spruce_log", "minecraft:spruce_fence", "minecraft:glass_pane", "minecraft:spruce_door", "minecraft:mud_bricks",
 			"minecraft:brown_terracotta", "minecraft:deepslate_bricks",
-			"minecraft:dirt_path", "minecraft:gravel", "minecraft:coarse_dirt", "minecraft:stone_bricks", "minecraft:podzol", "minecraft:dirt");
+			"minecraft:dirt_path", "minecraft:gravel", "minecraft:coarse_dirt", "minecraft:stone_bricks", "minecraft:podzol", "minecraft:dirt", "minecraft:cobbled_deepslate", "minecraft:light_gray_concrete");
 	static final Set<String> BIOMES = Set.of("minecraft:taiga", "minecraft:old_growth_pine_taiga", "minecraft:old_growth_spruce_taiga");
 
 	@Test

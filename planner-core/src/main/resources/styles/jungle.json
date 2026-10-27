@@ -25,10 +25,10 @@
     "door": ["minecraft:jungle_door", "minecraft:bamboo_door"],
     "roof": ["minecraft:jungle_planks", "minecraft:jungle_planks", "minecraft:jungle_planks", "minecraft:jungle_planks", "minecraft:moss_block"],
     "stair": ["minecraft:jungle_planks", "minecraft:bamboo_planks"],
-    "road": ["minecraft:dirt_path", "minecraft:mud_bricks"],
-    "paving": ["minecraft:mossy_stone_bricks", "minecraft:stone_bricks"],
+    "road": ["minecraft:dirt_path"],
+    "paving": ["minecraft:stone_bricks"],
     "ground": ["minecraft:podzol", "minecraft:dirt"],
-    "deck": ["minecraft:jungle_planks", "minecraft:bamboo_planks"],
+    "deck": ["minecraft:jungle_planks"],
     "rail": ["minecraft:jungle_fence"]
   },
 
@@ -43,10 +43,10 @@
     "door": ["#a07850", "#c8b05a"],
     "roof": ["#a07850", "#a07850", "#a07850", "#a07850", "#596e2d"],
     "stair": ["#a07850", "#c8b05a"],
-    "road": ["#9a7f55", "#6e5a4a"],
-    "paving": ["#6f7f66", "#8a8a8a"],
+    "road": ["#9a7f55"],
+    "paving": ["#8a8a8a"],
     "ground": ["#5a4a2e", "#6b4f33"],
-    "deck": ["#a0683e", "#c2b25a"],
+    "deck": ["#a0683e"],
     "rail": ["#a07850"]
   }
 }
