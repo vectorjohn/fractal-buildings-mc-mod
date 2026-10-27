@@ -93,7 +93,7 @@ public final class Shapes {
 		for (Facing f : Facing.values()) if (g.role(x + f.dx, y + 1, z + f.dz) == Role.STAIR) return Shape.stair(f);
 		for (Facing f : Facing.values()) {
 			Role r = g.role(x + f.dx, y + 1, z + f.dz);
-			if (r == Role.FLOOR || r == Role.PAVING || r == Role.ROAD || r == Role.DECK || r == Role.GROUND) return Shape.stair(f);
+			if (r == Role.FLOOR || r == Role.PAVING || r.isRoad() || r == Role.DECK || r == Role.GROUND) return Shape.stair(f);
 		}
 		for (Facing f : Facing.values()) if (g.role(x + f.dx, y + 1, z + f.dz) == Role.DOOR) return Shape.stair(f); // a threshold step up to a doorway, whatever stands under the door (a ground-floor door has the slab under it; STEPTOP)
 		// A landing cell entered from a lower step: it stays a stair facing on, away from the step below, because a full block there is a one block jump (STEPTOP).

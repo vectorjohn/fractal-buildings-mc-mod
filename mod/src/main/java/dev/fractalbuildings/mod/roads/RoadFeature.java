@@ -172,8 +172,8 @@ public final class RoadFeature implements Feature {
 				int surf = plan.surf[i], g = plan.ground[i];
 				boolean wet = ground.wetAt(x, z);
 				BlockState top = switch (kind) {
-					case RoadSurface.ROAD -> roadBlock(level, pos.set(x, surf, z), "road");
-					case RoadSurface.DECK -> roadBlock(level, pos.set(x, surf, z), "deck");
+					case RoadSurface.ROAD -> roadBlock(level, pos.set(x, surf, z), "road", plan.block[i]);
+					case RoadSurface.DECK -> roadBlock(level, pos.set(x, surf, z), "deck", plan.block[i]);
 					default -> nativeTop(level, pos.set(x, surf, z));
 				};
 				if (RECORD_STATS) COLUMNS.put(PieceLedger.pack(x, 0, z), "kind " + kind + " surf " + surf + " ground " + g + " wet " + wet + " scan " + ground.scanTop(x, z) + " top " + top.getBlock().getDescriptionId());
@@ -281,8 +281,9 @@ public final class RoadFeature implements Feature {
 		}
 	}
 
-	/** The road or deck block of the biome's style at this column: a hashed pick, the first entry twice as likely. */
-	private static BlockState roadBlock(WorldGenLevel level, BlockPos pos, String role) {
+	/** The road or deck block: the route's own (DS-30); only a column without one (an unplanned test road) falls back to the biome's style at this column, a hashed pick. */
+	private static BlockState roadBlock(WorldGenLevel level, BlockPos pos, String role, String routeBlock) {
+		if (routeBlock != null) return BlockMapper.state(routeBlock, Shape.NONE); // the route's one material (DS-30), never the column's biome
 		String biome = level.getBiome(pos).unwrapKey().map(k -> k.identifier().toString()).orElse("?");
 		StyleRules st = STYLES.computeIfAbsent(biome, StyleLibrary::forBiome);
 		List<String> ids = st.palette().get(role);

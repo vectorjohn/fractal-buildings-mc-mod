@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
 # B9 (6.8): the fly-through screenshots. Heavy (takes the heavy lock through client-test.sh); minutes per seed (renderer: client-test.sh FB_VK, Intel iGPU by default).
 #
-#   scripts/flythrough.sh [--seeds 987654321,12345,1] [--out DIR] [--rd 10] [--cells 6] [--all] [extra gradle args]
+#   scripts/flythrough.sh [--roads] [--seeds 987654321,12345,1] [--out DIR] [--rd 10] [--cells 6] [--all] [extra gradle args]
 #
 # Runs only FlyThroughClientGameTest (FB_FLY=only; --all also runs the other client tests). Writes 960-wide JPEGs
 # <seed>-<tier>-<n>-<label>.jpg and manifest.tsv (seed, tier, site, centre, frame, label, sky fraction, dominant-colour
 # fraction, file) to --out (default mod/build/flythrough); the full-size PNGs are in mod/build/screenshots/fly-*.png.
+# --roads (ROADS1 r2): instead of the six frames per settlement, one frame per kind of road surface (RoadLook) plus a built asphalt comparison strip.
 # C2: run it with the three review seeds (the default), then copy the frames you want into docs/review/phase6/.
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -17,6 +18,7 @@ while [ $# -gt 0 ]; do
 		--rd) export FB_FLY_RD="$2"; shift 2 ;;
 		--cells) export FB_FLY_CELLS="$2"; shift 2 ;;
 		--all) export FB_FLY=1; shift ;;
+		--roads) export FB_FLY_ROADS=1; shift ;;
 		*) break ;;
 	esac
 done

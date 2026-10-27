@@ -115,7 +115,7 @@ class SettlementDeterminismTest {
 	static String sceneBytes(Setup s, SkeletonSource src, StyleField styles, DistrictSummary d) {
 		var det = Districts.plan(src, d.ix(), d.iz(), s.p().terrain()).orElseThrow();
 		DistrictPlan dp = Briefs.fill(det.plan(), src.quarters()::at, styles, s.p().terrain());
-		return IrJson.write(DistrictScenes.build(dp, det.landmarks(), s.p().terrain(), s.p().biome(), true).scene());
+		return IrJson.write(DistrictScenes.build(dp, det.landmarks(), s.p().terrain(), s.p().biome(), true, src.site().tier()).scene());
 	}
 
 	/** Reference bytes from a plain in-order {@link CityPlanner#plan} on a fresh {@link SkeletonSource.Direct}. */

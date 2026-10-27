@@ -228,6 +228,8 @@ public class DistrictOrderClientGameTest implements FabricClientGameTest {
 				long start = System.nanoTime();
 				boolean[] stepOk = {true};
 				String[] roadDigest = {""};
+				java.util.HashSet<Long> roadXZ = new java.util.HashSet<>(); // columns the road feature touched (membership only)
+				int[] roadDirtLogged = {0};
 				TreeMap<Long, Integer> ledger, hooks = new TreeMap<>();
 				int dups;
 				Mutations.mode = mutation;
@@ -246,6 +248,7 @@ public class DistrictOrderClientGameTest implements FabricClientGameTest {
 					}
 					dups = (int) rec.duplicates().stream().filter(k -> !rec.roadCells().contains(k)).count();
 					roadDigest[0] = PieceLedger.digest(roadCells) + " " + roadCells.size();
+					for (Long rk : rec.roadCells()) roadXZ.add(PieceLedger.pack(PieceLedger.x(rk), 0, PieceLedger.z(rk)));
 					for (var e : rec.hooks().entrySet()) {
 						int x = PieceLedger.x(e.getKey()), z = PieceLedger.z(e.getKey());
 						if (tiles.stream().anyMatch(t -> t.tile().contains(x, z))) hooks.put(e.getKey(), e.getValue());
@@ -258,11 +261,12 @@ public class DistrictOrderClientGameTest implements FabricClientGameTest {
 				long genMs = (System.nanoTime() - start) / 1_000_000;
 				// reference raster: the core's cells of every piece of every tile, same live probes, no world reads
 				TreeMap<Long, Integer> ref = new TreeMap<>();
+				java.util.HashSet<Long> refRoad = new java.util.HashSet<>(); // cells whose role is a street, plaza, quay or deck surface (membership only, never iterated)
 				int minY = level.getMinY(), h = level.getMaxY() - minY + 1;
 				for (TileInfo ti : tiles) {
 					Box3 all = new Box3(ti.tile().minX(), minY, ti.tile().minZ(), ti.tile().widthX(), h, ti.tile().widthZ());
 					for (BuildingPiece b : planner.buildings(ti.ix(), ti.iz())) planner.raster(b.ref(), all, (x, y, z, role, id, shape) -> ref.put(PieceLedger.pack(x, y, z), Block.BLOCK_STATE_REGISTRY.getId(BlockMapper.state(role, id, shape))));
-					for (GroundPiece g : planner.ground(ti.ix(), ti.iz())) planner.raster(g.ref(), all, (x, y, z, role, id, shape) -> ref.put(PieceLedger.pack(x, y, z), Block.BLOCK_STATE_REGISTRY.getId(BlockMapper.state(role, id, shape))));
+					for (GroundPiece g : planner.ground(ti.ix(), ti.iz())) planner.raster(g.ref(), all, (x, y, z, role, id, shape) -> { ref.put(PieceLedger.pack(x, y, z), Block.BLOCK_STATE_REGISTRY.getId(BlockMapper.state(role, id, shape))); if (role.isRoad() || role == dev.fractalbuildings.core.ir.Role.PAVING || role == dev.fractalbuildings.core.ir.Role.DECK) refRoad.add(PieceLedger.pack(x, y, z)); });
 				}
 				int missing = 0, extra = 0, wrong = 0;
 				for (var e : ref.entrySet()) {
@@ -303,9 +307,13 @@ public class DistrictOrderClientGameTest implements FabricClientGameTest {
 						if (have != want) {
 							solidBad++;
 							if (have.is(net.minecraft.tags.BlockTags.LOGS) || have.is(net.minecraft.tags.BlockTags.LEAVES)) solidTrees++;
-							String kind = Spill.solidKind(want, have, level.getBlockState(p.set(PieceLedger.x(k), PieceLedger.y(k) + 1, PieceLedger.z(k))), level.getBlockState(p.set(PieceLedger.x(k), PieceLedger.y(k) + 2, PieceLedger.z(k))));
+							String kind = Spill.solidKind(want, have, level.getBlockState(p.set(PieceLedger.x(k), PieceLedger.y(k) + 1, PieceLedger.z(k))), level.getBlockState(p.set(PieceLedger.x(k), PieceLedger.y(k) + 2, PieceLedger.z(k))), refRoad.contains(k));
 							if (kind.equals("unknown") && Spill.lakeBarrier(have, level, PieceLedger.x(k), PieceLedger.y(k), PieceLedger.z(k))) kind = "lake";
 							hist.merge(blockName(want) + "->" + blockName(have) + " [" + kind + "]", 1, Integer::sum);
+							if (refRoad.contains(k) && blockName(have).equals("dirt") && roadDirtLogged[0]++ < 12) { // ROADS1 r2: a dirt patch on a paved street, same cells in every order
+								int ux = PieceLedger.x(k), uy = PieceLedger.y(k), uz = PieceLedger.z(k);
+								dev.fractalbuildings.mod.FractalBuildingsMod.LOGGER.info("[B2] road-dirt cell {},{},{} want {}; road feature touched the column: {}; above {} {}; below {}; around N {} E {} S {} W {}", ux, uy, uz, blockName(want), roadXZ.contains(PieceLedger.pack(ux, 0, uz)), blockName(level.getBlockState(p.set(ux, uy + 1, uz))), blockName(level.getBlockState(p.set(ux, uy + 2, uz))), blockName(level.getBlockState(p.set(ux, uy - 1, uz))), blockName(level.getBlockState(p.set(ux, uy, uz - 1))), blockName(level.getBlockState(p.set(ux + 1, uy, uz))), blockName(level.getBlockState(p.set(ux, uy, uz + 1))), blockName(level.getBlockState(p.set(ux - 1, uy, uz))));
+							}
 							if (kind.equals("unknown")) {
 								unknownSolid++;
 								if (unknownSolid <= 10) { // CITYQ r6: where they are (cobblestone->stone in 5 of 7 orders)

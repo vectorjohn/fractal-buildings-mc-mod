@@ -35,4 +35,22 @@ public interface StyleAt {
 			return st[best];
 		};
 	}
+
+	/** Styles of towers and keeps: not a vote for the road style (see {@link #dominant}); mirrored by the viewer. */
+	static boolean towerStyle(String id) { return id.startsWith("tall") || id.startsWith("mass-timber") || id.startsWith("keep"); }
+
+	/**
+	 * The one style a tile's roads and bridge decks take (DS-30): the most used style among the buildings (ties: the lowest id), so the
+	 * surface never changes where the nearest building's style does. Tall, mass-timber and keep styles do not vote: their {@code deck} entry
+	 * is smooth stone, which is neither a road material nor a plank (DS-30), and a city's decks take the road's block anyway (DS-44).
+	 * No buildings, or only such: {@code fallback}.
+	 */
+	static String dominant(List<PlacedBuilding> buildings, String fallback) {
+		java.util.TreeMap<String, Integer> n = new java.util.TreeMap<>();
+		for (PlacedBuilding b : buildings) if (!towerStyle(b.shell().spec().style())) n.merge(b.shell().spec().style(), 1, Integer::sum);
+		String best = fallback;
+		int bn = 0;
+		for (var e : n.entrySet()) if (e.getValue() > bn) { bn = e.getValue(); best = e.getKey(); }
+		return best;
+	}
 }

@@ -175,7 +175,7 @@ public final class CityPlanner {
 	public static DistrictScenes.Built scene(City city, String districtId, TerrainProbe exact, BiomeProbe biome, boolean exterior) {
 		DistrictPlan dp = city.districts().get(districtId);
 		if (dp == null) throw new IllegalArgumentException("no planned district " + districtId);
-		return DistrictScenes.build(dp, city.landmarks().get(districtId), exact, biome, exterior);
+		return DistrictScenes.build(dp, city.landmarks().get(districtId), exact, biome, exterior, city.plan().site().tier());
 	}
 
 	/**

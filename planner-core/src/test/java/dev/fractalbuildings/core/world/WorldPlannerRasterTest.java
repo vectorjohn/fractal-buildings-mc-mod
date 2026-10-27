@@ -33,7 +33,7 @@ class WorldPlannerRasterTest {
 		for (BuildingPiece b : w.buildings(0, 0)) cells(w, b.ref(), ALL, whole, roles);
 		for (GroundPiece g : w.ground(0, 0)) cells(w, g.ref(), ALL, whole, roles);
 		assertTrue(whole.size() > 5000, "cells " + whole.size());
-		assertTrue(roles.containsAll(Set.of(Role.WALL, Role.DOOR, Role.ROAD)) || roles.contains(Role.PAVING), "roles " + roles);
+		assertTrue((roles.containsAll(Set.of(Role.WALL, Role.DOOR)) && roles.stream().anyMatch(Role::isRoad)) || roles.contains(Role.PAVING), "roles " + roles);
 
 		TreeMap<String, String> byChunk = new TreeMap<>();
 		for (int cz = t.minZ() / 16; cz < t.maxZ() / 16; cz++) {

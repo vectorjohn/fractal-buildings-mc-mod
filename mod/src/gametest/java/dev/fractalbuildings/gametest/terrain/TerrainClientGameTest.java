@@ -261,7 +261,7 @@ public class TerrainClientGameTest implements FabricClientGameTest {
 				planner.raster(g.ref(), new Box3(g.box().x(), level.getMinY(), g.box().z(), g.box().sx(), level.getMaxY() - level.getMinY() + 1, g.box().sz()), (x, y, z, role, id, shape) -> {
 					if (role != Role.AIR) buildingCells.add(key(x, y, z)); // what the plan owns: not terrain over the street
 					if (role == Role.DECK) deckCount.merge(((long) x << 32) ^ (z & 0xffffffffL), 1, Integer::sum);
-					if (role == Role.ROAD || role == Role.PAVING || role == Role.DECK) {
+					if (role.isRoad() || role == Role.PAVING || role == Role.DECK) {
 						long k = ((long) x << 32) ^ (z & 0xffffffffL);
 						Integer old = top.get(k);
 						if (old == null || y > old) { top.put(k, y); src.put(k, "t" + (s.ix() + ddx) + "," + (s.iz() + ddz) + " " + role); }
@@ -275,7 +275,7 @@ public class TerrainClientGameTest implements FabricClientGameTest {
 			final int[] acc = new int[8]; // roadCells, floating, headroom, bestCut, x, y, z, wetBest
 			List<int[]> cells = new ArrayList<>();
 			planner.raster(g.ref(), new Box3(g.box().x(), level.getMinY(), g.box().z(), g.box().sx(), level.getMaxY() - level.getMinY() + 1, g.box().sz()), (x, y, z, role, id, shape) -> {
-				if (role == Role.ROAD || role == Role.PAVING || role == Role.DECK) cells.add(new int[] {x, y, z, role.ordinal()});
+				if (role.isRoad() || role == Role.PAVING || role == Role.DECK) cells.add(new int[] {x, y, z, role.ordinal()});
 			});
 			for (int[] cell : cells) {
 				int x = cell[0], y = cell[1], z = cell[2];
@@ -288,9 +288,16 @@ public class TerrainClientGameTest implements FabricClientGameTest {
 					fl = true;
 					for (int h = 1; h <= 8 && fl; h++) { BlockState st = level.getBlockState(p.set(x, y - h, z)); if (solid(level, p, st) || !st.getFluidState().isEmpty()) fl = false; }
 					for (int q = -6; q <= 6 && fl; q++) for (int r = -6; r <= 6 && fl; r++) if (pierCols.contains(((long) (x + q) << 32) ^ ((z + r) & 0xffffffffL))) fl = false;
-				} else fl = !solid(level, p, below);
+				} else {
+					fl = !solid(level, p, below);
+					// DS-44: in a city or metropolis a bridge deck is a road role (the street's own block), so a street cell with water within 8 below, or a pier within 6 columns, is a deck span
+					if (fl && role.isRoad()) {
+						for (int h = 1; h <= 8 && fl; h++) if (!level.getBlockState(p.set(x, y - h, z)).getFluidState().isEmpty()) fl = false;
+						for (int q = -6; q <= 6 && fl; q++) for (int r = -6; r <= 6 && fl; r++) if (pierCols.contains(((long) (x + q) << 32) ^ ((z + r) & 0xffffffffL))) fl = false;
+					}
+				}
 				if (fl) { floating++; if (floatAt.size() < 6) floatAt.add(role + "@" + x + "," + y + "," + z + " probe " + exact.floorY(x, z) + " " + col(level, x, z, y - 8, y + 2)); }
-				if (role == Role.ROAD || role == Role.PAVING) {
+				if (role.isRoad() || role == Role.PAVING) {
 					for (int h = 1; h <= 3; h++) {
 						BlockState st = level.getBlockState(p.set(x, y + h, z));
 						if (solid(level, p, st) && !st.is(BlockTags.LEAVES) && !st.is(BlockTags.LOGS) && !buildingCells.contains(key(x, y + h, z))) {
@@ -301,7 +308,7 @@ public class TerrainClientGameTest implements FabricClientGameTest {
 					}
 				}
 				int cut = exact.floorY(x, z) - (y + 1);
-				if (role == Role.ROAD && cut > bestCut) { bestCut = cut; camX = x; camY = y; camZ = z; }
+				if (role.isRoad() && cut > bestCut) { bestCut = cut; camX = x; camY = y; camZ = z; }
 				// distance to water in columns
 				int wd = Integer.MAX_VALUE;
 				for (int q = 0; q <= 3 && wd == Integer.MAX_VALUE; q++) for (int zz = -q; zz <= q; zz++) for (int xx = -q; xx <= q; xx++) if (exact.waterDepth(x + xx, z + zz) > 0) wd = Math.min(wd, q);

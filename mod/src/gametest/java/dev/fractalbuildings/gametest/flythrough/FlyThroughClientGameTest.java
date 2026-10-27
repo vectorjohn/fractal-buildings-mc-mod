@@ -75,14 +75,20 @@ public class FlyThroughClientGameTest implements FabricClientGameTest {
 
 	record Frame(String label, double x, double y, double z, double tx, double ty, double tz, int settle) {}
 
-	record Prepared(String seed, SettlementSite site, List<Frame> frames, List<String> notes) {}
+	/** @param tag set for a synthetic set of frames that belongs to no settlement (the asphalt comparison): the name used for its tier and id */
+	record Prepared(String seed, SettlementSite site, List<Frame> frames, List<String> notes, String tag) {
+		Prepared(String seed, SettlementSite site, List<Frame> frames, List<String> notes) { this(seed, site, frames, notes, null); }
+		String tier() { return tag != null ? tag : site.tier().json; }
+		String id() { return tag != null ? tag : site.id(); }
+		String centre() { return tag != null ? "0,0" : site.centre().x() + "," + site.centre().z(); }
+	}
 
 	/**
 	 * Waits {@code ticks}, then polls (10-tick steps, up to {@code 8 * ticks} more) until the client holds the chunks under the camera, a point
 	 * 60% of the way to the target and the target, and the renderer has every section (the renderer alone says "done" before the chunks of a far
 	 * teleport have arrived); a cap only logs.
 	 */
-	private static void settle(ClientGameTestContext context, Frame f) {
+	static void settle(ClientGameTestContext context, Frame f) {
 		context.waitTicks(f.settle());
 		int[][] pts = {{(int) f.x(), (int) f.z()}, {(int) (f.x() + 0.6 * (f.tx() - f.x())), (int) (f.z() + 0.6 * (f.tz() - f.z()))}, {(int) f.tx(), (int) f.tz()}};
 		int cap = 8 * f.settle();
@@ -137,7 +143,7 @@ public class FlyThroughClientGameTest implements FabricClientGameTest {
 	 * Takes a screenshot every 20 ticks until two in a row agree (at most 8 tries; a cap only logs and keeps the last), pinning the time of
 	 * day each round. The last capture is the frame; earlier probe captures are deleted.
 	 */
-	private static Path stableShot(ClientGameTestContext context, TestSingleplayerContext world, String name) {
+	static Path stableShot(ClientGameTestContext context, TestSingleplayerContext world, String name) {
 		Path prev = null; double[] prevSig = null;
 		for (int i = 0; i < 8; i++) {
 			Path png = context.takeScreenshot("fly-" + name + (i == 0 ? "" : "-r" + i));
@@ -156,7 +162,7 @@ public class FlyThroughClientGameTest implements FabricClientGameTest {
 		return prev;
 	}
 
-	private static String tpCommand(Frame f) {
+	static String tpCommand(Frame f) {
 		double dx = f.tx() - f.x(), dy = f.ty() - f.y(), dz = f.tz() - f.z();
 		double yaw = Math.toDegrees(Math.atan2(-dx, dz)), pitch = -Math.toDegrees(Math.atan2(dy, Math.sqrt(dx * dx + dz * dz)));
 		return String.format(java.util.Locale.ROOT, "tp @p %.1f %.1f %.1f %.1f %.1f", f.x(), f.y(), f.z(), yaw, pitch);
@@ -185,7 +191,7 @@ public class FlyThroughClientGameTest implements FabricClientGameTest {
 			try (TestSingleplayerContext world = context.worldBuilder().setUseConsistentSettings(false).adjustSettings(c -> c.setSeed(seed)).create()) {
 				context.runOnClient(FlyThroughClientGameTest::hideHud);
 				AtomicReference<List<Prepared>> prep = new AtomicReference<>(List.of());
-				world.getServer().runOnServer(server -> prep.set(prepare(server.overworld(), seed, cells, rd)));
+				world.getServer().runOnServer(server -> prep.set(RoadLook.enabled() ? RoadLook.prepare(server.overworld(), seed, cells, rd, RoadLook.FOUND) : prepare(server.overworld(), seed, cells, rd)));
 				world.getServer().runCommand("gamemode spectator @p");
 				world.getServer().runCommand("time set noon");
 				world.getServer().runCommand("weather clear");
@@ -196,7 +202,7 @@ public class FlyThroughClientGameTest implements FabricClientGameTest {
 						world.getServer().runCommand("time set noon"); // the clock runs on while we wait: pin it per frame
 						world.getServer().runCommand(tpCommand(f));
 						settle(context, f);
-						String name = seed + "-" + p.site().tier().json + "-" + n + "-" + f.label();
+						String name = seed + "-" + p.tier() + "-" + n + "-" + f.label();
 						// a camera inside a block draws mostly void: say so next to the frame's numbers
 						String[] at = {""};
 						context.runOnClient(c -> {
@@ -209,17 +215,17 @@ public class FlyThroughClientGameTest implements FabricClientGameTest {
 						String res = analyse(png, out.resolve(name + ".jpg"));
 						String[] r = res.split("\t");
 						double sky = Double.parseDouble(r[0]), dom = Double.parseDouble(r[1]);
-						String line = String.join("\t", seed, p.site().tier().json, p.site().id(), p.site().centre().x() + "," + p.site().centre().z(), "" + n, f.label(), r[0], r[1], name + ".jpg");
+						String line = String.join("\t", seed, p.tier(), p.id(), p.centre(), "" + n, f.label(), r[0], r[1], name + ".jpg");
 						try { Files.writeString(manifest, line + "\n", StandardOpenOption.APPEND); } catch (IOException e) { throw new IllegalStateException(e); }
 						FractalBuildingsMod.LOGGER.info("[B9] frame {}", line);
-						if (sky > 0.9) failures.add(name + ": sky fraction " + sky);
-						if (dom > 0.8) failures.add(name + ": one colour fills " + dom + " of the frame (camera in the ground?)");
+						if (p.tag() == null && sky > 0.9) failures.add(name + ": sky fraction " + sky);
+						if (p.tag() == null && dom > 0.8) failures.add(name + ": one colour fills " + dom + " of the frame (camera in the ground?)");
 					}
-					for (String note : p.notes()) FractalBuildingsMod.LOGGER.info("[B9] {} {}: {}", seed, p.site().tier().json, note);
+					for (String note : p.notes()) FractalBuildingsMod.LOGGER.info("[B9] {} {}: {}", seed, p.tier(), note);
 				}
 			}
 		}
-		if (interiors == 0) failures.add("no interior frame on any seed");
+		if (interiors == 0 && !RoadLook.enabled()) failures.add("no interior frame on any seed");
 		if (!failures.isEmpty()) throw new IllegalStateException("fly-through checks failed:\n" + String.join("\n", failures));
 		FractalBuildingsMod.LOGGER.info("[B9] fly-through done, frames in {}", out);
 	}
@@ -329,7 +335,7 @@ public class FlyThroughClientGameTest implements FabricClientGameTest {
 		for (int dz = -1; dz <= 1; dz++) for (int dx = -1; dx <= 1; dx++) {
 			if (planner.tile(pick.ix() + dx, pick.iz() + dz).isEmpty()) continue;
 			for (GroundPiece g : planner.ground(pick.ix() + dx, pick.iz() + dz)) for (Box b : g.boxes()) {
-				if (b.role() != Role.ROAD && b.role() != Role.PAVING) continue;
+				if (!b.role().isRoad() && b.role() != Role.PAVING) continue;
 				int l = Math.max(b.box().sx(), b.box().sz());
 				if (l > len && Math.min(b.box().sx(), b.box().sz()) >= 2) { len = l; road = b.box(); }
 			}

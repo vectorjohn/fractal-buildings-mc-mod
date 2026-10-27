@@ -103,7 +103,7 @@ final class Pieces {
 		Rect t = tp.plan().district().rect();
 		int cx0 = Math.floorDiv(t.x(), 16), cz0 = Math.floorDiv(t.z(), 16), width = Math.floorDiv(t.x() + t.w() - 1, 16) - cx0 + 1;
 		TreeMap<Integer, List<Box>> byChunk = new TreeMap<>();
-		for (Box b : DistrictScenes.ground(tp.plan(), exact).boxes()) {
+		for (Box b : DistrictScenes.ground(tp.plan(), exact, tp.info().tier()).boxes()) {
 			Box3 c = clip(b.box(), t.x(), t.z(), t.x() + t.w(), t.z() + t.d());
 			if (c == null) continue;
 			for (int cz = Math.floorDiv(c.z(), 16); cz <= Math.floorDiv(c.maxZ() - 1, 16); cz++) {

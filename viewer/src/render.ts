@@ -10,7 +10,7 @@ import type { MeshData } from './mesh';
 import { cellHash } from './styles';
 import { roofShades } from './shading';
 import { styleColour } from './styles';
-import { placeColumn, sceneBounds, sceneVoxels, styleLocator, terrainVoxels } from './voxels';
+import { CARRIAGEWAY_ROLES, dominantStyle, placeColumn, sceneBounds, sceneVoxels, styleLocator, terrainVoxels } from './voxels';
 
 export interface RenderOptions {
   colour: 'role' | 'palette';
@@ -82,6 +82,7 @@ const faceMaterial = (): THREE.MeshLambertMaterial => new THREE.MeshLambertMater
 /** Group with named children terrain, water, foundation, shell, interior, roof, ground, violations. Instanced cubes for small scenes, merged exposed faces for big ones. */
 export function buildSceneObject(scene: Scene, opts: RenderOptions): THREE.Group {
   const locate = styleLocator(scene, opts.style);
+  const roadStyle = dominantStyle(scene, opts.style);
   const root = new THREE.Group();
   root.name = 'scene';
   for (const name of GROUP_NAMES) {
@@ -99,7 +100,7 @@ export function buildSceneObject(scene: Scene, opts: RenderOptions): THREE.Group
   let triangles = 0;
   let waterQuads = 0;
   const colourOf = (v: { role: string; x: number; y: number; z: number; building?: number }, shade: number): number => {
-    const style = v.building !== undefined ? (opts.style ?? scene.buildings[v.building]?.shell.spec.style ?? 'plain') : locate(v.x, v.z);
+    const style = v.building !== undefined ? (opts.style ?? scene.buildings[v.building]?.shell.spec.style ?? 'plain') : CARRIAGEWAY_ROLES.has(v.role) ? roadStyle : locate(v.x, v.z);
     const base = opts.colour === 'palette' ? styleColour(style, v.role, v.x, v.y, v.z) : roleColour(v.role);
     return shadeColour(base, shade);
   };
