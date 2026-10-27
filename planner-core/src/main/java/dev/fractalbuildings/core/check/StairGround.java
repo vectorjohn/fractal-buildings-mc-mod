@@ -130,12 +130,12 @@ final class StairGround {
 		return fails;
 	}
 
-	private static final int NONE = 0, GROUND = 1, BUILT = 2;
+	static final int NONE = 0, GROUND = 1, BUILT = 2;
 
-	private static long node(int x, int z, int top2) { return (((long) top2 + 4096) << 40) ^ (((long) x + 100000) << 20) ^ ((long) z + 100000); }
+	static long node(int x, int z, int top2) { return (((long) top2 + 4096) << 40) ^ (((long) x + 100000) << 20) ^ ((long) z + 100000); }
 
 	/** Whether a walker can stand at {@code top2} half blocks in the column: on the ground, or on a building block, or neither. */
-	private static int surfaceKind(VoxelGrid g, int lx, int lz, int top2, int level) {
+	static int surfaceKind(VoxelGrid g, int lx, int lz, int top2, int level) {
 		boolean stair = (top2 & 1) == 1;
 		int y = stair ? (top2 - 1) / 2 : top2 / 2 - 1;
 		boolean groundHere = !stair && y == level - 1 && !solidBuilt(g, lx, y, lz);

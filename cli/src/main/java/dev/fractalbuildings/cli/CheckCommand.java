@@ -1,5 +1,6 @@
 package dev.fractalbuildings.cli;
 
+import dev.fractalbuildings.core.check.DoorRise;
 import dev.fractalbuildings.core.check.Glazing;
 import dev.fractalbuildings.core.check.HighriseChecks;
 import dev.fractalbuildings.core.check.InvariantReport;
@@ -26,6 +27,7 @@ final class CheckCommand {
 		Matrix m = new Matrix(o);
 		InvariantReport report = new InvariantReport();
 		Glazing.Report byType = new Glazing.Report(), byStyle = new Glazing.Report();
+		DoorRise.Report doorRise = new DoorRise.Report();
 		long t0 = System.nanoTime();
 		for (long seed = seeds[0]; seed <= seeds[1]; seed++) {
 			final long s = seed;
@@ -42,6 +44,7 @@ final class CheckCommand {
 					byType.add(m.cells.get(i).type(), gs);
 					byStyle.add(m.cells.get(i).style(), gs);
 				}
+				doorRise.add(DoorRise.measure(scene, req.terrain()));
 				warnings[i] = HighriseChecks.check(scene);
 			});
 			for (int i = 0; i < results.length; i++) {
@@ -50,7 +53,7 @@ final class CheckCommand {
 				report.addWarnings(label, m.cells.get(i).type().equals(HighriseChecks.TYPE), warnings[i]);
 			}
 		}
-		String md = report.toMarkdown() + "\n## Glazing (DS-33, report only)\n\nGlass cells over exterior wall-plane cells, ground to top ceiling.\n\n" + byType.toMarkdown("type") + "\n" + byStyle.toMarkdown("style");
+		String md = report.toMarkdown() + "\n## Glazing (DS-33, report only)\n\nGlass cells over exterior wall-plane cells, ground to top ceiling.\n\n" + byType.toMarkdown("type") + "\n" + byStyle.toMarkdown("style") + "\n## Door rise (DS-45, report only)\n\nEntrance doors; rise = door level minus the street surface in front (limits: shops -2..2, houses and workshops at most 3 or 4-5 with a landing, no run over 3 risers).\n\n" + doorRise.toMarkdown();
 		double secs = (System.nanoTime() - t0) / 1e9;
 		System.err.printf("checked %d cases in %.1f s%n", report.cases(), secs);
 		if (o.has("out")) GenCommand.write(Path.of(o.get("out", null)), md.getBytes(StandardCharsets.UTF_8));
