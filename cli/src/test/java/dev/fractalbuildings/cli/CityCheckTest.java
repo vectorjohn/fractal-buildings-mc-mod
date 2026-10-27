@@ -158,4 +158,21 @@ class CityCheckTest {
 	private static List<Path> files(Path root) throws Exception {
 		try (Stream<Path> s = Files.walk(root)) { return s.filter(Files::isRegularFile).sorted().toList(); }
 	}
+
+	/** METROFILL M0: the Fill section and --fill-json are there, deterministic, and the fill checks only warn (exit code unchanged). */
+	@Test
+	void cityCheckReportsFillAndItsChecksOnlyWarn(@TempDir Path dir) throws Exception {
+		String[] args = {"city-check", "--seeds", "1", "--sites", "at:0,0,city,600", "--terrain", "noise:3:70:10:300", "--scenes", "auto:0"};
+		Path md = dir.resolve("a.md"), js = dir.resolve("a.json"), js2 = dir.resolve("b.json");
+		String[] a = java.util.Arrays.copyOf(args, args.length + 4);
+		a[args.length] = "--out"; a[args.length + 1] = md.toString(); a[args.length + 2] = "--fill-json"; a[args.length + 3] = js.toString();
+		assertEquals(0, run(a));
+		String r = Files.readString(md);
+		assertTrue(r.contains("## Fill (DS-47, report only)") && r.contains("### Band core") && r.contains("### Per site"), r.substring(0, Math.min(300, r.length())));
+		assertTrue(r.contains("0 failing, 0 violations"), r.substring(0, 200));
+		a[args.length + 3] = js2.toString();
+		assertEquals(0, run(a));
+		assertEquals(Files.readString(js), Files.readString(js2));
+		assertTrue(Files.readString(js).contains("\"arterialMainPct\""));
+	}
 }
