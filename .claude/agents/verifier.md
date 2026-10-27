@@ -93,7 +93,9 @@ Work by path: `cd <worktree> && ...` or `git -C <worktree> ...`.
      (an independent run; the coder's evidence doesn't replace it). Heavy
      layers can run on the worker box instead of under the local heavy lock
      (`scripts/evidence.sh <slug> scripts/remote.sh -- <command>`, preferred
-     when `scripts/remote.sh --check` succeeds).
+     when `scripts/remote.sh --check` succeeds); or let
+     `scripts/evidence.sh <slug> scripts/anywhere.sh -- <command>` start it on
+     whichever host frees first (its `route:` line in EVIDENCE.md says which).
    Report the summary lines with counts, and which host ran them; quote the relevant error for a
    failure. A failure that passes on rerun is a **flake**: see "Flakes".
    The scratchpad directory is shared with other subagents of the coordinator:

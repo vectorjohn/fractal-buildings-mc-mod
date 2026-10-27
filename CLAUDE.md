@@ -206,6 +206,7 @@ source of truth, and update it when a command changes.)*
 - Whole Gradle build (all three modules + boundary check): `nix develop -c ./gradlew build`
 - Boundary check alone: `nix develop -c ./gradlew :planner-core:checkNoMinecraft` (also part of `check` and run before `compileJava`)
 - **Any of the above on the worker box:** `scripts/remote.sh -- <command>`, the command exactly as you'd run it from the worktree root but without a `flock .../heavy.lock` prefix (e.g. `scripts/remote.sh -- scripts/test-all.sh`, `scripts/remote.sh -- scripts/client-test.sh`, `scripts/remote.sh -- nix develop -c ./gradlew :planner-core:test`). It copies the worktree (no `.git`, nothing gitignored), queues the command, prints the last 40 lines and saves the full log to `build/remote/<job>.log`, copies results back to the same paths (`build/test-all/`, JUnit XML, `mod/build/screenshots/`, client test logs, `viewer/out/`; `--fetch PATH` for more) and exits with the command's status. Output written elsewhere doesn't come back unless you `--fetch` it. `scripts/remote.sh --check` exits 0 if the worker is reachable; `--help` for the rest.
+- **Either host, whichever frees first (preferred for full suites and client runs):** `scripts/anywhere.sh -- <command>` (same command form as `remote.sh`; e.g. `scripts/evidence.sh <slug> scripts/anywhere.sh -- scripts/test-all.sh --no-client`) waits here in a FIFO queue (`.claude/anywhere/`), not in beebox's queue, and starts the command locally when what it needs is free (a suite slot, the heavy lock, 1-min load < 14) or through `scripts/remote.sh` when beebox has nothing running or queued, whichever comes first; logs one `anywhere: -> HOST (why)` line (also in the evidence); `--prefer`/`--only local|beebox`, `--fetch`, `--cpu`, `--wait S`; `--status` shows the queue and both hosts; `--dry-run` says where it would go now; FB_VK, interactive runs and a subdirectory cwd stay local; tests: `scripts/anywhere-selftest.sh`
 
 ## Parallel work (a priority)
 
@@ -245,6 +246,12 @@ agents can work and test at once. The rules below exist to make that safe.
   galleries. Run quick builds and tests locally as before; copying the
   worktree over costs a few seconds. If the check fails, use the local heavy
   lock as above.
+  - **Prefer `scripts/anywhere.sh -- <cmd>` for full suites and client
+    runs** over picking a host yourself: it holds the job locally and starts
+    it on whichever host frees first (the local suite slot or heavy lock, or
+    an idle beebox), so both machines stay busy and nothing gets stuck in
+    beebox's queue, which can't drop a queued job. Run it in the background
+    (it can wait a long time); stop it with SIGTERM, never SIGKILL.
   - **It renders on its GPU**, not lavapipe: there's no desktop on it to
     share the GPU with. `scripts/remote.sh` runs the command in a headless
     sway session and the test scripts use its Xwayland display instead of

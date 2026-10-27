@@ -165,7 +165,10 @@ and mention them in the ROADMAP testing section.
   `flock <repo root>/.claude/heavy.lock`. Everything else can run concurrently
   with other agents. When the worker box is up (`scripts/remote.sh --check`),
   prefer it for client tests and long runs like `scripts/test-all.sh`:
-  `scripts/remote.sh -- <cmd>` (CLAUDE.md "Parallel work").
+  `scripts/remote.sh -- <cmd>` (CLAUDE.md "Parallel work"). Better still, let
+  `scripts/anywhere.sh -- <cmd>` pick: it waits locally and starts full
+  suites and client runs on whichever host frees first (run it in the
+  background; `--status` shows the queue).
 - Run **full** suites through a suite slot (at most 2 machine-wide):
   `scripts/suite.sh nix develop -c ./gradlew :planner-core:test` (same for
   `build`, `:mod:build`, `:mod:runGameTest`). `scripts/test-all.sh` takes one
