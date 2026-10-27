@@ -216,7 +216,7 @@ class TerrainToolkitTest {
 			if (p.bridge()[i]) assertEquals(67, p.y()[i], "deck at surface + 3");
 		}
 		long deck = g.boxes().stream().filter(b -> b.kind() == Kind.DECK).mapToLong(b -> b.box().volume()).sum();
-		assertEquals(24L * 3, deck);
+		assertEquals(23L * 3, deck); // wet columns 20..43 claim x 21..44 (the dry column 19 claims 20); the dry cell x 44 is road on earth, not deck (p7-groundwalk)
 		var piers = g.boxes().stream().filter(b -> b.kind() == Kind.PIER).toList();
 		assertEquals(3, piers.size());
 		for (var b : piers) {

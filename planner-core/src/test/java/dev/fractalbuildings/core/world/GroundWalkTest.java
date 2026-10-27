@@ -23,7 +23,7 @@ class GroundWalkTest {
 			if (w.tile(ix, iz).isEmpty()) continue;
 			for (GroundPiece g : w.ground(ix, iz)) {
 				w.raster(g.ref(), ALL, (x, y, z, role, id, shape) -> {
-					if (role != Role.ROAD && role != Role.PAVING && role != Role.DECK) return;
+					if (!role.isRoad() && role != Role.PAVING && role != Role.DECK) return;
 					top.merge(((long) x << 32) ^ (z & 0xffffffffL), new int[] {y, role.ordinal()}, (a, b) -> a[0] >= b[0] ? a : b);
 				});
 			}
@@ -65,15 +65,15 @@ class GroundWalkTest {
 				int m = 0;
 				for (String e : s) {
 					String[] q = e.split(" ");
-					m = Math.max(m, Math.abs(Integer.parseInt(q[1].replaceAll("[A-Z]", "")) - Integer.parseInt(q[4].replaceAll("[A-Z]", ""))));
+					m = Math.max(m, Math.abs(Integer.parseInt(q[1].replaceAll("[A-Z_]", "")) - Integer.parseInt(q[4].replaceAll("[A-Z_]", ""))));
 				}
 				if (m > 3) { over3++; if (examples.size() < 3) examples.add(g.name() + " " + info.ix() + "," + info.iz() + ": " + s.get(0)); }
 			}
 		}
 		System.out.println("[B3] walkability: tiles " + tiles + ", with a step over 1: " + over1 + ", over 3: " + over3 + " " + examples);
 		assertTrue(tiles > 600);
-		assertTrue(over1 <= 112, "tiles with a step over 1 block: " + over1);
-		assertTrue(over3 <= 18, "tiles with a step over 3 blocks: " + over3 + " " + examples);
+		assertTrue(over1 <= 107, "tiles with a step over 1 block: " + over1);
+		assertTrue(over3 <= 11, "tiles with a step over 3 blocks: " + over3 + " " + examples);
 	}
 
 	/**
@@ -83,7 +83,7 @@ class GroundWalkTest {
 	 */
 	@Test
 	void everyRoadSurfaceHasPlanEarthOrProbedGroundUnderIt() {
-		int checked = 0, holes = 0;
+		int checked = 0, holes = 0, onWater = 0;
 		List<String> examples = new ArrayList<>();
 		for (GateWorld g : GateWorld.all()) {
 			WorldPlanner w = g.planner(WorldPlanner.Caches.DEFAULT, null);
@@ -96,18 +96,19 @@ class GroundWalkTest {
 				for (GroundPiece gp : w.ground(info.ix(), info.iz())) {
 					w.raster(gp.ref(), ALL, (x, y, z, role, id, shape) -> {
 						if (role != Role.AIR) solid.add(key(x, y, z));
-						if (role == Role.ROAD || role == Role.PAVING) surfaces.add(new int[] {x, y, z});
+						if (role.isRoad() || role == Role.PAVING) surfaces.add(new int[] {x, y, z});
 					});
 				}
 				for (int[] s : surfaces) {
 					checked++;
+					if (g.probes().exact().waterDepth(s[0], s[2]) > 0) { onWater++; continue; } // a bridge deck carries the street over water (DS-44: city decks take the street role); piers stand only here and there
 					if (solid.contains(key(s[0], s[1] - 1, s[2])) || g.probes().exact().floorY(s[0], s[2]) >= s[1]) continue;
 					holes++;
 					if (examples.size() < 5) examples.add(g.name() + " " + s[0] + "," + s[1] + "," + s[2] + " probe " + g.probes().exact().floorY(s[0], s[2]));
 				}
 			}
 		}
-		System.out.println("[B3] surfaces checked " + checked + ", over a hole " + holes + " " + examples);
+		System.out.println("[B3] surfaces checked " + checked + ", over water (bridge decks, exempt) " + onWater + ", over a hole " + holes + " " + examples);
 		assertTrue(checked > 10_000);
 		assertEquals(0, holes, "road or paving cells over a hole: " + examples);
 	}
