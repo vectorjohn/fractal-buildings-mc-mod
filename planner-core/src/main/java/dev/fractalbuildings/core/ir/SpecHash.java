@@ -29,6 +29,7 @@ public final class SpecHash {
 				.num("storeys", s.storeys()).text("roof", s.roof());
 		if (s.v2Keys()) w.num("maxHeight", s.maxHeight()).num("streets", s.streets());
 		if (s.v2Keys() && s.lead() > 0) w.num("lead", s.lead());
+		if (s.v2Keys() && s.square()) w.raw("square", "true");
 		return w;
 	}
 }

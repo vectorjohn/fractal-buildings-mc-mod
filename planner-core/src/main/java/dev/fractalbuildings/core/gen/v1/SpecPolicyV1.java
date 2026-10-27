@@ -108,6 +108,8 @@ public final class SpecPolicyV1 {
 			// air rights: the envelope grows by the front margin plus the air in front, so upper storeys can jetty over the street (docs/plans/phase5.md "JT")
 			lead = lim.front() + Math.min(brief.airRights(), BuildingSpec.MAX_LEAD - lim.front());
 		}
-		return new BuildingSpec(GeneratorV1.GEN_VERSION, specSeed, style.id(), t.id(), w, d + lead, storeys, "auto", maxHeight, streets, lead);
+		// the square's market hall (7.17 S4) stands only on level ground
+		boolean square = brief != null && brief.square() && t.id().equals("shop") && maxFloor - minFloor <= 1;
+		return new BuildingSpec(GeneratorV1.GEN_VERSION, specSeed, style.id(), t.id(), w, d + lead, storeys, "auto", maxHeight, streets, lead, square);
 	}
 }

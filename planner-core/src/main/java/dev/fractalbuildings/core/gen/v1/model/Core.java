@@ -9,9 +9,12 @@ package dev.fractalbuildings.core.gen.v1.model;
  * 2 (the default stair is a two-row switchback, docs/plans/phase4.md "Core contract").
  */
 public record Core(int x, int z, int sx, int sz, int from, int to) {
+	/** A core's {@code from} of {@code LEG}: its first flight rises from the open floor under a raised building (a market hall on posts) to storey 0. */
+	public static final int LEG = -1;
+
 	public Core {
 		if (sx < 2 || sz < 2) throw new IllegalArgumentException("core " + sx + "x" + sz);
-		if (from < 0 || to < from + 2) throw new IllegalArgumentException("core storeys [" + from + ", " + to + ")");
+		if (from < LEG || to < from + 2) throw new IllegalArgumentException("core storeys [" + from + ", " + to + ")");
 	}
 
 	public int maxX() { return x + sx; }
@@ -25,7 +28,7 @@ public record Core(int x, int z, int sx, int sz, int from, int to) {
 	/** Minimum long side for flights from storeys [from, to - 1): the tallest such storey plus 1. */
 	public static int length(StoreyGrid g, int from, int to) {
 		int h = 0;
-		for (int s = from; s < to - 1; s++) h = Math.max(h, g.height(s));
+		for (int s = Math.max(from, 0); s < to - 1; s++) h = Math.max(h, g.height(s));
 		return h + 1;
 	}
 }

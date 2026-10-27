@@ -1,0 +1,12 @@
+{
+  "type": "shop",
+  "style": "medieval",
+  "lot": "13x22",
+  "terrain": "flat:64",
+  "front": "north",
+  "seeds": "0..15",
+  "gen": "v1",
+  "square": true,
+  "cutStorey": 1,
+  "cameras": ["front-left", "back-right", "top", "front", "cutaway"]
+}

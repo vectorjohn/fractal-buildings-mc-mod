@@ -1,0 +1,12 @@
+{
+  "type": "shop",
+  "style": "plain",
+  "lot": "15x24",
+  "terrain": "plane:64:0:1:40",
+  "front": "north",
+  "seeds": "0..15",
+  "gen": "v1",
+  "square": true,
+  "cutStorey": 1,
+  "cameras": ["front-left", "back-right", "top", "front", "cutaway"]
+}

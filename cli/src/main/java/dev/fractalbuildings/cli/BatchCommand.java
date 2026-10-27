@@ -13,7 +13,7 @@ final class BatchCommand {
 	private BatchCommand() {}
 
 	static int run(String[] args) throws IOException {
-		Opts o = new Opts(args, Set.of("seeds", "lot", "at", "front", "style", "terrain", "out-dir", "type", "gen", "air"), Set.of("no-check"));
+		Opts o = new Opts(args, Set.of("seeds", "lot", "at", "front", "style", "terrain", "out-dir", "type", "gen", "air"), Set.of("no-check", "square"));
 		String gen = Scenes.gen(o);
 		String type = Scenes.type(o.get("type", "house"), gen);
 		long[] seeds = Opts.seedRange(o.require("seeds"));
@@ -29,7 +29,7 @@ final class BatchCommand {
 		int bad = 0;
 		StringBuilder list = new StringBuilder();
 		for (long s = seeds[0]; s <= seeds[1]; s++) {
-			var scene = Scenes.generate(Scenes.request(s, lot, at, front, type, style, p, o.intValue("air", 0)), check, gen);
+			var scene = Scenes.generate(Scenes.request(s, lot, at, front, type, style, p, o.intValue("air", 0), o.flag("square")), check, gen);
 			bad += scene.violations().isEmpty() ? 0 : 1;
 			GenCommand.write(dir.resolve("seed-" + s + ".json"), IrJson.write(scene).getBytes(StandardCharsets.UTF_8));
 			if (!list.isEmpty()) list.append(", ");

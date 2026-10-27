@@ -75,7 +75,7 @@ public final class TowerType implements BuildingType {
 		BuildingSpec sp = c.spec();
 		// the stair is one step per block of height along the front wall, so the legs are at most about half the envelope width
 		int cap = Math.min(8, Math.min((sp.width() + 1) / 2, sp.maxHeight() - 2 - g.y(1)));
-		return cap < Stilts.MIN_LIFT ? 0 : c.draws("tower/legs").range(Stilts.MIN_LIFT, cap);
+		return cap < Stilts.TOWER_MIN_LIFT ? 0 : c.draws("tower/legs").range(Stilts.TOWER_MIN_LIFT, cap);
 	}
 
 	private static Massing stilted(BuildContext c, MassingStyle st) {

@@ -49,7 +49,7 @@ public record FloorPlan(int w, int d, List<Leaf> leaves, List<Cut> cuts, List<Do
 	}
 
 	/** One room, no partitions. */
-	static FloorPlan single(int w, int d) {
+	public static FloorPlan single(int w, int d) {
 		int[][] at = new int[w][d];
 		return new FloorPlan(w, d, List.of(new Leaf(0, 0, w, d)), List.of(), List.of(), at, -1);
 	}

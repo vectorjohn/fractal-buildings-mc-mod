@@ -20,7 +20,7 @@ final class FloorplanCommand {
 	private FloorplanCommand() {}
 
 	static int run(String[] args) throws IOException {
-		Opts o = new Opts(args, Set.of("in", "building", "seed", "lot", "at", "front", "style", "terrain", "out", "type", "gen", "air"), Set.of("wide"));
+		Opts o = new Opts(args, Set.of("in", "building", "seed", "lot", "at", "front", "style", "terrain", "out", "type", "gen", "air"), Set.of("wide", "square"));
 		SceneDoc doc;
 		if (o.has("in")) {
 			String json = Files.readString(Path.of(o.get("in", null)), StandardCharsets.UTF_8);
@@ -38,7 +38,7 @@ final class FloorplanCommand {
 			String style = Scenes.style(o.get("style", "plain"), gen);
 			ProbeSpecs.Probes p = Scenes.probes(o.get("terrain", "flat:64"));
 			int[] at = Scenes.origin(o.get("at", null), p, lot[0], lot[1]);
-			doc = Scenes.generate(Scenes.request(seed, lot, at, front, type, style, p, o.intValue("air", 0)), false, gen);
+			doc = Scenes.generate(Scenes.request(seed, lot, at, front, type, style, p, o.intValue("air", 0), o.flag("square")), false, gen);
 		}
 		String id = o.get("building", null);
 		if (id == null && doc.buildings().size() > 1) {

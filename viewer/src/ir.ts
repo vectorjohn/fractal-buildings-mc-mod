@@ -24,7 +24,7 @@ export interface Spec {
   genVersion: number; specSeed: string; style: string; type: string;
   width: number; depth: number; storeys: number; roof: string;
   /** genVersion 2+: exclusive local y bound and street-side mask (docs/IR.md). */
-  maxHeight?: number; streets?: number; lead?: number;
+  maxHeight?: number; streets?: number; lead?: number; /** 7.17: the lot may carry the square's market hall. */ square?: boolean;
 }
 export interface Storey { index: number; y: number; height: number }
 export interface Volume { id: string; min: Vec3; size: Vec3; parent: string | null }
@@ -136,6 +136,7 @@ function parseShell(v: unknown, p: string): Shell {
   if ('maxHeight' in so) spec.maxHeight = int(so, 'maxHeight', sp);
   if ('streets' in so) spec.streets = int(so, 'streets', sp);
   if ('lead' in so) spec.lead = int(so, 'lead', sp);
+  if (so.square === true) spec.square = true;
   const specHash = str(o, 'specHash', p);
   if (!/^[0-9a-f]{16}$/.test(specHash)) fail(at(p, 'specHash'), 'must be 16 lower-case hex digits');
   return {

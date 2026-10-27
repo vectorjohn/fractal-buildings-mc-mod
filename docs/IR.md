@@ -30,7 +30,7 @@ shell    { spec, specHash: "<16 hex>", bounds: {min,size}, storeys: [storey],
            volumes: [volume], rooms: [room], openings: [opening],
            roofs: [roof], boxes: [box], hooks: [hook] }   hooks: genVersion >= 2 only
 spec     { genVersion, specSeed: "<int64>", style, type, width, depth,
-           storeys, roof, maxHeight, streets, lead? }   maxHeight, streets: genVersion >= 2 only; lead: only when > 0
+           storeys, roof, maxHeight, streets, lead?, square? }   maxHeight, streets: genVersion >= 2 only; lead: only when > 0; square: only when true
 storey   { index, y, height }       y = local y of the slab; stand at y + 1
 volume   { id, min, size, parent: id | null }
 room     { id, storey, volume, use, parts: [{min,size}] }
@@ -103,6 +103,12 @@ byte-for-byte unchanged; readers treat them as absent for genVersion 1.
   far in front of where it would be and ground masses start at z >= lead. **lot.airRights / lot.frontY** (written only
   when airRights > 0): how far past the front edge, over the street, voxels are allowed, at world y >= frontY + 3;
   the `in-lot` invariant accepts exactly that strip (front side only) and nothing else outside the lot.
+  **spec.square** (7.17 SHOPLOW S4, written only when true): the lot is the one on its square that may carry the market hall (a shop on level
+  ground, envelope 9 or more wide); set from the district lot brief (`LotBrief.square`, JSON key `square` of `fb-district/1`, written only when true).
+  A market hall is a shop on 3 (4 from width 11) high posts with a paved open floor, no door in any wall, a 1-wide stair along its back edge from
+  the open floor (an opening `stair` with `from: "outside"`, its first step on the ground) up through a hole in the first floor, and one civic room per
+  floor (use `hall`, stores above). The stair-from-outside is its way in: `rooms-reachable` and `entrance-reachable` treat it like an exterior door and
+  `shell-closed` lets its shaft stay open.
 - **volume ids** are `<kind><n>` (`main0`, `wing1`, `jetty1`, `podium0`, `shaft1`,
   `crown2`, `hall0`...); a volume's box runs from its first storey's slab to its top
   slab inclusive. A volume whose `min` y is above 0 stands on its `parent` (inside it:

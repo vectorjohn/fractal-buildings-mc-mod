@@ -38,6 +38,7 @@ public final class DistrictJson {
 				.text("type", l.type()).text("style", l.style()).raw("storeys", ints(l.minStoreys(), l.maxStoreys())).num("streets", l.streets())
 				.num("airRights", l.airRights()).num("frontY", l.frontY()).num("density", l.density()).text("status", l.status());
 		if (l.walk() != null) w.raw("walk", ints(l.walk().base(), l.walk().prev(), l.walk().next())); // only the ring lots of a walled town have one
+		if (l.square()) w.raw("square", "true");
 		return w.build();
 	}
 
@@ -78,6 +79,6 @@ public final class DistrictJson {
 					for (Facing f : Facing.values()) if (f.json().equals(s)) return f;
 					throw new IllegalArgumentException("unknown front '" + s + "'");
 				}), Rd.string(o, p, "type"), Rd.string(o, p, "style"), st[0], st[1], Rd.integer(o, p, "streets"), Rd.integer(o, p, "airRights"),
-				Rd.integer(o, p, "frontY"), Rd.integer(o, p, "density"), Rd.string(o, p, "status"), walk));
+				Rd.integer(o, p, "frontY"), Rd.integer(o, p, "density"), Rd.string(o, p, "status"), walk, o.containsKey("square") && Rd.bool(o, p, "square")));
 	}
 }
