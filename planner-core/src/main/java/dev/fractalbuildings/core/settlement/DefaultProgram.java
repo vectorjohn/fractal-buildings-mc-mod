@@ -68,7 +68,7 @@ public class DefaultProgram implements TierProgram {
 	 * {@code minExit} from the hub; a tiny hamlet may only have nearer columns, so the second takes any column ahead.
 	 */
 	private static Pt pick(SkeletonContext c, Pt hub, double ux, double uz, int minExit) {
-		for (int pass = 0; pass < 2; pass++) {
+		for (int pass = 0; pass < 4; pass++) { // passes 0-1 keep to tiles the settlement plans (6.15 ROADJOIN step 3), 2-3 take any tile
 			double bestScore = -1e18;
 			Pt best = null;
 			for (int j = 0; j < c.nz; j++) {
@@ -78,7 +78,7 @@ public class DefaultProgram implements TierProgram {
 					double dx = x - hub.x(), dz = z - hub.z();
 					double fwd = dx * ux + dz * uz, perp = StrictMath.abs(-dx * uz + dz * ux);
 					double score = fwd - 0.5 * perp;
-					if ((pass == 0 ? fwd >= minExit : fwd > 0) && score > bestScore) {
+					if ((pass % 2 == 0 ? fwd >= minExit : fwd > 0) && (pass >= 2 || c.tileOwned(x, z)) && score > bestScore) {
 						bestScore = score;
 						best = new Pt(x, z);
 					}

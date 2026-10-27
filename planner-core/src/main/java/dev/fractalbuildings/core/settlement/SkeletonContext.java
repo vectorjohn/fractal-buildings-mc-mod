@@ -23,6 +23,10 @@ public final class SkeletonContext {
 	public final int x0, z0, nx, nz, step;
 	final boolean[] owned, candidate;
 	int[] mask;
+	/** For {@link #tileOwned}: set by the builder once the hub is known (6.15 ROADJOIN step 3). */
+	RegionView view;
+	DistrictGrid.TileId siteHubTile;
+	private final java.util.TreeMap<Long, Boolean> tileOwned = new java.util.TreeMap<>();
 
 	SkeletonContext(long seed, SettlementSite site, Cell cell, RegionField field, CoarseTerrain terrain, DistrictGrid grid, DensityField density,
 			QuarterField quarters, List<Pt> polygon, int x0, int z0, int nx, int nz) {
@@ -60,6 +64,17 @@ public final class SkeletonContext {
 	public boolean urbanCandidate(int x, int z) {
 		int k = index(x, z);
 		return k >= 0 ? candidate[k] : density.urban(x, z);
+	}
+
+	/**
+	 * Does this settlement plan the district tile of the column ({@link Districts#owns})? Exits are chosen by cell ownership but districts
+	 * are planned by tile ownership, so an exit can sit in a tile nobody plans and its road never reaches a street (6.15 ROADJOIN step 3).
+	 * True when the context was built without a view (tests).
+	 */
+	public boolean tileOwned(int x, int z) {
+		if (view == null) return true;
+		DistrictGrid.Tile t = grid.tileAt(x, z);
+		return tileOwned.computeIfAbsent(((long) t.ix() << 32) ^ (t.iz() & 0xffffffffL), k -> Districts.owns(view, site, grid, siteHubTile, t.ix(), t.iz()));
 	}
 
 	/** An exit column that road traffic can leave from: the column and its eight lattice neighbours are all dry, so no bridge ends on it (6.16 DEADMAIN). */

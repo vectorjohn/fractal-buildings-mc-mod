@@ -45,19 +45,23 @@ final class LinkExits {
 		double len = StrictMath.sqrt(dx * dx + dz * dz);
 		if (len == 0) return null;
 		double ux = dx / len, uz = dz / len;
-		double bestScore = -1e18;
-		Pt best = null;
-		for (int j = 0; j < c.nz; j++) {
-			for (int i = 0; i < c.nx; i++) {
-				if (c.mask[j * c.nx + i] != CoarseRaster.URBAN || !c.owned[j * c.nx + i]) continue;
-				int x = c.x0 + i * c.step, z = c.z0 + j * c.step;
-				double ex = x - hub.x(), ez = z - hub.z();
-				double fwd = ex * ux + ez * uz, perp = StrictMath.abs(-ex * uz + ez * ux);
-				double score = fwd - 0.5 * perp;
-				if (fwd > 0 && score > bestScore) { bestScore = score; best = new Pt(x, z); }
+		// ROADJOIN step 3: columns in tiles this settlement plans first; a column in a tile nobody plans only when no other qualifies
+		for (int pass = 0; pass < 2; pass++) {
+			double bestScore = -1e18;
+			Pt best = null;
+			for (int j = 0; j < c.nz; j++) {
+				for (int i = 0; i < c.nx; i++) {
+					if (c.mask[j * c.nx + i] != CoarseRaster.URBAN || !c.owned[j * c.nx + i]) continue;
+					int x = c.x0 + i * c.step, z = c.z0 + j * c.step;
+					double ex = x - hub.x(), ez = z - hub.z();
+					double fwd = ex * ux + ez * uz, perp = StrictMath.abs(-ex * uz + ez * ux);
+					double score = fwd - 0.5 * perp;
+					if (fwd > 0 && score > bestScore && (pass == 1 || c.tileOwned(x, z))) { bestScore = score; best = new Pt(x, z); }
+				}
 			}
+			if (best != null) return best;
 		}
-		return best;
+		return null;
 	}
 
 	/** Required exits of this cell, one per assigned port that has an urban column to leave from, in port order. */
@@ -72,6 +76,9 @@ final class LinkExits {
 	}
 
 	/** An approach: lattice columns from the exit to the port over dry ground, corners only; empty when no dry path exists inside the window. */
+	/** Extra cost per lattice step through the urban footprint, in units of one step (a plain step costs 10). */
+	static final long URBAN_PENALTY = 30;
+
 	static List<Pt> approach(SkeletonContext c, Link l) {
 		int step = c.step;
 		Pt from = l.exit(), to = new Pt(Math.floorDiv(l.port().x() + step / 2, step) * step, Math.floorDiv(l.port().z() + step / 2, step) * step);
@@ -87,6 +94,8 @@ final class LinkExits {
 				if (dy * 3 > len) return FORBIDDEN;
 				long cost = (diag ? 14L : 10L) * step + 60L * dy;
 				if (c.terrain.roadSteep(nx, nz)) cost += 300;
+				// ROADJOIN step 4: an approach leaves town (DS-52: the link is the main street at the gate); crossing the urban footprint is a last resort, not a short cut
+				if (c.urbanCandidate(nx, nz) && !(nx == from.x() && nz == from.z())) cost += URBAN_PENALTY * step;
 				return cost;
 			}
 		};

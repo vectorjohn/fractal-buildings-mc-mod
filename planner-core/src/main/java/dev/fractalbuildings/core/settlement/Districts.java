@@ -47,7 +47,7 @@ public final class Districts {
 	/** Frontage lots stay shallower than the {@code block} type's smallest lot (52), so only whole street blocks take blocks. */
 	public static final int MAX_DEPTH = 44;
 	static final int PAD = 16, MIN_W = 7, MIN_DEPTH_ANY = 7;
-	static final int STREET = 1, PLAZA = 2, LOT = 4, RESERVED = 8, WET = 16, SKEL = 32;
+	static final int STREET = 1, PLAZA = 2, LOT = 4, RESERVED = 8, WET = 16, SKEL = 32, APPROACH = 64;
 	/** Whole-block lots from density 50 up (ROADS3; was 70): the mid-density grid quarters get perimeter blocks too, where the class table picks one. */
 	static final int BLOCK_DENSITY = 50;
 	/** How far beyond the tile a grid line's runs are followed (a multiple of {@link StreetRules#NODE}). */
@@ -328,6 +328,7 @@ public final class Districts {
 			this.flags = new byte[rw * rd];
 			this.owner = new short[rw * rd];
 			if (water) markWater();
+			markApproaches();
 		}
 
 		// ---- terrain access, memoised
@@ -356,6 +357,16 @@ public final class Districts {
 			}
 		}
 
+		/** ROADJOIN step 4: the columns of the settlement's approaches (width + 2) stay free of lots, buildings and plazas; streets may cross them. */
+		void markApproaches() {
+			for (var a : src.approaches()) {
+				double[][] st = dev.fractalbuildings.core.road.Curve.stations(a.nodes());
+				if (st.length < 2) continue;
+				for (var l : dev.fractalbuildings.core.road.RoadNet.raster(st, new int[st.length], new boolean[st.length], a.width() + 2).values())
+					for (var c : l) or(c.x(), c.z(), APPROACH);
+			}
+		}
+
 		boolean inR(int x, int z) { return x >= rx0 && z >= rz0 && x < rx0 + rw && z < rz0 + rd; }
 
 		int fg(int x, int z) { return inR(x, z) ? flags[(z - rz0) * rw + (x - rx0)] : 0; }
@@ -363,7 +374,7 @@ public final class Districts {
 		void or(int x, int z, int f) { if (inR(x, z)) flags[(z - rz0) * rw + (x - rx0)] |= (byte) f; }
 
 		/** Free for a lot: inside the tile and nothing on it. */
-		boolean free(int x, int z) { return tr.contains(x, z) && (fg(x, z) & (STREET | PLAZA | LOT | RESERVED | WET)) == 0; }
+		boolean free(int x, int z) { return tr.contains(x, z) && (fg(x, z) & (STREET | PLAZA | LOT | RESERVED | WET | APPROACH)) == 0; }
 
 		Raw streetAt(int x, int z) {
 			if (!inR(x, z)) return null;
@@ -1175,12 +1186,12 @@ public final class Districts {
 
 		/** Free of streets, plazas and lots; wet columns are judged by the exact probes (the caller checks {@link #dry}), not the conservative WET flags. */
 		boolean rectFreeExactWet(Rect r) {
-			for (int z = r.z(); z < r.z() + r.d(); z++) for (int x = r.x(); x < r.x() + r.w(); x++) if ((fg(x, z) & (STREET | PLAZA | LOT)) != 0) return false;
+			for (int z = r.z(); z < r.z() + r.d(); z++) for (int x = r.x(); x < r.x() + r.w(); x++) if ((fg(x, z) & (STREET | PLAZA | LOT | APPROACH)) != 0) return false;
 			return true;
 		}
 
 		boolean rectFree(Rect r, boolean ignoreReserved) {
-			int mask = STREET | PLAZA | LOT | WET | (ignoreReserved ? 0 : RESERVED);
+			int mask = STREET | PLAZA | LOT | WET | APPROACH | (ignoreReserved ? 0 : RESERVED);
 			for (int z = r.z(); z < r.z() + r.d(); z++) for (int x = r.x(); x < r.x() + r.w(); x++) if ((fg(x, z) & mask) != 0) return false;
 			return true;
 		}
@@ -2449,7 +2460,7 @@ public final class Districts {
 							boolean bad = false;
 							for (int o = -h; o <= h; o++) {
 								int fx = x + (alongX ? o : 0), fz = z + (alongX ? 0 : o);
-								if ((fg(fx, fz) & (PLAZA | LOT | RESERVED | WET)) != 0 || !inR(fx, fz)) bad = true;
+								if ((fg(fx, fz) & (PLAZA | LOT | RESERVED | WET | APPROACH)) != 0 || !inR(fx, fz)) bad = true;
 							}
 							if (bad) break;
 							// the tip's footprint shares an edge with a street (a border street that the guard above keeps the lane off)
@@ -2687,7 +2698,7 @@ public final class Districts {
 				if ((fg(x, z) & STREET) != 0) { end = k; break; }
 				for (int o = -h; o <= h; o++) {
 					int fx = x + (ux == 0 ? o : 0), fz = z + (uz == 0 ? o : 0);
-					if ((fg(fx, fz) & (PLAZA | LOT | RESERVED | WET)) != 0 || !inR(fx, fz) || wt(fx, fz)) { k = AVE_LANE_MAX + 1; break; }
+					if ((fg(fx, fz) & (PLAZA | LOT | RESERVED | WET | APPROACH)) != 0 || !inR(fx, fz) || wt(fx, fz)) { k = AVE_LANE_MAX + 1; break; }
 				}
 				if (k > AVE_LANE_MAX) break;
 			}
@@ -2695,10 +2706,10 @@ public final class Districts {
 				int len = 0;
 				for (int t = start + 1; t <= AVE_LANE_MAX; t++) {
 					int x = c[0] + ux * t, z = c[1] + uz * t;
-					boolean bad = !inner.contains(x, z) || !den.urban(x, z) || (fg(x, z) & (STREET | PLAZA | LOT | RESERVED | WET)) != 0 || wt(x, z);
+					boolean bad = !inner.contains(x, z) || !den.urban(x, z) || (fg(x, z) & (STREET | PLAZA | LOT | RESERVED | WET | APPROACH)) != 0 || wt(x, z);
 					for (int o = -h; o <= h && !bad; o++) {
 						int fx = x + (ux == 0 ? o : 0), fz = z + (uz == 0 ? o : 0);
-						if ((fg(fx, fz) & (PLAZA | LOT | RESERVED | WET)) != 0 || !inR(fx, fz) || wt(fx, fz)) bad = true;
+						if ((fg(fx, fz) & (PLAZA | LOT | RESERVED | WET | APPROACH)) != 0 || !inR(fx, fz) || wt(fx, fz)) bad = true;
 					}
 					if (bad) break;
 					len = t - start;
