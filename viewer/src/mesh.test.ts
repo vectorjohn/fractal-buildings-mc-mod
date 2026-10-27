@@ -105,6 +105,12 @@ describe('cuts: footprint and areaway lower the terrain (SHOPLOW S1v)', () => {
     // a raw column that was higher in the footprint did get lowered
     expect(at(s.terrain!.floorY, s, 10, 12)).toBe(68);
   });
+  it('an air box that ends at the top block (S2: y range [slab - 1, floorY), exclusive top = floorY) cuts like one that ends a block above', () => {
+    const s = load(), full = terrainTops(s);
+    const trimmed = { ...s, buildings: s.buildings.map((b) => ({ ...b, siteBoxes: b.siteBoxes.map((q) => q.role === 'air' ? { ...q, size: [q.size[0], q.size[1] - 1, q.size[2]] as [number, number, number] } : q) })) };
+    const t = terrainTops(trimmed);
+    for (let z = 5; z < 15; z++) for (const x of [5, 14]) expect(at(t, s, x, z)).toBe(at(full, s, x, z));
+  });
   it('without the building cuts the same columns keep their earth (the mutation)', () => {
     const s = load();
     const bare = terrainTops({ ...s, buildings: s.buildings.map((b) => ({ ...b, siteBoxes: [], shell: { ...b.shell, volumes: [] } })) });

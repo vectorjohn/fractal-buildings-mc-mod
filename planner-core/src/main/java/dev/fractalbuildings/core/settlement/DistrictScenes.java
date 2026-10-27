@@ -46,7 +46,10 @@ public final class DistrictScenes {
 	 *     settlement rules (the scene has the building rules)
 	 * @param fallbacks lot ids whose type was replaced or that were emptied
 	 */
-	public record Built(SceneDoc scene, DistrictPlan plan, List<String> fallbacks) {}
+	public record Built(SceneDoc scene, DistrictPlan plan, List<String> fallbacks, List<Violation> warnings) {
+		/** Without design warnings. */
+		public Built(SceneDoc scene, DistrictPlan plan, List<String> fallbacks) { this(scene, plan, fallbacks, List.of()); }
+	}
 
 	/**
 	 * @param exterior drop interior boxes, rooms and hooks from the buildings (a lighter scene for plan and street
@@ -72,13 +75,14 @@ public final class DistrictScenes {
 		DistrictPlan out = new DistrictPlan(plan.genVersion(), plan.seed(), plan.district(), plan.streets(), plan.plazas(), newLots, plan.scene(), settlement);
 		SceneDoc draft = new SceneDoc(GeneratorV1.GEN_VERSION, plan.seed(), patch, lots, buildings, ground, List.of());
 		List<Violation> found = Invariants.check(draft, exact); // on the full buildings, then stripped
+		List<Violation> warnings = dev.fractalbuildings.core.check.DoorChecks.warnings(draft, exact); // DS-45 design warnings (door-rise beyond the planner's limit, flight-landings), also on the full buildings
 		if (exterior) {
 			List<PlacedBuilding> stripped = new ArrayList<>();
 			for (PlacedBuilding b : buildings) stripped.add(new PlacedBuilding(b.id(), b.lots(), b.ox(), b.oy(), b.oz(), b.rotation(), exterior(b.shell()), b.siteBoxes()));
 			buildings = stripped;
 		}
 		SceneDoc scene = new SceneDoc(GeneratorV1.GEN_VERSION, plan.seed(), patch, lots, buildings, ground, found);
-		return new Built(scene, out, fallbacks);
+		return new Built(scene, out, fallbacks, warnings);
 	}
 
 	/**
@@ -109,7 +113,7 @@ public final class DistrictScenes {
 		for (int i = 0; i < plan.lots().size(); i++) {
 			LotBrief l = plan.lots().get(i);
 			if (!l.builds()) { newLots.add(l); continue; }
-			Generated g = generateLot(plan.seed(), i, l, out.size(), exact, biome);
+			Generated g = generateLot(plan.seed(), i, l, out.size(), Briefs.withStreetFront(plan, l, exact), biome);
 			if (g == null) {
 				fallbacks.add(l.id());
 				newLots.add(new LotBrief(l.id(), l.x(), l.z(), l.w(), l.d(), l.front(), l.type(), l.style(), l.minStoreys(), l.maxStoreys(), l.streets(), l.airRights(), l.frontY(), l.density(), "empty:gen-failed", l.walk()));

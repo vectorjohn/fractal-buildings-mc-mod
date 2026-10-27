@@ -143,11 +143,11 @@ export function terrainTops(scene: Scene): number[] {
     }
     for (const box of b.siteBoxes) {
       if (box.role !== 'air') continue;
-      const y0 = oy + box.min[1], y1 = y0 + box.size[1] - 1;
+      const y0 = oy + box.min[1], y1 = y0 + box.size[1] - 1; // y1: the top block; SiteGround compares the exclusive top (y1 + 1) with floorY
       for (let z = 0; z < box.size[2]; z++)
         for (let x = 0; x < box.size[0]; x++) {
           const i = world(box.min[0] + x, box.min[2] + z);
-          if (i >= 0 && y0 <= raw[i]! - 1 && y1 >= raw[i]! && y0 < tops[i]!) tops[i] = y0;
+          if (i >= 0 && y0 <= raw[i]! - 1 && y1 + 1 >= raw[i]! && y0 < tops[i]!) tops[i] = y0;
         }
     }
   }

@@ -201,6 +201,7 @@ final class CityCheckCommand {
 				// doors exist only in scenes built with interiors; the exterior scene above has none (violations of this one are not listed: the interior rules are check's)
 				if (doorRiseOn) DOOR_RISE.add(DoorRise.measure(CityPlanner.scene(city, id, p.terrain(), p.biome(), false).scene(), p.terrain()));
 				for (Violation v : HighriseChecks.check(b.scene())) warnings.add(v.invariant() + ": " + id + " " + v.message());
+				for (Violation v : b.warnings()) warnings.add(v.invariant() + ": " + id + " " + v.message());
 				built++;
 			}
 			int lots = 0;
@@ -238,7 +239,7 @@ final class CityCheckCommand {
 			for (String w : r.warnings()) design.merge(rule(w), 1, Integer::sum);
 		}
 		if (!design.isEmpty()) {
-			sb.append("Design warnings (high-rise and proposed checks, not violations; ").append(designSites).append(" sites): ");
+			sb.append("Design warnings (high-rise, door-rise beyond the planner's limit, flight-landings and proposed checks, not violations; ").append(designSites).append(" sites): ");
 			design.forEach((k, n) -> sb.append(k).append(" ").append(n).append("; "));
 			sb.append("\n\n");
 		}

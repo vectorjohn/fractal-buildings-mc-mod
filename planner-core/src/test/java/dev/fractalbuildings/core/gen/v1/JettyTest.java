@@ -100,7 +100,10 @@ class JettyTest {
 	@Test
 	void streetLowerThanTheLotLeavesMoreClearance() {
 		for (long seed = 0; seed < 30; seed++) {
-			SceneDoc s = new GeneratorV1().generate(req(seed, "house", "medieval", 14, 12, Facing.EAST, 2, 62)) ;;
+			// the street really is 2 below the lot: the ground east of the lot's front edge (x 114 on) is at 62, as the brief says (the house digs in to it, SHOPLOW S2)
+			GenRequest rq = req(seed, "house", "medieval", 14, 12, Facing.EAST, 2, 62);
+			rq = new GenRequest(rq.worldSeed(), rq.lot(), rq.type(), rq.style(), (px, pz) -> px >= 114 ? 62 : 64, rq.biome(), rq.brief());
+			SceneDoc s = new GeneratorV1().generate(rq);
 			assertEquals(List.of(), Invariants.check(s));
 			int[] o = outside(s);
 			if (o[0] > 0) assertTrue(o[1] >= 62 + 3);

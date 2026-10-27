@@ -14,6 +14,7 @@
 //     walkable way from the door down to the ground (breadth first, StairGround's walker model, half-block steps; the
 //     way ends at the nearest ground, often the lot's own ground, not the street); landing = a level move before the
 //     walker is more than half a block below the door's floor (a stoop or porch at door level);
+//   - the walker reads the ground through SiteGround (SHOPLOW S2: the cut and the fill are ground);
 //   - kind: market (shop whose lowest room storey is above storey 0: the market hall on posts), stilted (any other type
 //     like that), else the spec type.
 // Usage: java -cp 'cli/build/install/fractal-cli/lib/*' scripts/DoorRise.java --scenes N --out-dir DIR SITE...
@@ -199,7 +200,7 @@ public class DoorRise {
 			Integer fy = null;
 			Integer lf = lots.isEmpty() ? null : frontY.get(lots.get(0).id());
 			if (front && lf != null && lf != Integer.MIN_VALUE) fy = level - lf;
-			int[] run = run(g, o, outL, terrain, surface, lots);
+			int[] run = run(g, o, outL, dev.fractalbuildings.core.terrain.SiteGround.probe(b, terrain), surface, lots); // the ground as the building leaves it (cut and fill)
 			out.add(new Door(site, district, b.id(), lots.isEmpty() ? "" : lots.get(0).id(), o.id(), kind, s.spec().style(), front, level - street, sv != null ? "ground" : "terrain", fy, run[0], run[1] == 1, run[2] == 1));
 		}
 		return out;

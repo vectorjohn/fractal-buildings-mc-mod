@@ -19,7 +19,9 @@ public enum Invariant {
 	/** Generator v1 only: walking an interior flight from one floor to the next never needs a rise over half a block (STAIRS). */
 	STAIR_RISE("stair-rise"),
 	/** Generator v1 only (DS-33): at most 25 % of a building's windows are 1x1 (the accent size), for buildings with 4 or more windows. */
-	WINDOW_SIZE("window-size");
+	WINDOW_SIZE("window-size"),
+	/** Generator v1 only (DS-45): a shop or workshop door sits at most 2 above the street in front of it, a house door at most 5, on every lot within the planner's limit (Briefs.SHOP_FRONT_RISE, HOUSE_FRONT_RISE; steeper lots wait for the bank buildings and are a design warning). {@code flight-landings} (DS-45 "Stair runs": at most 3 risers in a straight run) is a design warning for now, see {@code DoorRise.warnings}. */
+	DOOR_RISE("door-rise");
 
 	public final String id;
 

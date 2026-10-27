@@ -57,6 +57,7 @@ class InstancePassV1Test {
 		boolean[][] fp = InstancePassV1.footprint(b.shell());
 		assertTrue(b.siteBoxes().size() > 0);
 		for (Box s : b.siteBoxes()) {
+			if (s.role() == Role.AIR || s.role() == Role.PAVING || s.role() == Role.GROUND) continue; // the dig-in's cut and fill are not foundations (SHOPLOW S2)
 			boolean under = true; // a wall-slab foundation run, or a front step's single column
 			for (int x = s.box().x(); x < s.box().maxX(); x++)
 				under &= x >= 0 && s.box().z() >= 0 && x < fp.length && s.box().z() < fp[0].length && fp[x][s.box().z()];

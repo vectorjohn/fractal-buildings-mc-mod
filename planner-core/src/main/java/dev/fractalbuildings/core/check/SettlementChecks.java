@@ -772,6 +772,71 @@ public final class SettlementChecks {
 		return out;
 	}
 
+	public static final String MAIN_DEAD_END = "main-dead-end";
+	public static final String BRIDGE_DEAD_END = "bridge-dead-end";
+
+	/**
+	 * 6.16 DEADMAIN, two rules over a settlement's skeleton roads. {@code main-dead-end}: a main road or path ends at a gate or on
+	 * another road (a junction), never in the open. {@code bridge-dead-end}: a bridge that runs to the road's last point, where no other road continues, lands on
+	 * a column with water in its 3 x 3 lattice neighbourhood (a shore spit, nothing beyond it), so the road stops at the water. A cell gate
+	 * is exempt: the neighbouring cell may carry the road on, and when it holds no urban column the road ends at the settlement edge
+	 * (known issue, ROADMAP 6.16: such a bridge still lands on a shore).
+	 */
+	public static List<Violation> mainRoadEnds(List<Road> roads, List<Road> approaches, List<Gate> gates, dev.fractalbuildings.core.settlement.CoarseRaster raster) {
+		List<Violation> out = new ArrayList<>();
+		for (Road r : roads) {
+			if (r.kind() != RoadKind.MAIN && r.kind() != RoadKind.PATH) continue;
+			int n = r.points().size();
+			Pt end = r.points().get(n - 1);
+			boolean ok = false, joined = false, cellGate = false;
+			for (Gate g : gates) {
+				boolean here = g.x() == end.x() && g.z() == end.z();
+				ok |= here;
+				cellGate |= here && g.kind() == GateKind.CELL;
+			}
+			for (Road o : roads) if (o != r) joined |= touches(o, end);
+			ok |= joined;
+			for (Road o : approaches) if (!ok) ok = touches(o, end); // an approach carries on to a link
+			if (!ok) out.add(v(MAIN_DEAD_END, "road " + r.id() + " ends at " + end.x() + "," + end.z() + " at no gate and no other road", end.x(), end.z(), 1, 1));
+			for (int[] b : r.bridges()) {
+				if (!joined && !cellGate && b[1] == n - 1 && shore(raster, end.x(), end.z())) {
+					out.add(v(BRIDGE_DEAD_END, "road " + r.id() + " bridges to its end at " + end.x() + "," + end.z() + ", a shore column with nothing beyond", end.x(), end.z(), 1, 1));
+				}
+			}
+		}
+		return out;
+	}
+
+	private static boolean touches(Road o, Pt p) {
+		List<Pt> pts = o.points();
+		for (int i = 0; i < pts.size(); i++) {
+			Pt a = pts.get(i);
+			if (a.x() == p.x() && a.z() == p.z()) return true;
+			if (i == 0) continue;
+			Pt q = pts.get(i - 1);
+			int dx = Integer.signum(a.x() - q.x()), dz = Integer.signum(a.z() - q.z());
+			int len = Math.max(Math.abs(a.x() - q.x()), Math.abs(a.z() - q.z()));
+			int t = dx != 0 ? (p.x() - q.x()) / dx : (p.z() - q.z()) / dz;
+			if (len > 0 && t >= 0 && t <= len && q.x() + dx * t == p.x() && q.z() + dz * t == p.z()) return true;
+		}
+		return false;
+	}
+
+	/** Water (depth 2 or more, or a water mask) in the 3 x 3 coarse columns around (x, z); columns outside the raster count as dry. */
+	private static boolean shore(dev.fractalbuildings.core.settlement.CoarseRaster r, int x, int z) {
+		int[] water = r.water(), mask = r.mask();
+		for (int dz = -1; dz <= 1; dz++) {
+			for (int dx = -1; dx <= 1; dx++) {
+				int i = Math.floorDiv(x - r.x0() + dx * r.step(), r.step()), j = Math.floorDiv(z - r.z0() + dz * r.step(), r.step());
+				if (i < 0 || j < 0 || i >= r.nx() || j >= r.nz()) continue;
+				int k = j * r.nx() + i;
+				if (water[k] >= 2 || mask[k] == dev.fractalbuildings.core.settlement.CoarseRaster.WATER) return true;
+			}
+		}
+		return false;
+	}
+
+
 	/** Proposed rule (METROFILL R1, architect; report-only until accepted): the arterials of a city form one network. */
 	public static final String ARTERIALS_CONNECTED = "arterials-connected";
 
