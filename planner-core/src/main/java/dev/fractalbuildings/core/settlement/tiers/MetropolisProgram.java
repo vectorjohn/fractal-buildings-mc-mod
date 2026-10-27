@@ -10,13 +10,17 @@ import java.util.List;
  * ring of arterials where the tiles inside 0.62 of the footprint radius meet those outside ({@link dev.fractalbuildings.core.settlement.Arterials}),
  * and eight avenues from the hub, the four diagonals and the four axes. No old-town wall.
  */
-public final class MetropolisProgram extends CityProgram {
-	@Override protected int exitCount(SkeletonContext c) { return c.holdsCentre() ? 8 : 1; }
+public class MetropolisProgram extends CityProgram {
+	public MetropolisProgram() { this(true); }
 
-	/** All eight compass directions. */
+	public MetropolisProgram(boolean diagonals) { super(diagonals); }
+
+	@Override protected int exitCount(SkeletonContext c) { return c.holdsCentre() ? (diagonals() ? 8 : 4) : 1; }
+
+	/** All eight compass directions (the four axes when diagonals are off). */
 	@Override protected List<int[]> directions(SkeletonContext c) {
 		List<int[]> out = new ArrayList<>();
-		for (int k = 0; k < 8; k++) out.add(OCT[k]);
+		for (int k = 0; k < 8; k += diagonals() ? 1 : 2) out.add(OCT[k]);
 		return out;
 	}
 

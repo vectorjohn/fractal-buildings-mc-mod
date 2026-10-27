@@ -10,9 +10,11 @@ export interface CityPreset {
   /** `all` plans every district, `auto:N` plans all and builds scenes for N chosen ones. */
   scenes: 'none' | 'all' | `auto:${number}` | string[];
   camera: { plan: { x?: number; z?: number; zoom?: number; layers?: string }; stops: number[][] | null };
+  /** `off` plans a city or metropolis with axis streets only (METROFILL DX); `on` (default) is today's plan. */
+  diagonals: 'on' | 'off';
 }
 
-const KEYS = new Set(['seed', 'terrain', 'site', 'cellSize', 'scenes', 'camera']);
+const KEYS = new Set(['seed', 'terrain', 'site', 'cellSize', 'scenes', 'camera', 'diagonals']);
 const TIERS = ['hamlet', 'village', 'town', 'city', 'metropolis'];
 
 function bad(name: string, what: string): never {
@@ -49,6 +51,8 @@ export function parseCityPreset(name: string, json: unknown): CityPreset {
   if (sc === 'none' || sc === 'all' || (typeof sc === 'string' && /^auto:[1-9][0-9]?$/.test(sc))) scenes = sc as CityPreset['scenes'];
   else if (Array.isArray(sc) && sc.length > 0 && sc.every((i) => typeof i === 'string' && /^d[m0-9]+_[m0-9]+$/.test(i))) scenes = sc as string[];
   else bad(name, 'scenes must be "none", "all", "auto:N" or a list of district ids');
+  const diagonals = o['diagonals'] ?? 'on';
+  if (diagonals !== 'on' && diagonals !== 'off') bad(name, 'diagonals must be "on" or "off"');
   const cam = (o['camera'] ?? {}) as Record<string, unknown>;
   const plan = (cam['plan'] ?? {}) as Record<string, unknown>;
   for (const k of ['x', 'z', 'zoom']) if (plan[k] !== undefined && !num(plan[k])) bad(name, `camera.plan.${k} must be a number`);
@@ -58,6 +62,7 @@ export function parseCityPreset(name: string, json: unknown): CityPreset {
   return {
     name, seed: o['seed'] as number, terrain: o['terrain'] as string, site, cellSize: cellSize as number | null, scenes,
     camera: { plan: plan as CityPreset['camera']['plan'], stops: stops as number[][] | null },
+    diagonals,
   };
 }
 
@@ -69,5 +74,6 @@ export function cityArgs(p: CityPreset): string[] {
   if (p.cellSize !== null) a.push('--cell-size', String(p.cellSize));
   a.push('--districts');
   if (p.scenes !== 'none') a.push('--scenes', Array.isArray(p.scenes) ? p.scenes.join(',') : p.scenes);
+  if (p.diagonals === 'off') a.push('--diagonals', 'off');
   return a;
 }

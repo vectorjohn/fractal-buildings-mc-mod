@@ -21,7 +21,9 @@ import dev.fractalbuildings.core.settlement.DistrictSummary;
 import dev.fractalbuildings.core.settlement.Districts;
 import dev.fractalbuildings.core.settlement.LotBrief;
 import dev.fractalbuildings.core.settlement.QuarterKind;
+import dev.fractalbuildings.core.settlement.PlanOptions;
 import dev.fractalbuildings.core.settlement.SkeletonSource;
+import dev.fractalbuildings.core.settlement.TierPrograms;
 import dev.fractalbuildings.core.settlement.StyleWeight;
 import dev.fractalbuildings.core.style.StyleField;
 import java.util.Optional;
@@ -57,8 +59,16 @@ final class CityCommand {
 	/** A typo guard, not a resource limit (plan memory is bounded by the skeleton and region BoundedCaches): 64 cells is a maxRadius-4096 metropolis at S=1024 (plan Decision 3). */
 	static final int MAX_CELLS = 64;
 
+	/** {@code --diagonals on|off} (METROFILL DX): off plans cities and metropolises with axis streets only. */
+	static PlanOptions planOptions(Opts o) {
+		String v = o.get("diagonals", "on");
+		if (!v.equals("on") && !v.equals("off")) throw new UsageException("--diagonals on|off");
+		return new PlanOptions(v.equals("on"));
+	}
+
 	static int run(String[] args) throws IOException {
-		Opts o = new Opts(args, Set.of("seed", "terrain", "cell", "site", "cell-size", "out-dir", "scene", "scenes"), Set.of("districts", "exterior", "interiors", "check", "roads"));
+		Opts o = new Opts(args, Set.of("seed", "terrain", "cell", "site", "cell-size", "out-dir", "scene", "scenes", "diagonals"), Set.of("districts", "exterior", "interiors", "check", "roads"));
+		PlanOptions opts = planOptions(o);
 		long seed = o.longValue("seed");
 		Path dir = Path.of(o.require("out-dir"));
 		if (o.has("cell") == o.has("site")) throw new UsageException("give exactly one of --cell CX,CZ and --site X,Z,TIER,RADIUS");
@@ -91,10 +101,10 @@ final class CityCommand {
 		CityPlanner.City city = null;
 		try {
 			if (wantDistricts) {
-				city = CityPlanner.plan(new SkeletonSource.Direct(seed, view, site, coarse), coarse, p.terrain(), p.biome(), GeneratorV1.GEN_VERSION);
+				city = CityPlanner.plan(new SkeletonSource.Direct(seed, view, site, coarse, TierPrograms.of(site.tier(), opts)), coarse, p.terrain(), p.biome(), GeneratorV1.GEN_VERSION);
 				plan = city.plan();
 			} else {
-				plan = Skeletons.plan(seed, view, site, coarse, GeneratorV1.GEN_VERSION);
+				plan = Skeletons.plan(seed, view, site, coarse, GeneratorV1.GEN_VERSION, TierPrograms.of(site.tier(), opts));
 			}
 		} catch (IllegalArgumentException e) {
 			throw new UsageException("cannot plan " + site.id() + ": " + e.getMessage() + " (does the terrain window cover the settlement?)");

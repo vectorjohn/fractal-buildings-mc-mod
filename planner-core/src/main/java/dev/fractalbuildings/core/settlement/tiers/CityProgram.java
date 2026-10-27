@@ -37,6 +37,14 @@ public class CityProgram extends TownProgram {
 	/** One arterial crossing in this many gets a square (METROFILL R1: every second tile line carries an arterial, so crossings are 4x rarer and each keeps its square). */
 	public static final int SQUARE_ONE_IN = 1;
 
+	private final boolean diagonals;
+
+	public CityProgram() { this(true); }
+
+	public CityProgram(boolean diagonals) { this.diagonals = diagonals; }
+
+	@Override public boolean diagonals() { return diagonals; }
+
 	/** The hub square keeps 14 clear of the tile edge, so the 9-wide avenues its reservation clips agree across the border (tile-border-agree). */
 	@Override protected int landmarkMargin() { return 14; }
 
@@ -48,7 +56,7 @@ public class CityProgram extends TownProgram {
 	/** The avenue directions: every second compass point from a hashed start, diagonals on {@value #DIAGONAL_PCT} per cent of cities. */
 	protected List<int[]> directions(SkeletonContext c) {
 		long h = Hash64.hash(c.seed, "avenue-dirs", c.site.centre().x(), c.site.centre().z());
-		boolean diagonal = Hash64.below(h, 100) < DIAGONAL_PCT;
+		boolean diagonal = diagonals && Hash64.below(h, 100) < DIAGONAL_PCT;
 		int start = Hash64.below(Hash64.hash(h, "start"), 4) * 2 + (diagonal ? 1 : 0), n = exitCount(c);
 		List<int[]> out = new ArrayList<>();
 		for (int k = 0; k < n; k++) out.add(OCT[(start + 2 * k) % 8]);
@@ -107,12 +115,24 @@ public class CityProgram extends TownProgram {
 		int dx = b.x() - a.x(), dz = b.z() - a.z();
 		if (dx == 0 && dz == 0) return null;
 		List<List<Pt>> variants = new ArrayList<>();
+		if (!diagonals) {
+			if (dx == 0 || dz == 0) variants.add(List.of(a, b));
+			else {
+				variants.add(List.of(a, new Pt(b.x(), a.z()), b)); // x first, then z
+				variants.add(List.of(a, new Pt(a.x(), b.z()), b));
+			}
+			return firstUsable(c, variants, b);
+		}
 		int m = Math.min(Math.abs(dx), Math.abs(dz)), sx = Integer.signum(dx), sz = Integer.signum(dz);
 		if (dx == 0 || dz == 0 || Math.abs(dx) == Math.abs(dz)) variants.add(List.of(a, b));
 		else {
 			variants.add(List.of(a, new Pt(a.x() + sx * m, a.z() + sz * m), b)); // the diagonal first, from the hub end
 			variants.add(List.of(a, new Pt(b.x() - sx * m, b.z() - sz * m), b));
 		}
+		return firstUsable(c, variants, b);
+	}
+
+	private static Route firstUsable(SkeletonContext c, List<List<Pt>> variants, Pt b) {
 		for (List<Pt> v : variants) {
 			boolean ok = true;
 			for (int i = 1; i < v.size() && ok; i++) ok = legOk(c, v.get(i - 1), v.get(i), b);

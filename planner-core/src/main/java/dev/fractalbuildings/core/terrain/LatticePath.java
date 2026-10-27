@@ -78,6 +78,12 @@ public final class LatticePath {
 	 */
 	public static List<Pt> find(Pt start, Pt goal, Cost cost, Bounds bounds, int step, int maxWaterRun,
 			int maxExpansions, boolean reverseNeighbours) {
+		return find(start, goal, cost, bounds, step, maxWaterRun, maxExpansions, reverseNeighbours, true);
+	}
+
+	/** As above; {@code diagonal == false} expands the 4 axis neighbours only, with the Manhattan heuristic (METROFILL DX). */
+	public static List<Pt> find(Pt start, Pt goal, Cost cost, Bounds bounds, int step, int maxWaterRun,
+			int maxExpansions, boolean reverseNeighbours, boolean diagonal) {
 		if (step <= 0) throw new IllegalArgumentException("step " + step);
 		if (Math.floorMod(goal.x() - start.x(), step) != 0 || Math.floorMod(goal.z() - start.z(), step) != 0) {
 			throw new IllegalArgumentException("goal is not on the lattice of start");
@@ -103,8 +109,9 @@ public final class LatticePath {
 		int s = ((0 - minJ) * w + (0 - minI)) * runs;
 		g[s] = 0;
 		parent[s] = -1;
-		open.add(entry(heuristic(0, 0, gi, gj, step), 0, 0, 0, 0, s));
-		int[][] dirs = {{-1, -1}, {0, -1}, {1, -1}, {-1, 0}, {1, 0}, {-1, 1}, {0, 1}, {1, 1}};
+		open.add(entry(heuristic(0, 0, gi, gj, step, diagonal), 0, 0, 0, 0, s));
+		int[][] dirs = diagonal ? new int[][] {{-1, -1}, {0, -1}, {1, -1}, {-1, 0}, {1, 0}, {-1, 1}, {0, 1}, {1, 1}} : new int[][] {{0, -1}, {-1, 0}, {1, 0}, {0, 1}};
+		int nd = dirs.length;
 		int expansions = 0;
 		int found = -1;
 		while (!open.isEmpty()) {
@@ -118,8 +125,8 @@ public final class LatticePath {
 			if (i == gi && j == gj) { found = id; break; }
 			if (++expansions > maxExpansions) return List.of();
 			int wx = start.x() + i * step, wz = start.z() + j * step;
-			for (int q = 0; q < 8; q++) {
-				int[] dd = dirs[reverseNeighbours ? 7 - q : q];
+			for (int q = 0; q < nd; q++) {
+				int[] dd = dirs[reverseNeighbours ? nd - 1 - q : q];
 				int ni = i + dd[0], nj = j + dd[1];
 				if (ni < minI || ni > maxI || nj < minJ || nj > maxJ) continue;
 				int nwx = start.x() + ni * step, nwz = start.z() + nj * step;
@@ -136,7 +143,7 @@ public final class LatticePath {
 				if (ng < g[nid]) {
 					g[nid] = ng;
 					parent[nid] = id;
-					open.add(entry(ng + heuristic(ni, nj, gi, gj, step), ng, nj, ni, nrun, nid));
+					open.add(entry(ng + heuristic(ni, nj, gi, gj, step, diagonal), ng, nj, ni, nrun, nid));
 				}
 			}
 		}
@@ -162,8 +169,9 @@ public final class LatticePath {
 		return 0;
 	}
 
-	private static long heuristic(int i, int j, int gi, int gj, int step) {
+	private static long heuristic(int i, int j, int gi, int gj, int step, boolean diagonal) {
 		long dx = Math.abs(gi - i), dz = Math.abs(gj - j);
+		if (!diagonal) return 10L * (dx + dz) * step;
 		long diag = Math.min(dx, dz);
 		return (14L * diag + 10L * (Math.max(dx, dz) - diag)) * step;
 	}

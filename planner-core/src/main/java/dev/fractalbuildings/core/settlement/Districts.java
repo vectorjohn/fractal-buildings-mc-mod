@@ -2279,7 +2279,7 @@ public final class Districts {
 			int gx = qx + Math.round((to[0] - qx) / (float) m) * m, gz = qz + Math.round((to[1] - qz) / (float) m) * m;
 			LatticePath.Bounds b = new LatticePath.Bounds(tile.minX() + EDGE_STEP, tile.minZ() + EDGE_STEP, tile.maxX() - EDGE_STEP - 1, tile.maxZ() - EDGE_STEP - 1);
 			if (!b.contains(gx, gz) || (gx == qx && gz == qz)) return null;
-			List<LatticePath.Pt> path = LatticePath.find(new LatticePath.Pt(qx, qz), new LatticePath.Pt(gx, gz), laneCost(qx, qz, 8), b, m, -1, 20_000, false);
+			List<LatticePath.Pt> path = LatticePath.find(new LatticePath.Pt(qx, qz), new LatticePath.Pt(gx, gz), laneCost(qx, qz, 8), b, m, -1, 20_000, false, src.program().diagonals());
 			if (path.size() < 2) return null;
 			List<Pt> routed = new ArrayList<>();
 			for (LatticePath.Pt q : path) routed.add(new Pt(q.x(), q.z()));
@@ -2360,7 +2360,7 @@ public final class Districts {
 						int m = StreetRules.NODE;
 						LatticePath.Bounds b = new LatticePath.Bounds(tile.minX() + m, tile.minZ() + m, tile.maxX() - m, tile.maxZ() - m);
 						if (b.contains(gx, gz) && b.contains(qx, qz) && (gx != qx || gz != qz)) {
-							path = LatticePath.find(new LatticePath.Pt(qx, qz), new LatticePath.Pt(gx, gz), laneCost(qx, qz, 0), b, StreetRules.NODE, -1, 20_000, false);
+							path = LatticePath.find(new LatticePath.Pt(qx, qz), new LatticePath.Pt(gx, gz), laneCost(qx, qz, 0), b, StreetRules.NODE, -1, 20_000, false, src.program().diagonals());
 						}
 						List<Pt> routed = new ArrayList<>(pts);
 						for (LatticePath.Pt q : path) routed.add(new Pt(q.x(), q.z()));
@@ -2523,7 +2523,7 @@ public final class Districts {
 				if (!b.contains(qx, qz) || !b.contains(gx, gz)) continue;
 				List<List<Pt>> variants = new ArrayList<>();
 				if (gx != qx || gz != qz) {
-					List<LatticePath.Pt> path = LatticePath.find(new LatticePath.Pt(qx, qz), new LatticePath.Pt(gx, gz), laneCost(qx, qz, 0), b, m, -1, 40_000, false);
+					List<LatticePath.Pt> path = LatticePath.find(new LatticePath.Pt(qx, qz), new LatticePath.Pt(gx, gz), laneCost(qx, qz, 0), b, m, -1, 40_000, false, src.program().diagonals());
 					if (!path.isEmpty()) {
 						List<Pt> v = new ArrayList<>();
 						for (LatticePath.Pt q : path) v.add(new Pt(q.x(), q.z()));
@@ -2584,7 +2584,7 @@ public final class Districts {
 						if (b.contains(gx, gz) && b.contains(c[0], c[1]) && rules.frontageAt(gx, gz)) { got = true; break; }
 					}
 					if (!got) continue;
-					List<LatticePath.Pt> path = LatticePath.find(new LatticePath.Pt(c[0], c[1]), new LatticePath.Pt(gx, gz), laneCost(c[0], c[1], 14), b, StreetRules.NODE, -1, 20_000, false);
+					List<LatticePath.Pt> path = LatticePath.find(new LatticePath.Pt(c[0], c[1]), new LatticePath.Pt(gx, gz), laneCost(c[0], c[1], 14), b, StreetRules.NODE, -1, 20_000, false, src.program().diagonals());
 					if (path.size() < 2) continue;
 					List<Pt> pts = new ArrayList<>();
 					for (LatticePath.Pt q : path) pts.add(new Pt(q.x(), q.z()));

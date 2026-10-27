@@ -23,6 +23,9 @@ public interface TierProgram {
 
 	int mainWidth(Tier tier);
 
+	/** May this program's roads (and its district lanes) run on 45-degree diagonals? True except for a city or metropolis planned with {@link PlanOptions#diagonals()} off (METROFILL DX). */
+	default boolean diagonals() { return true; }
+
 	/** Width of this cell's main roads: the tier's, unless the program narrows it (a walled city's avenues pass 5-wide gates). */
 	default int mainWidth(SkeletonContext c) { return mainWidth(c.site.tier()); }
 

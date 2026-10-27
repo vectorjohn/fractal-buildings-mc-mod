@@ -243,7 +243,7 @@ triangles, 1.4 draw calls per frame. SwiftShader frame times are not meaningful 
 
 `nix develop -c npm run city` plans every `viewer/city-presets/<name>.json` with `fractal-cli city --districts --scenes ...` into `viewer/out/city/<name>/`
 (`settlement.json`, `terrain.json.gz`, `districts/`, `scenes/`; `npm run city -- a b` only those; the CLI exits 1 when the plan has violations, the data is still written).
-A preset is `{seed, terrain, site: {at: [x, z], tier, radius} | {cell: [cx, cz]}, cellSize?, scenes: "none"|"all"|"auto:N"|[ids], camera: {plan: {x, z, zoom, layers}, stops?}}`
+A preset is `{seed, terrain, site: {at: [x, z], tier, radius} | {cell: [cx, cz]}, cellSize?, diagonals?: "on"|"off" (off: axis streets only, METROFILL DX), scenes: "none"|"all"|"auto:N"|[ids], camera: {plan: {x, z, zoom, layers}, stops?}}`
 (`src/cityPresets.ts`, tested in `cityPresets.test.ts`); terrain paths are relative to the repository root. `npm run city-gallery` also builds the viewer and runs
 `e2e/city.spec.ts` over every preset (a plain `playwright test` runs `synth-city` only, if its data exists; `FB_CITIES=a,b` picks others): plan view loads, the first two scenes load in
 the fly camera, and `plan.png`, `<district>-overview.png`, `<district>-street.png` are written next to the data. Asserted: no `tile-border-agree` violation, no building
