@@ -19,7 +19,7 @@
 #           flythrough.sh, server-only-test.sh, compat-matrix.sh, city-bench.sh; they take it
 #           themselves), or both (test-all.sh with its client layer). Anything else (CLI runs,
 #           `--tests X`, viewer npm test): load only.
-#   beebox  `ssh beebox job status` shows at most --depth jobs running or queued (default 0:
+#   beebox  `ssh beebox job status` shows at most --depth jobs running or queued (default 2, i.e. 3 slots:
 #           idle), counting jobs other waiters sent there that aren't in its queue yet;
 #           `scripts/remote.sh --check` passes just before sending.
 # Waiters queue FIFO (tickets in <main root>/.claude/anywhere/): a waiter takes a host only after
@@ -33,7 +33,7 @@
 #   --only local|beebox    never use the other host
 #   --kind suite|heavy|full|light   override the guess from CMD
 #   --load N               local load ceiling (FB_ANY_LOAD_MAX, default 14)
-#   --depth N              beebox counts as free with at most N jobs running/queued (FB_ANY_DEPTH, 0)
+#   --depth N              beebox counts as free with at most N jobs running/queued (FB_ANY_DEPTH, 2: beebox runs 3 jobs at once)
 #   --wait S               give up after S s without a host (exit 6; default: wait forever)
 #   --fetch P, --cpu, --host H   passed to scripts/remote.sh
 #   --dry-run              print where it would go now and exit (no ticket, nothing run)
@@ -58,7 +58,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 CLAUDE_DIR=$(suite_slot_dir)
 
 PREFER=local ONLY="" KIND="" DRY=0 STATUS=0 WAIT_MAX=""
-LOAD_MAX=${FB_ANY_LOAD_MAX:-14} DEPTH=${FB_ANY_DEPTH:-0} POLL=${FB_ANY_POLL:-20}
+LOAD_MAX=${FB_ANY_LOAD_MAX:-14} DEPTH=${FB_ANY_DEPTH:-2} POLL=${FB_ANY_POLL:-20}
 HOST=${FB_REMOTE_HOST:-beebox}
 REMOTE_ARGS=()
 while [[ $# -gt 0 ]]; do
