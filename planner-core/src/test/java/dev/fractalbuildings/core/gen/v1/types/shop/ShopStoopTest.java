@@ -72,20 +72,57 @@ class ShopStoopTest {
 				}
 		System.out.println(String.format(Locale.ROOT, "shop stoops: %d of %d shops lifted 2+ above the door's ground; %d landings span half the front or more", lifted, total, wide));
 		assertTrue(bad.isEmpty(), bad.toString());
-		assertTrue(lifted >= 30, "only " + lifted + " lifted shops");
+		// S2 dig-in + S4 (the market hall is a level-ground square shop): shops are no longer lifted on slopes, so this is a regression guard, not a count floor
+		assertTrue(total >= 300 && lifted * 20 <= total, "lifted " + lifted + " of " + total + " shops");
 		assertTrue(wide >= lifted * 0.8, "wide landings " + wide + " of " + lifted);
+	}
+
+	/** SHOPLOW S2: a shop digs in to the street. On slopes up to the planner's limit every shop door rises at most 2, a stoop appears only at rise 2, and the street row reaches the door. */
+	@Test
+	void everyShopRisesAtMostTwoAndAStoopAppearsOnlyAtRiseTwo() {
+		String[] slopes = {"plane:64:0:1:4", "plane:64:0:1:6", "plane:64:0:1:9", "plane:64:0:-1:4", "plane:64:1:0:6", "plane:64:-1:0:6", "plane:64:0:1:12", "flat:64"};
+		int shops = 0, stoops = 0, rise2 = 0;
+		for (String terrain : slopes)
+			for (Facing f : Facing.values())
+				for (int[] lt : new int[][] {{11, 17}, {9, 14}, {11, 20}})
+					for (long seed = 0; seed < 12; seed++) {
+						ProbeSpecs.Probes p = ProbeSpecs.parse(terrain);
+						GenRequest rq = new GenRequest(seed, new Lot("lot0", 3, -5, f.ordinal() % 2 == 0 ? lt[0] : lt[1], f.ordinal() % 2 == 0 ? lt[1] : lt[0], f), "shop", "medieval", p.terrain(), p.biome());
+						SceneDoc s;
+						try { s = new GeneratorV1().generate(rq); } catch (IllegalArgumentException e) { continue; }
+						String what = terrain + " " + f + " " + lt[0] + "x" + lt[1] + " seed " + seed;
+						assertEquals(List.of(), Invariants.check(s, rq.terrain()), what);
+						street(s, rq, what);
+						PlacedBuilding b = s.buildings().get(0);
+						if (InstancePassV1.entranceStorey(b.shell()).y() != 0) continue; // a market hall on posts: its trade floor is the open ground
+						shops++;
+						var eff = dev.fractalbuildings.core.terrain.SiteGround.probe(b, rq.terrain());
+						Opening door = null;
+						for (Opening o : b.shell().openings()) if (o.kind() == OpeningKind.DOOR && Opening.OUTSIDE.equals(o.to())) door = o;
+						int wx = b.placement().worldX(door.box().x(), door.box().z() - 1), wz = b.placement().worldZ(door.box().x(), door.box().z() - 1);
+						int rise = b.oy() + door.box().y() - eff.floorY(wx, wz); // the door's rise above the ground in front of it (the lot's own, not the street's)
+						int row = door.box().z() - 1, landing = 0;
+						for (Box x : b.siteBoxes()) if (x.role() == Role.STAIR && x.box().y() == 0 && x.box().z() == row && b.siteBoxes().stream().noneMatch(q -> q.role() == Role.PAVING && q.box().y() == -1 && q.box().z() == row && q.box().x() <= x.box().x() && x.box().x() < q.box().maxX())) landing++; // (a stair block on the areaway paving is the step below the door, not a stoop)
+						if (landing > 0) { stoops++; assertTrue(rise >= 2, what + ": a stoop at rise " + rise); }
+						if (rise == 2) rise2++;
+						for (dev.fractalbuildings.core.check.DoorRise.Door d : dev.fractalbuildings.core.check.DoorChecks.doors(s, b, rq.terrain()))
+							if (d.front()) assertTrue(d.rise() <= 2, what + ": rise " + d.rise() + " from the street");
+					}
+		System.out.println("shop stoops after the dig-in: " + shops + " shops, " + rise2 + " at rise 2 over the ground in front, " + stoops + " stoops");
+		assertTrue(shops >= 300, "shops " + shops);
 	}
 
 	@Test
 	void theLandingCheckCanFail() {
 		// control: the same scene with the landing's top blocks removed measures a landing of 0
-		ProbeSpecs.Probes p = ProbeSpecs.parse("plane:64:0:1:12");
-		for (long seed = 0; seed < 200; seed++) {
-			GenRequest rq = new GenRequest(seed, new Lot("lot0", 3, -5, 11, 20, Facing.NORTH), "shop", "medieval", p.terrain(), p.biome());
-			SceneDoc s = new GeneratorV1().generate(rq);
+		for (String terrain : SLOPES) for (Facing f : Facing.values()) for (long seed = 0; seed < 60; seed++) {
+			ProbeSpecs.Probes p = ProbeSpecs.parse(terrain);
+			GenRequest rq = new GenRequest(seed, new Lot("lot0", 3, -5, f.ordinal() % 2 == 0 ? 11 : 20, f.ordinal() % 2 == 0 ? 20 : 11, f), "shop", "medieval", p.terrain(), p.biome());
+			SceneDoc s;
+			try { s = new GeneratorV1().generate(rq); } catch (IllegalArgumentException e) { continue; }
 			Stoop st = measure(s, rq);
-			if (!st.lifted) continue;
-			assertTrue(st.landing >= 3);
+			if (st.landing < 1) continue; // a stoop landing at rise 2 (shops dig in; no lifted market hall on a slope since S4)
+
 			PlacedBuilding b = s.buildings().get(0);
 			int floorY = InstancePassV1.entranceStorey(b.shell()).y();
 			List<Box> site = new ArrayList<>(b.siteBoxes());
@@ -95,12 +132,12 @@ class ShopStoopTest {
 			assertEquals(0, measure(m, rq).landing);
 			return;
 		}
-		throw new AssertionError("no lifted shop found");
+		throw new AssertionError("no shop with a stoop landing found");
 	}
 
 	/** A walker from the lot's street-facing edge row reaches the door and, under a market hall, the open floor. */
 	private static void street(SceneDoc s, GenRequest rq, String what) {
-		StreetWalk w = new StreetWalk(s, rq.terrain());
+		StreetWalk w = new StreetWalk(s, dev.fractalbuildings.core.terrain.SiteGround.probe(s.buildings().get(0), rq.terrain())); // the ground a walker sees: the dig-in's cut and fill included
 		assertTrue(w.reachesDoors(), what + ": the door is not reachable from the lot's street row");
 		PlacedBuilding b = s.buildings().get(0);
 		if (b.shell().volumes().stream().noneMatch(v -> v.id().startsWith("leg"))) return;

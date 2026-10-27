@@ -99,10 +99,11 @@ class ShopOpenGroundTest {
 	}
 
 	@Test
-	void shopsOnlyGoOnALevelFrontage() {
+	void shopsOnlyGoOnGentleGround() {
 		SpecPolicyV1.spec(onSlope(100)); // 1 in 100: fine
 		SpecPolicyV1.spec(onSlope(12)); // 1 in 12 over 20: a step or two at the door
-		IllegalArgumentException e = assertThrows(IllegalArgumentException.class, () -> SpecPolicyV1.spec(onSlope(4)));
+		SpecPolicyV1.spec(onSlope(4)); // 1 in 4 (relief 5): fine since SHOPLOW loosened SHOP_GRADE (the site pass digs the shop in)
+		IllegalArgumentException e = assertThrows(IllegalArgumentException.class, () -> SpecPolicyV1.spec(onSlope(2))); // relief 10 over 11 x 20
 		assertTrue(e.getMessage().contains("too steep for a shop"), e.getMessage());
 	}
 }

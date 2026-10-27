@@ -115,7 +115,7 @@ public final class Invariants {
 	private static final class BuildingCheck {
 		final SceneDoc scene;
 		final PlacedBuilding b;
-		final TerrainProbe ground;
+		final TerrainProbe ground, raw;
 		final List<Violation> out;
 		final java.util.Map<Long, Integer> surface;
 		final VoxelGrid g;
@@ -126,6 +126,7 @@ public final class Invariants {
 			this.surface = surface;
 			this.scene = scene;
 			this.b = b;
+			this.raw = ground;
 			this.ground = dev.fractalbuildings.core.terrain.SiteGround.probe(b, ground);
 			this.out = out;
 			this.g = VoxelGrid.of(b);
@@ -145,6 +146,23 @@ public final class Invariants {
 			stepsReachGround();
 			stairRise();
 			windowSize();
+			doorRise();
+		}
+
+		void doorRise() {
+			if (scene.genVersion() < 2) return;
+			String type = b.shell().spec().type();
+			if (DoorChecks.limit(type) == Integer.MAX_VALUE || !DoorChecks.groundStorey(b)) return;
+			List<DoorRise.Door> doors = DoorRise.measure(scene, b, ground, surface);
+			List<Box3> cells = new ArrayList<>();
+			String first = null;
+			for (Object[] t : DoorChecks.tooHigh(scene, b, doors, raw)) {
+				if (!(Boolean) t[1]) continue; // beyond the planner's contract: a design warning (DoorChecks.warnings)
+				DoorRise.Door d = (DoorRise.Door) t[0];
+				cells.add(DoorChecks.cell(b, (dev.fractalbuildings.core.ir.Opening) t[2]));
+				if (first == null) first = d.door() + ": rise " + d.rise() + " from the street (a " + type + " door sits at most " + DoorChecks.limit(type) + " above it)";
+			}
+			if (first != null) report(Invariant.DOOR_RISE, cells.size() + " entrance door(s) too far above the street, first " + first, cells, cells.size());
 		}
 
 		void windowSize() {

@@ -90,11 +90,11 @@ class RailingTest {
 						assertTrue(beside, what + ": rail " + q + " has no step beside it at its level");
 						assertTrue(kerb, what + ": rail " + q + " has no kerb under it");
 						int wx = b.placement().worldX(q.x(), q.z()), wz = b.placement().worldZ(q.x(), q.z());
-						assertTrue(b.oy() + q.y() - rq.terrain().floorY(wx, wz) >= InstancePassV1.RAIL_DROP_LANDING + 1, what + ": rail on ground level with the tread");
+						assertTrue(b.oy() + q.y() - eff(b, rq).floorY(wx, wz) >= InstancePassV1.RAIL_DROP_LANDING + 1, what + ": rail on ground level with the tread");
 					}
 				}
 		assertTrue(scenes > 60, "only " + scenes + " scenes generated");
-		assertTrue(withRails >= 20 && total >= 50, "rails in only " + withRails + " scenes (" + total + " blocks)");
+		assertTrue(withRails >= 8 && total >= 40, "rails in only " + withRails + " scenes (" + total + " blocks)"); // houses, shops and workshops dig in to the street (SHOPLOW S2), so only the towers and temples climb much (and the S4 market hall, on level ground)
 	}
 
 	@Test
@@ -165,14 +165,17 @@ class RailingTest {
 							int wx = b.placement().worldX(cx, cz), wz = b.placement().worldZ(cx, cz);
 							boolean inShell = cx >= 0 && cz >= 0 && cx < bd.maxX() && cz < bd.maxZ();
 							if (inShell || nearDoor(b, cx, cz) || columns.contains(k)) continue;
-							if (b.oy() + t.box().y() - rq.terrain().floorY(wx, wz) < InstancePassV1.RAIL_DROP_FLIGHT) continue;
+							if (b.oy() + t.box().y() - eff(b, rq).floorY(wx, wz) < InstancePassV1.RAIL_DROP_FLIGHT) continue;
 							edges++;
 							assertTrue(railCols.contains(k), what + (rq.lot().containsColumn(wx, wz) ? "" : " (lot line)") + ": open edge beside tread " + t.box() + " at (" + cx + "," + cz + ") has no rail");
 						}
 					}
 				}
-		assertTrue(rails >= 50 && edges >= 50 && diag >= 10, rails + " rails, " + edges + " edges, " + diag + " corners");
+		assertTrue(rails >= 50 && edges >= 40 && diag >= 10, rails + " rails, " + edges + " edges, " + diag + " corners");
 	}
+
+	/** The ground beside a flight as a walker sees it: the building's own cut and fill included (SiteGround). */
+	static dev.fractalbuildings.core.probe.TerrainProbe eff(PlacedBuilding b, GenRequest rq) { return dev.fractalbuildings.core.terrain.SiteGround.probe(b, rq.terrain()); }
 
 	/** Open edges beside a flight or landing deeper than the rail threshold with no rail on them, as text. */
 	static List<String> unguardedEdges(PlacedBuilding b, GenRequest rq) {
@@ -191,7 +194,7 @@ class RailingTest {
 				long k = ((long) cx << 32) ^ (cz & 0xffffffffL);
 				int wx = b.placement().worldX(cx, cz), wz = b.placement().worldZ(cx, cz);
 				if (cx >= 0 && cz >= 0 && cx < bd.maxX() && cz < bd.maxZ() || nearDoor(b, cx, cz) || columns.contains(k)) continue;
-				if (b.oy() + t.box().y() - rq.terrain().floorY(wx, wz) < InstancePassV1.RAIL_DROP_FLIGHT) continue;
+				if (b.oy() + t.box().y() - eff(b, rq).floorY(wx, wz) < InstancePassV1.RAIL_DROP_FLIGHT) continue;
 				if (!railCols.contains(k)) bad.add("tread " + t.box() + " open to (" + cx + "," + cz + ")" + (rq.lot().containsColumn(wx, wz) ? "" : " on the lot line"));
 			}
 		}
@@ -237,9 +240,10 @@ class RailingTest {
 	@Test
 	void aRailAcrossAStepIsCaught() {
 		int tried = 0, failed = 0;
-		for (long seed = 1; seed <= 8; seed++) {
-			GenRequest rq = request("house", seed, "plane:70:1:1:12");
+		for (long seed = 1; seed <= 18; seed++) {
+			GenRequest rq = request(new String[] {"temple", "tower", "hall"}[(int) (seed % 3)], seed, "plane:70:1:1:12"); // houses dig in to the street now and rarely need steps
 			SceneDoc s = generate(rq);
+			if (s == null) continue;
 			PlacedBuilding b = s.buildings().get(0);
 			Box top = null;
 			for (Box x : b.siteBoxes()) if (x.role() == Role.STAIR && (top == null || x.box().y() > top.box().y())) top = x;

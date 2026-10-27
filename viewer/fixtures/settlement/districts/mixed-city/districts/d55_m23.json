@@ -13,7 +13,7 @@
   "lots": [
     {"id": "d55_m23.l0", "x": 8837, "z": -3558, "w": 24, "d": 20, "front": "south", "type": "house", "style": "desert", "storeys": [1, 2], "streets": 1, "airRights": 1, "frontY": 95, "density": 22, "status": "empty:steep"},
     {"id": "d55_m23.l1", "x": 8861, "z": -3546, "w": 10, "d": 8, "front": "south", "type": "house", "style": "desert", "storeys": [1, 2], "streets": 1, "airRights": 1, "frontY": 91, "density": 22, "status": "build"},
-    {"id": "d55_m23.l2", "x": 8871, "z": -3555, "w": 35, "d": 17, "front": "south", "type": "house", "style": "desert", "storeys": [1, 2], "streets": 1, "airRights": 1, "frontY": 85, "density": 12, "status": "empty:steep"}
+    {"id": "d55_m23.l2", "x": 8871, "z": -3555, "w": 35, "d": 17, "front": "south", "type": "house", "style": "desert", "storeys": [1, 2], "streets": 1, "airRights": 1, "frontY": 85, "density": 12, "status": "empty:bank"}
   ],
   "scene": null,
   "violations": []

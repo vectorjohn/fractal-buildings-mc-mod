@@ -112,7 +112,7 @@ class LotRailTest {
 				for (int x = o.box().x(); x < o.box().maxX(); x++)
 					for (int z = o.box().z(); z < o.box().maxZ(); z++) {
 						int cx = x + f.dx, cz = z + f.dz;
-						int g = r.rq().terrain().floorY(b.placement().worldX(cx, cz), b.placement().worldZ(cx, cz));
+						int g = dev.fractalbuildings.core.terrain.SiteGround.probe(b, r.rq().terrain()).floorY(b.placement().worldX(cx, cz), b.placement().worldZ(cx, cz));
 						int surface = g;
 						for (Box s : b.siteBoxes()) if (s.role() == Role.STAIR && s.box().x() == cx && s.box().z() == cz) { surface = Math.max(surface, b.oy() + s.box().y()); landing |= b.oy() + s.box().y() == floor; }
 						if (floor - surface > 1 && bad.size() < 10) bad.add(r.rq().type() + " " + r.rq().lot().w() + "x" + r.rq().lot().d() + " seed " + r.rq().worldSeed() + " door " + o.box() + " drop " + (floor - surface));

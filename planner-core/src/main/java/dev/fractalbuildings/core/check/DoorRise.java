@@ -47,7 +47,7 @@ public final class DoorRise {
 	public static List<Door> measure(SceneDoc scene, TerrainProbe terrain) {
 		Map<Long, Integer> surface = StairGround.surfaceLevels(scene);
 		List<Door> out = new ArrayList<>();
-		for (PlacedBuilding b : scene.buildings()) out.addAll(measure(scene, b, terrain, surface));
+		for (PlacedBuilding b : scene.buildings()) out.addAll(measure(scene, b, dev.fractalbuildings.core.terrain.SiteGround.probe(b, terrain), surface)); // the ground as the building leaves it: its cut and fill are ground (SHOPLOW S2)
 		return out;
 	}
 

@@ -45,7 +45,9 @@ final class CheckCommand {
 					byStyle.add(m.cells.get(i).style(), gs);
 				}
 				doorRise.add(DoorRise.measure(scene, req.terrain()));
-				warnings[i] = HighriseChecks.check(scene);
+				List<Violation> w = new java.util.ArrayList<>(HighriseChecks.check(scene));
+				w.addAll(dev.fractalbuildings.core.check.DoorChecks.warnings(scene, req.terrain()));
+				warnings[i] = w;
 			});
 			for (int i = 0; i < results.length; i++) {
 				String label = "seed " + s + " " + m.cells.get(i).label();
