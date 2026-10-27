@@ -340,7 +340,23 @@ public class WorldPlanner {
 	}
 
 	/**
-	 * Resolves the region cells within {@code radius} blocks of the point and builds the road network, the junction field and the quay runs of every settlement found there,
+	 * METROFILL R1: the quay runs of every settlement warm() would find, traced once (a settlement-wide value) ahead of its first waterfront tile.
+	 * Split from {@link #warm} (PERF row "Region layer + road network", regionperf): on a metropolis it is about 3x the exact probes of the rest of the region
+	 * layer, and the first waterfront tile pays it anyway. Never changes any answer.
+	 */
+	public void warmQuays(int blockX, int blockZ, int radius) {
+		TreeMap<String, SettlementSite> found = new TreeMap<>();
+		int s = config.cellSize();
+		for (int cz = Math.floorDiv(blockZ - radius, s); cz <= Math.floorDiv(blockZ + radius, s); cz++) {
+			for (int cx = Math.floorDiv(blockX - radius, s); cx <= Math.floorDiv(blockX + radius, s); cx++) {
+				siteOf(new Cell(cx, cz)).ifPresent(site -> found.put(site.id(), site));
+			}
+		}
+		for (SettlementSite site : found.values()) dev.fractalbuildings.core.settlement.Districts.warmQuays(source(site), probes.exact());
+	}
+
+	/**
+	 * Resolves the region cells within {@code radius} blocks of the point and builds the street network and the junction field of every settlement found there and the intercity road edges near those cells,
 	 * on the calling thread. Never changes any answer; call it from a worker ahead of travellers.
 	 */
 	public void warm(int blockX, int blockZ, int radius) {
@@ -354,7 +370,6 @@ public class WorldPlanner {
 		for (SettlementSite site : found.values()) {
 			source(site).network();
 			source(site).junctions(probes.exact()); // JUNCTION: the settlement's junction field reads its whole streets' terrain once, ahead of the first tile
-			dev.fractalbuildings.core.settlement.Districts.warmQuays(source(site), probes.exact()); // METROFILL R1: the settlement's quay runs, traced once, ahead of its first waterfront tile
 		}
 		if (roads != null) {
 			for (int cz = Math.floorDiv(blockZ - radius, s); cz <= Math.floorDiv(blockZ + radius, s); cz++) {

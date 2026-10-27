@@ -192,6 +192,7 @@ public class PerfClientGameTest implements FabricClientGameTest {
 					WorldPlanner planner = WorldPlanners.of(level, level.getChunkSource().getGenerator()).orElseThrow();
 					DistrictGrid.Tile t = planner.grid().tileAt(METRO_X + 9 * 16, METRO_Z);
 					planner.warm(METRO_X + 9 * 16, METRO_Z, 2048);
+					planner.warmQuays(METRO_X + 9 * 16, METRO_Z, 2048);
 					planner.prefetch(t.ix(), t.iz());
 					dev.fractalbuildings.mod.worldgen.Workers.awaitIdle(dev.fractalbuildings.mod.worldgen.Workers.pool(), 120_000);
 				}

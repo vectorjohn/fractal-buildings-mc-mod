@@ -6,7 +6,6 @@ import dev.fractalbuildings.core.probe.TerrainProbe;
 import dev.fractalbuildings.core.world.SettlementInfo;
 import dev.fractalbuildings.core.world.WorldConfig;
 import dev.fractalbuildings.core.world.WorldPlanner;
-import dev.fractalbuildings.core.world.WorldProbes;
 import dev.fractalbuildings.mod.TerrainDumpTool;
 import dev.fractalbuildings.mod.probe.LiveProbes;
 import dev.fractalbuildings.mod.worldgen.Workers;
@@ -45,11 +44,16 @@ class PerfPlannerTest {
 
 	private static double ms(long t0) { return (System.nanoTime() - t0) / 1e6; }
 
+	/** The last planner's live probes (the region rows read their noise counters). */
+	private static LiveProbes lastProbes;
+
+	/** A cold planner over the game's own probes ({@link LiveProbes#world}), exact reads counted. */
 	private static WorldPlanner planner(NoiseBasedChunkGenerator gen, RandomState rs, ThreadPoolExecutor pool, Counting[] counter, WorldPlanner.Caches caps) {
 		LiveProbes lp = new LiveProbes(gen, rs);
 		Counting c = new Counting(lp.exact());
 		if (counter != null) counter[0] = c;
-		return new WorldPlanner(SEED, WorldConfig.defaults(), new WorldProbes(lp.region(), lp.coarse(32), c, lp.biome()), pool, caps);
+		lastProbes = lp;
+		return new WorldPlanner(SEED, WorldConfig.defaults(), lp.world(c), pool, caps);
 	}
 
 	private static long usedMb() {
@@ -80,6 +84,17 @@ class PerfPlannerTest {
 		long t0 = System.nanoTime();
 		cold.warm(sx, sz, 2 * cold.config().cellSize());
 		out.put("region.cold.warm.ms", ms(t0));
+		long qp0 = cnt[0].calls.get();
+		out.put("region.cold.warm.probes", qp0);
+		// the noise warm generated (deterministic: one thread, a cold planner): what the timing row is made of (regionperf)
+		LiveProbes lp = lastProbes;
+		out.put("region.cold.warm.chunkFills", lp.chunkFills());
+		out.put("region.cold.warm.sparseColumns", lp.sparseColumns());
+		out.put("region.cold.warm.roadColumns", lp.roadColumns());
+		t0 = System.nanoTime();
+		cold.warmQuays(sx, sz, 2 * cold.config().cellSize());
+		out.put("region.cold.quays.ms", ms(t0));
+		out.put("region.cold.quays.probes", cnt[0].calls.get() - qp0);
 		DistrictGrid.Tile tile = cold.grid().tileAt(sx, sz);
 		long probes0 = cnt[0].calls.get();
 		t0 = System.nanoTime();
@@ -116,7 +131,7 @@ class PerfPlannerTest {
 		try {
 			WorldPlanner w = planner(gen, rs, pool, null, WorldPlanner.Caches.DEFAULT);
 			t0 = System.nanoTime();
-			pool.execute(() -> w.warm(sx, sz, 2 * w.config().cellSize()));
+			pool.execute(() -> { w.warm(sx, sz, 2 * w.config().cellSize()); w.warmQuays(sx, sz, 2 * w.config().cellSize()); }); // as RegionWarmer.warmAt
 			Workers.awaitIdle(pool, 600_000);
 			out.put("region.warmed.worker.ms", ms(t0));
 			t0 = System.nanoTime();
