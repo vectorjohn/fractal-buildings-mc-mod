@@ -96,6 +96,11 @@ Work by path: `cd <worktree> && ...` or `git -C <worktree> ...`.
    The scratchpad directory is shared with other subagents of the coordinator:
    name any log you write there after the item (`testall-<slug>.log`), or
    read the worktree's own `build/test-all/` logs instead.
+   Full suites take a machine-wide suite slot (at most 2 at once):
+   `scripts/test-all.sh` takes one itself; run a full `:planner-core:test`,
+   `:mod:build` or `build` outside it as `scripts/suite.sh <cmd>`, and pass
+   such a command to `scripts/snapshot-test.sh` the same way. A "waiting for
+   suite slot" line is expected under load; allow for it in your `timeout`.
 6. **Mutation spot check** (cheap layers only, at most one, a few minutes):
    break the item's main behaviour with a one-line `sed`, run the narrowest
    command that covers it, confirm a test fails. Then **always** restore with
