@@ -1,6 +1,6 @@
 # Workflow proposal (2026-10-27)
 
-John asked (2026-10-27) for ways to make the run more mechanical, to run fewer tests, to see what agents are doing without an LLM, to see at a glance what needs him, and to catch stalled jobs. This page answers each point with today's evidence, options, cost (S = an hour or two, M = half a day, L = more), what it saves and the risks, and ends with a build order and the decisions that are John's.
+John asked (2026-10-27) for ways to make the run more mechanical, to run fewer tests, to see what agents are doing without an LLM, to see at a glance what needs him, and to catch stalled jobs, and later (point 6) suggested reusing a saved world instead of regenerating one for every look. This page answers each point with today's evidence, options, cost (S = an hour or two, M = half a day, L = more), what it saves and the risks, and ends with a build order and the decisions that are John's.
 
 Written by the assistant from the run ledger ([2026-10-22-phase6](../runs/2026-10-22-phase6.md), "RESUMED 2026-10-27" and "Heavy runs"), the agent definitions, the scripts and the subagent transcripts. Nothing here is built yet; every option is a proposal.
 
@@ -127,6 +127,45 @@ John runs `watch -n 60 scripts/status.sh` in a terminal, or reads the file. *Sav
 
 **Option 5d: fewer "still waiting" notifications (S).** The coordinator gets a notification for each background command or monitor an agent hands back. With 2d (result files) and 1b (the queue), agents end instead of handing back "still waiting", and the coordinator reads `board.md` when it wants a picture, so its context only sees finished work.
 
+# 6. A reference world instead of regenerating (John's idea)
+
+John (2026-10-27): "We also could consider that we don't *always* need to regenerate the world, depending on the use case. If we find an issue we could have some relatively recent world that an agent could fire up and just jump to some already generated areas to look at buildings of various types."
+
+**What agents do today.** Every in-game look generates a fresh world:
+
+- Every client game test (`FlyThroughClientGameTest`, `GameplayClientGameTest`, `RoadsClientGameTest`, `StepBuryClientGameTest`, `FoliageClientGameTest`, `TerrainClientGameTest`, `PerfClientGameTest`, ...) calls `context.worldBuilder()...create()`: a new world per run, generated chunk by chunk while the camera waits. `scripts/flythrough.sh` takes about 25 minutes for 90 frames (NOTES, B9), and fill is server-bound at ~44 chunks/s fresh (NOTES, gpu-intel). `scripts/server-only-test.sh` deletes `mod/build/run/serverOnly/world` before each run.
+- The `architect` and `interior-designer` reviewers judge viewer galleries, `fractal-cli floorplan` and the in-game shots that client tests and fly-throughs left in `mod/build/screenshots/` and `docs/review/phase6/`. They may not run clients, so for a new in-game view they "ask the coordinator for a screenshot", which means a client test or fly-through run under the heavy lock (queued up to five deep today) that regenerates everything just to get a few frames.
+- **Saved worlds are already being read, ad hoc.** ROADJOIN and ROADCLEAR (2026-10-27) diagnosed John's playtest world (seed 1709797029209580947, build e237e451, `~/kaiju-survival-server/run/world`, 605 MB, 71 852 chunks) without running the game: `scripts/McaTop.java` prints a top-block map of a coordinate box straight from the region files, and `scripts/FloatingSnow.java` scanned every generated chunk for snow over air. The ROADJOIN plan also reads `mod/build/run/serverOnly/world` that way after a server-only run. Nobody yet loads a saved world into a client to look around.
+
+So the habit John asks about exists only for offline block reads; looking is always "regenerate, then look".
+
+**Option 6a: a reference-world cache (M).** A saved world per (commit, seed), regenerated in batch and kept for agents to look at:
+
+- **Where**: `~/.cache/fractal-worlds/<seed>-<short sha>/` on each host (outside every worktree, so `git clean` and worktree removal never touch it), holding `world/` (the save), `mod.jar` (the exact jar that generated it), `reference.json` (commit, seed, generation hash (below), radius, mod config, Minecraft version, date, host) and `places.tsv`. A `current-<seed>` symlink points at the newest. Keep the last two per seed.
+- **Seeds**: the three review seeds the fly-through already uses (987654321, 12345, 1), plus John's playtest seed when he wants it.
+- **Generation (`scripts/refworld-gen.sh --seed S [--radius R]`)**: the `server-only-test.sh` machinery (modded dedicated server, console on a FIFO, 127.0.0.1 only) with no client: `worldborder set` to the radius, then pregenerate by `forceload add` in blocks of at most 256 chunks through the console (vanilla only; no pregenerator mod needed; Chunky is the fallback, run as a black-box test-only jar like `fetch-test-mods.sh`'s), then `save-all flush` and stop. Run by the heavy batch (2b), on beebox or locally, after the batch's tests pass, so a reference world only ever comes from a tested commit.
+- **The index (`places.tsv`)**: one row per interesting place: kind, label, x, y, z, yaw, pitch, plus the site id and tier. Kinds: settlement centre per tier and style, a sample building per building type (house, shop, highrise, ...), bridge, quay, gate, road join, plaza, slope street. Sources, cheapest first: the fly-through's `manifest.tsv` (it already finds sites and frames per tier) and `/fb locate <tier>` through the console; then building types from the planner itself, either `fractal-cli city --districts` on a terrain dump of the same world (NOTES warns live and recorded site choice differed once, so check each row against the save with McaTop), or, better, a small mod-side `/fb places` dump command (a **coder** item, S) that writes what the live planner placed. Camera presets come from the same rows (the fly-through's ring and street views).
+- **Looking (`scripts/refworld-look.sh --world current-12345 --places 'kind=quay,tier=metropolis' | --at X,Y,Z,YAW,PITCH ...`)**: copy the save to a scratch dir (the cached copy is never opened for writing), start the modded server on the stored `mod.jar` with the world border at the pregenerated radius, join with the vanilla client (`tools/vanilla-client`, as `server-only-test.sh` does), `tp` to each preset in spectator mode, wait until two captures agree (the fly-through's `stableShot` rule), `import -window root`, then stop. Every frame gets the stamp burnt in with ImageMagick (already in the flake): `refworld 12345 @ <sha> (N generator commits behind HEAD) x,y,z`, and the same in the output `manifest.tsv` and the file name. Still a client, so it takes the heavy lock (or goes to beebox through `anywhere.sh`), but for minutes, not the 25-40 of a fly-through or suite.
+- **Reading offline (`scripts/world-query.sh`)**: McaTop and FloatingSnow promoted to one tool with subcommands (`top BOX`, `block X Y Z`, `column X Z`, `find BLOCK BOX`, `count BLOCK BOX`, `scan <check>`), on a reference world or any save (John's included). No lock, no game, seconds. Checks like "is there floating snow on any road" or "what is at the coordinate John reported" become one command; reviewers who may not run clients may run this.
+
+**When a reference world is valid.** `reference.json` stores a **generation hash**: the tree hash of the paths that can change what is generated (`planner-core/src/main`, `mod/src/main`, the mod's `resources/data`, `gradle.properties`; the list kept next to `test-scope.tsv`). `refworld-look.sh` prints, and stamps, one of:
+
+- **exact**: no change to those paths between the world's commit and HEAD (`git diff --quiet <sha> HEAD -- <paths>`). The world is what HEAD would generate. Good for anything that only looks: architect and interior reviews, John's questions, docs pictures, bug reproduction at a coordinate.
+- **stale, N commits behind**: those paths changed. Still good enough for looks reviews of things the change didn't touch ("how does a metropolis quay look" after a shop interior change), for orientation, and for "was it already like this before the change" comparisons, where the stamp is the point. The reviewer says in its verdict that it used a stale world.
+- **fresh world required**, never a reference world: determinism and generation-order tests (`order-test.sh`), anything that verifies a generation change (the item's own evidence has to come from its own commit), performance and timing (generation cost is what they measure), the server-only install test, the compat matrix, and gate evidence.
+
+**Cost.** Build: `refworld-gen.sh` (M, mostly reuse of `server-only-test.sh`), `refworld-look.sh` (M, same machinery plus presets and stamping), `world-query.sh` (S, the code exists), the index from manifests and `/fb locate` (S), `/fb places` (coder, S). About two days of assistant work plus one small coder item. Run: at John's world's density (605 MB / 71 852 chunks, ~8.6 KB a chunk) a radius of 1536 blocks (192 x 192 = ~37 000 chunks) is ~320 MB a seed, ~2 GB for three seeds kept twice. Generation time is **not measured**: at the ~44 chunks/s fresh fill rate seen through a client it would be ~14 min a seed; server-side `forceload` on 20 cores may be faster or slower. One refresh per heavy batch, so a few per day at most.
+
+**Savings.** A screenshot request from a reviewer or John becomes a ~5-minute look (estimate, **not measured**: server and client start ~1-2 min, then frames load from disk instead of generating) instead of a client test or fly-through run that regenerates the world (25-40 min plus the heavy queue). Bug reproduction at a coordinate starts from a known save that every agent can cite ("refworld 12345 @ abc123, x=..., z=..."), as ROADJOIN and ROADCLEAR did with John's world, without first regenerating to reach the spot. Offline checks over a whole world (FloatingSnow-style scans over 70 000 chunks) need no client at all. It also takes reviewer-only screenshot runs out of the heavy queue, which is the queue that held items up today.
+
+**Risks.**
+
+- **A stale world misleading a review** (the main one): the commit and "N commits behind" are burnt into every frame and written to every manifest; the reviewer and verifier templates say a verdict on a generator change needs an exact world or the item's own run.
+- **Chunks generated by a different build**: walking past the pregenerated edge would generate new chunks with whatever jar is loaded and leave a seam. The look script loads the stored jar, keeps the world border at the pregenerated radius, and keeps presets inside it minus the render distance.
+- **Loading changes the save** (entities move, block ticks run, a newer Minecraft upgrades the chunks): the cached copy is never opened, only a scratch copy; after a Minecraft version bump the cache is thrown away.
+- **Index drift**: `places.tsv` rows are checked against the save (McaTop top block at each row) when the world is built; a row that finds no building is dropped and logged.
+- **Disk and transfer**: ~2 GB per host; whether `remote.sh`'s channel to beebox suits a ~1 GB copy is not checked, so generating on each host may be simpler than copying.
+
 # Other fixes found on the way
 
 - **Verifiers can't write report files**: `verifier.md`'s frontmatter is `tools: Read, Grep, Glob, Bash, EnterWorktree, ExitWorktree`, with no `Write`, so a verifier has to write its report through a Bash heredoc, which the classifier may refuse. Add `Write` to its tools, or add `scripts/report.sh <slug>` that writes stdin to `.claude/reports/<slug>.md`. S, assistant. (Agent definitions only take effect in sessions started after they reach the checkout the session runs in.)
@@ -149,8 +188,11 @@ John runs `watch -n 60 scripts/status.sh` in a terminal, or reads the file. *Sav
 | 10 | `merge-queue.sh` (train in snapshot, regen guard, one suite, ff-only, bisect) | M | assistant (lead-coder review) | 3, 5, 9 |
 | 11 | `reap.sh --mine/--orphans` | M | assistant | 8 |
 | 12 | SilverBullet status page; Haiku digest | S | assistant | 6 |
+| 13 | `world-query.sh` (McaTop and FloatingSnow as one offline tool) | S | assistant | |
+| 14 | Reference worlds: `refworld-gen.sh`, `places.tsv` from manifests and `/fb locate`, `refworld-look.sh` with stamped frames; refresh in the heavy batch | M | assistant | 2b's heavy batch (for the refresh) |
+| 15 | `/fb places` dump command for the index (building types by coordinate) | S | coder | 14 |
 
-Items 1-5 are a day's work for one assistant and change nothing about how items are coded; they pay off at once. Item 10 is the one that cuts test time and golden conflicts the most, but it changes how merges happen, so it should go in after the ledger and board make it observable, and run alongside manual merges for a day before it replaces them.
+Items 1-5 are a day's work for one assistant and change nothing about how items are coded; they pay off at once. Item 13 can go in at any time (it is already used, just scattered); 14 pays off as soon as reviewers ask for in-game views, and does not depend on the merge queue. Item 10 is the one that cuts test time and golden conflicts the most, but it changes how merges happen, so it should go in after the ledger and board make it observable, and run alongside manual merges for a day before it replaces them.
 
 # What John decides
 
@@ -163,3 +205,4 @@ Items 1-5 are a day's work for one assistant and change nothing about how items 
 7. **Where you look**: terminal (`watch scripts/status.sh`), a file, or a page in SilverBullet (needs a git-ignored file in docs-feedback)?
 8. **beebox**: allow `job kill` on queued jobs, and does `anywhere.sh` count beebox as 3 slots now that `job help` says 3 at a time?
 9. **Haiku digest**: wanted, or the generated board only?
+10. **Reference worlds**: build them (which seeds; add your playtest seed?), and is a "stale, N commits behind" world acceptable for looks reviews of things the change didn't touch, or only an exact one? Disk budget (~2 GB per host proposed)?
