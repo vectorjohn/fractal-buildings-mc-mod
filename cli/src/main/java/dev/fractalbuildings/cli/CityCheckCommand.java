@@ -2,6 +2,7 @@ package dev.fractalbuildings.cli;
 
 import dev.fractalbuildings.cli.Main.UsageException;
 import dev.fractalbuildings.core.check.DoorRise;
+import dev.fractalbuildings.core.check.FillStats;
 import dev.fractalbuildings.core.check.Glazing;
 import dev.fractalbuildings.core.check.HighriseChecks;
 import dev.fractalbuildings.core.check.SettlementChecks;
@@ -45,10 +46,10 @@ final class CityCheckCommand {
 
 	private record Job(String label, long seed, String terrain, int cellSize, String site, int cellCx, int cellCz) {}
 
-	private record Result(Job job, String siteId, String tier, int radius, int cells, int districts, int lots, int scenes, int hubPct, int strays, List<String> problems, List<String> warnings, String error, double ms, TerrainStats terrain) {}
+	private record Result(Job job, String siteId, String tier, int radius, int cells, int districts, int lots, int scenes, int hubPct, int strays, List<String> problems, List<String> warnings, String error, double ms, TerrainStats terrain, FillStats fill, long roofCols, long roofDry) {}
 
 	static int run(String[] args) throws IOException {
-		Opts o = new Opts(args, Set.of("seeds", "terrain", "sites", "scenes", "cell-size", "out", "ignore", "list", "junctions-near"), Set.of("junction", "door-rise"));
+		Opts o = new Opts(args, Set.of("seeds", "terrain", "sites", "scenes", "cell-size", "out", "ignore", "list", "junctions-near", "fill-json"), Set.of("junction", "door-rise"));
 		doorRiseOn = o.flag("door-rise");
 		o.flag("junction"); // junction-height is part of every check now (JUNCTION); the flag that turned it on is accepted and does nothing
 		listMax = o.intValue("list", 20);
@@ -98,6 +99,7 @@ final class CityCheckCommand {
 		int bad = 0;
 		for (Result r : results) if (r.error() != null || r.problems().stream().anyMatch(p -> !ignore.contains(rule(p)))) bad++;
 		System.err.printf(Locale.ROOT, "city-check: %d sites, %d failing, %.1f s%n", results.length, bad, secs);
+		if (o.has("fill-json")) GenCommand.write(Path.of(o.get("fill-json", null)), FillReport.json(fillSites(results)).getBytes(StandardCharsets.UTF_8)); // METROFILL M0
 		if (o.has("out")) GenCommand.write(Path.of(o.get("out", null)), md.getBytes(StandardCharsets.UTF_8));
 		else System.out.print(md);
 		return bad == 0 ? 0 : 1;
@@ -191,6 +193,10 @@ final class CityCheckCommand {
 			for (Violation v : dev.fractalbuildings.core.check.SettlementChecks.cityEdgeTaper(city.districts().values(), site.centre(), new dev.fractalbuildings.core.settlement.BuiltEdge(src)::depth)) warnings.add(v.invariant() + ": " + v.message());
 			// proposed rule "arterials form one network" (METROFILL R1): a warning until John accepts it
 			for (Violation v : dev.fractalbuildings.core.check.SettlementChecks.cityArterialsConnected(city.districts().values())) warnings.add(v.invariant() + ": " + v.message());
+			// METROFILL M0: fill metrics and the three DS-47 checks, report only
+			FillStats fill = FillStats.of(city);
+			for (Violation v : fill.checks(site.tier())) warnings.add(v.invariant() + ": " + v.message());
+			long roofCols = 0, roofDry = 0;
 			int built = 0;
 			List<String> ids = CityPlanner.autoScenes(city, sceneCount);
 			for (String id : ids) {
@@ -202,14 +208,23 @@ final class CityCheckCommand {
 				if (doorRiseOn) DOOR_RISE.add(DoorRise.measure(CityPlanner.scene(city, id, p.terrain(), p.biome(), false).scene(), p.terrain()));
 				for (Violation v : HighriseChecks.check(b.scene())) warnings.add(v.invariant() + ": " + id + " " + v.message());
 				for (Violation v : b.warnings()) warnings.add(v.invariant() + ": " + id + " " + v.message());
+				long[] rc = FillReport.roofCover(b, city.plan().coarse());
+				roofCols += rc[0];
+				roofDry += rc[1];
 				built++;
 			}
 			int lots = 0;
 			for (var d : city.districts().values()) lots += (int) d.lots().stream().filter(LotBrief::builds).count();
-			return new Result(j, site.id(), site.tier().json, site.radius(), site.cells().size(), city.districts().size(), lots, built, city.streetColumns() == 0 ? 100 : (int) (100L * city.hubPiece() / city.streetColumns()), city.strays(), problems, warnings, null, (System.nanoTime() - t0) / 1e6, TerrainStats.of(city, p.terrain()));
+			return new Result(j, site.id(), site.tier().json, site.radius(), site.cells().size(), city.districts().size(), lots, built, city.streetColumns() == 0 ? 100 : (int) (100L * city.hubPiece() / city.streetColumns()), city.strays(), problems, warnings, null, (System.nanoTime() - t0) / 1e6, TerrainStats.of(city, p.terrain()), fill, roofCols, roofDry);
 		} catch (RuntimeException e) {
-			return new Result(j, "?", "?", 0, 0, 0, 0, 0, 0, 0, problems, warnings, e.getClass().getSimpleName() + ": " + e.getMessage(), (System.nanoTime() - t0) / 1e6, null);
+			return new Result(j, "?", "?", 0, 0, 0, 0, 0, 0, 0, problems, warnings, e.getClass().getSimpleName() + ": " + e.getMessage(), (System.nanoTime() - t0) / 1e6, null, null, 0, 0);
 		}
+	}
+
+	private static java.util.List<FillReport.Site> fillSites(Result[] rs) {
+		java.util.List<FillReport.Site> out = new ArrayList<>();
+		for (Result r : rs) out.add(new FillReport.Site(r.job().label(), r.tier(), r.fill(), r.roofCols(), r.roofDry()));
+		return out;
 	}
 
 	private static String rule(String problem) { return problem.substring(0, problem.indexOf(':')); }
@@ -261,6 +276,7 @@ final class CityCheckCommand {
 			for (int i = 0; i < Math.min(r.problems().size(), listMax); i++) sb.append("- ").append(r.problems().get(i)).append('\n');
 			if (r.problems().size() > listMax) sb.append("- ... ").append(r.problems().size() - listMax).append(" more\n");
 		}
+		FillReport.section(sb, fillSites(rs), scenes);
 		if (scenes > 0) sb.append("\n## Glazing (DS-33, report only)\n\nBuildings in the district scenes built; glass cells over exterior wall-plane cells.\n\n").append(GLAZING.toMarkdown("type"));
 		if (scenes > 0 && doorRiseOn) sb.append("\n## Door rise (DS-45, report only)\n\nEntrance doors of the buildings in the district scenes built; rise = door level minus the street surface in front (limits: shops -2..2, houses and workshops at most 3 or 4-5 with a landing, no run over 3 risers).\n\n").append(DOOR_RISE.toMarkdown());
 		return sb.toString();
