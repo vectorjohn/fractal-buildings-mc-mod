@@ -11,7 +11,7 @@
 # minus any `flock .../heavy.lock` prefix: the worker runs one job at a time from
 # its own queue, so the local heavy lock doesn't apply there.
 #
-# What it does: copies this worktree (minus .git, .claude and everything
+# What it does: copies this worktree (minus .git, .claude but its agents/, and everything
 # .gitignore'd: build/, run/, node_modules/, ...) to the worker, queues CMD,
 # waits, saves the full output to build/remote/<job>.log and prints its tail,
 # copies results back to the same paths here (build/test-all/, JUnit XML,
@@ -98,7 +98,10 @@ trap 'rm -f "$RUNNER"' EXIT
 } > "$RUNNER"
 
 echo "remote: copying $ROOT to $HOST:jobs/$NAME ..." >&2
-rsync -a --filter=':- .gitignore' --exclude=/.git --exclude=/.claude/ \
+# .claude/agents/ is tracked and needed (design-blocks --check reads it); the
+# rest of .claude/ (worktrees, locks, reports, settings) stays here.
+rsync -a --filter=':- .gitignore' --exclude=/.git \
+	--include=/.claude/ --include='/.claude/agents/***' --exclude='/.claude/*' \
 	-e "${SSH[*]}" "$ROOT/" "$HOST:jobs/$NAME/"
 rsync -a -e "${SSH[*]}" "$RUNNER" "$HOST:jobs/$NAME/.fb-remote-run.sh"
 
@@ -107,7 +110,9 @@ echo "remote: queued as $HOST job $ID; waiting (log: $LOG) ..." >&2
 
 # From here on, stopping this script stops the remote job too.
 # shellcheck disable=SC2329 # called from the trap
+WAITPID=""
 cleanup_remote() {
+	[[ -n $WAITPID ]] && kill "$WAITPID" 2>/dev/null || true
 	"${SSH[@]}" "$HOST" job kill "$ID" >/dev/null 2>&1 || true
 	(( KEEP )) || "${SSH[@]}" "$HOST" job clean "$NAME" >/dev/null 2>&1 || true
 }
@@ -118,7 +123,12 @@ trap 'rm -f "$RUNNER"; cleanup_remote; exit 130' INT TERM
 status=255
 for _ in 1 2 3 4 5; do
 	set +e
-	"${SSH[@]}" "$HOST" job wait "$ID"
+	# In the background + `wait`: bash runs the INT/TERM trap only after a
+	# foreground child exits, so a foreground ssh would make stopping this
+	# script wait for the whole remote job instead of cancelling it.
+	"${SSH[@]}" "$HOST" job wait "$ID" &
+	WAITPID=$!
+	wait "$WAITPID"
 	status=$?
 	set -e
 	(( status != 255 )) && break

@@ -92,7 +92,9 @@ cd "$ROOT"
 exec 9>> "$HEAVY_LOCK"
 log "waiting for heavy lock $HEAVY_LOCK ..."
 flock 9
-log "heavy lock taken (pid $$); timeout ${TIMEOUT}s, crash grace ${GRACE}s, renderer FB_VK=$VK"
+RENDERER="FB_VK=$VK"
+if [[ -n ${FB_VK_DRIVER_FILES:-} ]]; then RENDERER="worker GPU (FB_VK_DRIVER_FILES)"; fi
+log "heavy lock taken (pid $$); timeout ${TIMEOUT}s, crash grace ${GRACE}s, renderer $RENDERER"
 
 CHILD="" PGID="" TAILPID=""
 
