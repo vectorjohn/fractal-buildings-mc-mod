@@ -13,7 +13,9 @@ export FB_ANY_DIR=$T/any FB_SUITE_LOCK_DIR=$T/locks FB_HEAVY_LOCK=$T/heavy.lock 
 export FB_ANY_LOADAVG=$T/loadavg FB_ANY_POLL=1 FB_ANY_REMOTE=$T/fake-remote
 export FB_ANY_BEEBOX_STATUS="test ! -e $T/down && cat $T/status.d/* 2>/dev/null; test ! -e $T/down"
 export FB_ANY_BEEBOX_CHECK="test ! -e $T/down"
-unset FB_VK FB_SUITE_SLOT_HELD FB_ANY_LOAD_MAX FB_ANY_DEPTH
+unset FB_VK FB_SUITE_SLOT_HELD
+# The cases were written for load ceiling 14 and beebox depth 0 (one job); the defaults moved since.
+export FB_ANY_LOAD_MAX=14 FB_ANY_DEPTH=0
 mkdir -p "$T/locks"
 cat > "$T/fake-remote" <<EOF
 #!/usr/bin/env bash
@@ -94,9 +96,10 @@ check "SIGTERM while waiting: 143, no ticket, not run" "$rc $(ls "$T/any/queue" 
 
 # Three waiters, FIFO: both busy; then both free. 1st -> local (prefer), 2nd -> beebox, 3rd waits
 # for one of them to finish (heavy kind: the local heavy claim keeps local busy while the 1st runs).
+# The 2nd sleeps longer, so the 1st always ends first.
 reset; load 15; bee_busy
 for i in 1 2 3; do
-	"$A" --kind heavy -- sh -c "echo start $i \$(date +%s.%N) >> $T/order; sleep 3; echo end $i \$(date +%s.%N) >> $T/order" 2> "$T/out.w$i" &
+	"$A" --kind heavy -- sh -c "echo start $i \$(date +%s.%N) >> $T/order; sleep $(( i == 2 ? 5 : 3 )); echo end $i \$(date +%s.%N) >> $T/order" 2> "$T/out.w$i" &
 	eval "w$i=\$!"; sleep 0.4
 done
 sleep 1; load 3; bee_idle
@@ -123,6 +126,38 @@ reset
 sleep 1.5; kill -TERM $r; wait $r; rc=$?
 check "SIGTERM after start: CMD's status" "$rc" "42"
 check "--status runs" "$("$A" --status | grep -c '^local: load')" "1"
+
+# Quiet switch (--local-max): N=0 keeps suite/heavy/full off this host, N=1 allows one at a time.
+reset
+go() { "$A" --dry-run "$@" | grep -o 'go to [a-z]*'; }
+check "--local-max 0 writes the file" "$("$A" --local-max 0 > /dev/null; head -n1 "$T/any/local-max")" "0"
+check "--status shows the switch" "$("$A" --status | grep -c '^quiet switch: local-max 0')" "1"
+check "N=0: suite, both free: beebox" "$(go --kind suite -- true)" "go to beebox"
+check "N=0: heavy, both free: beebox" "$(go -- scripts/client-test.sh)" "go to beebox"
+check "N=0: --only local suite: waits" "$(go --only local --kind suite -- true)" "go to nowhere"
+check "N=0: light still local" "$(go -- true)" "go to local"
+check "N=0: FB_VK (local only) still local" "$(go -- env FB_VK=intel scripts/client-test.sh)" "go to local"
+"$A" --local-max 1 > /dev/null
+check "N=1: nothing running: suite local" "$(go --kind suite -- true)" "go to local"
+"$A" --kind heavy -- sleep 4 2> "$T/out.q1" & q1=$!; sleep 1.5
+check "N=1: 1st heavy went local" "$(route "$T/out.q1")" "local"
+check "N=1: one local run: suite -> beebox" "$(go --kind suite -- true)" "go to beebox"
+check "N=1: one local run: light still local" "$(go -- true)" "go to local"
+bee_busy; rm -f "$T"/any/beebox-status.*
+"$A" --kind suite -- true 2> "$T/out.q2"
+wait $q1
+check "N=1: beebox busy: 2nd waits, then local" "$(route "$T/out.q2") $(grep -c 'waiting for a host' "$T/out.q2")" "local 1"
+check "N=1: claim cleaned up" "$(compgen -G "$T/any/claims/local-run.*" | wc -l)" "0"
+bee_idle; rm -f "$T"/any/beebox-status.*
+flock -o "$T/locks/suite.lock.2" sleep 30 & h4=$!; sleep 0.3
+check "N=1: slot held outside anywhere counts: beebox" "$(go --kind suite -- true)" "go to beebox"
+kill $h4; wait $h4 2>/dev/null
+"$A" --local-max 0 --until "$(( $(date +%s) - 5 ))" > /dev/null
+check "expired switch: local" "$(go --kind suite -- true)" "go to local"
+check "expired switch: --status says so" "$("$A" --status | grep -c '^quiet switch: off (expired')" "1"
+check "--until HH:MM: within a day" "$("$A" --local-max 1 --until 00:00 > /dev/null; awk -v now="$(date +%s)" 'NR == 1 { sub("until=", "", $2); print ($2 > now && $2 <= now + 86400) }' "$T/any/local-max")" "1"
+check "--local-max off removes it" "$("$A" --local-max off > /dev/null; [[ -e $T/any/local-max ]] && echo there || echo gone)" "gone"
+check "--local-max x: refused (2)" "$("$A" --local-max x > /dev/null 2>&1; echo $?)" "2"
 
 echo "anywhere-selftest: $fails failure(s)"
 (( fails == 0 ))

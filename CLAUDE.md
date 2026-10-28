@@ -252,6 +252,7 @@ agents can work and test at once. The rules below exist to make that safe.
     an idle beebox), so both machines stay busy and nothing gets stuck in
     beebox's queue, which can't drop a queued job. Run it in the background
     (it can wait a long time); stop it with SIGTERM, never SIGKILL.
+  - **Quiet switch:** `scripts/anywhere.sh --local-max N [--until HH:MM]` caps this host at N anywhere-routed suite/heavy/full jobs at once (also counting suite slots and the heavy lock held outside anywhere; N=0: all of them go to beebox), `--local-max off` lifts it, `--status` shows it; light and local-only jobs (FB_VK, snapshot-test.sh, squash-merge.sh) are not held back, and it only gates jobs started through anywhere.sh, so while it is on, send full suites and client runs through it.
   - **It renders on its GPU**, not lavapipe: there's no desktop on it to
     share the GPU with. `scripts/remote.sh` runs the command in a headless
     sway session and the test scripts use its Xwayland display instead of
