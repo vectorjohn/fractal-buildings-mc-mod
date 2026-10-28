@@ -20,7 +20,7 @@
 # scripts/remote.sh prints the OOM kill itself and exits 137.
 #
 # Jobs and memory (ORDERMEM): one run is a Gradle client + a single-use Gradle daemon (-Xmx2G, gradle.properties) + the server JVM
-# (no -Xmx: the JVM default, 1/4 of the memory it sees, cgroup-aware); FB_ORDER_RUN_MB (default 3000) is the budget per run. Default
+# (no -Xmx: the JVM default, 1/4 of the memory it sees, cgroup-aware); FB_ORDER_RUN_MB (default 2300; John 2026-10-27, measured peak ~1.9 GB per run) is the budget per run. Default
 # --jobs = min(6, (budget - 1 GiB) / FB_ORDER_RUN_MB), at least 1; the budget is the tightest cgroup v2 memory.max above this process
 # (when one is set; the lower of it and MemAvailable), else MemAvailable. An explicit --jobs wins but warns when over the budget. Under
 # a cgroup cap the build step runs --no-daemon, so no idle daemon holds memory during the runs. A beebox job (MemoryMax 28 %, 7.9 GiB)
@@ -64,7 +64,7 @@ if [ -n "$CG_MAX" ]; then
 else
 	MEM_MB=$AVAIL_MB; MEM_SRC="MemAvailable $AVAIL_MB MB"
 fi
-RUN_MB="${FB_ORDER_RUN_MB:-3000}"
+RUN_MB="${FB_ORDER_RUN_MB:-2300}"
 [[ $RUN_MB =~ ^[1-9][0-9]*$ ]] || { echo "order-test: FB_ORDER_RUN_MB must be a positive number" >&2; exit 2; }
 FIT=$(( (MEM_MB - 1024) / RUN_MB )); [ "$FIT" -ge 1 ] || FIT=1
 if [ -z "$JOBS" ]; then
