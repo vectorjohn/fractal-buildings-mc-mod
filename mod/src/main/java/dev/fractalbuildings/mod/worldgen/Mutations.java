@@ -27,6 +27,9 @@ public final class Mutations {
 	/** Vanilla lakes are placed where our pieces are ({@link LakeVeto} off): a later neighbour's lake then writes lava and cave air into them. */
 	public static final String LAKES = "lakes";
 
+	/** Vanilla boulders ({@code BlockBlobFeature}, forest_rock) are placed where our pieces are ({@link RockVeto} off). Sim and unit tests only. */
+	public static final String ROCKS = "rocks";
+
 	/** The pre-SPILLDIRT2 street fix: {@link StreetAirFix} does not put a planned air cell back under a removed trunk (the dirt stays). */
 	public static final String TRUNK_BASE = "trunk-base";
 	/** The pre-2026-10-23 {@link SpillClear}: it clears logs and the cells under logs too. */

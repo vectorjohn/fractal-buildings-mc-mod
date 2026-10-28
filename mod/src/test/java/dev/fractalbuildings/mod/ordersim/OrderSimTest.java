@@ -8,7 +8,6 @@ import dev.fractalbuildings.mod.worldgen.BuildingAirClear;
 import dev.fractalbuildings.mod.worldgen.SpillClear;
 import dev.fractalbuildings.mod.worldgen.StreetAirFix;
 import java.util.List;
-import java.util.Set;
 import java.util.function.Predicate;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -28,7 +27,6 @@ import org.junit.jupiter.api.Test;
  * air than with the pass on (the histogram's {@code air->..._leaves/_log/snow} cells), so the controls assert that.
  */
 class OrderSimTest {
-	static final Set<String> NO_ROCK = Set.of("forest_rock");
 	static SimSites temperate, snow;
 	static Scenario sc1, sc5, sc1small;
 
@@ -39,12 +37,12 @@ class OrderSimTest {
 		WorldPlanner p1 = temperate.planner();
 		ScenarioFinder f1 = new ScenarioFinder(p1, temperate.site(), temperate.probes().exact());
 		ScenarioFinder.Window w6 = f1.densestWindow(6), w4 = f1.densestWindow(4);
-		sc1 = Scenario.city("sc1", temperate, p1, w6.cx(), w6.cz(), w6.n(), 3, false, List.of(), false, NO_ROCK);
-		sc1small = Scenario.city("sc1-small", temperate, p1, w4.cx(), w4.cz(), w4.n(), 3, false, List.of(), false, NO_ROCK);
+		sc1 = Scenario.city("sc1", temperate, p1, w6.cx(), w6.cz(), w6.n(), 3, false, List.of(), false);
+		sc1small = Scenario.city("sc1-small", temperate, p1, w4.cx(), w4.cz(), w4.n(), 3, false, List.of(), false);
 		snow = SimSites.load("gate-snow-city");
 		WorldPlanner p5 = snow.planner();
 		ScenarioFinder.Window ws = new ScenarioFinder(p5, snow.site(), snow.probes().exact()).densestWindow(4);
-		sc5 = Scenario.city("sc5", snow, p5, ws.cx(), ws.cz(), ws.n(), 3, true, List.of(), false, NO_ROCK);
+		sc5 = Scenario.city("sc5", snow, p5, ws.cx(), ws.cz(), ws.n(), 3, true, List.of(), false);
 		for (Scenario s : List.of(sc1, sc1small, sc5)) s.plan(); // the reference raster once per scenario: the tests time the orders
 	}
 

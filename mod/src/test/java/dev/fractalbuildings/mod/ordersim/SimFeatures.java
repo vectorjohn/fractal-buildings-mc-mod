@@ -5,6 +5,7 @@ import dev.fractalbuildings.core.probe.TerrainProbe;
 import dev.fractalbuildings.core.rand.Hash64;
 import dev.fractalbuildings.core.world.WorldPlanner;
 import dev.fractalbuildings.mod.worldgen.LakeVeto;
+import dev.fractalbuildings.mod.worldgen.RockVeto;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -33,6 +34,7 @@ public final class SimFeatures {
 		public int chunkX() { return Math.floorDiv(x, 16); }
 		public int chunkZ() { return Math.floorDiv(z, 16); }
 		public BlockPos origin() { return new BlockPos(x, y, z); }
+		public boolean isRock() { return key.equals("forest_rock"); }
 		public boolean isLake() { return key.startsWith("lake_"); }
 		public String label() { return "feature:" + key + "@" + x + "," + y + "," + z; }
 	}
@@ -135,6 +137,7 @@ public final class SimFeatures {
 		int[] st = stats.of(c.key());
 		st[0]++;
 		if (c.isLake() && planner != null && LakeVeto.vetoes(planner, c.origin())) { st[2]++; return false; }
+		if (c.isRock() && planner != null && RockVeto.vetoes(planner, c.origin())) { st[2]++; return false; }
 		SimLevel level = new SimLevel(world, c.chunkX(), c.chunkZ(), c.label(), c.rngSeed());
 		boolean placed = SimBoot.feature(KEYS.get(c.key())).place(level.proxy(), null, RandomSource.create(c.rngSeed()), c.origin());
 		if (placed) st[1]++;

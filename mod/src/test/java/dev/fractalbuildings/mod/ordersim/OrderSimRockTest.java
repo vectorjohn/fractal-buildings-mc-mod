@@ -3,6 +3,7 @@ package dev.fractalbuildings.mod.ordersim;
 import static org.junit.jupiter.api.Assertions.*;
 
 import dev.fractalbuildings.core.world.WorldPlanner;
+import dev.fractalbuildings.mod.worldgen.Mutations;
 import java.util.List;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -21,7 +22,7 @@ import org.junit.jupiter.api.Test;
  */
 class OrderSimRockTest {
 	/** ROCKVETO flips this to true when the veto is in production and in the sim. */
-	static final boolean FIXED = false;
+	static final boolean FIXED = true;
 
 	static Scenario full, single;
 	static SimFeatures.Call rock;
@@ -35,14 +36,19 @@ class OrderSimRockTest {
 		full = Scenario.city("rock-full", gate, planner, w.cx(), w.cz(), w.n(), 3, false, List.of(), false);
 		// the rock calls of the full pool that can reach the inner window: find the one the forward and reverse runs name as the last writer
 		var orders = OrderSimTest.fast(full);
-		for (int i = 0; i < 2 && rock == null; i++) {
-			SimRun r = OrderSim.run(full, orders.get(i), false);
-			for (String cell : r.badCells) {
-				int at = cell.indexOf("feature:forest_rock@");
-				if (at < 0) continue;
-				String label = cell.substring(at).split("[ ;]")[0];
-				for (SimFeatures.Call c : full.calls) if (c.label().equals(label)) rock = c;
+		Mutations.mode = Mutations.ROCKS; // ROCKVETO: with the veto on no rock lands, so find the case with it off
+		try {
+			for (int i = 0; i < 2 && rock == null; i++) {
+				SimRun r = OrderSim.run(full, orders.get(i), false);
+				for (String cell : r.badCells) {
+					int at = cell.indexOf("feature:forest_rock@");
+					if (at < 0) continue;
+					String label = cell.substring(at).split("[ ;]")[0];
+					for (SimFeatures.Call c : full.calls) if (c.label().equals(label)) rock = c;
+				}
 			}
+		} finally {
+			Mutations.mode = null; // the replay below runs with the veto on
 		}
 		if (rock != null) single = new Scenario("rock", planner, gate.seed(), gate.probes().exact(), gate.probes().biome(), w.cx(), w.cz(), w.n(), List.of(rock), true);
 	}
