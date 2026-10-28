@@ -86,23 +86,25 @@ public final class SimLevel {
 		}
 		if (world.logWrites) {
 			String frame = null;
-			if (world.audit) {
+			if (world.audit && ours()) { // the first frame of ours (not the sim, not Minecraft) that made the write
 				frame = StackWalker.getInstance().walk(s -> s.map(f -> f.getClassName() + "." + f.getMethodName() + ":" + f.getLineNumber())
 					.filter(n -> !n.startsWith("dev.fractalbuildings.mod.ordersim.") && !n.startsWith("jdk.proxy") && !n.startsWith("net.minecraft.") && !n.startsWith("java."))
 					.findFirst().orElse("?"));
 			}
 			world.writes.add(new SimWorld.Write(pos.getX(), pos.getY(), pos.getZ(), old, state, flags, writer, frame));
-			world.lastWriter.put(SimWorld.key(pos.getX(), pos.getY(), pos.getZ()), writer);
 		}
+		if (world.trackWriters) world.lastWriter.put(SimWorld.key(pos.getX(), pos.getY(), pos.getZ()), writer);
 		return true;
 	}
+
+	private static final java.util.concurrent.ConcurrentHashMap<Method, String> KEYS = new java.util.concurrent.ConcurrentHashMap<>();
 
 	private final class Handler implements InvocationHandler {
 		@Override
 		public Object invoke(Object p, Method m, Object[] a) throws Throwable {
 			String name = m.getName();
 			int n = a == null ? 0 : a.length;
-			switch (name + "/" + n) {
+			switch (KEYS.computeIfAbsent(m, mm -> mm.getName() + "/" + mm.getParameterCount())) {
 				case "hashCode/0": return System.identityHashCode(p);
 				case "equals/1": return p == a[0];
 				case "toString/0": return "SimLevel[" + ccx + "," + ccz + " " + writer + "]";
@@ -139,6 +141,7 @@ public final class SimLevel {
 				case "getBlockEntity/1": { BlockPos bp = (BlockPos) a[0]; return readChunk(bp.getX() >> 4, bp.getZ() >> 4).getBlockEntity(bp); }
 				case "ensureCanWrite/1": { BlockPos bp = (BlockPos) a[0]; return inWrite(bp.getX() >> 4, bp.getZ() >> 4); }
 				case "setCurrentlyGenerating/1": return null;
+				case "environmentAttributes/0": return net.minecraft.world.attribute.EnvironmentAttributeReader.EMPTY; // dimension defaults (FAST_LAVA for a lava tick delay)
 				default:
 					if (m.isDefault()) return InvocationHandler.invokeDefault(p, m, a);
 					throw new UnsupportedOperationException("SimLevel does not model " + m.getDeclaringClass().getSimpleName() + "." + name + "/" + n);

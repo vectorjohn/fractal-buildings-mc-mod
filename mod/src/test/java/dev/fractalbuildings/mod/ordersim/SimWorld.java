@@ -47,6 +47,8 @@ public final class SimWorld {
 	/** Record a StackWalker frame (the first frame outside the sim and Minecraft) with each write. Slower. */
 	public boolean audit;
 	public boolean logWrites = true;
+	/** Keep the last writer of each written cell (provenance); cheaper than the full log. */
+	public boolean trackWriters = true;
 
 	@SuppressWarnings("unchecked")
 	public SimWorld(long seed, int cx0, int cz0, int nx, int nz, TerrainProbe terrain, BiomeProbe biomes) {

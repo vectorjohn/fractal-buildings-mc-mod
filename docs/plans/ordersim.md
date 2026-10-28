@@ -516,3 +516,16 @@ Scenario SC6: a road beside a village. The checks are as for SC4, plus the `Vill
 - (architect) SPILLDIRT's first and 10-23 cases are kept as accepted spill: buried dirt under road concrete, and dirt
   at the top of a street cut's headroom under the hillside's grass. Should the street pass restore the planned block
   there too (`StreetAirFix` already does it for removed trunks)? Default: no; it stays accepted spill.
+
+# S3 as built (2026-10-28)
+
+Deviations from the plan above (all in `mod/src/test/java/dev/fractalbuildings/mod/ordersim/`):
+
+- **Post-process replay stays small.** In 26.3 `getPostProcessPos` is null for all but mushrooms, soul sand and magma, so `SimWorld.promote` replays only those; promotion runs once a chunk and its 8 neighbours have decorated. No bigger replay machine was built.
+- **Road passes without R3.** `RoadFeature.placeIn` does not exist yet, so `OrderSim.roadStep` repeats the lines of `RoadFeature.place` before the draw (`SpillClear` where no ground piece, `roadLeaves`, `BuildingAirClear`, `StreetAirFix`). The road draw is not run. When R3 lands (S5/S8), replace `roadStep` by `placeIn` so the two cannot drift.
+- **Feature steps are fixed in `SimFeatures`**, not read from the biome JSON. The hashed pool is a stress mix, not biome-accurate (it includes `forest_rock` and `dark_oak` in a temperate city).
+- **The structures' step is asked of the real `DistrictStructure.step()`** (built with the JSON's settings), so `early-step` moves it; the run also records an error (C1) when it is not `TOP_LAYER_MODIFICATION`, like the order test's `stepOk`. A 2 x 2 window with k = 3 features did not show `early-step` in C3 on its own.
+- **C6 is a fixpoint check**: two more sweeps of the top-layer step (pieces, then road step) over every decorated chunk; the second must change no claimed cell. "Run again, nothing changes" is false after the first sweep, because re-running `TilePiece.write` repairs spill.
+- **C5 rules** are in `SimCompare.violation`: flag 16 on every write of ours, a `TilePiece` write inside the decorating chunk, air-only writes for the clears with their old-block and planned-air conditions, `restoreBase` writes exactly the planned block over dirt-family blocks. Writers are found with `StackWalker` in forward and reverse only.
+- **Test hooks:** `Scenario.Extra` (test-only work in a chunk's top-layer step, used for the planted order dependence) and `OrderSim.run(.., tamper)` (changes the world before the checks read it).
+- **Cost** (loadavg 22 to 28, so not quiet): SC1 2 x 2 window, 6 orders in parallel on 4 threads, 2.2 to 2.9 s; SC1 6 x 6 window (k = 3): 4.1 s parallel, 8.5 s one after another; plan (reference raster) 0.1 to 0.3 s.
