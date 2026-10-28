@@ -12,10 +12,10 @@
 #   phase 1 (independent): forward clean-centre config mutant-*     phase 2 (compare with a phase 1 baseline): the other orders, reverse-centre
 # Results: build/order-test/<label>.{verdict,report,run.json,log,server.log}; exit 0 only when every run says PASS.
 #
-# EULA: the run dirs are mod/build/run/order/<label>/ and each needs eula.txt. Create ONE file (agents may, under the standing EULA approval in CLAUDE.md, local test servers only),
-#   mkdir -p <repo>/mod/build/run/order && echo eula=true > <repo>/mod/build/run/order/eula.txt
-# in this worktree or in the main checkout (a file there is found from every worktree); this script only copies that
-# file into the per-run dirs, and stops (exit 3) when there is none. It never writes "eula=true" itself.
+# EULA: each run dir mod/build/run/order/<label>/ gets a copy of mod/build/run/order/eula.txt (this worktree's, else the main checkout's).
+# When neither says eula=true, the script writes eula=true to this worktree's file itself and prints one line saying so (so remote.sh
+# copies, which leave ignored files out, work): local test servers in the project's test dirs, 127.0.0.1, online-mode=false, covered by
+# the standing EULA approval in CLAUDE.md. Each run checks its server.properties binds 127.0.0.1 with online-mode=false (else that run FAILs, unstarted).
 #
 # Works from any cwd and worktree; enters the dev shell itself. Env: FB_ORDER_TIMEOUT (seconds per run, default 3000), FB_ORDER_PORT (first port, default 25610).
 set -euo pipefail
@@ -34,9 +34,8 @@ for f in "$BASE/eula.txt" "$MAIN_ROOT/mod/build/run/order/eula.txt"; do
 	if grep -qx 'eula=true' "$f" 2>/dev/null; then EULA="$f"; break; fi
 done
 if [ -z "$EULA" ]; then
-	echo "order-test: no eula.txt saying eula=true in $BASE (or the main checkout). The order test runs local dedicated servers (127.0.0.1, offline); the standing EULA approval in CLAUDE.md covers them." >&2
-	echo "  Create it once:  mkdir -p $BASE && echo eula=true > $BASE/eula.txt" >&2
-	exit 3
+	mkdir -p "$BASE"; echo eula=true > "$BASE/eula.txt"; EULA="$BASE/eula.txt"
+	echo "order-test: no eula.txt found; wrote eula=true to $EULA (local test servers, 127.0.0.1, online-mode=false: standing EULA approval in CLAUDE.md, John 2026-10-22/26)" >&2
 fi
 
 OUT="$ROOT/build/order-test"
@@ -83,6 +82,11 @@ simulation-distance=4
 spawn-protection=0
 max-tick-time=-1
 P
+	# the EULA approval covers local offline test servers only: never start one that isn't
+	if ! grep -qx 'server-ip=127.0.0.1' "$dir/server.properties" || ! grep -qx 'online-mode=false' "$dir/server.properties"; then
+		echo "FAIL $dir/server.properties must bind 127.0.0.1 with online-mode=false" > "$OUT/$label.verdict"
+		echo "order-test: $label: server.properties not local/offline; not started" >&2; return 3
+	fi
 	# gap 3: the config world is made while the file says cellSize 2048; every other run has no config file (the defaults)
 	rm -f "$dir/config/fractalbuildings.json"
 	[ "$label" = config ] && echo '{"cellSize": 2048}' > "$dir/config/fractalbuildings.json"
