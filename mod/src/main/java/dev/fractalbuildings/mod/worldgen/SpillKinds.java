@@ -46,7 +46,20 @@ public final class SpillKinds {
 		if (natural && (TREE_BASE.contains(name(have)) || CARVER.contains(name(have)))) return "spill";
 		// a tree's dirt base under a log may replace a block that is not ground (a road edge, a wall foot)
 		if (TREE_BASE.contains(name(have)) && treeAbove(above, above2)) return "spill";
+		// SPILLDIRT3: a tree base whose log our surface blocked (see surfaceOverBase)
+		if (roadCell && TREE_BASE.contains(name(have)) && surfaceOverBase(above)) return "spill";
 		return "unknown";
+	}
+
+	/**
+	 * SPILLDIRT3: a street cell one below its surface block. A tree of a neighbouring chunk that decorates after our write sets its dirt base under the
+	 * base cell; where that cell is our street surface (a road two blocks thick on a slope, the cell below is road too) the log is blocked, the dirt replaces the
+	 * lower road block, and no log is left to see: our own later steps clear the logs it did place, and the 4 cells of a 2x2 base fall in two chunks, one of
+	 * which our write covers after the tree. Seen at 1287,65,-9504 (order test) and reproduced by the sim at 1206,71,-9600 (writer feature:dark_oak).
+	 * Only a road cell, only dirt-family, only under a solid non-ground, non-vegetation block of ours.
+	 */
+	private static boolean surfaceOverBase(BlockState above) {
+		return !above.isAir() && !ground(above) && !above.is(BlockTags.LEAVES) && !above.is(BlockTags.LOGS) && above.getFluidState().isEmpty();
 	}
 
 	/**
