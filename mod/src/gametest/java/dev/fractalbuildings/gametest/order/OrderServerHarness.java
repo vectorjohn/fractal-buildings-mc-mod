@@ -290,6 +290,7 @@ public final class OrderServerHarness {
 						if (!have.isAir()) {
 							airBad++;
 							String kind = Spill.airKind(have, level.getBlockState(p.set(PieceLedger.x(k), PieceLedger.y(k) + 1, PieceLedger.z(k))), level.getBlockState(p.set(PieceLedger.x(k), PieceLedger.y(k) + 2, PieceLedger.z(k))));
+							if (kind.equals("unknown") && Spill.trunkBaseBeside(have, level, PieceLedger.x(k), PieceLedger.y(k), PieceLedger.z(k))) kind = "spill"; // the 2x2 base cell whose log was blocked (p6-spilldirt, spiral)
 							hist.merge("air->" + blockName(have) + " [" + kind + "]", 1, Integer::sum);
 							if (kind.equals("unknown")) {
 								unknownAir++;
@@ -307,6 +308,7 @@ public final class OrderServerHarness {
 							if (have.is(net.minecraft.tags.BlockTags.LOGS) || have.is(net.minecraft.tags.BlockTags.LEAVES)) solidTrees++;
 							String kind = Spill.solidKind(want, have, level.getBlockState(p.set(PieceLedger.x(k), PieceLedger.y(k) + 1, PieceLedger.z(k))), level.getBlockState(p.set(PieceLedger.x(k), PieceLedger.y(k) + 2, PieceLedger.z(k))), refRoad.contains(k));
 							if (kind.equals("unknown") && Spill.lakeBarrier(have, level, PieceLedger.x(k), PieceLedger.y(k), PieceLedger.z(k))) kind = "lake";
+							if (kind.equals("unknown") && Spill.trunkBaseBeside(have, level, PieceLedger.x(k), PieceLedger.y(k), PieceLedger.z(k))) kind = "spill";
 							hist.merge(blockName(want) + "->" + blockName(have) + " [" + kind + "]", 1, Integer::sum);
 							if (refRoad.contains(k) && blockName(have).equals("dirt") && roadDirtLogged[0]++ < 12) { // ROADS1 r2: a dirt patch on a paved street, same cells in every order
 								int ux = PieceLedger.x(k), uy = PieceLedger.y(k), uz = PieceLedger.z(k);

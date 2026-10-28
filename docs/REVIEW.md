@@ -528,3 +528,5 @@ The architect and interior designer answered the design questions from your play
   Result:
 - [ ] **Workflow proposal (2026-10-27)**: read [review/workflow-proposal.md](review/workflow-proposal.md) (merge queue, test ledger, golden regen, status board, needs-John list, watchdog) and answer "What John decides" at its end.
   Result:
+
+- [ ] **BRIDGEENDS: rails on the new stone abutments (2026-10-27)**: bridge ends and high road embankments (bare fill over 2) are now faced in foundation stone down to the ground ([before](../.claude/reports/p7-bridgeends-gallery/r2-before-river.png), [after](../.claude/reports/p7-bridgeends-gallery/r2-after-river.png), river-town dm6_m22). DS-46/DS-8 say a raised road edge gets a rail; none is built. Add rails in this item, or widen ROADMAP 7.15 (railings on city bridges) to "decks and abutments" and merge BRIDGEENDS now? The architect recommends widening 7.15. Review: `.claude/reports/p7-bridgeends-architect.md` (round 2).

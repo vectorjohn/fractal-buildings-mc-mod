@@ -50,6 +50,20 @@ final class Spill {
 	}
 
 	/**
+	 * The dirt base of a 2x2 (dark oak) trunk whose other base cells carry the trunk. {@code DarkOakTrunkPlacer} calls setDirtAt under all four base cells but
+	 * places a log only where the cell is free; a neighbouring chunk's tree that runs after our write therefore leaves dirt/podzol under a cell of ours whose
+	 * log it could not place (p6-spilldirt: light_gray_concrete->dirt at 1287,65,-9504 and 1288,65,-9504 with concrete above, one shuffled order in 17,
+	 * a 2-wide pair on a chunk's edge row). Needs a log in the 8 columns around, one or two cells up; in every other order our write comes later and covers it.
+	 */
+	static boolean trunkBaseBeside(BlockState have, net.minecraft.world.level.Level level, int x, int y, int z) {
+		if (!TREE_BASE.contains(name(have))) return false;
+		net.minecraft.core.BlockPos.MutableBlockPos p = new net.minecraft.core.BlockPos.MutableBlockPos();
+		for (int dy = 1; dy <= 2; dy++) for (int dz = -1; dz <= 1; dz++) for (int dx = -1; dx <= 1; dx++)
+			if ((dx != 0 || dz != 0) && level.getBlockState(p.set(x + dx, y + dy, z + dz)).is(BlockTags.LOGS)) return true;
+		return false;
+	}
+
+	/**
 	 * A lava lake's barrier: {@code LakeFeature} (26.3 bytecode, second pass of {@code place}) sets its barrier (stone for lava lakes) on every
 	 * solid block of the lake's shell that its replace predicate allows, ours included, when a neighbour chunk decorated later puts its lake
 	 * across the border (CITYQ r6: cobblestone->stone in 5 of 7 orders). Stone with lava within 3 blocks.
