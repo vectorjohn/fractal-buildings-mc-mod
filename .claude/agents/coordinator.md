@@ -288,8 +288,20 @@ post-merge failure.
   Copy the verifier's non-breaking findings into the ROADMAP **Polish
   backlog** and its human-review items into `docs/REVIEW.md` (if not already
   there). Start whatever this item unblocked.
-- *Merged, but post-merge tests failed* (squash-merge exit 5; they run on a
-  snapshot after the lock is released): decide **revert vs fix-forward**. Revert
+- *Merged, post-merge pending* (the normal case): `squash-merge.sh` starts
+  the post-merge tests detached on the snapshot and exits, so the verifier
+  reports `post-merge: pending` with a `POSTMERGE PENDING` line. Check them
+  when you next look at the run with `scripts/postmerge-status.sh <slug>`
+  (exit 0 PASS, 1 FAIL / KILLED / DIED, 3 RUNNING; no argument lists the
+  last 20) or by grepping `<repo root>/.claude/postmerge.log` (one `START` /
+  `PASS` / `FAIL` / `KILLED` / `DIED` line per run), and record the outcome
+  in the ledger. FAIL is the case below. KILLED or DIED never finished:
+  restart it detached with `setsid nohup scripts/postmerge-run.sh
+  <integration checkout> <sha> <slug> 'scripts/test-all.sh --no-client'
+  > /dev/null 2>&1 < /dev/null &`.
+- *Merged, but post-merge tests failed* (`postmerge-status.sh` FAIL, or
+  squash-merge exit 5 with `--wait`; they run on a snapshot after the lock is
+  released): decide **revert vs fix-forward**. Revert
   when the cause isn't obvious or the branch is blocking others: one merge-lock
   call (`git -C <integration checkout> revert --no-edit <sha>`, `revert --abort`
   on failure), then re-open the item. Fix forward when the fix is small and

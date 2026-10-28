@@ -127,7 +127,8 @@ Work by path: `cd <worktree> && ...` or `git -C <worktree> ...`.
 
 Be thorough about this change, not the whole codebase. Flag real gaps, not
 style preferences. Before you report, make sure nothing you started is still
-running.
+running, except the detached post-merge run that `squash-merge.sh` starts
+(Merge, step 6).
 
 ### Evidence rule (heavy layers)
 
@@ -200,15 +201,16 @@ it per command (each Bash call is a separate process, so a lock taken in one
 call is gone in the next, and `I` would sit half-merged with the lock free;
 this has happened). Run `scripts/squash-merge.sh` from `I`, which does steps
 1–5 under one `flock`, resets `I` before exiting on any failure, **releases
-the lock after the commit**, and then runs step 6 on a snapshot worktree.
+the lock after the commit**, then (`--cleanup`) does step 7, and then starts
+step 6 **detached** on a snapshot worktree and exits at once.
 `I` = the integration checkout:
 
 ```sh
 # write the step-5 message to a file (scratchpad) first, then ONE Bash call:
-timeout 3600 I/scripts/squash-merge.sh I <integration branch> \
+timeout 3600 I/scripts/squash-merge.sh --cleanup I <integration branch> \
     claude/<slug> <message file> ['<step-6 test command>']
-# exit 0 merged | 2 not clean / wrong branch | 3 conflict (reset) |
-#      4 commit failed (reset) | 5 tests failed after commit | 6 no lock |
+# exit 0 merged (step 6 PENDING) | 2 not clean / wrong branch | 3 conflict (reset) |
+#      4 commit failed (reset) | 5 step 6 could not start (merged) | 6 no lock |
 #      7 archived REVIEW items brought back (reset; send it back to the coder)
 ```
 
@@ -254,18 +256,30 @@ call. The steps:
    ```
 6. **Post-merge tests, without the lock:** if the integration branch gained
    code commits after `<base>`, pass the fast layers as the test command
-   (`'scripts/test-all.sh --no-client'`). The script runs them through
+   (`'scripts/test-all.sh --no-client'`). The script starts them **detached**
+   (`setsid nohup scripts/postmerge-run.sh`, which runs
    `scripts/snapshot-test.sh` in the warm, persistent worktree
-   `.claude/worktrees/postmerge` (own lock, `.claude/postmerge.lock`: another
+   `.claude/worktrees/postmerge`; own lock, `.claude/postmerge.lock`: another
    merge's tests may run first; logs pinned under
-   `.claude/reports/postmerge-<slug>-evidence/`). On exit 5, report the
-   commit, the failing test and the evidence folder. **Don't revert and
+   `.claude/reports/postmerge-<slug>-evidence/`) and prints one
+   `POSTMERGE PENDING sha=... slug=... pid=... log=... result=... evidence=...`
+   line. They take 15–45 min plus the queue, longer than your Bash tool
+   allows, so **don't wait for them**: report
+   `## Merge: merged <sha>; post-merge: pending (scripts/postmerge-status.sh <slug>)`
+   and copy the PENDING line into the report. The coordinator checks the
+   result. If you happen to check it yourself (`scripts/postmerge-status.sh
+   <slug>`: exit 0 PASS, 1 FAIL/KILLED/DIED, 3 RUNNING) and it failed, report
+   the commit, the failing test and the evidence folder. **Don't revert and
    don't fix**: the coordinator decides revert vs fix-forward. (Two merges
    that pass alone can fail together; the next merge's post-merge tests and
-   the batched heavy run catch that.)
-7. Clean up: `git -C I worktree remove <worktree>` and
-   `git -C I branch -D claude/<slug>` (`-D` because a squash doesn't mark it
-   merged). If removing the worktree fails, leave both and say so.
+   the batched heavy run catch that.) `--wait` keeps the old foreground run
+   (exit 5 on failure) for when the coordinator asks you to wait.
+7. Clean up: `--cleanup` removes the item's worktree (`git worktree remove`,
+   no `--force`) and deletes `claude/<slug>` (`-D`, a squash doesn't mark it
+   merged) right after the commit, before step 6 starts, and prints a
+   `CLEANUP` line. On `CLEANUP KEPT` (dirty worktree) both are left; say so.
+   Without `--cleanup`, do it by hand: `git -C I worktree remove <worktree>`
+   and `git -C I branch -D claude/<slug>`.
 
 **Never run Gradle in `I`**: use the item's worktree or a snapshot
 (`scripts/snapshot-test.sh I <sha> <label> '<cmd>'`). If you must run there,
@@ -282,7 +296,10 @@ own) and give each its own verdict. Then squash-merge the COMPLETE ones one
 after another, each with its own message and **no** test command. After the
 last, run the fast suite once:
 `scripts/snapshot-test.sh I HEAD train-<first slug> 'scripts/test-all.sh --no-client'`.
-If it fails, bisect over the train's squash commits: run the narrowest
+Your Bash tool may not outlive it: start it detached instead,
+`setsid nohup I/scripts/postmerge-run.sh I <head sha> train-<first slug> 'scripts/test-all.sh --no-client' > /dev/null 2>&1 < /dev/null &`,
+and poll `I/scripts/postmerge-status.sh train-<first slug>` in short calls
+(exit 3 while RUNNING); same for each bisect step. If it fails, bisect over the train's squash commits: run the narrowest
 failing command with `snapshot-test.sh` at each commit (oldest first, or
 halving with 4) to find the first failing one. Then revert that commit in
 **one** merge-lock call (clean check, `git -C I revert --no-edit <sha>`; on
@@ -365,7 +382,7 @@ usual; the squash commit covers all rounds.
 
 ```
 ## Verdict: COMPLETE | INCOMPLETE | FAILING
-## Merge: merged <sha> | not merged (<reason>) | MERGE CONFLICT (<files>)
+## Merge: merged <sha>; post-merge: pending (scripts/postmerge-status.sh <slug>) | PASS | FAIL (<evidence>) | none | not merged (<reason>) | MERGE CONFLICT (<files>)
 ## Tests
 - <command> (where) → <summary lines with counts>
 - heavy: <evidence folder accepted | run by me: folder | not needed | batched>

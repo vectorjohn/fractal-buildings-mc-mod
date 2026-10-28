@@ -40,6 +40,9 @@ replay_*.log
 /.claude/suite.lock.*
 # scripts/anywhere.sh queue, claims and route log
 /.claude/anywhere/
+# scripts/postmerge-run.sh state: result files, logs (see scripts/squash-merge.sh)
+/.claude/postmerge/
+/.claude/postmerge.log
 
 # editor swap files
 *.swp
