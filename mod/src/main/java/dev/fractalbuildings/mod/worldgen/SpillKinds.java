@@ -1,4 +1,4 @@
-package dev.fractalbuildings.gametest.order;
+package dev.fractalbuildings.mod.worldgen;
 
 import java.util.Set;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -13,8 +13,8 @@ import net.minecraft.world.level.block.state.BlockState;
  * litter, logs, huge mushrooms and short plants in our air; shape-only changes of a connecting block next to a vanilla block. Everything else
  * that changes one of our cells is {@code unknown} and fails the test; the histogram of every run is logged so a new kind is seen, not guessed.
  */
-final class Spill {
-	private Spill() {}
+public final class SpillKinds {
+	private SpillKinds() {}
 
 	/** Natural ground our raster may want (terrain-following fill, roads of gravel and sand). */
 	private static final Set<String> GROUND = Set.of("dirt", "coarse_dirt", "rooted_dirt", "grass_block", "podzol", "mycelium", "stone", "andesite", "diorite", "granite", "deepslate", "tuff",
@@ -33,12 +33,12 @@ final class Spill {
 			// CITYQ r2: a fallen tree's decoration (a brown mushroom on its log, seen at 1441,64,-9476 in reverse and shuffle2 once the gate city's lattice drew a street there)
 			"brown_mushroom", "red_mushroom");
 
-	static String name(BlockState s) { return BuiltInRegistries.BLOCK.getKey(s.getBlock()).getPath(); }
+	public static String name(BlockState s) { return BuiltInRegistries.BLOCK.getKey(s.getBlock()).getPath(); }
 
 	private static boolean ground(BlockState s) { String n = name(s); return GROUND.contains(n) || n.endsWith("_ore"); }
 
 	/** "spill" (known vanilla), "shape" (same connecting block, other connections) or "unknown". {@code above} is the world block over the cell. */
-	static String solidKind(BlockState want, BlockState have, BlockState above, BlockState above2, boolean roadCell) {
+	public static String solidKind(BlockState want, BlockState have, BlockState above, BlockState above2, boolean roadCell) {
 		if (want.getBlock() == have.getBlock() && (want.getBlock() instanceof CrossCollisionBlock || want.getBlock() instanceof WallBlock)) return "shape";
 		boolean natural = ground(want) || name(want).equals("dirt_path");
 		if (roadCell && ROAD_BLOCKS.contains(name(want)) && ROAD_CARVED.contains(name(have))) return "spill";
@@ -55,7 +55,7 @@ final class Spill {
 	 * log it could not place (p6-spilldirt: light_gray_concrete->dirt at 1287,65,-9504 and 1288,65,-9504 with concrete above, one shuffled order in 17,
 	 * a 2-wide pair on a chunk's edge row). Needs a log in the 8 columns around, one or two cells up; in every other order our write comes later and covers it.
 	 */
-	static boolean trunkBaseBeside(BlockState have, net.minecraft.world.level.Level level, int x, int y, int z) {
+	public static boolean trunkBaseBeside(BlockState have, net.minecraft.world.level.BlockGetter level, int x, int y, int z) {
 		if (!TREE_BASE.contains(name(have))) return false;
 		net.minecraft.core.BlockPos.MutableBlockPos p = new net.minecraft.core.BlockPos.MutableBlockPos();
 		for (int dy = 1; dy <= 2; dy++) for (int dz = -1; dz <= 1; dz++) for (int dx = -1; dx <= 1; dx++)
@@ -68,7 +68,7 @@ final class Spill {
 	 * solid block of the lake's shell that its replace predicate allows, ours included, when a neighbour chunk decorated later puts its lake
 	 * across the border (CITYQ r6: cobblestone->stone in 5 of 7 orders). Stone with lava within 3 blocks.
 	 */
-	static boolean lakeBarrier(BlockState have, net.minecraft.world.level.Level level, int x, int y, int z) {
+	public static boolean lakeBarrier(BlockState have, net.minecraft.world.level.BlockGetter level, int x, int y, int z) {
 		if (!name(have).equals("stone")) return false;
 		net.minecraft.core.BlockPos.MutableBlockPos p = new net.minecraft.core.BlockPos.MutableBlockPos();
 		for (int dy = -3; dy <= 3; dy++) for (int dz = -3; dz <= 3; dz++) for (int dx = -3; dx <= 3; dx++)
@@ -77,7 +77,7 @@ final class Spill {
 	}
 
 	/** "spill" (canopy, litter, patches, a tree's dirt under a log) or "unknown". */
-	static String airKind(BlockState have, BlockState above, BlockState above2) {
+	public static String airKind(BlockState have, BlockState above, BlockState above2) {
 		String n = name(have);
 		if (n.equals("dirt") && treeAbove(above, above2)) return "spill";
 		if (AIR_SPILL.contains(n) || n.endsWith("_ore") || have.is(BlockTags.LEAVES) || have.is(BlockTags.LOGS) || have.is(BlockTags.FLOWERS) || have.is(BlockTags.SAPLINGS)) return "spill";

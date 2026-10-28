@@ -37,10 +37,7 @@ public final class GroundStructure extends Structure {
 			BlockPos pos = new BlockPos(cp.getMiddleBlockX(), ctx.chunkGenerator().getSeaLevel(), cp.getMiddleBlockZ());
 			return Optional.of(new GenerationStub(pos, builder -> {
 				try {
-					for (GroundPiece g : planner.ground(t.ix(), t.iz())) {
-						Box3 b = g.box();
-						builder.addPiece(new GroundStructurePiece(g.ref(), new BoundingBox(b.x(), b.y(), b.z(), b.maxX() - 1, b.maxY() - 1, b.maxZ() - 1)));
-					}
+					for (TilePiece piece : groundPieces(planner, t)) builder.addPiece(piece);
 				} catch (RuntimeException e) {
 					WorldPlanners.FAILURES.incrementAndGet();
 					FractalBuildingsMod.LOGGER.error("Planning the ground of tile {},{} failed; the tile gets none", t.ix(), t.iz(), e);
@@ -51,6 +48,16 @@ public final class GroundStructure extends Structure {
 			FractalBuildingsMod.LOGGER.error("Deciding the ground start at chunk {} failed", cp, e);
 			return Optional.empty();
 		}
+	}
+
+	/** The ground pieces of a tile, in plan order (what the generation stub adds). Public so the order simulation builds the same pieces. */
+	public static java.util.List<TilePiece> groundPieces(WorldPlanner planner, DistrictGrid.Tile t) {
+		java.util.ArrayList<TilePiece> out = new java.util.ArrayList<>();
+		for (GroundPiece g : planner.ground(t.ix(), t.iz())) {
+			Box3 b = g.box();
+			out.add(new GroundStructurePiece(g.ref(), new BoundingBox(b.x(), b.y(), b.z(), b.maxX() - 1, b.maxY() - 1, b.maxZ() - 1)));
+		}
+		return out;
 	}
 
 	@Override

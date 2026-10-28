@@ -27,6 +27,11 @@ public final class Mutations {
 	/** Vanilla lakes are placed where our pieces are ({@link LakeVeto} off): a later neighbour's lake then writes lava and cave air into them. */
 	public static final String LAKES = "lakes";
 
+	/** The pre-SPILLDIRT2 street fix: {@link StreetAirFix} does not put a planned air cell back under a removed trunk (the dirt stays). */
+	public static final String TRUNK_BASE = "trunk-base";
+	/** The pre-2026-10-23 {@link SpillClear}: it clears logs and the cells under logs too. */
+	public static final String SPILL_LOGS = "spill-logs";
+
 	public static volatile String mode;
 	/** The shared counter of {@link #COUNTER}. */
 	static final java.util.concurrent.atomic.AtomicInteger COUNTER_VALUE = new java.util.concurrent.atomic.AtomicInteger();

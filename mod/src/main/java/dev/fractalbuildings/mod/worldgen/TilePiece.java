@@ -73,13 +73,24 @@ public abstract class TilePiece extends StructurePiece {
 
 	@Override
 	public void postProcess(WorldGenLevel level, StructureManager structureManager, ChunkGenerator generator, RandomSource random, BoundingBox chunkBB, ChunkPos chunkPos, BlockPos referencePos) {
-		// `random` is used only by the RANDOM mutation switch: everything else derives from the planner (seed + position).
 		ServerLevel sl = level.getLevel();
 		Optional<WorldPlanner> planner = WorldPlanners.of(sl, generator);
 		if (planner.isEmpty()) return;
 		if (genVersion != GeneratorV1.GEN_VERSION && WARNED.put("gv" + genVersion, true) == null) {
 			FractalBuildingsMod.LOGGER.warn("A district piece was saved by generator v{}, this is v{}: not-yet-generated chunks of old cities may show a seam", genVersion, GeneratorV1.GEN_VERSION);
 		}
+		write(level, planner.get(), this, chunkBB, chunkPos, random);
+	}
+
+	/**
+	 * Everything {@code postProcess} does once the planner is known: the piece's cells in the chunk, then the clears and hooks. Public so the
+	 * order simulation (and tests) can drive a piece without a generator or structure manager.
+	 */
+	public static void write(WorldGenLevel level, WorldPlanner planner, TilePiece piece, BoundingBox chunkBB, ChunkPos chunkPos, RandomSource random) {
+		// `random` is used only by the RANDOM mutation switch: everything else derives from the planner (seed + position).
+		final PieceRef ref = piece.ref;
+		final int genVersion = piece.genVersion;
+		final BoundingBox boundingBox = piece.boundingBox;
 		boolean noChunkClip = Mutations.is(Mutations.NO_CHUNK_CLIP);
 		int x0 = Math.max(noChunkClip ? boundingBox.minX() : chunkBB.minX(), boundingBox.minX());
 		int x1 = Math.min(noChunkClip ? boundingBox.maxX() : chunkBB.maxX(), boundingBox.maxX());
@@ -101,7 +112,7 @@ public abstract class TilePiece extends StructurePiece {
 		FoliageClear.Cuts cuts = ground ? new FoliageClear.Cuts("street") : null;
 		try {
 			lt = LaneStats.postBegin();
-			planner.get().raster(ref, clip, (x, y, z, role, blockId, shape) -> {
+			planner.raster(ref, clip, (x, y, z, role, blockId, shape) -> {
 				BlockState state = BlockMapper.state(role, blockId, shape);
 				if (mixRandom && random.nextInt(4) == 0) state = Blocks.STONE.defaultBlockState();
 				if (counter && !state.isAir() && Mutations.COUNTER_VALUE.incrementAndGet() % 7 == 0) state = Blocks.STONE_BRICKS.defaultBlockState();
@@ -127,7 +138,7 @@ public abstract class TilePiece extends StructurePiece {
 		// after it then removes whatever those cuts left hanging (it removes every unsupported cell within its margin, cut by anyone)
 		if (ref.kind() == PieceRef.Kind.GROUND) {
 			try {
-				SpillClear.run(level, planner.get(), chunkPos.x(), chunkPos.z()); // CITYQ: street air a later neighbour's features wrote into
+				SpillClear.run(level, planner, chunkPos.x(), chunkPos.z()); // CITYQ: street air a later neighbour's features wrote into
 			} catch (RuntimeException e) {
 				WorldPlanners.FAILURES.incrementAndGet();
 				FractalBuildingsMod.LOGGER.error("Re-clearing the street air round {} failed", ref, e);
@@ -149,7 +160,7 @@ public abstract class TilePiece extends StructurePiece {
 		if (ref.kind() == PieceRef.Kind.BUILDING) {
 			try {
 				// furniture, chests and villagers for the planner's hooks, after the shell cells of this chunk (plan B5)
-				dev.fractalbuildings.mod.gameplay.HookPlacer.place(level, planner.get(), ref, x0, x1, z0, z1, dev.fractalbuildings.mod.gameplay.Gameplay.villagersEnabled());
+				dev.fractalbuildings.mod.gameplay.HookPlacer.place(level, planner, ref, x0, x1, z0, z1, dev.fractalbuildings.mod.gameplay.Gameplay.villagersEnabled());
 			} catch (RuntimeException e) {
 				WorldPlanners.FAILURES.incrementAndGet();
 				FractalBuildingsMod.LOGGER.error("Placing the hooks of {} failed", ref, e);

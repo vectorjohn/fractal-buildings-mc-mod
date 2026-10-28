@@ -32,11 +32,17 @@ public final class LakeVeto {
 
 	/** True when the lake at {@code origin} must not be placed. Failures place the lake (vanilla) and count in {@link WorldPlanners#FAILURES}. */
 	public static boolean vetoes(WorldGenLevel level, ChunkGenerator gen, BlockPos origin) {
-		if (Mutations.is(Mutations.LAKES) || level.getLevel().dimension() != Level.OVERWORLD) return false;
+		if (Mutations.is(Mutations.LAKES) || level.getLevel().dimension() != Level.OVERWORLD) return false; // (the pure overload checks the mutant again)
 		Optional<WorldPlanner> planner = WorldPlanners.of(level.getLevel(), gen);
 		if (planner.isEmpty()) return false;
+		return vetoes(planner.get(), origin);
+	}
+
+	/** The pure decision (no level, no dimension): the {@code LAKES} mutant, the claim test and the counters. */
+	public static boolean vetoes(WorldPlanner planner, BlockPos origin) {
+		if (Mutations.is(Mutations.LAKES)) return false;
 		try {
-			if (!planner.get().claimsNear(box(origin))) return false;
+			if (!planner.claimsNear(box(origin))) return false;
 		} catch (RuntimeException e) {
 			WorldPlanners.FAILURES.incrementAndGet();
 			FractalBuildingsMod.LOGGER.error("Could not tell whether the lake at {} meets a settlement or road; placing it", origin, e);

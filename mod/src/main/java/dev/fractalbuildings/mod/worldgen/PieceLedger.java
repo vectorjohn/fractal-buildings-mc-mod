@@ -15,6 +15,10 @@ import java.util.concurrent.ConcurrentSkipListMap;
  */
 public final class PieceLedger {
 	private static volatile Recording active;
+	/** Sentinel in {@link #active}: recordings are per thread ({@link #startLocal}); the cell goes to {@link #LOCAL}'s recording of the calling thread, if any. */
+	private static final Recording PER_THREAD = new Recording();
+	private static final ThreadLocal<Recording> LOCAL = new ThreadLocal<>();
+	private static final java.util.concurrent.atomic.AtomicInteger LOCALS = new java.util.concurrent.atomic.AtomicInteger();
 
 	private PieceLedger() {}
 
@@ -25,14 +29,34 @@ public final class PieceLedger {
 		return r;
 	}
 
-	public static void record(int x, int y, int z, int stateId) {
+	/**
+	 * Starts a recording that only the calling thread's cells go to, so orders can run on parallel threads (ORDERSIM). Close it on the same
+	 * thread. A thread without one records nothing; {@link #start()} still gives the one global recording (and replaces this mode while it is open).
+	 */
+	public static Recording startLocal() {
+		Recording r = new Recording();
+		r.owner = Thread.currentThread();
+		if (LOCAL.get() != null) throw new IllegalStateException("this thread already has a local recording");
+		LOCAL.set(r);
+		LOCALS.incrementAndGet();
+		active = PER_THREAD;
+		return r;
+	}
+
+	/** The recording the calling thread's cells go to, or null. */
+	private static Recording current() {
 		Recording r = active;
+		return r == PER_THREAD ? LOCAL.get() : r;
+	}
+
+	public static void record(int x, int y, int z, int stateId) {
+		Recording r = current();
 		if (r != null) r.add(x, y, z, stateId);
 	}
 
 	/** The road feature's cells (C1): recorded like any cell, and also listed in {@link Recording#roadCells} so a harness that compares district pieces to a reference raster can set them aside. */
 	public static void recordRoad(int x, int y, int z, int stateId) {
-		Recording r = active;
+		Recording r = current();
 		if (r != null) {
 			r.add(x, y, z, stateId);
 			r.roads.add(pack(x, y, z));
@@ -41,7 +65,7 @@ public final class PieceLedger {
 
 	/** Records furniture placed over claimed air. Hook blocks are kept apart from the shell cells ({@link Recording#hooks}), so the shell can be compared with the core raster exactly. */
 	public static void override(int x, int y, int z, int stateId) {
-		Recording r = active;
+		Recording r = current();
 		if (r != null) r.replace(x, y, z, stateId);
 	}
 
@@ -72,6 +96,8 @@ public final class PieceLedger {
 	public static int y(long k) { return (int) (k & 0xFFF) - 2048; }
 
 	public static final class Recording implements AutoCloseable {
+		/** The thread of a {@link #startLocal} recording, else null. */
+		private Thread owner;
 		private final ConcurrentSkipListMap<Long, int[]> cells = new ConcurrentSkipListMap<>();
 		final java.util.concurrent.ConcurrentSkipListSet<Long> roads = new java.util.concurrent.ConcurrentSkipListSet<>();
 
@@ -133,6 +159,13 @@ public final class PieceLedger {
 		}
 
 		@Override public void close() {
+			if (owner != null) {
+				if (LOCAL.get() == this) {
+					LOCAL.remove();
+					if (LOCALS.decrementAndGet() == 0 && active == PER_THREAD) active = null;
+				}
+				return;
+			}
 			if (active == this) active = null;
 		}
 	}

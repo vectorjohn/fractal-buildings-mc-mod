@@ -65,16 +65,7 @@ public final class DistrictStructure extends Structure {
 			BlockPos pos = new BlockPos(cp.getMiddleBlockX(), ctx.chunkGenerator().getSeaLevel(), cp.getMiddleBlockZ());
 			return Optional.of(new GenerationStub(pos, builder -> {
 				try {
-					for (BuildingPiece b : planner.buildings(t.ix(), t.iz())) {
-						Box3 box = b.box();
-						// clipped to the tile (the ownership boundary); the bottom is the slab level: beard_thin takes its ground plane from it
-						int x0 = Math.max(box.x(), t.minX()), x1 = Math.min(box.maxX(), t.maxX());
-						int z0 = Math.max(box.z(), t.minZ()), z1 = Math.min(box.maxZ(), t.maxZ());
-						if (x0 >= x1 || z0 >= z1) continue;
-						int slab = b.building().oy();
-						BoundingBox bb = new BoundingBox(x0, slab, z0, x1 - 1, Math.max(slab, box.maxY() - 1), z1 - 1);
-						builder.addPiece(new BuildingStructurePiece(b.ref(), slab, bb));
-					}
+					for (TilePiece piece : buildingPieces(planner, t)) builder.addPiece(piece);
 				} catch (RuntimeException e) {
 					WorldPlanners.FAILURES.incrementAndGet();
 					FractalBuildingsMod.LOGGER.error("Planning the buildings of tile {},{} failed; the tile gets none", t.ix(), t.iz(), e);
@@ -87,6 +78,22 @@ public final class DistrictStructure extends Structure {
 			FractalBuildingsMod.LOGGER.error("Deciding the district start at chunk {} failed; no settlement here", cp, e);
 			return Optional.empty();
 		}
+	}
+
+	/** The building pieces of a tile, in plan order (what the generation stub adds). Public so the order simulation builds the same pieces. */
+	public static java.util.List<TilePiece> buildingPieces(WorldPlanner planner, DistrictGrid.Tile t) {
+		java.util.ArrayList<TilePiece> out = new java.util.ArrayList<>();
+		for (BuildingPiece b : planner.buildings(t.ix(), t.iz())) {
+			Box3 box = b.box();
+			// clipped to the tile (the ownership boundary); the bottom is the slab level: beard_thin takes its ground plane from it
+			int x0 = Math.max(box.x(), t.minX()), x1 = Math.min(box.maxX(), t.maxX());
+			int z0 = Math.max(box.z(), t.minZ()), z1 = Math.min(box.maxZ(), t.maxZ());
+			if (x0 >= x1 || z0 >= z1) continue;
+			int slab = b.building().oy();
+			BoundingBox bb = new BoundingBox(x0, slab, z0, x1 - 1, Math.max(slab, box.maxY() - 1), z1 - 1);
+			out.add(new BuildingStructurePiece(b.ref(), slab, bb));
+		}
+		return out;
 	}
 
 	@Override

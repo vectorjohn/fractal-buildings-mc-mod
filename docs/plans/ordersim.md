@@ -337,6 +337,8 @@ Files:
 
 For R3 (`RoadFeature.placeIn`), check whether VILLROAD has merged. If not, change only `place()`.
 
+**Done (2026-10-27):** R1, R2, R4, R5, R6, R7 landed in S0. **R3 was left out** (VILLROAD is editing `RoadFeature`); it moves to S8 / the first step after VILLROAD merges. R2 names: `DistrictStructure.buildingPieces(planner, DistrictGrid.Tile)` and `GroundStructure.groundPieces(planner, DistrictGrid.Tile)` return `List<TilePiece>`; R1 is `TilePiece.write(level, planner, piece, chunkBB, chunkPos, random)`; R4 is `LakeVeto.vetoes(WorldPlanner, BlockPos)`; R5 is `PieceLedger.startLocal()`; R6 is `SpillKinds` (public methods, `BlockGetter`); R7 is `Mutations.TRUNK_BASE` ("trunk-base") and `Mutations.SPILL_LOGS` ("spill-logs"). Tests: `PieceLedgerLocalTest`, `LakeVetoTest` in `mod/src/test`.
+
 Tests:
 - the existing fast suite (`OrderGameTest`, `GameplayGameTest` and the server game tests drive `postProcess` and
   `place`);

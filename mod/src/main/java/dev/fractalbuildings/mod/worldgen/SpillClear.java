@@ -119,6 +119,7 @@ public final class SpillClear {
 	/** Re-clears planned air of the ground pieces round chunk (cx, cz), outside the chunk; returns the number of blocks written. */
 	public static int run(WorldGenLevel level, WorldPlanner planner, int cx, int cz) {
 		if (!ENABLED) return 0;
+		boolean clearLogs = Mutations.is(Mutations.SPILL_LOGS); // read once per run
 		int x0 = cx * 16 - LEAF_MARGIN, z0 = cz * 16 - LEAF_MARGIN, x1 = cx * 16 + 15 + LEAF_MARGIN, z1 = cz * 16 + 15 + LEAF_MARGIN;
 		int minY = level.getMinY();
 		DistrictGrid g = planner.grid();
@@ -150,7 +151,7 @@ public final class SpillClear {
 								if (lotMayOwn(lots, x, y, z)) { if (TRACE) trace(x, z, cx, cz, "y" + y + " a lot's"); continue; }
 								pos.set(x, y, z);
 								BlockState have = level.getBlockState(pos);
-								if (have.isAir() || have.is(BlockTags.LOGS)) continue; // logs stay: see the class note
+								if (have.isAir() || (!clearLogs && have.is(BlockTags.LOGS))) continue; // logs stay: see the class note
 								if (LEAF_CLEAR && naturalLeaf(have)) {
 									if (TRACE) trace(x, z, cx, cz, "y" + y + " leaf cleared");
 									level.setBlock(pos, air, WRITE_FLAGS);
@@ -159,7 +160,7 @@ public final class SpillClear {
 									continue;
 								}
 								if (!near || have.is(BlockTags.LEAVES)) continue; // a persistent leaf (a hedge) is someone's
-								if (level.getBlockState(above.set(x, y + 1, z)).is(BlockTags.LOGS) || level.getBlockState(above.set(x, y + 2, z)).is(BlockTags.LOGS)) { if (TRACE) trace(x, z, cx, cz, "y" + y + " under a log"); continue; } // a trunk's base
+								if (!clearLogs && (level.getBlockState(above.set(x, y + 1, z)).is(BlockTags.LOGS) || level.getBlockState(above.set(x, y + 2, z)).is(BlockTags.LOGS))) { if (TRACE) trace(x, z, cx, cz, "y" + y + " under a log"); continue; } // a trunk's base
 								if (TRACE) trace(x, z, cx, cz, "y" + y + " " + have.getBlock().getDescriptionId() + " cleared");
 								level.setBlock(pos, air, WRITE_FLAGS);
 								n[0]++;

@@ -46,6 +46,7 @@ public final class StreetAirFix {
 
 	public static int run(WorldGenLevel level, WorldPlanner planner, int cx, int cz) {
 		if (!ENABLED || !planner.districtsNear(cx, cz)) return 0;
+		boolean keepAirBase = Mutations.is(Mutations.TRUNK_BASE); // read once per run
 		int x0 = cx * 16 - MARGIN, z0 = cz * 16 - MARGIN, x1 = cx * 16 + 15 + MARGIN, z1 = cz * 16 + 15 + MARGIN;
 		int minY = level.getMinY();
 		DistrictGrid g = planner.grid();
@@ -78,7 +79,7 @@ public final class StreetAirFix {
 									LOGS_REMOVED.incrementAndGet();
 									removed++;
 									lowest = Math.min(lowest, y);
-									restoreBase(level, planner, p, x, by, z, pos);
+									restoreBase(level, planner, p, x, by, z, pos, keepAirBase);
 								}
 							}
 							if (SNOW) {
@@ -106,7 +107,7 @@ public final class StreetAirFix {
 	}
 
 	/** Dirt (podzol, coarse dirt) where the piece plans another solid block, under a trunk we just took out: the planned block back. */
-	private static void restoreBase(WorldGenLevel level, WorldPlanner planner, GroundPiece p, int x, int y, int z, BlockPos.MutableBlockPos pos) {
+	private static void restoreBase(WorldGenLevel level, WorldPlanner planner, GroundPiece p, int x, int y, int z, BlockPos.MutableBlockPos pos, boolean keepAirBase) {
 		BlockState have = level.getBlockState(pos.set(x, y, z));
 		if (!(have.is(Blocks.DIRT) || have.is(Blocks.PODZOL) || have.is(Blocks.COARSE_DIRT) || have.is(Blocks.ROOTED_DIRT))) return;
 		BlockState[] planned = new BlockState[1]; boolean[] inAir = new boolean[1];
@@ -118,6 +119,7 @@ public final class StreetAirFix {
 			return; // the piece no longer exists in the tile (old save)
 		}
 		BlockState want = planned[0];
+		if (keepAirBase && (want == null || want.isAir())) return; // TRUNK_BASE mutant: the pre-SPILLDIRT2 code
 		if (want == null || want.isAir()) want = inAir[0] ? Blocks.AIR.defaultBlockState() : null; // a base the plan gives as air (a trunk on the street surface) goes too
 		if (want == null || want == have) return;
 		level.setBlock(pos.set(x, y, z), want, WRITE_FLAGS);
