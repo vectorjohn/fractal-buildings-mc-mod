@@ -130,18 +130,22 @@ public final class RoadFeature implements Feature {
 		}
 	}
 
+
 	private boolean draw(WorldGenLevel level, WorldPlanner planner, ChunkPos cp) {
-		List<List<RoadNet.Col>> around = planner.roadColumnsAround(cp.x(), cp.z());
-		boolean any = false;
-		for (List<RoadNet.Col> l : around) if (!l.isEmpty()) { any = true; break; }
-		if (!any) return false;
+		VillageRoads.Adjusted joined = VillageRoads.adjust(level, planner, cp, planner.roadColumnsAround(cp.x(), cp.z())); // VILLROAD: bend round vanilla villages, spur to their street
+		List<List<RoadNet.Col>> around = joined.around();
+		if (!joined.hasWork()) return false;
 		boolean[] district = planner.districtColumns(cp.x(), cp.z());
-		int[] foreignTop = foreignStructureTops(level, cp);
+		int[][] foreign = foreignStructureTops(level, cp);
+		int[] foreignTop = foreign == null ? null : foreign[0], streetFreeTop = foreign == null ? null : foreign[1];
 		WorldGround ground = new WorldGround(level);
 		RoadSurface.Plan plan = RoadSurface.plan(cp.x(), cp.z(), around, district, ground);
+		boolean[] spurCell = VillageRoads.addSpur(plan, joined.spur(), joined.spurBlock(), district, ground);
+		if (MUTANT_SPUR_YIELD) spurCell = null; // test control: the spur yields to street boxes as before VILLROAD r7 (stops at the box)
 		if (foreignTop != null) { // the road yields to a foreign structure that reaches the surface here (MF2)
 			for (int i = 0; i < 256; i++) {
-				if (plan.kind[i] != RoadSurface.NONE && foreignTop[i] >= plan.ground[i] - FOREIGN_SLACK) {
+				int top = spurCell != null && spurCell[i] ? streetFreeTop[i] : foreignTop[i]; // a spur cell crosses a street box's margin to its path (VILLROAD): only other pieces stop it
+				if (plan.kind[i] != RoadSurface.NONE && top >= plan.ground[i] - FOREIGN_SLACK) {
 					if (plan.kind[i] == RoadSurface.ROAD) plan.roads--; else if (plan.kind[i] == RoadSurface.DECK) plan.decks--; else plan.terraces--;
 					plan.kind[i] = RoadSurface.NONE;
 				}
@@ -260,11 +264,15 @@ public final class RoadFeature implements Feature {
 	 * {@link Integer#MIN_VALUE}: from the structure starts this chunk references, which exist before any feature runs, in any order. The
 	 * road yields where a piece reaches the surface (MF2). Null when no piece covers the chunk. A failure to read them leaves the road as is.
 	 */
-	private static int[] foreignStructureTops(WorldGenLevel level, ChunkPos cp) {
+	/** Test control (VILLROAD): spur cells yield to every foreign piece box, street boxes too, so the spur stops at the street box's edge; the village check must fail. */
+	public static volatile boolean MUTANT_SPUR_YIELD = false;
+
+	/** The top of the foreign pieces over each column of the chunk ([0]; MIN_VALUE where none), and of those that are not village street pieces ([1]); null when there are none. */
+	private static int[][] foreignStructureTops(WorldGenLevel level, ChunkPos cp) {
 		if (!(level instanceof WorldGenRegion region)) return null;
 		try {
 			StructureManager sm = level.getLevel().structureManager().forWorldGenRegion(region);
-			int[] tops = null;
+			int[] tops = null, nonStreet = null;
 			int x0 = cp.getMinBlockX(), z0 = cp.getMinBlockZ();
 			var registry = level.registryAccess().lookupOrThrow(Registries.STRUCTURE);
 			for (var ref : region.getChunk(cp.x(), cp.z()).getAllReferences().entrySet()) {
@@ -277,18 +285,20 @@ public final class RoadFeature implements Feature {
 					for (StructurePiece piece : start.getPieces()) {
 						BoundingBox bb = piece.getBoundingBox();
 						if (bb.maxX() < x0 || bb.minX() > x0 + 15 || bb.maxZ() < z0 || bb.minZ() > z0 + 15) continue;
-						if (tops == null) { tops = new int[256]; java.util.Arrays.fill(tops, Integer.MIN_VALUE); }
+						if (tops == null) { tops = new int[256]; nonStreet = new int[256]; java.util.Arrays.fill(tops, Integer.MIN_VALUE); java.util.Arrays.fill(nonStreet, Integer.MIN_VALUE); }
+						boolean street = piece instanceof net.minecraft.world.level.levelgen.structure.PoolElementStructurePiece pe && pe.getElement() instanceof net.minecraft.world.level.levelgen.structure.pools.SinglePoolElement se && se.getTemplateLocation().getPath().contains("/streets/");
 						if (RECORD_STATS) FOREIGN_SEEN.add(String.valueOf(id));
 						for (int z = Math.max(bb.minZ(), z0); z <= Math.min(bb.maxZ(), z0 + 15); z++) {
 							for (int x = Math.max(bb.minX(), x0); x <= Math.min(bb.maxX(), x0 + 15); x++) {
 								int i = (z - z0) * 16 + (x - x0);
 								tops[i] = Math.max(tops[i], bb.maxY());
+								if (!street) nonStreet[i] = Math.max(nonStreet[i], bb.maxY());
 							}
 						}
 					}
 				}
 			}
-			return tops;
+			return tops == null ? null : new int[][] {tops, nonStreet};
 		} catch (RuntimeException e) {
 			if (!WARNED_STRUCTURES.getAndSet(true)) FractalBuildingsMod.LOGGER.warn("Could not read the structures around chunk {}: roads will not yield to them", cp, e);
 			return null;

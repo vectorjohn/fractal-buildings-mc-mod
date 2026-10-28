@@ -88,6 +88,54 @@ public class RoadsClientGameTest implements FabricClientGameTest {
 		return h;
 	}
 
+	/** FB_ROADS_VILLAGE=1: the test finds its own site, a route that passes a vanilla village (VILLROAD). */
+	static final boolean VILLAGE_MODE = "1".equals(System.getenv("FB_ROADS_VILLAGE"));
+	static final net.minecraft.tags.TagKey<net.minecraft.world.level.levelgen.structure.Structure> VILLAGE_TAG =
+		net.minecraft.tags.TagKey.create(net.minecraft.core.registries.Registries.STRUCTURE, net.minecraft.resources.Identifier.withDefaultNamespace("village"));
+
+	/**
+	 * Village mode: walks the planned routes around the centre in key order, asks the game's structure locate for the nearest village
+	 * every few stations, and takes the first route one passes within {@code NEAR} blocks of; the corridor is that route's stations within
+	 * {@code WINDOW} blocks of the village. Deterministic for a seed (the routes and the locate both are).
+	 */
+	static Picked pickVillage(ServerLevel level, WorldPlanner planner) {
+		final double NEAR = 90, WINDOW = 200;
+		RoadNet net = planner.roads();
+		TreeMap<EdgeKey, Route> routes = new TreeMap<>();
+		for (Settlement s : net.settlementsNear(CENTER[0], CENTER[1], 5000)) {
+			for (EdgeKey e : net.edgesOf(s)) {
+				Route r = net.route(e);
+				if (r.ok && !r.touching && r.length >= 300) routes.put(e, r);
+			}
+		}
+		say("village mode: " + routes.size() + " routes around " + CENTER[0] + "," + CENTER[1]);
+		int asked = 0;
+		for (Route r : routes.values()) {
+			for (int i = 0; i < r.stations.length; i += 5) {
+				double[] st = r.stations[i];
+				double da = Math.hypot(st[0] - r.a.x(), st[1] - r.a.z()) - r.a.r(), db = Math.hypot(st[0] - r.b.x(), st[1] - r.b.z()) - r.b.r();
+				if (Math.min(da, db) < 330) continue;
+				asked++;
+				BlockPos v = level.findNearestMapStructure(VILLAGE_TAG, new BlockPos((int) st[0], 64, (int) st[1]), 6, false);
+				if (v == null || Math.hypot(v.getX() - st[0], v.getZ() - st[1]) > NEAR) continue;
+				Set<ChunkPos> corridor = new LinkedHashSet<>();
+				for (double[] s : r.stations) {
+					if (Math.hypot(v.getX() - s[0], v.getZ() - s[1]) > WINDOW) continue;
+					int x = (int) Math.floor(s[0]), z = (int) Math.floor(s[1]);
+					for (int ox = -1; ox <= 1; ox++) for (int oz = -1; oz <= 1; oz++) corridor.add(new ChunkPos((x >> 4) + ox, (z >> 4) + oz));
+				}
+				say("village mode: village at " + v.getX() + "," + v.getZ() + " beside route " + r.key + " (station " + i + " of " + r.stations.length + ", " + asked + " locates), corridor "
+					+ corridor.size() + " chunks");
+				List<int[]> crossings = new ArrayList<>();
+				for (var c : r.profile.crossings()) crossings.add(new int[] {c.first(), c.last(), c.from(), c.to(), c.length(), c.deck()});
+				List<ChunkPos> out = new ArrayList<>(corridor);
+				out.sort((a, b) -> a.x() != b.x() ? Integer.compare(a.x(), b.x()) : Integer.compare(a.z(), b.z()));
+				return new Picked(List.of(new Target("village", r.key, r.stations, r.profile.deck(), crossings, fingerprint(r))), out);
+			}
+		}
+		throw new IllegalStateException("village mode: no route passes a village within " + NEAR + " blocks (" + asked + " locates, " + routes.size() + " routes)");
+	}
+
 	/** Routes near the origin, outside every district reach; chosen by the world's own planner (the same in every fresh world of the seed). */
 	static Picked pick(WorldPlanner planner) {
 		RoadNet net = planner.roads();
@@ -141,7 +189,7 @@ public class RoadsClientGameTest implements FabricClientGameTest {
 		if ("0".equals(System.getenv("FB_ROADS"))) return;
 		String seed = System.getenv().getOrDefault("FB_ROADS_SEED", "987654321");
 		boolean shots = !"0".equals(System.getenv("FB_ROADS_SHOTS"));
-		List<String> orders = List.of("asc", "desc", "shuffled", "shuffled-evicting", "mutant-asc", "mutant-shuffled");
+		List<String> orders = VILLAGE_MODE ? List.of("asc", "desc", "shuffled", "shuffled-evicting", "nojoin", "spuryield", "spurshort", "ungraded", "mutant-asc", "mutant-shuffled") : List.of("asc", "desc", "shuffled", "shuffled-evicting", "mutant-asc", "mutant-shuffled"); // the nojoin, spuryield, spurshort and ungraded controls need a village: only in village mode
 		Picked first = null;
 		Map<String, String> digests = new TreeMap<>();
 		Map<String, Map<Long, String>> columns = new TreeMap<>();
@@ -155,6 +203,10 @@ public class RoadsClientGameTest implements FabricClientGameTest {
 			final boolean firstOrder = oi == 0;
 			if (mutant && System.getenv("FB_ROADS_MUTANT") != null && "0".equals(System.getenv("FB_ROADS_MUTANT"))) continue;
 			RoadFeature.MUTANT_GROUND = mutant;
+			dev.fractalbuildings.mod.roads.VillageRoads.OFF = order.equals("nojoin"); // the control: the join switched off
+			RoadFeature.MUTANT_SPUR_YIELD = order.equals("spuryield"); // the control: the spur yields to the street box as in r6 (stops at its edge)
+			dev.fractalbuildings.mod.roads.VillageRoads.MUTANT_SPUR_SHORT = order.equals("spurshort"); // the control: a bare centre line 2 cells short of the street
+			dev.fractalbuildings.mod.roads.VillageRoads.UNGRADED = order.equals("ungraded"); // the control: the spur on the ground as in r7 (2-block steps on this seed)
 			RoadFeature.LEGACY_CLEAR = "1".equals(System.getenv("FB_ROADS_LEGACY"));
 			RoadFeature.CHUNKS.set(0);
 			RoadFeature.BLOCKS.set(0);
@@ -173,10 +225,13 @@ public class RoadsClientGameTest implements FabricClientGameTest {
 					WorldPlanner planner = WorldPlanners.of(level, level.getChunkSource().getGenerator()).orElseThrow(() -> new IllegalStateException("no planner"));
 					if (!planner.roadsEnabled()) throw new IllegalStateException("roads are off in a default world");
 					long t0 = System.nanoTime();
-					Picked p = pick(planner);
+					Picked p0 = VILLAGE_MODE ? pickVillage(level, planner) : pick(planner);
+					VillageChecks.Villages vil = VillageChecks.find(level, p0.corridor());
+					Picked p = new Picked(p0.targets(), vil.corridor());
+					say(order + " villages near the corridor: " + vil.found().size() + ", corridor with their windows " + p.corridor().size() + " chunks");
 					say(order + " picked in " + (System.nanoTime() - t0) / 1_000_000 + " ms, corridor " + p.corridor().size() + " chunks, loadavg " + load);
 					picked.set(p);
-					if (p.targets().size() < 2 || p.corridor().size() < 40) throw new IllegalStateException("too few routes near the origin: " + p.targets().size());
+					if (p.targets().size() < (VILLAGE_MODE ? 1 : 2) || p.corridor().size() < (VILLAGE_MODE ? 9 : 40)) throw new IllegalStateException("too few routes near the origin: " + p.targets().size());
 					List<ChunkPos> seq = new ArrayList<>(p.corridor());
 					if (order.contains("desc")) Collections.reverse(seq);
 					else if (order.contains("shuffled")) Collections.shuffle(seq, new Random(order.hashCode()));
@@ -199,12 +254,23 @@ public class RoadsClientGameTest implements FabricClientGameTest {
 						cellsByOrder.put(order, mine);
 						roadsByOrder.put(order, new java.util.TreeSet<>(rec.roadCells()));
 						if (!rec.duplicates().isEmpty()) problem("cells claimed twice: " + rec.duplicates().size());
-						if (firstOrder) readBack(level, planner, p, rec.states());
+						if (firstOrder) readBack(level, planner, p, vil, rec.states());
+						if (!mutant) {
+							List<String> lines = new ArrayList<>();
+							List<String> probs = VillageChecks.check(level, planner, vil, lines, VILLAGE_MODE);
+							lines.forEach(l -> say(order + " VILLAGE " + l));
+							if (order.equals("nojoin")) { if (probs.isEmpty()) problem("the village check passed with the join switched off, it cannot fail"); else say("nojoin (the control) fails the village check as it must: " + probs.get(0)); }
+							else if (order.equals("spuryield")) { if (probs.isEmpty()) problem("the village check passed with the spur stopping at the street box, the strict end check cannot fail"); else say("spuryield (the control) fails the village check as it must: " + probs.get(0)); }
+							else if (order.equals("spurshort") || order.equals("ungraded")) { if (probs.isEmpty()) problem("the village check passed for the " + order + " control, it cannot fail"); else say(order + " (the control) fails the village check as it must: " + probs.get(0)); }
+							else for (String s : probs) problem(order + ": " + s);
+							if (List.of("asc", "desc", "shuffled", "shuffled-evicting").contains(order)) villageView(planner, vil, order.equals("asc"));
+							if (order.equals("asc")) for (var vf : vil.found()) { if (dev.fractalbuildings.mod.roads.VillageRoads.resultOf(planner, vf).isEmpty()) continue; VillageChecks.planImage(planner, vf, "road-village-plan", lines); lines.forEach(l -> { if (l.startsWith("plan view")) say(l); }); break; }
+						}
 					}
 					if (WorldPlanners.FAILURES.get() != 0) problem("the road feature swallowed exceptions, see the log");
 					digests.put(order, digest);
 					columns.put(order, new TreeMap<>(RoadFeature.COLUMNS));
-					long chunks = RoadFeature.CHUNKS.get();
+					long chunks = RoadFeature.CHUNKS.get(); dev.fractalbuildings.mod.roads.VillageRoads.OFF = false; RoadFeature.MUTANT_SPUR_YIELD = false; dev.fractalbuildings.mod.roads.VillageRoads.MUTANT_SPUR_SHORT = false; dev.fractalbuildings.mod.roads.VillageRoads.UNGRADED = false;
 					say(String.format("%s digest %s; road chunks %d, blocks %d, feature mean %.2f ms, slowest %.1f ms (load %s)", order, digest, chunks,
 						RoadFeature.BLOCKS.get(), chunks == 0 ? 0 : RoadFeature.NANOS.get() / 1e6 / chunks, RoadFeature.SLOWEST.get() / 1e6, loadavg()));
 					say(String.format("%s feature calls %d (all chunks): mean %.3f ms", order, RoadFeature.CALLS.get(), RoadFeature.CALLS.get() == 0 ? 0 : RoadFeature.CALL_NANOS.get() / 1e6 / RoadFeature.CALLS.get()));
@@ -228,6 +294,7 @@ public class RoadsClientGameTest implements FabricClientGameTest {
 			throw new RuntimeException(e);
 		}
 		String ref = digests.get("asc");
+		if (digests.containsKey("nojoin") && digests.get("nojoin").equals(ref)) problem("the road is the same with the village join off: the join changed nothing");
 		for (String o : List.of("desc", "shuffled", "shuffled-evicting")) diff("asc", o, columns.get("asc"), columns.get(o));
 		for (String o : List.of("desc", "shuffled", "shuffled-evicting")) if (cellsByOrder.containsKey(o)) cellDiff("asc", o, cellsByOrder.get("asc"), cellsByOrder.get(o), roadsByOrder.get("asc"), roadsByOrder.get(o));
 		for (String o : List.of("desc", "shuffled", "shuffled-evicting")) {
@@ -242,6 +309,38 @@ public class RoadsClientGameTest implements FabricClientGameTest {
 			throw new RuntimeException(e);
 		}
 		if (!PROBLEMS.isEmpty()) throw new AssertionError("road test: " + PROBLEMS);
+	}
+
+
+	/** Cameras for a joined village (VILLROAD): {x, z, dirX, dirZ} each. */
+	static volatile double[] VILLAGE_VIEW;
+	/** The south edge of the village's pieces: the overview stands off beyond it. */
+	static volatile double[] VILLAGE_OVERVIEW;
+	static volatile double[] BEND_VIEW;
+	static volatile double[] SPUR_VIEW;
+
+	static void villageView(WorldPlanner planner, VillageChecks.Villages vil, boolean set) {
+		if (!set) return;
+		for (var f : vil.found()) {
+			var r = dev.fractalbuildings.mod.roads.VillageRoads.resultOf(planner, f);
+			if (r.removed().isEmpty() || r.spur().isEmpty()) continue;
+			var v = f.village();
+			double sx = 0, sz = 0;
+			int maxZ = Integer.MIN_VALUE;
+			for (var b : v.pieces()) { sx += (b.minX() + b.maxX()) / 2.0; sz += (b.minZ() + b.maxZ()) / 2.0; maxZ = Math.max(maxZ, b.maxZ()); }
+			VILLAGE_VIEW = new double[] {sx / v.pieces().size(), sz / v.pieces().size()};
+			VILLAGE_OVERVIEW = new double[] {sx / v.pieces().size(), maxZ};
+			if (!r.added().isEmpty()) { // along the bend: from 30 blocks back on the line it leaves, toward the line it rejoins
+				var a = r.added().get(0);
+				var z = r.added().get(r.added().size() - 1);
+				BEND_VIEW = new double[] {a.x(), a.z(), z.x() - a.x(), z.z() - a.z()};
+			}
+			if (!r.ends().isEmpty()) { // the spur mouth: from the road side toward the street end
+				int[] m = r.spur().get(0), e = r.ends().get(0);
+				SPUR_VIEW = new double[] {m[0], m[1], e[0] - m[0], e[1] - m[1]};
+			}
+			return;
+		}
 	}
 
 	static String faceShare() {
@@ -304,7 +403,7 @@ public class RoadsClientGameTest implements FabricClientGameTest {
 	}
 
 	/** The world against the plan: deck blocks as the ledger says, nothing over water but crossings, nothing inside a settlement. */
-	static void readBack(ServerLevel level, WorldPlanner planner, Picked p, Map<Long, Integer> ledger) {
+	static void readBack(ServerLevel level, WorldPlanner planner, Picked p, VillageChecks.Villages vil, Map<Long, Integer> ledger) {
 		RoadNet net = planner.roads();
 		BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
 		int cols = 0, deckOk = 0, overWater = 0, overWaterNoSpan = 0, inSettlement = 0, headBlocked = 0, solidUnder = 0, onLedger = 0;
@@ -312,7 +411,7 @@ public class RoadsClientGameTest implements FabricClientGameTest {
 		TreeMap<String, Integer> blockers = new TreeMap<>();
 		List<String> missing = new ArrayList<>();
 		for (ChunkPos c : p.corridor()) {
-			for (Col col : planner.roadColumns(c.x(), c.z())) {
+			for (Col col : VillageChecks.columns(planner, vil, c)) {
 				cols++;
 				int y = col.y() - 1;
 				pos.set(col.x(), y, col.z());
@@ -431,6 +530,17 @@ public class RoadsClientGameTest implements FabricClientGameTest {
 		names.add("country");
 		context.runOnClient(client -> client.options.chatVisibility().set(net.minecraft.world.entity.player.ChatVisiblity.HIDDEN));
 		world.getServer().runCommand("gamemode spectator @p");
+		double[] vo = VILLAGE_OVERVIEW;
+		if (vo != null) villageShot(context, world, "road-village", vo[0], vo[1] + 40, 0, -1, 50, 40); // the whole village from the south, outside it
+		double[] bv = BEND_VIEW, sv = SPUR_VIEW;
+		if (bv != null) { // along the road through the bend, 22 up, from 30 blocks back
+			double l = Math.hypot(bv[2], bv[3]);
+			villageShot(context, world, "road-village-bend", bv[0] - bv[2] / l * 30, bv[1] - bv[3] / l * 30, bv[2] / l, bv[3] / l, 22, 30);
+		}
+		if (sv != null) { // at the spur mouth, looking toward the street end, 22 up
+			double l = Math.hypot(sv[2], sv[3]);
+			villageShot(context, world, "road-village-spur", sv[0] - sv[2] / l * 14, sv[1] - sv[3] / l * 14, sv[2] / l, sv[3] / l, 22, 35);
+		}
 		for (int i = 0; i < views.size(); i++) {
 			double[] v = views.get(i);
 			double len = Math.hypot(v[2], v[3]);
@@ -465,5 +575,28 @@ public class RoadsClientGameTest implements FabricClientGameTest {
 				say("screenshot road-" + names.get(i) + "-" + (s == 0 ? "along" : "side") + " at " + (int) v[0] + "," + (int) v[1]);
 			}
 		}
+	}
+
+	/** One village shot: the camera at (cx, cz), {@code up} above the ground, looking along (dx, dz) pitched down {@code pitch} degrees. */
+	static void villageShot(ClientGameTestContext context, TestSingleplayerContext world, String name, double cx, double cz, double dx, double dz, int up, int pitch) {
+		int[] y = new int[1];
+		world.getServer().runOnServer(server -> {
+			ServerLevel level = server.overworld();
+			level.getChunkSource().getChunk((int) Math.floor(cx) >> 4, (int) Math.floor(cz) >> 4, ChunkStatus.FULL, true);
+			y[0] = level.getHeight(Heightmap.Types.WORLD_SURFACE, (int) Math.floor(cx), (int) Math.floor(cz));
+		});
+		float yaw = (float) Math.toDegrees(Math.atan2(-dx, dz));
+		world.getServer().runCommand(String.format("tp @p %.1f %d %.1f %.1f %d", cx, y[0] + up, cz, yaw, pitch));
+		final double[] want = {cx, y[0] + up, cz};
+		for (int w = 0; w < 120; w++) {
+			context.waitTicks(20);
+			java.util.concurrent.atomic.AtomicBoolean there = new java.util.concurrent.atomic.AtomicBoolean();
+			context.runOnClient(client -> there.set(client.player != null && client.player.distanceToSqr(want[0], want[1], want[2]) < 9));
+			if (there.get()) break;
+		}
+		try { world.getConnection().waitForChunksRender(); } catch (AssertionError e) { say("chunks did not finish rendering in time; taking the screenshot anyway"); }
+		context.waitTicks(20);
+		context.takeScreenshot(name);
+		say("screenshot " + name + " at " + (int) cx + "," + (int) cz + " looking " + String.format("%.2f,%.2f", dx, dz));
 	}
 }
