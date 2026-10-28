@@ -109,16 +109,17 @@ public final class StreetAirFix {
 	private static void restoreBase(WorldGenLevel level, WorldPlanner planner, GroundPiece p, int x, int y, int z, BlockPos.MutableBlockPos pos) {
 		BlockState have = level.getBlockState(pos.set(x, y, z));
 		if (!(have.is(Blocks.DIRT) || have.is(Blocks.PODZOL) || have.is(Blocks.COARSE_DIRT) || have.is(Blocks.ROOTED_DIRT))) return;
-		BlockState[] planned = new BlockState[1];
+		BlockState[] planned = new BlockState[1]; boolean[] inAir = new boolean[1];
 		try {
 			planner.raster(p.ref(), new Box3(x, y, z, 1, 1, 1), (cx, cy, cz, role, blockId, shape) -> {
-				planned[0] = role == Role.AIR ? null : BlockMapper.state(role, blockId, shape);
+				inAir[0] = role == Role.AIR; planned[0] = role == Role.AIR ? null : BlockMapper.state(role, blockId, shape);
 			});
 		} catch (IllegalArgumentException e) {
 			return; // the piece no longer exists in the tile (old save)
 		}
 		BlockState want = planned[0];
-		if (want == null || want.isAir() || want == have) return;
+		if (want == null || want.isAir()) want = inAir[0] ? Blocks.AIR.defaultBlockState() : null; // a base the plan gives as air (a trunk on the street surface) goes too
+		if (want == null || want == have) return;
 		level.setBlock(pos.set(x, y, z), want, WRITE_FLAGS);
 		DIRT_RESTORED.incrementAndGet();
 	}
