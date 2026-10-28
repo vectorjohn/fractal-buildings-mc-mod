@@ -17,7 +17,7 @@ import net.minecraft.world.level.chunk.LevelChunkSection;
  * loses its lower trunk or canopy, and what is left above hangs in the air. After the clear this pass reads the foliage around the chunk
  * and removes what vanilla itself would call detached, using vanilla's own rules:
  * <ul>
- * <li>a <b>log</b> (of a cluster that touches natural leaves: beams and pillars of a building are left alone) is supported when a chain of logs (26-neighbour) reaches one that stands on something that is not foliage or air;</li>
+ * <li>a <b>log</b> (of a cluster that touches natural leaves, or that touches nothing solid at all, a floating remnant: beams and pillars of a building are left alone) is supported when a chain of logs (26-neighbour) reaches one that stands on something that is not foliage or air;</li>
  * <li>a <b>leaf</b> (not persistent: a hedge or a village's leaf block is left alone; and a bee nest) is supported when a supported log is within 6 steps through leaves (vanilla's distance 7 decays);</li>
  * <li>a <b>vine</b> is supported when a horizontal neighbour is supported foliage or any solid block, or the vine above it stays; cocoa
  * pods need a supported log beside them; a snow layer on a removed leaf goes with it.</li>
@@ -295,7 +295,14 @@ private static int labelTrees(byte[] kind, int[] owner, int[] queue, int H) {
 			|| s.is(BlockTags.DOORS) || s.is(BlockTags.TRAPDOORS) || s.is(BlockTags.WOOL) || s.is(BlockTags.IMPERMEABLE);
 	}
 
-	/** A log whose 26-connected cluster touches no natural leaf is a beam, post or pillar of someone's building (or a dead tree): it becomes an ordinary solid block here, never removed and never needing support. */
+	/**
+	 * FOLIAGECLUSTER: a leafless cluster that touches nothing solid either (every 26-neighbour is air or foliage) is no beam or pillar but the
+	 * floating remnant of a tree, and stays a log so the support test removes it. Deciding "building" from the leaves alone was order dependent:
+	 * a leaf a neighbour chunk's pass had already cut (a pass removes within {@link #MARGIN} of its chunk, the log may lie one block further)
+	 * left the log leafless, kept by the next pass, while the other order removed log and leaf together.
+	 *
+	 * <p>A log whose 26-connected cluster touches no natural leaf is otherwise a beam, post or pillar of someone's building (or a dead tree): it becomes an ordinary solid block here, never removed and never needing support.
+	 */
 	private static void markBuildingLogs(byte[] kind, boolean[] ok, int H) {
 		boolean[] seen = new boolean[kind.length];
 		int[] queue = new int[kind.length];
@@ -305,7 +312,7 @@ private static int labelTrees(byte[] kind, int[] owner, int[] queue, int H) {
 			int qh = 0, qt = 0;
 			queue[qt++] = start;
 			seen[start] = true;
-			boolean tree = false, built = false;
+			boolean tree = false, built = false, touchesSolid = false;
 			while (qh < qt) {
 				int c = queue[qh++];
 				int h = c % H, col = c / H, wx = col % W, wz = col / W;
@@ -321,8 +328,11 @@ private static int labelTrees(byte[] kind, int[] owner, int[] queue, int H) {
 					if (nx < 0 || nz < 0 || nx >= W || nz >= W || nh < 0 || nh >= H) continue;
 					int n = (nz * W + nx) * H + nh;
 					if (kind[n] == LOG && !seen[n]) { seen[n] = true; queue[qt++] = n; }
+					if (kind[n] == OTHER || kind[n] == BUILT) touchesSolid = true;
 				}
+				if (h == 0 || h == H - 1 || wx == 0 || wz == 0 || wx == W - 1 || wz == W - 1) touchesSolid = true; // at the edge of what the pass reads: unknown, so not "floating"
 			}
+			if (!tree && !touchesSolid) continue; // FOLIAGECLUSTER: a floating leafless remnant stays a log: the support test removes it
 			if (!tree) for (int i = 0; i < qt; i++) kind[queue[i]] = OTHER;
 			else if (built) for (int i = 0; i < qt; i++) ok[queue[i]] = true; // a live tree beside a fence or wall: stays a log, counts as supported
 		}
