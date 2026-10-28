@@ -279,11 +279,12 @@ take_ticket() {
 	TICKET=$(printf '%s/queue/%012d.%s' "$DIR" "$n" "$$")
 	write_ticket "$TICKET" "$@"
 }
-# Line 1: "KIND HOSTS PREFER LOCALONLY(0|1)" (what decide reads); line 2: for --status.
+# Line 1: "KIND HOSTS PREFER" (what decide reads); line 2: for --status; line 3: "localonly 0|1"
+# (the quiet switch; on its own line so older copies of this script, reading line 1, are unaffected).
 write_ticket() {
 	local f=$1 lo=0; shift
 	[[ -n $LOCAL_ONLY_WHY ]] && lo=1
-	printf '%s %s %s %s\nsince %s, %s: %s\n' "$KIND" "$HOSTS" "$PREFER" "$lo" "$(date '+%F %T')" "$PWD" "$*" > "$f"
+	printf '%s %s %s\nsince %s, %s: %s\nlocalonly %s\n' "$KIND" "$HOSTS" "$PREFER" "$(date '+%F %T')" "$PWD" "$*" "$lo" > "$f"
 }
 bee_check() {
 	if [[ -n $BEE_CHECK_CMD ]]; then bash -c "$BEE_CHECK_CMD" > /dev/null 2>&1
@@ -324,7 +325,8 @@ decide() {
 		[[ -e $t ]] || continue
 		if ! kill -0 "${t##*.}" 2>/dev/null; then rm -f "$t"; continue; fi
 		mine=0; [[ $t == "$TICKET" ]] && mine=1
-		lo=0; read -r k hs pr lo _ < "$t" || continue
+		lo=0 k=""; { read -r k hs pr _ && read -r _ && read -r _ lo; } < "$t"
+		[[ -n $k ]] || continue
 		choice=""
 		for h in "$pr" local beebox; do
 			[[ $hs == *$h* ]] || continue
