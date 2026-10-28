@@ -106,6 +106,7 @@ public final class SimCompare {
 			int dot = cm.lastIndexOf('.');
 			String method = dot < 0 ? cm : cm.substring(dot + 1), cls = dot < 0 ? cm : cm.substring(cm.lastIndexOf('.', dot - 1) + 1, dot);
 			run.branchWrites.merge(cls + "." + (method.startsWith("lambda$") ? "write" : method), 1, Integer::sum);
+			run.branchWrites.merge(cls + "." + (method.startsWith("lambda$") ? "write" : method) + "/" + oldKind(w.old()), 1, Integer::sum); // liveness by what was removed (S4a)
 			String why = violation(p, w, cls, method);
 			if (why != null) {
 				bad++;
@@ -113,6 +114,16 @@ public final class SimCompare {
 			}
 		}
 		run.contractViolations = bad;
+	}
+
+	/** What a write replaced, for the liveness counts: leaf, log, snow, vine, air or other. */
+	static String oldKind(BlockState old) {
+		if (old.isAir()) return "air";
+		if (old.is(BlockTags.LEAVES)) return "leaf";
+		if (old.is(BlockTags.LOGS)) return "log";
+		if (old.is(Blocks.SNOW)) return "snow";
+		if (old.is(Blocks.VINE)) return "vine";
+		return "other";
 	}
 
 	private static String violation(Scenario.Plan p, SimWorld.Write w, String cls, String method) {

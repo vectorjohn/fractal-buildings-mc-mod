@@ -66,8 +66,13 @@ public final class Scenario {
 
 	/** A scenario on a gate site: hashed calls (k per decorated chunk) plus the scripted ones. */
 	public static Scenario city(String id, SimSites site, WorldPlanner planner, int cx, int cz, int n, int hashedK, boolean snowy, List<SimFeatures.Call> scripted, boolean spaced) {
+		return city(id, site, planner, cx, cz, n, hashedK, snowy, scripted, spaced, java.util.Set.of());
+	}
+
+	/** As above, the hashed pool without the {@code excluded} feature keys. */
+	public static Scenario city(String id, SimSites site, WorldPlanner planner, int cx, int cz, int n, int hashedK, boolean snowy, List<SimFeatures.Call> scripted, boolean spaced, java.util.Set<String> excluded) {
 		List<SimFeatures.Call> calls = new ArrayList<>(scripted);
-		if (hashedK > 0) calls.addAll(SimFeatures.hashed(site.seed(), cx - 1, cz - 1, n + 2, n + 2, hashedK, site.probes().exact(), snowy));
+		if (hashedK > 0) calls.addAll(SimFeatures.hashed(site.seed(), cx - 1, cz - 1, n + 2, n + 2, hashedK, site.probes().exact(), snowy, excluded));
 		return new Scenario(id, planner, site.seed(), site.probes().exact(), site.probes().biome(), cx, cz, n, calls, spaced);
 	}
 

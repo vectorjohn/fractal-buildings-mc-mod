@@ -530,6 +530,17 @@ Deviations from the plan above (all in `mod/src/test/java/dev/fractalbuildings/m
 - **Test hooks:** `Scenario.Extra` (test-only work in a chunk's top-layer step, used for the planted order dependence) and `OrderSim.run(.., tamper)` (changes the world before the checks read it).
 - **Cost** (loadavg 22 to 28, so not quiet): SC1 2 x 2 window, 6 orders in parallel on 4 threads, 2.2 to 2.9 s; SC1 6 x 6 window (k = 3): 4.1 s parallel, 8.5 s one after another; plan (reference raster) 0.1 to 0.3 s.
 
+# S4a as built (2026-10-28)
+
+`OrderSimTest` (SC1 6 x 6 and SC5 4 x 4 in the fast order set, liveness, three controls) and `OrderSimRockTest` (pinned case), in `mod/src/test/.../ordersim/`. Deviations:
+
+- **`forest_rock` is out of SC1's and SC5's hashed pool** (`Scenario.city(.., excluded)`, `SimFeatures.hashed/pool(.., excluded)`). With it, SC1 fails C3 (mossy cobblestone over a claimed street cell) in some orders: real order dependence, not spill, left to ROCKVETO.
+- **ROCKVETO's coder:** `OrderSimRockTest` finds that case itself (full pool on the SC1 4 x 4 window, reads the writer of the unknown cell, replays that one `forest_rock` call alone, spaced so C4 is strict) and asserts today's failure. When the veto is in production and in `SimFeatures.place`, set `OrderSimRockTest.FIXED = true`: the same scenario must then pass every check in every order. If you want rocks back in SC1/SC5, drop `NO_ROCK` in `OrderSimTest`.
+- **Controls do not fail C3** (plan said C3 for all three). `SpillKinds.airKind` accepts leaves, logs and snow in claimed air as `spill` (the order test's classifier), so with a pass off the world differs only by those. The controls therefore assert a bigger residue of leaves/logs in the claimed air with the pass off than on (forward + reverse, SC1 4 x 4): SpillClear 0 -> 4, StreetAirFix 0 -> 11, BuildingAirClear 0 -> 27. An order-dependent C3 for them needs a stricter classifier or a spaced scripted tree (C4); not done.
+- **Liveness is by what a write replaced**: `SimCompare.contracts` also counts `Class.method/old-kind` (leaf, log, snow, vine, air, other) in `SimRun.branchWrites`. SC1: `SpillClear.run/leaf`, `StreetAirFix.run/log`, `BuildingAirClear.*/leaf`, `FoliageClear.erase` all fire. SC5: snow is removed by `SpillClear.run/snow` (131 in forward); `StreetAirFix`'s hanging-snow branch did not fire.
+- SC5 reverse leaves 132 `air->snow` cells on street edges (spill, `freeze_top_layer` of a later chunk): accepted by the classifier.
+- Cost (loadavg 8-13): SC1 6 orders 4.7 s, SC5 2.3 s, controls about 4 s, rock 3 s; the three classes about 20 s of test time in all.
+
 # S4b as built (2026-10-28)
 
 Deviations: SC3 spots come from `trunkSpotFromNeighbour` and a new street case `trunkSpotInStreet` (whole base on street air); SC2a's origin is moved 4 blocks into the wall (`RegressionScenarios.LAKE_INTO_WALL`); SPILL_LOGS is caught by C5 and EARLY_STEP by C1, not C3; SC3 histograms are empty on current code (nothing left to pin); the two manual checks did not fail as predicted (see `docs/log/2026-10-28-ordersim-s4b.md`). Mutants run in forward and reverse with a control per scenario.

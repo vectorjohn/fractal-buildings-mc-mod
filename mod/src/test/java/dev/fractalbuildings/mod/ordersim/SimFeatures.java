@@ -59,9 +59,12 @@ public final class SimFeatures {
 	}
 
 	/** The pool the hashed calls draw from (sorted by name, so the draw is stable). {@code freeze_top_layer} only with {@code snowy}. */
-	public static List<String> pool(boolean snowy) {
+	public static List<String> pool(boolean snowy) { return pool(snowy, java.util.Set.of()); }
+
+	/** As above without the {@code excluded} keys (SC1 and SC5 leave out {@code forest_rock} until ROCKVETO lands: a known real order dependence, pinned in {@code OrderSimRockTest}). */
+	public static List<String> pool(boolean snowy, java.util.Set<String> excluded) {
 		List<String> out = new ArrayList<>();
-		for (String k : KEYS.keySet()) if (snowy || !k.equals("freeze_top_layer")) out.add(k);
+		for (String k : KEYS.keySet()) if ((snowy || !k.equals("freeze_top_layer")) && !excluded.contains(k)) out.add(k);
 		return out;
 	}
 
@@ -73,7 +76,12 @@ public final class SimFeatures {
 
 	/** {@code k} calls per chunk of the {@code w x h} window at (cx0, cz0), drawn from the pool by hashing (seed, chunk, i). y is the terrain floor. */
 	public static List<Call> hashed(long seed, int cx0, int cz0, int w, int h, int k, TerrainProbe terrain, boolean snowy) {
-		List<String> pool = pool(snowy);
+		return hashed(seed, cx0, cz0, w, h, k, terrain, snowy, java.util.Set.of());
+	}
+
+	/** As above, drawing from the pool without {@code excluded}. */
+	public static List<Call> hashed(long seed, int cx0, int cz0, int w, int h, int k, TerrainProbe terrain, boolean snowy, java.util.Set<String> excluded) {
+		List<String> pool = pool(snowy, excluded);
 		List<Call> out = new ArrayList<>();
 		for (int cz = cz0; cz < cz0 + h; cz++) {
 			for (int cx = cx0; cx < cx0 + w; cx++) {
