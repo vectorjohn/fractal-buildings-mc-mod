@@ -157,4 +157,7 @@ When there's more detail than fits, write it to
 `<repo root>/.claude/reports/assist-<slug>.md` (not committed) and give the
 path. Don't claim anything you didn't check. "Not checked" is a fine answer.
 
-Before you finish, leave nothing running that you started.
+Before you finish, leave nothing running that you started. Never run
+`./gradlew --stop` or kill a `GradleDaemon` to get there: daemons are shared by
+every worktree, `--stop` stops all of them (other agents' builds fail), and
+they expire on their own. Use `--no-daemon` in throwaway worktrees.

@@ -110,6 +110,9 @@ Work by path: `cd <worktree> && ...` or `git -C <worktree> ...`.
    break the item's main behaviour with a one-line `sed`, run the narrowest
    command that covers it, confirm a test fails. Then **always** restore with
    `git -C <worktree> checkout -- <file>` and confirm `git status` is clean.
+   If the check ran in a temporary worktree, remove it with `git worktree
+   remove`; **never `./gradlew --stop`** (it stops every agent's daemon and
+   fails their builds; CLAUDE.md "Parallel work"). Use `--no-daemon` there.
 7. **Look at the output.** If anything visible changed, open the relevant PNGs
    (viewer screenshots, gallery, client game test screenshots) with Read, at
    least two including any the report relies on. **For a generator change,

@@ -314,6 +314,13 @@ agents can work and test at once. The rules below exist to make that safe.
 - **Never kill a process you didn't start.** Other agents, and the human's own
   game client, run on the same machine. Before you finish, stop everything you
   started.
+- **Never run `./gradlew --stop` (or `gradle --stop`), and never kill a
+  `GradleDaemon`.** `--stop` is not scoped to your worktree: it stops every
+  Gradle daemon of the `agent` user, which fails other agents' running builds
+  and kills other projects' servers (it happened twice, `docs/NOTES.md`).
+  Daemons are shared between worktrees and expire after 3 h idle; remove a
+  worktree without stopping anything. In a throwaway worktree (bisect,
+  mutation check) pass `--no-daemon` if you want nothing left behind.
 
 ## Working conventions
 

@@ -198,8 +198,11 @@ and mention them in the ROADMAP testing section.
 - OpenAL/sound errors are expected. Client tests render on the Intel iGPU (lavapipe if it is unusable; a `FALLBACK` line in the log says so). Never use the NVIDIA GPU; if something
   is too slow to test that way, say so.
 - **Before you report, leave nothing running** that you started (test runs,
-  waiter loops, clients, dev servers, Gradle daemons you started with special
-  flags). Never kill a process you didn't start.
+  waiter loops, clients, dev servers). Never kill a process you didn't start.
+  **Never run `./gradlew --stop` or kill a `GradleDaemon`**: daemons are shared
+  by every worktree and `--stop` stops all of them, failing other agents'
+  builds (CLAUDE.md "Parallel work"). They expire on their own; use
+  `--no-daemon` in a throwaway worktree.
 
 ### Docs and commits
 
