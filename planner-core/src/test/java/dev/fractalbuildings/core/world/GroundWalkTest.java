@@ -56,7 +56,7 @@ class GroundWalkTest {
 		int tiles = 0, over1 = 0, over3 = 0;
 		List<String> examples = new ArrayList<>();
 		for (GateWorld g : GateWorld.all()) {
-			WorldPlanner w = g.planner(WorldPlanner.Caches.DEFAULT, null);
+			WorldPlanner w = g.sharedPlanner();
 			for (TileInfo info : WorldPlannerParityTest.planned(w, g).values()) {
 				List<String> s = steps(w, info);
 				tiles++;
@@ -86,7 +86,7 @@ class GroundWalkTest {
 		int checked = 0, holes = 0, onWater = 0;
 		List<String> examples = new ArrayList<>();
 		for (GateWorld g : GateWorld.all()) {
-			WorldPlanner w = g.planner(WorldPlanner.Caches.DEFAULT, null);
+			WorldPlanner w = g.sharedPlanner();
 			int k = 0;
 			for (TileInfo info : WorldPlannerParityTest.planned(w, g).values()) {
 				if (k++ % 3 != 0) continue;

@@ -17,8 +17,8 @@ class AvenueDistrictsTest {
 		int tiles = 0, withLane = 0, lanes = 0, lotsInTiles = 0, greens = 0;
 		TreeMap<String, Integer> bad = new TreeMap<>();
 		for (int i : OldTownDistrictsTest.bigCases(40)) {
-			DistrictsTest.Planned p = DistrictsTest.planned(i);
-			for (Districts.Detail d : p.all()) {
+			DistrictsTest.Planned p = DistrictsTest.shared(i);
+			for (Districts.Detail d : DistrictsTest.details(i)) {
 				tiles++;
 				for (Violation v : d.plan().violations()) bad.merge(v.invariant() + " (case " + i + ")", 1, Integer::sum);
 				if (d.notes().stream().anyMatch(n -> n.startsWith("avenue green"))) {

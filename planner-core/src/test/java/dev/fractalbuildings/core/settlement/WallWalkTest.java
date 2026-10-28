@@ -62,7 +62,17 @@ class WallWalkTest {
 
 	static int pieceIndex(String lotId) { return Integer.parseInt(lotId.substring(lotId.indexOf(WallRing.MARK) + WallRing.MARK.length())); }
 
-	static Ring ring(TownProgramTest.Town t) {
+	private static final java.util.Map<TownProgramTest.Town, java.lang.ref.SoftReference<Ring>> RINGS = new java.util.IdentityHashMap<>();
+
+	/** Built once per town object (TESTSPEED2: the towns are memoised, and four tests walk the same rings); read-only. */
+	static synchronized Ring ring(TownProgramTest.Town t) {
+		var r = RINGS.get(t);
+		Ring ring = r == null ? null : r.get();
+		if (ring == null) { ring = buildRing(t); RINGS.put(t, new java.lang.ref.SoftReference<>(ring)); }
+		return ring;
+	}
+
+	private static Ring buildRing(TownProgramTest.Town t) {
 		World w = new World();
 		List<PlacedBuilding> bs = new ArrayList<>();
 		Map<String, Rect> rects = new TreeMap<>();
@@ -220,7 +230,13 @@ class WallWalkTest {
 	}
 
 	/** Settlements with a ring on terrain other than the standard three: steep noise, and cities (walled old towns). */
-	static List<TownProgramTest.Town> ringsOn(String terrain, dev.fractalbuildings.core.settlement.Tier tier, int radius, int max, int tries) {
+	private static final java.util.Map<String, List<TownProgramTest.Town>> RINGS_ON = new java.util.HashMap<>();
+
+	static synchronized List<TownProgramTest.Town> ringsOn(String terrain, dev.fractalbuildings.core.settlement.Tier tier, int radius, int max, int tries) {
+		return RINGS_ON.computeIfAbsent(terrain + "/" + tier + "/" + radius + "/" + max + "/" + tries, k -> List.copyOf(planRingsOn(terrain, tier, radius, max, tries)));
+	}
+
+	private static List<TownProgramTest.Town> planRingsOn(String terrain, dev.fractalbuildings.core.settlement.Tier tier, int radius, int max, int tries) {
 		List<TownProgramTest.Town> out = new ArrayList<>();
 		for (int i = 0; i < tries && out.size() < max; i++) {
 			CityPlannerTest.Setup s = CityPlannerTest.setup(900 + i, terrain, i % 4, -(i % 3), tier, radius);
@@ -234,7 +250,7 @@ class WallWalkTest {
 	void theRingCanBeWalkedOnSteepGroundAndAroundWalledCities() {
 		int rings = 0;
 		for (String terrain : new String[] {"noise:9:90:40:150", "noise:7:80:30:100"}) {
-			List<TownProgramTest.Town> towns = ringsOn(terrain, dev.fractalbuildings.core.settlement.Tier.TOWN, 280, 6, 60);
+			List<TownProgramTest.Town> towns = new ArrayList<>(ringsOn(terrain, dev.fractalbuildings.core.settlement.Tier.TOWN, 280, 6, 60));
 			towns.addAll(ringsOn(terrain, dev.fractalbuildings.core.settlement.Tier.CITY, 600, 3, 40));
 			for (TownProgramTest.Town t : towns)
 				for (DistrictPlan d : t.city().districts().values())

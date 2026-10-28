@@ -27,7 +27,15 @@ record GateWorld(String name, long seed, int x, int z, String tier, int radius, 
 		throw new IllegalArgumentException(name);
 	}
 
-	static List<GateWorld> all() {
+	private static List<GateWorld> allMemo;
+
+	/** The dumps are read once per JVM (immutable). */
+	static synchronized List<GateWorld> all() {
+		if (allMemo == null) allMemo = List.copyOf(read());
+		return allMemo;
+	}
+
+	private static List<GateWorld> read() {
 		try {
 			List<GateWorld> out = new ArrayList<>();
 			for (String line : Files.readAllLines(FIXTURES.resolve("gate-sites.tsv")).stream().skip(1).toList()) {
@@ -60,6 +68,23 @@ record GateWorld(String name, long seed, int x, int z, String tier, int radius, 
 
 	WorldPlanner planner(WorldPlanner.Caches caps, java.util.concurrent.Executor workers) {
 		return WorldPlanner.forSite(seed, WorldConfig.defaults(), probes, workers, caps, site());
+	}
+
+	/** Caps that keep every tile of one gate window (about 75 tiles) warm. */
+	private static final WorldPlanner.Caches WINDOW_CAPS = new WorldPlanner.Caches(4096, 64, 64, WorldPlanner.Caches.DEFAULT.region(), 256, 256, 256);
+	private static final java.util.Map<String, java.lang.ref.SoftReference<WorldPlanner>> SHARED = new java.util.HashMap<>();
+
+	/**
+	 * TESTSPEED2: one planner per gate window for the whole test JVM, with caches large enough to hold the window, so the read-only walks of
+	 * GroundWalkTest, BuildingCellExtentTest and WorldPlannerInvariantTest generate each tile's buildings and ground once instead of once per test.
+	 * Answers never depend on cache state (WorldPlannerOrderTest, WorldPlannerCachePressureTest), so sharing hides nothing a read-only check could
+	 * see; tests of the planner itself (parity, order, isolation, eviction) keep making their own. Soft, so a tight heap drops it.
+	 */
+	synchronized WorldPlanner sharedPlanner() {
+		var r = SHARED.get(name);
+		WorldPlanner w = r == null ? null : r.get();
+		if (w == null) { w = planner(WINDOW_CAPS, null); SHARED.put(name, new java.lang.ref.SoftReference<>(w)); }
+		return w;
 	}
 
 	/** The probes of a dump, with the region window the way the CLI computes it. */

@@ -26,9 +26,9 @@ class SquareLotsTest {
 	static List<Filled> filled(int i) {
 		List<Filled> hit = MEMO.get(i);
 		if (hit != null) return hit;
-		DistrictsTest.Planned p = DistrictsTest.planned(i);
+		DistrictsTest.Planned p = DistrictsTest.shared(i);
 		List<Filled> out = new ArrayList<>();
-		for (Districts.Detail d : p.all()) out.add(new Filled(p, d, Briefs.fill(d.plan(), QuarterKind.values()[d.plan().district().quarter()], new StyleField(ProbeSpecs.parse(p.c().spec()).biome(), p.c().seed()), p.exact())));
+		for (Districts.Detail d : DistrictsTest.details(i)) out.add(new Filled(p, d, Briefs.fill(d.plan(), QuarterKind.values()[d.plan().district().quarter()], new StyleField(ProbeSpecs.parse(p.c().spec()).biome(), p.c().seed()), p.exact())));
 		if (i < 150) MEMO.put(i, out);
 		return out;
 	}

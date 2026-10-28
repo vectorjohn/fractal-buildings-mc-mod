@@ -26,6 +26,25 @@ class DistrictsTest {
 		return new Planned(c, src, exact, c.plan());
 	}
 
+	/** JVM-wide memo of deterministic synthetic sites (TESTSPEED2): for read-only checks. Tests whose point is a fresh source or a tile order use {@link #planned}. Soft, so a tight heap drops them. */
+	private static final java.util.Map<Integer, java.lang.ref.SoftReference<Planned>> SHARED = new java.util.HashMap<>();
+	private static final java.util.Map<Integer, java.lang.ref.SoftReference<List<Districts.Detail>>> SHARED_ALL = new java.util.HashMap<>();
+
+	static synchronized Planned shared(int i) {
+		var r = SHARED.get(i);
+		Planned p = r == null ? null : r.get();
+		if (p == null) { p = planned(i); SHARED.put(i, new java.lang.ref.SoftReference<>(p)); }
+		return p;
+	}
+
+	/** Every district of site {@code i}, planned once per JVM from {@link #shared}. */
+	static synchronized List<Districts.Detail> details(int i) {
+		var r = SHARED_ALL.get(i);
+		List<Districts.Detail> l = r == null ? null : r.get();
+		if (l == null) { l = List.copyOf(shared(i).all()); SHARED_ALL.put(i, new java.lang.ref.SoftReference<>(l)); }
+		return l;
+	}
+
 	@Test
 	void smoke() throws Exception {
 		Planned p = planned(1);
@@ -46,12 +65,23 @@ class DistrictsTest {
 
 	@Test
 	void invariantsHoldOverManySyntheticSites() {
+		invariantsOver(0, 75);
+	}
+
+	/** TESTSPEED2: the second half of the 150 sites; same rule, run with -PfbTests=heavy. */
+	@Test
+	@org.junit.jupiter.api.Tag("heavy")
+	void invariantsHoldOverTheOtherSyntheticSites() {
+		invariantsOver(75, 150);
+	}
+
+	private void invariantsOver(int from, int to) {
 		int sites = 0, tiles = 0, lots = 0, pairs = 0;
 		java.util.TreeMap<String, Integer> bad = new java.util.TreeMap<>();
-		for (int i = 0; i < 150; i++) {
-			Planned p = planned(i);
+		for (int i = from; i < to; i++) {
+			Planned p = shared(i);
 			java.util.TreeMap<String, Districts.Detail> byId = new java.util.TreeMap<>();
-			for (Districts.Detail d : p.all()) {
+			for (Districts.Detail d : details(i)) {
 				byId.put(d.plan().district().id(), d);
 				tiles++;
 				lots += d.plan().lots().size();
@@ -99,8 +129,8 @@ class DistrictsTest {
 
 	@Test
 	void planJsonRoundTripsAndStaysInsideTheTile() {
-		Planned p = planned(2);
-		for (Districts.Detail d : p.all()) {
+		Planned p = shared(2);
+		for (Districts.Detail d : details(2)) {
 			String json = DistrictJson.write(d.plan());
 			assertEquals(json, DistrictJson.write(DistrictJson.read(json)));
 		}
@@ -144,9 +174,9 @@ class DistrictsTest {
 	void gridStreetsRunStraightAcrossTileBorders() {
 		int crossings = 0;
 		for (int i : new int[] {1, 4, 7, 10, 13}) {
-			Planned p = planned(i);
+			Planned p = shared(i);
 			java.util.TreeMap<String, Districts.Detail> byId = new java.util.TreeMap<>();
-			for (Districts.Detail d : p.all()) byId.put(d.plan().district().id(), d);
+			for (Districts.Detail d : details(i)) byId.put(d.plan().district().id(), d);
 			for (Districts.Detail d : byId.values()) {
 				DistrictInfo a = d.plan().district();
 				Districts.Detail below = byId.get(Ids.district(a.ix(), a.iz() + 1));
@@ -171,8 +201,8 @@ class DistrictsTest {
 	void frontYFollowsTheGradedProfileAndAirRightsFollowTheStreet() {
 		int checked = 0, air = 0;
 		for (int i : new int[] {1, 4, 7}) {
-			Planned p = planned(i);
-			for (Districts.Detail d : p.all()) {
+			Planned p = shared(i);
+			for (Districts.Detail d : details(i)) {
 				DistrictPlan plan = d.plan();
 				for (LotBrief l : plan.lots()) {
 					if (l.frontY() == dev.fractalbuildings.core.gen.Brief.NO_FRONT_Y) continue;
@@ -207,8 +237,8 @@ class DistrictsTest {
 	void hubSquareHallAndTempleGetLotsThatFaceTheSquare() {
 		int halls = 0, temples = 0;
 		for (int i = 0; i < 12; i++) {
-			Planned p = planned(i);
-			for (Districts.Detail d : p.all()) {
+			Planned p = shared(i);
+			for (Districts.Detail d : details(i)) {
 				for (LotBrief l : d.plan().lots()) {
 					if (l.type().equals("hall")) halls++;
 					if (l.type().equals("temple")) temples++;
@@ -226,8 +256,8 @@ class DistrictsTest {
 	void lotsPerHectareByDensityBand() {
 		double[] lots = new double[4], area = new double[4], cover = new double[4];
 		for (int i = 0; i < 30; i++) {
-			Planned p = planned(i);
-			for (Districts.Detail d : p.all()) {
+			Planned p = shared(i);
+			for (Districts.Detail d : details(i)) {
 				for (LotBrief l : d.plan().lots()) {
 					int b = l.density() < 25 ? 0 : l.density() < 50 ? 1 : l.density() < 70 ? 2 : 3;
 					lots[b]++;
@@ -250,11 +280,11 @@ class DistrictsTest {
 	void plannedDistrictsBuildScenesWithoutViolations() {
 		int built = 0, buildings = 0, fallbacks = 0;
 		for (int i : new int[] {1, 4}) {
-			Planned p = planned(i);
+			Planned p = shared(i);
 			var styles = new dev.fractalbuildings.core.style.StyleField(ProbeSpecs.parse(p.c().spec()).biome(), p.c().seed());
 			var biome = ProbeSpecs.parse(p.c().spec()).biome();
 			int n = 0;
-			for (Districts.Detail d : p.all()) {
+			for (Districts.Detail d : details(i)) {
 				if (d.plan().lots().size() < 40 || n++ >= 3) continue;
 				DistrictPlan filled = Briefs.fill(d.plan(), QuarterKind.values()[d.plan().district().quarter()], styles, p.exact());
 				DistrictScenes.Built b = DistrictScenes.build(filled, d.landmarks(), p.exact(), biome, true);

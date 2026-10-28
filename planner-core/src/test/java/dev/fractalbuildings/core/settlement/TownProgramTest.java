@@ -21,7 +21,17 @@ class TownProgramTest {
 		SettlementPlan plan() { return city.plan(); }
 	}
 
-	static Town town(int i) {
+	private static final java.util.Map<Integer, java.lang.ref.SoftReference<Town>> TOWNS = new java.util.HashMap<>();
+
+	/** Planned once per JVM (TESTSPEED2): towns are deterministic and read-only. */
+	static synchronized Town town(int i) {
+		var r = TOWNS.get(i);
+		Town t = r == null ? null : r.get();
+		if (t == null) { t = plan(i); TOWNS.put(i, new java.lang.ref.SoftReference<>(t)); }
+		return t;
+	}
+
+	private static Town plan(int i) {
 		int radius = 260 + 30 * (i % 6);
 		CityPlannerTest.Setup s = CityPlannerTest.setup(500 + i, TERRAINS[i % TERRAINS.length], i % 4, -(i % 3), Tier.TOWN, radius);
 		return new Town(s, s.plan());
@@ -218,7 +228,7 @@ class TownProgramTest {
 	@Test
 	void townsAreDeterministic() {
 		for (int i : new int[] {1, 4, 7}) {
-			assertEquals(SettlementJson.write(town(i).plan()), SettlementJson.write(town(i).plan()));
+			assertEquals(SettlementJson.write(plan(i).plan()), SettlementJson.write(plan(i).plan()));
 		}
 	}
 

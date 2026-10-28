@@ -35,7 +35,7 @@ class BuildingCellExtentTest {
 	void sameOnEveryGateWindow() {
 		int[] n = {0, 0, 0};
 		for (GateWorld g : GateWorld.all()) {
-			WorldPlanner w = g.planner(WorldPlanner.Caches.DEFAULT, null);
+			WorldPlanner w = g.sharedPlanner();
 			int k = 0;
 			for (TileInfo info : WorldPlannerParityTest.planned(w, g).values()) {
 				if (k++ % 3 != 0) continue;
@@ -60,7 +60,7 @@ class BuildingCellExtentTest {
 	void groundYieldsEveryBuildingCellToTheBuilding() {
 		int strip = 0;
 		for (GateWorld g : GateWorld.all()) {
-			WorldPlanner w = g.planner(WorldPlanner.Caches.DEFAULT, null);
+			WorldPlanner w = g.sharedPlanner();
 			int k = 0;
 			for (TileInfo info : WorldPlannerParityTest.planned(w, g).values()) {
 				if (k++ % 2 != 0) continue;
@@ -89,7 +89,7 @@ class BuildingCellExtentTest {
 	void everyGroundFloorColumnHasFoundationTwelveBelowTheProbedGround() {
 		int cols = 0, deep = 0;
 		for (GateWorld g : GateWorld.all()) {
-			WorldPlanner w = g.planner(WorldPlanner.Caches.DEFAULT, null);
+			WorldPlanner w = g.sharedPlanner();
 			int k = 0;
 			for (TileInfo info : WorldPlannerParityTest.planned(w, g).values()) {
 				if (k++ % 4 != 0) continue;

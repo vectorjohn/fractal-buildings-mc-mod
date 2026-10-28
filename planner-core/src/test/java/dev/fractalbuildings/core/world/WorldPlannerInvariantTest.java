@@ -26,7 +26,7 @@ class WorldPlannerInvariantTest {
 	void sampledTilesOfEveryGateWindowPassTheInvariants() {
 		int tiles = 0, buildings = 0, grounds = 0;
 		for (GateWorld g : GateWorld.all()) {
-			WorldPlanner w = g.planner(WorldPlanner.Caches.DEFAULT, null);
+			WorldPlanner w = g.sharedPlanner();
 			int n = 0;
 			for (TileInfo info : WorldPlannerParityTest.planned(w, g).values()) {
 				List<BuildingPiece> bs = w.buildings(info.ix(), info.iz());

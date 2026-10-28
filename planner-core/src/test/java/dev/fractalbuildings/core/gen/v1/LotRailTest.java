@@ -26,7 +26,15 @@ class LotRailTest {
 
 	private record Run(GenRequest rq, SceneDoc scene, boolean setBack) {}
 
-	private static List<Run> matrix() {
+	private static List<Run> memo;
+
+	/** Generated once per JVM (TESTSPEED2): both tests read the same matrix. */
+	private static synchronized List<Run> matrix() {
+		if (memo == null) memo = List.copyOf(buildMatrix());
+		return memo;
+	}
+
+	private static List<Run> buildMatrix() {
 		List<Run> runs = new ArrayList<>();
 		for (BuildingType t : Types.all()) {
 			if (java.util.Set.of("wall", "curtain", "bastion").contains(t.id())) continue;

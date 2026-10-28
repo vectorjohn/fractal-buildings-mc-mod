@@ -86,5 +86,5 @@ tasks.named('test') {
 tasks.named('test') {
 	maxParallelForks = Math.max(1, Math.min(6, Runtime.runtime.availableProcessors().intdiv(3)))
 	forkEvery = 0
-	maxHeapSize = '1g'
+	maxHeapSize = '2g' // TESTSPEED2: the shared gate-window planners (GateWorld.sharedPlanner) hold about 70 MB each
 }

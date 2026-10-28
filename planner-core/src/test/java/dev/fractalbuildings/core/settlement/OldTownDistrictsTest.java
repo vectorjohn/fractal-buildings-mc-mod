@@ -24,8 +24,8 @@ class OldTownDistrictsTest {
 		int tiles = 0, sub = 0, lots = 0, streets = 0, squares = 0, sdLanes = 0;
 		TreeMap<String, Integer> bad = new TreeMap<>();
 		for (int i : bigCases(40)) {
-			DistrictsTest.Planned p = DistrictsTest.planned(i);
-			for (Districts.Detail d : p.all()) {
+			DistrictsTest.Planned p = DistrictsTest.shared(i);
+			for (Districts.Detail d : DistrictsTest.details(i)) {
 				tiles++;
 				if (!subdivided(d)) continue;
 				sub++;
