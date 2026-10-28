@@ -7,7 +7,7 @@
 #   e.g. scripts/evidence.sh p6-foliage scripts/client-test.sh
 #        scripts/evidence.sh p6-foliage scripts/test-all.sh --no-client
 #
-# Writes <main root>/.claude/reports/<label>-evidence/<short sha>-<UTC time>/ with EVIDENCE.md (commit,
+# Writes <main root>/.claude/reports/<label>-evidence/<short sha>-<UTC time>[-N]/ with EVIDENCE.md (commit,
 # dirty files if any, command, exit code, start/end, loadavg, copied files) and copies of every known
 # test artifact the command wrote (build/test-all/*.log, build/client-test/gradle.log, the client game
 # test log, build/anywhere/* (scripts/anywhere.sh: which host ran it; also a "route:" line),
@@ -15,16 +15,26 @@
 # viewer/out/** screenshots).
 # Prints "EVIDENCE <dir>" and exits with the command's exit code. Takes no lock itself: the commands
 # it runs (client-test.sh, perf.sh, test-all.sh) take the heavy lock where they need it.
+# Concurrent runs get their own folders, but runs overlapping in ONE worktree share its build/ paths, so
+# each also copies whatever the other wrote meanwhile; use separate worktrees for clean evidence.
 set -uo pipefail
-[ $# -ge 2 ] || { sed -n '2,16p' "$0" | sed 's/^# \{0,1\}//'; exit 2; }
+[ $# -ge 2 ] || { sed -n '2,19p' "$0" | sed 's/^# \{0,1\}//'; exit 2; }
 LABEL=$1; shift
 WT=$(git rev-parse --show-toplevel) || exit 2
 MAIN_ROOT=$(dirname "$(git -C "$WT" rev-parse --path-format=absolute --git-common-dir)")
 SHA=$(git -C "$WT" rev-parse HEAD)
 DIRTY=$(git -C "$WT" status --porcelain --untracked-files=no)
 STAMP=$(date -u +%Y%m%dT%H%M%SZ)
-OUT="$MAIN_ROOT/.claude/reports/$LABEL-evidence/${SHA:0:10}-$STAMP"
-mkdir -p "$OUT"
+# The folder is created atomically (mkdir without -p on the leaf): when another run with the same label
+# already took <sha10>-<stamp> (both started in the same second), this one gets <sha10>-<stamp>-2, -3, ...
+# Before this, such runs shared one folder, one start mark and one EVIDENCE.md (VILLROAD, 2026-10-28).
+PARENT="$MAIN_ROOT/.claude/reports/$LABEL-evidence"
+mkdir -p "$PARENT" || exit 2
+OUT="$PARENT/${SHA:0:10}-$STAMP"; n=1
+until mkdir "$OUT" 2>/dev/null; do
+  n=$((n + 1)); OUT="$PARENT/${SHA:0:10}-$STAMP-$n"
+  [ "$n" -le 100 ] || { echo "evidence.sh: cannot create a folder under $PARENT" >&2; exit 2; }
+done
 MARK="$OUT/.start"; touch "$MARK"
 START=$(date -u +%FT%TZ); LOAD0=$(cut -d' ' -f1-3 /proc/loadavg)
 
