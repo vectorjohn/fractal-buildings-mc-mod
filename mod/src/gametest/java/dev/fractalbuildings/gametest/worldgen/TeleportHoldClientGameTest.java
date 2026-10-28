@@ -20,6 +20,7 @@ public class TeleportHoldClientGameTest implements FabricClientGameTest {
 	@Override
 	public void runTest(ClientGameTestContext context) {
 		if (dev.fractalbuildings.gametest.compat.CompatOnly.skip("TeleportHoldClientGameTest")) return;
+		if (dev.fractalbuildings.gametest.perf.PerfGate.skipOthers()) return; // B8: a perf-only run
 		try (TestSingleplayerContext world = context.worldBuilder()
 				.setUseConsistentSettings(false)
 				.adjustSettings(c -> c.setSeed("987654321"))

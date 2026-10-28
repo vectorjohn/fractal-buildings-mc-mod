@@ -171,6 +171,7 @@ public class FlyThroughClientGameTest implements FabricClientGameTest {
 	@Override
 	public void runTest(ClientGameTestContext context) {
 		if (dev.fractalbuildings.gametest.compat.CompatOnly.skip("FlyThroughClientGameTest")) return;
+		if (dev.fractalbuildings.gametest.perf.PerfGate.skipOthers()) return; // B8: a perf-only run
 		if (!enabled()) { FractalBuildingsMod.LOGGER.info("[B9] FlyThroughClientGameTest skipped (FB_FLY not set)"); return; }
 		String[] seeds = env("FB_FLY_SEEDS", "987654321,12345,1").split(",");
 		Path out = Path.of(env("FB_FLY_OUT", "build/flythrough")).toAbsolutePath();

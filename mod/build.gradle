@@ -219,3 +219,18 @@ tasks.matching { it.name == 'processGametestResources' }.configureEach { t ->
 		}
 	}
 }
+
+// PERFSRV: renderer-free world half of scripts/perf.sh. A dedicated server (world seed and view distance come from the run dir's
+// server.properties, written by scripts/perf.sh) with the game-test source set on the classpath; PerfServerHarness is loaded by the mod's
+// -Dfb.testHook and halts the server when its rows are written. -Pfb.perfVariant=mod|base picks the world, -Pfb.perfOut=<dir> the output.
+loom.runs {
+	perfServer {
+		server()
+		source sourceSets.gametest
+		runDir "build/run/perfServer"
+		ideConfigGenerated false
+		property 'fb.testHook', 'dev.fractalbuildings.gametest.perf.PerfServerHarness'
+		property 'fb.perf.variant', (findProperty('fb.perfVariant') ?: 'mod').toString()
+		property 'fb.perf.out', (findProperty('fb.perfOut') ?: layout.buildDirectory.dir('perf').get().asFile.path).toString()
+	}
+}

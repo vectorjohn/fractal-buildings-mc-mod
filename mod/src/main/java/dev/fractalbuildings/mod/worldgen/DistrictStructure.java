@@ -44,9 +44,32 @@ public final class DistrictStructure extends Structure {
 
 	public Tier tier() { return tier; }
 
+	/** The lane token of the stub this thread's last {@link #findGenerationPoint} returned, read by {@link #findValidGenerationPoint}. */
+	private static final ThreadLocal<long[]> LAST_STUB = ThreadLocal.withInitial(() -> new long[2]);
+
+	@Override
+	public Optional<GenerationStub> findValidGenerationPoint(GenerationContext ctx) {
+		long[] last = LAST_STUB.get();
+		last[0] = 0;
+		Optional<GenerationStub> stub = super.findValidGenerationPoint(ctx);
+		if (stub.isEmpty() && last[0] != 0) {
+			// ours was made and vanilla's biome filter dropped it (the tile gets no buildings)
+			LaneStats.startRejected();
+			if (LaneStats.logStarts()) logStart(ctx.chunkPos(), (int) (last[1] >> 32), (int) last[1], "biome-rejected", (System.nanoTime() - last[0]) / 1e6, -1, -1);
+		}
+		return stub;
+	}
+
+	private void logStart(ChunkPos cp, int ix, int iz, String outcome, double decideMs, double buildMs, int pieces) {
+		FractalBuildingsMod.LOGGER.info("[LANE-START] chunk {},{} tile {},{} tier {} {} decide {} ms build {} ms pieces {} thread {}", cp.x(), cp.z(), ix, iz, tier.json, outcome,
+				String.format(java.util.Locale.ROOT, "%.1f", decideMs), buildMs < 0 ? "-" : String.format(java.util.Locale.ROOT, "%.1f", buildMs), pieces, Thread.currentThread().getName());
+	}
+
 	@Override
 	protected Optional<GenerationStub> findGenerationPoint(GenerationContext ctx) {
 		ChunkPos cp = ctx.chunkPos();
+		long lane = 0;
+		boolean stubbed = false;
 		try {
 			Optional<WorldPlanner> wp = WorldPlanners.of(ctx);
 			if (wp.isEmpty()) return Optional.empty();
@@ -55,30 +78,59 @@ public final class DistrictStructure extends Structure {
 			Optional<DistrictGrid.Tile> start = planner.startTile(cp.x(), cp.z());
 			if (start.isEmpty()) return Optional.empty();
 			DistrictGrid.Tile t = start.get();
-			long lane = LaneStats.startBegin();
+			lane = LaneStats.startBegin();
 			Optional<TileInfo> info = planner.tile(t.ix(), t.iz());
 			if (info.isEmpty() || info.get().tier() != tier) {
-				LaneStats.startAbort(lane);
+				if (lane != 0 && LaneStats.logStarts()) {
+					// every decision without a stub: which settlement is near, so "no tile here" can be told from "the city was missed"
+					int mx = (t.minX() + t.maxX()) / 2, mz = (t.minZ() + t.maxZ()) / 2;
+					String near = planner.nearest(mx, mz, Tier.HAMLET, 1).map(n -> n.site().id() + " " + n.site().tier().json + " r" + n.site().radius() + " at " + (int) n.distance()).orElse("none");
+					String why = info.isEmpty() ? "no-owner" : "other-tier(" + info.get().tier().json + ")";
+					FractalBuildingsMod.LOGGER.info("[LANE-START] chunk {},{} tile {},{} tier {} {} decide {} ms centre {},{} nearest {} thread {}", cp.x(), cp.z(), t.ix(), t.iz(), tier.json, why,
+							String.format(java.util.Locale.ROOT, "%.1f", (System.nanoTime() - lane) / 1e6), mx, mz, near, Thread.currentThread().getName());
+				}
 				return Optional.empty();
 			}
+
 			planner.prefetch(t.ix(), t.iz()); // the neighbours' plans, on the workers, while this start builds its own pieces
 			BlockPos pos = new BlockPos(cp.getMiddleBlockX(), ctx.chunkGenerator().getSeaLevel(), cp.getMiddleBlockZ());
+			final long token = lane;
+			final long decided = System.nanoTime();
+			if (token != 0) {
+				long[] last = LAST_STUB.get();
+				last[0] = token;
+				last[1] = ((long) t.ix() << 32) | (t.iz() & 0xffffffffL);
+			}
+			stubbed = true;
+			LaneStats.startStub(lane);
 			return Optional.of(new GenerationStub(pos, builder -> {
+				LaneStats.buildBegin(token);
+				long b0 = System.nanoTime();
+				int pieces = 0;
+				String outcome = "built";
 				try {
-					for (TilePiece piece : buildingPieces(planner, t)) builder.addPiece(piece);
+					for (TilePiece piece : buildingPieces(planner, t)) {
+						builder.addPiece(piece);
+						pieces++;
+					}
 				} catch (RuntimeException e) {
+					outcome = "failed";
 					WorldPlanners.FAILURES.incrementAndGet();
 					FractalBuildingsMod.LOGGER.error("Planning the buildings of tile {},{} failed; the tile gets none", t.ix(), t.iz(), e);
 				} finally {
-					LaneStats.startEnd(lane);
+					LaneStats.startEnd(token);
+					if (token != 0 && LaneStats.logStarts()) logStart(cp, t.ix(), t.iz(), outcome, (decided - token) / 1e6, (System.nanoTime() - b0) / 1e6, pieces);
 				}
 			}));
 		} catch (RuntimeException e) {
 			WorldPlanners.FAILURES.incrementAndGet();
 			FractalBuildingsMod.LOGGER.error("Deciding the district start at chunk {} failed; no settlement here", cp, e);
 			return Optional.empty();
+		} finally {
+			if (!stubbed) LaneStats.startAbort(lane); // every path but the stub ends the decision here, so the in-progress count cannot leak
 		}
 	}
+
 
 	/** The building pieces of a tile, in plan order (what the generation stub adds). Public so the order simulation builds the same pieces. */
 	public static java.util.List<TilePiece> buildingPieces(WorldPlanner planner, DistrictGrid.Tile t) {
@@ -95,6 +147,7 @@ public final class DistrictStructure extends Structure {
 		}
 		return out;
 	}
+
 
 	@Override
 	public net.minecraft.world.level.levelgen.GenerationStep.Decoration step() {

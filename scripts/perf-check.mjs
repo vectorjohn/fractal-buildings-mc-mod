@@ -22,7 +22,7 @@ for (const b of spec.budgets) {
 	let v;
 	if (b.expr === 'inlineShare') {
 		const d = data['flight.lookups.done'], j = data['flight.lookups.joined'], i = data['flight.lookups.inline'];
-		v = d === undefined ? undefined : (d + j + i) === 0 ? 0 : (100 * i) / (d + j + i);
+		v = d === undefined || (d + j + i) === 0 ? undefined : (100 * i) / (d + j + i); // no lookups at all = nothing measured, not 0 % (PERFSRV r4)
 	} else v = data[b.key];
 	const ci = b.ci ?? b.budget * 2;
 	let st = 'ok';

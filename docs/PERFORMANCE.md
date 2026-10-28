@@ -238,6 +238,22 @@ How to use it:
   distance with clouds off and larger shots; GPU options in the assistant's
   2026-10-26 answer (gpu-perf).
 
+### perf.sh world half moved off the renderer (PERFSRV, 2026-10-26)
+
+- **What**: the world rows (`/locate`, flight ticks, inline share, chunk cost vs
+  vanilla, postProcess, region growth, heap) now come from a dedicated server
+  with no client (`:mod:runPerfServer`, `PerfServerHarness`; a mock player
+  flies the same path, so chunk loading, tracking and the teleport hold are the
+  same code as a client's player), run twice (variant mod, variant base) and
+  merged by `scripts/perf-merge.mjs`; same rows, budgets and `summary.md`.
+  Server settings: seed 987654321, view distance 4, simulation distance 12
+  (what the integrated server used at render distance 4). The old form is
+  `scripts/perf.sh --client` (`PerfClientGameTest`).
+- **Needs**: a dedicated server needs an accepted EULA; the standing approval in
+  CLAUDE.md covers `mod/build/run/perfServer/` (local, 127.0.0.1, online-mode=false),
+  so `perf.sh` writes `eula.txt` itself when it is missing (PERFSRV r9).
+- **Still client-side**: nothing today; a frame-time row (GPU) would be.
+
 ### Quays front-load probes on a waterfront settlement's first tile
 
 - **What**: METROFILL R1 (r3) made a settlement's quay runs a settlement-wide value (traced over every waterfront tile it plans and graded once, cached per source and probe like the junction field), because grading a run through each tile's own window made neighbouring tiles cut it differently (`tile-border-agree`). The first waterfront tile asked pays for the whole settlement's quays.

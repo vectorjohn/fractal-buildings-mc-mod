@@ -137,6 +137,7 @@ public class RoadsClientGameTest implements FabricClientGameTest {
 	@Override
 	public void runTest(ClientGameTestContext context) {
 		if (dev.fractalbuildings.gametest.compat.CompatOnly.skip("RoadsClientGameTest")) return;
+		if (dev.fractalbuildings.gametest.perf.PerfGate.skipOthers()) return; // B8: a perf-only run
 		if ("0".equals(System.getenv("FB_ROADS"))) return;
 		String seed = System.getenv().getOrDefault("FB_ROADS_SEED", "987654321");
 		boolean shots = !"0".equals(System.getenv("FB_ROADS_SHOTS"));

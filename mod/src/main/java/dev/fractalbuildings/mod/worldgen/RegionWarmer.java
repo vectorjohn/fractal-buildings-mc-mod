@@ -89,6 +89,7 @@ public final class RegionWarmer {
 	static boolean submit(WorldPlanner planner, State s, int x, int z, int ax, int az, Executor workers) {
 		if (s.busy) return false;
 		s.busy = true;
+		LaneStats.warmBegin(); // counted from the queue: a queued warm is the warmer's too (the perf settle tells it from building work)
 		try {
 			workers.execute(() -> {
 				long t0 = System.nanoTime();
@@ -107,6 +108,7 @@ public final class RegionWarmer {
 			return true;
 		} catch (RuntimeException refused) {
 			s.busy = false;
+			LaneStats.warmAbort();
 			LaneStats.refused();
 			return false;
 		}
