@@ -82,7 +82,8 @@ public final class CurtainType implements BuildingType {
 			if (fs.size() != 1) throw new IllegalStateException("curtain south face: " + fs.size() + " runs");
 			Face f = fs.get(0);
 			Draws r = c.draws("curtain/door");
-			int pos = f.a() + 10 + r.below(Math.max(1, f.length() - 20)); // clear of the ends, where a walk descending to a tower doorway is cut through the gallery
+			int edge = dev.fractalbuildings.core.gen.Brief.MAX_STEP + 2; // GUARDDOOR: a stair cut at an end is up to MAX_STEP columns and a closing wall, plus a column of air before the door
+			int pos = f.a() + edge + r.below(Math.max(1, f.length() - 2 * edge)); // clear of the ends, where a walk descending to a tower doorway is cut through the gallery
 			FacadePlan.Entrance town = new FacadePlan.Entrance(f, pos);
 			List<FacadePlan.Layout> layouts = new ArrayList<>();
 			for (FacadePlan.Layout l : p.layouts()) {

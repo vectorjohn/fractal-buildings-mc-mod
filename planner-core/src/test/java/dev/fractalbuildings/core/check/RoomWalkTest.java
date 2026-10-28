@@ -128,6 +128,35 @@ class RoomWalkTest {
 		assertTrue(hooksKept > 20, "the middle of the gallery stays furnished: " + hooksKept);
 	}
 
+	/**
+	 * GUARDDOOR: the curtain's guard door must stay clear of the stair cuts at the gallery ends (a cut is up to Brief.MAX_STEP columns plus its
+	 * closing wall), or the door opens into the solid ramp and the gallery is cut off.
+	 */
+	@Test
+	void aCurtainGuardDoorIsNeverInsideAStairCut() {
+		ProbeSpecs.Probes p = ProbeSpecs.parse("flat:70");
+		int step = dev.fractalbuildings.core.gen.Brief.MAX_STEP, checked = 0;
+		int[][] walks = {{-step, -step}, {-step, 0}, {0, -step}, {-step, step}};
+		for (int w : new int[] {24, 28, 36, 48})
+			for (int[] k : walks)
+				for (long seed = 1; seed <= 60; seed++) {
+					GenRequest rq = new GenRequest(seed, new Lot("lot0", 0, 0, w, 9, Facing.SOUTH), "curtain", "plains", p.terrain(), p.biome(),
+							new dev.fractalbuildings.core.gen.Brief(1, 1, 1, 1, 68, new dev.fractalbuildings.core.gen.Brief.Walk(70, k[0], k[1])));
+					SceneDoc s = new GeneratorV1().generate(rq);
+					String where = "w " + w + " walk " + k[0] + "," + k[1] + " seed " + seed;
+					assertEquals(List.of(), mine(s, rq), where);
+					for (PlacedBuilding b : s.buildings())
+						for (Opening o : b.shell().openings()) {
+							if (o.kind() != OpeningKind.DOOR || !o.from().equals(Opening.OUTSIDE) && !o.to().equals(Opening.OUTSIDE)) continue;
+							int west = Math.min(0, k[0]), east = Math.min(0, k[1]);
+							assertTrue(o.box().x() > -west, where + " door x " + o.box().x() + " in the west cut");
+							assertTrue(o.box().maxX() - 1 < w - 1 + east, where + " door max x " + (o.box().maxX() - 1) + " in the east cut");
+							checked++;
+						}
+				}
+		assertTrue(checked > 500, "checked " + checked);
+	}
+
 	/** Beds: foot (the hook) and head (one cell along the facing) are both in the room's air, and the head is against a wall. */
 	@Test
 	void everyBedHasItsHeadAgainstAWall() {
