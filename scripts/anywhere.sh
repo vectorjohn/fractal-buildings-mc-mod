@@ -3,6 +3,7 @@
 #
 #   scripts/anywhere.sh [options] -- CMD [ARGS...]
 #   scripts/anywhere.sh --status          the waiting queue, local resources and the beebox queue
+#   scripts/anywhere.sh --local-max N [--until HH:MM|EPOCH]   quiet this host (below); --local-max off
 #
 # CMD is what you'd run from the worktree root (as for scripts/remote.sh, no `flock heavy.lock`
 # prefix), e.g.
@@ -37,6 +38,11 @@
 #   --wait S               give up after S s without a host (exit 6; default: wait forever)
 #   --fetch P, --cpu, --host H   passed to scripts/remote.sh
 #   --dry-run              print where it would go now and exit (no ticket, nothing run)
+# Quiet switch (<main root>/.claude/anywhere/local-max, read on every poll): while it exists and
+# hasn't expired, at most N suite/heavy/full jobs run on THIS host at once; the rest wait for beebox.
+# In use = anywhere jobs running here (claims/local-run.*) plus suite slots / the heavy lock held by
+# jobs not started through anywhere.sh. N=0: those kinds never start here. Light jobs and the
+# local-only commands below are not held back (they still count as in use). File: `N [until=EPOCH]`.
 # Local only, whatever the options: a cwd other than the worktree root, FB_VK=... in CMD or the
 # environment (the Intel iGPU is this host's), runClient / run-desktop.sh / snapshot-test.sh /
 # squash-merge.sh. Environment variables are not sent to beebox: put them in CMD (`env X=1 ...`;
@@ -50,14 +56,14 @@
 # FB_ANY_REMOTE (replaces scripts/remote.sh), FB_HEAVY_LOCK, FB_SUITE_LOCK_DIR, FB_SUITE_SLOTS.
 set -uo pipefail
 
-usage() { sed -n '2,50p' "$0" | sed 's/^# \{0,1\}//'; }
+usage() { sed -n '2,56p' "$0" | sed 's/^# \{0,1\}//'; }
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 # shellcheck source-path=SCRIPTDIR source=lib/suite-slot.sh
 . "$(dirname "${BASH_SOURCE[0]}")/lib/suite-slot.sh"
 CLAUDE_DIR=$(suite_slot_dir)
 
-PREFER=local ONLY="" KIND="" DRY=0 STATUS=0 WAIT_MAX=""
+PREFER=local ONLY="" KIND="" DRY=0 STATUS=0 WAIT_MAX="" SET_LMAX="" SET_UNTIL=""
 LOAD_MAX=${FB_ANY_LOAD_MAX:-18} DEPTH=${FB_ANY_DEPTH:-2} POLL=${FB_ANY_POLL:-20}
 HOST=${FB_REMOTE_HOST:-beebox}
 REMOTE_ARGS=()
@@ -74,6 +80,8 @@ while [[ $# -gt 0 ]]; do
 		--host) HOST=$2; shift 2 ;;
 		--dry-run) DRY=1; shift ;;
 		--status) STATUS=1; shift ;;
+		--local-max) SET_LMAX=$2; shift 2 ;;
+		--until) SET_UNTIL=$2; shift 2 ;;
 		-h|--help) usage; exit 0 ;;
 		--) shift; break ;;
 		*) echo "anywhere: unknown argument: $1 (the command goes after --)" >&2; usage >&2; exit 2 ;;
@@ -97,6 +105,52 @@ SSH=(ssh -o BatchMode=yes -o ConnectTimeout=10)
 BEE_STATUS_CMD=${FB_ANY_BEEBOX_STATUS:-}
 BEE_CHECK_CMD=${FB_ANY_BEEBOX_CHECK:-}
 REMOTE=${FB_ANY_REMOTE:-$ROOT/scripts/remote.sh}
+LMAX_FILE=$DIR/local-max
+
+# ---- the quiet switch ------------------------------------------------------------------------
+LMAX="" LMAX_DESC="off"
+read_local_max() {   # sets LMAX (N, or "" when off/expired) and LMAX_DESC
+	local n="" until="" w
+	LMAX="" LMAX_DESC="off"
+	[[ -f $LMAX_FILE ]] || return 0
+	for w in $(head -n1 "$LMAX_FILE" 2>/dev/null); do
+		case "$w" in
+			until=*) until=${w#until=} ;;
+			*) [[ -z $n ]] && n=$w ;;
+		esac
+	done
+	if [[ ! $n =~ ^[0-9]+$ ]]; then LMAX_DESC="ignored (bad file $LMAX_FILE)"; return 0; fi
+	if [[ -n $until && ! $until =~ ^[0-9]+$ ]]; then
+		until=$(date -d "$until" +%s 2>/dev/null) || { LMAX_DESC="ignored (bad until= in $LMAX_FILE)"; return 0; }
+	fi
+	if [[ -n $until ]] && (( $(date +%s) >= until )); then
+		LMAX_DESC="off (expired $(date -d "@$until" '+%F %H:%M'))"; return 0
+	fi
+	LMAX=$n
+	LMAX_DESC="local-max $n${until:+ until $(date -d "@$until" '+%F %H:%M')}"
+}
+gated() { [[ -n $LMAX && $1 != light && $2 != 1 ]]; }   # $1 kind, $2 local-only flag
+
+if [[ -n $SET_LMAX ]]; then
+	if [[ $SET_LMAX == off ]]; then
+		rm -f "$LMAX_FILE"; echo "anywhere: local-max off (removed $LMAX_FILE)"; exit 0
+	fi
+	[[ $SET_LMAX =~ ^[0-9]+$ ]] || bad "--local-max takes a whole number or 'off'"
+	line=$SET_LMAX
+	if [[ -n $SET_UNTIL ]]; then
+		if [[ $SET_UNTIL =~ ^[0-9]{6,}$ ]]; then u=$SET_UNTIL
+		else
+			[[ $SET_UNTIL =~ ^[0-9]{1,2}:[0-9]{2}$ ]] || bad "--until takes HH:MM or an epoch"
+			u=$(date -d "$SET_UNTIL" +%s 2>/dev/null) || bad "--until: bad time '$SET_UNTIL'"
+			(( u <= $(date +%s) )) && u=$(date -d "tomorrow $SET_UNTIL" +%s)
+		fi
+		line="$line until=$u"
+	fi
+	printf '%s\n# set %s by %s; remove with: scripts/anywhere.sh --local-max off\n' \
+		"$line" "$(date '+%F %T')" "${USER:-?}" > "$LMAX_FILE.tmp.$$" && mv "$LMAX_FILE.tmp.$$" "$LMAX_FILE"
+	read_local_max; echo "anywhere: $LMAX_DESC (wrote $LMAX_FILE)"; exit 0
+fi
+[[ -z $SET_UNTIL ]] || bad "--until goes with --local-max N"
 
 # ---- what the command needs, and where it may run --------------------------------------------
 classify() {   # sets KIND (unless given) and LOCAL_ONLY_WHY
@@ -147,12 +201,17 @@ free_slots() {   # how many suite slots are free right now (probe only)
 	echo "$c"
 }
 
-heavy_free() {
-	local fd ok=1 f a
+heavy_lock_free() {
+	local fd ok=1
 	exec {fd}<>"$HEAVY_LOCK" || return 1
 	flock -n "$fd" || ok=0
 	exec {fd}>&-
-	(( ok )) || return 1
+	(( ok ))
+}
+
+heavy_free() {
+	local f a
+	heavy_lock_free || return 1
 	# A heavy job started from here in the last 3 min may not have taken the lock yet.
 	for f in "$DIR"/claims/local-heavy.*; do
 		[[ -e $f ]] || continue
@@ -160,6 +219,23 @@ heavy_free() {
 		kill -0 "${f##*.}" 2>/dev/null && (( a < 180 )) && return 1
 	done
 	return 0
+}
+
+# Suite/heavy/full jobs in progress on this host: anywhere's own (claims/local-run.<pid>, whose
+# file starts with the kind) plus held suite slots / heavy lock those claims don't account for.
+local_used() {
+	local f k n=0 w=0 occ=0 s ns=${FB_SUITE_SLOTS:-2}
+	for f in "$DIR"/claims/local-run.*; do
+		[[ -e $f ]] || continue
+		if ! kill -0 "${f##*.}" 2>/dev/null; then rm -f "$f"; continue; fi
+		read -r k _ < "$f"; n=$((n + 1))
+		needs_slot "$k" && w=$((w + 1))
+		needs_heavy "$k" && w=$((w + 1))
+	done
+	s=$(free_slots); (( s <= ns )) && occ=$((ns - s))
+	heavy_lock_free || occ=$((occ + 1))
+	(( occ > w )) && n=$((n + occ - w))
+	echo "$n"
 }
 
 BEE_TEXT="" BEE_OK=0
@@ -203,10 +279,12 @@ take_ticket() {
 	TICKET=$(printf '%s/queue/%012d.%s' "$DIR" "$n" "$$")
 	write_ticket "$TICKET" "$@"
 }
-# Line 1: "KIND HOSTS PREFER" (what decide reads); line 2: for --status.
+# Line 1: "KIND HOSTS PREFER" (what decide reads); line 2: for --status; line 3: "localonly 0|1"
+# (the quiet switch; on its own line so older copies of this script, reading line 1, are unaffected).
 write_ticket() {
-	local f=$1; shift
-	printf '%s %s %s\nsince %s, %s: %s\n' "$KIND" "$HOSTS" "$PREFER" "$(date '+%F %T')" "$PWD" "$*" > "$f"
+	local f=$1 lo=0; shift
+	[[ -n $LOCAL_ONLY_WHY ]] && lo=1
+	printf '%s %s %s\nsince %s, %s: %s\nlocalonly %s\n' "$KIND" "$HOSTS" "$PREFER" "$(date '+%F %T')" "$PWD" "$*" "$lo" > "$f"
 }
 bee_check() {
 	if [[ -n $BEE_CHECK_CMD ]]; then bash -c "$BEE_CHECK_CMD" > /dev/null 2>&1
@@ -218,23 +296,27 @@ bee_check() {
 # one could use. Call under the dispatch lock.
 WHY=""
 decide() {
-	local lok=0 slots heavy=0 bee_cap=0 bee_n=0 t k hs pr h choice="" mine
+	local lok=0 slots heavy=0 bee_cap=0 bee_n=0 t k hs pr lo h choice="" mine lused=0 lcap=0
 	load_ok && lok=1
+	read_local_max
+	if [[ -n $LMAX ]]; then lused=$(local_used); lcap=$(( LMAX - lused )); fi
 	slots=$(free_slots)
 	heavy_free && heavy=1
 	if [[ $HOSTS == *beebox* ]]; then
 		beebox_probe; bee_n=$(bee_used)
 		(( BEE_OK )) && bee_cap=$(( DEPTH + 1 - bee_n ))
 	fi
-	host_free() {   # $1 host $2 kind
+	host_free() {   # $1 host $2 kind $3 local-only flag
 		if [[ $1 == beebox ]]; then (( bee_cap > 0 )); return; fi
 		(( lok )) || return 1
+		if gated "$2" "$3" && (( lcap < 1 )); then return 1; fi
 		if needs_slot "$2" && (( slots < 1 )); then return 1; fi
 		if needs_heavy "$2" && (( ! heavy )); then return 1; fi
 		return 0
 	}
 	take() {
 		if [[ $1 == beebox ]]; then bee_cap=$((bee_cap - 1)); return; fi
+		[[ $2 != light ]] && lcap=$((lcap - 1))
 		needs_slot "$2" && slots=$((slots - 1))
 		needs_heavy "$2" && heavy=0
 		return 0
@@ -243,17 +325,19 @@ decide() {
 		[[ -e $t ]] || continue
 		if ! kill -0 "${t##*.}" 2>/dev/null; then rm -f "$t"; continue; fi
 		mine=0; [[ $t == "$TICKET" ]] && mine=1
-		read -r k hs pr < "$t" || continue
+		lo=0 k=""; { read -r k hs pr _ && read -r _ && read -r _ lo; } < "$t"
+		[[ -n $k ]] || continue
 		choice=""
 		for h in "$pr" local beebox; do
 			[[ $hs == *$h* ]] || continue
-			if host_free "$h" "$k"; then choice=$h; break; fi
+			if host_free "$h" "$k" "${lo:-0}"; then choice=$h; break; fi
 		done
 		if (( mine )); then break; fi
 		[[ -n $choice ]] && take "$choice" "$k"
 	done
 	local lstate bstate
 	lstate="load $(load1)/$LOAD_MAX, suite slots free $(( slots > 50 ? 0 : slots )), heavy lock $( ((heavy)) && echo free || echo busy)"
+	[[ -n $LMAX ]] && lstate="$lstate, quiet switch $LMAX_DESC with $lused in use"
 	if [[ $HOSTS == *beebox* ]]; then
 		if (( BEE_OK )); then bstate="$HOST $bee_n running/queued (depth $DEPTH)"; else bstate="$HOST unreachable"; fi
 	else bstate="$HOST not allowed"; fi
@@ -269,6 +353,9 @@ if (( STATUS )); then
 		kill -0 "${t##*.}" 2>/dev/null || continue
 		printf '  pid %s: %s; %s\n' "${t##*.}" "$(head -n1 "$t")" "$(sed -n 2p "$t" | cut -c1-200)"
 	done
+	read_local_max
+	if [[ -n $LMAX ]]; then echo "quiet switch: $LMAX_DESC; suite/heavy/full jobs in progress here: $(local_used)"
+	else echo "quiet switch: $LMAX_DESC"; fi
 	echo "local: load $(load1) (ceiling $LOAD_MAX), suite slots free $(free_slots)/${FB_SUITE_SLOTS:-2}, heavy lock $(heavy_free && echo free || echo busy)"
 	beebox_probe
 	if (( BEE_OK )); then echo "$HOST: $(bee_used) running/queued (incl. sends in flight)"; else echo "$HOST: unreachable"; fi
@@ -358,12 +445,14 @@ claim=""
 if [[ $DECISION == beebox ]]; then claim="$DIR/claims/beebox.$child"
 elif needs_heavy "$KIND"; then claim="$DIR/claims/local-heavy.$child"; fi
 [[ -n $claim ]] && echo "$KIND $*" > "$claim"
+lclaim=""   # counted by the quiet switch (local_used)
+if [[ $DECISION == local && $KIND != light ]]; then lclaim="$DIR/claims/local-run.$child"; echo "$KIND $*" > "$lclaim"; fi
 rm -f "$TICKET"; TICKET=""
 flock -u "$DLOCK"; exec {DLOCK}>&-
 
 trap 'kill -TERM "$child" 2>/dev/null' TERM HUP
 trap 'kill -INT "$child" 2>/dev/null' INT
-trap '[[ -n $claim ]] && rm -f "$claim"' EXIT
+trap 'rm -f ${claim:+"$claim"} ${lclaim:+"$lclaim"}' EXIT
 while :; do
 	wait "$child"; rc=$?
 	kill -0 "$child" 2>/dev/null || break   # a trapped signal ended the wait: keep waiting
