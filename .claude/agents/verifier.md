@@ -330,10 +330,10 @@ path `M`. Don't review each item again.
 1. In the coordinator's worktree: the status table reflects the outcomes, and
    the tree is clean apart from `docs/runs/`. Run every layer on a snapshot
    of the run branch head `H`, not in the worktree itself:
-   `scripts/snapshot-test.sh --name heavy <worktree> H to-main 'scripts/test-all.sh --full --perf' scripts/flythrough.sh`.
+   `scripts/snapshot-test.sh --name heavy <worktree> H to-main 'scripts/test-all.sh --full --planner-heavy --perf' scripts/flythrough.sh`.
    When `scripts/remote.sh --check` succeeds, the client and fly-through
    layers can go to the worker box instead:
-   `scripts/snapshot-test.sh --name heavy <worktree> H to-main 'scripts/remote.sh -- scripts/test-all.sh --full' 'scripts/remote.sh -- scripts/flythrough.sh' scripts/perf.sh`.
+   `scripts/snapshot-test.sh --name heavy <worktree> H to-main 'scripts/remote.sh -- scripts/test-all.sh --full --planner-heavy' 'scripts/remote.sh -- scripts/flythrough.sh' scripts/perf.sh`.
    Keep `scripts/perf.sh` local: its budgets were set on this host, and
    timings across hosts aren't comparable. Say which host ran each layer.
    If the coordinator names a passing batched heavy run at `H` (or with only

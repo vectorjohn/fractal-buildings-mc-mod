@@ -63,3 +63,7 @@ Only Minecraft can show these, so they stay in-world (server game tests where a 
 - how it looks and feels: screenshots, the fly-through, performance.
 
 Everything else (layout, rules, determinism, raster ownership, shapes, styles) is checked faster and more completely in the core and the viewer.
+
+# Heavy-tagged planner tests
+
+A planner-core test that costs minutes even alone is tagged `@Tag("heavy")` (JUnit) and left out of `:planner-core:test`, so the default suite stays about 10 minutes. `./gradlew :planner-core:test -PfbTests=heavy` runs only the tagged ones, `-PfbTests=all` runs everything; `scripts/test-all.sh --planner-heavy` runs them after the default run (step `planner-heavy`, about 80 min). It is not part of `--full` (the batched heavy runs skip it); the to-main run uses `--full --planner-heavy --perf`. A test is moved there only when a cheaper variant of the same check stays in the default run (say which in the test's javadoc). Today: `ApproachCacheTest` (every cache at 1 on the two metropolis chunks, about 40 min each; the default run shrinks one layer at a time and uses all-at-1 on the hamlet gate) and `SettlementDeterminismTest.everyPresetPlansTheSameBytesEveryWay` (all ~25 city presets; the default run keeps `synth-city`, `river-town` and `gate-joined-city`). A change to caches, threads or the settlement planner that can reach these should run `-PfbTests=heavy` before the merge to main.

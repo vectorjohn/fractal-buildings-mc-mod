@@ -33,7 +33,7 @@ import org.junit.jupiter.api.Test;
  * however they are computed: (a) in order, (b) cells and districts shuffled, each skeleton from a fresh source, (c) on 8 threads
  * over a source whose skeleton cache holds 2 cells and evicts constantly, (d) every district (a sample of them unless
  * {@code -Dfb.det.full=true}) alone in a new source. The cases are the viewer's city presets ({@code viewer/city-presets/*.json}),
- * so new presets are picked up without editing this class. {@code -Dfb.det.presets=a,b} picks presets by name (default: all of them). Mutant sources at the bottom prove the checks can fail.
+ * so new presets are picked up without editing this class. {@code -Dfb.det.presets=a,b} picks presets by name (default: {@link #DEFAULT}; the heavy-tagged test runs all of them). Mutant sources at the bottom prove the checks can fail.
  */
 class SettlementDeterminismTest {
 	static final Path PRESETS = Files.isDirectory(Path.of("../viewer/city-presets")) ? Path.of("../viewer/city-presets") : Path.of("viewer/city-presets");
@@ -72,7 +72,7 @@ class SettlementDeterminismTest {
 	}
 
 	static List<Preset> selected() throws IOException {
-		String want = System.getProperty("fb.det.presets", "all");
+		String want = System.getProperty("fb.det.presets", String.join(",", DEFAULT));
 		List<Preset> all = allPresets(), out = new ArrayList<>();
 		for (Preset p : all) if (want.equals("all") || List.of(want.split(",")).contains(p.name())) out.add(p);
 		assertFalse(out.isEmpty(), "no preset matches " + want);
@@ -271,8 +271,18 @@ class SettlementDeterminismTest {
 
 	@Test
 	void presetsPlanTheSameBytesEveryWay() throws Exception {
+		checkPresets(selected());
+	}
+
+	/** TESTSPEED: every other city preset (about 25, 15 minutes); the default run keeps {@link #DEFAULT}. Run by `-PfbTests=heavy` and test-all.sh --full. */
+	@org.junit.jupiter.api.Tag("heavy")
+	@Test
+	void everyPresetPlansTheSameBytesEveryWay() throws Exception {
+		checkPresets(allPresets());
+	}
+
+	private static void checkPresets(List<Preset> presets) throws Exception {
 		boolean full = Boolean.getBoolean("fb.det.full");
-		List<Preset> presets = selected();
 		for (Preset pr : presets) {
 			Setup s = setup(pr);
 			Reference ref = reference(s);

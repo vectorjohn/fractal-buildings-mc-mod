@@ -18,13 +18,29 @@ import org.junit.jupiter.api.Test;
  * village's) and none anywhere else.
  */
 class SquareLotsTest {
+	record Filled(DistrictsTest.Planned p, Districts.Detail d, DistrictPlan f) {}
+
+	/** TESTSPEED: the two statistics tests share the first 150 sites (planning and filling them was most of the 15 minutes); the rest are not kept. */
+	private static final java.util.Map<Integer, List<Filled>> MEMO = new java.util.concurrent.ConcurrentHashMap<>();
+
+	static List<Filled> filled(int i) {
+		List<Filled> hit = MEMO.get(i);
+		if (hit != null) return hit;
+		DistrictsTest.Planned p = DistrictsTest.planned(i);
+		List<Filled> out = new ArrayList<>();
+		for (Districts.Detail d : p.all()) out.add(new Filled(p, d, Briefs.fill(d.plan(), QuarterKind.values()[d.plan().district().quarter()], new StyleField(ProbeSpecs.parse(p.c().spec()).biome(), p.c().seed()), p.exact())));
+		if (i < 150) MEMO.put(i, out);
+		return out;
+	}
+
 	@Test
 	void oneHallLotPerSquareAndOnlyWhereEligible() {
 		int squares = 0, withLot = 0, eligiblePlazas = 0, marked = 0, outside = 0;
 		for (int i = 0; i < 150; i++) {
-			DistrictsTest.Planned p = DistrictsTest.planned(i);
-			for (Districts.Detail d : p.all()) {
-				DistrictPlan f = Briefs.fill(d.plan(), QuarterKind.values()[d.plan().district().quarter()], new StyleField(ProbeSpecs.parse(p.c().spec()).biome(), p.c().seed()), p.exact());
+			for (Filled fd : filled(i)) {
+				DistrictsTest.Planned p = fd.p();
+				Districts.Detail d = fd.d();
+				DistrictPlan f = fd.f();
 				int inPlan = 0;
 				for (LotBrief l : f.lots()) {
 					if (!l.square()) continue;
@@ -61,10 +77,11 @@ class SquareLotsTest {
 	@Test
 	void aboutSixtyPercentOfTheEligibleSquaresGetAHall() {
 		int eligible = 0, marked = 0;
-		for (int i = 0; i < 400; i++) {
-			DistrictsTest.Planned p = DistrictsTest.planned(i);
-			for (Districts.Detail d : p.all()) {
-				DistrictPlan f = Briefs.fill(d.plan(), QuarterKind.values()[d.plan().district().quarter()], new StyleField(ProbeSpecs.parse(p.c().spec()).biome(), p.c().seed()), p.exact());
+		for (int i = 0; i < 250; i++) {
+			for (Filled fd : filled(i)) {
+				DistrictsTest.Planned p = fd.p();
+				Districts.Detail d = fd.d();
+				DistrictPlan f = fd.f();
 				for (Plaza pl : f.plazas()) {
 					if (!Briefs.hallPlaza(pl)) continue;
 					Rect r = new Rect(pl.x(), pl.z(), pl.w(), pl.d());

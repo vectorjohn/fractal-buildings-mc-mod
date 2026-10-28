@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
 # Run every test layer (ROADMAP "Testing strategy") and print a short summary.
 #
-#   scripts/test-all.sh [--no-client] [--full] [--perf] [--help]
+#   scripts/test-all.sh [--no-client] [--full] [--planner-heavy] [--perf] [--help]
 #
 #   --no-client   skip layer 5 (Minecraft client game tests under Xvfb)
 #   --full        the full client layer (FB_LAYER=full: adds Roads, Foliage, Compat) and the district-order test on dedicated servers
 #                 (scripts/order-test.sh, not heavy; needs mod/build/run/order/eula.txt, see its header). Default: FB_LAYER=quick, no order test
+#   --planner-heavy  also run the planner-core tests tagged @Tag("heavy") (-PfbTests=heavy, about 80 min; TESTSPEED). Not part of --full: the to-main run adds it
 #   --perf        also run scripts/perf.sh (the 6.7 budget check, ~10 min, heavy lock; fails above the CI ceilings of mod/perf-budget.json)
 #
 # Works from any cwd and any worktree; re-execs itself inside `nix develop` when
@@ -31,11 +32,13 @@ usage() { sed -n '2,26p' "$0" | sed 's/^# \{0,1\}//'; }
 RUN_CLIENT=1
 RUN_PERF=0
 FULL=0
+PLANNER_HEAVY=0
 for arg in "$@"; do
 	case "$arg" in
 		--no-client) RUN_CLIENT=0 ;;
 		--perf) RUN_PERF=1 ;;
 		--full) FULL=1 ;;
+		--planner-heavy) PLANNER_HEAVY=1 ;;
 		-h|--help) usage; exit 0 ;;
 		*) echo "test-all: unknown argument: $arg" >&2; usage >&2; exit 2 ;;
 	esac
@@ -150,6 +153,12 @@ if has_task 'planner-core:build'; then
 	record planner-core $st "$(fmt_counts $(junit_counts "$ROOT/planner-core/build/test-results")); boundary check incl."
 else
 	skip planner-core
+fi
+
+# --- Layer 1b (--planner-heavy): the tests tagged @Tag("heavy") (TESTSPEED), excluded from the default run above
+if (( PLANNER_HEAVY )) && has_task 'planner-core:build'; then
+	if run_logged planner-heavy "${GRADLE[@]}" :planner-core:test -PfbTests=heavy; then st=pass; else st=fail; fi
+	record planner-heavy $st "$(fmt_counts $(junit_counts "$ROOT/planner-core/build/test-results")); @Tag(heavy) tests"
 fi
 
 # --- CLI -------------------------------------------------------------------
@@ -288,7 +297,7 @@ fi
 # --- Summary --------------------------------------------------------------------
 say ""
 say "=== test-all summary ==="
-declare -A LAYER=([planner-core]="L1" [cli]="L1" [determinism]="L2" [mod]="L4" [viewer]="L1" [viewer-shots]="L3" [client]="L5" [order]="L4" [perf]="L5")
+declare -A LAYER=([planner-core]="L1" [planner-heavy]="L1" [cli]="L1" [determinism]="L2" [mod]="L4" [viewer]="L1" [viewer-shots]="L3" [client]="L5" [order]="L4" [perf]="L5")
 for s in "${STEPS[@]}"; do
 	printf '%-3s %-13s %-8s %s\n' "${LAYER[$s]:-}" "$s" "${STATUS[$s]}" "${DETAIL[$s]}"
 done

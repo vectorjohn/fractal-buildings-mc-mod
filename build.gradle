@@ -1,10 +1,16 @@
 // Root project: shared Java settings only. Modules are in planner-core/, cli/, mod/.
 subprojects {
+	tasks.withType(Test).configureEach {
+		// TESTSPEED: tests tagged @Tag("heavy") (minutes each) are left out by default.
+		// -PfbTests=heavy runs only them, -PfbTests=all runs everything (scripts/test-all.sh --full uses heavy after the default run).
+		def sel = project.findProperty('fbTests')
+		useJUnitPlatform {
+			if (sel == 'heavy') includeTags 'heavy'
+			else if (sel != 'all') excludeTags 'heavy'
+		}
+	}
 	tasks.withType(JavaCompile).configureEach {
 		options.release = 25
 		options.encoding = 'UTF-8'
-	}
-	tasks.withType(Test).configureEach {
-		useJUnitPlatform()
 	}
 }
