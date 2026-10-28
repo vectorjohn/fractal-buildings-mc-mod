@@ -835,7 +835,7 @@ drops them, and accepted ones move to the section they belong in.
   `glazing-share` ranges per look (DS-33), DS-1's `highrise-materials`; in
   a glass tower every room lit (DS-24) and the hall and lobby furnished.
   Build notes and materials: [notes/highrises.md](notes/highrises.md).
-- **Status:** proposed; biome-dependent looks wait for John's research.
+- **Status:** #Approved by @John on 2026-10-28; biome-dependent looks wait for John's research.
   **Source:** John, playtest notes 2026-10-25; drafted by the architect.
 
 ## DS-35 More entrances
@@ -855,7 +855,7 @@ drops them, and accepted ones move to the section they belong in.
   on two faces, the main one 2+ wide); every door meets DS-4 and DS-6 and
   opens into a hall, kitchen, lobby or shop floor, never a bedroom. None
   today: `Massing.entrances()` gives one door per mass.
-- **Status:** proposed. **Source:** John, playtest notes 2026-10-25;
+- **Status:** #Approved by @John on 2026-10-28. **Source:** John, playtest notes 2026-10-25;
   drafted by the architect.
 
 ## DS-36 Smooth pitched roofs
@@ -874,7 +874,7 @@ drops them, and accepted ones move to the section they belong in.
   today: every roof in game is stepped full blocks, and the plains, taiga
   and jungle roof palettes (terracotta, moss) have no stairs or slabs. Build
   notes: [notes/roofs.md](notes/roofs.md).
-- **Status:** proposed. **Source:** John, playtest notes 2026-10-25;
+- **Status:** #Approved by @John on 2026-10-28. **Source:** John, playtest notes 2026-10-25;
   drafted by the architect.
 
 ## DS-8 amendment: railings that hold
@@ -895,7 +895,7 @@ drops them, and accepted ones move to the section they belong in.
   Today rails stand at the tread's own y (`InstancePassV1.rails`), 0.5
   above the walking surface, under the player's 0.6 step height, so a
   player walks over them; city bridges have no rails.
-- **Status:** proposed (amends accepted DS-8). **Source:** John, playtest
+- **Status:** #Approved by @John on 2026-10-28 (amends accepted DS-8). **Source:** John, playtest
   notes 2026-10-25; drafted by the architect.
 
 ## DS-30 amendment: bamboo only on footbridges
@@ -913,7 +913,7 @@ drops them, and accepted ones move to the section they belong in.
   plus a width check for bamboo decks. None today: the jungle style's
   `deck` role mixes jungle and bamboo planks cell by cell, so every jungle
   bridge is patchy bamboo ([styles/jungle.md](styles/jungle.md)).
-- **Status:** proposed (amends DS-30). **Source:** John, playtest
+- **Status:** #Approved by @John on 2026-10-28 (amends DS-30). **Source:** John, playtest
   notes 2026-10-25; drafted by the architect.
 
 ## DS-38 Guarded roofs
@@ -929,7 +929,7 @@ drops them, and accepted ones move to the section they belong in.
 - **Enforcement:** code candidate, folds into the DS-8 amendment's
   `rail-height`: every edge cell of a door-reached roof has a wall with a
   rail above it. None today.
-- **Status:** proposed. **Source:** architect, high-rise plan review
+- **Status:** #Approved by @John on 2026-10-28. **Source:** architect, high-rise plan review
   2026-10-25 ([highrise-plan-architect.md](../review/reports/highrise-plan-architect.md), answer 3).
 
 ## DS-8 amendment: flights, corners and the lot line
@@ -959,7 +959,7 @@ drops them, and accepted ones move to the section they belong in.
   1 deeper than the type minimum (`SpecPolicyV1.railRoomOk`); the lot planner
   sizes and picks types accordingly, the generator still builds on any lot that fits, and
   `LOT_GRADE` checks it.
-- **Status:** proposed (amends the proposed DS-8 amendment). **Source:**
+- **Status:** #Approved by @John on 2026-10-28 (amends the proposed DS-8 amendment). **Source:**
   architect, RAILFIX review 2026-10-25
   ([p6-railfix-architect.md](../review/reports/p6-railfix-architect.md), "Proposed rules").
 
@@ -973,7 +973,7 @@ drops them, and accepted ones move to the section they belong in.
   r 454). Extends CITYQ's tier-follows-radius.
 - **Scope:** city, metropolis.
 - **Enforcement:** code candidate (planner, after district planning).
-- **Status:** proposed. **Source:** architect, CITYQ review 2026-10-25
+- **Status:** #Approved by @John on 2026-10-28. **Source:** architect, CITYQ review 2026-10-25
   ([p6-cityq-architect.md](../review/reports/p6-cityq-architect.md), "Proposed rules").
 
 ## DS-45 Doors sit near the street
@@ -1085,7 +1085,7 @@ drops them, and accepted ones move to the section they belong in.
 - **Scope:** type `workshop`.
 - **Enforcement:** code candidate, folds into DS-35's `entrance-count`.
   None today.
-- **Status:** proposed (amends the proposed DS-35). **Source:** interior
+- **Status:** #Approved by @John on 2026-10-28 (amends the proposed DS-35). **Source:** interior
   designer, playtest questions 2026-10-27
   ([playtest1026-qs-interior.md](../review/reports/playtest1026-qs-interior.md), Q3).
 
@@ -1101,7 +1101,7 @@ drops them, and accepted ones move to the section they belong in.
 - **Enforcement:** code candidate `road-open-sky` (no solid block in the
   headroom-to-sky column over a road cell, outside bridges and designed
   covers). None today.
-- **Status:** proposed. **Source:** architect, playtest questions
+- **Status:** #Approved by @John on 2026-10-28. **Source:** architect, playtest questions
   2026-10-27 ([playtest1026-qs-architect.md](../review/reports/playtest1026-qs-architect.md), P2).
 
 ## DS-45 amendment: run and turn sizes
@@ -1118,7 +1118,7 @@ drops them, and accepted ones move to the section they belong in.
 - **Scope:** every exterior flight.
 - **Enforcement:** code candidate: extend the planned `flight-landings`
   check (`MIN_RUN = 2`). None today.
-- **Status:** proposed (amends accepted DS-45). **Source:** architect,
+- **Status:** #Approved by @John on 2026-10-28 (amends accepted DS-45). **Source:** architect,
   playtest questions 2026-10-27
   ([playtest1026-qs-architect.md](../review/reports/playtest1026-qs-architect.md), P3).
 
@@ -1135,5 +1135,5 @@ drops them, and accepted ones move to the section they belong in.
 - **Enforcement:** code candidate in `city-check` (width at each gate and
   junction), folding into the planned `road-hierarchy` check (DS-47).
   None today.
-- **Status:** proposed. **Source:** architect, playtest questions
+- **Status:** #Approved by @John on 2026-10-28. **Source:** architect, playtest questions
   2026-10-27 ([playtest1026-qs-architect.md](../review/reports/playtest1026-qs-architect.md), P5).
