@@ -83,8 +83,31 @@ final class PerfSupport {
 		List<Double> t = new ArrayList<>();
 		for (int dz = -r; dz <= r; dz++) for (int dx = -r; dx <= r; dx++) {
 			long t0 = System.nanoTime();
+			final int fi = t.size();
+			Thread wd = new Thread(() -> { // COLDCHUNK diagnostic: dump busy worker stacks while one chunk takes > 4 s
+				try {
+					Thread.sleep(4000);
+					for (int k = 0; k < 60; k++) {
+						StringBuilder sb = new StringBuilder("[COLDCHUNK-STACK] chunk#" + fi + " t+" + (4 + k * 5) + "s\n");
+						for (var e : Thread.getAllStackTraces().entrySet()) {
+							String n = e.getKey().getName();
+							StackTraceElement[] st = e.getValue();
+							if (!(n.contains("Worker") || n.contains("Server thread") || n.contains("fb-"))) continue;
+							if (st.length == 0 || (!n.contains("Server thread") && st[0].getMethodName().startsWith("park"))) continue;
+							sb.append("  ").append(n).append('\n');
+							for (int i = 0; i < Math.min(st.length, 25); i++) sb.append("    ").append(st[i]).append('\n');
+						}
+						System.out.println(sb);
+						Thread.sleep(5000);
+					}
+				} catch (InterruptedException ignored) { }
+			}, "coldchunk-watchdog");
+			wd.setDaemon(true);
+			wd.start();
 			level.getChunk(ccx + dx, ccz + dz, ChunkStatus.FULL, true);
+			wd.interrupt();
 			t.add((System.nanoTime() - t0) / 1e6);
+			if (t.get(fi) > 1000) System.out.println("[COLDCHUNK] chunk#" + fi + " (" + (ccx + dx) + "," + (ccz + dz) + ") took " + t.get(fi) + " ms");
 		}
 		return t.stream().mapToDouble(Double::doubleValue).toArray();
 	}
