@@ -638,6 +638,7 @@ Performance issues and the tradeoffs we accepted are tracked separately in
 - SPILLDIRT (verifier): `Spill.trunkBaseBeside` accepts any dirt-family block next to any log, so a small real dirt defect beside a tree reads as spill, and buried dirt under concrete left by a blocked 2x2 trunk is accepted rather than fixed; the 2x2 mechanism is reasoned, not reproduced.
 - SPILLDIRT (verifier): perf not run for this item (central quiet); covered by the next batched heavy run.
 - BRIDGEENDS (verifier, 0e09c461): TerrainStats doesn't count WALL volume as fill; no in-game screenshot of a settlement abutment yet (inter-settlement bridges take another path).
+- BRIDGEENDS (architect r2): 15 cells in 4 of 12 gate scenes (snow d29_3 x4638-4642, jungle dm4_m24 x-511, temperate d7_m57 x1264, d7_m61 x1190) show a 4-high earth face where the road's own fill is 2 but the open side drops 2 more; measure fill against the lowest open-side ground (as the wall depth already does).
 
 ## Open questions and risks
 
