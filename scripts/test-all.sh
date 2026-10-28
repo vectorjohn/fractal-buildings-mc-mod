@@ -6,7 +6,7 @@
 #   --no-client   skip layer 5 (Minecraft client game tests under Xvfb)
 #   --full        the full client layer (FB_LAYER=full: adds Roads, Foliage, Compat) and the district-order test on dedicated servers
 #                 (scripts/order-test.sh, not heavy; needs mod/build/run/order/eula.txt, see its header). Default: FB_LAYER=quick, no order test
-#   --planner-heavy  also run the planner-core tests tagged @Tag("heavy") (-PfbTests=heavy, about 80 min; TESTSPEED). Not part of --full: the to-main run adds it
+#   --planner-heavy  also run the tests tagged @Tag("heavy"): planner-core (-PfbTests=heavy, about 80 min; TESTSPEED) and the mod's (OrderSimMutantTest, ~1 min). Not part of --full: the to-main run adds it
 #   --perf        also run scripts/perf.sh (the 6.7 budget check, ~10 min, heavy lock; fails above the CI ceilings of mod/perf-budget.json)
 #
 # Works from any cwd and any worktree; re-execs itself inside `nix develop` when
@@ -185,6 +185,13 @@ if (( PLANNER_HEAVY )) && has_task 'planner-core:build'; then
 	save_junit planner-core heavy
 fi
 
+# The mod's @Tag("heavy") tests (ORDERSIM S7: OrderSimMutantTest, 30 to 42 s) run with the planner-heavy ones.
+if (( PLANNER_HEAVY )) && has_task 'mod:build'; then
+	if run_logged mod-heavy "${GRADLE[@]}" :mod:test -PfbTests=heavy; then st=pass; else st=fail; fi
+	record mod-heavy $st "$(fmt_counts $(junit_counts "$ROOT/mod/build/test-results")); @Tag(heavy) tests (order sim mutants)"
+	save_junit mod heavy
+fi
+
 # --- CLI -------------------------------------------------------------------
 if has_task 'cli:build'; then
 	if run_logged cli "${GRADLE[@]}" :cli:build; then st=pass; else st=fail; fi
@@ -227,6 +234,7 @@ if has_task 'mod:build'; then
 		d+="; server game tests: not present yet"
 	fi
 	record mod $st "$d"
+	save_junit mod default
 else
 	skip mod
 fi
@@ -321,7 +329,7 @@ fi
 # --- Summary --------------------------------------------------------------------
 say ""
 say "=== test-all summary ==="
-declare -A LAYER=([planner-core]="L1" [planner-heavy]="L1" [cli]="L1" [determinism]="L2" [mod]="L4" [viewer]="L1" [viewer-shots]="L3" [client]="L5" [order]="L4" [perf]="L5")
+declare -A LAYER=([planner-core]="L1" [planner-heavy]="L1" [mod-heavy]="L4" [cli]="L1" [determinism]="L2" [mod]="L4" [viewer]="L1" [viewer-shots]="L3" [client]="L5" [order]="L4" [perf]="L5")
 for s in "${STEPS[@]}"; do
 	printf '%-3s %-13s %-8s %s\n' "${LAYER[$s]:-}" "$s" "${STATUS[$s]}" "${DETAIL[$s]}"
 done

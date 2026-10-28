@@ -97,14 +97,15 @@ path	@core/raster/Variant.java	raster	fast,gallery,client-quick?	per-cell block 
 path	@core/raster/*	raster	fast,gallery,order?,client-quick?	cell ownership and shapes: what the mod writes. RasterOwnershipTest proves one owner per cell and the same cells under any chunk clipping, OrderGameTest (fast) that the world keeps neighbour-shaped states; order if ownership, clipping or the grown-grid neighbour read changes, not for a new shape case
 path	@core/rand/*	determinism	fast,gallery,city,order,client-full	hashing and draws: every output changes
 path	@core/cache/*	world-planner	fast,order,perf	shared bounded caches: thread safety and eviction under real chunk threads
-path	@core/world/*	world-planner	fast,order,client-full,perf	WorldPlanner, Pieces (ground, foundations), tile lookup, prefetch: the mod's only door into the core
-path	@core/probe/*	probes	fast,order,client-full,perf	probes and memos (recorded/synthetic ones only matter to tests, but the memos are live)
-path	@core/terrain/*	settlement	fast,city,order,client-full	grading, lot ground, water: ground pieces and foundations in the world (TerrainClientGameTest)
-path	@core/settlement/*	settlement	fast,city,order,client-full,perf-planner	settlement plans, districts, briefs, ground boxes
+path	@core/world/*	world-planner	fast,order?,client-full,perf	WorldPlanner, Pieces (ground, foundations), tile lookup, prefetch: the mod's only door into the core. WorldPlannerOrderTest and the order sim (fast) cover order; order if prefetch, threads or the way the mod calls it change
+path	@core/probe/*	probes	fast,order?,client-full,perf	probes and memos (recorded/synthetic ones only matter to tests, but the memos are live). the order sim (fast) runs this code in 6 orders with vanilla features; run order if the change touches the pipeline, threads, structure data or a new block kind
+path	@core/terrain/*	settlement	fast,city,order?,client-full	grading, lot ground, water: ground pieces and foundations in the world (TerrainClientGameTest). the order sim (fast) runs this code in 6 orders with vanilla features; run order if the change touches the pipeline, threads, structure data or a new block kind
+path	@core/settlement/*	settlement	fast,city,order?,client-full,perf-planner	settlement plans, districts, briefs, ground boxes. the order sim (fast) runs this code in 6 orders with vanilla features; run order if the change touches the pipeline, threads, structure data or a new block kind
 path	@core/road/*	roads	fast,city,client-full,perf-planner	intercity roads (RoadsClientGameTest has its own order digest)
 path	@core/region/*	region	fast,city,client-full,perf	region layer: where settlements are, veto footprints
 
 # --- mod
+path	mod/src/test/java/dev/fractalbuildings/mod/ordersim/*	order-sim	fast	the engine-free order sim and its tests (:mod:test); OrderSimMutantTest is @Tag(heavy): run -PfbTests=heavy when the checks change
 path	mod/src/test/*	mod-tests	fast	mod unit tests (:mod:test)
 path	mod/perf-budget.json	perf	perf	budgets
 path	@gt/order/*	order-test	order	the order test itself
@@ -121,10 +122,15 @@ path	@mod/worldgen/PieceLedger.java	order-hooks	fast,order	the ledger the order 
 path	@mod/worldgen/RegionWarmer.java	threads	fast,order,perf	prefetch and warming threads: must change speed only
 path	@mod/worldgen/Workers.java	threads	fast,order,perf	worker pool
 path	@mod/worldgen/LaneStats.java	threads	fast,perf	counters
-path	@mod/worldgen/FoliageClear.java	spill	fast,order,client-full	vanilla trees and features next to our air (FoliageClientGameTest)
-path	@mod/worldgen/SpillClear.java	spill	fast,order,client-full	neighbour chunks' features writing into street air
+path	@mod/worldgen/SpillKinds.java	spill	fast,order	the spill classifier the order test and the order sim share (a change moves both verdicts)
+path	@mod/worldgen/FoliageClear.java	spill	fast,order?,client-full	vanilla trees and features next to our air (FoliageClientGameTest). the order sim (fast) runs this code in 6 orders with vanilla features; run order if the change touches the pipeline, threads, structure data or a new block kind
+path	@mod/worldgen/SpillClear.java	spill	fast,order?,client-full	neighbour chunks features writing into street air. the order sim (fast) runs this code in 6 orders with vanilla features; run order if the change touches the pipeline, threads, structure data or a new block kind
+path	@mod/worldgen/StreetAirFix.java	spill	fast,order?,client-full	StreetAirFix (ORDERSIM covers it). the order sim (fast) runs this code in 6 orders with vanilla features; run order if the change touches the pipeline, threads, structure data or a new block kind
+path	@mod/worldgen/BuildingAirClear.java	spill	fast,order?,client-full	BuildingAirClear (ORDERSIM covers it). the order sim (fast) runs this code in 6 orders with vanilla features; run order if the change touches the pipeline, threads, structure data or a new block kind
+path	@mod/worldgen/TilePiece.java	spill	fast,order?,client-full	TilePiece (ORDERSIM covers it). the order sim (fast) runs this code in 6 orders with vanilla features; run order if the change touches the pipeline, threads, structure data or a new block kind
+path	@mod/worldgen/LakeVeto.java	spill	fast,order?,client-full	LakeVeto (ORDERSIM covers it). the order sim (fast) runs this code in 6 orders with vanilla features; run order if the change touches the pipeline, threads, structure data or a new block kind
 path	@mod/worldgen/*	worldgen	fast,order,client-full,perf	structures, pieces, placement, the write path
-path	@mod/roads/*	roads	fast,client-full,perf	road feature (RoadsClientGameTest has its own order digest)
+path	@mod/roads/*	roads	fast,order?,client-full,perf	road feature (RoadsClientGameTest has its own order digest; OrderSimRoadsTest runs it through RoadFeature.placeIn). the order sim (fast) runs this code in 6 orders with vanilla features; run order if the change touches the pipeline, threads, structure data or a new block kind
 path	@mod/probe/*	probes	fast,order,client-full,perf	live probes from the noise router; LiveProbeTest in fast
 path	@mod/compat/*	veto	fast,client-full,compat?,perf?	vanilla structure veto and biome aliases (VetoGameTest in fast)
 path	@mod/mixin/ChunkGeneratorMixin.java	veto	fast,client-full,compat?	veto at start generation

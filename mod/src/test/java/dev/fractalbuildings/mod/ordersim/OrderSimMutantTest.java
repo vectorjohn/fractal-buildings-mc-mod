@@ -8,13 +8,18 @@ import dev.fractalbuildings.mod.worldgen.Mutations;
 import java.util.List;
 import java.util.function.Predicate;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 /**
  * ORDERSIM S4b: every mutant switch of {@link Mutations} must make the sim fail the check that is meant to catch it, on its scenario in forward
  * and reverse. The same scenario without the mutant passes (the control), so a failure is the mutant's. Mutants run one after another because
  * {@code Mutations.mode} is global.
+ *
+ * <p>Tagged {@code heavy} (30 to 42 s): it tests the checks, not the product. The regression and scenario classes stay in the default run and
+ * show the sim passes; this one runs with {@code -PfbTests=heavy} ({@code scripts/test-all.sh --planner-heavy}) and whenever the checks change.
  */
+@Tag("heavy")
 class OrderSimMutantTest {
 	static final RegressionScenarios R = RegressionScenarios.get();
 

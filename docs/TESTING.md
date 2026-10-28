@@ -22,10 +22,10 @@ The mapping lives in one table, [`scripts/test-scope.tsv`](../scripts/test-scope
 | docs, `.claude/`, process scripts | none | |
 | building generators (`core/gen/**`, `grammar`, `style`, `ir`, `json`, styles JSON) | fast, gallery (perf-planner, client-quick for interiors: consider) | content of one building inside its lot; order is a core property (below) |
 | `core/raster` | fast, gallery (order, client-quick: consider) | exactly what the mod writes; the core proves clip independence |
-| `core/world`, `cache`, `probe`, `rand` | fast, order, client-full, perf | the mod's only door into the core; threads and caches |
+| `core/world`, `cache`, `probe`, `rand` | fast, client-full, perf, order (consider for `world` and `probe`: the order sim covers them; required for `cache`, `rand`) | the mod's only door into the core; threads and caches |
 | `core/settlement`, `terrain`, `road`, `region` | fast, city, client-full (+ order for settlement and terrain, perf) | ground pieces, grading, roads and where settlements go |
-| `mod/.../worldgen`, `probe`, `block` | fast, order, client-full or quick, perf | the write path, spill and foliage passes, placement, threads |
-| `mod/.../roads`, `compat`, mixins | fast, client-full (compat, perf: consider) | road feature (own order digest), veto |
+| `mod/.../worldgen`, `probe`, `block` | fast, order (consider for the spill, air-clear, tile and lake-veto passes: the order sim covers them), client-full or quick, perf | the write path, spill and foliage passes, placement, threads |
+| `mod/.../roads`, `compat`, mixins | fast, client-full (compat, perf: consider; order: consider for roads, required for mixins) | road feature (own order digest), veto |
 | `mod/.../gameplay`, `config`, `teleport`, entrypoint, resources | fast, client-quick (server-only: consider) | |
 | viewer, CLI | fast, gallery | |
 | build files, `flake.*`, `gradle.properties` | everything | versions move vanilla behaviour and mixin targets |
@@ -50,6 +50,31 @@ A change to how one building is generated can't change chunk-order behaviour by 
 - **New block kinds** (the `content` rows): gravity blocks, fluids, blocks that need support, two-block blocks, neighbour-shaped blocks. The world can change these after we write them; the core can't see it.
 - **Hooks** (interiors): beds, chests and workstations become blocks in `HookPlacer`, which reads the world. `GameplayGameTest` covers it in the fast suite; client-quick when the kind or count of hooks changes.
 - **Cost**: buildings are planned during chunk generation, inside the cold district budget, so a slower generator shows in `perf-planner`.
+
+## Engine-free order sim (ORDERSIM)
+
+`mod/src/test/java/dev/fractalbuildings/mod/ordersim/` (plain JUnit in `:mod:test`, so in the fast suite, no server): real `ProtoChunk`s decorated chunk by chunk in six orders (forward, reverse, shuffles, spiral, columns) with the real `TilePiece`, `SpillClear`, `BuildingAirClear`, `StreetAirFix`, `FoliageClear`, `HookPlacer`, `RoadFeature.placeIn` and the lake and boulder veto decisions, against real vanilla features (trees, dark oak, lava lake, forest rock ...). It applies the order test's criteria (orders agree, claimed cells equal the reference raster, spill classified, write contracts) and carries regressions for ORDERFAIL, SPILLDIRT, TREEINORDER, FOLIAGECLUSTER and ROCKVETO plus permanent mutants. About 3 minutes of test time (the figure is in `NOTES.md`); `OrderSimMutantTest` (tests the checks, not the product) is `@Tag("heavy")` and runs with `-PfbTests=heavy` / `scripts/test-all.sh --planner-heavy`, and whenever the sim's checks change.
+
+So `scripts/order-test.sh` (about 10 minutes) is **advisory (`order?`)** for the paths the sim covers (`SpillClear`, `FoliageClear`, `StreetAirFix`, `BuildingAirClear`, `TilePiece`, `LakeVeto`, `mod/roads`, `core/world|settlement|terrain|probe`): run it when the change touches the pipeline, threads, structure data or a new block kind. It stays **required** where the sim cannot vouch:
+
+- build files, `gradle.properties`, the flake (Minecraft or Fabric version bump);
+- `scripts/order-test.sh` and `gametest/order/*`, `Mutations`, `PieceLedger`, `RegionWarmer`, `Workers`, `core/cache`, `core/rand` (what the order test checks, and the threads);
+- every mixin (the sim does not apply mixins; `RockVetoGameTest` and `mutant-lakes` check they are applied);
+- structure starts and placement (`DistrictStructure`, `WorldPlanners`, the `worldgen/*` catch-all, `data/*/worldgen/*`; the VILLROAD join waits for ORDERSIM S8);
+- `mod/block/*` and new block kinds (the `content` rows: write flags and neighbour shapes are only partly modelled);
+- the real chunk pipeline, block entities and loot.
+
+The batched heavy run and the to-main run still run every layer, so a miss is found there and becomes a new sim scenario or a corrected row.
+
+Examples, `scripts/test-scope.sh A..B` before and after (required layers beyond `fast`):
+
+| Merged item | Before | After |
+|---|---|---|
+| TREEINORDER (`BuildingAirClear`) | client-full, order, perf | client-full; order: consider |
+| FOLIAGECLUSTER (`FoliageClear`) | client-full, order | client-full; order: consider |
+| ORDERSIM R3+S5 (`RoadFeature.placeIn`, roads) | client-full, perf | client-full, perf; order: consider |
+| SPILLDIRT3 (`SpillKinds`, classifier used only by tests) | client-full, order, perf | order |
+| ORDERSIM S0 (`Mutations`, seams) | client-full, order, perf | unchanged |
 
 # What needs the engine
 
