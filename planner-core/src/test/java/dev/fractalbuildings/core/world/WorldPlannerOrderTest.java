@@ -24,6 +24,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -94,6 +95,9 @@ class WorldPlannerOrderTest {
 		return out;
 	}
 
+	/** Tiles finished by the threaded runs; the hang detector watches it. */
+	static final AtomicLong PROGRESS = new AtomicLong();
+
 	@Test
 	void forwardReverseAndShuffledOrders() {
 		assertTrue(TILE_LIST.size() == TILES);
@@ -119,6 +123,43 @@ class WorldPlannerOrderTest {
 		}
 	}
 
+	/**
+	 * Waits for the walkers. The bound is on progress, not on total time: with capacity-1 caches every lookup recomputes, so the run is
+	 * compute-bound (62 s locally at load 14, over the old 5 min total bound twice on a loaded beebox). It fails, with a thread dump,
+	 * only when no tile finishes for STALL_SECONDS (a deadlock or livelock) or after HARD_MINUTES overall.
+	 */
+	static final long STALL_SECONDS = 180, HARD_MINUTES = 30;
+
+	static void awaitWithHangDetector(List<Future<Map<String, String>>> fs, String what) throws Exception {
+		awaitWithHangDetector(fs, what, STALL_SECONDS, HARD_MINUTES);
+	}
+
+	static void awaitWithHangDetector(List<Future<Map<String, String>>> fs, String what, long stallSeconds, long hardMinutes) throws Exception {
+		long start = System.nanoTime(), lastMove = start, seen = PROGRESS.get();
+		while (true) {
+			boolean all = true;
+			for (Future<?> f : fs) if (!f.isDone()) { all = false; break; }
+			if (all) return;
+			Thread.sleep(500);
+			long now = System.nanoTime(), p = PROGRESS.get();
+			if (p != seen) { seen = p; lastMove = now; }
+			boolean stalled = now - lastMove > TimeUnit.SECONDS.toNanos(stallSeconds);
+			boolean hard = now - start > TimeUnit.MINUTES.toNanos(hardMinutes);
+			if (stalled || hard) {
+				throw new AssertionError(what + (stalled ? ": no tile finished for " + stallSeconds + " s" : ": over " + hardMinutes + " min") + " (" + p + " tiles done)\n" + threadDump());
+			}
+		}
+	}
+
+	static String threadDump() {
+		StringBuilder sb = new StringBuilder();
+		for (var e : Thread.getAllStackTraces().entrySet()) {
+			sb.append("\"").append(e.getKey().getName()).append("\" ").append(e.getKey().getState()).append("\n");
+			for (StackTraceElement el : e.getValue()) sb.append("\tat ").append(el).append("\n");
+		}
+		return sb.toString();
+	}
+
 	/** {@code threads} threads each walk every tile in their own shuffled order; an optional evictor empties the caches meanwhile. */
 	static void threaded(WorldPlanner w, int threads, boolean evictor, String what) throws Exception {
 		ExecutorService pool = Executors.newFixedThreadPool(threads + 1);
@@ -133,10 +174,15 @@ class WorldPlannerOrderTest {
 		for (int i = 0; i < threads; i++) {
 			List<int[]> order = new ArrayList<>(TILE_LIST);
 			Collections.shuffle(order, new Random(100 + i));
-			fs.add(pool.submit(() -> run(w, order)));
+			fs.add(pool.submit(() -> {
+				Map<String, String> out = new TreeMap<>();
+				for (int[] t : order) { out.put(id(t), digest(w, t[0], t[1])); PROGRESS.incrementAndGet(); }
+				return out;
+			}));
 		}
 		try {
-			for (Future<Map<String, String>> f : fs) assertSame(f.get(5, TimeUnit.MINUTES), what);
+			awaitWithHangDetector(fs, what);
+			for (Future<Map<String, String>> f : fs) assertSame(f.get(), what);
 		} finally {
 			done.set(true);
 			if (ev != null) ev.get(10, TimeUnit.SECONDS);
@@ -152,6 +198,20 @@ class WorldPlannerOrderTest {
 	@Test
 	void eightThreadsTinyCachesAndAnEvictor() throws Exception {
 		threaded(GATE.planner(WorldPlanner.Caches.all(1), null), 8, true, "8 threads, capacity 1, evictor");
+	}
+
+	@Test
+	void theHangDetectorFailsWithAThreadDump() throws Exception {
+		ExecutorService pool = Executors.newSingleThreadExecutor();
+		java.util.concurrent.CountDownLatch never = new java.util.concurrent.CountDownLatch(1);
+		try {
+			List<Future<Map<String, String>>> fs = List.of(pool.submit(() -> { never.await(); return new TreeMap<String, String>(); }));
+			AssertionError e = org.junit.jupiter.api.Assertions.assertThrows(AssertionError.class, () -> awaitWithHangDetector(fs, "stuck", 1, 1));
+			assertTrue(e.getMessage().contains("no tile finished") && e.getMessage().contains("CountDownLatch"), "message names the stall and carries stacks");
+		} finally {
+			never.countDown();
+			pool.shutdownNow();
+		}
 	}
 
 	@Test
