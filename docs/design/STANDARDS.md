@@ -281,6 +281,59 @@ and Minecraft block facts ([blocks.md](blocks.md), from John's
 - **Enforcement:** code, exists: `Role.RAIL`, `RailingTest`.
 - **Status:** accepted. **Source:** John, REVIEW 5.11, 2026-10-21 (ROADMAP 6.9).
 
+## DS-8 amendment: railings that hold
+
+- **Addition** to DS-8's rule: a railing stops a walker. The rail
+  block stands on the same level as the walker's feet, in the first air
+  block above the surface it guards, so a fence or wall rises 1.5 above
+  that surface (iron bars and panes, 1.0, only on balconies). Rails run
+  without gaps along the open edge (the path opening aside), join each
+  other, and step up beside a flight one block above each step. Bridges,
+  walkable roofs and terraces count as open edges.
+- **Why:** John: "The railings don't do their one job. They only go up to
+  ground level, they're never functional at keeping you from falling."
+- **Enforcement:** code, exists for flights and landings (RAILFIX
+  2026-10-25): `InstancePassV1.rails` stands each rail one block above the
+  surface it guards; `RailingTest` checks every `RAIL` cell's y is at least
+  the walking surface's (the step's y + 1), every tread or landing with
+  the DS-8 drop beside it has a rail there, and a rail top is not
+  standable (`Invariants.walkFloor`). Not covered yet: city bridges have
+  no rails (ROADMAP 7.15).
+- **Status:** #Approved by @John on 2026-10-28 (amends accepted DS-8). **Source:** John, playtest
+  notes 2026-10-25; drafted by the architect.
+
+## DS-8 amendment: flights, corners and the lot line
+
+- **Additions** to the DS-8 amendment "railings that hold", replacing its "step up beside a flight one block above each
+  step": (1) beside a flight, the rail's top is at least 1.5 above every
+  walking surface next to it (its own tread, the tread above, any kerb or
+  cheek wall); rails turning a corner, diagonal ones included, meet in a
+  corner post; no gap between rail posts wider than 0.5. (2) Flights and
+  landings that need a rail sit one cell inside the lot line, so the rail
+  fits in the lot.
+- **Why:** Minecraft steps 0.6 and the player is 0.6 wide, so stepped and
+  diagonal fence posts are not barriers; the lot edge is where the street
+  drop is (6.9 known issue, RAILFIX review).
+- **Scope:** all exterior flights, landings, terraces and bridges; (2) the
+  site pass, all types.
+- **Enforcement:** code, exists; both parts hold. (1) Flights and corners
+  (RAILFIX round 2, 2026-10-25): a rail takes the level of the highest
+  tread within one cell, and diagonal rails meet in a corner post;
+  `RailingTest` checks rail height, corner gaps and that a rail top is not
+  standable. (2) The lot line (LOTRAIL 2026-10-25, MINLOT 2026-10-26): the
+  site pass sets a building back (front, then every side, up to 2 cells)
+  until every flight and landing is railed inside the lot, and a door
+  wider than one cell gets a landing as wide as the door; on ground with
+  relief 2 or more a lot must be 2 wider and 1 deeper than the type
+  minimum (`SpecPolicyV1.railRoomOk`), so the lot planner sizes lots and
+  picks types to leave that room (the generator still builds on any lot
+  that fits). `LotRailTest` (852 buildings: every non-wall type, test
+  lots, slopes and seeds) finds 0 unguarded edges, and `LOT_GRADE` in
+  `city-check` flags a sloped lot without the room.
+- **Status:** #Approved by @John on 2026-10-28 (amends the DS-8 amendment "railings that hold"). **Source:**
+  architect, RAILFIX review 2026-10-25
+  ([p6-railfix-architect.md](../review/reports/p6-railfix-architect.md), "Proposed rules").
+
 ## DS-9 Walkable walls are reachable
 
 - **Rule:** a wall with a walk on top has a way up (stairs or ladder) and its
@@ -345,6 +398,138 @@ and Minecraft block facts ([blocks.md](blocks.md), from John's
 - **Status:** Approved by @John 2026-10-25. **Source:** John, playtest notes 2026-10-25;
   drafted by the architect (interior programme with the interior-designer's
   lens).
+
+## DS-38 Guarded roofs
+
+- **Rule:** a roof reached by a door (the top roof a stair house opens
+  onto, sky-lobby terraces) has a 1-high wall parapet with a 1-high rail
+  (iron bars) on top, unbroken round the edge: 2 above the roof surface,
+  see-through at eye level. Setback roofs with no door keep a 1-high
+  parapet.
+- **Why:** stops a walker (jump 1.25, meets the DS-8 amendment's 1.5)
+  while keeping the view from a roof climbed to (eye height 1.62).
+- **Scope:** accessible flat roofs and terraces, all types.
+- **Enforcement:** code candidate, folds into the DS-8 amendment's
+  `rail-height`: every edge cell of a door-reached roof has a wall with a
+  rail above it. None today.
+- **Status:** #Approved by @John on 2026-10-28. **Source:** architect, high-rise plan review
+  2026-10-25 ([highrise-plan-architect.md](../review/reports/highrise-plan-architect.md), answer 3).
+
+## DS-45 Doors sit near the street
+
+- **Rule:** a building's main door sits near the level of the street or
+  pavement it faces. Rise = the entrance-storey floor minus that street
+  surface (rise 1 = one step up).
+  - **Shops** (and the shop ground floor of mixed buildings): rise at most
+    2, or at most 4 when the door opens off a continuous raised pavement
+    or arcade at door level along the whole frontage (railed, DS-8, and
+    met by the street at grade or by a short flight at its ends). Never 5
+    or more.
+    Shops always meet this; they never take the variants below.
+  - **Houses and workshops, by default:** rise at most 3 as a plain
+    flight; 4-5 with a landing or porch at the door, and the flight below
+    it also broken after at most 3 risers (see **Stair runs** below).
+    Above that the
+    building **cuts into the slope** instead of lifting to the high
+    ground: the floor goes at door level and the earth stands against the
+    uphill walls; on a steep lot the storey above gets a back door onto
+    the high ground (a bank building). Digging in is the usual answer.
+  - **Houses and workshops, deliberate variants:** the default is not a
+    ban. A minority of lots, chosen per lot, may instead take:
+    - a **stilted or posted house** on a downhill lot: the door at or
+      near street level (within the default limits), the house hanging
+      off the slope on long posts or piers (the hillside houses of
+      Portland, Oregon);
+    - a **raised house with a long stair** on an uphill lot: the house
+      stays up on the high ground and a long stair climbs to the door,
+      broken by landings (**Stair runs** below).
+
+    The architect sets the mix (how many, on which slopes, styles and
+    tiers); DS-8 railings apply to the stair, landings and any raised
+    deck.
+  - **What the rule forbids for houses and workshops** is the accidental
+    case: a single tall straight flight with no landing, or a door left
+    unreachable from the street.
+  - **Stair runs, every lot:** no exterior flight on any lot (default or
+    variant, any building type) has more than 3 risers in a straight run
+    without a level tread: a landing, or a turn at a level quarter
+    landing (a winder does not count as a turn). At rise 4-5 that means
+    straight 3, a 1-cell level landing, then 1-2 more; or an L turned
+    along the facade at a level corner cell. A landing at the door alone
+    is not enough. The earlier default-lot allowance of a straight 4-5 to
+    a door landing is dropped. The architect also offered a fallback for
+    lots where no such route fits (a straight 4-5 to a door landing,
+    counted in SHOPLOW S9); it is **not** part of the rule, because the
+    report gives it as an implementation fallback, not a measured
+    exception (no counts exist yet). If lots turn out to need it, it
+    comes back to John with the counts.
+  - Numbers: the architect's (SHOPLOW answer, 2026-10-26), approved by
+    John; the shop limit of 2 was first the agent's number and the
+    architect kept it.
+- **Why:** "I'd like the shops to sit lower if we can do it, they should
+  get closer to the street or there should be a walkway along them. I
+  can't picture any situation where a storefront has a five meter high
+  staircase straight up to a door." Real shop thresholds are 0-2 steps;
+  house stoops run 3-8 (architect). The same highest-ground rule lifts
+  houses (river-town: 23 of 123 at rise 4+) and workshops (11 of 39).
+  Stair runs: one riser is 1 m, so 5 straight risers is the 5 m straight
+  flight John objected to; a real flight tops out at about 3.7 m
+  (architect).
+- **Scope:** shops, houses and workshops, all styles and tiers; not
+  walls, towers or halls for now (market halls on legs have their own
+  spec in the architect's answer). The stair-run limit covers every
+  exterior flight of every building type. Amends DS-7: a shop that meets
+  this needs no DS-7 terrace.
+- **Enforcement:** code candidate `door-rise`, none yet: entrance-storey
+  floor minus the street surface in front of the main door (`frontY`,
+  else the terrain at the door's outside cell); shops at most 2 (4 off a
+  frontage pavement or arcade), always; houses and workshops at most 5,
+  with a landing above 3, unless the lot is a stilt or long-stair
+  variant, which is checked instead for a door reachable from the street
+  and DS-8 railings. Stair runs: code candidate `flight-landings` with
+  one constant `MAX_RISERS = 3`, on every exterior flight of every lot
+  (the SHOPLOW plan had it on variant lots only), none yet (ROADMAP 7.17
+  SHOPLOW).
+- **Status:** accepted. **Source:** John, REVIEW STAIRGROUND, 2026-10-26
+  (shops); widened to houses and workshops by John (chat, 2026-10-26: "I
+  agree with the architect's suggestion on houses, and widening the
+  rule"), from the architect's proposed rule "Doors sit near the street"
+  (SHOPLOW answer, [shoplow-architect](../review/reports/shoplow-architect.md)).
+  Refined by John (chat, 2026-10-26), making digging in the default for
+  houses and workshops and allowing stilt and long-stair variants: "Can
+  we make the rule not happen all the time? In real life there are
+  certainly houses (e.g. all over the hills in Portland Oregon) where
+  they sit on a hill on long stilts. Or other setups where they don't
+  always cut into the hill. I wouldn't want to make a rule that made that
+  kind of thing impossible, but definitely for shops it shouldn't happen.
+  For houses I could see allowing both."
+- **Amended 2026-10-26** (stair runs, every lot): approved by John (chat,
+  2026-10-26: "I agree with both of those earlier rule change
+  suggestions, 3 steps runs and streets stay close to ground"), from the
+  architect's proposed amendment (SHOPLOW plan answer A5,
+  [shoplow-plan-architect](../review/reports/shoplow-plan-architect.md)).
+  The default-lot text read "rise at most 3 as a plain flight; 4-5 with
+  a landing or porch at the door", which allowed a straight 4-5 to a door
+  landing; the long-stair variant's "no straight run of more than 3
+  risers without a landing or a turn" now applies to every flight.
+
+## DS-45 amendment: run and turn sizes
+
+- **Addition** to DS-45's **Stair runs**: exterior
+  straight runs are at least 2 risers (a single last step to a door
+  landing excepted); turns are at least 2 risers apart; a quarter landing
+  is W x W and a half landing 2W x W, level full blocks at walking height;
+  prefer an L to a U (a U only for a rise of 6 or more that doesn't fit
+  along the facade); headroom 3 over every tread and landing; no rail post
+  or wall in a landing cell (agent's numbers).
+- **Why:** John, playtest 2026-10-26 (21.38.53): "hard to walk up ...
+  more generous on the switchbacks".
+- **Scope:** every exterior flight.
+- **Enforcement:** code candidate: extend the planned `flight-landings`
+  check (`MIN_RUN = 2`). None today.
+- **Status:** #Approved by @John on 2026-10-28 (amends accepted DS-45). **Source:** architect,
+  playtest questions 2026-10-27
+  ([playtest1026-qs-architect.md](../review/reports/playtest1026-qs-architect.md), P3).
 
 # Interiors
 
@@ -457,6 +642,19 @@ and Minecraft block facts ([blocks.md](blocks.md), from John's
 - **Enforcement:** guideline (style choice ignores tier today; ROADMAP 7.7).
 - **Status:** accepted. **Source:** John, coordinator chat, 2026-10-25.
 
+## DS-40 Settlement tier follows built lots
+
+- **Rule:** after its districts are planned, a city needs a minimum number
+  of built lots and a contiguous core of mid-rise or taller, and a
+  metropolis a high-rise downtown; otherwise it takes the tier its built
+  form fits.
+- **Why:** sparse "cities" on poor ground (seed 1: about 6 buildings at
+  r 454). Extends CITYQ's tier-follows-radius.
+- **Scope:** city, metropolis.
+- **Enforcement:** code candidate (planner, after district planning).
+- **Status:** #Approved by @John on 2026-10-28. **Source:** architect, CITYQ review 2026-10-25
+  ([p6-cityq-architect.md](../review/reports/p6-cityq-architect.md), "Proposed rules").
+
 ## DS-19 No causeways or long bridges (for now)
 
 - **Rule:** roads cross water only by a single span of at most 20 blocks;
@@ -466,6 +664,21 @@ and Minecraft block facts ([blocks.md](blocks.md), from John's
 - **Scope:** roads between settlements (and streets).
 - **Enforcement:** code, exists: `Profile.MAX_CROSSING = 20`, `ProfileTest`.
 - **Status:** accepted. **Source:** John, REVIEW S10, 2026-10-22; [ADR 0004](../adr/0004-roads-between-settlements.md) answers, 2026-10-23.
+
+## DS-50 Roads don't tunnel (for now)
+
+- **Rule:** no road or street is roofed by terrain. A cut is open to the
+  sky (terraced or faced sides), or the route goes round or the link is
+  dropped. Future tunnels, if any, need portals, a lining, headroom of 4
+  or more (3 on paths) and lights every 8 blocks or fewer.
+- **Why:** an unlined bore is ugly and a mob spawner (John, playtest
+  2026-10-26, 21.37.41; DS-24).
+- **Scope:** all roads and streets.
+- **Enforcement:** code candidate `road-open-sky` (no solid block in the
+  headroom-to-sky column over a road cell, outside bridges and designed
+  covers). None today.
+- **Status:** #Approved by @John on 2026-10-28. **Source:** architect, playtest questions
+  2026-10-27 ([playtest1026-qs-architect.md](../review/reports/playtest1026-qs-architect.md), P2).
 
 ## DS-20 No floating foliage over roads
 
@@ -493,6 +706,28 @@ and Minecraft block facts ([blocks.md](blocks.md), from John's
   `roads` report. None today.
 - **Status:** Approved by @John on 2026-10-25. **Source:** John, playtest note 2026-10-25;
   drafted by the architect.
+
+## DS-30 amendment: bamboo only on footbridges
+
+- **Addition** to DS-30's bridge-deck row: bamboo appears on a
+  bridge only when the bridge is a small footpath (2 wide or less, span 8
+  or less; agent's numbers) and is all bamboo (deck, rails and posts;
+  blocks in [styles/README.md](styles/README.md), "Road surfaces"). Every
+  other bridge uses the road's material, stone, or one other plank
+  species, never mixed with bamboo.
+- **Why:** John: "No bamboo bridges unless they are small paths and all
+  bamboo."
+- **Scope:** bridges and boardwalks in all tiers.
+- **Enforcement:** holds today because nothing builds bamboo bridges:
+  since ROADS1 (7.10) every style's `deck` is one block (jungle:
+  `jungle_planks`), city bridges have no rails yet (ROADMAP 7.15), and no
+  all-bamboo footbridge exists. `RoadMaterialTest`
+  (`everyVotingStyleHasAPlankOrRoadDeck`) checks one deck block per style,
+  planks or the road's block, but would not catch a `bamboo_planks` deck.
+  Code candidate, planned: folds into `road-one-material` (DS-30, ROADMAP
+  7.10) plus a width check for bamboo decks.
+- **Status:** #Approved by @John on 2026-10-28 (amends DS-30). **Source:** John, playtest
+  notes 2026-10-25; drafted by the architect.
 
 ## DS-31 Smooth roads; kerbed city streets
 
@@ -530,11 +765,31 @@ and Minecraft block facts ([blocks.md](blocks.md), from John's
   plank species" for these; elsewhere DS-30 holds as written.
 - **Enforcement:** code candidate, folded into `road-one-material` (DS-30):
   deck block == the road's block wherever the tier is city or above, or the
-  route joins two cities. None today.
+  route joins two cities. Partly exists since ROADS1 (7.10):
+  `RoadMaterialTest` (`cityBridgeDecksCarryTheRoad`) checks that city
+  decks take the street's road role and city-city routes have deck ==
+  road; the `road-one-material` check is not built, and piers under city
+  bridges are still planks (polish backlog, 7.10 ROADS1 piers).
 - **Status:** accepted. **Source:** architect, ROADS1 review 2026-10-26
   (proposed rule, `.claude/reports/p7-roads1-architect.md`); accepted by
   John 2026-10-26 (coordinator chat: "I accept the architect's suggestions
   on ROADS1").
+
+## DS-52 Roads step down one rank at a time
+
+- **Rule:** a link that ends at a settlement becomes its main street at
+  the gate, and meets a junction, never a lane or path. A through road
+  keeps its width through smaller settlements. At any join the width
+  drops by at most 2; a larger drop tapers by 1 per side over at least 4
+  blocks (agent's numbers). The material changes only at the gate (DS-30).
+- **Why:** John, playtest 2026-10-26 (21.32.46): "transition from tiny
+  path to this huge road is pretty abrupt".
+- **Scope:** roads between settlements and settlement exits.
+- **Enforcement:** code candidate in `city-check` (width at each gate and
+  junction), folding into the planned `road-hierarchy` check (DS-47).
+  None today.
+- **Status:** #Approved by @John on 2026-10-28. **Source:** architect, playtest questions
+  2026-10-27 ([playtest1026-qs-architect.md](../review/reports/playtest1026-qs-architect.md), P5).
 
 ## DS-21 Hamlets and villages are not ruler-straight
 
@@ -742,6 +997,87 @@ DS-25 with an exception for deliberate repeating patterns.
 - **Status:** Approved by @John 2026-10-25. **Source:** John, playtest notes 2026-10-25;
   drafted by the architect.
 
+## DS-34 High-rises come in several looks
+
+- **Rule:** high-rises use one of a few distinct looks, so a skyline is not
+  one tower repeated: **masonry** (brick, stone or terracotta, base, shaft
+  and crown, stacked 1x2 and 2x2 windows, setbacks: today's massing),
+  **frame** (an expressed grid of columns and floor bands in concrete,
+  stone or quartz with glass set back between), **glass tower** (walls
+  mostly glass between thin mullions, on a solid podium, with a solid
+  crown or core showing) and **mass timber** (7-20 storeys, DS-1). Glass
+  towers are for the metropolis core and are usually its tallest
+  buildings. No look takes more than about half the high-rises of a
+  district, and neighbours differ in look or tint (agent's numbers).
+- **Why:** John: "For metropolis, a new highrise type where walls are
+  mostly glass"; "Highrises should come in a few different looks. Maybe
+  some are biome dependent, I'll have to look at real pictures."
+- **Scope:** type `highrise` and buildings over 6 storeys; glass towers in
+  the metropolis only. Biome tint follows DS-1 and the tall-styles
+  recommendation (masonry and frame take the style's tint); glass towers
+  over about 20 storeys share one look across biomes, tinted only at the
+  base (John 2026-10-26, DS-41).
+- **Enforcement:** guideline; code candidates: the look recorded in the IR,
+  `glazing-share` ranges per look (DS-33), DS-1's `highrise-materials`; in
+  a glass tower every room lit (DS-24) and the hall and lobby furnished.
+  Build notes and materials: [notes/highrises.md](notes/highrises.md).
+- **Status:** #Approved by @John on 2026-10-28; biome-dependent looks wait for John's research.
+  **Source:** John, playtest notes 2026-10-25; drafted by the architect.
+
+## DS-35 More entrances
+
+- **Rule:** buildings have more than one way in. A house has a back or side
+  door to the yard (usually from the kitchen); a shop with a dwelling above
+  has the shop door and a separate house door; a corner building has a door
+  on each street; halls and temples have main doors on the axis and side
+  doors; workshops a cart door and a person door; high-rises and city blocks
+  a main entrance of 2-3 wide doors on the main street and at least one
+  more on another face, plus a door every 12-20 blocks of a long street
+  frontage. Secondary doors are smaller and plainer (DS-26).
+- **Why:** John: "More entrances to buildings!"
+- **Scope:** all types; one-room huts, stalls and towers may keep one.
+- **Enforcement:** code candidate `entrance-count` (two or more exterior
+  doors for buildings with 2+ storeys or a footprint of 80+ cells; high-rises
+  on two faces, the main one 2+ wide); every door meets DS-4 and DS-6 and
+  opens into a hall, kitchen, lobby or shop floor, never a bedroom. None
+  today: `Massing.entrances()` gives one door per mass.
+- **Status:** #Approved by @John on 2026-10-28. **Source:** John, playtest notes 2026-10-25;
+  drafted by the architect.
+
+## DS-35 amendment: workshop doors
+
+- **Addition** to DS-35: a workshop's lean-to and its
+  living wing each get their own exterior person door (the lean-to's onto
+  the yard on its back or side face; the living wing's from its kitchen),
+  besides the cart door.
+- **Why:** John, playtest 2026-10-26 (21.27.38), "back door to the
+  lean-to"; in 124 CLI workshop plans the cart door is the only way out.
+- **Scope:** type `workshop`.
+- **Enforcement:** code candidate, folds into DS-35's `entrance-count`.
+  None today.
+- **Status:** #Approved by @John on 2026-10-28 (amends DS-35). **Source:** interior
+  designer, playtest questions 2026-10-27
+  ([playtest1026-qs-interior.md](../review/reports/playtest1026-qs-interior.md), Q3).
+
+## DS-36 Smooth pitched roofs
+
+- **Rule:** pitched roofs are laid in stairs (1 up per 1 across) or slabs
+  (gentle, 1 up per 2), never as stepped full blocks. Hips and valleys turn
+  with corner stairs, ridges are capped, eaves end in a stair course. A
+  pitched roof's material has stairs and a slab.
+- **Why:** John: "For pitched roofs, smooth them out. Stairs (or slabs for a
+  gentle pitch)."
+- **Scope:** all pitched roofs (gable, hip, pyramid, shed, mansard, dormers).
+  Flat roofs and parapets are not affected.
+- **Enforcement:** code candidates `roof-smooth` (every exposed top cell of
+  a pitched roof is a stair or slab) and a static style test (every `roof`
+  palette entry has stairs and a slab, per [blocks.md](blocks.md)). None
+  today: every roof in game is stepped full blocks, and the plains, taiga
+  and jungle roof palettes (terracotta, moss) have no stairs or slabs. Build
+  notes: [notes/roofs.md](notes/roofs.md).
+- **Status:** #Approved by @John on 2026-10-28. **Source:** John, playtest notes 2026-10-25;
+  drafted by the architect.
+
 ## DS-39 Floor-to-ceiling glazing is a per-style-and-type choice
 
 - **Rule:** windows from the floor (sill 0) to the ceiling only on civic
@@ -810,330 +1146,3 @@ DS-25 with an exception for deliberate repeating patterns.
 
 New proposals go here (`proposed`, with the source); John accepts, edits or
 drops them, and accepted ones move to the section they belong in.
-
-## DS-34 High-rises come in several looks
-
-- **Rule:** high-rises use one of a few distinct looks, so a skyline is not
-  one tower repeated: **masonry** (brick, stone or terracotta, base, shaft
-  and crown, stacked 1x2 and 2x2 windows, setbacks: today's massing),
-  **frame** (an expressed grid of columns and floor bands in concrete,
-  stone or quartz with glass set back between), **glass tower** (walls
-  mostly glass between thin mullions, on a solid podium, with a solid
-  crown or core showing) and **mass timber** (7-20 storeys, DS-1). Glass
-  towers are for the metropolis core and are usually its tallest
-  buildings. No look takes more than about half the high-rises of a
-  district, and neighbours differ in look or tint (agent's numbers).
-- **Why:** John: "For metropolis, a new highrise type where walls are
-  mostly glass"; "Highrises should come in a few different looks. Maybe
-  some are biome dependent, I'll have to look at real pictures."
-- **Scope:** type `highrise` and buildings over 6 storeys; glass towers in
-  the metropolis only. Biome tint follows DS-1 and the tall-styles
-  recommendation (masonry and frame take the style's tint); glass towers
-  over about 20 storeys share one look across biomes, tinted only at the
-  base (John 2026-10-26, DS-41).
-- **Enforcement:** guideline; code candidates: the look recorded in the IR,
-  `glazing-share` ranges per look (DS-33), DS-1's `highrise-materials`; in
-  a glass tower every room lit (DS-24) and the hall and lobby furnished.
-  Build notes and materials: [notes/highrises.md](notes/highrises.md).
-- **Status:** #Approved by @John on 2026-10-28; biome-dependent looks wait for John's research.
-  **Source:** John, playtest notes 2026-10-25; drafted by the architect.
-
-## DS-35 More entrances
-
-- **Rule:** buildings have more than one way in. A house has a back or side
-  door to the yard (usually from the kitchen); a shop with a dwelling above
-  has the shop door and a separate house door; a corner building has a door
-  on each street; halls and temples have main doors on the axis and side
-  doors; workshops a cart door and a person door; high-rises and city blocks
-  a main entrance of 2-3 wide doors on the main street and at least one
-  more on another face, plus a door every 12-20 blocks of a long street
-  frontage. Secondary doors are smaller and plainer (DS-26).
-- **Why:** John: "More entrances to buildings!"
-- **Scope:** all types; one-room huts, stalls and towers may keep one.
-- **Enforcement:** code candidate `entrance-count` (two or more exterior
-  doors for buildings with 2+ storeys or a footprint of 80+ cells; high-rises
-  on two faces, the main one 2+ wide); every door meets DS-4 and DS-6 and
-  opens into a hall, kitchen, lobby or shop floor, never a bedroom. None
-  today: `Massing.entrances()` gives one door per mass.
-- **Status:** #Approved by @John on 2026-10-28. **Source:** John, playtest notes 2026-10-25;
-  drafted by the architect.
-
-## DS-36 Smooth pitched roofs
-
-- **Rule:** pitched roofs are laid in stairs (1 up per 1 across) or slabs
-  (gentle, 1 up per 2), never as stepped full blocks. Hips and valleys turn
-  with corner stairs, ridges are capped, eaves end in a stair course. A
-  pitched roof's material has stairs and a slab.
-- **Why:** John: "For pitched roofs, smooth them out. Stairs (or slabs for a
-  gentle pitch)."
-- **Scope:** all pitched roofs (gable, hip, pyramid, shed, mansard, dormers).
-  Flat roofs and parapets are not affected.
-- **Enforcement:** code candidates `roof-smooth` (every exposed top cell of
-  a pitched roof is a stair or slab) and a static style test (every `roof`
-  palette entry has stairs and a slab, per [blocks.md](blocks.md)). None
-  today: every roof in game is stepped full blocks, and the plains, taiga
-  and jungle roof palettes (terracotta, moss) have no stairs or slabs. Build
-  notes: [notes/roofs.md](notes/roofs.md).
-- **Status:** #Approved by @John on 2026-10-28. **Source:** John, playtest notes 2026-10-25;
-  drafted by the architect.
-
-## DS-8 amendment: railings that hold
-
-- **Proposed addition** to DS-8's rule: a railing stops a walker. The rail
-  block stands on the same level as the walker's feet, in the first air
-  block above the surface it guards, so a fence or wall rises 1.5 above
-  that surface (iron bars and panes, 1.0, only on balconies). Rails run
-  without gaps along the open edge (the path opening aside), join each
-  other, and step up beside a flight one block above each step. Bridges,
-  walkable roofs and terraces count as open edges.
-- **Why:** John: "The railings don't do their one job. They only go up to
-  ground level, they're never functional at keeping you from falling."
-- **Enforcement:** code candidate `rail-height`: every `RAIL` cell's y is
-  at least that of the walking surface it guards (the step or deck block's
-  y + 1); every tread, landing or deck cell with the DS-8 drop beside it
-  has a rail or wall there. `RailingTest` exists and should be extended.
-  Today rails stand at the tread's own y (`InstancePassV1.rails`), 0.5
-  above the walking surface, under the player's 0.6 step height, so a
-  player walks over them; city bridges have no rails.
-- **Status:** #Approved by @John on 2026-10-28 (amends accepted DS-8). **Source:** John, playtest
-  notes 2026-10-25; drafted by the architect.
-
-## DS-30 amendment: bamboo only on footbridges
-
-- **Proposed addition** to DS-30's bridge-deck row: bamboo appears on a
-  bridge only when the bridge is a small footpath (2 wide or less, span 8
-  or less; agent's numbers) and is all bamboo (deck, rails and posts;
-  blocks in [styles/README.md](styles/README.md), "Road surfaces"). Every
-  other bridge uses the road's material, stone, or one other plank
-  species, never mixed with bamboo.
-- **Why:** John: "No bamboo bridges unless they are small paths and all
-  bamboo."
-- **Scope:** bridges and boardwalks in all tiers.
-- **Enforcement:** code candidate, folds into `road-one-material` (DS-30)
-  plus a width check for bamboo decks. None today: the jungle style's
-  `deck` role mixes jungle and bamboo planks cell by cell, so every jungle
-  bridge is patchy bamboo ([styles/jungle.md](styles/jungle.md)).
-- **Status:** #Approved by @John on 2026-10-28 (amends DS-30). **Source:** John, playtest
-  notes 2026-10-25; drafted by the architect.
-
-## DS-38 Guarded roofs
-
-- **Rule:** a roof reached by a door (the top roof a stair house opens
-  onto, sky-lobby terraces) has a 1-high wall parapet with a 1-high rail
-  (iron bars) on top, unbroken round the edge: 2 above the roof surface,
-  see-through at eye level. Setback roofs with no door keep a 1-high
-  parapet.
-- **Why:** stops a walker (jump 1.25, meets the DS-8 amendment's 1.5)
-  while keeping the view from a roof climbed to (eye height 1.62).
-- **Scope:** accessible flat roofs and terraces, all types.
-- **Enforcement:** code candidate, folds into the DS-8 amendment's
-  `rail-height`: every edge cell of a door-reached roof has a wall with a
-  rail above it. None today.
-- **Status:** #Approved by @John on 2026-10-28. **Source:** architect, high-rise plan review
-  2026-10-25 ([highrise-plan-architect.md](../review/reports/highrise-plan-architect.md), answer 3).
-
-## DS-8 amendment: flights, corners and the lot line
-
-- **Proposed additions** to the proposed DS-8 amendment ("railings that
-  hold"), replacing its "step up beside a flight one block above each
-  step": (1) beside a flight, the rail's top is at least 1.5 above every
-  walking surface next to it (its own tread, the tread above, any kerb or
-  cheek wall); rails turning a corner, diagonal ones included, meet in a
-  corner post; no gap between rail posts wider than 0.5. (2) Flights and
-  landings that need a rail sit one cell inside the lot line, so the rail
-  fits in the lot.
-- **Why:** Minecraft steps 0.6 and the player is 0.6 wide, so stepped and
-  diagonal fence posts are not barriers; the lot edge is where the street
-  drop is (6.9 known issue, RAILFIX review).
-- **Scope:** all exterior flights, landings, terraces and bridges; (2) the
-  site pass, all types.
-- **Enforcement:** code, extend `RailingTest`: no standable surface within
-  0.6 below a rail top on the open side, corner posts, and a flight
-  against the lot edge. The RAILFIX r2 review scan found no step-over or
-  corner gaps left in the galleries; the lot-line
-  case still fails in the galleries.
-  LOTRAIL (2026-10-25): enforced in code: the site pass sets a building back
-  (front, then every side, up to 2 cells) until every flight and landing is
-  railed inside the lot; a door wider than one cell gets a landing as wide as
-  the door. Tests: `RailingTest`, `LotRailTest`. MINLOT (2026-10-26): on ground with relief 2 or more a lot must be 2 wider and
-  1 deeper than the type minimum (`SpecPolicyV1.railRoomOk`); the lot planner
-  sizes and picks types accordingly, the generator still builds on any lot that fits, and
-  `LOT_GRADE` checks it.
-- **Status:** #Approved by @John on 2026-10-28 (amends the proposed DS-8 amendment). **Source:**
-  architect, RAILFIX review 2026-10-25
-  ([p6-railfix-architect.md](../review/reports/p6-railfix-architect.md), "Proposed rules").
-
-## DS-40 Settlement tier follows built lots
-
-- **Rule:** after its districts are planned, a city needs a minimum number
-  of built lots and a contiguous core of mid-rise or taller, and a
-  metropolis a high-rise downtown; otherwise it takes the tier its built
-  form fits.
-- **Why:** sparse "cities" on poor ground (seed 1: about 6 buildings at
-  r 454). Extends CITYQ's tier-follows-radius.
-- **Scope:** city, metropolis.
-- **Enforcement:** code candidate (planner, after district planning).
-- **Status:** #Approved by @John on 2026-10-28. **Source:** architect, CITYQ review 2026-10-25
-  ([p6-cityq-architect.md](../review/reports/p6-cityq-architect.md), "Proposed rules").
-
-## DS-45 Doors sit near the street
-
-- **Rule:** a building's main door sits near the level of the street or
-  pavement it faces. Rise = the entrance-storey floor minus that street
-  surface (rise 1 = one step up).
-  - **Shops** (and the shop ground floor of mixed buildings): rise at most
-    2, or at most 4 when the door opens off a continuous raised pavement
-    or arcade at door level along the whole frontage (railed, DS-8, and
-    met by the street at grade or by a short flight at its ends). Never 5
-    or more.
-    Shops always meet this; they never take the variants below.
-  - **Houses and workshops, by default:** rise at most 3 as a plain
-    flight; 4-5 with a landing or porch at the door, and the flight below
-    it also broken after at most 3 risers (see **Stair runs** below).
-    Above that the
-    building **cuts into the slope** instead of lifting to the high
-    ground: the floor goes at door level and the earth stands against the
-    uphill walls; on a steep lot the storey above gets a back door onto
-    the high ground (a bank building). Digging in is the usual answer.
-  - **Houses and workshops, deliberate variants:** the default is not a
-    ban. A minority of lots, chosen per lot, may instead take:
-    - a **stilted or posted house** on a downhill lot: the door at or
-      near street level (within the default limits), the house hanging
-      off the slope on long posts or piers (the hillside houses of
-      Portland, Oregon);
-    - a **raised house with a long stair** on an uphill lot: the house
-      stays up on the high ground and a long stair climbs to the door,
-      broken by landings (**Stair runs** below).
-
-    The architect sets the mix (how many, on which slopes, styles and
-    tiers); DS-8 railings apply to the stair, landings and any raised
-    deck.
-  - **What the rule forbids for houses and workshops** is the accidental
-    case: a single tall straight flight with no landing, or a door left
-    unreachable from the street.
-  - **Stair runs, every lot:** no exterior flight on any lot (default or
-    variant, any building type) has more than 3 risers in a straight run
-    without a level tread: a landing, or a turn at a level quarter
-    landing (a winder does not count as a turn). At rise 4-5 that means
-    straight 3, a 1-cell level landing, then 1-2 more; or an L turned
-    along the facade at a level corner cell. A landing at the door alone
-    is not enough. The earlier default-lot allowance of a straight 4-5 to
-    a door landing is dropped. The architect also offered a fallback for
-    lots where no such route fits (a straight 4-5 to a door landing,
-    counted in SHOPLOW S9); it is **not** part of the rule, because the
-    report gives it as an implementation fallback, not a measured
-    exception (no counts exist yet). If lots turn out to need it, it
-    comes back to John with the counts.
-  - Numbers: the architect's (SHOPLOW answer, 2026-10-26), approved by
-    John; the shop limit of 2 was first the agent's number and the
-    architect kept it.
-- **Why:** "I'd like the shops to sit lower if we can do it, they should
-  get closer to the street or there should be a walkway along them. I
-  can't picture any situation where a storefront has a five meter high
-  staircase straight up to a door." Real shop thresholds are 0-2 steps;
-  house stoops run 3-8 (architect). The same highest-ground rule lifts
-  houses (river-town: 23 of 123 at rise 4+) and workshops (11 of 39).
-  Stair runs: one riser is 1 m, so 5 straight risers is the 5 m straight
-  flight John objected to; a real flight tops out at about 3.7 m
-  (architect).
-- **Scope:** shops, houses and workshops, all styles and tiers; not
-  walls, towers or halls for now (market halls on legs have their own
-  spec in the architect's answer). The stair-run limit covers every
-  exterior flight of every building type. Amends DS-7: a shop that meets
-  this needs no DS-7 terrace.
-- **Enforcement:** code candidate `door-rise`, none yet: entrance-storey
-  floor minus the street surface in front of the main door (`frontY`,
-  else the terrain at the door's outside cell); shops at most 2 (4 off a
-  frontage pavement or arcade), always; houses and workshops at most 5,
-  with a landing above 3, unless the lot is a stilt or long-stair
-  variant, which is checked instead for a door reachable from the street
-  and DS-8 railings. Stair runs: code candidate `flight-landings` with
-  one constant `MAX_RISERS = 3`, on every exterior flight of every lot
-  (the SHOPLOW plan had it on variant lots only), none yet (ROADMAP 7.17
-  SHOPLOW).
-- **Status:** accepted. **Source:** John, REVIEW STAIRGROUND, 2026-10-26
-  (shops); widened to houses and workshops by John (chat, 2026-10-26: "I
-  agree with the architect's suggestion on houses, and widening the
-  rule"), from the architect's proposed rule "Doors sit near the street"
-  (SHOPLOW answer, [shoplow-architect](../review/reports/shoplow-architect.md)).
-  Refined by John (chat, 2026-10-26), making digging in the default for
-  houses and workshops and allowing stilt and long-stair variants: "Can
-  we make the rule not happen all the time? In real life there are
-  certainly houses (e.g. all over the hills in Portland Oregon) where
-  they sit on a hill on long stilts. Or other setups where they don't
-  always cut into the hill. I wouldn't want to make a rule that made that
-  kind of thing impossible, but definitely for shops it shouldn't happen.
-  For houses I could see allowing both."
-- **Amended 2026-10-26** (stair runs, every lot): approved by John (chat,
-  2026-10-26: "I agree with both of those earlier rule change
-  suggestions, 3 steps runs and streets stay close to ground"), from the
-  architect's proposed amendment (SHOPLOW plan answer A5,
-  [shoplow-plan-architect](../review/reports/shoplow-plan-architect.md)).
-  The default-lot text read "rise at most 3 as a plain flight; 4-5 with
-  a landing or porch at the door", which allowed a straight 4-5 to a door
-  landing; the long-stair variant's "no straight run of more than 3
-  risers without a landing or a turn" now applies to every flight.
-
-## DS-35 amendment: workshop doors
-
-- **Proposed addition** to proposed DS-35: a workshop's lean-to and its
-  living wing each get their own exterior person door (the lean-to's onto
-  the yard on its back or side face; the living wing's from its kitchen),
-  besides the cart door.
-- **Why:** John, playtest 2026-10-26 (21.27.38), "back door to the
-  lean-to"; in 124 CLI workshop plans the cart door is the only way out.
-- **Scope:** type `workshop`.
-- **Enforcement:** code candidate, folds into DS-35's `entrance-count`.
-  None today.
-- **Status:** #Approved by @John on 2026-10-28 (amends the proposed DS-35). **Source:** interior
-  designer, playtest questions 2026-10-27
-  ([playtest1026-qs-interior.md](../review/reports/playtest1026-qs-interior.md), Q3).
-
-## DS-50 Roads don't tunnel (for now)
-
-- **Rule:** no road or street is roofed by terrain. A cut is open to the
-  sky (terraced or faced sides), or the route goes round or the link is
-  dropped. Future tunnels, if any, need portals, a lining, headroom of 4
-  or more (3 on paths) and lights every 8 blocks or fewer.
-- **Why:** an unlined bore is ugly and a mob spawner (John, playtest
-  2026-10-26, 21.37.41; DS-24).
-- **Scope:** all roads and streets.
-- **Enforcement:** code candidate `road-open-sky` (no solid block in the
-  headroom-to-sky column over a road cell, outside bridges and designed
-  covers). None today.
-- **Status:** #Approved by @John on 2026-10-28. **Source:** architect, playtest questions
-  2026-10-27 ([playtest1026-qs-architect.md](../review/reports/playtest1026-qs-architect.md), P2).
-
-## DS-45 amendment: run and turn sizes
-
-- **Proposed addition** to accepted DS-45's **Stair runs**: exterior
-  straight runs are at least 2 risers (a single last step to a door
-  landing excepted); turns are at least 2 risers apart; a quarter landing
-  is W x W and a half landing 2W x W, level full blocks at walking height;
-  prefer an L to a U (a U only for a rise of 6 or more that doesn't fit
-  along the facade); headroom 3 over every tread and landing; no rail post
-  or wall in a landing cell (agent's numbers).
-- **Why:** John, playtest 2026-10-26 (21.38.53): "hard to walk up ...
-  more generous on the switchbacks".
-- **Scope:** every exterior flight.
-- **Enforcement:** code candidate: extend the planned `flight-landings`
-  check (`MIN_RUN = 2`). None today.
-- **Status:** #Approved by @John on 2026-10-28 (amends accepted DS-45). **Source:** architect,
-  playtest questions 2026-10-27
-  ([playtest1026-qs-architect.md](../review/reports/playtest1026-qs-architect.md), P3).
-
-## DS-52 Roads step down one rank at a time
-
-- **Rule:** a link that ends at a settlement becomes its main street at
-  the gate, and meets a junction, never a lane or path. A through road
-  keeps its width through smaller settlements. At any join the width
-  drops by at most 2; a larger drop tapers by 1 per side over at least 4
-  blocks (agent's numbers). The material changes only at the gate (DS-30).
-- **Why:** John, playtest 2026-10-26 (21.32.46): "transition from tiny
-  path to this huge road is pretty abrupt".
-- **Scope:** roads between settlements and settlement exits.
-- **Enforcement:** code candidate in `city-check` (width at each gate and
-  junction), folding into the planned `road-hierarchy` check (DS-47).
-  None today.
-- **Status:** #Approved by @John on 2026-10-28. **Source:** architect, playtest questions
-  2026-10-27 ([playtest1026-qs-architect.md](../review/reports/playtest1026-qs-architect.md), P5).

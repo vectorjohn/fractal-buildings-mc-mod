@@ -1,7 +1,7 @@
 # Notes: building high-rises
 
 Build guidance for [DS-22](../STANDARDS.md) (stairwell), [DS-32](../STANDARDS.md)
-(floor programme) and the proposed [DS-34](../STANDARDS.md) (looks). Not
+(floor programme) and [DS-34](../STANDARDS.md) (looks). Not
 rules: the implementer may do it another way if the rules' checks hold.
 Drafted by the architect (with the interior-designer's lens), 2026-10-25;
 numbers are agent's.
@@ -38,7 +38,7 @@ numbers are agent's.
   lengthens the stair core on every floor (accept it, or give tall floors
   two flights with a landing).
 
-# Looks (DS-34, proposed)
+# Looks (DS-34)
 
 Until the tall styles get briefs (ROADMAP 7.7), their materials live here.
 

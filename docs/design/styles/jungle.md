@@ -17,9 +17,8 @@ Jungle logs as posts and beams, bamboo and jungle planks as walls (small
 buildings only), mossy cobblestone footings, jungle-plank roofs with moss.
 Town and city buildings in mossy stone bricks, stone and dark terracotta;
 high-rises never bamboo (DS-1). Bridge decks in jungle planks alone;
-bamboo only on an all-bamboo footbridge (proposed DS-30 amendment; today
-the style file's `deck` mixes jungle and bamboo planks cell by cell, a
-gap). Interiors jungle wood with bamboo accents,
+bamboo only on an all-bamboo footbridge (DS-30 amendment; the style
+file's `deck` is `jungle_planks` alone since ROADS1). Interiors jungle wood with bamboo accents,
 mossy cobblestone, green, lime and brown cloth, ferns and bamboo in pots.
 
 ## Proportions and massing

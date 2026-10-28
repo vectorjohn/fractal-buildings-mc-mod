@@ -1,6 +1,6 @@
 # Notes: building pitched roofs
 
-Build guidance for the proposed [DS-36](../STANDARDS.md) (smooth pitched
+Build guidance for [DS-36](../STANDARDS.md) (smooth pitched
 roofs). Not rules: the implementer may do it another way if the rule's
 checks hold. Drafted by the architect, 2026-10-25 (Minecraft 26.3).
 

@@ -65,9 +65,9 @@ have slabs and stairs is in [blocks.md](../blocks.md) (`dirt_path` and
 | City and metropolis arterials, main streets, roads between cities | `cobbled_deepslate` ("asphalt"; open: check in game against `polished_deepslate` and `gray_concrete`, below) | none exists |
 | City and metropolis streets and lanes | `light_gray_concrete` | none exists |
 | Sidewalks (DS-31) | `white_concrete` | none |
-| Bridge decks | city and metropolis, and roads between two cities: the road's own material ([DS-44](../STANDARDS.md)); elsewhere the road's material or one plank species; bamboo only on an all-bamboo footbridge (proposed DS-30 amendment) | as the road |
+| Bridge decks | city and metropolis, and roads between two cities: the road's own material ([DS-44](../STANDARDS.md)); elsewhere the road's material or one plank species; bamboo only on an all-bamboo footbridge (DS-30 amendment) | as the road |
 
-All-bamboo footbridge (proposed): deck `bamboo_planks` or `bamboo_mosaic`,
+All-bamboo footbridge (DS-30 amendment): deck `bamboo_planks` or `bamboo_mosaic`,
 rails `bamboo_fence`, posts `bamboo_block`.
 
 ROADS1 follow-up (architect review 2026-10-26, accepted by John
