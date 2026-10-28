@@ -32,8 +32,13 @@ final class PerfSupport {
 	static final int CITY_X = 1280, CITY_Z = -9600, METRO_X = 2432, METRO_Z = -5696;
 	static final double ELYTRA_PER_TICK = 33.0 / 20.0;
 	static final int FLIGHT_BLOCKS = Integer.parseInt(System.getenv().getOrDefault("FB_PERF_FLIGHT", "2500"));
+	/** PROFILE: FB_PERF_TARGET=metro flies the server harness into the metropolis instead (ending 600 blocks short of its centre, inside its rim, so the cold block stays ungenerated); default: the gate city. */
+	static final boolean FLY_METRO = "metro".equals(System.getenv("FB_PERF_TARGET"));
+	static final int FLY_X = FLY_METRO ? METRO_X : CITY_X, FLY_Z = FLY_METRO ? METRO_Z - 600 : CITY_Z;
 
 	final Map<String, Object> out = new LinkedHashMap<>();
+	/** PROFILE: called at each phase boundary of {@link #blockRows} (cold, warmprep, warm, tail); a no-op unless a profile is running. */
+	java.util.function.Consumer<String> phase = x -> {};
 
 	void put(String k, double v) {
 		out.put(k, Math.round(v * 100.0) / 100.0);
@@ -169,11 +174,13 @@ final class PerfSupport {
 	void blockRows(MinecraftServer server, String p, boolean mod) {
 		ServerLevel level = server.overworld();
 		long bytes0 = regionBytes(server);
+		phase.accept("cold");
 		LaneStats.reset();
 		long t1 = System.nanoTime();
 		double[] cold = generate(level, METRO_X, METRO_Z, 4, 0);
 		put(p + "cold.block.wall.ms", (System.nanoTime() - t1) / 1e6);
 		stats(p + "cold.chunk", cold);
+		phase.accept(mod ? "warmprep" : "warm");
 		if (mod) {
 			put("cold.lane", LaneStats.report().replace('\n', ' '));
 			put("cold.start.mean.ms", LaneStats.startMeanMs()); put("cold.start.max.ms", LaneStats.startMaxMs()); put("cold.postProcess.mean.ms", LaneStats.postMeanMs());
@@ -184,12 +191,14 @@ final class PerfSupport {
 			planner.prefetch(t.ix(), t.iz());
 			Workers.awaitIdle(Workers.pool(), 120_000);
 		}
+		if (mod) phase.accept("warm");
 		LaneStats.reset();
 		long t2 = System.nanoTime();
 		double[] warm = generate(level, METRO_X, METRO_Z, 4, 9);
 		put(p + "warm.block.wall.ms", (System.nanoTime() - t2) / 1e6);
 		stats(p + "warm.chunk", warm);
 		if (mod) { put("warm.lane", LaneStats.report().replace('\n', ' ')); put("warm.postProcess.mean.ms", LaneStats.postMeanMs()); put("warm.start.mean.ms", LaneStats.startMeanMs()); }
+		phase.accept("tail");
 		long bytes1 = regionBytes(server);
 		put(p + "region.growth.bytes", bytes1 - bytes0);
 		put(p + "heap.mb", usedMb());

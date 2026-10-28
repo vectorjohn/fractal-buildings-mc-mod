@@ -27,6 +27,7 @@ public final class PerfServerHarness {
 	private final PerfSupport s = new PerfSupport();
 	private final boolean mod = !"base".equals(System.getProperty("fb.perf.variant", "mod"));
 	private final String p = mod ? "mod." : "base.";
+	private final PerfProfile prof = new PerfProfile(s, p, mod ? "mod" : "base");
 	private final List<Double> tickMs = new ArrayList<>();
 	private ServerPlayer player;
 	private long tickStart, flightStart;
@@ -40,6 +41,8 @@ public final class PerfServerHarness {
 	public static void install() {
 		PerfServerHarness h = new PerfServerHarness();
 		if (!h.mod) baseConfig();
+		h.s.phase = h.prof::phase;
+		h.prof.phase("boot");
 		LaneStats.enable(true);
 		ServerLifecycleEvents.SERVER_STARTED.register(h::started);
 		ServerTickEvents.START_SERVER_TICK.register(sv -> h.tickStart = System.nanoTime());
@@ -48,12 +51,14 @@ public final class PerfServerHarness {
 
 	private void started(MinecraftServer server) {
 		s.put(p + "load.start", load());
+		if (mod) prof.phase("locate");
 		LaneStats.reset();
 		if (mod) s.locateRows(server);
 		LaneStats.reset();
 		// after /locate: the per-start lines (and their nearest-settlement read) cover the flight and what follows. Diagnostic only
 		// (FB_LANE_LOG=1, set by perf.sh --world-mod-only): they cost log I/O and region reads inside the timed chunks.
 		if ("1".equals(System.getenv("FB_LANE_LOG"))) LaneStats.logStarts(true);
+		prof.phase("flight");
 		player = MockPlayer.join(server, server.overworld(), "perf-flier", VIEW);
 		flying = true;
 	}
@@ -112,7 +117,7 @@ public final class PerfServerHarness {
 		if (ticks % 500 == 0 && ticks > 0 && grace == 0 && LaneStats.startsInProgress() > 0) dumpOurThreads("flight tick " + ticks);
 		double d = ticks * ELYTRA_PER_TICK;
 		if (d < FLIGHT_BLOCKS) {
-			MockPlayer.flyTo(player, CITY_X, 160, CITY_Z - FLIGHT_BLOCKS + d);
+			MockPlayer.flyTo(player, FLY_X, 160, FLY_Z - FLIGHT_BLOCKS + d);
 			ticks++;
 			return;
 		}
@@ -127,6 +132,7 @@ public final class PerfServerHarness {
 				s.put("flight.lane.atEnd", LaneStats.report().replace('\n', ' '));
 				if (LaneStats.startsInProgress() > 0) dumpOurThreads("landing");
 			}
+			prof.phase("settle");
 			settleStart = System.nanoTime();
 		}
 		// PERFSRV r4: on a cold world the city's warm and starts outlast the flight, so counters read at the landing were all 0 and the
@@ -137,6 +143,7 @@ public final class PerfServerHarness {
 			s.put(p + "flight.settle.s", (System.nanoTime() - settleStart) / 1e9);
 			if (mod) s.flightLaneRows();
 			s.blockRows(server, p, mod);
+			prof.phase(null);
 			s.write(Path.of(System.getProperty("fb.perf.out", "build/perf")).resolve("world-" + (mod ? "mod" : "base") + ".json"));
 		} finally {
 			server.halt(false);

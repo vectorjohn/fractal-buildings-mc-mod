@@ -3,6 +3,8 @@
 #
 #   scripts/perf.sh [--planner-only] [--check-only] [--client]   (the first two skip rows that were not measured; a full run fails on any absent row)
 #   --world-mod-only: diagnostic, only the mod world's server run (no planner run, no base world, no merge, no check); logs every start decision ([LANE-START])
+#   --world-only: both server runs (mod, base) and the merge, no planner run; the budget check allows absent rows (scripts/profile.sh uses it)
+#   FB_PERF_VARIANTS="base mod": the world runs in that order (default "mod base"; PROFILE: an order-effect check)
 #
 # Takes the heavy lock itself (timings); don't wrap it in flock. Steps:
 #   1. mod:test PerfPlannerTest (no server): cold plan, region layer, multi-player cache pressure, veto query -> mod/build/perf/planner.json
@@ -27,8 +29,8 @@ fi
 HEAVY_LOCK="$MAIN_ROOT/.claude/heavy.lock"
 mkdir -p "$(dirname "$HEAVY_LOCK")" "$ROOT/mod/build/perf"
 cd "$ROOT"
-PLANNER_ONLY=0; CHECK_ONLY=0; CLIENT=0; MOD_ONLY=0
-for a in "$@"; do case "$a" in --planner-only) PLANNER_ONLY=1 ;; --check-only) CHECK_ONLY=1 ;; --client) CLIENT=1 ;; --world-mod-only) MOD_ONLY=1 ;; *) echo "unknown $a" >&2; exit 2 ;; esac; done
+PLANNER_ONLY=0; CHECK_ONLY=0; CLIENT=0; MOD_ONLY=0; WORLD_ONLY=0
+for a in "$@"; do case "$a" in --planner-only) PLANNER_ONLY=1 ;; --check-only) CHECK_ONLY=1 ;; --client) CLIENT=1 ;; --world-mod-only) MOD_ONLY=1 ;; --world-only) WORLD_ONLY=1 ;; *) echo "unknown $a" >&2; exit 2 ;; esac; done
 LOGDIR="$ROOT/mod/build/perf"
 SRV="$ROOT/mod/build/run/perfServer"
 if [ "$CHECK_ONLY" = 0 ]; then
@@ -40,7 +42,7 @@ if [ "$CHECK_ONLY" = 0 ]; then
 	rm -f mod/build/perf/*.json
 	echo "perf: waiting for heavy lock ..." >&2
 	# a failing gradle run (build error, test exception, crashed client) must fail the script: no `| ... || true`
-	if [ "$MOD_ONLY" = 0 ]; then
+	if [ "$MOD_ONLY" = 0 ] && [ "$WORLD_ONLY" = 0 ]; then
 	set +e
 	flock "$HEAVY_LOCK" nix develop "$ROOT" -c ./gradlew --console=plain :mod:test -Dfb.perf=1 --tests '*PerfPlannerTest*' --rerun-tasks > "$LOGDIR/planner.log" 2>&1
 	rc=$?
@@ -61,7 +63,7 @@ if [ "$CHECK_ONLY" = 0 ]; then
 		mkdir -p "$SRV"
 		exec 9>"$HEAVY_LOCK"
 		flock 9
-		VARIANTS="mod base"; [ "$MOD_ONLY" = 1 ] && VARIANTS=mod && export FB_LANE_LOG=1 # per-start [LANE-START] lines, diagnostics only
+		VARIANTS="${FB_PERF_VARIANTS:-mod base}"; [ "$MOD_ONLY" = 1 ] && VARIANTS=mod && export FB_LANE_LOG=1 # per-start [LANE-START] lines, diagnostics only
 		for v in $VARIANTS; do
 			rm -rf "$SRV/world" "$SRV/logs"
 			cat > "$SRV/server.properties" <<P
@@ -92,5 +94,5 @@ P
 	fi
 fi
 ALLOW=""
-if [ "$PLANNER_ONLY" = 1 ] || [ "$CHECK_ONLY" = 1 ]; then ALLOW="--allow-absent"; fi
+if [ "$PLANNER_ONLY" = 1 ] || [ "$CHECK_ONLY" = 1 ] || [ "$WORLD_ONLY" = 1 ]; then ALLOW="--allow-absent"; fi
 exec nix develop "$ROOT" -c node scripts/perf-check.mjs mod/perf-budget.json mod/build/perf $ALLOW
