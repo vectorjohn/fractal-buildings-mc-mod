@@ -13,7 +13,7 @@ import org.junit.jupiter.api.Test;
  * 6.15 ROADJOIN: the approach columns of a chunk do not depend on the cache sizes (the planner's answers never do).
  *
  * <p>TESTSPEED: with every cache at 1 (strict LRU) the metropolis chunks (200,106 and 204,110) replan the settlement for each of its nine
- * neighbours and takes about 40 minutes alone, so that one case is {@code @Tag("heavy")} (run by {@code scripts/test-all.sh --full}
+ * neighbours and takes about 40 minutes alone, so that one case is {@code @Tag("heavy")} (run by {@code scripts/test-all.sh --planner-heavy}
  * or {@code -PfbTests=heavy}). The default run shrinks one cache layer at a time over all four chunks (each evicts and recomputes
  * its layer on every access, seconds), and all caches at 1 over the chunks that are cheap that way.
  */

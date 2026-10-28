@@ -27,7 +27,8 @@
 # slot" line when all are busy; the slot is released before the client and perf layers.
 set -uo pipefail
 
-usage() { sed -n '2,26p' "$0" | sed 's/^# \{0,1\}//'; }
+# The header: every comment line after the shebang, up to the first non-comment line.
+usage() { awk 'NR == 1 { next } !/^#/ { exit } { sub(/^# ?/, ""); print }' "$0"; }
 
 RUN_CLIENT=1
 RUN_PERF=0
@@ -115,11 +116,32 @@ fmt_counts() { # tests failures errors skipped
 	echo "$((t - f - e - s))/$t passed$( ((f + e)) && echo ", $((f + e)) failed")$( ((s)) && echo ", $s skipped")"
 }
 
+# Copies of a module's JUnit XML, saved after each run: $JUNIT_SAVED/<module>/<run>/.
+# The --planner-heavy run replaces planner-core/build/test-results, so the live dir
+# then holds only the heavy results and would hide a failure in the default run.
+JUNIT_SAVED="$OUT/junit"
+save_junit() { # module run
+	rm -rf "${JUNIT_SAVED:?}/$1/$2"
+	mkdir -p "$JUNIT_SAVED/$1/$2"
+	if [[ -d "$ROOT/$1/build/test-results" ]]; then
+		cp -r "$ROOT/$1/build/test-results/." "$JUNIT_SAVED/$1/$2/"
+	fi
+}
+
 # Test cases in JUnit classes whose name mentions determinism, in any module.
+# A module with saved copies (planner-core: default and heavy runs) is counted from
+# them instead of its live build/test-results.
 determinism_counts() {
-	local files
-	files=$(find "$ROOT"/*/build/test-results \
-		-name 'TEST-*eterminis*.xml' 2>/dev/null)
+	local files d m dirs=()
+	for d in "$ROOT"/*/build/test-results; do
+		m=$(basename "$(dirname "$(dirname "$d")")")
+		[[ -d "$JUNIT_SAVED/$m" ]] || dirs+=("$d")
+	done
+	for d in "$JUNIT_SAVED"/*; do
+		[[ -d "$d" ]] && dirs+=("$d")
+	done
+	(( ${#dirs[@]} )) || { echo "0 0 0 0"; return; }
+	files=$(find "${dirs[@]}" -name 'TEST-*eterminis*.xml' 2>/dev/null)
 	[[ -z "$files" ]] && { echo "0 0 0 0"; return; }
 	# shellcheck disable=SC2086
 	junit_counts $files
@@ -151,6 +173,7 @@ say "Running:"
 if has_task 'planner-core:build'; then
 	if run_logged planner-core "${GRADLE[@]}" :planner-core:build; then st=pass; else st=fail; fi
 	record planner-core $st "$(fmt_counts $(junit_counts "$ROOT/planner-core/build/test-results")); boundary check incl."
+	save_junit planner-core default
 else
 	skip planner-core
 fi
@@ -159,6 +182,7 @@ fi
 if (( PLANNER_HEAVY )) && has_task 'planner-core:build'; then
 	if run_logged planner-heavy "${GRADLE[@]}" :planner-core:test -PfbTests=heavy; then st=pass; else st=fail; fi
 	record planner-heavy $st "$(fmt_counts $(junit_counts "$ROOT/planner-core/build/test-results")); @Tag(heavy) tests"
+	save_junit planner-core heavy
 fi
 
 # --- CLI -------------------------------------------------------------------

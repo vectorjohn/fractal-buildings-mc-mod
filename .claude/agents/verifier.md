@@ -355,7 +355,8 @@ path `M`. Don't review each item again.
    timings across hosts aren't comparable. Say which host ran each layer.
    If the coordinator names a passing batched heavy run at `H` (or with only
    docs after it), check its evidence by the evidence rule and run only
-   `'scripts/test-all.sh --no-client'`. If anything fails, don't merge;
+   `'scripts/test-all.sh --no-client --planner-heavy'` (a batched heavy run
+   doesn't include the planner-heavy step). If anything fails, don't merge;
    report FAILING. A flake (passes on an identical rerun) blocks too unless
    it's already in `docs/NOTES.md` with an open item; say so in the report
    and the message.

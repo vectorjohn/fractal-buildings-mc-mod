@@ -2,7 +2,7 @@
 subprojects {
 	tasks.withType(Test).configureEach {
 		// TESTSPEED: tests tagged @Tag("heavy") (minutes each) are left out by default.
-		// -PfbTests=heavy runs only them, -PfbTests=all runs everything (scripts/test-all.sh --full uses heavy after the default run).
+		// -PfbTests=heavy runs only them, -PfbTests=all runs everything (scripts/test-all.sh --planner-heavy uses heavy after the default run).
 		def sel = project.findProperty('fbTests')
 		useJUnitPlatform {
 			if (sel == 'heavy') includeTags 'heavy'

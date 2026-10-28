@@ -274,7 +274,7 @@ class SettlementDeterminismTest {
 		checkPresets(selected());
 	}
 
-	/** TESTSPEED: every other city preset (about 25, 15 minutes); the default run keeps {@link #DEFAULT}. Run by `-PfbTests=heavy` and test-all.sh --full. */
+	/** TESTSPEED: every other city preset (about 25, 15 minutes); the default run keeps {@link #DEFAULT}. Run by `-PfbTests=heavy` and test-all.sh --planner-heavy. */
 	@org.junit.jupiter.api.Tag("heavy")
 	@Test
 	void everyPresetPlansTheSameBytesEveryWay() throws Exception {

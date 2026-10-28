@@ -16,7 +16,7 @@
 ## Fix
 - `ApproachCacheTest`: default tests shrink one layer at a time (tiles, sources, skeletons, region, plans+buildings+ground) over all four chunks (55 s) and use all-at-1 on the hamlet gate chunks (24 s); the original all-at-1 case on the two metropolis chunks is `@Tag("heavy")`. Class: 2555 s to 80 s.
 - Mutation: in `WorldPlanner.roadColumnsAround`, drop the first column of an approach chunk when `caps.region() == 1` -> both default tests fail (2 failed); reverted. (Before the change the same mutation would have failed the single test after 42 min.)
-- Heavy tag: root `build.gradle` excludes `heavy` by default; `-PfbTests=heavy` includes only them, `-PfbTests=all` everything. `scripts/test-all.sh --full` runs `:planner-core:test -PfbTests=heavy` as step `planner-heavy`. CLAUDE.md, docs/TESTING.md updated.
+- Heavy tag: root `build.gradle` excludes `heavy` by default; `-PfbTests=heavy` includes only them, `-PfbTests=all` everything. `scripts/test-all.sh --planner-heavy` (not `--full`; the to-main run adds it) runs `:planner-core:test -PfbTests=heavy` as step `planner-heavy`. CLAUDE.md, docs/TESTING.md updated.
 - `SquareLotsTest`: both statistics tests planned and filled the same sites; the first 150 are now memoised (`filled(i)`), the share test uses 250 sites instead of 400 (eligible squares 112, share 0.63, bounds 0.45 to 0.75 unchanged). 540 to 910 s -> 139 s.
 - `SettlementDeterminismTest`: the preset test ran ~25 city presets (500 to 1070 s). Default is now `DEFAULT` (synth-city, river-town, gate-joined-city; 8 to 12 s each); `everyPresetPlansTheSameBytesEveryWay` is `@Tag("heavy")`. Class 1070 s to ~70 s. Mutants stay in the default run.
 
