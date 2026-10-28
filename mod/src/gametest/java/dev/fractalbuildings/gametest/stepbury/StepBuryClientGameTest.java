@@ -169,8 +169,9 @@ public class StepBuryClientGameTest implements FabricClientGameTest {
 	 * One forest hamlet (seed 1) with the pass on: (1) the natural world: no natural leaf, vine or tree log in a cell a building claims as
 	 * air (how often the control has any depends on the seed: a log line only); (2) a late tree, injected: after generation natural leaves,
 	 * vines and a log cluster with its crown are written into claimed air cells of rooms (what a neighbour chunk's tree decorated after the
-	 * building's pass does), a screenshot, the pass runs on the chunks, and every one of them must be gone, while a hedge leaf (persistent)
-	 * and a beam log (no leaves round it) put into claimed air stay.
+	 * building's pass does), a screenshot, everything planted is put back (planted leaves decay while the world ticks), the pass runs on the
+	 * chunks, and every one of them must be gone, a log with no leaf near included (TREEINORDER: no piece puts a log in claimed air), while a
+	 * hedge leaf (persistent) put into claimed air and the logs the buildings place themselves (beams, trim) stay.
 	 */
 	void trees(ClientGameTestContext context) {
 		String seed = System.getenv().getOrDefault("FB_TREEIN_SEED", "1");
@@ -179,12 +180,13 @@ public class StepBuryClientGameTest implements FabricClientGameTest {
 			List<String> samples = new ArrayList<>();
 			int[] n = new int[4];
 			Spot[] spot = new Spot[1];
-			List<long[]> planted = new ArrayList<>(); // x, y, z, kind (0 natural leaf, 1 vine, 2 tree log, 3 persistent leaf, 4 beam log)
+			List<long[]> planted = new ArrayList<>(); // x, y, z, kind (0 natural leaf, 1 vine, 2 tree log, 3 persistent leaf, 4 a log with no leaf near)
+			List<Long> beams = new ArrayList<>(); // cells the ledger gives a building as a log (its beams, trim): the pass must leave them
 			world.getServer().runOnServer(server -> {
 				ServerLevel level = server.overworld();
 				WorldPlanner planner = WorldPlanners.of(level, level.getChunkSource().getGenerator()).orElseThrow();
 				WorldPlanners.FAILURES.set(0);
-				List<Long> air = readTrees(level, planner, n, samples);
+				List<Long> air = readTrees(level, planner, n, samples, beams);
 				say("trees seed " + seed + " natural world, pass on: " + n[3] + " claimed building air cells read, natural leaves " + n[0] + ", vines " + n[1] + ", logs " + n[2] + "; pass calls " + BuildingAirClear.CALLS.get() + " " + BuildingAirClear.NANOS.get() / 1_000_000 + " ms, removed leaves " + BuildingAirClear.LEAVES.get() + " vines " + BuildingAirClear.VINES.get() + " logs " + BuildingAirClear.LOGS.get() + "; " + samples);
 				if (n[0] + n[1] + n[2] != 0) problem("trees: " + (n[0] + n[1] + n[2]) + " natural leaves, vines or logs in the air buildings claim, with the pass on: " + samples);
 				plant(level, air, planted);
@@ -193,12 +195,17 @@ public class StepBuryClientGameTest implements FabricClientGameTest {
 			if (planted.size() < 20) problem("trees: only " + planted.size() + " cells planted: no building air to test with");
 			int[] before = new int[1];
 			world.getServer().runOnServer(server -> before[0] = countStanding(server.overworld(), planted));
-			say("planted " + planted.size() + " (natural leaves, vines, a tree, a hedge leaf, a beam log); standing before the pass: " + before[0]);
+			say("planted " + planted.size() + " (natural leaves, vines, a tree, a hedge leaf, a log with no leaf near); standing before the pass: " + before[0]);
 			if (spot[0] != null) shoot(context, world, spot[0], "treein-before", 3);
-			int[] after = new int[3];
+			int[] after = new int[4];
 			world.getServer().runOnServer(server -> {
 				ServerLevel level = server.overworld();
 				WorldPlanner planner = WorldPlanners.of(level, level.getChunkSource().getGenerator()).orElseThrow();
+				// TREEINORDER: the world ticks while the screenshot is taken, and a planted leaf (distance 7, no neighbour update) is a decaying
+				// leaf: a random tick takes it. A lone leaf gone that way passed without the pass; a tree log whose leaf went looked like a log
+				// with no tree. Put everything back as planted in this task, so the pass sees exactly what was planted.
+				after[3] = replant(level, planted);
+				say("planted cells changed while the screenshot was taken (leaf decay), put back: " + after[3]);
 				java.util.TreeSet<Long> chunks = new java.util.TreeSet<>();
 				for (long[] p : planted) for (int dx = -1; dx <= 1; dx++) for (int dz = -1; dz <= 1; dz++) chunks.add(ChunkPos.pack(((int) p[0] + dx * 12) >> 4, ((int) p[2] + dz * 12) >> 4));
 				for (long c : chunks) BuildingAirClear.run(level, planner, ChunkPos.getX(c), ChunkPos.getZ(c));
@@ -206,15 +213,17 @@ public class StepBuryClientGameTest implements FabricClientGameTest {
 				for (long[] p : planted) {
 					BlockState s = level.getBlockState(pos.set((int) p[0], (int) p[1], (int) p[2]));
 					boolean gone = !(s.is(BlockTags.LEAVES) || s.is(Blocks.VINE) || s.is(BlockTags.LOGS));
-					if (p[3] <= 2) { if (!gone) after[0]++; }
-					else if (gone) after[1]++; // a hedge leaf or a beam log must stay
+					if (p[3] != 3) { if (!gone) { after[0]++; say("  still standing: kind " + p[3] + " at " + p[0] + "," + p[1] + "," + p[2] + " " + s); } }
+					else if (gone) after[1]++; // a hedge leaf must stay
 				}
-				after[2] = BuildingAirClear.LEAVES.get() > 0 ? 1 : 0;
+				for (long k : beams) if (!level.getBlockState(pos.set(PieceLedger.x(k), PieceLedger.y(k), PieceLedger.z(k))).is(BlockTags.LOGS)) after[2]++; // the buildings' own logs stay
 			});
-			say("after the pass: natural foliage still standing " + after[0] + ", persistent leaf or beam log wrongly removed " + after[1]);
+			say("after the pass: natural foliage or foreign logs still standing " + after[0] + ", persistent leaf wrongly removed " + after[1] + ", building logs (" + beams.size() + ") removed " + after[2]);
+			if (after[2] != 0) problem("trees: the pass removed " + after[2] + " of the buildings' own logs");
+			if (beams.isEmpty()) say("trees: no building log in the settlement, the building-log control did not run");
 			if (before[0] < 20) problem("trees: the control (planted, pass not run) found only " + before[0] + " standing: the test cannot fail");
 			if (after[0] != 0) problem("trees: " + after[0] + " planted natural leaves, vines or tree logs still stand after the pass");
-			if (after[1] != 0) problem("trees: the pass removed " + after[1] + " hedge leaves or beam logs it must leave alone");
+			if (after[1] != 0) problem("trees: the pass removed " + after[1] + " hedge leaves it must leave alone");
 			if (spot[0] != null) shoot(context, world, spot[0], "treein-after", 3);
 		} finally {
 			BuildingAirClear.ENABLED = true;
@@ -231,9 +240,33 @@ public class StepBuryClientGameTest implements FabricClientGameTest {
 		return n;
 	}
 
+	/** Puts every planted cell back as {@link #plant} wrote it; returns how many had changed (a planted leaf decays on a random tick). */
+	static int replant(ServerLevel level, List<long[]> planted) {
+		BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+		int changed = 0;
+		for (long[] p : planted) {
+			BlockState want = plantedState((int) p[3]);
+			pos.set((int) p[0], (int) p[1], (int) p[2]);
+			BlockState have = level.getBlockState(pos);
+			if (have == want) continue;
+			if (!have.is(want.getBlock())) changed++; // gone (a leaf decayed), not just a leaf whose distance was updated
+			level.setBlock(pos, want, Block.UPDATE_CLIENTS);
+		}
+		return changed;
+	}
+
+	static BlockState plantedState(int kind) {
+		return switch (kind) {
+			case 0 -> Blocks.OAK_LEAVES.defaultBlockState().setValue(LeavesBlock.PERSISTENT, false);
+			case 1 -> Blocks.VINE.defaultBlockState();
+			case 3 -> Blocks.OAK_LEAVES.defaultBlockState().setValue(LeavesBlock.PERSISTENT, true);
+			default -> Blocks.OAK_LOG.defaultBlockState();
+		};
+	}
+
 	/**
 	 * Writes a late tree into claimed air of rooms: 24 natural leaves (a crown), 3 vines, one oak trunk cell touching leaves; and the two
-	 * that must stay: a persistent leaf and a log with no leaf near. Cells are taken from the claimed air list in key order, spread out.
+	 * last two: a persistent leaf (must stay) and a log with no leaf near (must go: a fallen log). Cells are taken from the claimed air list in key order, spread out.
 	 */
 	static void plant(ServerLevel level, List<Long> air, List<long[]> planted) {
 		BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
@@ -272,7 +305,7 @@ public class StepBuryClientGameTest implements FabricClientGameTest {
 	}
 
 	/** Loads the most forested settlement's chunks and counts foliage in the cells buildings claim as air; returns those cells (not furniture), in key order. */
-	static List<Long> readTrees(ServerLevel level, WorldPlanner planner, int[] n, List<String> samples) {
+	static List<Long> readTrees(ServerLevel level, WorldPlanner planner, int[] n, List<String> samples, List<Long> beams) {
 		Settlement best = null;
 		double bestF = -1;
 		for (Settlement s : planner.roads().settlementsNear(0, 0, 2600)) {
@@ -295,7 +328,11 @@ public class StepBuryClientGameTest implements FabricClientGameTest {
 			for (ChunkPos p : chunks) level.getChunkSource().getChunk(p.x(), p.z(), ChunkStatus.FULL, true);
 			Map<Long, Integer> hooks = rec.hooks();
 			for (var e : rec.states().entrySet()) { // key order
-				if (e.getValue() != airId) continue;
+				if (e.getValue() != airId) {
+					long kb = e.getKey(); // a log our pieces placed (beam, trim) and the world still has: the pass must leave it
+					if (Block.BLOCK_STATE_REGISTRY.byId(e.getValue()).is(BlockTags.LOGS) && level.getBlockState(pos.set(PieceLedger.x(kb), PieceLedger.y(kb), PieceLedger.z(kb))).is(BlockTags.LOGS)) beams.add(kb);
+					continue;
+				}
 				long k = e.getKey();
 				int x = PieceLedger.x(k), z = PieceLedger.z(k), y = PieceLedger.y(k);
 				boolean inBox = false;

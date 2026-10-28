@@ -6,11 +6,8 @@ import dev.fractalbuildings.core.settlement.DistrictGrid;
 import dev.fractalbuildings.core.settlement.LotBrief;
 import dev.fractalbuildings.core.world.BuildingPiece;
 import dev.fractalbuildings.core.world.WorldPlanner;
-import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import net.minecraft.core.BlockPos;
 import net.minecraft.tags.BlockTags;
@@ -27,7 +24,10 @@ import net.minecraft.world.level.block.state.BlockState;
  * tree of a neighbouring chunk that is decorated <i>after</i> the building's chunk puts its crown (and, from a trunk standing on a lot's
  * edge, its trunk) into any air cell, a room's included. Like {@link SpillClear} for streets, this pass runs in every chunk after that chunk's own
  * features ({@code RoadFeature.place}, the top-layer step) and rewrites, within {@link #MARGIN} blocks of the chunk, the cells that the
- * ledger gives a building as air: natural leaves (not persistent), vines and the logs of a tree cluster that touches natural leaves go.
+ * ledger gives a building as air: natural leaves (not persistent), vines and logs go. Every log goes (TREEINORDER), not only one whose
+ * connected logs touch natural leaves: no piece of ours puts a log in a cell it claims as air (beams and trim are solid roles), and a test
+ * of the leaves round a log reads what other chunks' passes have already cut, so the same log (a fallen log, a trunk beside a crown a
+ * neighbour's pass had cut) stayed or went by chunk order ({@code TreeInOrderSimTest}).
  * A trunk reaches at most about 7 blocks out and the generation region allows writes one chunk out, so the chunk that decorates a tree
  * always covers the cells its tree can reach, and the end state does not depend on the order the chunks are generated in. Persistent
  * leaves (hedges, a building's own leaf blocks), furniture and every non-air cell stay: nothing the ledger gives a building as a solid
@@ -65,9 +65,7 @@ public final class BuildingAirClear {
 		DistrictGrid g = planner.grid();
 		DistrictGrid.TileId ta = g.tileOf(x0, z0), tb = g.tileOf(x1, z1);
 		BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
-		List<long[]> logs = new ArrayList<>(); // log cells in claimed air, to test after the leaves are known
 		List<int[]> cuts = new ArrayList<>();
-		Set<Long> cutSet = new HashSet<>(); // the leaf cells removed above
 		int[] n = new int[3]; // leaves, vines, logs
 		for (int iz = ta.iz(); iz <= tb.iz(); iz++) {
 			for (int ix = ta.ix(); ix <= tb.ix(); ix++) {
@@ -85,14 +83,15 @@ public final class BuildingAirClear {
 							if (have.is(BlockTags.LEAVES)) {
 								if (have.getValueOrElse(LeavesBlock.PERSISTENT, false)) return; // a hedge or a leaf block someone placed
 								cuts.add(new int[] {x, y, z});
-								cutSet.add(BlockPos.asLong(x, y, z));
 								level.setBlock(pos, Blocks.AIR.defaultBlockState(), WRITE_FLAGS);
 								n[0]++;
 							} else if (have.is(Blocks.VINE)) {
 								level.setBlock(pos, Blocks.AIR.defaultBlockState(), WRITE_FLAGS);
 								n[1]++;
-							} else if (have.is(BlockTags.LOGS)) {
-								logs.add(new long[] {x, y, z});
+							} else if (have.is(BlockTags.LOGS)) { // TREEINORDER: no piece of ours puts a log in a cell it claims as air
+								cuts.add(new int[] {x, y, z});
+								level.setBlock(pos, Blocks.AIR.defaultBlockState(), WRITE_FLAGS);
+								n[2]++;
 							}
 						});
 					} catch (IllegalArgumentException e) {
@@ -100,15 +99,6 @@ public final class BuildingAirClear {
 					}
 				}
 			}
-		}
-		// foreign logs: a log in claimed air whose connected logs touch natural leaves (or did: the leaves above were just removed) is a tree's
-		for (long[] l : logs) {
-			pos.set((int) l[0], (int) l[1], (int) l[2]);
-			if (!level.getBlockState(pos).is(BlockTags.LOGS)) continue; // removed with an earlier cluster
-			if (!treeCluster(level, (int) l[0], (int) l[1], (int) l[2], cutSet)) continue;
-			level.setBlock(pos, Blocks.AIR.defaultBlockState(), WRITE_FLAGS);
-			cuts.add(new int[] {(int) l[0], (int) l[1], (int) l[2]});
-			n[2]++;
 		}
 		int total = n[0] + n[1] + n[2];
 		if (total == 0) return 0;
@@ -136,34 +126,6 @@ public final class BuildingAirClear {
 	private static boolean lotNear(List<LotBrief> lots, int x0, int z0, int x1, int z1) {
 		for (LotBrief l : lots) {
 			if (l.x() - LOT_REACH <= x1 && l.x() + l.w() + LOT_REACH > x0 && l.z() - LOT_REACH <= z1 && l.z() + l.d() + LOT_REACH > z0) return true;
-		}
-		return false;
-	}
-
-	/**
-	 * Is the log part of a tree: do the logs connected to it (26-neighbours, at most 300 of them) touch a natural leaf, or a cell a leaf was just
-	 * removed from? A beam, a pillar or a furniture log touches none.
-	 */
-	private static boolean treeCluster(WorldGenLevel level, int x, int y, int z, Set<Long> cutLeaves) {
-		Set<Long> seen = new HashSet<>();
-		ArrayDeque<int[]> queue = new ArrayDeque<>();
-		BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
-		queue.add(new int[] {x, y, z});
-		seen.add(BlockPos.asLong(x, y, z));
-		int[][] face = {{1, 0, 0}, {-1, 0, 0}, {0, 1, 0}, {0, -1, 0}, {0, 0, 1}, {0, 0, -1}};
-		while (!queue.isEmpty() && seen.size() <= 300) {
-			int[] c = queue.poll();
-			for (int[] f : face) {
-				int nx = c[0] + f[0], ny = c[1] + f[1], nz = c[2] + f[2];
-				BlockState s = level.getBlockState(pos.set(nx, ny, nz));
-				if (s.is(BlockTags.LEAVES) && !s.getValueOrElse(LeavesBlock.PERSISTENT, false)) return true;
-				if (s.isAir() && cutLeaves.contains(BlockPos.asLong(nx, ny, nz))) return true;
-			}
-			for (int dz = -1; dz <= 1; dz++) for (int dx = -1; dx <= 1; dx++) for (int dy = -1; dy <= 1; dy++) {
-				int nx = c[0] + dx, ny = c[1] + dy, nz = c[2] + dz;
-				if (!seen.add(BlockPos.asLong(nx, ny, nz))) continue;
-				if (level.getBlockState(pos.set(nx, ny, nz)).is(BlockTags.LOGS)) queue.add(new int[] {nx, ny, nz});
-			}
 		}
 		return false;
 	}

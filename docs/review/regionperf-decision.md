@@ -100,3 +100,20 @@ the 6.10 C1 intercity roads).
 5. **Before deciding anything about travel**, run the perf world half (the
    elytra flight into a metropolis, heavy). That is the case players hit in
    normal play, and it is unmeasured since the regression.
+
+## 6. Update 2026-10-28: the 70-120 s cold chunk is the quay trace
+
+Measured by COLDCHUNK (`.claude/reports/p6-coldchunk.md`), and seen again in the HEAVY4 and HEAVY5 perf runs.
+
+- In a cold metropolis, the first chunk asked waits 70-120 s. The other 80 chunks take a median of about 72 ms.
+- **Where the time goes:** a single worker runs the settlement-wide quay trace (`Districts.plan` → quays → `waterDepth` → exact terrain fill). That is about 600k exact reads, single-threaded, 56-70 s (the `region.cold.quays.ms` row). It is separate from the ~30 s region layer + roads row above. There is no lock contention.
+- **Origin:** METROFILL R1 r3, which made the first waterfront tile pay for the whole city's quays.
+- **Options:**
+  - (a) trace lazily, from the tile that asks;
+  - (b) warm the quays on the worker pool before the first start, as the teleport hold does;
+  - (c) parallelise the trace per water body;
+  - (d) use a coarser water test.
+- **What each option changes:**
+  - (b) is cheapest to build, but it moves the wait to settlement start, so it doesn't remove it.
+  - (a) and (c) cut the cost itself.
+  - (d) trades some quay accuracy for speed.
