@@ -66,6 +66,22 @@ class RockVetoTest {
 		assertEquals(before + 1, RockVeto.VETOED.get());
 	}
 
+	/** ROCKVETO2: an origin on a canopy or above deep water (here 40 above the building, air below it) sinks to the building in vanilla; the replay vetoes it. */
+	@Test
+	void highOriginThatSinksOntoABuildingIsVetoed() {
+		BlockPos high = onBuilding.above(40);
+		int ground = onBuilding.getY() - 3; // the predicate: the cell below is "ground" only from here down
+		assertTrue(RockVeto.vetoes(planner, -64, high, p -> p.getY() <= ground));
+		assertEquals(onBuilding.getY() - 3 + 1, RockVeto.descend(high, -64, p -> p.getY() <= ground).getY());
+	}
+
+	@Test
+	void highOriginThatLandsFarFromClaimsIsNotVetoed() {
+		BlockPos high = onBuilding.above(40);
+		assertFalse(RockVeto.vetoes(planner, -64, high, p -> p.getY() <= onBuilding.getY() + 30));
+		assertFalse(RockVeto.vetoes(planner, -64, high, p -> false), "vanilla gives up at minY+3 and places nothing");
+	}
+
 	@Test
 	void rockFarBelowIsNotVetoed() {
 		long before = RockVeto.VETOED.get();

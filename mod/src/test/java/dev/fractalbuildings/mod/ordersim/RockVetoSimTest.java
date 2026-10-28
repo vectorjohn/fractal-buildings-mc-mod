@@ -95,13 +95,15 @@ class RockVetoSimTest {
 	void everyCellTheFeatureWritesIsInsideTheVetoBox() {
 		var terrain = gate.probes().exact();
 		int ox = window.cx() * 16 + 8, oz = window.cz() * 16 + 8, placed = 0;
-		for (int dy = 0; dy <= 1; dy++) {
+		for (int dy : new int[] {0, 1, 12, 30}) { // 12 and 30: over a canopy or deep water, the descent is longer than 8
 			for (long s = 0; s < 150; s++) {
 				SimWorld w = new SimWorld(1L, window.cx() - 1, window.cz() - 1, 3, 3, terrain, gate.probes().biome());
 				int oy = terrain.floorY(ox, oz) + dy;
-				if (!SimFeatures.place(w, null, new SimFeatures.Call(SimFeatures.stepOf("forest_rock"), "forest_rock", ox, oy, oz, s), new SimFeatures.Stats())) continue;
+				var call = new SimFeatures.Call(SimFeatures.stepOf("forest_rock"), "forest_rock", ox, oy, oz, s);
+				var landed = SimFeatures.landed(w, 0, 0, call); // before the rock writes: the descent reads the level as it was
+				if (!SimFeatures.place(w, null, call, new SimFeatures.Stats())) continue;
 				placed++;
-				var box = RockVeto.box(new BlockPos(ox, oy, oz));
+				var box = RockVeto.box(landed);
 				for (SimWorld.Write wr : w.writes()) {
 					if (wr.now() == Blocks.AIR.defaultBlockState()) continue;
 					assertTrue(wr.x() >= box.x() && wr.x() < box.maxX() && wr.y() >= box.y() && wr.y() < box.maxY() && wr.z() >= box.z() && wr.z() < box.maxZ(),

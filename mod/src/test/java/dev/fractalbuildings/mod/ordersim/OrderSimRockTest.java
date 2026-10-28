@@ -11,17 +11,14 @@ import org.junit.jupiter.api.Test;
 /**
  * ORDERSIM S4a: the pinned forest rock case. Vanilla's {@code forest_rock} ({@code BlockBlobFeature}) sets blocks with no replace check, so a
  * rock of a neighbour chunk overwrites a claimed solid street cell (light gray concrete became mossy cobblestone) when the street's chunk ran
- * first. It occurs in old growth pine and spruce taiga, where the taiga style builds, so it is a real order dependence in the game. SC1 and SC5
- * leave {@code forest_rock} out of their pool for that reason ({@link OrderSimTest}).
+ * first. It occurs in old growth pine and spruce taiga, where the taiga style builds, so it is a real order dependence in the game. Fixed by ROCKVETO
+ * (the production veto, also applied by {@code SimFeatures.place}); SC1 and SC5 keep {@code forest_rock} in their pools.
  *
  * <p>This test finds the case itself: it runs SC1's 4 x 4 window with the full pool, takes the unknown cell, reads the call that wrote it from
- * the report, and replays that one call alone. Today the fast order set fails C3 on it (mossy cobblestone over a street cell).
- *
- * <p>TODO(ROCKVETO): when the production veto lands (a veto on forest_rock like {@code LakeVeto}, applied by {@code SimFeatures.place} too),
- * flip {@link #FIXED} to true: the same scenario must then pass every check in every order.
+ * the report, and replays that one call alone. With the veto off ({@code Mutations.ROCKS}) it fails C3 (mossy cobblestone over a street cell).
  */
 class OrderSimRockTest {
-	/** ROCKVETO flips this to true when the veto is in production and in the sim. */
+	/** True since ROCKVETO: the veto is in production and in the sim. */
 	static final boolean FIXED = true;
 
 	static Scenario full, single;

@@ -6,6 +6,7 @@ import dev.fractalbuildings.core.rand.Hash64;
 import dev.fractalbuildings.core.world.WorldPlanner;
 import dev.fractalbuildings.mod.worldgen.LakeVeto;
 import dev.fractalbuildings.mod.worldgen.RockVeto;
+import net.minecraft.world.level.levelgen.feature.BlockBlobFeature;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -63,7 +64,7 @@ public final class SimFeatures {
 	/** The pool the hashed calls draw from (sorted by name, so the draw is stable). {@code freeze_top_layer} only with {@code snowy}. */
 	public static List<String> pool(boolean snowy) { return pool(snowy, java.util.Set.of()); }
 
-	/** As above without the {@code excluded} keys (SC1 and SC5 leave out {@code forest_rock} until ROCKVETO lands: a known real order dependence, pinned in {@code OrderSimRockTest}). */
+	/** As above without the {@code excluded} keys (a scenario can leave out a key; since ROCKVETO the SC pools keep {@code forest_rock}, its former order dependence is pinned fixed in {@code OrderSimRockTest}). */
 	public static List<String> pool(boolean snowy, java.util.Set<String> excluded) {
 		List<String> out = new ArrayList<>();
 		for (String k : KEYS.keySet()) if ((snowy || !k.equals("freeze_top_layer")) && !excluded.contains(k)) out.add(k);
@@ -133,12 +134,22 @@ public final class SimFeatures {
 	 * Places the call through a level centred on its chunk (reads and writes inside the 3 x 3 chunks, like the generation region). A lake first
 	 * asks {@link LakeVeto#vetoes(WorldPlanner, BlockPos)} when there is a planner. Returns whether the feature placed.
 	 */
+	/** The origin the forest rock call ends up with after vanilla's descent, read on a fresh level (no writes). */
+	public static BlockPos landed(SimWorld world, int chunkX, int chunkZ, Call c) {
+		SimLevel level = new SimLevel(world, c.chunkX(), c.chunkZ(), c.label(), c.rngSeed());
+		BlockBlobFeature blob = (BlockBlobFeature) SimBoot.feature(KEYS.get(c.key()));
+		return RockVeto.descend(c.origin(), level.proxy().getMinY(), p -> blob.canPlaceOn().test(level.proxy(), p));
+	}
+
 	public static boolean place(SimWorld world, WorldPlanner planner, Call c, Stats stats) {
 		int[] st = stats.of(c.key());
 		st[0]++;
 		if (c.isLake() && planner != null && LakeVeto.vetoes(planner, c.origin())) { st[2]++; return false; }
-		if (c.isRock() && planner != null && RockVeto.vetoes(planner, c.origin())) { st[2]++; return false; }
 		SimLevel level = new SimLevel(world, c.chunkX(), c.chunkZ(), c.label(), c.rngSeed());
+		if (c.isRock() && planner != null) {
+			BlockBlobFeature blob = (BlockBlobFeature) SimBoot.feature(KEYS.get(c.key()));
+			if (RockVeto.vetoes(planner, level.proxy().getMinY(), c.origin(), p -> blob.canPlaceOn().test(level.proxy(), p))) { st[2]++; return false; }
+		}
 		boolean placed = SimBoot.feature(KEYS.get(c.key())).place(level.proxy(), null, RandomSource.create(c.rngSeed()), c.origin());
 		if (placed) st[1]++;
 		return placed;

@@ -5,10 +5,12 @@ import dev.fractalbuildings.core.world.WorldPlanner;
 import dev.fractalbuildings.mod.FractalBuildingsMod;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Predicate;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.WorldGenLevel;
 import net.minecraft.world.level.chunk.ChunkGenerator;
+import net.minecraft.world.level.levelgen.blockpredicates.BlockPredicate;
 
 /**
  * Keeps vanilla boulders off our pieces (ROCKVETO, 2026-10-28). {@code BlockBlobFeature.place} (26.3 bytecode) first lowers its origin
@@ -29,25 +31,44 @@ public final class RockVeto {
 	public static final AtomicLong VETOED = new AtomicLong();
 	private static final AtomicLong LOGGED = new AtomicLong();
 
-	/** How far the origin may be lowered by the {@code can_place_on} search before the first blob; a deeper search is not covered. */
-	public static final int DESCENT = 8;
-
 	private RockVeto() {}
 
-	/** The cells a boulder at {@code origin} (the feature's input position) can write, grown by one block, and the cells below that the descent can reach. */
+	/** The cells a boulder whose origin is {@code origin} AFTER the descent can write, grown by one block (x, z: origin-4..+2, y: origin-4..+2). */
 	public static Box3 box(BlockPos origin) {
-		return new Box3(origin.getX() - 4, origin.getY() - 4 - DESCENT, origin.getZ() - 4, 7, 6 + DESCENT, 7);
+		return new Box3(origin.getX() - 4, origin.getY() - 4, origin.getZ() - 4, 7, 7, 7);
+	}
+
+	/**
+	 * Replays vanilla's descent (ROCKVETO2): {@code while (y > minY + 3 && !canPlaceOn.test(level, pos.below())) pos = pos.below()}. The
+	 * origin comes from the MOTION_BLOCKING heightmap, so it can start on a leaf canopy or above deep water and sink without bound; the box
+	 * must be taken at the origin the blob really uses. Chosen over extending the box down to the terrain probe's surface: it reads exactly
+	 * the blocks vanilla reads (same predicate, same cells), so the answer is the vanilla position whatever the neighbours already placed,
+	 * and a fixed-depth box would either miss a deep drop or veto every boulder near a claim. Cost: one read per block of descent.
+	 * Returns a position at or below {@code minY + 3} when vanilla gives up (it then places nothing).
+	 */
+	public static BlockPos descend(BlockPos origin, int minY, Predicate<BlockPos> canPlaceBelow) {
+		BlockPos p = origin;
+		while (p.getY() > minY + 3 && !canPlaceBelow.test(p.below())) p = p.below();
+		return p;
 	}
 
 	/** True when the boulder at {@code origin} must not be placed. Failures place it (vanilla) and count in {@link WorldPlanners#FAILURES}. */
-	public static boolean vetoes(WorldGenLevel level, ChunkGenerator gen, BlockPos origin) {
+	public static boolean vetoes(WorldGenLevel level, ChunkGenerator gen, BlockPos origin, BlockPredicate canPlaceOn) {
 		if (Mutations.is(Mutations.ROCKS) || level.getLevel().dimension() != Level.OVERWORLD) return false;
 		Optional<WorldPlanner> planner = WorldPlanners.of(level.getLevel(), gen);
 		if (planner.isEmpty()) return false;
-		return vetoes(planner.get(), origin);
+		return vetoes(planner.get(), level.getMinY(), origin, p -> canPlaceOn.test(level, p));
 	}
 
-	/** The pure decision (no level, no dimension): the {@code ROCKS} mutant, the claim test and the counters. */
+	/** The decision with the descent replayed: the box is taken at the origin vanilla ends up with. */
+	public static boolean vetoes(WorldPlanner planner, int minY, BlockPos origin, Predicate<BlockPos> canPlaceBelow) {
+		if (Mutations.is(Mutations.ROCKS)) return false;
+		BlockPos landed = descend(origin, minY, canPlaceBelow);
+		if (landed.getY() <= minY + 3) return false; // vanilla places nothing
+		return vetoes(planner, landed);
+	}
+
+	/** The pure decision on the post-descent origin (no level, no dimension): the {@code ROCKS} mutant, the claim test and the counters. */
 	public static boolean vetoes(WorldPlanner planner, BlockPos origin) {
 		if (Mutations.is(Mutations.ROCKS)) return false;
 		try {

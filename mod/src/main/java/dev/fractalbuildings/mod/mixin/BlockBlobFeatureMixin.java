@@ -20,6 +20,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 public class BlockBlobFeatureMixin {
 	@Inject(method = "place", at = @At("HEAD"), cancellable = true)
 	private void fractalbuildings$veto(WorldGenLevel level, ChunkGenerator gen, RandomSource random, BlockPos origin, CallbackInfoReturnable<Boolean> cir) {
-		if (RockVeto.vetoes(level, gen, origin)) cir.setReturnValue(false);
+		if (RockVeto.vetoes(level, gen, origin, ((BlockBlobFeature) (Object) this).canPlaceOn())) cir.setReturnValue(false);
 	}
 }
