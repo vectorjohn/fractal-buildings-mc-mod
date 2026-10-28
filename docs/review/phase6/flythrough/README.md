@@ -18,7 +18,7 @@ The first number in a file name is the **world seed**. The world is deterministi
    the terrain or the buildings.
 4. `/gamemode spectator`, `/time set noon`, `/weather clear`, render distance 10, F1 to hide the HUD, then teleport.
    `manifest.tsv` gives only the settlement centre (column `centre`, x,z); `/fb locate <tier>` (that tier or larger) or
-   `/locate structure fractalbuildings:<tier>` finds it too. These frames don't record the camera itself; FLY2 adds it.
+   `/locate structure fractalbuildings:<tier>` finds it too. Frames from `scripts/flythrough.sh` at FLY2 or later record the camera: `manifest.tsv` columns `tp` (`x y z yaw pitch`, paste after `/tp @s`), `rd` (render distance to set) and `commit` (check that out).
 
 Example, `12345-city-6-edge.jpg`: the city `s1_m1` has centre 1152,-256 and radius 807; the edge camera stood 40 blocks outside the
 radius on the side away from the world origin, looking back in: about `/tp @s 1979 101 -440 77 10` (height not logged: 63 plus 38

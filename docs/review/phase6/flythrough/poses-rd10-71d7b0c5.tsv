@@ -1,0 +1,23 @@
+seed	tier	site	centre	frame	label	buildings	window	rd	fill	fill_s	tp	commit	sky	dominant	file
+987654321	hamlet	sm1_m1	-320,-512	1	view	5	49	10	0.984	17	-360.0 87.4 -525.8 -67.5 24.0	unknown-dirty	0.298	0.102	987654321-hamlet-1-view.jpg
+987654321	village	sm1_0	-576,704	1	view	9	109	10	0.984	46	-538.7 135.8 667.7 22.5 24.9	unknown-dirty	0.504	0.408	987654321-village-1-view.jpg
+987654321	town	s1_2	1344,3008	1	view	17	110	10	0.988	48	1328.6 106.2 2922.3 67.5 24.0	unknown-dirty	0.433	0.272	987654321-town-1-view.jpg
+987654321	town	s1_2	1344,3008	2	interior	0	0	10	0.980	4	1242.5 70.0 2951.0 -180.0 -11.3	unknown-dirty	0.015	0.171	987654321-town-2-interior.jpg
+987654321	city	sm1_m4	-640,-3712	1	sweep-a	12	110	10	0.668	61	-663.7 114.8 -3890.9 -157.5 24.0	unknown-dirty	0.222	0.174	987654321-city-1-sweep-a.jpg
+987654321	city	sm1_m4	-640,-3712	2	sweep-b	22	110	10	0.988	10	-786.4 112.8 -3928.2 67.5 24.0	unknown-dirty	0.183	0.127	987654321-city-2-sweep-b.jpg
+987654321	metropolis	s2_m2	2304,-1920	1	sweep-a	13	110	10	0.233	61	2298.1 115.8 -1609.8 112.5 24.0	unknown-dirty	0.031	0.100	987654321-metropolis-1-sweep-a.jpg
+987654321	metropolis	s2_m2	2304,-1920	2	sweep-b	16	110	10	0.988	48	2580.8 109.8 -1679.1 -22.5 24.0	unknown-dirty	0.002	0.101	987654321-metropolis-2-sweep-b.jpg
+12345	hamlet	sm1_0	-576,640	1	view	3	48	10	0.980	15	-584.0 112.0 629.1 67.5 24.0	unknown-dirty	0.216	0.107	12345-hamlet-1-view.jpg
+12345	village	s0_m2	320,-1600	1	view	2	48	10	0.984	39	365.9 129.0 -1653.0 22.5 24.0	unknown-dirty	0.206	0.106	12345-village-1-view.jpg
+12345	town	sm2_2	-1472,2304	1	view	32	110	10	0.984	17	-1629.1 109.2 2312.8 -67.5 24.0	unknown-dirty	0.385	0.274	12345-town-1-view.jpg
+12345	town	sm2_2	-1472,2304	2	interior	0	0	10	0.996	4	-1553.5 85.0 2339.0 -180.0 -11.3	unknown-dirty	0.014	0.091	12345-town-2-interior.jpg
+12345	city	s1_m1	1152,-256	1	sweep-a	32	110	10	0.980	20	1560.4 106.7 -151.7 -67.5 24.0	unknown-dirty	0.156	0.092	12345-city-1-sweep-a.jpg
+12345	city	s1_m1	1152,-256	2	sweep-b	21	110	10	0.992	9	1735.6 104.8 -87.7 67.5 24.0	unknown-dirty	0.259	0.168	12345-city-2-sweep-b.jpg
+12345	metropolis	s7_m3	7360,-2496	1	sweep-a	19	110	10	0.984	34	6960.3 109.8 -2675.1 -22.5 24.0	unknown-dirty	0.100	0.086	12345-metropolis-1-sweep-a.jpg
+12345	metropolis	s7_m3	7360,-2496	2	sweep-b	15	110	10	0.988	9	7147.7 109.8 -2851.9 157.5 24.0	unknown-dirty	0.125	0.083	12345-metropolis-2-sweep-b.jpg
+1	hamlet	s0_0	576,448	1	view	7	74	10	0.984	31	561.2 97.5 474.4 -157.5 24.0	unknown-dirty	0.340	0.223	1-hamlet-1-view.jpg
+1	village	s2_0	2496,448	1	view	19	110	10	0.984	24	2446.4 103.2 387.8 -67.5 24.0	unknown-dirty	0.460	0.322	1-village-1-view.jpg
+1	town	sm2_m2	-1472,-1664	1	view	20	110	10	0.984	40	-1596.8 160.2 -1726.6 22.5 24.0	unknown-dirty	0.416	0.319	1-town-1-view.jpg
+1	town	sm2_m2	-1472,-1664	2	interior	0	0	10	0.996	5	-1648.5 125.0 -1639.0 -0.0 -11.3	unknown-dirty	0.003	0.166	1-town-2-interior.jpg
+1	city	sm4_m5	-3328,-4224	1	sweep-a	35	110	10	0.984	29	-3021.7 100.5 -4205.1 -22.5 24.0	unknown-dirty	0.362	0.251	1-city-1-sweep-a.jpg
+1	city	sm4_m5	-3328,-4224	2	sweep-b	26	110	10	0.996	6	-3159.6 105.8 -4023.8 -112.5 24.0	unknown-dirty	0.395	0.283	1-city-2-sweep-b.jpg

@@ -104,6 +104,10 @@ echo "remote: copying $ROOT to $HOST:jobs/$NAME ..." >&2
 rsync -a --filter=':- .gitignore' --exclude=/.git \
 	--include=/.claude/ --include='/.claude/agents/***' --exclude='/.claude/*' \
 	-e "${SSH[*]}" "$ROOT/" "$HOST:jobs/$NAME/"
+COMMIT_FILE=$(mktemp)
+{ git -C "$ROOT" rev-parse --short=10 HEAD 2>/dev/null || echo unknown; } | tr -d '\n' > "$COMMIT_FILE"
+git -C "$ROOT" diff --quiet HEAD 2>/dev/null || printf -- -dirty >> "$COMMIT_FILE"
+rsync -a -e "${SSH[*]}" "$COMMIT_FILE" "$HOST:jobs/$NAME/.fb-commit"; rm -f "$COMMIT_FILE"
 rsync -a -e "${SSH[*]}" "$RUNNER" "$HOST:jobs/$NAME/.fb-remote-run.sh"
 
 ID=$("${SSH[@]}" "$HOST" job submit "$NAME" bash .fb-remote-run.sh)
