@@ -83,8 +83,48 @@ tasks.named('test') {
 // Run test classes in several JVMs (the suite is ~10 min serial). Each class is self-contained and
 // determinism tests compare within one JVM, so forking per class is safe. Capped so that several
 // agents building at once don't starve each other.
+// FORKMEM: the fork count is also capped by memory. forks = max(1, min(6, cpus/3, (budget - 1.5 GiB) / (heap + 0.5 GiB))), where budget
+// is the tightest cgroup v2 memory.max from this build's cgroup up to the root (like scripts/order-test.sh), else MemAvailable (the
+// lower of the two when both apply). A beebox job (MemoryMax 28 %, 7.9 GiB) gets 2 forks of 2g instead of 4, which peaked at 7.8G.
+def testHeapMb = 2048
+def testOverheadMb = 512
+def reserveMb = 1536
+def memBudget = { ->
+	long best = -1L
+	String src = 'unknown'
+	try {
+		def cgFile = new File('/proc/self/cgroup')
+		def line = cgFile.exists() ? cgFile.readLines().find { it.startsWith('0::') } : null
+		def cg = line ? line.substring(3).trim() : ''
+		if (cg && cg != '/') {
+			def d = new File('/sys/fs/cgroup' + cg)
+			while (d != null && d.path != '/sys/fs/cgroup' && d.path != '/') {
+				def f = new File(d, 'memory.max')
+				def v = f.exists() ? f.text.trim() : 'max'
+				if (v ==~ /\d+/ && (best < 0 || v.toLong() < best)) { best = v.toLong(); src = "cgroup memory.max ${v.toLong().intdiv(1048576)} MB (${d.path})" }
+				d = d.parentFile
+			}
+		}
+	} catch (Exception e) { /* fall through to MemAvailable */ }
+	try {
+		def m = new File('/proc/meminfo').readLines().find { it.startsWith('MemAvailable:') }
+		if (m) {
+			long avail = m.split(/\s+/)[1].toLong() * 1024L
+			if (best < 0 || avail < best) { best = avail; src = "MemAvailable ${avail.intdiv(1048576)} MB" }
+		}
+	} catch (Exception e) { }
+	return [best < 0 ? Long.MAX_VALUE : best, src]
+}
+def testForks = { ->
+	int cpuForks = Math.max(1, Runtime.runtime.availableProcessors().intdiv(3))
+	def (long budget, String src) = memBudget()
+	int memForks = budget == Long.MAX_VALUE ? 6 : Math.max(1, (int) ((budget.intdiv(1048576) - reserveMb).intdiv(testHeapMb + testOverheadMb)))
+	int forks = Math.max(1, Math.min(6, Math.min(cpuForks, memForks)))
+	logger.lifecycle("planner-core tests: ${forks} forks (cpus/3 = ${cpuForks}, memory allows ${memForks}: ${src}, ${testHeapMb} MB heap + ${testOverheadMb} MB per fork, ${reserveMb} MB kept back)")
+	return forks
+}
 tasks.named('test') {
-	maxParallelForks = Math.max(1, Math.min(6, Runtime.runtime.availableProcessors().intdiv(3)))
+	maxParallelForks = testForks()
 	forkEvery = 0
-	maxHeapSize = '2g' // TESTSPEED2: the shared gate-window planners (GateWorld.sharedPlanner) hold about 70 MB each
+	maxHeapSize = "${testHeapMb}m" // TESTSPEED2: the shared gate-window planners (GateWorld.sharedPlanner) hold about 70 MB each
 }
