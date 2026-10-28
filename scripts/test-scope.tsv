@@ -130,6 +130,7 @@ path	@mod/worldgen/BuildingAirClear.java	spill	fast,order?,client-full	BuildingA
 path	@mod/worldgen/TilePiece.java	spill	fast,order?,client-full	TilePiece (ORDERSIM covers it). the order sim (fast) runs this code in 6 orders with vanilla features; run order if the change touches the pipeline, threads, structure data or a new block kind
 path	@mod/worldgen/LakeVeto.java	spill	fast,order?,client-full	LakeVeto (ORDERSIM covers it). the order sim (fast) runs this code in 6 orders with vanilla features; run order if the change touches the pipeline, threads, structure data or a new block kind
 path	@mod/worldgen/*	worldgen	fast,order,client-full,perf	structures, pieces, placement, the write path
+path	@mod/roads/Village*	roads	fast,order,client-full,perf	village joins (VillageRoads, VillageGround): read vanilla structure starts, which the order sim does not model (ORDERSIM S8 open), so the real order test stays required
 path	@mod/roads/*	roads	fast,order?,client-full,perf	road feature (RoadsClientGameTest has its own order digest; OrderSimRoadsTest runs it through RoadFeature.placeIn). the order sim (fast) runs this code in 6 orders with vanilla features; run order if the change touches the pipeline, threads, structure data or a new block kind
 path	@mod/probe/*	probes	fast,order,client-full,perf	live probes from the noise router; LiveProbeTest in fast
 path	@mod/compat/*	veto	fast,client-full,compat?,perf?	vanilla structure veto and biome aliases (VetoGameTest in fast)
