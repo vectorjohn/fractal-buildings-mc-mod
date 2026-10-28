@@ -164,6 +164,23 @@ final class WalkOps {
 		return out;
 	}
 
+
+	/**
+	 * The shell without the furnishing hooks that a stair cut ({@link #joins}, a neighbouring tower doorway lower than this walk)
+	 * would bury: the cut fills the gallery across with ramp and a closing wall over its first {@code -k + 1} columns at that end,
+	 * so a chest or lantern there would stand inside solid blocks (GALLERYROOMS).
+	 */
+	static dev.fractalbuildings.core.ir.BuildingIr withoutCutHooks(dev.fractalbuildings.core.ir.BuildingIr shell, dev.fractalbuildings.core.gen.Brief.Walk walk) {
+		int w = shell.spec().width();
+		int west = Math.max(-w / 2, Math.min(walk.prev(), w / 2)), east = Math.max(-w / 2, Math.min(walk.next(), w / 2));
+		java.util.List<dev.fractalbuildings.core.ir.Hook> keep = new java.util.ArrayList<>();
+		for (dev.fractalbuildings.core.ir.Hook h : shell.hooks()) {
+			boolean buried = west < 0 && h.x() <= -west || east < 0 && h.x() >= w - 1 + east;
+			if (!buried) keep.add(h);
+		}
+		if (keep.size() == shell.hooks().size()) return shell;
+		return new dev.fractalbuildings.core.ir.BuildingIr(shell.spec(), shell.bounds(), shell.storeys(), shell.volumes(), shell.rooms(), shell.openings(), shell.roofs(), shell.boxes(), keep);
+	}
 	private static void ramp(java.util.List<dev.fractalbuildings.core.ir.Box> out, int k, int y, int z0, int w, boolean east) {
 		k = Math.max(-w / 2, Math.min(k, w / 2));
 		if (k < 0) { // the neighbour is a tower doorway lower than this walk: a stair cut down through the end, between the parapets

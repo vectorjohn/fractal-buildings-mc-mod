@@ -107,6 +107,27 @@ class RoomWalkTest {
 		assertEquals(List.of(), mine(s, rq));
 	}
 
+	/**
+	 * GALLERYROOMS: a curtain whose neighbouring tower doorways are lower than its walk has a stair cut down through each end of
+	 * the gallery (ramp and a closing wall over the first columns). A chest or lantern placed there before the cut was known stood
+	 * inside solid blocks, cutting off its use cell (dm6_m24 and dm6_m25 of the town-walled preset). Such hooks are now dropped.
+	 */
+	@Test
+	void aCurtainGalleryHasNoFurnitureInsideItsStairCuts() {
+		ProbeSpecs.Probes p = ProbeSpecs.parse("flat:70");
+		int cut = 0, hooksKept = 0;
+		for (long seed = 1; seed <= 80; seed++) {
+			GenRequest rq = new GenRequest(seed, new Lot("lot0", 0, 0, 36, 9, Facing.SOUTH), "curtain", "plains", p.terrain(), p.biome(),
+					new dev.fractalbuildings.core.gen.Brief(1, 1, 1, 1, 68, new dev.fractalbuildings.core.gen.Brief.Walk(70, -9, -9)));
+			SceneDoc s = new GeneratorV1().generate(rq);
+			assertEquals(List.of(), mine(s, rq), "seed " + seed);
+			for (PlacedBuilding b : s.buildings()) hooksKept += b.shell().hooks().size();
+			cut++;
+		}
+		assertEquals(80, cut);
+		assertTrue(hooksKept > 20, "the middle of the gallery stays furnished: " + hooksKept);
+	}
+
 	/** Beds: foot (the hook) and head (one cell along the facing) are both in the room's air, and the head is against a wall. */
 	@Test
 	void everyBedHasItsHeadAgainstAWall() {

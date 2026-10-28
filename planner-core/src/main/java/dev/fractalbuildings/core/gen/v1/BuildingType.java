@@ -48,6 +48,8 @@ public interface BuildingType {
 	 * walk profile: none by default.
 	 */
 	default java.util.List<dev.fractalbuildings.core.ir.Box> walkJoins(dev.fractalbuildings.core.ir.BuildingIr shell, dev.fractalbuildings.core.gen.Brief.Walk walk) { return java.util.List.of(); }
+	/** The shell for a lot with a wall walk, minus whatever the walk joins would bury (furnishing hooks). */
+	default dev.fractalbuildings.core.ir.BuildingIr walkClear(dev.fractalbuildings.core.ir.BuildingIr shell, dev.fractalbuildings.core.gen.Brief.Walk walk) { return shell; }
 
 	/** The type's own floor planner for the interior pass, or null for the generic one. */
 	default dev.fractalbuildings.core.gen.v1.interior.FloorPlanner floors() { return null; }

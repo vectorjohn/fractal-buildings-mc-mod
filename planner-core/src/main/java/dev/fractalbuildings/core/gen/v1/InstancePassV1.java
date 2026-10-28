@@ -89,7 +89,10 @@ public final class InstancePassV1 {
 		List<Opening> unreachable = new ArrayList<>();
 		boolean guarded = steps(provisional, lot, t, all, stoopRise(shell, lim), placedSite.causeway(), placedSite.open(), unreachable) && unreachable.isEmpty();
 		BuildingIr built = shell;
-		if (walk != null) all.addAll(Types.get(shell.spec().type()).walkJoins(shell, walk));
+		if (walk != null) {
+			all.addAll(Types.get(shell.spec().type()).walkJoins(shell, walk));
+			built = Types.get(shell.spec().type()).walkClear(built, walk);
+		}
 		if (!unreachable.isEmpty() && WALL_TYPES.contains(shell.spec().type())) built = sealed(shell, unreachable); // a wall tower or gatehouse standing high above steep ground: no way down in the lot, so no door
 
 		return new Placed(new PlacedBuilding("b0", List.of(lot.id()), ox, oy, oz, r, built, all), guarded);

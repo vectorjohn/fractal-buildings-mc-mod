@@ -58,6 +58,9 @@ public final class CurtainType implements BuildingType {
 	public java.util.List<dev.fractalbuildings.core.ir.Box> walkJoins(dev.fractalbuildings.core.ir.BuildingIr shell, dev.fractalbuildings.core.gen.Brief.Walk walk) { return WalkOps.joins(shell, walk); }
 
 	@Override
+	public dev.fractalbuildings.core.ir.BuildingIr walkClear(dev.fractalbuildings.core.ir.BuildingIr shell, dev.fractalbuildings.core.gen.Brief.Walk walk) { return WalkOps.withoutCutHooks(shell, walk); }
+
+	@Override
 	public Program roofs() {
 		return c -> {
 			RoofStyle s = c.style().roof();
