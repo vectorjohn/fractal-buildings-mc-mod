@@ -16,7 +16,8 @@
 # waits, saves the full output to build/remote/<job>.log and prints its tail,
 # copies results back to the same paths here (build/test-all/, JUnit XML,
 # screenshots, viewer/out/; add more with --fetch), deletes the remote copy
-# (--keep leaves it) and exits with CMD's status.
+# (--keep leaves it) and exits with CMD's status, or 137 with a "JOB OOM-KILLED"
+# line when the worker's journal says the job went over its memory cap.
 #
 # Rendering: the worker has no desktop, so CMD runs on its GPU (radv) in a
 # headless sway session, with Xwayland as $DISPLAY in place of Xvfb
@@ -142,6 +143,16 @@ fi
 
 "${SSH[@]}" "$HOST" job log "$ID" > "$LOG" 2>&1 || true
 
+# A job over its memory cap (MemoryMax per job) is SIGKILLed whole by systemd: CMD prints nothing more and the
+# job just "exits 1". Look for that in the worker's journal, say so loudly, and exit 137 (ORDERMEM).
+OOM=""
+if (( status != 0 )); then
+	OOM=$("${SSH[@]}" "$HOST" "journalctl --user --no-pager -o cat -u 'job-$NAME-*' 2>/dev/null | grep -E \"Failed with result 'oom-kill'|memory peak\" | tail -n 2" 2>/dev/null || true)
+	[[ $OOM == *oom-kill* ]] || OOM=""
+fi
+[[ -n $OOM ]] && printf 'remote: JOB OOM-KILLED: %s job %s went over its memory cap and was killed whole; its output stops mid-run and is NOT a test result. Journal: %s\n' \
+	"$HOST" "$ID" "${OOM//$'\n'/ | }" >> "$LOG"
+
 # Results back to the same relative paths. -R keeps the path after "/./".
 for p in "${FETCH[@]}"; do
 	rsync -aR --ignore-missing-args -e "${SSH[*]}" "$HOST:jobs/$NAME/./$p" "$ROOT/" 2>/dev/null || true
@@ -152,5 +163,9 @@ trap - INT TERM
 
 # Short lines only: Minecraft logs lines of many KB (classpaths in stack traces).
 tail -n 40 "$LOG" | cut -c1-300
+if [[ -n $OOM ]]; then
+	echo "remote: $HOST job $ID OOM-KILLED (exit 137; the job itself said $status); full log $LOG" >&2
+	exit 137
+fi
 echo "remote: $HOST job $ID exited $status; full log $LOG" >&2
 exit "$status"

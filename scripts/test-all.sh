@@ -256,7 +256,7 @@ fi
 # --- Layer 4b (--full): the district-order test (B2) on dedicated servers, no renderer, not under the heavy lock
 if (( FULL )); then
 	if run_logged order "$ROOT/scripts/order-test.sh"; then st=pass; else st=fail; fi
-	record order $st "$(grep -E "^order-test: [0-9]+ of|^order-test: no eula" "${LOGS[order]}" | tail -n1 | cut -c1-200)"
+	record order $st "$(grep -E "^order-test: [0-9]+ of|^order-test: ORDER TEST DID NOT COMPLETE|^order-test: no eula" "${LOGS[order]}" | tail -n1 | cut -c1-200)"
 fi
 
 # --- Layer 5: client game tests (heavy lock) ----------------------------------
