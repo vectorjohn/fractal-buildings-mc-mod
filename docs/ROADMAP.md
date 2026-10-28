@@ -634,6 +634,10 @@ Performance issues and the tradeoffs we accepted are tracked separately in
 - TESTLAYERS (verifier): CLAUDE.md's order-test line ("created by a human once ... agents cannot write it") and NOTES' TESTLAYERS line are out of date since the standing EULA approval in CLAUDE.md "Display / running the game" (John 2026-10-22, reaffirmed 2026-10-26). The `scripts/order-test.sh` header and messages and the `scripts/test-all.sh` header are corrected (docs1027b) and NOTES has a correction line; the CLAUDE.md line is left to the coordinator or John.
 - REGIONPERF (verifier, merged 0c8957b9; `.claude/reports/p6-regionperf-r2.md`): no test asserts that `RegionWarmer` warms the quays (`warmQuays`), so dropping that call would still pass; and `region.warmed.worker.ms` now includes quays (103 s), so it is not comparable with numbers from before 0c8957b9.
 - ORDERFAIL (verifier; `.claude/reports/p6-orderfail.md`): the road lake veto (road columns in `WorldPlanner.claimsNear`, within `RoadSurface.CUT_REACH` + 1) has no upper bound, so a vanilla lake far above a road cut is vetoed too.
+- SPILLDIRT (verifier, merged 6c78fd77): the `StreetAirFix.restoreBase` air-base branch has no direct test (only the order test exercises it; FoliageClientGameTest's injection skips air-surface columns); inject one trunk whose base cell is planned air.
+- SPILLDIRT (verifier): `Spill.trunkBaseBeside` accepts any dirt-family block next to any log, so a small real dirt defect beside a tree reads as spill, and buried dirt under concrete left by a blocked 2x2 trunk is accepted rather than fixed; the 2x2 mechanism is reasoned, not reproduced.
+- SPILLDIRT (verifier): perf not run for this item (central quiet); covered by the next batched heavy run.
+- BRIDGEENDS (verifier, 0e09c461): TerrainStats doesn't count WALL volume as fill; no in-game screenshot of a settlement abutment yet (inter-settlement bridges take another path).
 
 ## Open questions and risks
 
