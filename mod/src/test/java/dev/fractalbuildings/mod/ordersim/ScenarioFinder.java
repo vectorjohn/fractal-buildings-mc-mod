@@ -152,6 +152,7 @@ public final class ScenarioFinder {
 			Box3 lb = lakeBox(ox, oy, oz);
 			if (lb.intersects(bx)) continue;
 			if (!planner.claimsNear(lb)) continue;
+			if (othersMeet(lb, b)) continue; // only this building's deep foundation: no ground piece and no other building is near (ORDERSIM S4b: the veto then depends on the rastered box alone)
 			return new LakeSpot(LakeKind.UNDER_BOX, ox, oy, oz, b.ref(), true);
 		}
 		return null;
@@ -167,6 +168,15 @@ public final class ScenarioFinder {
 			}
 		}
 		return null;
+	}
+
+	private boolean othersMeet(Box3 lb, BuildingPiece b) {
+		for (BuildingPiece o : buildings) {
+			if (o == b) continue;
+			Box3 ob = o.box();
+			if (new Box3(ob.x(), ob.y() - FOUNDATION_BELOW, ob.z(), ob.sx(), ob.sy() + FOUNDATION_BELOW, ob.sz()).intersects(lb)) return true;
+		}
+		return false;
 	}
 
 	private LakeSpot spot(LakeKind k, int x, int y, int z, BuildingPiece b) {
@@ -201,7 +211,13 @@ public final class ScenarioFinder {
 	 * The first spot of each kind, scanning 6 x 6 chunk windows of the planned tiles from the densest 5 x 5 window outwards (nearest first,
 	 * then lowest (z, x)) until every kind is found or the tiles are exhausted; an absent kind has no entry.
 	 */
-	public List<TrunkSpot> trunkSpots() {
+	public List<TrunkSpot> trunkSpots() { return trunkSpots(false); }
+
+	/**
+	 * As {@link #trunkSpots()}; with {@code fromNeighbour} only spots where the tree origin (the 2 x 2 base minimum corner, which decides the chunk
+	 * that grows it) is in the non-street chunk, so a neighbour of the street chunk grows the tree (ORDERSIM S4b: the cases where the order matters).
+	 */
+	public List<TrunkSpot> trunkSpots(boolean fromNeighbour) {
 		Window w = densestWindow(5);
 		List<int[]> origins = new ArrayList<>();
 		int minCx = Integer.MAX_VALUE, minCz = Integer.MAX_VALUE, maxCx = Integer.MIN_VALUE, maxCz = Integer.MIN_VALUE;
@@ -215,12 +231,12 @@ public final class ScenarioFinder {
 		TreeMap<TrunkKind, TrunkSpot> out = new TreeMap<>();
 		for (int[] o : origins) {
 			if (out.size() == TrunkKind.values().length) break;
-			scanTrunks(columns(o[0], o[1], 6), out);
+			scanTrunks(columns(o[0], o[1], 6), out, fromNeighbour);
 		}
 		return new ArrayList<>(out.values());
 	}
 
-	private void scanTrunks(Columns cols, TreeMap<TrunkKind, TrunkSpot> out) {
+	private void scanTrunks(Columns cols, TreeMap<TrunkKind, TrunkSpot> out, boolean fromNeighbour) {
 		for (Column c : cols.byCol.values()) { // sorted by (z, x)
 			if (!c.street || c.airTop == Integer.MIN_VALUE) continue;
 			for (int[] d : new int[][] {{-1, 0}, {1, 0}, {0, -1}, {0, 1}}) {
@@ -229,6 +245,7 @@ public final class ScenarioFinder {
 				if (Math.floorDiv(ox, 16) == Math.floorDiv(c.x, 16) && Math.floorDiv(oz, 16) == Math.floorDiv(c.z, 16)) continue; // not a chunk line
 				Column o = cols.get(ox, oz);
 				if (o != null && (o.street || o.buildingAir || o.buildingSolid)) continue; // the other side must be open ground
+				if (fromNeighbour && Math.min(c.x, ox) == c.x && Math.min(c.z, oz) == c.z) continue; // the base corner is the street column: the street chunk grows the tree
 				int nat = ground.floorY(ox, oz);
 				int natStreet = ground.floorY(c.x, c.z);
 				TrunkKind kind;
@@ -247,6 +264,40 @@ public final class ScenarioFinder {
 
 	public TrunkSpot trunkSpot(TrunkKind kind) {
 		return trunkSpots().stream().filter(s -> s.kind() == kind).findFirst().orElse(null);
+	}
+
+	/** The first spot of {@code kind} whose tree is grown by the street chunk's neighbour; null when none. */
+	public TrunkSpot trunkSpotFromNeighbour(TrunkKind kind) {
+		return trunkSpots(true).stream().filter(s -> s.kind() == kind).findFirst().orElse(null);
+	}
+
+	/**
+	 * SC3 (b'): a 2 x 2 base wholly on street columns, straddling a chunk line, grown from the lower chunk, with the street cut at least 3 below
+	 * the (flat) natural ground under the base, so the dirt cell under the base is planned air and no log stays beside it once the trunk is
+	 * removed: the SPILLDIRT third hit ({@code restoreBase} writing air). Null when none. Kind CUT_HEADROOM; {@code out} is the base cell
+	 * across the chunk line, which is a street column too.
+	 */
+	public TrunkSpot trunkSpotInStreet() {
+		Window w = densestWindow(5);
+		for (int dz = -6; dz <= 6; dz += 3) {
+			for (int dx = -6; dx <= 6; dx += 3) {
+				Columns cols = columns(w.cx() + dx, w.cz() + dz, 4);
+				for (Column c : cols.byCol.values()) {
+					boolean lineX = Math.floorMod(c.x, 16) == 15, lineZ = Math.floorMod(c.z, 16) == 15;
+					if (!(lineX || lineZ) || !c.street) continue;
+					int y = ground.floorY(c.x, c.z);
+					boolean ok = true;
+					for (int ez = 0; ez < 2 && ok; ez++) for (int ex = 0; ex < 2 && ok; ex++) {
+						Column q = cols.get(c.x + ex, c.z + ez);
+						ok = q != null && q.street && !q.buildingAir && !q.buildingSolid && ground.floorY(c.x + ex, c.z + ez) == y && q.airTop >= y && q.surfaceY <= y - 2;
+					}
+					if (!ok) continue;
+					int ox = lineX ? c.x + 1 : c.x, oz = lineZ ? c.z + 1 : c.z;
+					return new TrunkSpot(TrunkKind.CUT_HEADROOM, c.x, y, c.z, ox, oz, c.x, c.z, c.surfaceY, c.surfaceBlock, c.airTop, y);
+				}
+			}
+		}
+		return null;
 	}
 
 	// ---------------------------------------------------------------- columns from the raster

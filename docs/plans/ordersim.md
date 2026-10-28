@@ -529,3 +529,7 @@ Deviations from the plan above (all in `mod/src/test/java/dev/fractalbuildings/m
 - **C5 rules** are in `SimCompare.violation`: flag 16 on every write of ours, a `TilePiece` write inside the decorating chunk, air-only writes for the clears with their old-block and planned-air conditions, `restoreBase` writes exactly the planned block over dirt-family blocks. Writers are found with `StackWalker` in forward and reverse only.
 - **Test hooks:** `Scenario.Extra` (test-only work in a chunk's top-layer step, used for the planted order dependence) and `OrderSim.run(.., tamper)` (changes the world before the checks read it).
 - **Cost** (loadavg 22 to 28, so not quiet): SC1 2 x 2 window, 6 orders in parallel on 4 threads, 2.2 to 2.9 s; SC1 6 x 6 window (k = 3): 4.1 s parallel, 8.5 s one after another; plan (reference raster) 0.1 to 0.3 s.
+
+# S4b as built (2026-10-28)
+
+Deviations: SC3 spots come from `trunkSpotFromNeighbour` and a new street case `trunkSpotInStreet` (whole base on street air); SC2a's origin is moved 4 blocks into the wall (`RegressionScenarios.LAKE_INTO_WALL`); SPILL_LOGS is caught by C5 and EARLY_STEP by C1, not C3; SC3 histograms are empty on current code (nothing left to pin); the two manual checks did not fail as predicted (see `docs/log/2026-10-28-ordersim-s4b.md`). Mutants run in forward and reverse with a control per scenario.
