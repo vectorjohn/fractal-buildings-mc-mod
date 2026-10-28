@@ -782,6 +782,30 @@ DS-25 with an exception for deliberate repeating patterns.
   approved by John 2026-10-27 (REVIEW "Door frame or glass blocks": "I
   approve the architect call here. I was leaning that way.").
 
+## DS-53 Basements are reachable, lit, dry and sensible
+
+- **Rule:** a storey below the entrance storey:
+  - is reached by an inside stair stacked with the main stair (a hatch
+    and ladder in one-room buildings and defensive towers), or by an
+    outside hatch, areaway or walk-out door that meets DS-4, DS-6 and DS-8;
+  - is lit per DS-24;
+  - holds no habitable room unless that room has a window onto an
+    areaway or the open side of a walk-out;
+  - is never built where its floor would lie below nearby water;
+  - in high-rises, has the stairwell and the lift shaft continue to the
+    lowest basement level (extends DS-22).
+- **Why:** John 2026-10-26 asked for basements (houses by climate,
+  several levels under high-rises); the architect's answer sets what makes
+  one believable.
+- **Scope:** every building with a storey below its entrance (ROADMAP 7.18
+  BASEMENT, after the first release).
+- **Enforcement:** none today; 7.18 lands the checks (reachability,
+  DS-24 light propagation below grade, water level).
+- **Status:** accepted 2026-10-27 (John, in
+  [basements-architect.md](../review/reports/basements-architect.md): "I
+  also approve the proposed rule"). **Source:** architect, basements
+  question 2026-10-26.
+
 # Proposed by agents
 
 New proposals go here (`proposed`, with the source); John accepts, edits or

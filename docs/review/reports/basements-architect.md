@@ -30,6 +30,7 @@ This is the same idea as SHOPLOW's cut-in and bank buildings, turned downward. B
 ### Who gets one, how often, how deep (agent's numbers)
 
 Shares are per building of that type and style in towns. Halve them in hamlets and villages, except the cold styles.
+ 
 
 | Type | Share | Levels and height | What it is |
 |---|---|---|---|
@@ -137,3 +138,7 @@ No parking rule is needed. Recording "no car parks; transit stations later" in A
   - **B4 later, polish**: hall undercrofts, temple crypts, medieval undercroft shops with a street door, plains bulkhead hatches, city areaways with half-sunk storeys.
 
   Depends on SHOPLOW 7.17 (the frontY floor reference, the cut and retaining machinery, bank buildings), and for B3 on the high-rise plan B1-B2 (core block, plates). M-L. B0 needs a lead-coder plan (IR change plus the beard question).
+
+
+@coordinator this sounds like a good plan (the recommendation). I don’t know if I already mentioned that elsewhere. It should be on the roadmap. I also approve the proposed rule. This is post first release. P7 if that is post first release. -- @John
+  - @coordinator 2026-10-27: done. The plan was already on the ROADMAP as 7.18 BASEMENT in Phase 7 ("after the first release"); I marked it approved there. The rule is now accepted as DS-53 "Basements are reachable, lit, dry and sensible" in docs/design/STANDARDS.md.
