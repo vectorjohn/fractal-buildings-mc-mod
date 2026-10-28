@@ -94,7 +94,15 @@ public final class RoadFeature implements Feature {
 		if (level.getLevel().dimension() != Level.OVERWORLD) return false;
 		WorldPlanner planner = WorldPlanners.of(level.getLevel(), gen).orElse(null);
 		if (planner == null) return false;
-		ChunkPos cp = ChunkPos.containing(origin);
+		return placeIn(level, planner, ChunkPos.containing(origin));
+	}
+
+	/**
+	 * Everything {@link #place} does after the dimension and planner checks: the street-air passes, then the road draw. Pure in its
+	 * arguments (ORDERSIM R3), so the order simulator runs the same code as the game. VillageRoads and the foreign-structure read only
+	 * act on a WorldGenRegion, so they are off for any other level.
+	 */
+	public static boolean placeIn(WorldGenLevel level, WorldPlanner planner, ChunkPos cp) {
 		// CITYQ r5: street air beside a chunk with no ground piece of ours (the settlement's outer tile border) is re-cleared from here,
 		// since TilePiece runs the pass only where a ground piece is; this feature runs in every overworld chunk, after its own features
 		try {
@@ -131,7 +139,7 @@ public final class RoadFeature implements Feature {
 	}
 
 
-	private boolean draw(WorldGenLevel level, WorldPlanner planner, ChunkPos cp) {
+	private static boolean draw(WorldGenLevel level, WorldPlanner planner, ChunkPos cp) {
 		VillageRoads.Adjusted joined = VillageRoads.adjust(level, planner, cp, planner.roadColumnsAround(cp.x(), cp.z())); // VILLROAD: bend round vanilla villages, spur to their street
 		List<List<RoadNet.Col>> around = joined.around();
 		if (!joined.hasWork()) return false;

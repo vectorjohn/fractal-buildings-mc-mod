@@ -3,7 +3,7 @@ package dev.fractalbuildings.mod.ordersim;
 import dev.fractalbuildings.core.rand.Hash64;
 import dev.fractalbuildings.mod.gameplay.Gameplay;
 import dev.fractalbuildings.mod.ordersim.SimOrders.Order;
-import dev.fractalbuildings.mod.worldgen.BuildingAirClear;
+import dev.fractalbuildings.mod.roads.RoadFeature;
 import dev.fractalbuildings.mod.worldgen.Mutations;
 import dev.fractalbuildings.mod.worldgen.PieceLedger;
 import dev.fractalbuildings.mod.worldgen.SpillClear;
@@ -28,8 +28,8 @@ import net.minecraft.world.level.levelgen.structure.BoundingBox;
  *     surface structures under the {@code early-step} mutant), then that step's feature calls of the chunk, each through a level that reads and
  *     writes only the 3 x 3 chunks round it;
  * <li>at the top layer, after its features, the passes the road feature runs ({@code SpillClear} where the chunk has no ground piece,
- *     {@code roadLeaves}, {@code BuildingAirClear}, {@code StreetAirFix}). A copy of those lines of {@code RoadFeature.place} until the
- *     {@code placeIn} seam exists (the road draw itself is not run);
+ *     {@code roadLeaves}, {@code BuildingAirClear}, {@code StreetAirFix}), then the road draw: all of it {@code RoadFeature.placeIn}, the production seam
+ *     (village joins are off: they need a {@code WorldGenRegion});
  * <li>promotion of every chunk whose 8 neighbours have all decorated (post-process marks replayed). In 26.3 almost no block asks for it.
  * </ol>
  */
@@ -192,18 +192,10 @@ public final class OrderSim {
 		for (TilePiece p : ps) TilePiece.write(level.proxy(), s.planner, p, chunkBB, new ChunkPos(cx, cz), random);
 	}
 
-	/** What {@code RoadFeature.place} runs before the road draw. */
+	/** The real road step: {@code RoadFeature.placeIn} (street-air passes, then the road draw; no village joins, which need a WorldGenRegion). */
 	private static void roadStep(Scenario s, SimWorld world, int cx, int cz) {
 		SimLevel level = new SimLevel(world, cx, cz, "ours:road:" + cx + "," + cz, s.seed);
-		var lv = level.proxy();
-		try {
-			if (s.planner.districtsNear(cx, cz) && !SpillClear.hasGround(s.planner, cx, cz)) SpillClear.run(lv, s.planner, cx, cz);
-			if (s.planner.roadsEnabled()) SpillClear.roadLeaves(lv, s.planner, cx, cz);
-			BuildingAirClear.run(lv, s.planner, cx, cz);
-			StreetAirFix.run(lv, s.planner, cx, cz);
-		} catch (RuntimeException e) {
-			WorldPlanners.FAILURES.incrementAndGet();
-		}
+		RoadFeature.placeIn(level.proxy(), s.planner, new ChunkPos(cx, cz));
 	}
 
 	/**

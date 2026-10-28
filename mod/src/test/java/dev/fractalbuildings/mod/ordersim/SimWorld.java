@@ -64,6 +64,7 @@ public final class SimWorld {
 				ProtoChunk c = new ProtoChunk(new ChunkPos(cx0 + i, cz0 + k), UpgradeData.EMPTY, lha, SimBoot.containers(), null);
 				fill(c);
 				Heightmap.primeHeightmaps(c, ChunkStatus.FEATURES.heightmapsAfter());
+				Heightmap.primeHeightmaps(c, java.util.EnumSet.of(Heightmap.Types.WORLD_SURFACE_WG, Heightmap.Types.OCEAN_FLOOR_WG)); // the worldgen maps, from the bare terrain: features do not update them (RoadFeature's ground scan reads WORLD_SURFACE_WG)
 				c.setPersistedStatus(ChunkStatus.FEATURES);
 				chunks[i * nz + k] = c;
 			}

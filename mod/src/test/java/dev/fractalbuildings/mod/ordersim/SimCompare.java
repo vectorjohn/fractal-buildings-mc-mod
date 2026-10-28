@@ -33,7 +33,12 @@ public final class SimCompare {
 			Integer got = ledger.get(k);
 			if (got == null) run.missing++; else if (got != p.ref.get(k)) run.wrong++;
 		}
-		for (Long k : ledger.keySet()) if (!p.ref.containsKey((long) k)) run.extra++;
+		TreeMap<Long, Integer> roads = new TreeMap<>(); // the road feature's cells (they have no reference raster: SC4 checks them against the ledger and across orders)
+		for (long k : rec.roadCells()) if (ledger.containsKey(k) && !p.ref.containsKey(k)) roads.put(k, ledger.get(k));
+		for (Long k : ledger.keySet()) if (!p.ref.containsKey((long) k) && !roads.containsKey(k)) run.extra++;
+		run.roadCells = roads.size();
+		run.roadDigest = PieceLedger.digest(roads);
+		run.roadStates = roads;
 		run.duplicates = (int) rec.duplicates().stream().filter(k -> s.inInner(PieceLedger.x(k), PieceLedger.z(k))).count();
 		run.ledgerDigest = PieceLedger.digest(ledger);
 
@@ -66,6 +71,33 @@ public final class SimCompare {
 				if (kind.equals("unknown")) { run.solidUnknown++; detail(run.badCells, "solid", world, x, y, z, want, have); }
 			}
 		}
+		roadCells(world, level, roads, run);
+	}
+
+	/** C3 for the road feature's cells: the world holds what the ledger says, or what {@link SpillKinds} accepts there (no ledger cell is ever "unknown"). */
+	private static void roadCells(SimWorld world, BlockGetter level, TreeMap<Long, Integer> roads, SimRun run) {
+		for (var e : roads.entrySet()) {
+			long k = e.getKey();
+			int x = PieceLedger.x(k), y = PieceLedger.y(k), z = PieceLedger.z(k);
+			BlockState want = Block.BLOCK_STATE_REGISTRY.byId(e.getValue()), have = world.get(x, y, z);
+			if (want.isAir()) {
+				if (have.isAir()) continue;
+				run.roadBad++;
+				String kind = SpillKinds.airKind(have, world.get(x, y + 1, z), world.get(x, y + 2, z));
+				if (kind.equals("unknown") && SpillKinds.trunkBaseBeside(have, level, x, y, z)) kind = "spill";
+				run.histogram.merge("road-air->" + name(have) + " [" + kind + "]", 1, Integer::sum);
+				if (kind.equals("unknown")) { run.roadUnknown++; detail(run.badCells, "road air", world, x, y, z, want, have); }
+			} else {
+				run.roadSolid++;
+				if (have == want) continue;
+				run.roadBad++;
+				String kind = SpillKinds.solidKind(want, have, world.get(x, y + 1, z), world.get(x, y + 2, z), true);
+				if (kind.equals("unknown") && SpillKinds.lakeBarrier(have, level, x, y, z)) kind = "lake";
+				if (kind.equals("unknown") && SpillKinds.trunkBaseBeside(have, level, x, y, z)) kind = "spill";
+				run.histogram.merge("road-" + name(want) + "->" + name(have) + " [" + kind + "]", 1, Integer::sum);
+				if (kind.equals("unknown")) { run.roadUnknown++; detail(run.badCells, "road solid", world, x, y, z, want, have); }
+			}
+		}
 	}
 
 	private static void detail(java.util.List<String> out, String what, SimWorld world, int x, int y, int z, BlockState want, BlockState have) {
@@ -78,6 +110,7 @@ public final class SimCompare {
 	static void crossOrder(Scenario s, SimRun base, SimRun run) {
 		Scenario.Plan p = s.plan();
 		run.digestDiffers = !run.ledgerDigest.equals(base.ledgerDigest);
+		run.roadDigestDiffers = !run.roadDigest.equals(base.roadDigest);
 		int diff = 0;
 		for (int i = 0; i < run.have.length; i++) {
 			if (run.have[i] == base.have[i]) continue;
@@ -161,6 +194,8 @@ public final class SimCompare {
 				return old.is(Blocks.SNOW) ? null : "removed " + name(old);
 			case "FoliageClear":
 				return now.isAir() || !now.getFluidState().isEmpty() ? null : "wrote " + name(now);
+			case "RoadFeature":
+				return Math.floorDiv(w.x(), 16) == dcx && Math.floorDiv(w.z(), 16) == dcz ? null : "wrote outside its chunk " + dcx + "," + dcz;
 			case "HookPlacer":
 				return null;
 			default:
