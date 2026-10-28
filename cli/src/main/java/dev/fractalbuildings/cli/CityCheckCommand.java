@@ -51,7 +51,7 @@ final class CityCheckCommand {
 	private record Result(Job job, String siteId, String tier, int radius, int cells, int districts, int lots, int scenes, int hubPct, int strays, List<String> problems, List<String> warnings, String error, double ms, TerrainStats terrain, FillStats fill, long roofCols, long roofDry) {}
 
 	static int run(String[] args) throws IOException {
-		Opts o = new Opts(args, Set.of("seeds", "terrain", "sites", "scenes", "cell-size", "out", "ignore", "list", "junctions-near", "fill-json", "diagonals"), Set.of("junction", "door-rise"));
+		Opts o = new Opts(args, Set.of("seeds", "terrain", "sites", "scenes", "cell-size", "out", "ignore", "list", "junctions-near", "fill-json", "fill-baseline", "diagonals"), Set.of("junction", "door-rise"));
 		doorRiseOn = o.flag("door-rise");
 		o.flag("junction"); // junction-height is part of every check now (JUNCTION); the flag that turned it on is accepted and does nothing
 		listMax = o.intValue("list", 20);
@@ -98,6 +98,14 @@ final class CityCheckCommand {
 		final PlanOptions opts = CityCommand.planOptions(o);
 		IntStream.range(0, results.length).parallel().forEach(i -> results[i] = check(jobs.get(i), sceneCount, opts));
 		String md = toMarkdown(results, scenes, ignore);
+		int lotLosses = 0; // METROFILL R2: the DS-47 lot-loss guard
+		if (o.has("fill-baseline")) {
+			try {
+				Object[] ld = FillReport.lotDiff(fillSites(results), Files.readString(Path.of(o.get("fill-baseline", null))));
+				md += (String) ld[0];
+				lotLosses = (Integer) ld[1];
+			} catch (java.io.IOException e) { throw new UsageException("cannot read --fill-baseline: " + e.getMessage()); }
+		}
 		double secs = (System.nanoTime() - t0) / 1e9;
 		int bad = 0;
 		for (Result r : results) if (r.error() != null || r.problems().stream().anyMatch(p -> !ignore.contains(rule(p)))) bad++;
@@ -105,7 +113,7 @@ final class CityCheckCommand {
 		if (o.has("fill-json")) GenCommand.write(Path.of(o.get("fill-json", null)), FillReport.json(fillSites(results)).getBytes(StandardCharsets.UTF_8)); // METROFILL M0
 		if (o.has("out")) GenCommand.write(Path.of(o.get("out", null)), md.getBytes(StandardCharsets.UTF_8));
 		else System.out.print(md);
-		return bad == 0 ? 0 : 1;
+		return bad == 0 && lotLosses == 0 ? 0 : 1;
 	}
 
 	/** Violations listed per site in the report ({@code --list}). */

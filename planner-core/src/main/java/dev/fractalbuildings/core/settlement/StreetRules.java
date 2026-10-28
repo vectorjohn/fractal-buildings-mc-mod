@@ -162,6 +162,7 @@ final class StreetRules {
 		int m = Math.floorDiv(along[0] + along[1], 2), c0 = Math.floorDiv(lo + pos, 2), c1 = Math.floorDiv(pos + hi, 2);
 		boolean grid = vertical ? gridAt(c0, m) || gridAt(c1, m) : gridAt(m, c0) || gridAt(m, c1);
 		if (!grid) return false;
+		if (tier.atLeast(Tier.CITY) && lattice() && network.parallelMain(axis, pos, along[0], along[1], RoadNetwork.GRID_YIELD)) return false; // judged per block side, like the grid land test
 		int x0 = vertical ? pos : a, z0 = vertical ? a : pos, x1 = vertical ? pos : b, z1 = vertical ? b : pos;
 		return !wet(exact, x0, z0) && !wet(exact, x1, z1) && slopeOk(exact, x0, z0, x1, z1);
 	}

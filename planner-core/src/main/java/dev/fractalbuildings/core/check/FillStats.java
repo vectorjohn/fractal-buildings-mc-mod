@@ -85,6 +85,10 @@ public final class FillStats {
 	public final SortedMap<String, Double> lengthByKind;
 	public final List<Sliver> slivers;
 	public final long sliverArea;
+	/** Sliver columns by the kinds of the two roads either side ("arterial/main", kinds in alphabetical order), over the columns of the slivers. */
+	public final SortedMap<String, Long> sliverPairs;
+	/** Built lots and density by district id ({built, density}); the lot-loss guard compares two runs. */
+	public final SortedMap<String, int[]> districtLots;
 	/** All road-to-road gaps in rows and columns, and those that are empty and at most {@link #SLIVER_GAP} long. */
 	public final long gaps, emptyShortGaps;
 	public final int deadEnds;
@@ -96,7 +100,7 @@ public final class FillStats {
 	public final SortedMap<String, Integer> coreLotCount;
 
 	private FillStats(String site, Tier tier, int radius, Zone all, SortedMap<String, Zone> bands, SortedMap<String, Zone> rings, SortedMap<String, long[]> frontageByKind,
-			SortedMap<String, Double> lengthByKind, List<Sliver> slivers, long sliverArea, long gaps, long emptyShortGaps, int deadEnds, SortedMap<String, Integer> deadEndsByKind,
+			SortedMap<String, Double> lengthByKind, List<Sliver> slivers, long sliverArea, SortedMap<String, Long> sliverPairs, SortedMap<String, int[]> districtLots, long gaps, long emptyShortGaps, int deadEnds, SortedMap<String, Integer> deadEndsByKind,
 			int blockLots, SortedMap<String, Integer> coreLotDepth, SortedMap<String, Integer> coreLotCount) {
 		this.site = site;
 		this.tier = tier;
@@ -108,6 +112,8 @@ public final class FillStats {
 		this.lengthByKind = lengthByKind;
 		this.slivers = slivers;
 		this.sliverArea = sliverArea;
+		this.sliverPairs = sliverPairs;
+		this.districtLots = districtLots;
 		this.gaps = gaps;
 		this.emptyShortGaps = emptyShortGaps;
 		this.deadEnds = deadEnds;
@@ -172,6 +178,7 @@ public final class FillStats {
 		w.raw("coreLotDepth", intMap(coreLotDepth));
 		w.raw("deadEnds", Integer.toString(deadEnds));
 		w.raw("deadEndsByKind", intMap(deadEndsByKind));
+		w.raw("districtLots", districtLotsJson());
 		w.raw("emptyShortGapPct", f1(emptyShortGapPct()));
 		w.raw("frontageByKind", frontageJson());
 		w.num("gaps", gaps);
@@ -181,6 +188,7 @@ public final class FillStats {
 		w.raw("rings", zonesJson(rings));
 		w.text("site", site);
 		w.raw("sliverArea", Long.toString(sliverArea));
+		w.raw("sliverPairs", pairsJson());
 		w.raw("slivers", Integer.toString(slivers.size()));
 		w.text("tier", tier.json);
 		w.raw("total", zoneJson(all));
@@ -194,6 +202,46 @@ public final class FillStats {
 		m.forEach((k, v) -> parts.add(JsonWriter.quote(k) + ": " + v));
 		return "{" + String.join(", ", parts) + "}";
 	}
+
+	private String pairsJson() {
+		List<String> parts = new ArrayList<>();
+		sliverPairs.forEach((k, v) -> parts.add(JsonWriter.quote(k) + ": " + v));
+		return "{" + String.join(", ", parts) + "}";
+	}
+
+	private String districtLotsJson() {
+		List<String> parts = new ArrayList<>();
+		districtLots.forEach((k, v) -> parts.add(JsonWriter.quote(k) + ": [" + v[0] + ", " + v[1] + "]"));
+		return "{" + String.join(", ", parts) + "}";
+	}
+
+	/** Districts of a site JSON object (as {@link #toJson} wrote it) by id: {built lots, density}; empty when the file has none. */
+	@SuppressWarnings("unchecked")
+	public static SortedMap<String, int[]> parseDistrictLots(Object siteJson) {
+		TreeMap<String, int[]> out = new TreeMap<>();
+		Object m = siteJson instanceof java.util.Map<?, ?> s ? s.get("districtLots") : null;
+		if (m instanceof java.util.Map<?, ?> dm) {
+			for (java.util.Map.Entry<?, ?> e : dm.entrySet()) {
+				List<Object> a = (List<Object>) e.getValue();
+				out.put((String) e.getKey(), new int[] {((Number) a.get(0)).intValue(), ((Number) a.get(1)).intValue()});
+			}
+		}
+		return out;
+	}
+
+	/** DS-47 guard: districts of density {@value #LOSS_DENSITY} and up (either run) whose built lot count fell, as "id before -> after (density)". A road removal must never cause one. */
+	public static List<String> lotLosses(SortedMap<String, int[]> before, SortedMap<String, int[]> after) {
+		List<String> out = new ArrayList<>();
+		before.forEach((id, b) -> {
+			int[] a = after.get(id);
+			if (a == null) return;
+			if (Math.max(a[1], b[1]) >= LOSS_DENSITY && a[0] < b[0]) out.add(id + " " + b[0] + " -> " + a[0] + " (density " + b[1] + ")");
+		});
+		return out;
+	}
+
+	/** Density from which a lower lot count in a district counts as a loss. */
+	public static final int LOSS_DENSITY = 50;
 
 	private String lengthJson() {
 		List<String> parts = new ArrayList<>();
@@ -370,7 +418,14 @@ public final class FillStats {
 
 			long[] gapCount = new long[2];
 			List<Sliver> slivers = new ArrayList<>();
-			long sliverArea = sliverScan(gapCount, slivers);
+			TreeMap<String, Long> pairs = new TreeMap<>();
+			long sliverArea = sliverScan(gapCount, slivers, pairs);
+			TreeMap<String, int[]> dl = new TreeMap<>();
+			for (DistrictPlan d : districts) {
+				int n = 0;
+				for (LotBrief l : d.lots()) if (l.builds()) n++;
+				dl.put(d.district().id(), new int[] {n, d.district().density()});
+			}
 
 			// dead ends
 			TreeMap<String, Integer> deadByKind = new TreeMap<>();
@@ -394,7 +449,7 @@ public final class FillStats {
 				med.put(t, v.get((v.size() - 1) / 2));
 				cnt.put(t, v.size());
 			});
-			return new FillStats(site.id(), site.tier(), r, total.zone("all"), bands, rings, byKind, length, slivers, sliverArea, gapCount[0], gapCount[1], dead, deadByKind, blocks, med, cnt);
+			return new FillStats(site.id(), site.tier(), r, total.zone("all"), bands, rings, byKind, length, slivers, sliverArea, pairs, dl, gapCount[0], gapCount[1], dead, deadByKind, blocks, med, cnt);
 		}
 
 		/** Length of the part of segment a-b inside [xa, xb) x [za, zb). */
@@ -419,8 +474,15 @@ public final class FillStats {
 		 * Row and column scan for road-to-road gaps; marks the cells of empty gaps of at most {@link #SLIVER_GAP}, then collects
 		 * connected marked components whose bounding box is at least {@link #SLIVER_LENGTH} on its long side.
 		 */
-		long sliverScan(long[] gapCount, List<Sliver> out) {
+		static String pairName(int p) {
+			int lo = p / 8, hi = p % 8;
+			String a = lo == 0 ? "road" : KINDS[lo - 1], b = hi == 0 ? "road" : KINDS[hi - 1];
+			return a.compareTo(b) <= 0 ? a + "/" + b : b + "/" + a;
+		}
+
+		long sliverScan(long[] gapCount, List<Sliver> out, TreeMap<String, Long> pairs) {
 			boolean[] mark = new boolean[w * h];
+			byte[] pair = new byte[w * h];
 			for (int dir = 0; dir < 2; dir++) {
 				int na = dir == 0 ? h : w, nb = dir == 0 ? w : h;
 				int sa = dir == 0 ? w : 1, sb = dir == 0 ? 1 : w;
@@ -436,7 +498,7 @@ public final class FillStats {
 								int len = b - last - 1;
 								if (!filled && len <= SLIVER_GAP) {
 									gapCount[1]++;
-									for (int q = last + 1; q < b; q++) mark[a * sa + q * sb] = true;
+									for (int q = last + 1; q < b; q++) { mark[a * sa + q * sb] = true; pair[a * sa + q * sb] = (byte) (Math.min(kind[a * sa + last * sb], kind[k]) * 8 + Math.max(kind[a * sa + last * sb], kind[k])); }
 								}
 							}
 							last = b;
@@ -454,9 +516,11 @@ public final class FillStats {
 				seen[k0] = true;
 				int minI = w, maxI = -1, minJ = h, maxJ = -1;
 				long n = 0;
+				TreeMap<String, Long> comp = new TreeMap<>();
 				while (!stack.isEmpty()) {
 					int k = stack.pop();
 					n++;
+					comp.merge(pairName(pair[k]), 1L, Long::sum);
 					int i = k % w, j = k / w;
 					minI = Math.min(minI, i);
 					maxI = Math.max(maxI, i);
@@ -472,6 +536,7 @@ public final class FillStats {
 					Rect box = new Rect(x0 + minI, z0 + minJ, bw, bd);
 					out.add(new Sliver(box, n, densityAt(box.x() + bw / 2, box.z() + bd / 2)));
 					area += n;
+					comp.forEach((p, c) -> pairs.merge(p, c, Long::sum));
 				}
 			}
 			return area;

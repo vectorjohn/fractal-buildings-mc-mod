@@ -2298,7 +2298,7 @@ public final class Districts {
 			if (last.x() != to[0] && last.z() != to[1]) routed.add(new Pt(to[0], last.z()));
 			if (routed.get(routed.size() - 1).x() != to[0] || routed.get(routed.size() - 1).z() != to[1]) routed.add(new Pt(to[0], to[1]));
 			Raw lane = laneRaw(laneId, routed);
-			return lane != null && !hitsReservedAny(lane) && grade(lane) ? lane : null;
+			return lane != null && !runsBeside(lane) && !hitsReservedAny(lane) && grade(lane) ? lane : null;
 		}
 
 		// ---- lanes
@@ -2339,6 +2339,34 @@ public final class Districts {
 				if (Integer.signum(b.x() - a.x()) == Integer.signum(c.x() - b.x()) && Integer.signum(b.z() - a.z()) == Integer.signum(c.z() - b.z())) out.remove(i);
 			}
 			return out;
+		}
+
+		/** Longest stretch a lane may run beside another street within {@link #LANE_BESIDE} (METROFILL R2). 0 = off: at 16 it saved 2 slivers on the 9 gate windows and exposed a latent tile-border disagreement (DistrictsTest case 8, see NOTES). */
+		static final int LANE_PARALLEL = 0, LANE_BESIDE = 12;
+
+		/**
+		 * Does the lane run alongside another street, closer than {@link #LANE_BESIDE} across and for more than {@link #LANE_PARALLEL}
+		 * blocks? Only axis-parallel runs count; lanes that come within 16 of the tile border are left alone (the neighbour tile
+		 * would have to agree). City and metropolis only.
+		 */
+		boolean runsBeside(Raw r) {
+			if (LANE_PARALLEL <= 0 || !src.site().tier().atLeast(Tier.CITY)) return false;
+			int m = 16;
+			for (int[] c : r.cols) if (c[0] < tile.minX() + m || c[0] > tile.maxX() - m || c[1] < tile.minZ() + m || c[1] > tile.maxZ() - m) return false;
+			int hits = 0;
+			for (int k = 0; k < r.cols.size(); k++) {
+				int[] a = r.cols.get(Math.max(0, k - 2)), b = r.cols.get(Math.min(r.cols.size() - 1, k + 2)), c = r.cols.get(k);
+				int dx = Math.abs(b[0] - a[0]), dz = Math.abs(b[1] - a[1]);
+				boolean alongX = dx > 2 * dz, alongZ = dz > 2 * dx;
+				if (!alongX && !alongZ) continue;
+				boolean hit = false;
+				for (int o = 3; o <= LANE_BESIDE && !hit; o++) {
+					int x1 = alongX ? c[0] : c[0] + o, z1 = alongX ? c[1] + o : c[1], x2 = alongX ? c[0] : c[0] - o, z2 = alongX ? c[1] - o : c[1];
+					hit = (fg(x1, z1) & STREET) != 0 || (fg(x2, z2) & STREET) != 0;
+				}
+				if (hit) hits++;
+			}
+			return hits > LANE_PARALLEL;
 		}
 
 		Raw laneRaw(String laneId, List<Pt> pts) {
@@ -2550,7 +2578,7 @@ public final class Districts {
 					if (last.x() != near[0] && last.z() != near[1]) routed.add(new Pt(near[0], last.z()));
 					if (routed.get(routed.size() - 1).x() != near[0] || routed.get(routed.size() - 1).z() != near[1]) routed.add(new Pt(near[0], near[1]));
 					Raw lane = laneRaw("q" + n++, routed);
-					if (lane == null || hitsReservedAny(lane) || !grade(lane)) continue;
+					if (lane == null || runsBeside(lane) || hitsReservedAny(lane) || !grade(lane)) continue;
 					raws.add(lane);
 					paint(lane);
 					break;
@@ -2600,7 +2628,7 @@ public final class Districts {
 					List<Pt> pts = new ArrayList<>();
 					for (LatticePath.Pt q : path) pts.add(new Pt(q.x(), q.z()));
 					Raw lane = laneRaw("n" + ln++, pts);
-					if (lane == null || hitsReservedAny(lane)) continue;
+					if (lane == null || runsBeside(lane) || hitsReservedAny(lane)) continue;
 					if (!grade(lane)) continue;
 					raws.add(lane);
 					paint(lane);

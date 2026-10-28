@@ -78,6 +78,77 @@ public final class RoadNetwork {
 	/** True when the network has a street lattice at all (a city or metropolis with a hub and planned tiles). */
 	public boolean hasLattice() { return lattice; }
 
+	/** Grid lines yield to a skeleton main road this near (centre to centre) running the same way (METROFILL R2). 0 = off: at 24 it saved no sliver (28 -> 29 on the 9 gate windows) and exposed a latent tile-border disagreement (DistrictsTest case 8: a skeleton square within 8 of the border clips a main road in one tile only). */
+	static final int GRID_YIELD = 0;
+	/**
+	 * Plain border streets yield to a parallel main road this near (METROFILL R2). 0 = off, byte-neutral: at 16 the street's lots and the
+	 * streets that branched off it were lost (city-check lot-loss guard: 12 districts of density 50+ lose lots on the gate windows, coast-city
+	 * dm46_m22 28 -> 0 before the cascade test); the frontage hand-over to the main road (re-rooting, re-fronting lots) is not built. See
+	 * docs/review/metrofill/fill-r2-yield16.md.
+	 */
+	static final int LATTICE_YIELD = 0;
+	static final int ARTERIAL_YIELD = 0;
+
+	/** Test hook: a network holding only the main-road rasters. */
+	RoadNetwork(Mains m) {
+		this(new TreeSet<>(), 0, 0, 0, 0, new BitSet(), null, new TreeMap<>());
+		this.mains = m;
+	}
+
+	/**
+	 * Do at least half the {@link StreetRules#NODE}-block nodes of the stretch {@code from..to} of the line of constant coordinate {@code pos}
+	 * ({@code axis} as in {@link DistrictGrid}: AXIS_X is a line of constant x) have a skeleton main road running the same way within
+	 * {@code reach} across it? A main road crossing the line at right angles does not count. Pointwise (a raster lookup).
+	 */
+	public boolean parallelMain(int axis, int pos, int from, int to, int reach) {
+		return mains != null && reach > 0 && mains.parallel(axis, pos, from, to, reach);
+	}
+
+	/** Skeleton main-road centre lines by run direction (R2), null without a lattice. */
+	private Mains mains;
+
+	/** Main-road centre lines split by run direction: {@code alongZ} columns belong to roads that run along z (parallel to lines of constant x). */
+	static final class Mains {
+		final BitSet alongX, alongZ;
+		final int x0, z0, w, d;
+
+		Mains(int x0, int z0, int w, int d) {
+			this.x0 = x0;
+			this.z0 = z0;
+			this.w = w;
+			this.d = d;
+			alongX = new BitSet(w * d);
+			alongZ = new BitSet(w * d);
+		}
+
+		void add(List<int[]> cols) {
+			for (int k = 0; k < cols.size(); k++) {
+				int[] a = cols.get(Math.max(0, k - 2)), b = cols.get(Math.min(cols.size() - 1, k + 2)), c = cols.get(k);
+				int dx = Math.abs(b[0] - a[0]), dz = Math.abs(b[1] - a[1]);
+				int i = c[0] - x0, j = c[1] - z0;
+				if (i < 0 || j < 0 || i >= w || j >= d) continue;
+				if (dx > 2 * dz) alongX.set(j * w + i);
+				else if (dz > 2 * dx) alongZ.set(j * w + i);
+			}
+		}
+
+		boolean parallel(int axis, int pos, int from, int to, int reach) {
+			boolean vertical = axis == DistrictGrid.AXIS_X;
+			BitSet runs = vertical ? alongZ : alongX;
+			int nodes = 0, hit = 0;
+			for (int t = Math.floorDiv(from + StreetRules.NODE - 1, StreetRules.NODE) * StreetRules.NODE; t <= to; t += StreetRules.NODE) {
+				nodes++;
+				boolean found = false;
+				for (int o = -reach; o <= reach && !found; o++) {
+					int i = (vertical ? pos + o : t) - x0, j = (vertical ? t : pos + o) - z0;
+					if (i >= 0 && j >= 0 && i < w && j < d && runs.get(j * w + i)) found = true;
+				}
+				if (found) hit++;
+			}
+			return nodes > 0 && 2 * hit >= nodes;
+		}
+	}
+
 	private boolean lattice;
 
 	/** What the tile-border segment is drawn as: {@link RoadKind#ARTERIAL}, {@link RoadKind#STREET}, or null for none. */
@@ -101,7 +172,27 @@ public final class RoadNetwork {
 	}
 
 	/** An eligible lattice segment: its key, tile corners, centre-line columns and whether it is an arterial. */
-	private record Seg(DistrictGrid.Segment s, String key, long n0, long n1, List<int[]> cols, boolean arterial) {}
+	private record Seg(DistrictGrid.Segment s, String key, long n0, long n1, List<int[]> cols, boolean arterial, boolean yields) {}
+
+	/** The segments linked to the hub through the mains and each other, leaving out those in {@code off}; {@code liveOut[0]} gets the flooded raster. */
+	private static boolean[] fixpoint(List<Seg> segs, TreeMap<Long, List<Integer>> atNode, boolean[] off, BitSet mains, Painter p, Pt hub, int x0, int z0, int w, int d, BitSet[] liveOut) {
+		boolean[] in = new boolean[segs.size()];
+		while (true) {
+			BitSet on = (BitSet) mains.clone();
+			for (int i = 0; i < segs.size(); i++) if (in[i]) p.paint(on, segs.get(i).cols());
+			BitSet live = flood(on, hub, x0, z0, w, d);
+			if (liveOut != null) liveOut[0] = live;
+			List<Integer> stack = new ArrayList<>();
+			for (int i = 0; i < segs.size(); i++) if (!off[i] && !in[i] && touches(live, segs.get(i).cols(), x0, z0, w, d)) { in[i] = true; stack.add(i); }
+			if (stack.isEmpty()) return in;
+			while (!stack.isEmpty()) {
+				Seg s = segs.get(stack.remove(stack.size() - 1));
+				for (long n : new long[] {s.n0(), s.n1()}) {
+					for (int j : atNode.get(n)) if (!off[j] && !in[j]) { in[j] = true; stack.add(j); }
+				}
+			}
+		}
+	}
 
 	/** Builds the network of a settlement from its skeletons and the arterial rule. */
 	public static RoadNetwork build(SkeletonSource src) {
@@ -127,10 +218,15 @@ public final class RoadNetwork {
 		int pad = Districts.MARGIN + 2;
 		int x0 = minX - pad, z0 = minZ - pad, w = maxX - minX + 2 * pad, d = maxZ - minZ + 2 * pad;
 		BitSet mains = new BitSet(w * d);
+		Mains dirs = new Mains(x0, z0, w, d);
 		Painter p = new Painter(grid, planned, x0, z0, w, d);
 		for (CellSkeleton s : sk) {
 			for (Road r : s.roads()) {
-				if (r.kind() == RoadKind.MAIN || r.kind() == RoadKind.PATH) p.paint(mains, StreetCols.columns(r.points()));
+				if (r.kind() == RoadKind.MAIN || r.kind() == RoadKind.PATH) {
+					List<int[]> mc = StreetCols.columns(r.points());
+					p.paint(mains, mc);
+					if (r.kind() == RoadKind.MAIN) dirs.add(mc);
+				}
 			}
 		}
 		TreeMap<String, Boolean> present = new TreeMap<>();
@@ -140,27 +236,25 @@ public final class RoadNetwork {
 		if (!lattice) {
 			live = flood(mains, hub, x0, z0, w, d);
 		} else {
-			List<Seg> segs = eligible(src, planned, x0, z0, w, d);
+			List<Seg> segs = eligible(src, planned, x0, z0, w, d, dirs);
 			TreeMap<Long, List<Integer>> atNode = new TreeMap<>();
 			for (int i = 0; i < segs.size(); i++) {
 				atNode.computeIfAbsent(segs.get(i).n0(), k -> new ArrayList<>()).add(i);
 				atNode.computeIfAbsent(segs.get(i).n1(), k -> new ArrayList<>()).add(i);
 			}
-			boolean[] in = new boolean[segs.size()];
-			while (true) {
-				BitSet on = (BitSet) mains.clone();
-				for (int i = 0; i < segs.size(); i++) if (in[i]) p.paint(on, segs.get(i).cols());
-				live = flood(on, hub, x0, z0, w, d);
-				List<Integer> stack = new ArrayList<>();
-				for (int i = 0; i < segs.size(); i++) if (!in[i] && touches(live, segs.get(i).cols(), x0, z0, w, d)) { in[i] = true; stack.add(i); }
-				if (stack.isEmpty()) break;
-				while (!stack.isEmpty()) {
-					Seg s = segs.get(stack.remove(stack.size() - 1));
-					for (long n : new long[] {s.n0(), s.n1()}) {
-						for (int j : atNode.get(n)) if (!in[j]) { in[j] = true; stack.add(j); }
-					}
-				}
+			// METROFILL R2: a segment beside a parallel main road yields only when that costs no other segment its link to the hub
+			// (the cascade that emptied whole tiles): candidates in key order, each tried on top of the ones already accepted
+			boolean[] off = new boolean[segs.size()];
+			boolean[] all = fixpoint(segs, atNode, off, mains, p, hub, x0, z0, w, d, null);
+			for (int c = 0; c < segs.size(); c++) {
+				if (!segs.get(c).yields()) continue;
+				off[c] = true;
+				boolean[] t = fixpoint(segs, atNode, off, mains, p, hub, x0, z0, w, d, null);
+				for (int i = 0; i < segs.size() && off[c]; i++) if (all[i] && !t[i] && !off[i]) off[c] = false;
 			}
+			BitSet[] lv = new BitSet[1];
+			boolean[] in = fixpoint(segs, atNode, off, mains, p, hub, x0, z0, w, d, lv);
+			live = lv[0];
 			for (int i = 0; i < segs.size(); i++) {
 				if (!in[i]) continue;
 				Seg s = segs.get(i);
@@ -170,6 +264,7 @@ public final class RoadNetwork {
 		}
 		RoadNetwork n = new RoadNetwork(planned, x0, z0, w, d, live, hub, present);
 		n.lattice = lattice;
+		n.mains = dirs;
 		n.arterialIds = arterialIds;
 		return n;
 	}
@@ -203,7 +298,7 @@ public final class RoadNetwork {
 	}
 
 	/** The eligible border segments of the planned area, in (axis, line, index) order, with the columns the drawn windows keep. */
-	private static List<Seg> eligible(SkeletonSource src, TreeSet<Long> planned, int x0, int z0, int w, int d) {
+	private static List<Seg> eligible(SkeletonSource src, TreeSet<Long> planned, int x0, int z0, int w, int d, Mains dirs) {
 		Arterials art = src.density().arterials();
 		DensityField den = src.density();
 		boolean city = src.site().tier() == Tier.CITY;
@@ -216,6 +311,9 @@ public final class RoadNetwork {
 			boolean adj = xAxis ? planned.contains(key(kx - 1, kz)) || planned.contains(key(kx, kz)) : planned.contains(key(kx, kz - 1)) || planned.contains(key(kx, kz));
 			if (!adj) continue;
 			boolean arterial = art.is(s);
+			// R2: a main road within reach running the same way takes the segment's place (arterial or plain)
+			int reach = arterial ? ARTERIAL_YIELD : LATTICE_YIELD;
+			boolean yields = reach > 0 && src.site().tier().atLeast(Tier.CITY) && dirs.parallel(s.axis(), s.fixed(), s.from(), s.to(), reach);
 			if (!arterial) {
 				int mid = Math.floorDiv(s.from() + s.to(), 2), urban = 0;
 				for (int q : new int[] {s.from(), mid, s.to()}) if (streetPoint(den, Arterials.ax(s, q), Arterials.az(s, q))) urban++;
@@ -228,7 +326,7 @@ public final class RoadNetwork {
 			if (!arterial && hitsWall(all, StreetRules.BORDER_WIDTH, walls)) continue;
 			List<int[]> cols = new ArrayList<>();
 			for (int[] c : all) if (p.drawn(c[0], c[1])) cols.add(c);
-			out.add(new Seg(s, key(s), n0, n1, cols, arterial));
+			out.add(new Seg(s, key(s), n0, n1, cols, arterial, yields));
 		}
 		return out;
 	}
