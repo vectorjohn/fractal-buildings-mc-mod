@@ -629,6 +629,37 @@ and Minecraft block facts ([blocks.md](blocks.md), from John's
 - **Status:** accepted (Approved by @John on 2026-10-27). **Source:** interior designer, playtest questions
   2026-10-27 ([playtest1026-qs-interior.md](../review/reports/playtest1026-qs-interior.md), Q1).
 
+## DS-13 amendment: storage rooms fill densely
+
+- **Addition** to DS-13's 40 % cap: storage uses (cellar, storeroom,
+  wine and keg cellar, root cellar, undercroft store, lockers) may fill to
+  about 50 % of the floor cells, as long as DS-48's 1-wide lane from the
+  stair foot to every door and every chest holds.
+- **Why:** storage rooms look right packed (barrel stacks, shelves,
+  chests along every wall). John: "I like the dense fill rate suggestion."
+- **Scope:** storage uses, above and below grade (first case: 7.18
+  BASEMENT).
+- **Enforcement:** code candidate: `COVER_CAP` per room use, with the
+  `furnished-rooms-walkable` lane check (DS-48). None today.
+- **Status:** accepted (John 2026-10-29, amends accepted DS-13).
+  **Source:** interior designer, basements question 2026-10-26
+  ([basements-interior.md](../review/reports/basements-interior.md),
+  "Rule?"); John's answer in the same file.
+
+## DS-74 Crypts may hold a skull niche
+
+- **Rule:** a temple crypt may show a single `skeleton_skull` in a wall
+  niche (an ossuary touch); never `bone_block` walls, never more than one
+  per crypt (agent's number).
+- **Why:** period-correct (ossuaries), needs no entity. John: "Yes to
+  skull niche."
+- **Scope:** temple crypts (7.18 BASEMENT B4).
+- **Enforcement:** guideline.
+- **Status:** accepted (John 2026-10-29). **Source:** interior designer,
+  basements question 2026-10-26
+  ([basements-interior.md](../review/reports/basements-interior.md),
+  "Temple").
+
 # Settlements
 
 ## DS-17 No detached roads
@@ -1178,6 +1209,28 @@ DS-25 with an exception for deliberate repeating patterns.
   also approve the proposed rule"). **Source:** architect, basements
   question 2026-10-26.
 
+## DS-24 and DS-25 amendment: basements are lit, not daylit
+
+- **Addition** to DS-24 and an exception to DS-25 (and to DS-53's
+  window line): a room below the entrance storey needs no window or
+  daylight; instead every basement room is lit from placed sources: one
+  lantern (or equal) per room, two when the room is wider than about 12
+  cells, corridor lights every 8 cells or less, and block light 1 or more
+  on every walkable cell (agent's numbers). Finished basement rooms
+  (ROADMAP 7.18 phase 2: bars, gyms, event and club rooms) take the same
+  exception.
+- **Why:** John: "Basements obviously don't need daylight, so yes it has
+  to be an exception" and "They should be lighted for now". A windowless
+  room is dark by default, so light is what keeps it from being a
+  spawner (DS-24).
+- **Scope:** every storey below the entrance (7.18 BASEMENT).
+- **Enforcement:** code candidate: DS-24's light propagation over the IR,
+  extended below grade (7.18 B1); none today.
+- **Status:** accepted (John 2026-10-29; amends accepted DS-24, DS-25 and
+  DS-53). **Source:** interior designer, basements question 2026-10-26
+  ([basements-interior.md](../review/reports/basements-interior.md),
+  "Basements are lit throughout"); John's answer in the same file.
+
 # Proposed by agents
 
 New proposals go here (`proposed`, with the source); John accepts, edits or
@@ -1667,3 +1720,22 @@ copies are under `docs/review/` where they exist.
   pass); client foliage tests.
 - **Status:** proposed (clarifies DS-20). **Source:** architect,
   ROADLEAFORDER review 2026-10-29 (p6-roadleaforder-architect.md).
+
+## DS-75 Basement rooms take basement uses
+
+- **Proposed rule:** a basement room takes a basement use: in 7.18
+  phase 1 a service use (storage, cellar, plant, lockers, laundry, crypt,
+  vault; the desert sardab excepted), in phase 2 also a finished use (bar,
+  gym, event or club room, rec room, a hidden room); never a bedroom or a
+  kitchen. Basement rooms don't count for DS-12 (bedrooms first).
+- **Why:** period practice; no daylight. John 2026-10-29 widened the
+  agents' "service space only" to two phases ("any basement at all with
+  storage followed by event spaces, gyms, bars, finished basements,
+  etc.") but did not say whether basement rooms count for DS-12, or
+  whether bedrooms or kitchens are ever allowed below grade.
+- **Scope:** all types with basements (7.18 BASEMENT).
+- **Enforcement:** code candidate (room-use check per storey).
+- **Status:** proposed (the DS-12 count and the bedroom/kitchen ban
+  await John). **Source:** interior designer, basements question
+  2026-10-26 ([basements-interior.md](../review/reports/basements-interior.md),
+  "Basements are service space").

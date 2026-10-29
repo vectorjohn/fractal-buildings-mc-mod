@@ -15,7 +15,10 @@
 #      "John feedback: <files>". Never discards, resets or stashes.
 #   2. main: if it has commits the run branch lacks, report it (the coordinator merges it).
 #   3. if the docs branch has commits the run branch lacks: under <root>/.claude/merge.lock, in
-#      --checkout (must be clean and on the run branch) `merge --no-ff --no-commit`, run
+#      --checkout (must be on the run branch, with nothing staged and clean apart from
+#      uncommitted docs/runs/ edits, the coordinator's ledger, which stay uncommitted; when there
+#      are some and the docs branch changed docs/runs/ too, nothing is merged: exit 1)
+#      `merge --no-ff --no-commit`, run
 #      scripts/review-check.sh on the index, commit; on a conflict or review-check failure
 #      `merge --abort` (the checkout is left as it was).
 #   4. fast-forward the docs branch to the run branch (`merge --ff-only`); never forces. A non-ff
@@ -105,8 +108,16 @@ if [ "$RC" != 1 ] && [ "$n" -gt 0 ]; then
   (
     flock 9 || exit 1
     [ "$(git -C "$C" branch --show-current)" = "$RUN" ] || { echo "checkout $C is not on $RUN"; exit 1; }
-    [ -z "$(git -C "$C" status --porcelain --untracked-files=no)" ] || { echo "checkout $C is not clean"; exit 1; }
+    # clean apart from unstaged docs/runs/ edits (the coordinator's ledger; same exclusion as squash-merge.sh)
+    DIRTY=$(git -C "$C" status --porcelain --untracked-files=no -- . ':!docs/runs')
+    [ -z "$DIRTY" ] || { echo "checkout $C is not clean: $(echo "$DIRTY" | cut -c4- | paste -sd' ')"; exit 1; }
+    STAGED=$(git -C "$C" diff --cached --name-only)
+    [ -z "$STAGED" ] || { echo "checkout $C has staged changes: $(echo "$STAGED" | paste -sd' ')"; exit 1; }
     [ ! -e "$(git -C "$C" rev-parse --git-path MERGE_HEAD)" ] || { echo "checkout $C has a merge in progress"; exit 1; }
+    if [ -n "$(git -C "$C" status --porcelain -- docs/runs)" ]; then
+      TOUCH=$(git -C "$C" diff --name-only "HEAD...$DB" -- docs/runs)
+      [ -z "$TOUCH" ] || { echo "merge of $DB would touch docs/runs/ while the checkout has uncommitted ledger edits (nothing merged; commit the ledger first): $(echo "$TOUCH" | paste -sd' ')"; exit 1; }
+    fi
     BASE=$(git -C "$C" rev-parse HEAD)
     if ! git -C "$C" merge -q --no-ff --no-commit "$DB" >/dev/null 2>&1; then
       echo "merge of $DB conflicted: $(git -C "$C" diff --name-only --diff-filter=U | paste -sd' ')"

@@ -20,6 +20,7 @@ setup() {
   printf '# Review\n\n- [ ] **Open item** look\n' > "$R/docs/REVIEW.md"
   printf '# Review archive\n\n- [x] **Old item** done\n' > "$R/docs/REVIEW-ARCHIVE.md"
   printf 'line one\nline two\n' > "$R/docs/a.md"
+  mkdir -p "$R/docs/runs"; printf "# Run ledger\n" > "$R/docs/runs/ledger.md"
   printf '/.claude/\n' > "$R/.gitignore"
   git -C "$R" add -A; git -C "$R" commit -qm base
   git -C "$R" branch claude/run-x; git -C "$R" branch john/docs-feedback
@@ -93,6 +94,47 @@ check "dirty: exit 1" "$(sync)" 1
 has "dirty: line" "is not clean"
 check "dirty: John committed" "$(git -C "$D" log -1 --format=%s)" "John feedback: docs/REVIEW.md"
 check "dirty: run not merged" "$(git -C "$C" rev-list --count claude/run-x..john/docs-feedback)" 1
+
+# 7b. only uncommitted docs/runs/ edits (the coordinator's ledger): merged, ledger left as it was
+setup
+echo "- in flight: X" >> "$C/docs/runs/ledger.md"; echo "# new run" > "$C/docs/runs/new.md"
+echo "@John: ledger ok?" >> "$D/docs/a.md"
+check "ledger dirty: exit 10" "$(sync)" 10
+has "ledger dirty: merged line" "JOHN FEEDBACK MERGED into claude/run-x"
+check "ledger dirty: merge has no docs/runs" "$(git -C "$C" diff --name-only HEAD^1 HEAD -- docs/runs)" ""
+check "ledger dirty: edit kept" "$(tail -n1 "$C/docs/runs/ledger.md")" "- in flight: X"
+check "ledger dirty: still uncommitted" "$(git -C "$C" status --porcelain -- docs/runs | paste -sd,)" " M docs/runs/ledger.md,?? docs/runs/new.md"
+check "ledger dirty: John's text on run" "$(tail -n1 "$C/docs/a.md")" "@John: ledger ok?"
+
+# 7c. dirty ledger and the docs branch changed docs/runs/: exit 1, nothing merged, both kept
+setup
+echo "- coordinator line" >> "$C/docs/runs/ledger.md"
+echo "@John: on the ledger" >> "$D/docs/runs/ledger.md"
+RUNHEAD=$(git -C "$C" rev-parse HEAD)
+check "ledger touched: exit 1" "$(sync)" 1
+has "ledger touched: line" "would touch docs/runs/ .*docs/runs/ledger.md"
+check "ledger touched: run head unchanged" "$(git -C "$C" rev-parse HEAD)" "$RUNHEAD"
+check "ledger touched: coordinator edit kept" "$(tail -n1 "$C/docs/runs/ledger.md")" "- coordinator line"
+check "ledger touched: John committed" "$(git -C "$D" log -1 --format=%s)" "John feedback: docs/runs/ledger.md"
+check "ledger touched: no MERGE_HEAD" "$(test -e "$(git -C "$C" rev-parse --git-path MERGE_HEAD)" && echo yes || echo no)" no
+
+# 7d. dirty ledger and a conflict elsewhere: aborted, ledger edit kept
+setup
+sed -i 's/line one/line ONE run/' "$C/docs/a.md"; commit_in "$C" "run edit"
+echo "- coordinator line" >> "$C/docs/runs/ledger.md"
+sed -i 's/line one/line one -- @John no/' "$D/docs/a.md"
+check "ledger conflict: exit 1" "$(sync)" 1
+has "ledger conflict: names file" "merge of john/docs-feedback conflicted: docs/a.md"
+check "ledger conflict: only the ledger dirty" "$(git -C "$C" status --porcelain | paste -sd,)" " M docs/runs/ledger.md"
+check "ledger conflict: edit kept" "$(tail -n1 "$C/docs/runs/ledger.md")" "- coordinator line"
+
+# 7e. a staged docs/runs/ edit still refuses (the merge commit would take it)
+setup
+echo "- staged" >> "$C/docs/runs/ledger.md"; git -C "$C" add docs/runs/ledger.md
+echo "@John: z" >> "$D/docs/a.md"
+check "ledger staged: exit 1" "$(sync)" 1
+has "ledger staged: line" "has staged changes: docs/runs/ledger.md"
+check "ledger staged: run not merged" "$(git -C "$C" rev-list --count claude/run-x..john/docs-feedback)" 1
 
 # 8. post-merge FAIL / DIED: reported once (exit 12); old ones on the first run only recorded
 setup
