@@ -17,6 +17,8 @@ surface Y. Total committed size is about 0.6 MB.
 | `fly-1-hill-town.json.gz` | 1 | x -2240..-848, z 4096..5488 (176 x 176) | 8 | 32 KB | B9 fly-through "metropolis" `sm2_4` (-1536, 4800, r418), a town since CITYQ: steep, lakes (`CityFillTest`) |
 | `pt1709-world-s64.json.gz` | 1709797029209580947 | x, z -12288..12224 (384 x 384) | 64 | 235 KB | John's playtest world of 2026-10-26 (6.15 ROADJOIN): coarse world map; region decisions on it are the game's (the region layer reads 64-block lattice columns only) |
 | `pt1709-join-s2.json.gz` | 1709797029209580947 | x 3136..3776, z 1344..1920 (321 x 289) | 2 | 46 KB | ROADJOIN crop under `pt1709-world-s64`: hamlet `s3_1` (3648, 1408, r55) and metropolis `s1_2`'s north-east exits (3200, 1696) and (3264, 1856); `JoinWorld.playtest()` layers it over the world map |
+| `pt1573-world-s64.json.gz` | 1573336981619055086 | x, z -12288..12224 (384 x 384) | 64 | 231 KB | John's playtest world of 2026-10-28 (6.22 DEADPORT): coarse world map; 141 settlements |
+| `pt1573-metro-s8.json.gz` | 1573336981619055086 | x 2752..5568, z -3008..-192 (353 x 353) | 8 | 122 KB | the metropolis s4_m2 (4224, -1664, r1286) round John's "roads to nowhere" shots 20.02.18, 20.25.33, 20.42.25, 20.43.12; `JoinWorld.pt1573()` layers it over the world map (`DeadPortPlaytestTest`) |
 
 ## Regenerating, or making larger windows
 

@@ -86,11 +86,12 @@ class WorldPlannerRegionTest {
 		for (var e : on.roads().allEdges()) {
 			var r = on.roads().route(e);
 			if (!r.ok || r.touching) continue;
+			if (on.linkState(e) == WorldPlanner.LinkState.DROPPED) continue; // 6.22 DEADPORT: not drawn
 			var first = r.byChunk.values().iterator().next().get(0);
 			int cx = Math.floorDiv(first.x(), 16), cz = Math.floorDiv(first.z(), 16);
 			assertFalse(on.roadColumns(cx, cz).isEmpty());
 			assertEquals(java.util.List.of(), none.roadColumns(cx, cz));
-			for (var c : on.roads().query(cx, cz)) assertTrue(on.roadColumns(cx, cz).contains(c), "the graph's column " + c);
+			for (var c : on.roads().query(cx, cz, e2 -> on.linkState(e2) != WorldPlanner.LinkState.DROPPED)) assertTrue(on.roadColumns(cx, cz).contains(c), "the graph's column " + c); // 6.22: a dropped link is not drawn
 			if (++roadChunks >= 10) break;
 		}
 		assertTrue(roadChunks >= 10);

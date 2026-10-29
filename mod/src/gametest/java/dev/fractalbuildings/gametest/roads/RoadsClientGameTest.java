@@ -105,7 +105,7 @@ public class RoadsClientGameTest implements FabricClientGameTest {
 		for (Settlement s : net.settlementsNear(CENTER[0], CENTER[1], 5000)) {
 			for (EdgeKey e : net.edgesOf(s)) {
 				Route r = net.route(e);
-				if (r.ok && !r.touching && r.length >= 300) routes.put(e, r);
+				if (r.ok && !r.touching && r.length >= 300 && planner.linkState(e) != WorldPlanner.LinkState.DROPPED) routes.put(e, r); // 6.22: a dropped link draws nothing
 			}
 		}
 		say("village mode: " + routes.size() + " routes around " + CENTER[0] + "," + CENTER[1]);
@@ -143,7 +143,7 @@ public class RoadsClientGameTest implements FabricClientGameTest {
 		for (Settlement s : net.settlementsNear(CENTER[0], CENTER[1], 2600)) {
 			for (EdgeKey e : net.edgesOf(s)) {
 				Route r = net.route(e);
-				if (r.ok && !r.touching) routes.put(e, r);
+				if (r.ok && !r.touching && planner.linkState(e) != WorldPlanner.LinkState.DROPPED) routes.put(e, r); // 6.22: a dropped link draws nothing
 			}
 		}
 		say("routes near the origin: " + routes.size());

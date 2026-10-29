@@ -37,7 +37,7 @@ class ApproachPicTest {
 				for (int i = 0; i < scale; i++) for (int j = 0; j < scale; j++) img.setRGB(x * scale + i, z * scale + j, rgb);
 			}
 			TreeSet<Long> chunks = new TreeSet<>();
-			var apps = w.approachRoads(site, so);
+			var apps = w.drawnApproaches(site, so);
 			for (var a : apps) for (RoadNet.Col k : a.columns()) chunks.add(JoinWorld.key(Math.floorDiv(k.x(), 16), Math.floorDiv(k.z(), 16)));
 			TreeMap<Long, int[]> d = JoinWorld.districtTops(w, chunks);
 			for (var en : d.entrySet()) paint(img, (int) (en.getKey() & 0xffffffffL), (int) (en.getKey() >> 32), x0, z0, r, scale, 0x30c030);

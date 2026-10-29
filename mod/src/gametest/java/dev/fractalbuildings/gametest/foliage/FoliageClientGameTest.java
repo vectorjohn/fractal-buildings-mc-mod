@@ -340,6 +340,7 @@ public class FoliageClientGameTest implements FabricClientGameTest {
 			for (EdgeKey e : net.edgesOf(s)) {
 				Route r = net.route(e);
 				if (!r.ok || r.touching) continue;
+				if (planner.linkState(e) == WorldPlanner.LinkState.DROPPED) continue; // 6.22: a dropped link draws nothing
 				int win = 60; // stations
 				for (int from = 0; from + win <= r.stations.length; from += 10) {
 					int f = 0;

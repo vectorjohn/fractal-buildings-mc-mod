@@ -68,7 +68,7 @@ class RoadJoinProbeTest {
 			for (JoinWorld.Join j : JoinWorld.joins(w, c[0], c[1])) {
 				System.out.println("  " + j);
 				if (System.getenv("FB_ROADJOIN_GRID") != null) {
-					for (WorldPlanner.Approach a : w.approachRoads(site, so.get())) {
+					for (WorldPlanner.Approach a : w.drawnApproaches(site, so.get())) {
 						if (!a.road().id().equals(j.id())) continue;
 						TreeMap<Long, Col> drawn = new TreeMap<>();
 						java.util.TreeSet<Long> chunks = new java.util.TreeSet<>();

@@ -112,7 +112,7 @@ class WorldPlannerClaimsNearTest {
 		for (int[] c : WorldPlannerRoadsTest.CELLS) {
 			RoadNet.Settlement s = net.settlement(new CellKey(c[0], c[1])).orElseThrow();
 			SettlementSite site = w.siteOf(new Cell(c[0], c[1])).orElseThrow();
-			for (WorldPlanner.Approach a : w.approachRoads(site, s)) {
+			for (WorldPlanner.Approach a : w.drawnApproaches(site, s)) {
 				RoadNet.Col col = a.columns().get(a.columns().size() - 1); // the port end, outside the settlement
 				assertTrue(w.claimsNear(lake(col.x(), col.y(), col.z())), "lake on the road at " + col);
 				// beside the road, at its reach: the shoulder and terraces

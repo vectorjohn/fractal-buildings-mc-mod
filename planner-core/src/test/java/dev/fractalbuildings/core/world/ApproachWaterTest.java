@@ -143,7 +143,7 @@ class ApproachWaterTest {
 				var so = w.roads().settlement(new dev.fractalbuildings.core.region.CellKey(c[0], c[1]));
 				var site = w.siteOf(new dev.fractalbuildings.core.settlement.Cell(c[0], c[1]));
 				if (so.isEmpty() || site.isEmpty()) continue;
-				for (var a : w.approachRoads(site.get(), so.get())) {
+				for (var a : w.drawnApproaches(site.get(), so.get())) {
 					fails += a.wetFailures();
 					int aw = 0, ab = 0;
 					for (RoadNet.Col k : a.columns()) {

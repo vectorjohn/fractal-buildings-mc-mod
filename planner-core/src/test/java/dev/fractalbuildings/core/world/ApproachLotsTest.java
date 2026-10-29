@@ -26,7 +26,7 @@ class ApproachLotsTest {
 			var so = w.roads().settlement(new CellKey(c[0], c[1]));
 			var site = w.siteOf(new Cell(c[0], c[1])).orElse(null);
 			if (so.isEmpty() || site == null || !done.add(site.id())) continue;
-			for (WorldPlanner.Approach a : w.approachRoads(site, so.get())) {
+			for (WorldPlanner.Approach a : w.drawnApproaches(site, so.get())) {
 				n++;
 				TreeSet<Long> tiles = new TreeSet<>();
 				for (Col k : a.columns()) { var t = w.grid().tileOf(k.x(), k.z()); tiles.add(JoinWorld.key(t.ix(), t.iz())); }

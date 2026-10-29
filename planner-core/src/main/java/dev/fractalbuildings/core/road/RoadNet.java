@@ -804,13 +804,17 @@ public final class RoadNet {
 	}
 
 	/** Road columns inside the chunk, sorted by (z, x); where two roads overlap the lower edge key wins (RD4). */
-	public List<Col> query(int chunkX, int chunkZ) {
+	public List<Col> query(int chunkX, int chunkZ) { return query(chunkX, chunkZ, e -> true); }
+
+	/** As above, of the links {@code drawn} accepts only (asked only for links with a column in the chunk); a refused link gives way to the next. */
+	public List<Col> query(int chunkX, int chunkZ, java.util.function.Predicate<EdgeKey> drawn) {
 		int cx = Math.floorDiv(chunkX * 16 + 8, S), cz = Math.floorDiv(chunkZ * 16 + 8, S);
 		TreeMap<Long, Col> merged = new TreeMap<>();
 		long ck = chunkKey(chunkX, chunkZ);
 		for (EdgeKey e : edgesNearCell(new CellKey(cx, cz))) {
 			List<Col> cols = route(e).byChunk.get(ck);
 			if (cols == null) continue;
+			if (!drawn.test(e)) continue;
 			for (Col c : cols) merged.putIfAbsent(colKey(c.x(), c.z()), c);
 		}
 		return new ArrayList<>(merged.values());

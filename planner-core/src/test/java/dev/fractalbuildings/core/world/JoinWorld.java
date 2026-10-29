@@ -78,6 +78,13 @@ final class JoinWorld {
 		return new WorldPlanner(PT_SEED, WorldConfig.defaults(), probes(read(GateWorld.FIXTURES, "pt1709-join-s2", "pt1709-world-s64")), null, caps);
 	}
 
+	static final long PT1573_SEED = 1573336981619055086L;
+
+	/** John's playtest world of 2026-10-28 (6.22 DEADPORT): the step-8 crop round metropolis s4_m2 over the 64-block world map. */
+	static WorldPlanner pt1573() {
+		return new WorldPlanner(PT1573_SEED, WorldConfig.defaults(), probes(read(GateWorld.FIXTURES, "pt1573-metro-s8", "pt1573-world-s64")), null, WorldPlanner.Caches.DEFAULT);
+	}
+
 	static long key(int x, int z) { return ((long) z << 32) ^ (x & 0xffffffffL); }
 
 	/** Street ('S'), district deck ('B') and plaza ('P') surface tops of the district tiles of the given chunks and their neighbours: {kind, top block y}. */
@@ -145,7 +152,7 @@ final class JoinWorld {
 		SettlementSite site = w.siteOf(new Cell(cx, cz)).orElse(null);
 		if (site == null) return out;
 		TerrainProbe t = w.probes().exact();
-		for (WorldPlanner.Approach a : w.approachRoads(site, so.get())) {
+		for (WorldPlanner.Approach a : w.drawnApproaches(site, so.get())) {
 			List<Col> cols = a.columns();
 			TreeSet<Long> chunks = new TreeSet<>();
 			for (Col k : cols) chunks.add(key(Math.floorDiv(k.x(), 16), Math.floorDiv(k.z(), 16)));

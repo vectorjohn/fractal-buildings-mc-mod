@@ -41,6 +41,35 @@ class WorldPlannerRoadsTest {
 		return seen.size() == all.size();
 	}
 
+	/** One drawn approach is one connected strip that reaches its port and, at a graph road's port, meets that road within a step; true for a graph road, false for a meeting point. */
+	static boolean checkJoinsItsRoad(WorldPlanner w, WorldPlanner.Approach a) {
+		List<Col> cols = a.columns();
+		assertFalse(cols.isEmpty(), a.road().id());
+		assertTrue(connected(cols), "approach " + a.road().id() + " is one connected strip");
+		RoadPort p = a.port();
+		assertTrue(p != null, "approach " + a.road().id() + " ends at a port");
+		// the strip reaches the port
+		Col near = null;
+		double best = 1e18;
+		for (Col col : cols) {
+			double d = Math.hypot(col.x() + 0.5 - p.x(), col.z() + 0.5 - p.z());
+			if (d < best) { best = d; near = col; }
+		}
+		assertTrue(best <= p.width(), "approach " + a.road().id() + " ends " + best + " from its port");
+		if (p.meeting()) return false;
+		// and the graph's road starts there: a column of it within the width, at the same height (+-1)
+		int cx = Math.floorDiv(p.x(), 16), cz = Math.floorDiv(p.z(), 16);
+		Col road = null;
+		double rbest = 1e18;
+		for (int dz = -1; dz <= 1; dz++) for (int dx = -1; dx <= 1; dx++) for (Col col : w.roads().query(cx + dx, cz + dz)) {
+			double d = Math.hypot(col.x() + 0.5 - p.x(), col.z() + 0.5 - p.z());
+			if (d < rbest) { rbest = d; road = col; }
+		}
+		assertTrue(road != null && rbest <= p.width(), "the road starts " + rbest + " from the port of " + a.road().id());
+		assertTrue(Math.abs(road.y() - near.y()) <= 1 + a.portExcess(), "step of " + (road.y() - near.y()) + " at the port of " + a.road().id());
+		return true;
+	}
+
 	@Test
 	void everyApproachIsOneStripThatJoinsItsRoadAtTheSameHeight() {
 		WorldPlanner w = WorldPlannerRegionTest.planner(WorldConfig.defaults(), WorldPlanner.Caches.DEFAULT);
@@ -49,33 +78,10 @@ class WorldPlannerRoadsTest {
 		for (int[] c : CELLS) {
 			RoadNet.Settlement s = net.settlement(new CellKey(c[0], c[1])).orElseThrow();
 			SettlementSite site = w.siteOf(new Cell(c[0], c[1])).orElseThrow();
-			for (WorldPlanner.Approach a : w.approachRoads(site, s)) {
+			for (WorldPlanner.Approach a : w.drawnApproaches(site, s)) {
 				approaches++;
-				List<Col> cols = a.columns();
-				assertFalse(cols.isEmpty(), a.road().id());
-				assertTrue(connected(cols), "approach " + a.road().id() + " is one connected strip");
-				RoadPort p = a.port();
-				assertTrue(p != null, "approach " + a.road().id() + " ends at a port");
-				// the strip reaches the port
-				Col near = null;
-				double best = 1e18;
-				for (Col col : cols) {
-					double d = Math.hypot(col.x() + 0.5 - p.x(), col.z() + 0.5 - p.z());
-					if (d < best) { best = d; near = col; }
-				}
-				assertTrue(best <= p.width(), "approach " + a.road().id() + " ends " + best + " from its port");
-				if (p.meeting()) { meeting++; continue; }
-				// and the graph's road starts there: a column of it within the width, at the same height (+-1)
-				int cx = Math.floorDiv(p.x(), 16), cz = Math.floorDiv(p.z(), 16);
-				Col road = null;
-				double rbest = 1e18;
-				for (int dz = -1; dz <= 1; dz++) for (int dx = -1; dx <= 1; dx++) for (Col col : net.query(cx + dx, cz + dz)) {
-					double d = Math.hypot(col.x() + 0.5 - p.x(), col.z() + 0.5 - p.z());
-					if (d < rbest) { rbest = d; road = col; }
-				}
-				assertTrue(road != null && rbest <= p.width(), "the road starts " + rbest + " from the port of " + a.road().id());
-				assertTrue(Math.abs(road.y() - near.y()) <= 1 + a.portExcess(), "step of " + (road.y() - near.y()) + " at the port of " + a.road().id());
-				joined++;
+				if (checkJoinsItsRoad(w, a)) joined++;
+				else meeting++;
 			}
 		}
 		System.out.println("approaches: " + approaches + ", joined to a road at the port: " + joined + ", meeting points: " + meeting);
@@ -97,7 +103,7 @@ class WorldPlannerRoadsTest {
 			for (int dz = -1; dz <= 1; dz++) for (int dx = -1; dx <= 1; dx++) {
 				List<Col> mine = w.roadColumns(cx + dx, cz + dz);
 				List<Col> got = around.get((dz + 1) * 3 + dx + 1);
-				for (Col k : net.query(cx + dx, cz + dz)) assertTrue(got.contains(k));
+				for (Col k : net.query(cx + dx, cz + dz, e2 -> w.linkState(e2) != WorldPlanner.LinkState.DROPPED)) assertTrue(got.contains(k)); // 6.22: a dropped link is not drawn
 				for (Col k : got) assertEquals(Math.floorDiv(k.x(), 16), cx + dx);
 				if (dx == 0 && dz == 0) assertEquals(mine, got);
 			}
@@ -116,7 +122,7 @@ class WorldPlannerRoadsTest {
 			RoadNet.Settlement s = net.settlement(new CellKey(c[0], c[1])).orElseThrow();
 			SettlementSite site = w.siteOf(new Cell(c[0], c[1])).orElseThrow();
 			java.util.TreeSet<Long> seen = new java.util.TreeSet<>();
-			for (WorldPlanner.Approach a : w.approachRoads(site, s)) {
+			for (WorldPlanner.Approach a : w.drawnApproaches(site, s)) {
 				for (Col col : a.columns()) {
 					int cx = Math.floorDiv(col.x(), 16), cz = Math.floorDiv(col.z(), 16);
 					if (!seen.add(((long) cz << 32) ^ (cx & 0xffffffffL))) continue;
