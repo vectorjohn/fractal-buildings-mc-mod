@@ -1,5 +1,7 @@
 package dev.fractalbuildings.mod.worldgen;
 
+import dev.fractalbuildings.core.ir.Box3;
+import dev.fractalbuildings.core.world.WorldPlanner;
 import java.util.concurrent.atomic.AtomicLong;
 import net.minecraft.core.BlockPos;
 import net.minecraft.tags.BlockTags;
@@ -34,6 +36,10 @@ import net.minecraft.world.level.chunk.LevelChunkSection;
  *
  * <p>Leaves that stay were placed non-persistent by vanilla's tree features, so the game's own decay still handles an orphan that
  * appears later.
+ *
+ * <p><b>ROADLEAFORDER (2026-10-29):</b> {@link #run} is now only the {@code foliage-old} mutant (the control of {@code RoadLeafOrderSimTest}).
+ * The clears call {@link #afterCut}; the pass that decides is {@link #own}, once per chunk, from the chunk's own tree writes and the plan:
+ * reading other chunks' foliage made a cut crown stay or go by chunk order (see {@link #own}).
  */
 public final class FoliageClear {
 	/** Test switch: when false nothing is removed (the "before" screenshots and the control that shows the test can fail). */
@@ -238,24 +244,261 @@ public final class FoliageClear {
 				removed += erase(level, pos.set(x0 - REACH + wx, yLo + h, z0 - REACH + wz), air);
 			}
 		}
-		if (MEASURE && cuts != null && !cuts.label.endsWith("-fix")) { // BuildingAirClear (no cuts) and the air-fix passes name columns that are not a street or road clear: not a measure of one
-			int left = 0;
-			for (int i = 0; i < 256; i++) {
-				if (!own[i]) continue;
-				for (int h = 1; h <= 4; h++) {
-					BlockState st = level.getBlockState(pos.set(x0 + (i & 15), surf[i] + h, z0 + (i >> 4)));
-					if (st.is(BlockTags.LEAVES) && !st.getValueOrElse(net.minecraft.world.level.block.LeavesBlock.PERSISTENT, false)) { // natural leaves only: a hedge or a street tree of ours is persistent
-						left++;
-						if (RESIDUAL_SAMPLES.incrementAndGet() <= 12) System.out.println("FOLIAGE residual " + (cuts == null ? "?" : cuts.label) + " " + (x0 + (i & 15)) + "," + (surf[i] + h) + "," + (z0 + (i >> 4)) + " surf " + surf[i] + " wsWG " + (level.getHeight(net.minecraft.world.level.levelgen.Heightmap.Types.WORLD_SURFACE_WG, x0 + (i & 15), z0 + (i >> 4)) - 1) + " mb " + (level.getHeight(net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING, x0 + (i & 15), z0 + (i >> 4)) - 1) + " " + st.getBlock().getDescriptionId());
-					}
+		if (MEASURE) measure(level, cx, cz, own, surf, cuts);
+		REMOVED.addAndGet(removed);
+		NANOS.addAndGet(System.nanoTime() - t0); // det-ok: report only
+		return removed;
+	}
+
+	/**
+	 * What a clear calls after it cut (a street piece, the road draw, {@code BuildingAirClear}, {@code StreetAirFix}): the residual measure
+	 * of the test ({@link #MEASURE}), and the old pass under the {@code foliage-old} mutant. The trees our clears cut go in {@link #own}, once per
+	 * chunk at the end of its decoration.
+	 */
+	public static int afterCut(WorldGenLevel level, int cx, int cz, boolean[] own, int[] surf, Cuts cuts) {
+		if (Mutations.is(Mutations.FOLIAGE_OLD)) return run(level, cx, cz, own, surf, cuts);
+		if (MEASURE) measure(level, cx, cz, own, surf, cuts);
+		return 0;
+	}
+
+	/** Test measure: the natural leaves left in the cleared volume (surface +1..+4) of the columns a clear ran for, into {@link #RESIDUAL}. */
+	static void measure(WorldGenLevel level, int cx, int cz, boolean[] own, int[] surf, Cuts cuts) {
+		if (cuts == null || cuts.label.endsWith("-fix")) return; // BuildingAirClear (no cuts) and the air-fix passes name columns that are not a street or road clear: not a measure of one
+		int x0 = cx * 16, z0 = cz * 16, left = 0;
+		BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+		for (int i = 0; i < 256; i++) {
+			if (!own[i]) continue;
+			for (int h = 1; h <= 4; h++) {
+				BlockState st = level.getBlockState(pos.set(x0 + (i & 15), surf[i] + h, z0 + (i >> 4)));
+				if (st.is(BlockTags.LEAVES) && !st.getValueOrElse(net.minecraft.world.level.block.LeavesBlock.PERSISTENT, false)) { // natural leaves only: a hedge or a street tree of ours is persistent
+					left++;
+					if (RESIDUAL_SAMPLES.incrementAndGet() <= 12) System.out.println("FOLIAGE residual " + cuts.label + " " + (x0 + (i & 15)) + "," + (surf[i] + h) + "," + (z0 + (i >> 4)) + " surf " + surf[i] + " " + st.getBlock().getDescriptionId());
 				}
 			}
-			RESIDUAL.addAndGet(left);
-			if (cuts != null && "street".equals(cuts.label)) RESIDUAL_STREET.addAndGet(left);
+		}
+		RESIDUAL.addAndGet(left);
+		if ("street".equals(cuts.label)) RESIDUAL_STREET.addAndGet(left);
+	}
+
+	/** Own cells undone by {@link #own}: in a cell a piece or road claims, and left hanging by the claims. */
+	public static final AtomicLong OWN_CLAIMED = new AtomicLong(), OWN_HANGING = new AtomicLong(), OWN_PASSES = new AtomicLong();
+	/** Test switch: false skips {@link #own} (the order sim's controls of the other passes measure them alone). */
+	public static volatile boolean OWN = true;
+
+	private static final byte O_OTHER = 0, O_LOG = 1, O_LEAF = 2, O_VINE = 3, O_COCOA = 4, O_SNOW = 5;
+
+	/**
+	 * ROADLEAFORDER: the trees of chunk (cx, cz) that our pieces and roads cut, decided once, from what this chunk's own features wrote
+	 * ({@link OwnWrites}) and the plan ({@link ClaimMask}) alone, at the end of the chunk's decoration ({@code RoadFeature.placeIn}).
+	 *
+	 * <p>Why: the pass before ({@link #run}) asked whether a leaf was held by any log within 6 leaf steps, after each clear, reading the 3 x 3
+	 * chunks. A crown our road had cut was held by the crown of a tree in the next chunk when that chunk had decorated first, and removed when
+	 * it had not (FoliageClientGameTest seed 1 road, -616,108,-2301: 13 spruce leaves in one world of six; {@code RoadLeafOrderSimTest}).
+	 * Here a chunk's own trees are judged by their own logs and leaves, as if every cell our pieces and roads claim (a street's air, a room,
+	 * a wall, a road's surface and its clear) were already written, whichever chunk owns it and whether it has decorated or not. No other
+	 * chunk's foliage counts, so the answer is the same in every order.
+	 *
+	 * <p>What goes: every own cell in a claimed air cell (as the owner's clear takes it; a claimed solid cell is left to its owner, who
+	 * writes it whatever our tree put there first), and every own log, leaf, vine or cocoa
+	 * pod the claims leave unsupported (vanilla's rules, as in {@link #run}: a log chain standing on something; a leaf within 6 leaf steps of
+	 * such a log; a vine beside supported foliage or a solid block, or under a vine that stays), and a snow layer on a removed cell. A cell
+	 * goes back to what it held before this chunk's features wrote it: air, the ground, or another chunk's leaf, so the result does not depend
+	 * on which tree came first either. A cell something else has changed since (our pieces, a clear) is left alone.
+	 *
+	 * @return the number of cells put back
+	 */
+	public static int own(WorldGenLevel level, WorldPlanner planner, int cx, int cz) {
+		if (!ENABLED || !OWN || Mutations.is(Mutations.FOLIAGE_OLD)) return 0;
+		it.unimi.dsi.fastutil.longs.Long2ObjectLinkedOpenHashMap<OwnWrites.Cell> rec = OwnWrites.of(cx, cz);
+		if (rec == null || rec.isEmpty()) return 0;
+		long t0 = System.nanoTime(); // det-ok: report only
+		int n = rec.size();
+		long[] key = new long[n];
+		byte[] kind = new byte[n];
+		BlockState[] before = new BlockState[n];
+		int m = 0, minX = Integer.MAX_VALUE, minY = Integer.MAX_VALUE, minZ = Integer.MAX_VALUE, maxX = Integer.MIN_VALUE, maxY = Integer.MIN_VALUE, maxZ = Integer.MIN_VALUE;
+		BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+		for (var e : rec.long2ObjectEntrySet()) { // insertion order: deterministic
+			long k = e.getLongKey();
+			pos.set(BlockPos.getX(k), BlockPos.getY(k), BlockPos.getZ(k));
+			if (!writable(level, pos)) continue; // r2: never read (or put back) a cell outside the write zone
+			BlockState now = level.getBlockState(pos);
+			if (now != e.getValue().written()) continue; // changed since (our clear, our piece, a later feature of this chunk wrote again: then that one is the record)
+			key[m] = k;
+			before[m] = e.getValue().before();
+			kind[m] = ownKind(now);
+			minX = Math.min(minX, pos.getX()); maxX = Math.max(maxX, pos.getX());
+			minY = Math.min(minY, pos.getY()); maxY = Math.max(maxY, pos.getY());
+			minZ = Math.min(minZ, pos.getZ()); maxZ = Math.max(maxZ, pos.getZ());
+			m++;
+		}
+		if (m == 0) return 0;
+		Box3 bbox = new Box3(minX - 1, minY - 1, minZ - 1, maxX - minX + 3, maxY - minY + 3, maxZ - minZ + 3);
+		if (planner.claimRegion(bbox).isEmpty()) return 0; // nothing of ours near: vanilla's trees are whole
+		OWN_PASSES.incrementAndGet();
+		ClaimMask claims = ClaimMask.of(planner, bbox);
+		it.unimi.dsi.fastutil.longs.Long2IntOpenHashMap at = new it.unimi.dsi.fastutil.longs.Long2IntOpenHashMap(m * 2);
+		at.defaultReturnValue(-1);
+		for (int i = 0; i < m; i++) at.put(key[i], i);
+		boolean[] claimed = new boolean[m], claimedAir = new boolean[m];
+		for (int i = 0; i < m; i++) {
+			byte r = claims.role(BlockPos.getX(key[i]), BlockPos.getY(key[i]), BlockPos.getZ(key[i]));
+			claimed[i] = r != ClaimMask.NONE;
+			claimedAir[i] = r == ClaimMask.AIR;
+		}
+		boolean[] ok = new boolean[m];
+		int[] queue = new int[m];
+		int qh = 0, qt = 0;
+		// logs: a chain of own logs from one that stands on something; leafless clusters that touch something solid are left alone (a fallen log)
+		boolean[] seen = new boolean[m];
+		for (int s = 0; s < m; s++) {
+			if (kind[s] != O_LOG || claimed[s] || seen[s]) continue;
+			int h0 = qt, ch = qt;
+			queue[qt++] = s;
+			seen[s] = true;
+			boolean leaf = false, solid = false;
+			while (ch < qt) {
+				int c = queue[ch++];
+				int x = BlockPos.getX(key[c]), y = BlockPos.getY(key[c]), z = BlockPos.getZ(key[c]);
+				for (int dy = -1; dy <= 1; dy++) for (int dz = -1; dz <= 1; dz++) for (int dx = -1; dx <= 1; dx++) {
+					if (dx == 0 && dy == 0 && dz == 0) continue;
+					int j = at.get(BlockPos.asLong(x + dx, y + dy, z + dz));
+					if (j >= 0 && !claimed[j]) {
+						if (kind[j] == O_LOG && !seen[j]) { seen[j] = true; queue[qt++] = j; }
+						if (kind[j] == O_LEAF && Math.abs(dx) + Math.abs(dy) + Math.abs(dz) == 1) leaf = true;
+					}
+					if (solidFor(level, claims, at, kind, claimed, pos.set(x + dx, y + dy, z + dz))) solid = true;
+				}
+			}
+			if (!leaf && solid) for (int i = h0; i < qt; i++) ok[queue[i]] = true; // a fallen log or a stump: no tree to judge
+		}
+		qh = 0;
+		qt = 0;
+		for (int i = 0; i < m; i++) {
+			if (kind[i] != O_LOG || claimed[i]) continue;
+			if (ok[i] || standsOn(level, claims, at, kind, claimed, pos.set(BlockPos.getX(key[i]), BlockPos.getY(key[i]) - 1, BlockPos.getZ(key[i])))) { ok[i] = true; queue[qt++] = i; }
+		}
+		while (qh < qt) {
+			int c = queue[qh++];
+			int x = BlockPos.getX(key[c]), y = BlockPos.getY(key[c]), z = BlockPos.getZ(key[c]);
+			for (int dy = -1; dy <= 1; dy++) for (int dz = -1; dz <= 1; dz++) for (int dx = -1; dx <= 1; dx++) {
+				int j = at.get(BlockPos.asLong(x + dx, y + dy, z + dz));
+				if (j >= 0 && kind[j] == O_LOG && !claimed[j] && !ok[j]) { ok[j] = true; queue[qt++] = j; }
+			}
+		}
+		// leaves: 6 steps through own leaves from a supported own log
+		int[] dist = new int[m];
+		qh = 0;
+		qt = 0;
+		for (int i = 0; i < m; i++) if (kind[i] == O_LOG && ok[i]) queue[qt++] = i;
+		while (qh < qt) {
+			int c = queue[qh++];
+			if (dist[c] >= 6) continue;
+			int x = BlockPos.getX(key[c]), y = BlockPos.getY(key[c]), z = BlockPos.getZ(key[c]);
+			for (int[] f : FACE6) {
+				int j = at.get(BlockPos.asLong(x + f[0], y + f[1], z + f[2]));
+				if (j >= 0 && kind[j] == O_LEAF && !claimed[j] && !ok[j]) { ok[j] = true; dist[j] = dist[c] + 1; queue[qt++] = j; }
+			}
+		}
+		// what goes: claimed cells, and unsupported foliage; vines top down (a hanging chain goes with its top), cocoa beside a supported log
+		Integer[] order = new Integer[m];
+		for (int i = 0; i < m; i++) order[i] = i;
+		java.util.Arrays.sort(order, (a, b) -> {
+			int ya = BlockPos.getY(key[a]), yb = BlockPos.getY(key[b]);
+			return ya != yb ? Integer.compare(yb, ya) : Integer.compare(a, b);
+		});
+		boolean[] gone = new boolean[m];
+		for (int i : order) {
+			if (claimed[i]) { gone[i] = claimedAir[i]; continue; } // a claimed solid cell: its owner writes it (whatever our tree put there first)
+			switch (kind[i]) {
+				case O_LOG, O_LEAF -> gone[i] = !ok[i];
+				case O_VINE -> gone[i] = !vineStays(level, claims, at, kind, claimed, ok, gone, key[i], pos);
+				case O_COCOA -> gone[i] = !cocoaStays(at, kind, ok, gone, key[i]);
+				default -> { }
+			}
+		}
+		// a snow layer of this chunk on a cell that goes, goes too
+		for (int i = 0; i < m; i++) {
+			if (kind[i] != O_SNOW || gone[i]) continue;
+			int j = at.get(BlockPos.asLong(BlockPos.getX(key[i]), BlockPos.getY(key[i]) - 1, BlockPos.getZ(key[i])));
+			if (j >= 0 && gone[j] && kind[j] != O_SNOW) gone[i] = true;
+		}
+		int removed = 0;
+		for (int i : order) {
+			if (!gone[i]) continue;
+			level.setBlock(pos.set(BlockPos.getX(key[i]), BlockPos.getY(key[i]), BlockPos.getZ(key[i])), before[i], WRITE_FLAGS);
+			removed++;
+			if (claimed[i]) OWN_CLAIMED.incrementAndGet(); else OWN_HANGING.incrementAndGet();
 		}
 		REMOVED.addAndGet(removed);
 		NANOS.addAndGet(System.nanoTime() - t0); // det-ok: report only
 		return removed;
+	}
+
+	/** Whether {@code own} may read and write the cell: inside the generation region's write zone (for another level, a chunk it holds). */
+	static boolean writable(WorldGenLevel level, BlockPos pos) {
+		if (level instanceof net.minecraft.server.level.WorldGenRegion r) return r.isWithinWriteZone(pos);
+		return level.hasChunk(pos.getX() >> 4, pos.getZ() >> 4);
+	}
+
+	private static byte ownKind(BlockState s) {
+		if (s.is(BlockTags.LOGS)) return treeLog(s) ? O_LOG : O_OTHER;
+		if (s.is(BlockTags.LEAVES)) return s.getValueOrElse(net.minecraft.world.level.block.LeavesBlock.PERSISTENT, false) ? O_OTHER : O_LEAF;
+		if (s.is(Blocks.BEE_NEST)) return O_LEAF;
+		if (s.is(Blocks.VINE)) return O_VINE;
+		if (s.is(Blocks.COCOA)) return O_COCOA;
+		if (s.is(Blocks.SNOW)) return O_SNOW;
+		return O_OTHER;
+	}
+
+	/** Foliage or air: it neither holds a vine nor carries a log (another chunk's tree counts as nothing: it is there or not by order). */
+	private static boolean foliageOrAir(BlockState s) {
+		return s.isAir() || s.is(BlockTags.LEAVES) || s.is(BlockTags.LOGS) || s.is(Blocks.VINE) || s.is(Blocks.COCOA) || s.is(Blocks.BEE_NEST) || s.is(Blocks.SNOW) || !s.getFluidState().isEmpty();
+	}
+
+	/** Something solid that is no foliage: claimed solid; claimed air never; an own cell by its kind; else the world. */
+	private static boolean solidFor(WorldGenLevel level, ClaimMask claims, it.unimi.dsi.fastutil.longs.Long2IntOpenHashMap at, byte[] kind, boolean[] claimed, BlockPos p) {
+		byte r = claims.role(p.getX(), p.getY(), p.getZ());
+		if (r == ClaimMask.SOLID) return true;
+		if (r == ClaimMask.AIR) return false;
+		int j = at.get(p.asLong());
+		if (j >= 0) return kind[j] == O_OTHER;
+		if (!level.hasChunk(p.getX() >> 4, p.getZ() >> 4)) return true; // r2: outside the region: unknown, counts as holding (never read it)
+		return !foliageOrAir(level.getBlockState(p));
+	}
+
+	/** What a log stands on: as {@link #solidFor}, and a snow layer of the ground (as {@link #run} counts it). */
+	private static boolean standsOn(WorldGenLevel level, ClaimMask claims, it.unimi.dsi.fastutil.longs.Long2IntOpenHashMap at, byte[] kind, boolean[] claimed, BlockPos p) {
+		if (solidFor(level, claims, at, kind, claimed, p)) return true;
+		if (claims.role(p.getX(), p.getY(), p.getZ()) != ClaimMask.NONE || at.get(p.asLong()) >= 0) return false;
+		return level.getBlockState(p).is(Blocks.SNOW);
+	}
+
+	private static boolean vineStays(WorldGenLevel level, ClaimMask claims, it.unimi.dsi.fastutil.longs.Long2IntOpenHashMap at, byte[] kind, boolean[] claimed, boolean[] ok, boolean[] gone, long k, BlockPos.MutableBlockPos pos) {
+		int x = BlockPos.getX(k), y = BlockPos.getY(k), z = BlockPos.getZ(k);
+		int[][] side = {{1, 0, 0}, {-1, 0, 0}, {0, 0, 1}, {0, 0, -1}, {0, 1, 0}};
+		for (int[] d : side) {
+			int j = at.get(BlockPos.asLong(x + d[0], y + d[1], z + d[2]));
+			if (j >= 0) {
+				if (gone[j] || claimed[j]) continue;
+				if ((kind[j] == O_LOG || kind[j] == O_LEAF) && ok[j]) return true;
+				if (kind[j] == O_VINE && d[1] == 1) return true; // the vine above stays (top down: decided already)
+				if (kind[j] == O_OTHER) return true;
+				continue;
+			}
+			if (solidFor(level, claims, at, kind, claimed, pos.set(x + d[0], y + d[1], z + d[2]))) return true;
+		}
+		return false;
+	}
+
+	private static boolean cocoaStays(it.unimi.dsi.fastutil.longs.Long2IntOpenHashMap at, byte[] kind, boolean[] ok, boolean[] gone, long k) {
+		int x = BlockPos.getX(k), y = BlockPos.getY(k), z = BlockPos.getZ(k);
+		int[][] side = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}};
+		for (int[] d : side) {
+			int j = at.get(BlockPos.asLong(x + d[0], y, z + d[1]));
+			if (j >= 0 && kind[j] == O_LOG && ok[j] && !gone[j]) return true;
+		}
+		return false;
 	}
 
 private static final int[][] FACE6 = {{1, 0, 0}, {-1, 0, 0}, {0, 1, 0}, {0, -1, 0}, {0, 0, 1}, {0, 0, -1}};

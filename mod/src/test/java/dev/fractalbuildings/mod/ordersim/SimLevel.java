@@ -108,6 +108,7 @@ public final class SimLevel {
 			world.writes.add(new SimWorld.Write(pos.getX(), pos.getY(), pos.getZ(), old, state, flags, writer, frame));
 		}
 		if (world.trackWriters) world.lastWriter.put(SimWorld.key(pos.getX(), pos.getY(), pos.getZ()), writer);
+		dev.fractalbuildings.mod.worldgen.OwnWrites.record(pos, old, state); // ROADLEAFORDER: what WorldGenRegionMixin does in the game (records only inside a vanilla feature of the decorating chunk)
 		return true;
 	}
 

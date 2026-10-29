@@ -81,7 +81,13 @@ class OrderSimMutantTest {
 	@Test
 	void trunkBaseMutantFailsC3OnSc3b() {
 		Scenario s = R.trunkScenario(R.trunkInStreet(), "sc3-STREET");
-		caught(Mutations.TRUNK_BASE, s, "C3", has("unknown air"), "dirt left in planned street air");
+		// ROADLEAFORDER: FoliageClear.own puts back the ground under a trunk of the chunk's own tree in planned street air too; StreetAirFix is measured alone
+		dev.fractalbuildings.mod.worldgen.FoliageClear.OWN = false;
+		try {
+			caught(Mutations.TRUNK_BASE, s, "C3", has("unknown air"), "dirt left in planned street air");
+		} finally {
+			dev.fractalbuildings.mod.worldgen.FoliageClear.OWN = true;
+		}
 	}
 
 	/**

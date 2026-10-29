@@ -185,6 +185,7 @@ Nice bridge, but it’s missing those supports at the bottom.
 #backlog
 -->
   - @assistant 2026-10-29: unscheduled backlog; piers and abutments are 7.3 Bridges. Today a crossing is one span with no piers by design (ADR 0004 WR2).
+    - @John 2026-10-29: ok yes, no piers by design but I can see tiny little pier stumps there. Something tried to make piers but didn’t connect them. Still an acceptable bug though.
 
 
 ![[images/2026-10-28_20.05.40.jpg|800]]
@@ -239,6 +240,7 @@ I’m just curious what leads to this really deep cut. Is the planner missing in
 #backlog #question
 -->
   - @assistant 2026-10-29: unscheduled backlog. The router does see the hills, coarsely: A* runs on a 64-block lattice of exact heights and charges 60 per block of rise against 640 per straight lattice step, so a 10-block climb costs about one extra step. A hill narrower than 64 blocks between lattice nodes is invisible to it, and string-pulling then straightens the line across it; the cut is what is left. Tunnels are ruled out for now (DS-50).
+    - @John 2026-10-29: fascinating. So, what are the implications of getting a finer reading? Like, 64 blocks is enough to miss mountains at MC scales. If it was 8 I’m sure that would get it. I seem to remember there being a stage where we were doing many exact terrain reads for roads, which are costly. So that must be separate from this 64 block number. I just wonder if we could get away with a little more detail or quickly make the plan at 64 blocks, then take a finer reading (still very course, like sampling along the path of the road) to look for missed obstacles. Then reroute. I played years ago with an algorithm called D*Lite (https://github.com/Sollimann/Dstar-lite-pathplanner is one example implementation but it also links the paper). I have been wondering if it would come in handy because we kind of have the problem that we are route planning `A*` but we’re kind of blind and need to re-route cheaply with imperfect knowledge, which I think is the main point of Dstar lite. Might be worth a short research spike into feasibility and if it would be useful, unless someone can already say it won’t.
 
 
 ![[images/2026-10-28_20.15.58.jpg|800]]
@@ -316,6 +318,7 @@ XYZ: 3600.018 / 168.67658 / -1229.758
 @coordinator can I get a high level step by step big picture description of how we plan roads? Or just point me to the file where I missed it. 
 -->
   - @assistant 2026-10-29: the step-by-step is [ADR 0004](../../../adr/0004-roads-between-settlements.md), "Decision": (1) settlements are nodes, a pair is linked when their rims are within 1,536 blocks and no third settlement sits between them (N1); touching pairs share a meeting point (N2); (2) each link gets a port on each rim facing the other end (N3); (3) A* on a 64-block lattice between ports, slope and shore cost, water forbidden (N4); (4) string-pull, Catmull-Rom curve, then a dry check every 8 blocks with at most 3 reroutes; wet runs up to 20 blocks become one-span crossings, longer means no road (WR1, WR2); (5) the deck height is smoothed over the stations with a grade limit (HT); (6) inside the settlement, streets come from the skeleton and the approach joins a street exit to the port (N5, 6.15 ROADJOIN); (7) in game one feature per chunk draws its columns with terraced cuts and embankments (MF, TC).
+    - @John 2026-10-29: TODO to myself, no action needed.
 
 
 ![[images/2026-10-28_20.33.42.jpg|800]]

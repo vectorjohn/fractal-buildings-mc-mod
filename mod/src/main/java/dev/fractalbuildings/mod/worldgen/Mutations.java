@@ -32,6 +32,8 @@ public final class Mutations {
 
 	/** A vanilla tree's room check sees our pieces again ({@link TreeClip} off): whole trees beside our pieces then depend on chunk order. */
 	public static final String TREES = "trees";
+	/** ROADLEAFORDER: the foliage pass before it ({@code FoliageClear.run} after every clear, support through any chunk's foliage, read at the time of the pass), not {@code FoliageClear.own}. */
+	public static final String FOLIAGE_OLD = "foliage-old";
 
 	/** The pre-SPILLDIRT2 street fix: {@link StreetAirFix} does not put a planned air cell back under a removed trunk (the dirt stays). */
 	public static final String TRUNK_BASE = "trunk-base";

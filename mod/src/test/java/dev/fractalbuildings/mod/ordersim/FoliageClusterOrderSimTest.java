@@ -41,14 +41,21 @@ class FoliageClusterOrderSimTest {
 		Scenario base = Scenario.city("foliagecluster", gate, planner, window.cx(), window.cz(), window.n(), 0, false, List.of(), false);
 		final int ax = base.cx, az = base.cz, bx = ax + 1, cx = ax, cz = az + 1;
 		final int leafX = bx * 16 + 5, logX = bx * 16 + 6, z = bz(az);
-		final int y = base.terrain.floorY(logX, z) + 25;
+		final int y = plantY(base, leafX, logX, z); // ROADLEAFORDER: just over our claims (FoliageClear.own judges a chunk's trees only near them)
 		final BlockPos leaf = new BlockPos(leafX, y, z), log = new BlockPos(logX, y, z);
 		BlockState natural = Blocks.OAK_LEAVES.defaultBlockState().setValue(LeavesBlock.PERSISTENT, false).setValue(LeavesBlock.DISTANCE, 1);
 		Scenario.Extra plant = (world, ccx, ccz) -> {
 			if (ccx != cx || ccz != cz) return;
 			var l = new SimLevel(world, ccx, ccz, "feature:tree@" + ccx + "," + ccz, 1L).proxy();
-			l.setBlock(leaf, natural, 2 | 16);
-			l.setBlock(log, Blocks.OAK_LOG.defaultBlockState(), 2 | 16);
+			dev.fractalbuildings.mod.worldgen.OwnWrites.enterFeature(); // ROADLEAFORDER: a tree of chunk C (FoliageClear.own judges C's own writes)
+			dev.fractalbuildings.mod.worldgen.OwnWrites.enterTree();
+			try {
+				l.setBlock(leaf, natural, 2 | 16);
+				l.setBlock(log, Blocks.OAK_LOG.defaultBlockState(), 2 | 16);
+			} finally {
+				dev.fractalbuildings.mod.worldgen.OwnWrites.exitTree();
+				dev.fractalbuildings.mod.worldgen.OwnWrites.exitFeature();
+			}
 		};
 		Scenario s = base.withExtras("foliagecluster", true, plant);
 		assertFalse(s.plan().ref.containsKey(PieceLedger.pack(leafX, y, z)) || s.plan().ref.containsKey(PieceLedger.pack(logX, y, z)), "the planted cells are unclaimed");
@@ -67,4 +74,14 @@ class FoliageClusterOrderSimTest {
 	}
 
 	private static int bz(int az) { return az * 16 + 3; }
+
+	/** The lowest y over the terrain where both planted cells are unclaimed but a piece claims a cell next to them. */
+	private static int plantY(Scenario base, int leafX, int logX, int z) {
+		Scenario.Plan p = base.plan();
+		for (int y = base.terrain.floorY(logX, z) + 2; y < base.terrain.floorY(logX, z) + 60; y++) {
+			if (p.ref.containsKey(PieceLedger.pack(leafX, y, z)) || p.ref.containsKey(PieceLedger.pack(logX, y, z))) continue;
+			if (!planner.claimRegion(new dev.fractalbuildings.core.ir.Box3(leafX - 1, y - 1, z - 1, 4, 3, 3)).isEmpty() && base.terrain.floorY(logX, z) + 6 < y) return y;
+		}
+		throw new IllegalStateException("no plant height at " + leafX + "," + z);
+	}
 }

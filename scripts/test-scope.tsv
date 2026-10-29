@@ -142,6 +142,9 @@ path	@mod/mixin/ServerPlayerTeleportMixin.java	teleport	fast,client-quick,server
 path	@mod/mixin/LakeFeatureMixin.java	worldgen	fast,order,client-full	lake veto (ORDERFAIL): no vanilla lake where our pieces are; the order test and mutant-lakes check it
 path	@mod/mixin/BlockBlobFeatureMixin.java	worldgen	fast,order,client-full	boulder veto (ROCKVETO): no vanilla forest_rock where our pieces are; RockVetoGameTest and the ordersim RockVetoSimTest check it
 path	@mod/mixin/TreeFeatureMixin.java	worldgen	fast,order,client-full,perf	tree room check counts our claim region as free (LEAFORDER, TreeClip): every tree near a settlement or road runs it (perf), the ordersim TreeClipOrderSimTest and FoliageClientGameTest check it
+path	@mod/mixin/ChunkGeneratorDecorationMixin.java	worldgen	fast,order,client-full,perf	starts a chunk's OwnWrites records and FoliageWatch (ROADLEAFORDER): every chunk; FoliageClear.own, RoadLeafOrderSimTest, FoliageClientGameTest
+path	@mod/mixin/PlacedFeatureMixin.java	worldgen	fast,order,client-full,perf	marks vanilla feature writes for OwnWrites (ROADLEAFORDER): every feature call (perf)
+path	@mod/mixin/WorldGenRegionMixin.java	worldgen	fast,order,client-full,perf	records the decorating chunk's tree writes (OwnWrites, ROADLEAFORDER) and FoliageWatch: every worldgen write (perf)
 path	@mod/teleport/*	teleport	fast,client-quick,server-only?	teleport hold (TeleportHoldGameTest in fast)
 path	@mod/gameplay/*	gameplay	fast,client-quick	hooks to blocks, villagers, /fb (GameplayGameTest in fast)
 path	@mod/config/*	config	fast,client-quick	config pinned per world (ConfigGameTest in fast)

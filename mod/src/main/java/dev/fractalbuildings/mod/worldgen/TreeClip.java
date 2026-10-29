@@ -48,7 +48,7 @@ public final class TreeClip {
 	private TreeClip() {}
 
 	/** Off under the {@code trees} mutant. */
-	public static boolean enabled() { return !Mutations.is(Mutations.TREES); }
+	public static boolean enabled() { return !Mutations.is(Mutations.TREES) && !FoliageWatch.VANILLA_ONLY; }
 
 	/** What the check reads: whether a cell is free for the tree's trunk placer (vanilla's {@code isFree} and vine test). */
 	public interface Free { boolean free(BlockPos pos); }

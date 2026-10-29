@@ -170,6 +170,15 @@ public final class OrderSim {
 	}
 
 	private static void decorate(Scenario s, Scenario.Plan plan, SimWorld world, int cx, int cz, long orderHash, SimRun run) {
+		dev.fractalbuildings.mod.worldgen.OwnWrites.begin(cx, cz); // ROADLEAFORDER: what ChunkGeneratorDecorationMixin does in the game
+		try {
+			decorate0(s, plan, world, cx, cz, orderHash, run);
+		} finally {
+			dev.fractalbuildings.mod.worldgen.OwnWrites.end();
+		}
+	}
+
+	private static void decorate0(Scenario s, Scenario.Plan plan, SimWorld world, int cx, int cz, long orderHash, SimRun run) {
 		long key = ChunkPos.pack(cx, cz);
 		List<SimFeatures.Call> calls = plan.calls.getOrDefault(key, List.of());
 		Decoration structStep = structureStep();

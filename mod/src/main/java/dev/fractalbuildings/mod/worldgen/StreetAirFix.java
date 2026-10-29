@@ -101,7 +101,7 @@ public final class StreetAirFix {
 			int[] surf = new int[256];
 			java.util.Arrays.fill(own, true);
 			java.util.Arrays.fill(surf, lowest);
-			removed += FoliageClear.run(level, cx, cz, own, surf, cuts);
+			removed += FoliageClear.afterCut(level, cx, cz, own, surf, cuts);
 		}
 		return removed;
 	}

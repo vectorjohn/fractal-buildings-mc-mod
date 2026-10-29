@@ -115,7 +115,7 @@ public final class BuildingAirClear {
 			java.util.Arrays.fill(own, true);
 			java.util.Arrays.fill(surf, hi);
 			surf[0] = lo;
-			FoliageClear.run(level, cx, cz, own, surf, null);
+			FoliageClear.afterCut(level, cx, cz, own, surf, null);
 		} catch (RuntimeException e) {
 			WorldPlanners.FAILURES.incrementAndGet();
 			dev.fractalbuildings.mod.FractalBuildingsMod.LOGGER.error("Clearing the foliage round the buildings of chunk {},{} failed", cx, cz, e);

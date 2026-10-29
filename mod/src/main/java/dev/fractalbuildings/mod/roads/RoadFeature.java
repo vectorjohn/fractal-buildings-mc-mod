@@ -91,6 +91,7 @@ public final class RoadFeature implements Feature {
 
 	@Override
 	public boolean place(WorldGenLevel level, ChunkGenerator gen, RandomSource random, BlockPos origin) {
+		if (dev.fractalbuildings.mod.worldgen.FoliageWatch.VANILLA_ONLY) return false; // ROADLEAFORDER debug control
 		if (level.getLevel().dimension() != Level.OVERWORLD) return false;
 		WorldPlanner planner = WorldPlanners.of(level.getLevel(), gen).orElse(null);
 		if (planner == null) return false;
@@ -103,6 +104,20 @@ public final class RoadFeature implements Feature {
 	 * act on a WorldGenRegion, so they are off for any other level.
 	 */
 	public static boolean placeIn(WorldGenLevel level, WorldPlanner planner, ChunkPos cp) {
+		try (var ours = dev.fractalbuildings.mod.worldgen.OwnWrites.ours()) {
+			boolean drew = placeIn0(level, planner, cp);
+			// ROADLEAFORDER: the trees of this chunk that our pieces and roads cut (now or in a neighbour later), judged from this chunk's own writes and the plan
+			try {
+				dev.fractalbuildings.mod.worldgen.FoliageClear.own(level, planner, cp.x(), cp.z());
+			} catch (RuntimeException e) {
+				WorldPlanners.FAILURES.incrementAndGet();
+				FractalBuildingsMod.LOGGER.error("Clearing the cut trees of chunk {} failed", cp, e);
+			}
+			return drew;
+		}
+	}
+
+	private static boolean placeIn0(WorldGenLevel level, WorldPlanner planner, ChunkPos cp) {
 		// CITYQ r5: street air beside a chunk with no ground piece of ours (the settlement's outer tile border) is re-cleared from here,
 		// since TilePiece runs the pass only where a ground piece is; this feature runs in every overworld chunk, after its own features
 		try {
@@ -227,7 +242,7 @@ public final class RoadFeature implements Feature {
 		// the trees the clear cut: leaves and logs above the clear that nothing holds any more go too
 		boolean[] own = new boolean[256];
 		for (int i = 0; i < 256; i++) own[i] = plan.kind[i] != RoadSurface.NONE;
-		written += FoliageClear.run(level, cp.x(), cp.z(), own, plan.surf, cuts);
+		written += FoliageClear.afterCut(level, cp.x(), cp.z(), own, plan.surf, cuts);
 		BLOCKS.addAndGet(written);
 		return true;
 	}

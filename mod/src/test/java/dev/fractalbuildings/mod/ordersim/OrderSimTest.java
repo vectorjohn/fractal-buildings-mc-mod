@@ -78,7 +78,7 @@ class OrderSimTest {
 		assertTrue(fired(res, "SpillClear.run/leaf") > 0, "SpillClear's leaf clear fired");
 		assertTrue(fired(res, "StreetAirFix.run/log") > 0, "StreetAirFix removed a log");
 		assertTrue(fired(res, "BuildingAirClear.clear/leaf") + fired(res, "BuildingAirClear.write/leaf") > 0, "BuildingAirClear removed a leaf");
-		assertTrue(fired(res, "FoliageClear.erase/air") + fired(res, "FoliageClear.erase/leaf") + fired(res, "FoliageClear.erase/log") + fired(res, "FoliageClear.erase/other") > 0, "FoliageClear erased something");
+		assertTrue(fired(res, "FoliageClear.own/leaf") + fired(res, "FoliageClear.own/log") > 0, "FoliageClear.own put back cells of a cut tree (ROADLEAFORDER)");
 	}
 
 	@Test
@@ -87,7 +87,7 @@ class OrderSimTest {
 		assertEquals(List.of(), res.failed());
 		assertTrue(res.runs.get(0).features.byKey.containsKey("freeze_top_layer"), "snow is in the pool: " + res.runs.get(0).features);
 		// the snow in street air is taken by SpillClear.run (snow is not a log, so it goes with the rest of the planned air); StreetAirFix removes only a layer hanging over air
-		assertTrue(fired(res, "SpillClear.run/snow") + fired(res, "StreetAirFix.run/snow") > 0, "snow was removed from the claimed air: " + res.runs.get(0).branchWrites);
+		assertTrue(fired(res, "SpillClear.run/snow") + fired(res, "StreetAirFix.run/snow") + fired(res, "FoliageClear.own/snow") > 0, "snow was removed from the claimed air (since ROADLEAFORDER also by FoliageClear.own, with the cut leaf under it): " + res.runs.get(0).branchWrites);
 	}
 
 	// ---------------------------------------------------------------- controls
@@ -111,14 +111,20 @@ class OrderSimTest {
 	}
 
 	static void control(String what, Runnable off, Runnable on, Predicate<String> key) {
-		if (passOn == null) passOn = histograms(sc1small); // every pass on: the same for the three controls
-		int with = residue(passOn, key);
-		int without;
-		off.run();
+		// ROADLEAFORDER: FoliageClear.own also puts back what a chunk's own trees grew into claimed air, so each pass is measured with it off
+		dev.fractalbuildings.mod.worldgen.FoliageClear.OWN = false;
+		int with, without;
 		try {
-			without = residue(histograms(sc1small), key);
+			if (passOn == null) passOn = histograms(sc1small); // every other pass on: the same for the three controls
+			with = residue(passOn, key);
+			off.run();
+			try {
+				without = residue(histograms(sc1small), key);
+			} finally {
+				on.run();
+			}
 		} finally {
-			on.run();
+			dev.fractalbuildings.mod.worldgen.FoliageClear.OWN = true;
 		}
 		System.out.println("[ordersim] control " + what + ": residue with the pass on " + with + ", off " + without);
 		assertTrue(without > with, what + " off must leave more in the claimed air than on (on " + with + ", off " + without + ")");

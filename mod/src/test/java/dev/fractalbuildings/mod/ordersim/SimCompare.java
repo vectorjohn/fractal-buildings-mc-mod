@@ -193,6 +193,12 @@ public final class SimCompare {
 				if (old.is(BlockTags.LOGS)) return plannedAir ? null : "removed a log outside planned air";
 				return old.is(Blocks.SNOW) ? null : "removed " + name(old);
 			case "FoliageClear":
+				if (method.equals("own")) { // ROADLEAFORDER: puts back what a cell held before this chunk's tree wrote it
+					boolean treeCell = old.is(BlockTags.LEAVES) || old.is(BlockTags.LOGS) || old.is(Blocks.VINE) || old.is(Blocks.COCOA) || old.is(Blocks.BEE_NEST) || old.is(Blocks.SNOW) || old.is(BlockTags.DIRT) || old.is(Blocks.LEAF_LITTER);
+					if (!treeCell) return "put back over " + name(old) + ", not a tree's block";
+					boolean natural = now.isAir() || !now.getFluidState().isEmpty() || now.is(BlockTags.LEAVES) || now.is(BlockTags.LOGS) || now.is(Blocks.VINE) || now.is(Blocks.SNOW) || now.is(BlockTags.DIRT) || now.is(Blocks.GRASS_BLOCK) || now.is(Blocks.PODZOL) || now.canBeReplaced();
+					return natural ? null : "put back " + name(now);
+				}
 				return now.isAir() || !now.getFluidState().isEmpty() ? null : "wrote " + name(now);
 			case "RoadFeature":
 				return Math.floorDiv(w.x(), 16) == dcx && Math.floorDiv(w.z(), 16) == dcz ? null : "wrote outside its chunk " + dcx + "," + dcz;

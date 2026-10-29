@@ -73,6 +73,7 @@ public abstract class TilePiece extends StructurePiece {
 
 	@Override
 	public void postProcess(WorldGenLevel level, StructureManager structureManager, ChunkGenerator generator, RandomSource random, BoundingBox chunkBB, ChunkPos chunkPos, BlockPos referencePos) {
+		if (FoliageWatch.VANILLA_ONLY) return; // ROADLEAFORDER debug control
 		ServerLevel sl = level.getLevel();
 		Optional<WorldPlanner> planner = WorldPlanners.of(sl, generator);
 		if (planner.isEmpty()) return;
@@ -87,6 +88,12 @@ public abstract class TilePiece extends StructurePiece {
 	 * order simulation (and tests) can drive a piece without a generator or structure manager.
 	 */
 	public static void write(WorldGenLevel level, WorldPlanner planner, TilePiece piece, BoundingBox chunkBB, ChunkPos chunkPos, RandomSource random) {
+		try (var ours = OwnWrites.ours()) { // ROADLEAFORDER: nothing a piece writes is a tree of this chunk
+			write0(level, planner, piece, chunkBB, chunkPos, random);
+		}
+	}
+
+	private static void write0(WorldGenLevel level, WorldPlanner planner, TilePiece piece, BoundingBox chunkBB, ChunkPos chunkPos, RandomSource random) {
 		// `random` is used only by the RANDOM mutation switch: everything else derives from the planner (seed + position).
 		final PieceRef ref = piece.ref;
 		final int genVersion = piece.genVersion;
@@ -152,7 +159,7 @@ public abstract class TilePiece extends StructurePiece {
 			for (int i = 0; i < 256; i++) if (top[i] != Integer.MIN_VALUE) { own[i] = true; anyCol = true; }
 			if (anyCol) {
 				try {
-					FoliageClear.run(level, chunkPos.x(), chunkPos.z(), own, top, cuts);
+					FoliageClear.afterCut(level, chunkPos.x(), chunkPos.z(), own, top, cuts);
 				} catch (RuntimeException e) {
 					WorldPlanners.FAILURES.incrementAndGet();
 					FractalBuildingsMod.LOGGER.error("Clearing the foliage round {} failed", ref, e);

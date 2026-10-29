@@ -465,6 +465,9 @@ public class WorldPlanner {
 	/** The natural ground at a column: the exact probe's floor (first free block above the noise terrain, water ignored), before any feature or piece. LEAFORDER's tree room check. */
 	public int naturalFloorY(int x, int z) { return probes.exact().floorY(x, z); }
 
+	/** Water over the natural floor at (x, z) (the exact probe), 0 when dry. */
+	public int naturalWaterDepth(int x, int z) { return probes.exact().waterDepth(x, z); }
+
 	/**
 	 * The road columns inside a chunk, sorted by (z, x), where two roads meet the lower edge key's column (RD4). Empty when the world has
 	 * no roads. Pure: the same answer in any call order, on any thread, after any eviction. A cold region cell costs its routes (exact

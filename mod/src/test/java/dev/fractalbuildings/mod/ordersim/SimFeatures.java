@@ -167,7 +167,17 @@ public final class SimFeatures {
 					: TreeClip.naturallyFree(planner, p.getX(), p.getY(), p.getZ()) ? net.minecraft.world.level.block.Blocks.AIR.defaultBlockState() : net.minecraft.world.level.block.Blocks.STONE.defaultBlockState());
 			}
 		}
-		boolean placed = SimBoot.feature(KEYS.get(c.key())).place(level.proxy(), null, RandomSource.create(c.rngSeed()), c.origin());
+		Feature f = SimBoot.feature(KEYS.get(c.key()));
+		boolean tree = f instanceof TreeFeature;
+		dev.fractalbuildings.mod.worldgen.OwnWrites.enterFeature(); // ROADLEAFORDER: what PlacedFeatureMixin and TreeFeatureMixin mark in the game
+		if (tree) dev.fractalbuildings.mod.worldgen.OwnWrites.enterTree();
+		boolean placed;
+		try {
+			placed = f.place(level.proxy(), null, RandomSource.create(c.rngSeed()), c.origin());
+		} finally {
+			if (tree) dev.fractalbuildings.mod.worldgen.OwnWrites.exitTree();
+			dev.fractalbuildings.mod.worldgen.OwnWrites.exitFeature();
+		}
 		if (placed) st[1]++;
 		return placed;
 	}
