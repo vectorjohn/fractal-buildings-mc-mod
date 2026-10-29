@@ -45,6 +45,7 @@ public final class SimBoot {
 		bindTags(Registries.BLOCK, BuiltInRegistries.BLOCK);
 		bindTags(Registries.FLUID, BuiltInRegistries.FLUID);
 		lookup = VanillaRegistries.createWorldLookup();
+		dev.fractalbuildings.mod.testing.BiomeTagBinder.bind(lookup);
 		HolderLookup.RegistryLookup<Biome> biomes = lookup.lookupOrThrow(Registries.BIOME);
 		IdMapper<Holder<Biome>> ids = new IdMapper<>();
 		biomes.listElements().sorted((a, b) -> a.key().identifier().compareTo(b.key().identifier())).forEach(ids::add);

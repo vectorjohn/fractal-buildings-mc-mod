@@ -57,6 +57,7 @@ public final class TerrainDumpTool {
 		SharedConstants.tryDetectVersion();
 		Bootstrap.bootStrap();
 		reg = VanillaRegistries.createWorldLookup();
+		dev.fractalbuildings.mod.testing.BiomeTagBinder.bind(reg);
 		settings = reg.lookupOrThrow(Registries.NOISE_SETTINGS).getOrThrow(NoiseGeneratorSettings.OVERWORLD);
 		var src = MultiNoiseBiomeSource.createFromPreset(
 			reg.lookupOrThrow(Registries.MULTI_NOISE_BIOME_SOURCE_PARAMETER_LIST).getOrThrow(MultiNoiseBiomeSourceParameterLists.OVERWORLD));
