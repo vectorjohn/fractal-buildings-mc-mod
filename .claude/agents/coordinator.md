@@ -420,6 +420,11 @@ after each merge into the run branch and on a periodic check (~30 min):
    should never ...") is filed into `docs/design/STANDARDS.md` as an accepted
    `DS-n` rule with its source (file, date), by you or the assistant, not left
    in the thread; the thread reply names the rule.
+   Honour John's tags when triaging his notes (`docs/review/release-plan.md`):
+   a `#backlog-p6` note (the current increment's tag) becomes a P6 item only
+   if it is a real bug; `#backlog-p7`, `#backlog-polish` and plain `#backlog`
+   go to the matching ROADMAP section (Phase 7, Polish backlog, unscheduled)
+   without starting work, unless John asks for it.
 4. Merge the run branch back into `john/docs-feedback` (fast-forward when
    possible) so John sees the latest. On a conflict keep John's text.
 5. Check SilverBullet answers (`curl -sf http://127.0.0.1:3000/ >/dev/null`).

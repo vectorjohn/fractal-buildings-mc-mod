@@ -531,6 +531,38 @@ and Minecraft block facts ([blocks.md](blocks.md), from John's
   playtest questions 2026-10-27
   ([playtest1026-qs-architect.md](../review/reports/playtest1026-qs-architect.md), P3).
 
+## DS-54 The built environment is walkable without jumping
+
+- **Rule:** a player can walk everywhere the settlement means people to go
+  (roads, streets, paths, stoops, porches, doors, stairs inside and out)
+  without jumping: every rise along the way is at most a half block (a slab
+  or a stair step).
+- **Why:** John, playtest 2026-10-28 (20.36.35, a house door one block above
+  its path): "Rule proposal: the built environment should be walkable by the
+  player without jumping." Also 20.17.47: "I would like as much as possible
+  for the 'built environment' to be walkable by the player."
+- **Scope:** all tiers and types (as written). It overlaps DS-4, DS-5, DS-31
+  and DS-45, and would make every full-block step on a road, street crest,
+  kerb or stoop a violation, which is much of today's output (7.11 part 1
+  smooth roads is the road half).
+- **Exception (John 2026-10-29):** tracks and paths in a material with no
+  half block (`dirt_path`, gravel and the like) may keep full-block steps, as
+  DS-31 describes and as vanilla village paths do. John: "Lets allow tracks
+  without appropriate half blocks as an exception. Mud bricks or whatever
+  they are might work, but I think Minecraft already has paths in villages
+  with big steps. So lets allow those exceptions for now." A material that has
+  a slab (mud bricks, for example) is not exempt.
+- **Enforcement:** code, none as a whole; parts exist (`steps-reach-ground`,
+  `stair-rise`, `door-rise`). Candidate: a walk graph from the street to
+  every door (architect, playtest 2026-10-28 questions; ROADMAP backlog).
+- **Status:** accepted 2026-10-29, as written, with John's caveat: while
+  Phase 6 is still running, a violation found is filed as a `#backlog` line
+  (ROADMAP "Backlog (unscheduled)"), not as a P6 bug. John's words: "Approved
+  by @John on 2026-10-29 with caveat - violations got to #backlog while still
+  in P6." **Source:** John,
+  [playtest notes 2026-10-28](../review/phase6/playtest-2026-10-28/review.md),
+  20.36.35.
+
 # Interiors
 
 ## DS-13 Rooms look lived-in
