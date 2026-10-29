@@ -1,0 +1,11 @@
+# 6.21 STAIRFOOT: inner stair foot at a drop
+
+John's shot (seed 1573336981619055086, 1049,133,915: stone brick, two steps to a door beside a hole in the floor).
+
+- **Cause.** The high-rise stair house's roof door (`TowerRoof.door`): a sill step inside the door rises toward it, so its foot is the cell behind it, in the flight row. The door was always at the middle of the stairwell. When the last flight (odd count from the core's first storey) runs on the front row, the slab over all but its last step is cut, and the middle column is over that opening: the step's foot is a hole. Other step runs to doors (wall-tower walk doors, ground doors) were fine.
+- **Fix.** `TowerRoof.stairwellDoorColumn` picks the column nearest the middle that is not over the cut (the cut columns come from the new shared `InteriorPass.column`, so the flight and the door cannot drift apart). In practice the door lands on the flight's top step, so the walker steps off the last stair straight onto the door step.
+- **Check.** New invariant `stair-foot` (`check/StairFoot`, run from `Invariants.BuildingCheck.stairFoot`): for each STAIR cell inside a room that heads (alone or as a run of same-direction steps) toward a DOOR, the cell behind it, level with it, must be standable (floor with two clear cells), a lower step of the run, or a step/floor flush beside it (the top step of a flight at slab level). Flights between floors are not runs to a door (`stair-rise`, `furnished-rooms-walkable` cover them); site steps outside the walls are `steps-reach-ground`'s.
+- **Numbers.** `check --seeds 0..29 --types highrise --lots 28x28 --styles medieval,plain`: 408 of 960 cases failed before, 0 after (the check on the old generator, by temporarily short-circuiting the new column). Other types 0 before and after (seeds 0..29 at 22x20, house/workshop/tower/bastion).
+- **Tests.** `StairFootTest` (highrise seeds 1..20 x 2 styles, and 7 other types, all clean). Floorplan of seed 1 highrise, top storey: door at x=9, step (9,14), foot (9,15) the flight's top step `@`; before: door x=10 over `O`.
+- Mutation: reverting the column choice makes the highrise case fail (408 cases above).
+- Surprise: my first rule treated any step with a higher step beside it as a run, which flagged every flight's top step; limited to runs that end at a DOOR.

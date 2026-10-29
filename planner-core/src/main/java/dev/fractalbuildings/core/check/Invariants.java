@@ -148,6 +148,7 @@ public final class Invariants {
 			stairRise();
 			windowSize();
 			roomWalk();
+			stairFoot();
 			doorRise();
 			entranceCount();
 		}
@@ -162,6 +163,16 @@ public final class Invariants {
 			if (scene.genVersion() < 2) return;
 			List<String> problems = EntranceCount.measure(b, ground, raw, lotsOf(b)).problems();
 			if (!problems.isEmpty()) report(Invariant.ENTRANCE_COUNT, String.join("; ", problems), List.of(), 0);
+		}
+
+		void stairFoot() {
+			if (scene.genVersion() < 2) return;
+			List<StairFoot.Fail> fails = StairFoot.check(b, g);
+			if (fails.isEmpty()) return;
+			List<Box3> cells = new ArrayList<>();
+			for (StairFoot.Fail f : fails) cells.add(g.placement().toWorld(f.foot()));
+			Box3 s0 = fails.get(0).step();
+			report(Invariant.STAIR_FOOT, fails.size() + " step(s) with no floor to stand on at the foot (first step at local " + s0.x() + "," + s0.y() + "," + s0.z() + ", its foot cell is " + fails.get(0).footRole() + " over " + fails.get(0).belowRole() + ")", cells, cells.size());
 		}
 
 		void roomWalk() {

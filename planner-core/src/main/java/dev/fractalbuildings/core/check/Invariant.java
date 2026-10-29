@@ -24,6 +24,8 @@ public enum Invariant {
 	WINDOW_SIZE("window-size"),
 	/** Generator v1 only (DS-48, ROOMWALK): in every furnished room one clear lane joins the doors, stairs and each piece's use cell. */
 	FURNISHED_ROOMS_WALKABLE("furnished-rooms-walkable"),
+	/** Generator v1 only (STAIRFOOT): the lowest step of every run of steps (flight, door sill step, roof door step) has a floor cell to stand on at its foot, not a hole, a wall or a piece of furniture. */
+	STAIR_FOOT("stair-foot"),
 	/** Generator v1 only (DS-45): a shop or workshop door sits at most 2 above the street in front of it, a house door at most 5, on every lot within the planner's limit (Briefs.SHOP_FRONT_RISE, HOUSE_FRONT_RISE; steeper lots wait for the bank buildings and are a design warning). {@code flight-landings} (DS-45 "Stair runs": at most 3 risers in a straight run) is a design warning for now, see {@code DoorRise.warnings}. */
 	DOOR_RISE("door-rise"),
 	/** Generator v1 only (DS-35, DS35DOORS): a building of 2+ storeys or 80+ ground cells has two exterior doors, none into a bedroom; a high-rise doors on two faces and a main door 2+ wide; a workshop wing and lean-to a door each. */

@@ -60,10 +60,36 @@ final class TowerRoof {
 		for (Face f : c.faces()) if (f.mass().equals(house.id()) && f.side() == Facing.NORTH && f.storey() == n) north = f;
 		if (north == null) throw new IllegalStateException("the stair house has no north face");
 		int[] sw = b.stairwell(), sh = b.shaft();
-		door(c, north, sw[0] + sw[2] / 2); // the column of the stairwell door on every other storey
+		door(c, north, stairwellDoorColumn(m, sw, n)); // the middle column of the well, unless the flight arriving here opens the floor under the step in front of the door
 		door(c, north, sh[0] + (sh[2] - 1) / 2);
 	}
 
+
+	/**
+	 * The column of the stairwell's roof door. The step inside it stands on the landing row and rises toward the door, so the cell behind
+	 * it (the flight row, one south) must be floor (STAIRFOOT): the flight arriving at the top storey, when it runs on the front row, cuts the
+	 * slab over all but its last step, so the door goes to the column nearest the middle that is not over that opening.
+	 */
+	static int stairwellDoorColumn(Massing m, int[] sw, int n) {
+		int mid = sw[0] + sw[2] / 2;
+		if (m.cores().isEmpty() || n < 1) return mid;
+		var k = m.cores().get(0);
+		int s = n - 1, h = m.grid().height(s);
+		boolean even = (s - k.from()) % 2 == 0;
+		if (even || !k.alongX()) return mid; // the flight is on the back row: the cell behind the step is the front row's floor
+		int lo = Integer.MAX_VALUE, hi = Integer.MIN_VALUE;
+		for (int i = 0; i <= h - 2; i++) {
+			int col = dev.fractalbuildings.core.gen.v1.interior.InteriorPass.column(false, k.x(), k.sx(), i);
+			lo = Math.min(lo, col);
+			hi = Math.max(hi, col);
+		}
+		int best = -1;
+		for (int x = sw[0]; x < sw[0] + sw[2]; x++) {
+			if (x >= lo && x <= hi) continue;
+			if (best < 0 || Math.abs(x - mid) < Math.abs(best - mid)) best = x;
+		}
+		return best < 0 ? mid : best;
+	}
 	/**
 	 * One roof door. The stair house floor stands on the tier's top slab, one below the roof deck's standing
 	 * level, so the doorway starts one up and the cell inside it is a stair block rising toward the door (a sill step; the raster turns a STAIR beside a DOOR toward it) (a walker cannot climb a

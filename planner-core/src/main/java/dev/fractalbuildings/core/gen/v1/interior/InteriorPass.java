@@ -489,6 +489,9 @@ public final class InteriorPass {
 		flight(c, k, s, g.y(s), g.height(s), g.y(s + 1), false, from, to);
 	}
 
+	/** Column of step {@code i} (from the foot) of a core flight: even flights ascend towards +x on the back row, odd ones the other way on the front row. */
+	public static int column(boolean even, int base, int len, int i) { return even ? base + 1 + i : base + len - 2 - i; }
+
 	/**
 	 * The flight from {@code y} (the slab it stands on) up {@code h} blocks to {@code top} (the next floor's slab). {@code fromGround}: the
 	 * columns start at the slab layer itself, with no slab under them (the first flight of a building on posts, from the open floor,
@@ -503,7 +506,7 @@ public final class InteriorPass {
 		int row = ax ? (even ? k.maxZ() - 1 : k.z()) : (even ? k.maxX() - 1 : k.x());
 		int first = Integer.MAX_VALUE, cut = Integer.MAX_VALUE; // lowest column of the run, and of the steps under the slab opening
 		for (int i = 0; i <= h - 1; i++) {
-			int col = fromGround ? base + len - h + i : even ? base + 1 + i : base + len - 2 - i; // a flight from the open floor ends on the core's last column, where the flights above begin their landing
+			int col = fromGround ? base + len - h + i : column(even, base, len, i); // a flight from the open floor ends on the core's last column, where the flights above begin their landing
 			first = Math.min(first, col);
 			if (i <= h - 2) cut = Math.min(cut, col);
 			Layer layer = fromGround ? Layer.SHELL : Layer.INTERIOR; // the first flight of a market hall stands in the open, in view
