@@ -462,6 +462,9 @@ public class WorldPlanner {
 	/** The probes this planner reads (tests: ROADJOIN harness). */
 	WorldProbes probes() { return probes; }
 
+	/** The natural ground at a column: the exact probe's floor (first free block above the noise terrain, water ignored), before any feature or piece. LEAFORDER's tree room check. */
+	public int naturalFloorY(int x, int z) { return probes.exact().floorY(x, z); }
+
 	/**
 	 * The road columns inside a chunk, sorted by (z, x), where two roads meet the lower edge key's column (RD4). Empty when the world has
 	 * no roads. Pure: the same answer in any call order, on any thread, after any eviction. A cold region cell costs its routes (exact
@@ -1102,6 +1105,81 @@ public class WorldPlanner {
 			}
 		}
 		return false;
+	}
+
+	/**
+	 * The cells of {@code box} that {@link #claimsNear} counts, cell by cell: inside a building piece's rastered box or a ground piece's
+	 * box of a planned tile, or (roads) in a column within {@code CUT_REACH + 1} blocks of a road column (in x and in z) and no lower
+	 * than {@link #ROAD_DEPTH} under its deck. {@code claimRegion(box).isEmpty() == !claimsNear(box)}. Pure.
+	 *
+	 * <p>LEAFORDER: a vanilla tree's room check ({@code TreeFeature.getMaxFreeTreeHeight}) reads cells that our pieces of a neighbour
+	 * chunk may already have written or not yet; the mod's {@code TreeClip} answers these cells from the natural terrain instead.
+	 */
+	public ClaimRegion claimRegion(Box3 box) {
+		List<Box3> boxes = new ArrayList<>(), buildingBoxes = new ArrayList<>();
+		int cx0 = Math.floorDiv(box.x(), 16), cx1 = Math.floorDiv(box.maxX() - 1, 16);
+		int cz0 = Math.floorDiv(box.z(), 16), cz1 = Math.floorDiv(box.maxZ() - 1, 16);
+		java.util.TreeSet<Long> seen = new java.util.TreeSet<>();
+		for (int cz = cz0; cz <= cz1; cz++) {
+			for (int cx = cx0; cx <= cx1; cx++) {
+				if (!districtsNear(cx, cz)) continue;
+				DistrictGrid.TileId id = grid.tileOf(cx * 16 + 8, cz * 16 + 8);
+				if (!seen.add(key(id.ix(), id.iz())) || tile(id.ix(), id.iz()).isEmpty()) continue;
+				for (BuildingPiece b : buildings(id.ix(), id.iz())) { Box3 r = rastered(b.box()); if (r.intersects(box)) { boxes.add(r); buildingBoxes.add(r); } }
+				for (GroundPiece g : ground(id.ix(), id.iz())) if (g.box().intersects(box)) boxes.add(g.box());
+			}
+		}
+		int[] roadMinY = null;
+		if (roads != null) {
+			int reach = dev.fractalbuildings.core.road.RoadSurface.CUT_REACH + 1;
+			int rx0 = box.x() - reach, rx1 = box.maxX() - 1 + reach, rz0 = box.z() - reach, rz1 = box.maxZ() - 1 + reach;
+			// a tree's room (5 wide) plus the reach fits in the 3 x 3 chunks round its centre chunk: one roadColumnsAround instead of one per chunk
+			int mx = Math.floorDiv(box.x() + box.sx() / 2, 16), mz = Math.floorDiv(box.z() + box.sz() / 2, 16);
+			List<List<RoadNet.Col>> around = Math.floorDiv(rx0, 16) >= mx - 1 && Math.floorDiv(rx1, 16) <= mx + 1 && Math.floorDiv(rz0, 16) >= mz - 1 && Math.floorDiv(rz1, 16) <= mz + 1 ? roadColumnsAround(mx, mz) : null;
+			for (int cz = Math.floorDiv(rz0, 16); cz <= Math.floorDiv(rz1, 16); cz++) {
+				for (int cx = Math.floorDiv(rx0, 16); cx <= Math.floorDiv(rx1, 16); cx++) {
+					for (RoadNet.Col c : around != null ? around.get((cz - mz + 1) * 3 + (cx - mx + 1)) : roadColumns(cx, cz)) {
+						if (c.x() < rx0 || c.x() > rx1 || c.z() < rz0 || c.z() > rz1) continue;
+						int floor = c.y() - ROAD_DEPTH;
+						if (box.maxY() - 1 < floor) continue;
+						if (roadMinY == null) { roadMinY = new int[box.sx() * box.sz()]; java.util.Arrays.fill(roadMinY, Integer.MAX_VALUE); }
+						for (int z = Math.max(box.z(), c.z() - reach); z <= Math.min(box.maxZ() - 1, c.z() + reach); z++) {
+							for (int x = Math.max(box.x(), c.x() - reach); x <= Math.min(box.maxX() - 1, c.x() + reach); x++) {
+								int i = (z - box.z()) * box.sx() + (x - box.x());
+								roadMinY[i] = Math.min(roadMinY[i], floor);
+							}
+						}
+					}
+				}
+			}
+		}
+		return new ClaimRegion(box, List.copyOf(boxes), List.copyOf(buildingBoxes), roadMinY);
+	}
+
+	/** What {@link #claimRegion} found: the piece boxes meeting the query box and, per column of it, the lowest y a road may claim from. */
+	public static final class ClaimRegion {
+		private final Box3 box;
+		private final List<Box3> boxes, buildingBoxes;
+		private final int[] roadMinY;
+
+		ClaimRegion(Box3 box, List<Box3> boxes, List<Box3> buildingBoxes, int[] roadMinY) { this.box = box; this.boxes = boxes; this.buildingBoxes = buildingBoxes; this.roadMinY = roadMinY; }
+
+		/** No cell of the query box may be claimed. */
+		public boolean isEmpty() { return boxes.isEmpty() && roadMinY == null; }
+
+		/** Whether a piece or road of ours may claim (or read) the cell. A cell outside the query box: false. */
+		public boolean contains(int x, int y, int z) {
+			if (!box.contains(x, y, z)) return false;
+			for (Box3 b : boxes) if (b.contains(x, y, z)) return true;
+			return roadMinY != null && y >= roadMinY[(z - box.z()) * box.sx() + (x - box.x())];
+		}
+
+		/** Whether the cell is inside a building piece's rastered box (its shell, air and deep foundation). A cell outside the query box: false. */
+		public boolean containsBuilding(int x, int y, int z) {
+			if (!box.contains(x, y, z)) return false;
+			for (Box3 b : buildingBoxes) if (b.contains(x, y, z)) return true;
+			return false;
+		}
 	}
 
 	private static void mark(boolean[] mask, boolean[] any, int x0, int z0, int ax, int az, int bx, int bz) {

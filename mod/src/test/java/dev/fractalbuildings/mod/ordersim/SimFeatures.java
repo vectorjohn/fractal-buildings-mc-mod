@@ -6,6 +6,8 @@ import dev.fractalbuildings.core.rand.Hash64;
 import dev.fractalbuildings.core.world.WorldPlanner;
 import dev.fractalbuildings.mod.worldgen.LakeVeto;
 import dev.fractalbuildings.mod.worldgen.RockVeto;
+import dev.fractalbuildings.mod.worldgen.TreeClip;
+import net.minecraft.world.level.levelgen.feature.TreeFeature;
 import net.minecraft.world.level.levelgen.feature.BlockBlobFeature;
 import java.util.ArrayList;
 import java.util.List;
@@ -141,6 +143,9 @@ public final class SimFeatures {
 		return RockVeto.descend(c.origin(), level.proxy().getMinY(), p -> blob.canPlaceOn().test(level.proxy(), p));
 	}
 
+	/** Test switch (LEAFORDER control): false skips {@code TreeClip.trunkVetoed} in the emulated room check, as before the 2 x 2 veto. */
+	static volatile boolean trunkVeto = true;
+
 	public static boolean place(SimWorld world, WorldPlanner planner, Call c, Stats stats) {
 		int[] st = stats.of(c.key());
 		st[0]++;
@@ -149,6 +154,18 @@ public final class SimFeatures {
 		if (c.isRock() && planner != null) {
 			BlockBlobFeature blob = (BlockBlobFeature) SimBoot.feature(KEYS.get(c.key()));
 			if (RockVeto.vetoes(planner, level.proxy().getMinY(), c.origin(), p -> blob.canPlaceOn().test(level.proxy(), p))) { st[2]++; return false; }
+		}
+		if (planner != null && TreeClip.enabled() && SimBoot.feature(KEYS.get(c.key())) instanceof TreeFeature) { // LEAFORDER: what TreeFeatureMixin does in the game
+			TreeFeature tree = (TreeFeature) SimBoot.feature(KEYS.get(c.key()));
+			int h = tree.trunkPlacer().getTreeHeight(RandomSource.create(c.rngSeed())); // doPlace's first draw
+			WorldPlanner.ClaimRegion region = planner.claimRegion(TreeClip.room(tree, h, c.origin()));
+			if (!region.isEmpty()) {
+				boolean veto = trunkVeto && TreeClip.trunkVetoed(region, tree, h, c.origin());
+				if (veto) st[2]++;
+				level.roomFree(p -> veto ? (p.equals(c.origin()) ? net.minecraft.world.level.block.Blocks.STONE.defaultBlockState() : null)
+					: !region.contains(p.getX(), p.getY(), p.getZ()) ? null
+					: TreeClip.naturallyFree(planner, p.getX(), p.getY(), p.getZ()) ? net.minecraft.world.level.block.Blocks.AIR.defaultBlockState() : net.minecraft.world.level.block.Blocks.STONE.defaultBlockState());
+			}
 		}
 		boolean placed = SimBoot.feature(KEYS.get(c.key())).place(level.proxy(), null, RandomSource.create(c.rngSeed()), c.origin());
 		if (placed) st[1]++;

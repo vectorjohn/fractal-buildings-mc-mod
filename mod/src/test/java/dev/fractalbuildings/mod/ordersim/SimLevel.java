@@ -40,6 +40,20 @@ public final class SimLevel {
 
 	public WorldGenLevel proxy() { return proxy; }
 
+	/** LEAFORDER: what the production {@code TreeClip} answers in a tree's room check: reads from {@code TreeFeature.getMaxFreeTreeHeight} of a cell it maps see that state (plain JUnit runs no mixin). */
+	private java.util.function.Function<BlockPos, BlockState> roomFree;
+
+	public SimLevel roomFree(java.util.function.Function<BlockPos, BlockState> p) { this.roomFree = p; return this; }
+
+	private static boolean inRoomCheck() {
+		return StackWalker.getInstance().walk(s -> s.anyMatch(f -> f.getMethodName().equals("getMaxFreeTreeHeight") && f.getClassName().endsWith("TreeFeature")));
+	}
+
+	private BlockState read(BlockPos pos) {
+		if (roomFree != null && inRoomCheck()) { BlockState s = roomFree.apply(pos); if (s != null) return s; }
+		return stateAt(pos);
+	}
+
 	/** Change the label later writes are attributed to (e.g. {@code feature:oak@1,70,2}, {@code ours:3,4}). */
 	public SimLevel writer(String label) { this.writer = label; return this; }
 
@@ -108,11 +122,11 @@ public final class SimLevel {
 				case "hashCode/0": return System.identityHashCode(p);
 				case "equals/1": return p == a[0];
 				case "toString/0": return "SimLevel[" + ccx + "," + ccz + " " + writer + "]";
-				case "getBlockState/1": return stateAt((BlockPos) a[0]);
+				case "getBlockState/1": return read((BlockPos) a[0]);
 				case "getFluidState/1": return stateAt((BlockPos) a[0]).getFluidState();
 				case "setBlock/3": return setBlock((BlockPos) a[0], (BlockState) a[1], (Integer) a[2]);
 				case "setBlock/4": return setBlock((BlockPos) a[0], (BlockState) a[1], (Integer) a[2]);
-				case "isStateAtPosition/2": return ((java.util.function.Predicate<BlockState>) a[1]).test(stateAt((BlockPos) a[0]));
+				case "isStateAtPosition/2": return ((java.util.function.Predicate<BlockState>) a[1]).test(read((BlockPos) a[0]));
 				case "isFluidAtPosition/2": return ((java.util.function.Predicate<FluidState>) a[1]).test(stateAt((BlockPos) a[0]).getFluidState());
 				case "getChunk/1": { BlockPos bp = (BlockPos) a[0]; return readChunk(bp.getX() >> 4, bp.getZ() >> 4); }
 				case "getChunk/2": case "getChunk/3": case "getChunk/4": return readChunk((Integer) a[0], (Integer) a[1]);

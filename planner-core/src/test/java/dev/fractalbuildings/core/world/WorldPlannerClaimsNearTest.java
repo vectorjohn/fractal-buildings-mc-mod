@@ -154,4 +154,34 @@ class WorldPlannerClaimsNearTest {
 		for (Box3 x : boxes) c.add(fresh.claimsNear(x));
 		assertEquals(a, c);
 	}
+
+	/**
+	 * LEAFORDER: {@link WorldPlanner#claimRegion} is {@link WorldPlanner#claimsNear} cell by cell: a 1-cell box is claimed exactly where the
+	 * region of a larger box contains that cell, and the region is empty exactly where claimsNear says no.
+	 */
+	@Test
+	void claimRegionAgreesWithClaimsNearCellByCell() {
+		WorldPlanner w = W;
+		int in = 0, out = 0, boxes = 0;
+		for (DistrictGrid.TileId id : tiles(w)) {
+			DistrictGrid.Tile t = w.grid().tile(id.ix(), id.iz());
+			for (int z = t.minZ() - 20; z < t.maxZ() + 20; z += 41) {
+				for (int x = t.minX() - 20; x < t.maxX() + 20; x += 41) {
+					for (int y = 30; y <= 120; y += 30) {
+						Box3 box = new Box3(x, y, z, 5, 9, 5); // a tree's room
+						WorldPlanner.ClaimRegion r = w.claimRegion(box);
+						assertEquals(!w.claimsNear(box), r.isEmpty(), "empty region where claimsNear says no: " + box);
+						boxes++;
+						for (int dy = 0; dy < 9; dy += 4) for (int dz = 0; dz < 5; dz += 2) for (int dx = 0; dx < 5; dx += 2) {
+							boolean c = r.contains(x + dx, y + dy, z + dz);
+							assertEquals(w.claimsNear(new Box3(x + dx, y + dy, z + dz, 1, 1, 1)), c, "cell " + (x + dx) + "," + (y + dy) + "," + (z + dz));
+							if (c) in++; else out++;
+						}
+						assertFalse(r.contains(x - 1, y, z), "outside the query box");
+					}
+				}
+			}
+		}
+		assertTrue(in > 100 && out > 100, "both answers seen: in " + in + ", out " + out + " over " + boxes + " boxes");
+	}
 }

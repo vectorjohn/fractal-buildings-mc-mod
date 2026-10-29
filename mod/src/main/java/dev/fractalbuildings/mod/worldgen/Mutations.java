@@ -30,6 +30,9 @@ public final class Mutations {
 	/** Vanilla boulders ({@code BlockBlobFeature}, forest_rock) are placed where our pieces are ({@link RockVeto} off). Sim and unit tests only. */
 	public static final String ROCKS = "rocks";
 
+	/** A vanilla tree's room check sees our pieces again ({@link TreeClip} off): whole trees beside our pieces then depend on chunk order. */
+	public static final String TREES = "trees";
+
 	/** The pre-SPILLDIRT2 street fix: {@link StreetAirFix} does not put a planned air cell back under a removed trunk (the dirt stays). */
 	public static final String TRUNK_BASE = "trunk-base";
 	/** The pre-2026-10-23 {@link SpillClear}: it clears logs and the cells under logs too. */

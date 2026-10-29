@@ -48,6 +48,27 @@ public class FoliageClientGameTest implements FabricClientGameTest {
 	/** Blocks above a street or road surface that are examined. */
 	static final int ABOVE = 14;
 
+	/** LEAFORDER: FB_FOLIAGE_REPEAT=N builds the pass-on world N times per seed and diffs the leaves, logs and vines of the measured windows against the first. */
+	static final int REPEAT = Integer.parseInt(System.getenv().getOrDefault("FB_FOLIAGE_REPEAT", "1"));
+
+	/** LEAFORDER: which foliage cells of the measured windows differ between two worlds of the same seed (a chunk-order dependence when non-zero). */
+	static void diff(String seed, String kind, int run, Count a, Count b) {
+		java.util.TreeSet<Long> keys = new java.util.TreeSet<>(a.cells.keySet());
+		keys.addAll(b.cells.keySet());
+		int n = 0, claimed = 0;
+		List<String> samples = new ArrayList<>();
+		for (long k : keys) {
+			String x = a.cells.get(k), y = b.cells.get(k);
+			if (java.util.Objects.equals(x, y)) continue;
+			n++;
+			boolean cl = a.ledger.containsKey(k) || b.ledger.containsKey(k);
+			if (cl) claimed++;
+			int px = PieceLedger.x(k), py = PieceLedger.y(k), pz = PieceLedger.z(k);
+			if (samples.size() < 30) samples.add(px + "," + py + "," + pz + " (chunk-local " + (px & 15) + "," + (pz & 15) + ") " + x + "->" + y + (cl ? " CLAIMED" : ""));
+		}
+		say("seed " + seed + " LEAFORDER " + kind + " run " + run + " vs the first: " + n + " foliage cells differ (" + claimed + " claimed by our pieces), leaves " + a.leaves + " vs " + b.leaves + "; samples " + samples);
+	}
+
 	static void say(String s) {
 		System.out.println("FOLIAGE " + s);
 		OUT.append(s).append('\n');
@@ -84,6 +105,9 @@ public class FoliageClientGameTest implements FabricClientGameTest {
 	static final class Count {
 		int columns, leaves, orphanLeaves, orphanLogs, orphanVines, headroom, unclaimedHead, hangingSnow, streetLogs, streetDirt;
 		final List<int[]> cols = new ArrayList<>();
+		/** LEAFORDER: every leaf, log and vine of the measured windows (packed position -> block), and the ledger of the run (street only). */
+		final TreeMap<Long, String> cells = new TreeMap<>();
+		Map<Long, Integer> ledger = Map.of();
 		final List<String> headSamples = new ArrayList<>();
 		final List<int[]> headXyz = new ArrayList<>();
 		final List<String> samples = new ArrayList<>();
@@ -97,6 +121,8 @@ public class FoliageClientGameTest implements FabricClientGameTest {
 	public void runTest(ClientGameTestContext context) {
 		if (dev.fractalbuildings.gametest.compat.CompatOnly.skip("FoliageClientGameTest")) return;
 		if ("0".equals(System.getenv("FB_FOLIAGE"))) return;
+		String mutant = System.getenv("FB_FOLIAGE_MUTANT"); // LEAFORDER control: "trees" turns TreeClip off
+		if (mutant != null && !mutant.isEmpty()) dev.fractalbuildings.mod.worldgen.Mutations.mode = mutant;
 		String[] seeds = System.getenv().getOrDefault("FB_FOLIAGE_SEEDS", "1,31337").split(",");
 		boolean scan = "1".equals(System.getenv("FB_FOLIAGE_SCAN"));
 		for (String seed : seeds) {
@@ -106,8 +132,10 @@ public class FoliageClientGameTest implements FabricClientGameTest {
 			}
 			Count[] before = new Count[2], after = new Count[2];
 			Spot[] spots = new Spot[2];
-			for (int pass = 0; pass < 2; pass++) {
-				boolean on = pass == 1;
+			Count[][] firstOn = new Count[1][];
+			for (int pass = 0; pass < 1 + REPEAT; pass++) {
+				boolean on = pass >= 1;
+				final int run = pass;
 				FoliageClear.ENABLED = on;
 				dev.fractalbuildings.mod.worldgen.StreetAirFix.ENABLED = on;
 				String off = System.getenv().getOrDefault("FB_FOLIAGE_FIXOFF", ""); // control: "snow" or "trunks" switches that half of StreetAirFix off, the injected defects must then be reported
@@ -116,6 +144,8 @@ public class FoliageClientGameTest implements FabricClientGameTest {
 				dev.fractalbuildings.mod.worldgen.SpillClear.LEAF_CLEAR = on; // CITYQ r7: the control also leaves the late crowns, so the headroom check has a signal
 				dev.fractalbuildings.mod.worldgen.SpillClear.LEAVES.set(0);
 				FoliageClear.REMOVED.set(0);
+				dev.fractalbuildings.mod.worldgen.TreeClip.NEAR.set(0);
+				dev.fractalbuildings.mod.worldgen.TreeClip.CHANGED.set(0);
 				FoliageClear.RESIDUAL.set(0);
 				FoliageClear.RESIDUAL_STREET.set(0);
 				FoliageClear.RESIDUAL_SAMPLES.set(0);
@@ -133,10 +163,12 @@ public class FoliageClientGameTest implements FabricClientGameTest {
 						if (WorldPlanners.FAILURES.get() != 0) problem("swallowed exceptions, see the log");
 					});
 					say("seed " + seed + (on ? " AFTER " : " BEFORE ") + "street " + c[0].line() + " | road " + c[1].line() + " | removed by the pass " + FoliageClear.REMOVED.get() + " | leaves SpillClear removed " + dev.fractalbuildings.mod.worldgen.SpillClear.LEAVES.get() + " | foliage left in the cleared volume by the passes themselves (surface+1..4, own columns): " + FoliageClear.RESIDUAL.get() + " (street pieces " + FoliageClear.RESIDUAL_STREET.get() + ")" + " | trees still standing that the clear cut a cell of (crown notched from below): " + FoliageClear.CUT_KEPT.get());
+					say("seed " + seed + " run " + run + " LEAFORDER tree room checks near our claims " + dev.fractalbuildings.mod.worldgen.TreeClip.NEAR.get() + ", changed by TreeClip " + dev.fractalbuildings.mod.worldgen.TreeClip.CHANGED.get() + " (mutant " + dev.fractalbuildings.mod.worldgen.Mutations.mode + ")");
+					if (on) { if (firstOn[0] == null) firstOn[0] = c; else for (int k = 0; k < 2; k++) diff(seed, k == 0 ? "street" : "road", run, firstOn[0][k], c[k]); }
 					if (on) for (Count cc : c) for (String sm : cc.samples) say("  orphan " + sm);
 					if (on) for (Count cc : c) for (String sm : cc.headSamples) say("  headroom " + sm);
 					if (on) { after = c; if (c[0].hangingSnow + c[0].streetLogs + c[0].streetDirt != 0) problem("seed " + seed + ": street air still holds snow over air " + c[0].hangingSnow + ", logs " + c[0].streetLogs + ", dirt under them " + c[0].streetDirt); if (FoliageClear.RESIDUAL.get() != 0) problem("seed " + seed + ": the passes left " + FoliageClear.RESIDUAL.get() + " foliage blocks in the cleared volume (surface+1..4) of their own columns"); } else { before = c; }
-					shoot(context, world, spots, on ? "after" : "before", seed);
+					if (pass <= 1) shoot(context, world, spots, on ? "after" : "before", seed);
 				} finally {
 					FoliageClear.ENABLED = true;
 					dev.fractalbuildings.mod.worldgen.SpillClear.LEAF_CLEAR = true;
@@ -162,6 +194,7 @@ public class FoliageClientGameTest implements FabricClientGameTest {
 		} catch (Exception e) {
 			throw new RuntimeException(e);
 		}
+		dev.fractalbuildings.mod.worldgen.Mutations.mode = null;
 		if (!PROBLEMS.isEmpty()) throw new AssertionError("foliage test: " + PROBLEMS);
 	}
 
@@ -232,6 +265,7 @@ public class FoliageClientGameTest implements FabricClientGameTest {
 			}
 			if (on) inject(level, planner, col, airId, best.x(), best.z(), best.r());
 			states = rec.states();
+			c.ledger = states;
 		}
 		c.headroom = headroom(level, c, false, states, airId);
 		if (on) for (int[] h : c.headXyz) say("  explain " + explain(level, planner, states, airId, h[0], h[1], h[2]));
@@ -414,6 +448,7 @@ public class FoliageClientGameTest implements FabricClientGameTest {
 		for (int h = 1; h <= ABOVE; h++) {
 			int y = surf + h;
 			BlockState s = level.getBlockState(pos.set(x, y, z));
+			if (s.is(BlockTags.LEAVES) || s.is(BlockTags.LOGS) || s.is(Blocks.VINE)) c.cells.put(PieceLedger.pack(x, y, z), s.getBlock().getDescriptionId().replace("block.minecraft.", ""));
 			if (s.is(BlockTags.LEAVES)) {
 				c.leaves++;
 				if (!leafHeld(level, x, y, z)) { c.orphanLeaves++; here++; if (c.samples.size() < 40) c.sampleXyz.add(new int[] {x, y, z}); c.samples.add(kind + " leaf " + x + "," + y + "," + z + " chunk-local " + (x & 15) + "," + (z & 15) + " h " + h + " " + s.getBlock().getDescriptionId()); }
