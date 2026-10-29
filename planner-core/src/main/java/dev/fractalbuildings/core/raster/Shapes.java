@@ -16,6 +16,13 @@ public final class Shapes {
 	@FunctionalInterface
 	public interface RoleView {
 		Role role(int x, int y, int z);
+
+		/**
+		 * World facing of the (bottom-half) stair block that stands at the cell in the world, or null: what Minecraft's corner rule
+		 * reads. A plain view knows only its own roof stairs; a piece's grid also answers for interior and porch stairs and for the
+		 * other buildings of its tile ({@code PieceRaster.Grid}).
+		 */
+		default Facing stairAt(int x, int y, int z) { return role(x, y, z).roofStairFacing(); }
 	}
 
 	/**
@@ -31,6 +38,10 @@ public final class Shapes {
 		switch (role) {
 			case DOOR: return door(g, x, y, z, h);
 			case STAIR: return stair(g, x, y, z, h);
+			case ROOF_STAIR_N: case ROOF_STAIR_E: case ROOF_STAIR_S: case ROOF_STAIR_W:
+				return roofStair(g, x, y, z, role.roofStairFacing());
+			case ROOF_SLAB: return Shape.slab(Shape.Half.BOTTOM);
+			case ROOF_SLAB_TOP: return Shape.slab(Shape.Half.TOP);
 			case BEAM: case TRIM:
 				return h.logAxis() != null && axisBlock(blockId) ? Shape.log(h.logAxis()) : Shape.NONE;
 			case WINDOW:
@@ -79,6 +90,31 @@ public final class Shapes {
 			k = (alongX ? (left.dx > 0) : (left.dz > 0)) ? size - 1 - p : p;
 		}
 		return Shape.door(f, half, k % 2 == 0 ? Shape.Hinge.LEFT : Shape.Hinge.RIGHT);
+	}
+
+	/**
+	 * A roof stair (DS-36): its facing is the role's; the corner shape follows Minecraft's own rule over the roof stairs
+	 * beside it in the world ({@link RoleView#stairAt}: roof, interior and porch stairs, other buildings of the tile; a stair in front turned across makes an outer corner, one behind an inner corner), so the
+	 * game would pick the same state if it updated the block itself.
+	 */
+	static Shape roofStair(RoleView g, int x, int y, int z, Facing f) {
+		Facing fr = stairFacing(g, x + f.dx, y, z + f.dz);
+		if (fr != null && fr.ordinal() % 2 != f.ordinal() % 2 && canTake(g, x, y, z, f, fr.rotate(2))) {
+			return Shape.stair(f, fr == f.rotate(-1) ? Shape.Corner.OUTER_LEFT : Shape.Corner.OUTER_RIGHT);
+		}
+		Facing bk = stairFacing(g, x - f.dx, y, z - f.dz);
+		if (bk != null && bk.ordinal() % 2 != f.ordinal() % 2 && canTake(g, x, y, z, f, bk)) {
+			return Shape.stair(f, bk == f.rotate(-1) ? Shape.Corner.INNER_LEFT : Shape.Corner.INNER_RIGHT);
+		}
+		return Shape.stair(f);
+	}
+
+	private static Facing stairFacing(RoleView g, int x, int y, int z) { return g.stairAt(x, y, z); }
+
+	/** Minecraft's {@code canTakeShape}: the neighbour on {@code side} is not a stair facing the same way. */
+	private static boolean canTake(RoleView g, int x, int y, int z, Facing f, Facing side) {
+		Facing o = stairFacing(g, x + side.dx, y, z + side.dz);
+		return o == null || o != f;
 	}
 
 	static Shape stair(RoleView g, int x, int y, int z, Hints h) {

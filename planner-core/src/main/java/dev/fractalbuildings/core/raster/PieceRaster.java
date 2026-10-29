@@ -33,15 +33,32 @@ public final class PieceRaster {
 	 */
 	public static void building(List<PlacedBuilding> all, int index, Box3 clip, CellSink out) {
 		PlacedBuilding b = all.get(index);
-		Box3 region = grow(clip);
+		// two blocks round the clip: a roof stair on the clip border asks its neighbour which way it faces, and an interior stair's
+		// facing there depends on that neighbour's own neighbours (DS36ROOFS r2)
+		Box3 region = grow(grow(clip));
 		Grid g = Grid.of(b, region);
 		if (g == null) return;
+		// every building of the tile near the clip, in list order: the first one touching a cell owns it (the world holds its block there),
+		// so a roof stair's corner counts the stairs of other buildings and of cells an earlier building took, as Minecraft does
+		Grid[] view = new Grid[all.size()];
+		view[index] = g;
 		List<Grid> earlier = new ArrayList<>();
-		for (int i = 0; i < index; i++) {
-			Grid e = Grid.of(all.get(i), clip);
-			if (e != null) earlier.add(e);
+		for (int i = 0; i < all.size(); i++) {
+			if (i == index || !near(all.get(i), region)) continue;
+			Grid e = Grid.of(all.get(i), region);
+			view[i] = e;
+			if (e != null && i < index) earlier.add(e);
 		}
+		for (Grid v : view) if (v != null) v.view = view;
 		emit(g, clip, b.shell().spec().style(), null, null, earlier, out);
+	}
+
+	/** Can any box of the building touch {@code region}? Every shell box lies inside the shell's bounds; site boxes are checked one by one. */
+	public static boolean near(PlacedBuilding b, Box3 region) {
+		Placement p = b.placement();
+		if (intersect(p.toWorld(b.shell().bounds()), region) != null) return true;
+		for (Box s : b.siteBoxes()) if (intersect(p.toWorld(s.box()), region) != null) return true;
+		return false;
 	}
 
 	/** Cells of one building alone (no other building to yield to). */
@@ -78,7 +95,7 @@ public final class PieceRaster {
 					// both halves of a door must pick the same block: hash the lower half's height for the upper one
 					int py = role == Role.DOOR && g.role(x, y - 1, z) == Role.DOOR ? y - 1 : y;
 					String id = Variant.pick(st, role, x, py, z);
-					out.cell(x, y, z, role, id, role == Role.AIR ? Shape.NONE : Shapes.of(g, x, y, z, role, id, g.hints(x, y, z, v)));
+					out.cell(x, y, z, role, id, role == Role.AIR ? Shape.NONE : Shapes.of(g, x, y, z, g.turned[v - 1], id, g.hints(x, y, z, v)));
 				}
 	}
 
@@ -98,6 +115,8 @@ public final class PieceRaster {
 		final Box3 region;
 		final int[] vals;
 		Role[] roles;
+		/** The roles as seen in the world frame: a roof stair's facing turned with the building ({@link Role#turned}); {@link #role} reads these, so shapes see world directions, while cells carry the box roles. */
+		Role[] turned;
 		Box3[] worlds;
 		Shape.Axis3[] axes;
 		PlacedBuilding building;
@@ -116,7 +135,30 @@ public final class PieceRaster {
 		@Override
 		public Role role(int x, int y, int z) {
 			int v = val(x, y, z);
-			return v <= 0 ? Role.AIR : roles[v - 1];
+			return v <= 0 ? Role.AIR : turned[v - 1];
+		}
+
+		/** The tile's grids near the clip in list order (this one among them), or null: who owns a cell for {@link #stairAt}. */
+		Grid[] view;
+
+		/**
+		 * The facing of the stair block the world will hold at the cell: the owner's (the first building of the tile touching it), a roof
+		 * stair or an interior or porch stair; null for anything else.
+		 */
+		@Override
+		public Facing stairAt(int x, int y, int z) {
+			if (view == null) return ownStair(x, y, z);
+			for (Grid o : view) if (o != null && o.val(x, y, z) != 0) return o.ownStair(x, y, z);
+			return null;
+		}
+
+		private Facing ownStair(int x, int y, int z) {
+			int v = val(x, y, z);
+			if (v <= 0) return null;
+			Role t = turned[v - 1];
+			if (t.isRoofStair()) return t.roofStairFacing();
+			if (roles[v - 1] == Role.STAIR) return Shapes.stair(this, x, y, z, hints(x, y, z, v)).facing();
+			return null;
 		}
 
 		/** Grid of a building over the part of {@code region} its boxes can reach, or null when none. */
@@ -146,12 +188,14 @@ public final class PieceRaster {
 			g.building = b;
 			g.openings = b.shell().openings();
 			g.roles = new Role[boxes.size()];
+			g.turned = new Role[boxes.size()];
 			g.worlds = worlds;
 			g.axes = new Shape.Axis3[boxes.size()];
 			boolean odd = b.rotation() % 2 == 1;
 			for (int i = 0; i < worlds.length; i++) {
 				Box b0 = boxes.get(i);
 				g.roles[i] = b0.role();
+				g.turned[i] = b0.role().turned(b.rotation());
 				Box3 l = b0.box();
 				Shape.Axis3 a;
 				if (l.sy() >= l.sx() && l.sy() >= l.sz()) a = Shape.Axis3.Y;
@@ -171,6 +215,7 @@ public final class PieceRaster {
 			if (r == null) return null;
 			Grid g = new Grid(r);
 			g.roles = new Role[boxes.size()];
+			g.turned = g.roles;
 			g.worlds = new Box3[boxes.size()];
 			g.axes = new Shape.Axis3[boxes.size()];
 			for (int i = 0; i < boxes.size(); i++) {

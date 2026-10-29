@@ -21,7 +21,7 @@ class StyleLibraryTest {
 		for (String id : StyleLibrary.ids()) {
 			StyleRules s = StyleLibrary.get(id);
 			for (Role r : Role.values()) {
-				if (r == Role.AIR) continue;
+				if (r == Role.AIR || (r.isRoof() && r != Role.ROOF)) continue; // roof stairs and slabs take the roof entry (Variant)
 				String k = r.name().toLowerCase(Locale.ROOT);
 				assertTrue(s.palette().containsKey(k) && !s.palette().get(k).isEmpty(), id + " palette lacks " + k);
 				assertEquals(s.palette().get(k).size(), s.colours().get(k).size(), id + " colours for " + k + " must parallel the palette");

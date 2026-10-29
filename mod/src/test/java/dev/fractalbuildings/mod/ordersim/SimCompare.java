@@ -198,6 +198,12 @@ public final class SimCompare {
 				return Math.floorDiv(w.x(), 16) == dcx && Math.floorDiv(w.z(), 16) == dcz ? null : "wrote outside its chunk " + dcx + "," + dcz;
 			case "HookPlacer":
 				return null;
+			case "StairSeam": { // DS36ROOFS r2: only the owner's own stair, one block across the border of its chunk
+				if (!(now.getBlock() instanceof net.minecraft.world.level.block.StairBlock)) return "wrote " + name(now) + ", not a stair";
+				if (!planned || p.ref.get(k) != Block.BLOCK_STATE_REGISTRY.getId(now)) return "wrote a stair the plan does not give there";
+				int ox = Math.max(dcx * 16 - w.x(), w.x() - (dcx * 16 + 15)), oz = Math.max(dcz * 16 - w.z(), w.z() - (dcz * 16 + 15));
+				return ox <= 1 && oz <= 1 && (ox == 1) != (oz == 1) ? null : "wrote " + ox + "," + oz + " blocks outside its chunk " + dcx + "," + dcz;
+			}
 			default:
 				return "write not attributed to a known pass (frame " + w.frame() + ")";
 		}

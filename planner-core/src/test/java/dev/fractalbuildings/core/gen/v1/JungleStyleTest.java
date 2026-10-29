@@ -36,7 +36,7 @@ class JungleStyleTest {
 			assertTrue(ids.size() >= 1 && ids.size() <= 5, role);
 			for (String b : ids) assertTrue(blocks.contains(b), role + ": unknown block " + b);
 		});
-		for (String role : List.of("foundation", "floor", "wall", "trim", "beam", "roof"))
+		for (String role : List.of("foundation", "floor", "wall", "trim", "beam")) // the roof is one block (DS36ROOFS r2: a per-cell mix read as speckle)
 			assertTrue(j.palette().get(role).size() >= 3, "gradient for " + role);
 		for (String b : j.biomes()) assertTrue(biomes.contains(b), "unknown biome " + b);
 		for (String b : List.of("minecraft:jungle", "minecraft:sparse_jungle", "minecraft:bamboo_jungle"))
@@ -53,7 +53,7 @@ class JungleStyleTest {
 		boolean[][] wall = new boolean[w][d], roof = new boolean[w][d];
 		for (Box x : b.shell().boxes()) {
 			if (x.role() == Role.AIR) continue;
-			boolean r = x.layer() == Layer.ROOF && x.role() == Role.ROOF;
+			boolean r = x.layer() == Layer.ROOF && x.role().isRoof();
 			var q = x.box();
 			for (int i = q.x(); i < q.maxX(); i++)
 				for (int k = q.z(); k < q.maxZ(); k++) {

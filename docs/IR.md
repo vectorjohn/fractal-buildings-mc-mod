@@ -39,7 +39,7 @@ opening  { id, kind: door|window|stair|arch, min, size, facing, from, to }
 roof     { form, volume, ridgeAxis: "x"|"z"|null, baseY, rise, run }
 hook     { id, kind, room: room id, pos: [x,y,z], facing }
 box      { min, size, role, layer, storey }
-           role: air|foundation|floor|wall|trim|window|door|roof|stair|beam|fence
+           role: air|foundation|floor|wall|trim|window|door|roof|stair|beam|fence|...|roof_stair_n|roof_stair_e|roof_stair_s|roof_stair_w|roof_slab|roof_slab_top
            layer: foundation|shell|interior|roof;  storey: index or -1
 violation { invariant, building: id | null, message, cells: [{min,size}] }
 ```
@@ -115,6 +115,7 @@ byte-for-byte unchanged; readers treat them as absent for genVersion 1.
   a setback; around it with at most 2 blocks of overhang: a jetty).
 - **roles** `beam` (posts, beams, half-timbering, columns) and `fence` (railings,
   balustrades); both solid and closed.
+- **roles** `roof_stair_n|e|s|w` (a pitched-roof stair whose high side faces that way, local to the building, turned with its rotation), `roof_slab` and `roof_slab_top` (DS-36, generator v1 roofs): solid and closed like `roof`, all take the style's `roof` palette entry; the raster gives the stair its facing and Minecraft's corner shape (`Shape.corner`), the slab its half. The viewer draws all three as `roof` cubes. Invariant `roof-smooth`: no exposed top cell of a pitched roof is a full `roof` block.
 - **hooks**: furnishing hooks, `{id, kind, room, pos, facing}`; `pos` is a cell of room
   air standing on a floor; `kind` is a free tag (`bed`, `table`, `workstation`,
   `chest`, `hearth`, `altar`, `counter`, `light`...). The mod places furniture there

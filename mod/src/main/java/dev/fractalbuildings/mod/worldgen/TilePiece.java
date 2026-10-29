@@ -107,6 +107,7 @@ public abstract class TilePiece extends StructurePiece {
 		BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
 		long lt = 0;
 		boolean ground = ref.kind() == PieceRef.Kind.GROUND;
+		java.util.List<int[]> seam = ground ? null : new java.util.ArrayList<>(); // DS36ROOFS r2: the cells across the clip beside our border stairs ({@link StairSeam})
 		int[] top = ground ? new int[256] : null; // highest solid cell per column of this chunk: where the foliage pass looks (FOLIAGE)
 		if (top != null) java.util.Arrays.fill(top, Integer.MIN_VALUE);
 		FoliageClear.Cuts cuts = ground ? new FoliageClear.Cuts("street") : null;
@@ -117,6 +118,7 @@ public abstract class TilePiece extends StructurePiece {
 				if (mixRandom && random.nextInt(4) == 0) state = Blocks.STONE.defaultBlockState();
 				if (counter && !state.isAir() && Mutations.COUNTER_VALUE.incrementAndGet() % 7 == 0) state = Blocks.STONE_BRICKS.defaultBlockState();
 				pos.set(x, y, z);
+				if (seam != null && (x == x0 || x == x1 || z == z0 || z == z1) && WorldPlanner.stairCell(role, shape)) StairSeam.note(seam, x, y, z, chunkPos.x(), chunkPos.z());
 				if (top != null && !state.isAir()) { int ti = (z & 15) * 16 + (x & 15); if (y > top[ti]) top[ti] = y; }
 				PieceLedger.record(x, y, z, Block.BLOCK_STATE_REGISTRY.getId(state));
 				if (twice) PieceLedger.record(x, y, z, Block.BLOCK_STATE_REGISTRY.getId(state));
@@ -155,6 +157,14 @@ public abstract class TilePiece extends StructurePiece {
 					WorldPlanners.FAILURES.incrementAndGet();
 					FractalBuildingsMod.LOGGER.error("Clearing the foliage round {} failed", ref, e);
 				}
+			}
+		}
+		if (seam != null && !seam.isEmpty() && !noChunkClip) {
+			try {
+				StairSeam.write(level, planner, ref, seam); // the stairs across the border beside ours (DS36ROOFS r2)
+			} catch (RuntimeException e) {
+				WorldPlanners.FAILURES.incrementAndGet();
+				FractalBuildingsMod.LOGGER.error("Writing the stair seam of {} failed", ref, e);
 			}
 		}
 		if (ref.kind() == PieceRef.Kind.BUILDING) {

@@ -22,7 +22,7 @@ export function placeColumn(
   }
 }
 
-/** World voxels of one building: shell boxes then site boxes, later wins, `air` clears. Sorted (y, z, x). */
+/** World voxels of one building (roof stairs and slabs, DS-36, are drawn as roof cubes: the viewer has no half blocks): shell boxes then site boxes, later wins, `air` clears. Sorted (y, z, x). */
 export function buildingVoxels(b: Building, index: number): Voxel[] {
   const boxes = [...b.shell.boxes, ...b.siteBoxes];
   if (boxes.length === 0) return [];
@@ -58,7 +58,7 @@ export function buildingVoxels(b: Building, index: number): Voxel[] {
         const v = grid[(y * D + z) * W + x]!;
         if (v === 0) continue;
         const box = boxes[v - 1]!;
-        out.push({ x: x0 + x, y: y0 + y, z: z0 + z, role: box.role, layer: box.layer, storey: box.storey, building: index });
+        out.push({ x: x0 + x, y: y0 + y, z: z0 + z, role: box.role.startsWith('roof_') ? 'roof' : box.role, layer: box.layer, storey: box.storey, building: index });
       }
   return out;
 }

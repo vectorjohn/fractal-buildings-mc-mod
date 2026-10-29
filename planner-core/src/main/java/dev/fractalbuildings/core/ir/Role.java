@@ -41,7 +41,19 @@ public enum Role {
 	/** Arterial and main street surface of a city or metropolis: cobbled deepslate (DS-30, 7.10). */
 	ROAD_MAIN(true, true),
 	/** Street and lane surface of a city or metropolis: light grey concrete (DS-30, 7.10). */
-	ROAD_CITY(true, true);
+	ROAD_CITY(true, true),
+	/** Pitched-roof stair, high side north (DS-36); the mod makes it the roof material's stair. Appended last; the facing is local to the building and turns with its rotation. */
+	ROOF_STAIR_N(true, true),
+	/** As {@link #ROOF_STAIR_N}, high side east. */
+	ROOF_STAIR_E(true, true),
+	/** As {@link #ROOF_STAIR_N}, high side south. */
+	ROOF_STAIR_S(true, true),
+	/** As {@link #ROOF_STAIR_N}, high side west. */
+	ROOF_STAIR_W(true, true),
+	/** Pitched-roof slab, bottom half (DS-36): the roof material's slab. */
+	ROOF_SLAB(true, true),
+	/** Pitched-roof slab, top half (DS-36). */
+	ROOF_SLAB_TOP(true, true);
 
 	public final boolean solid;
 	public final boolean closesShell;
@@ -49,6 +61,27 @@ public enum Role {
 	Role(boolean solid, boolean closesShell) {
 		this.solid = solid;
 		this.closesShell = closesShell;
+	}
+
+	/** A roof cell of any kind: the full block, a roof stair or a roof slab. All take the style's {@code roof} palette. */
+	public boolean isRoof() { return this == ROOF || isRoofStair() || this == ROOF_SLAB || this == ROOF_SLAB_TOP; }
+
+	public boolean isRoofStair() { return this == ROOF_STAIR_N || this == ROOF_STAIR_E || this == ROOF_STAIR_S || this == ROOF_STAIR_W; }
+
+	/** The roof stair whose high side faces {@code f}. */
+	public static Role roofStair(Facing f) {
+		return switch (f) { case NORTH -> ROOF_STAIR_N; case EAST -> ROOF_STAIR_E; case SOUTH -> ROOF_STAIR_S; case WEST -> ROOF_STAIR_W; };
+	}
+
+	/** High-side direction of a roof stair, else null. */
+	public Facing roofStairFacing() {
+		return switch (this) { case ROOF_STAIR_N -> Facing.NORTH; case ROOF_STAIR_E -> Facing.EAST; case ROOF_STAIR_S -> Facing.SOUTH; case ROOF_STAIR_W -> Facing.WEST; default -> null; };
+	}
+
+	/** This role after the building is turned {@code quarterTurns} quarter turns clockwise (only roof stairs change). */
+	public Role turned(int quarterTurns) {
+		Facing f = roofStairFacing();
+		return f == null ? this : roofStair(f.rotate(quarterTurns));
 	}
 
 	/** A street or road surface of any tier (ROAD, ROAD_TOWN, ROAD_MAIN, ROAD_CITY). */

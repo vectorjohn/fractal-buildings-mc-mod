@@ -1,0 +1,6 @@
+seed	tier	site	centre	frame	label	buildings	window	rd	tp	file
+987654321	city	s1_m10	1280,-9600	1	spiral-se	1	16	8	1443 79 -9353 135 32	ds36-6-spiral-se
+987654321	city	s1_m10	1280,-9600	2	spiral-nw	1	16	8	1427 79 -9369 -45 32	ds36-6-spiral-nw
+987654321	city	s1_m10	1280,-9600	3	spiral-sw-high	1	16	8	1427 88 -9353 -135 45	ds36-6-spiral-sw-high
+987654321	city	s1_m10	1280,-9600	4	hip-se	1	16	8	1283 78 -9133 140 25	ds36-1-hip-se
+987654321	city	s1_m10	1280,-9600	5	hip-nw	1	16	8	1259 78 -9161 -40 25	ds36-1-hip-nw

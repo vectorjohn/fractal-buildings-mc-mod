@@ -15,8 +15,8 @@ roofs, carved trim.
 ## Materials
 
 Spruce plank walls with stripped spruce corner posts, spruce logs, a
-cobblestone, mossy cobblestone or andesite plinth, dark oak roofs (some
-brown terracotta). Interiors spruce with dark oak accents, cobblestone,
+cobblestone, mossy cobblestone or andesite plinth, dark oak roofs (one
+block per roof, DS-36). Interiors spruce with dark oak accents, cobblestone,
 brown, red and gray cloth, ferns.
 
 ## Proportions and massing

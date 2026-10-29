@@ -119,8 +119,8 @@ class RoofPassTest {
 		int slab = m.main().topSlab(m.grid());
 		BuildingIr none = ShellGeneratorV1.generate(TestMassings.spec(1, "plain"), new TestMassings.FixtureType(m), withRoof("plain", roof("hip", 1, 1, 0, 0)));
 		BuildingIr two = ShellGeneratorV1.generate(TestMassings.spec(1, "plain"), new TestMassings.FixtureType(m), withRoof("plain", roof("hip", 1, 1, 2, 0)));
-		long a = none.boxes().stream().filter(b -> b.role() == Role.ROOF && b.box().y() == slab).count();
-		long bb = two.boxes().stream().filter(b -> b.role() == Role.ROOF && b.box().y() == slab).count();
+		long a = none.boxes().stream().filter(b -> b.role().isRoof() && b.box().y() == slab).count();
+		long bb = two.boxes().stream().filter(b -> b.role().isRoof() && b.box().y() == slab).count();
 		assertEquals(0, a);
 		assertTrue(bb > 0);
 	}

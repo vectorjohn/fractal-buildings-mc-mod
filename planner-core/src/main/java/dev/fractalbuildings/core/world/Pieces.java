@@ -69,6 +69,59 @@ final class Pieces {
 		return new PlacedBuilding(b.id(), b.lots(), b.ox(), b.oy(), b.oz(), b.rotation(), b.shell(), site);
 	}
 
+	/**
+	 * The stair seam of a building piece (DS36ROOFS r2): every stair cell one block outside {@code clip} that is a horizontal neighbour of a
+	 * stair cell this piece emits inside it, as its owner's {@link #raster} gives it (whichever building of the tile owns it). Minecraft reads
+	 * a stair's corner shape from its four horizontal neighbours, so a chunk that writes these too never leaves one of its stairs beside a
+	 * missing neighbour across the chunk border, which a vanilla neighbour update (a tree's {@code StructureTemplate.updateShapeAtEdge}) would
+	 * turn the wrong way for good. The states are the owners' own, so writing them twice changes nothing. Ground pieces have no seam.
+	 */
+	static void seam(PieceRef ref, List<BuildingPiece> buildings, Box3 clip, CellSink out) {
+		if (ref.kind() != PieceRef.Kind.BUILDING) return;
+		boolean known = false;
+		for (BuildingPiece b : buildings) known |= b.ref().equals(ref);
+		if (!known) throw new IllegalArgumentException("no piece " + ref);
+		List<int[]> outside = new ArrayList<>(); // the neighbour cells, strip by strip: west, east, north, south
+		int[][] dirs = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};
+		for (int[] d : dirs) {
+			Box3 strip = d[0] < 0 ? new Box3(clip.x(), clip.y(), clip.z(), 1, clip.sy(), clip.sz())
+				: d[0] > 0 ? new Box3(clip.maxX() - 1, clip.y(), clip.z(), 1, clip.sy(), clip.sz())
+				: d[1] < 0 ? new Box3(clip.x(), clip.y(), clip.z(), clip.sx(), clip.sy(), 1)
+				: new Box3(clip.x(), clip.y(), clip.maxZ() - 1, clip.sx(), clip.sy(), 1);
+			raster(ref, buildings, List::of, strip, (x, y, z, role, id, shape) -> {
+				if (stair(role, shape)) outside.add(new int[] {x + d[0], y, z + d[1]});
+			});
+		}
+		stairsAt(buildings, outside, out);
+	}
+
+	/** The cells among {@code cells} that are stairs of one of the tile's buildings, each as its owner (the first building emitting it) rasters it. */
+	static void stairsAt(List<BuildingPiece> buildings, List<int[]> cells, CellSink out) {
+		if (cells.isEmpty()) return;
+		List<PlacedBuilding> placed = new ArrayList<>();
+		for (BuildingPiece b : buildings) placed.add(b.building());
+		PlacedBuilding[] deep = new PlacedBuilding[placed.size()];
+		for (int[] n : cells) {
+			Box3 cell = new Box3(n[0], n[1], n[2], 1, 1, 1);
+			boolean[] found = {false};
+			for (int k = 0; k < placed.size() && !found[0]; k++) {
+				if (!PieceRaster.near(placed.get(k), cell)) continue;
+				if (deep[k] == null) deep[k] = deepen(placed.get(k));
+				List<PlacedBuilding> view = new ArrayList<>(placed);
+				view.set(k, deep[k]); // the tile as the owner's own raster sees it
+				PieceRaster.building(view, k, cell, (x, y, z, role, id, shape) -> {
+					found[0] = true; // the first building that emits the cell owns it (later ones yield to it)
+					if (stair(role, shape)) out.cell(x, y, z, role, id, shape);
+				});
+			}
+		}
+	}
+
+	/** A cell that becomes a stair block: a roof stair, or an interior or porch stair with a facing. */
+	public static boolean stair(Role role, dev.fractalbuildings.core.raster.Shape shape) {
+		return role.isRoofStair() || role == Role.STAIR && shape.facing() != null;
+	}
+
 	/** Cells of one piece of a tile whose buildings are {@code buildings} (lot order) and whose ground comes from {@code ground}. */
 	static void raster(PieceRef ref, List<BuildingPiece> buildings, Supplier<List<GroundPiece>> ground, Box3 clip, CellSink out) {
 		List<PlacedBuilding> placed = new ArrayList<>();

@@ -14,11 +14,18 @@ import dev.fractalbuildings.core.ir.Facing;
  *       stairs and slabs.
  *   <li>{@code hinge}: doors; a single door is LEFT, a 2-wide doorway is LEFT then RIGHT as seen walking through.
  *   <li>{@code axis}: logs, beams and pillars (the long axis of the box that made the cell).
+ *   <li>{@code corner}: stair {@code shape} state (inner or outer corner), null for a straight stair.
  *   <li>{@code connect}: bit mask of {@link #N}, {@link #E}, {@link #S}, {@link #W} (bit = {@code Facing.ordinal()})
  *       for panes, fences and walls: which horizontal neighbours they join.
  * </ul>
  */
-public record Shape(Facing facing, Half half, Hinge hinge, Axis3 axis, int connect) {
+public record Shape(Facing facing, Half half, Hinge hinge, Axis3 axis, int connect, Corner corner) {
+	/** Stair {@code shape} state beyond straight (null in {@link Shape#corner} means straight), as Minecraft names them. */
+	public enum Corner { INNER_LEFT, INNER_RIGHT, OUTER_LEFT, OUTER_RIGHT }
+
+	/** A shape with no stair corner. */
+	public Shape(Facing facing, Half half, Hinge hinge, Axis3 axis, int connect) { this(facing, half, hinge, axis, connect, null); }
+
 	public enum Half { LOWER, UPPER, BOTTOM, TOP }
 
 	public enum Hinge { LEFT, RIGHT }
@@ -47,4 +54,9 @@ public record Shape(Facing facing, Half half, Hinge hinge, Axis3 axis, int conne
 	public static Shape log(Axis3 axis) { return new Shape(null, null, null, axis, 0); }
 
 	public static Shape connected(int mask) { return mask == 0 ? NONE : new Shape(null, null, null, null, mask); }
+
+	public static Shape stair(Facing facing, Corner corner) { return new Shape(facing, Half.BOTTOM, null, null, 0, corner); }
+
+	/** A slab (bottom or top half). */
+	public static Shape slab(Half half) { return new Shape(null, half, null, null, 0, null); }
 }

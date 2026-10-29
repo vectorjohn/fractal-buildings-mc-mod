@@ -140,6 +140,7 @@ public final class Invariants {
 			floodOutside();
 			shellClosed();
 			roofChecks();
+			roofSmooth();
 			roomGraph();
 			roomsReachable();
 			entranceReachable();
@@ -387,7 +388,7 @@ public final class Invariants {
 				for (int z = vb.z(); z < vb.maxZ(); z++)
 					for (int x = vb.x(); x < vb.maxX(); x++) {
 						int top = Integer.MIN_VALUE;
-						for (int y = g.minY + g.sy - 1; y >= vb.maxY(); y--) if (g.get(x, y, z) == Role.ROOF) { top = y; break; }
+						for (int y = g.minY + g.sy - 1; y >= vb.maxY(); y--) if (g.get(x, y, z).isRoof()) { top = y; break; }
 						if (top == Integer.MIN_VALUE) {
 							boolean cut = false; // (curtains only) a stair cut down through the roof (a town wall walk descending to a tower doorway) is open on purpose
 							for (int y = g.minY; y < vb.maxY() && !cut; y++) cut = b.shell().spec().type().equals("curtain") && g.get(x, y, z) == Role.STAIR && g.get(x, vb.maxY(), z) == Role.AIR;
@@ -406,6 +407,40 @@ public final class Invariants {
 			}
 			if (nUncovered > 0) report(Invariant.ROOF_COVERS, "volume columns with no roof voxel above", uncovered, nUncovered);
 			if (nOpen > 0) report(Invariant.ROOF_CLOSED, "air under the roof connected to the outside", open, nOpen);
+		}
+
+		/**
+		 * {@code roof-smooth} (DS-36): every exposed top cell of a pitched roof is a stair or a slab, never a full block. A full roof
+		 * block with nothing solid above it inside the footprint of a pitched roof's volume is a violation, except the deck of a flat roof
+		 * over the same column (a taller flat mass, a flat group beside the pitched one).
+		 */
+		void roofSmooth() {
+			if (scene.genVersion() < 2) return;
+			List<Box3> cells = new ArrayList<>();
+			int total = 0;
+			for (Roof r : b.shell().roofs()) {
+				if (r.form().equals("flat") || r.rise() == 0) continue;
+				Volume v = null;
+				for (Volume o : b.shell().volumes()) if (o.id().equals(r.volume())) { v = o; break; }
+				if (v == null) continue;
+				Box3 vb = v.box();
+				for (int z = vb.z(); z < vb.maxZ(); z++)
+					for (int x = vb.x(); x < vb.maxX(); x++)
+						for (int y = Math.max(g.minY, r.baseY()); y < g.minY + g.sy; y++) {
+							if (g.get(x, y, z) != Role.ROOF || g.get(x, y + 1, z).solid || flatDeck(x, y, z)) continue;
+							total++;
+							if (cells.size() < MAX_CELLS) cells.add(g.worldCell(x, y, z));
+						}
+			}
+			if (total > 0) report(Invariant.ROOF_SMOOTH, total + " exposed top cell(s) of a pitched roof are full blocks, not stairs or slabs (DS-36)", cells, total);
+		}
+
+		boolean flatDeck(int x, int y, int z) {
+			for (Roof f : b.shell().roofs()) {
+				if (!(f.form().equals("flat") || f.rise() == 0) || f.baseY() != y) continue;
+				for (Volume o : b.shell().volumes()) if (o.id().equals(f.volume()) && x >= o.box().x() && x < o.box().maxX() && z >= o.box().z() && z < o.box().maxZ()) return true;
+			}
+			return false;
 		}
 
 		void roomGraph() {

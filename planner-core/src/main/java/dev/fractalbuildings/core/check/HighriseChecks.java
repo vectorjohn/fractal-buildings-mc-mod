@@ -520,7 +520,7 @@ public final class HighriseChecks {
 			for (int y = top.baseY() + 1; y <= top.baseY() + 2 && !reached; y++)
 				for (int z = g.minZ; z < g.minZ + g.sz; z++)
 					for (int x = g.minX; x < g.minX + g.sx; x++)
-						if (g.inGrid(x, y, z) && seen[Invariants.cellIndex(g, x, y, z)] && g.get(x, y - 1, z) == Role.ROOF && !inAny(houses, x, y, z)) reached = true;
+						if (g.inGrid(x, y, z) && seen[Invariants.cellIndex(g, x, y, z)] && g.get(x, y - 1, z).isRoof() && !inAny(houses, x, y, z)) reached = true;
 			Volume vol = null;
 			for (Volume x : ir.volumes()) if (x.id().equals(top.volume())) vol = x;
 			if (!reached) out.add(v(ROOF, "no standing cell on the top roof (" + top.volume() + ", y=" + top.baseY() + ") is reachable on foot from the street doors", vol == null ? List.of() : List.of(vol.box())));

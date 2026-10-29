@@ -14,7 +14,7 @@ or tile roofs, a porch or a stoop, gardens.
 ## Materials
 
 Birch plank walls (a stripped birch variant, calm per DS-2), oak and spruce
-log posts, cobblestone and andesite plinth, brick and red terracotta roofs.
+log posts, cobblestone and andesite plinth, brick roofs with some granite.
 Interiors oak with spruce accents, cobblestone, yellow, white and light blue
 cloth, flowers in pots.
 

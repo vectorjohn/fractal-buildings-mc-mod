@@ -29,6 +29,18 @@ public final class BlockMapper {
 
 	/** Role-aware mapping: a {@link Role#STAIR} cell with a facing becomes the material's stair block. */
 	public static BlockState state(Role role, String blockId, Shape shape) {
+		if (role.isRoofStair() && shape.facing() != null) {
+			Optional<String> stair = ShapeTable.stair(blockId);
+			if (stair.isPresent()) return state(stair.get(), shape);
+			if (WARNED.add("nostair:" + blockId)) LOG.warn("no stair variant for {}, keeping the full block", blockId);
+			return state(blockId, Shape.NONE);
+		}
+		if (role == Role.ROOF_SLAB || role == Role.ROOF_SLAB_TOP) {
+			Optional<String> slab = ShapeTable.slab(blockId);
+			if (slab.isPresent()) return state(slab.get(), shape);
+			if (WARNED.add("noslab:" + blockId)) LOG.warn("no slab variant for {}, keeping the full block", blockId);
+			return state(blockId, Shape.NONE);
+		}
 		if (role == Role.STAIR && shape.facing() != null) {
 			Optional<String> stair = ShapeTable.stair(blockId);
 			if (stair.isPresent()) return state(stair.get(), shape.half() == null ? Shape.stair(shape.facing()) : shape);
@@ -62,6 +74,7 @@ public final class BlockMapper {
 			case "facing": return sh.facing() == null ? null : sh.facing().json();
 			case "half": case "type": return lower(sh.half());
 			case "hinge": return lower(sh.hinge());
+			case "shape": return lower(sh.corner());
 			case "axis": return lower(sh.axis());
 			case "north": return side(sh, Shape.N);
 			case "east": return side(sh, Shape.E);

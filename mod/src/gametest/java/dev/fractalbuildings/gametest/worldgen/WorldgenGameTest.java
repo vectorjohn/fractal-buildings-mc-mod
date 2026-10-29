@@ -229,10 +229,15 @@ public class WorldgenGameTest {
 		return new StartSupport.Placed(cells, outside, dups);
 	}
 
-	/** Every door is two halves of one door block facing alike; stairs have a facing. */
+	/**
+	 * Every door is two halves of one door block facing alike; stairs have a facing. DS36ROOFS r2: every stair already has the shape Minecraft
+	 * gives it from its neighbours ({@code Block.updateFromNeighbourShapes}, what a tree's {@code updateShapeAtEdge} or a player's block
+	 * next to it runs), so no later update reshapes a roof.
+	 */
 	private static void checkDoorsAndStairs(ServerLevel level, StructureStart s) {
 		BoundingBox bb = s.getBoundingBox();
-		int doors = 0, stairs = 0;
+		int doors = 0, stairs = 0, corners = 0;
+		List<String> reshaped = new ArrayList<>();
 		BlockPos.MutableBlockPos p = new BlockPos.MutableBlockPos();
 		for (int y = Math.max(level.getMinY(), bb.minY() - 2); y <= bb.maxY(); y++) for (int z = bb.minZ(); z <= bb.maxZ(); z++) for (int x = bb.minX(); x <= bb.maxX(); x++) {
 			BlockState st = level.getBlockState(p.set(x, y, z));
@@ -242,10 +247,16 @@ public class WorldgenGameTest {
 						&& up.getValue(DoorBlock.FACING) == st.getValue(DoorBlock.FACING) && up.getValue(DoorBlock.HINGE) == st.getValue(DoorBlock.HINGE), "door at " + x + "," + y + "," + z + " " + st + " has no matching upper half, above is " + up);
 				doors++;
 			}
-			if (st.getBlock() instanceof StairBlock) stairs++;
+			if (st.getBlock() instanceof StairBlock) {
+				stairs++;
+				if (st.getValue(StairBlock.SHAPE) != net.minecraft.world.level.block.state.properties.StairsShape.STRAIGHT) corners++;
+				BlockState updated = net.minecraft.world.level.block.Block.updateFromNeighbourShapes(st, level, p.set(x, y, z));
+				if (updated != st && reshaped.size() < 10) reshaped.add(x + "," + y + "," + z + " " + st + " -> " + updated.getValue(StairBlock.SHAPE));
+			}
 		}
 		check(doors > 0, "a settlement start has at least one door");
-		dev.fractalbuildings.mod.FractalBuildingsMod.LOGGER.info("[B1] readback: {} doors, {} stair blocks in {}", doors, stairs, bb);
+		check(reshaped.isEmpty(), "stairs a neighbour update would reshape: " + reshaped);
+		dev.fractalbuildings.mod.FractalBuildingsMod.LOGGER.info("[B1] readback: {} doors, {} stair blocks ({} corners, none reshaped by an update) in {}", doors, stairs, corners, bb);
 	}
 
 	@GameTest

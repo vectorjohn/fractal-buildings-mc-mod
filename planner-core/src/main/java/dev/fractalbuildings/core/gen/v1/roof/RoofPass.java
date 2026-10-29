@@ -344,8 +344,9 @@ public final class RoofPass {
 				while (x < w) {
 					if (!region[x][z]) { x++; continue; }
 					int e = x + 1;
-					while (e < w && region[e][z] && h[e][z] == h[x][z] && Arrays.equals(fill[e][z], fill[x][z])) e++;
-					c.box(Role.ROOF, Layer.ROOF, Box.NO_STOREY, x, base + h[x][z], z, e - x, 1, 1);
+					Role top = topRole(x, z);
+					while (e < w && region[e][z] && h[e][z] == h[x][z] && Arrays.equals(fill[e][z], fill[x][z]) && topRole(e, z) == top) e++;
+					c.box(top, Layer.ROOF, Box.NO_STOREY, x, base + h[x][z], z, e - x, 1, 1);
 					byte[] col = fill[x][z];
 					int y = 0;
 					while (y < col.length) {
@@ -358,6 +359,67 @@ public final class RoofPass {
 					x = e;
 				}
 			}
+		}
+
+		/** Pitch laid in stairs (1 up per 1 across or steeper), slabs (1 per 2 or gentler) or, for flat roofs, full blocks (DS-36). */
+		enum Lay { FULL, STAIRS, SLABS }
+
+		Lay lay() {
+			if (form.equals("flat") || pitch.rise() == 0) return Lay.FULL;
+			boolean mansard = form.equals("mansard") && pitch.rise() == rs.rise() && pitch.run() == rs.run();
+			return !mansard && pitch.run() >= 2 * pitch.rise() ? Lay.SLABS : Lay.STAIRS;
+		}
+
+		/** Height of the roof column beside a cell: a higher mass's wall counts as higher, open air as lower. */
+		int nbH(int x, int z) {
+			if (reg(x, z)) return h[x][z];
+			return isSolid(x, z) ? Integer.MAX_VALUE / 2 : Integer.MIN_VALUE / 2;
+		}
+
+		/**
+		 * The exposed top cell of a roof column (DS-36). Stairs face up the slope; at a summit a cell faces across the ridge
+		 * (back to back with its twin on an even span), a corner of a hip alternates its facing from ring to ring so that
+		 * Minecraft's own corner rule gives an outer corner on the diagonal and leaves the eave stairs straight; a lone ridge
+		 * row or peak (odd span) and the middle of a plateau take a bottom slab. Slab pitches alternate bottom and top slabs.
+		 */
+		Role topRole(int x, int z) {
+			Lay lay = lay();
+			if (lay == Lay.FULL) return Role.ROOF;
+			int hh = h[x][z];
+			boolean[] up = new boolean[4], eq = new boolean[4];
+			boolean lower = false;
+			int nUp = 0, nEq = 0;
+			for (Facing f : DIRS) {
+				int n = nbH(x + f.dx, z + f.dz);
+				if (n > hh) { up[f.ordinal()] = true; nUp++; }
+				else if (n == hh) { eq[f.ordinal()] = true; nEq++; }
+				else lower = true;
+			}
+			if (lay == Lay.SLABS) return lower ? Role.ROOF_SLAB : Role.ROOF_SLAB_TOP;
+			if (nUp > 0) {
+				Facing pick = null;
+				for (Facing f : DIRS) if (up[f.ordinal()] && !up[f.rotate(2).ordinal()]) { pick = f; break; }
+				if (pick == null) for (Facing f : DIRS) if (up[f.ordinal()]) { pick = f; break; }
+				return Role.roofStair(pick);
+			}
+			if (form.equals("gable")) { // a gable's ridge cells face across the ridge, to the twin of an even span; a lone ridge row and its ends take a slab
+				boolean ridgeX = true;
+				for (Mass m : masses) if (m.contains(x, z)) { ridgeX = m.sx() >= m.sz(); break; }
+				for (Facing f : DIRS) if ((f.dz != 0) == ridgeX && eq[f.ordinal()] && !eq[f.rotate(2).ordinal()]) return Role.roofStair(f);
+				return Role.ROOF_SLAB;
+			}
+			if (nEq <= 1) return Role.ROOF_SLAB; // the end of a one-wide ridge
+			if (nEq == 2) {
+				for (Facing f : DIRS) {
+					Facing g = f.rotate(1);
+					if (eq[f.ordinal()] && eq[g.ordinal()]) { // a corner: ring parity picks the facing along x or along z
+						boolean alongX = (hh / Math.max(1, pitch.rise())) % 2 == 0;
+						return Role.roofStair((f.dx != 0) == alongX ? f : g);
+					}
+				}
+			}
+			for (Facing f : DIRS) if (eq[f.ordinal()] && !eq[f.rotate(2).ordinal()]) return Role.roofStair(f);
+			return Role.ROOF_SLAB;
 		}
 
 		/** Eave overhang at the top-slab level, on free envelope columns beyond the eaves. */
@@ -397,16 +459,42 @@ public final class RoofPass {
 					prev = ring;
 				}
 			}
-			for (int z = 0; z < d; z++) {
-				int x = 0;
-				while (x < w) {
-					if (!oh[x][z]) { x++; continue; }
-					int e = x + 1;
-					while (e < w && oh[e][z]) e++;
-					c.box(Role.ROOF, Layer.ROOF, Box.NO_STOREY, x, base - 1, z, e - x, 1, 1);
-					x = e;
+			Lay lay = lay();
+			for (int z = 0; z < d; z++)
+				for (int x = 0; x < w; x++) {
+					if (!oh[x][z]) continue;
+					Role r = lay == Lay.SLABS ? Role.ROOF_SLAB_TOP : Role.ROOF_SLAB; // beyond the first ring a flat slab; slab pitches run a top slab under the eave's bottom slab
+					if (lay == Lay.FULL) r = Role.ROOF;
+					else {
+						boolean beside = false;
+						for (Facing f : DIRS) if (eave(x + f.dx, z + f.dz)) { // the ring beside the eave carries the slope on, half a block lower
+							if (lay == Lay.STAIRS) r = Role.roofStair(f);
+							beside = true;
+							break;
+						}
+						Facing corner = beside || lay != Lay.STAIRS ? null : eaveCorner(oh, x, z);
+						if (corner != null) r = Role.roofStair(corner);
+					}
+					c.box(r, Layer.ROOF, Box.NO_STOREY, x, base - 1, z, 1, 1, 1);
 				}
+		}
+
+		/** An eave column: on the roof, at the lowest course. */
+		boolean eave(int x, int z) { return reg(x, z) && h[x][z] == 0; }
+
+		/**
+		 * The facing of the overhang cell at a hip's outer eave corner (DS-36, architect r1): it touches the eave only on the diagonal, between
+		 * two overhang stairs that face the eave. It faces along z, the ring parity one course below the eave corner (which faces along x,
+		 * {@link #topRole}), so Minecraft's rule makes it an outer corner that carries the hip line down to the overhang. Null for any other cell.
+		 */
+		Facing eaveCorner(boolean[][] oh, int x, int z) {
+			for (Facing f : DIRS) {
+				Facing g = f.rotate(1);
+				int fx = x + f.dx, fz = z + f.dz, gx = x + g.dx, gz = z + g.dz;
+				if (!eave(fx + g.dx, fz + g.dz) || !in(fx, fz) || !oh[fx][fz] || !in(gx, gz) || !oh[gx][gz]) continue;
+				return f.dz != 0 ? f : g;
 			}
+			return null;
 		}
 
 		boolean free(boolean[][] oh, int x, int z) {
@@ -499,7 +587,7 @@ public final class RoofPass {
 				cell(Role.WALL, x, z, s, 0, ys + 1, px, pz, ux, uz);
 				cell(s == 0 ? Role.WINDOW : Role.WALL, x, z, s, 0, ys + 2, px, pz, ux, uz);
 				if (s != 0) cell(Role.WALL, x, z, s, 1, ys + 2, px, pz, ux, uz);
-				for (int i = 0; i <= 2; i++) cell(Role.ROOF, x, z, s, i, ys + 3, px, pz, ux, uz);
+				for (int i = 0; i <= 2; i++) cell(Role.ROOF_SLAB, x, z, s, i, ys + 3, px, pz, ux, uz); // a shed cap of slabs in the main roof's material, level with the slope where it meets it
 			}
 			for (int s = -3; s <= 3; s++) {
 				int sx = x + px * s, sz = z + pz * s;

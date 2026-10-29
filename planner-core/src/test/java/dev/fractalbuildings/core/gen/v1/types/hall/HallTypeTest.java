@@ -229,7 +229,7 @@ class HallTypeTest {
 				var vb = v.box();
 				for (var b : ir.boxes()) {
 					var q = b.box();
-					if (b.role() != dev.fractalbuildings.core.ir.Role.ROOF || q.x() < vb.x() || q.z() < vb.z() || q.maxX() > vb.maxX() || q.maxZ() > vb.maxZ()) continue;
+					if (!b.role().isRoof() || q.x() < vb.x() || q.z() < vb.z() || q.maxX() > vb.maxX() || q.maxZ() > vb.maxZ()) continue;
 					boolean shared = ir.volumes().stream().anyMatch(o -> o != v && o.box().x() <= q.x() && q.x() < o.box().maxX() && o.box().z() <= q.z() && q.z() < o.box().maxZ());
 					if (!shared) worst = Math.max(worst, q.maxY() - vb.maxY()); // columns of another volume (a wall strip) may carry its roof
 				}

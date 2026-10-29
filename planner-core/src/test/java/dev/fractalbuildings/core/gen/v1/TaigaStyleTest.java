@@ -33,11 +33,12 @@ class TaigaStyleTest {
 	void paletteHasThreeToFiveValidBlocksPerRoleAndBiomesAreDisjoint() {
 		StyleRules s = StyleLibrary.get("taiga");
 		for (Role r : Role.values()) {
-			if (r == Role.AIR) continue;
+			if (r == Role.AIR || (r.isRoof() && r != Role.ROOF)) continue; // roof stairs and slabs take the roof entry (Variant)
 			List<String> p = s.palette().get(r.name().toLowerCase(Locale.ROOT));
 			for (String id : p) assertTrue(VALID.contains(id), "unknown block " + id);
 		}
-		for (String role : List.of("foundation", "wall", "roof")) {
+		assertEquals(List.of("minecraft:dark_oak_planks"), s.palette().get("roof"), "one roof block (DS36ROOFS r2: a per-cell mix read as speckle)");
+		for (String role : List.of("foundation", "wall")) {
 			int n = s.palette().get(role).size();
 			assertTrue(n >= 3 && n <= 5, role + " has " + n);
 		}

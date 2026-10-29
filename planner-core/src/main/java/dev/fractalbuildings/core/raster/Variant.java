@@ -33,6 +33,6 @@ public final class Variant {
 		} catch (IllegalArgumentException e) {
 			return null;
 		}
-		return s.palette().get(role.json());
+		return s.palette().get((role.isRoof() ? Role.ROOF : role).json());
 	}
 }

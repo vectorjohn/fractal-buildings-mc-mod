@@ -320,6 +320,26 @@ public class WorldPlanner {
 	}
 
 	/**
+	 * The stair cells one block outside {@code clip} beside the stairs this piece has inside it, each as its owner piece rasters it
+	 * (DS36ROOFS r2). The mod writes them across the chunk border so that no stair of this chunk is ever reshaped by Minecraft against a
+	 * neighbour that is not there yet. Nothing for a ground piece; throws {@link IllegalArgumentException} like {@link #raster}.
+	 */
+	public void seam(PieceRef piece, Box3 clip, CellSink out) {
+		Pieces.seam(piece, buildings(piece.ix(), piece.iz()), clip, out);
+	}
+
+	/**
+	 * The cells among {@code cells} (world positions) that are stairs of a building of tile {@code (ix, iz)}, each as its owner piece rasters it:
+	 * {@link #seam} for a caller that already has the piece's own cells (the mod collects the neighbours of its border stairs while it writes).
+	 */
+	public void stairsAt(int ix, int iz, List<int[]> cells, CellSink out) {
+		Pieces.stairsAt(buildings(ix, iz), cells, out);
+	}
+
+	/** A cell that becomes a stair block in the world: a roof stair, or an interior or porch stair with a facing. */
+	public static boolean stairCell(dev.fractalbuildings.core.ir.Role role, dev.fractalbuildings.core.raster.Shape shape) { return Pieces.stair(role, shape); }
+
+	/**
 	 * Asks the workers to compute the buildings and ground of this tile and the plans and ground of its eight neighbours. Returns at once and never
 	 * changes any answer: a later call for a tile a worker is computing waits for it, one a worker has not started computes it itself.
 	 */

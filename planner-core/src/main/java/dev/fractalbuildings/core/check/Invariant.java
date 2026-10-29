@@ -10,6 +10,8 @@ public enum Invariant {
 	SHELL_CLOSED("shell-closed"),
 	ROOF_COVERS("roof-covers"),
 	ROOF_CLOSED("roof-closed"),
+	/** Generator v1 only (DS-36): every exposed top cell of a pitched roof is a stair or a slab, never a full block. */
+	ROOF_SMOOTH("roof-smooth"),
 	ROOM_GRAPH("room-graph"),
 	ROOMS_REACHABLE("rooms-reachable"),
 	/** Generator v1 only: every exterior ground-floor door has a walkable way down to the terrain inside the lot. */

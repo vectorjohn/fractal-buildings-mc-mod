@@ -90,9 +90,8 @@ class BlockMapperTest {
 			if (ShapeTable.stair(e[2]).isEmpty()) missing.add("stair:" + e[2]);
 			if (ShapeTable.slab(e[2]).isEmpty()) missing.add("slab:" + e[2]);
 		}
-		// Vanilla has no stairs or slabs of these: they stay full blocks (a new entry here needs a decision).
+		// DS-36: every pitched roof material has stairs and a slab (terracotta and moss left the plains, taiga and jungle roofs); a new entry here needs a decision.
 		var full = new TreeSet<String>();
-		for (String b : new String[] {"brown_terracotta", "moss_block", "red_terracotta", "terracotta"}) { full.add("stair:minecraft:" + b); full.add("slab:minecraft:" + b); }
 		// smooth_stone (the tall style's roof) has slabs but no stairs: ShapeTable falls back to a full block while cornices are full blocks (docs/plans/highrises.md, r2 decisions)
 		full.add("stair:minecraft:smooth_stone");
 		assertEquals(full, missing);
@@ -111,6 +110,22 @@ class BlockMapperTest {
 		assertSame(Blocks.OAK_PLANKS, BlockMapper.state(Role.STAIR, "minecraft:oak_planks", Shape.NONE).getBlock());
 		assertSame(Blocks.STONE_BRICK_STAIRS, BlockMapper.state(Role.STAIR, "minecraft:stone_bricks", Shape.stair(Facing.EAST)).getBlock());
 		assertSame(Blocks.BRICK_STAIRS, BlockMapper.state(Role.STAIR, "minecraft:bricks", Shape.stair(Facing.EAST)).getBlock());
+	}
+
+	/** DS-36: roof stairs become the material's stair with facing and corner shape, roof slabs its slab with the half. */
+	@Test
+	void roofStairsAndSlabs() {
+		BlockState s = BlockMapper.state(Role.ROOF_STAIR_E, "minecraft:bricks", Shape.stair(Facing.EAST, Shape.Corner.OUTER_RIGHT));
+		assertSame(Blocks.BRICK_STAIRS, s.getBlock());
+		assertEquals("east", prop(s, "facing"));
+		assertEquals("bottom", prop(s, "half"));
+		assertEquals("outer_right", prop(s, "shape"));
+		assertEquals("straight", prop(BlockMapper.state(Role.ROOF_STAIR_N, "minecraft:spruce_planks", Shape.stair(Facing.NORTH)), "shape"));
+		BlockState b = BlockMapper.state(Role.ROOF_SLAB, "minecraft:bricks", Shape.slab(Shape.Half.BOTTOM));
+		assertSame(Blocks.BRICK_SLAB, b.getBlock());
+		assertEquals("bottom", prop(b, "type"));
+		assertEquals("top", prop(BlockMapper.state(Role.ROOF_SLAB_TOP, "minecraft:mud_bricks", Shape.slab(Shape.Half.TOP)), "type"));
+		assertSame(Blocks.MUD_BRICK_SLAB, BlockMapper.state(Role.ROOF_SLAB_TOP, "minecraft:mud_bricks", Shape.slab(Shape.Half.TOP)).getBlock());
 	}
 
 	@Test
