@@ -31,10 +31,17 @@ import java.util.TreeMap;
  * docs/review/phase7/shoplow/baseline.md.
  */
 public final class DoorRise {
+	/** DOORBANK: a door this far below the street (or lower; 2 blocks is out of a jump's reach) needs a built way up to it. */
+	public static final int BANK_RISE = -2;
+	private static int wxOf(VoxelGrid g, int x, int z) { return g.worldX(x, z); }
+	private static int wzOf(VoxelGrid g, int x, int z) { return g.worldZ(x, z); }
 	private DoorRise() {}
 
 	/** One entrance door. {@code front}: it faces its lot's front. {@code source}: {@code ground} (road, paving, deck) or {@code terrain}. */
-	public record Door(String door, String building, String lot, String kind, String style, boolean front, int rise, String source, int run, boolean landing, boolean reached) {
+	public record Door(String door, String building, String lot, String kind, String style, boolean front, int rise, String source, int run, boolean landing, boolean reached, boolean toStreet) {
+		/** The record as before DOORBANK, for hand-built doors: the way to the street is taken as found whenever the way to the ground is. */
+		public Door(String door, String building, String lot, String kind, String style, boolean front, int rise, String source, int run, boolean landing, boolean reached) { this(door, building, lot, kind, style, front, rise, source, run, landing, reached, reached); }
+
 		/** DS-45: shops and market halls -2..2; others -2..3, or 4-5 with a landing; and no run over 3 risers when the way was measured. */
 		public boolean withinLimits() {
 			boolean shop = kind.equals("shop") || kind.equals("market");
@@ -75,8 +82,9 @@ public final class DoorRise {
 			while (k < 64 && inLots(lots, wx, wz)) { wx += outW.dx; wz += outW.dz; k++; }
 			Integer sv = surface.get(StairGround.key(wx, wz));
 			int street = sv != null ? sv : terrain.floorY(wx, wz);
-			int[] run = run(g, o, outL, terrain, surface, lots);
-			out.add(new Door(o.id(), b.id(), lots.isEmpty() ? "" : lots.get(0).id(), kind, s.spec().style(), front, level - street, sv != null ? "ground" : "terrain", run[0], run[1] == 1, run[2] == 1));
+			int[] run = run(g, o, outL, terrain, surface, lots, false, 0);
+			int[] up = level - street <= BANK_RISE ? run(g, o, outL, terrain, surface, lots, true, 2 * street) : run;
+			out.add(new Door(o.id(), b.id(), lots.isEmpty() ? "" : lots.get(0).id(), kind, s.spec().style(), front, level - street, sv != null ? "ground" : "terrain", run[0], run[1] == 1, run[2] == 1, up[2] == 1));
 		}
 		return out;
 	}
@@ -89,7 +97,7 @@ public final class DoorRise {
 	private static int top2(long n) { return (int) ((n >>> 40) - 4096); }
 
 	/** {longest run of risers, landing at the door 0/1, reached ground 0/1}: StairGround's walker, with parents kept. */
-	private static int[] run(VoxelGrid g, Opening o, Facing out, TerrainProbe terrain, Map<Long, Integer> surface, List<Lot> lots) {
+	private static int[] run(VoxelGrid g, Opening o, Facing out, TerrainProbe terrain, Map<Long, Integer> surface, List<Lot> lots, boolean toStreet, int streetTop2) {
 		int x0 = g.minX, x1 = g.minX + g.sx - 1, z0 = g.minZ, z1 = g.minZ + g.sz - 1;
 		for (Lot l : lots)
 			for (int cx : new int[] {l.x(), l.x() + l.w() - 1})
@@ -133,7 +141,7 @@ public final class DoorRise {
 					long k = StairGround.node(px, pz, top2);
 					if (parent.containsKey(k)) continue;
 					parent.put(k, new long[] {cn, f.ordinal()});
-					if (kind == StairGround.GROUND) { goal = k; break; }
+					if (toStreet ? top2 >= streetTop2 - 1 && !inLots(lots, wxOf(g, px, pz), wzOf(g, px, pz)) : kind == StairGround.GROUND) { goal = k; break; }
 					queue.add(new int[] {px, pz, top2});
 				}
 				if (goal != Long.MIN_VALUE) break;

@@ -166,6 +166,14 @@ public final class InstancePassV1 {
 			if (need <= oy || round >= 4) break;
 			oy = need;
 		}
+		// DOORBANK: a landmark hall or temple whose street runs 3 or more above its entrance floor stands on a podium (the footprint's foundation filled up to the street) instead of facing the bank
+		if (walk == null && PODIUM_TYPES.contains(shell.spec().type()) && req.brief() != null && req.brief().frontY() != dev.fractalbuildings.core.gen.Brief.NO_FRONT_Y && !SiteLevel.LEGACY.get()) {
+			int want = req.brief().frontY() + 1 - entranceStorey(shell).y();
+			if (want - oy >= 1 - dev.fractalbuildings.core.check.DoorRise.BANK_RISE) {
+				oy = want;
+				placedSite = site(shell, lot, p0, fp, t, dig, oy, ox, oz, r);
+			}
+		}
 		if (walk != null && walk.base() > oy) { // a town-wall lot stands at its level in the ring's walk profile (the ground under it is filled up to it)
 			oy = walk.base();
 			placedSite = site(shell, lot, p0, fp, t, dig, oy, ox, oz, r);
@@ -192,6 +200,9 @@ public final class InstancePassV1 {
 	}
 
 	/** Ids of the secondary doors of a placement that fail DS-45 or the ground: no way down, a straight run over 3 risers, or the ground past the lot straight out more than 2 blocks above the sill (DoorRise rise below -2, the DS-45 limit; round 2 had -1). */
+	/** Landmark types that stand on a podium where the street is well above them (DOORBANK). */
+	private static final java.util.Set<String> PODIUM_TYPES = java.util.Set.of("hall", "temple");
+
 	private static java.util.Set<String> badSecondary(PlacedBuilding b, Lot lot, TerrainProbe t) {
 		java.util.Set<String> bad = new java.util.TreeSet<>();
 		dev.fractalbuildings.core.ir.TerrainPatch patch = dev.fractalbuildings.core.ir.TerrainPatch.sample(t, lot.x() - 2, lot.z() - 2, lot.w() + 4, lot.d() + 4);

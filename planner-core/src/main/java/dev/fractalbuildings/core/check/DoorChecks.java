@@ -123,6 +123,19 @@ public final class DoorChecks {
 		return out;
 	}
 
+	/**
+	 * DOORBANK (playtest 2026-10-28, "do they take a ladder to get up to the road?"): whether a front entrance door of the building stands
+	 * {@link DoorRise#BANK_RISE} or more below the street in front of it with no walkable way up to that street (the door faces the wall of an embankment, the
+	 * way {@link StairGround}'s walker finds from the door never comes out at the street's level). {@code ground} is the probe the building was generated on
+	 * ({@code Briefs.withStreetFront}); the street reads from it, the same column straight out from the door that {@link DoorRise} reads.
+	 */
+	public static boolean bankDoor(Lot lot, PlacedBuilding b, TerrainProbe ground) {
+		SceneDoc one = new SceneDoc(2, 0, new dev.fractalbuildings.core.ir.TerrainPatch(0, 0, 1, 1, new int[] {0}), List.of(lot), List.of(b), List.of(), List.of());
+		for (DoorRise.Door d : DoorRise.measure(one, b, dev.fractalbuildings.core.terrain.SiteGround.probe(b, ground), Map.of()))
+			if (d.front() && d.rise() <= DoorRise.BANK_RISE && !d.toStreet()) return true;
+		return false;
+	}
+
 	/** The cell of a door (its first block, in the world) for a violation. */
 	static Box3 cell(PlacedBuilding b, Opening o) { return b.placement().toWorld(Box3.of(o.box().x(), o.box().y(), o.box().z(), 1, 1, 1)); }
 

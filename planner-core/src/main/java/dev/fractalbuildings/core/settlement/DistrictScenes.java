@@ -124,6 +124,11 @@ public final class DistrictScenes {
 				newLots.add(new LotBrief(l.id(), l.x(), l.z(), l.w(), l.d(), l.front(), l.type(), l.style(), l.minStoreys(), l.maxStoreys(), l.streets(), l.airRights(), l.frontY(), l.density(), "empty:gen-failed", l.walk()));
 				continue;
 			}
+			if (g.brief().builds() && dev.fractalbuildings.core.check.DoorChecks.bankDoor(g.lot(), g.building(), Briefs.withStreetFront(plan, l, exact))) { // DOORBANK: a front door below the street with no way up to it
+				fallbacks.add(l.id());
+				newLots.add(new LotBrief(l.id(), l.x(), l.z(), l.w(), l.d(), l.front(), l.type(), l.style(), l.minStoreys(), l.maxStoreys(), l.streets(), l.airRights(), l.frontY(), l.density(), "empty:bank", l.walk()));
+				continue;
+			}
 			if (!g.brief().equals(l)) fallbacks.add(l.id());
 			out.add(g);
 			newLots.add(g.brief());
