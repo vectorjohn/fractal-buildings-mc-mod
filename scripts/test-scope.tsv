@@ -17,8 +17,8 @@
 # client-quick, client-full (FB_LAYER) and order (scripts/order-test.sh, dedicated servers) follow claude/p6-testlayers.
 
 layer	fast	scripts/test-all.sh --no-client	-	planner-core (rules, determinism, order: WorldPlannerOrderTest, SettlementDeterminismTest, RasterOwnershipTest, goldens), CLI, viewer unit tests, mod build + server game tests (OrderGameTest block states, WarmingGameTest, GameplayGameTest)
-layer	gallery	cd viewer && nix develop -c npm run gallery	-	building look: one PNG per preset x camera; open them and compare with the previous gallery (FB_PRESETS=a,b limits it)
-layer	city	cd viewer && nix develop -c npm run city-gallery	-	settlement look: plan.png, overview and street frames per city preset (FB_CITIES=a,b limits it)
+layer	gallery	cd viewer && ../scripts/dev npm run gallery	-	building look: one PNG per preset x camera; open them and compare with the previous gallery (FB_PRESETS=a,b limits it)
+layer	city	cd viewer && ../scripts/dev npm run city-gallery	-	settlement look: plan.png, overview and street frames per city preset (FB_CITIES=a,b limits it)
 layer	client-quick	FB_LAYER=quick scripts/client-test.sh	-	heavy: quick client layer (Hello, B1 District, B5 Gameplay, B3 Terrain, TeleportHold): mod loads, a real world generates a settlement tile, screenshots
 layer	client-full	FB_LAYER=full scripts/client-test.sh	client-quick	heavy: full client layer: the quick tests plus Roads, Foliage and the compat world (FB_ONLY=<TestClass> runs one); fly-through and perf stay opt-in
 layer	order	scripts/order-test.sh	-	heavy (not under the heavy lock; dedicated servers, no renderer, needs the human-made EULA file): B2 chunk-order test in a real noise world (orders, 8 threads, cache eviction, mutants); only the mod's write path is new evidence, the core checks the rest
@@ -39,8 +39,9 @@ path	.gitignore	repo	-	ignore rules
 
 # --- build and toolchain: everything (gradle.properties holds the Minecraft and Fabric versions)
 path	gradle.properties	build	fast,gallery,city,client-full,order,server-only,compat?,perf?	Minecraft/Fabric/Loom versions: vanilla behaviour, mixin targets and block states can all move
-path	flake.nix	build	fast,gallery,client-full,order,perf?	toolchain (JDK, Node, Mesa, Vulkan loader)
-path	flake.lock	build	fast,gallery,client-full,order,perf?	toolchain pins
+path	nix/*	build	fast,gallery,client-full,order,perf?	toolchain (JDK, Node, Mesa, Vulkan loader) and its pins; scripts/dev refuses any other file in nix/
+path	scripts/dev	build	fast,client-quick	the cached dev-shell wrapper every script enters the shell through
+path	flake.nix	repo	-	root stub that only points to nix/ (never evaluated by scripts)
 path	gradle/*	build	fast,client-full,order	Gradle wrapper
 path	gradlew*	build	fast,client-full,order	Gradle wrapper
 path	*build.gradle	build	fast,client-full,order,perf?	build logic (test tasks, jar-in-jar, run configs)

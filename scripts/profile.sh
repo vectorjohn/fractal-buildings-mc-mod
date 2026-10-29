@@ -34,7 +34,7 @@ if [ ${#jfrs[@]} = 0 ]; then echo "profile: no recordings in $OUT/jfr (perf.sh e
 for f in "${jfrs[@]}"; do
 	b=$(basename "$f" .jfr)
 	v=${b%%-*}; ph=${b#*-??-}
-	nix develop "$ROOT" -c java "$ROOT/scripts/JfrAttrib.java" --title "$v, phase $ph" "$f" > "$OUT/profile/$v-$ph.md" 2> "$OUT/profile/$v-$ph.err" || echo "profile: JfrAttrib failed on $f" >&2
+	"$ROOT/scripts/dev" --fresh java "$ROOT/scripts/JfrAttrib.java" --title "$v, phase $ph" "$f" > "$OUT/profile/$v-$ph.md" 2> "$OUT/profile/$v-$ph.err" || echo "profile: JfrAttrib failed on $f" >&2
 done
 echo "profile: ${#jfrs[@]} recordings, reports in $OUT/profile/ (perf.sh exit $RC)"
 exit $RC

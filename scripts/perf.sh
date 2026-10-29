@@ -44,7 +44,7 @@ if [ "$CHECK_ONLY" = 0 ]; then
 	# a failing gradle run (build error, test exception, crashed client) must fail the script: no `| ... || true`
 	if [ "$MOD_ONLY" = 0 ] && [ "$WORLD_ONLY" = 0 ]; then
 	set +e
-	flock "$HEAVY_LOCK" nix develop "$ROOT" -c ./gradlew --console=plain :mod:test -Dfb.perf=1 --tests '*PerfPlannerTest*' --rerun-tasks > "$LOGDIR/planner.log" 2>&1
+	flock "$HEAVY_LOCK" "$ROOT/scripts/dev" --fresh ./gradlew --console=plain :mod:test -Dfb.perf=1 --tests '*PerfPlannerTest*' --rerun-tasks > "$LOGDIR/planner.log" 2>&1
 	rc=$?
 	set -e
 	grep -E "PERF |FAILED" "$LOGDIR/planner.log" || true
@@ -82,7 +82,7 @@ spawn-protection=0
 max-tick-time=-1
 P
 			set +e
-			timeout "${FB_PERF_TIMEOUT:-3600}" nix develop "$ROOT" -c ./gradlew --console=plain --no-daemon :mod:runPerfServer -Pfb.perfVariant=$v -Pfb.perfOut="$LOGDIR" 9>&- > "$LOGDIR/world-$v.log" 2>&1
+			timeout "${FB_PERF_TIMEOUT:-3600}" "$ROOT/scripts/dev" --fresh ./gradlew --console=plain --no-daemon :mod:runPerfServer -Pfb.perfVariant=$v -Pfb.perfOut="$LOGDIR" 9>&- > "$LOGDIR/world-$v.log" 2>&1
 			rc=$?
 			set -e
 			grep -E "\[PERF\]|FAILED|BUILD" "$LOGDIR/world-$v.log" || true
@@ -90,9 +90,9 @@ P
 		done
 		exec 9>&-
 		if [ "$MOD_ONLY" = 1 ]; then echo "perf: --world-mod-only: diagnostic run, no merge and no budget check (see $LOGDIR/world-mod.log)" >&2; exit 0; fi
-		nix develop "$ROOT" -c node scripts/perf-merge.mjs "$LOGDIR"
+		"$ROOT/scripts/dev" --fresh node scripts/perf-merge.mjs "$LOGDIR"
 	fi
 fi
 ALLOW=""
 if [ "$PLANNER_ONLY" = 1 ] || [ "$CHECK_ONLY" = 1 ] || [ "$WORLD_ONLY" = 1 ]; then ALLOW="--allow-absent"; fi
-exec nix develop "$ROOT" -c node scripts/perf-check.mjs mod/perf-budget.json mod/build/perf $ALLOW
+exec "$ROOT/scripts/dev" --fresh node scripts/perf-check.mjs mod/perf-budget.json mod/build/perf $ALLOW

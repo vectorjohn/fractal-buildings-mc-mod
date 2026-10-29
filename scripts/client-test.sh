@@ -141,7 +141,7 @@ build_cmd() { # renderer [gradle args]
 	[[ ${FB_USE_DISPLAY:-} == 1 ]] && xvfb=()
 	# The renderer is picked inside the dev shell, where VK_DRIVER_FILES (lavapipe) and vulkaninfo live.
 	CMD=(env -u WAYLAND_DISPLAY SDL_VIDEODRIVER=x11 FB_VK="$vk" FB_VK_LOG_TAG=client-test
-		"${xvfb[@]}" nix develop "$ROOT" -c bash -c '
+		"${xvfb[@]}" "$ROOT/scripts/dev" --fresh bash -c '
 			source "$1/scripts/vk-select.sh" && fb_vk_select || exit 2
 			shift; exec "$@"' client-test "$ROOT" ./gradlew --console=plain --no-daemon :mod:runClientGameTest "$@")
 }

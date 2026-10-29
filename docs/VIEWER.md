@@ -3,14 +3,14 @@
 The viewer (`viewer/`) draws building IR JSON in three.js: one scene at a time in the
 browser (`index.html`), or a 4x4 grid of seeds as a PNG (`gallery.html`, captured by
 Playwright). Every command below runs from `viewer/` inside the dev shell
-(`nix develop -c ...`, or a shell where `IN_NIX_SHELL` is set). Checked against the
+(`../scripts/dev ...`, or a shell where `IN_NIX_SHELL` is set). Checked against the
 code on 2026-10-19.
 
 # First time
 
 ```sh
 cd viewer
-nix develop -c npm ci        # installs node_modules/ from the lockfile
+../scripts/dev npm ci        # installs node_modules/ from the lockfile
 ```
 
 # Look at buildings in the browser
@@ -18,16 +18,16 @@ nix develop -c npm ci        # installs node_modules/ from the lockfile
 Two ways to start the dev server; it prints the URL (Vite's default
 `http://localhost:5173/`; add `-- --port N` to pick another).
 
-- `nix develop -c npm run dev`: serves only the bundled fixtures in `viewer/fixtures/`
+- `../scripts/dev npm run dev`: serves only the bundled fixtures in `viewer/fixtures/`
   (sample house, sample house with violations, a v0 seed). The seed arrows step
   through them.
-- `nix develop -c npm run dev:gen`: first regenerates **every** gallery preset
+- `../scripts/dev npm run dev:gen`: first regenerates **every** gallery preset
   (`npm run gen`, a few minutes; builds the CLI), then serves the results.
   Open a preset's batch with `?style=<preset name>`, e.g.
   `http://localhost:5173/?style=house-plains` or `?style=tower-taiga`
   (names are the files in `viewer/gallery-presets/`).
   To serve what is already generated without regenerating:
-  `FB_GALLERY=1 nix develop -c npx vite`.
+  `FB_GALLERY=1 ../scripts/dev npx vite`.
 
 ## Choosing what to show (URL)
 
@@ -95,7 +95,7 @@ count. No panel means no violations. `?fixture=sample-house-violations` shows on
 # Galleries (PNGs)
 
 ```sh
-FB_PORT=4817 nix develop -c npm run gallery
+FB_PORT=4817 ../scripts/dev npm run gallery
 ```
 
 Regenerates every preset, builds into `dist-gallery/`, serves it with `vite preview`
@@ -108,8 +108,8 @@ Only some presets: `npm run gallery` always regenerates all of them, so do the s
 by hand:
 
 ```sh
-nix develop -c npm run gen -- house-plains tower-taiga        # only these dirs are replaced
-nix develop -c sh -c 'FB_GALLERY=1 npx vite build && FB_GALLERY=1 GALLERY=1 FB_PRESETS=house-plains,tower-taiga FB_PORT=4817 npx playwright test e2e/gallery.spec.ts'
+../scripts/dev npm run gen -- house-plains tower-taiga        # only these dirs are replaced
+../scripts/dev sh -c 'FB_GALLERY=1 npx vite build && FB_GALLERY=1 GALLERY=1 FB_PRESETS=house-plains,tower-taiga FB_PORT=4817 npx playwright test e2e/gallery.spec.ts'
 ```
 
 A preset is a JSON file in `viewer/gallery-presets/` (`type`, `style`, `lot` `WxD`,
@@ -123,7 +123,7 @@ The gallery page also works in the dev server (`dev:gen`):
 `colour=role` (default palette), `exterior=1` (skip interiors, faster),
 `fixture=<name>`.
 
-`nix develop -c npm run screenshot` is the smoke test: it writes `viewer/out/smoke.png`
+`../scripts/dev npm run screenshot` is the smoke test: it writes `viewer/out/smoke.png`
 and runs the other browser tests.
 
 # Your own batch with the CLI
@@ -131,11 +131,11 @@ and runs the other browser tests.
 From the repo root, build the CLI once, then write a batch where the dev server finds it:
 
 ```sh
-nix develop -c ./gradlew :cli:installDist
-nix develop -c cli/build/install/fractal-cli/bin/fractal-cli batch --seeds 0..15 \
+scripts/dev ./gradlew :cli:installDist
+scripts/dev cli/build/install/fractal-cli/bin/fractal-cli batch --seeds 0..15 \
   --lot 16x12 --type house --style medieval --terrain noise:7:64:6:32 \
   --out-dir viewer/gallery-data/gen/medieval
-cd viewer && FB_GALLERY=1 nix develop -c npx vite    # then open /?style=medieval
+cd viewer && FB_GALLERY=1 ../scripts/dev npx vite    # then open /?style=medieval
 ```
 
 Naming the directory after a style id gives that style's palette in `palette` mode.
@@ -166,7 +166,7 @@ Not in the IR, so not shown: door hinge side or open direction, ladders, furnitu
 | `FB_PORT` | `playwright.config.ts` | Port of the preview server for `gallery` and `screenshot` (default: a free port the OS picks per run, so parallel runs never collide). Set it only to pin a port. Not used by `npm run dev`. |
 | `FB_PRESETS=a,b` | `e2e/gallery.spec.ts` | Capture only these presets (does not limit generation). |
 | `GALLERY=1` | `e2e/gallery.spec.ts` | Enables the gallery captures; set by `npm run gallery`. Without it the gallery tests are skipped. |
-| `PLAYWRIGHT_BROWSERS_PATH`, `PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS` | Playwright | Set by the dev shell (`flake.nix`) to its Chromium. Leave alone. |
+| `PLAYWRIGHT_BROWSERS_PATH`, `PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS` | Playwright | Set by the dev shell (`nix/flake.nix`) to its Chromium. Leave alone. |
 | `DISPLAY` | Playwright config | Removed for the browser on purpose (software WebGL breaks with it). Nothing to set. |
 
 # Region map (Phase 5, V0)
@@ -175,11 +175,11 @@ Not in the IR, so not shown: door hinge side or open direction, ladders, furnitu
 `layers`) in 2D: biome colours and water, the cell grid, settlement disks by tier (hamlet, village,
 town, city, metropolis), rejected sites as dots by reason, and, when the dump has the keys,
 `waterDist` heat (R2) and `claimedBy` links (MC1). Files may be gzip (detected by magic).
-Open it in the dev server (`nix develop -c npm run dev`):
+Open it in the dev server (`../scripts/dev npm run dev`):
 `http://localhost:5173/region.html?region=/@fs/<abs path>/viewer/fixtures/region/world-12345.json.gz`
 Optional: `&terrain=<url>` (a finer terrain dump drawn underneath, e.g. `fixtures/terrain/w12345-river-s8.json.gz`),
 `&view=x0,z0,w,d` (blocks), `&scale=<px per block>`, `&layer=N`, and `&heat=0 &claims=0 &grid=0 &reasons=0`.
-Screenshots: `FB_PORT=N nix develop -c bash -c 'npx vite build && npx playwright test e2e/region.spec.ts'`
+Screenshots: `FB_PORT=N ../scripts/dev bash -c 'npx vite build && npx playwright test e2e/region.spec.ts'`
 writes `viewer/out/region/*.png`. The committed dumps in `viewer/fixtures/region/` come from
 `fractal-cli region --seed S --terrain recorded:fixtures/terrain/world-S-s64.json.gz --out ...` then `gzip -9n`.
 
@@ -203,7 +203,7 @@ does not serve `fixtures/`; use `/@fs/<abs path>/viewer/fixtures/settlement/samp
   and `.redraw()` (returns ms).
 - Code: `src/settlement.ts` (strict parsers, gzip fetch), `src/planDraw.ts` (pure transform, LOD rule, rasters, drawing), `src/plan.ts` (page).
   Tests: `settlement.test.ts`, `planDraw.test.ts`, `e2e/plan.spec.ts` (writes `out/plan/*.png`; generates `out/city-big/` with `sample-city --big 4096`,
-  installing the CLI first if needed): `FB_PORT=N nix develop -c bash -c 'npx vite build && npx playwright test e2e/plan.spec.ts'`.
+  installing the CLI first if needed): `FB_PORT=N ../scripts/dev bash -c 'npx vite build && npx playwright test e2e/plan.spec.ts'`.
 
 # District 3D view and fly-through (Phase 5, V2)
 
@@ -241,7 +241,7 @@ triangles, 1.4 draw calls per frame. SwiftShader frame times are not meaningful 
 
 ## City gallery (D0)
 
-`nix develop -c npm run city` plans every `viewer/city-presets/<name>.json` with `fractal-cli city --districts --scenes ...` into `viewer/out/city/<name>/`
+`../scripts/dev npm run city` plans every `viewer/city-presets/<name>.json` with `fractal-cli city --districts --scenes ...` into `viewer/out/city/<name>/`
 (`settlement.json`, `terrain.json.gz`, `districts/`, `scenes/`; `npm run city -- a b` only those; the CLI exits 1 when the plan has violations, the data is still written).
 A preset is `{seed, terrain, site: {at: [x, z], tier, radius} | {cell: [cx, cz]}, cellSize?, diagonals?: "on"|"off" (off: axis streets only, METROFILL DX), scenes: "none"|"all"|"auto:N"|[ids], camera: {plan: {x, z, zoom, layers}, stops?}}`
 (`src/cityPresets.ts`, tested in `cityPresets.test.ts`); terrain paths are relative to the repository root. `npm run city-gallery` also builds the viewer and runs

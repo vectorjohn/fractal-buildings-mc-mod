@@ -22,7 +22,7 @@
 #   - Gradle time is not separated out: agents run suites in the background and wait
 #     for a notification, so it shows up as gaps (or inside active time if < 10 min).
 #
-# Needs jq (in the flake dev shell): nix develop -c scripts/agent-usage.sh ...
+# Needs jq (in the flake dev shell): scripts/dev scripts/agent-usage.sh ...
 set -euo pipefail
 
 from=0000; to=9999; files=()

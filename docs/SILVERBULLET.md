@@ -1,7 +1,7 @@
 # Writing docs for SilverBullet
 
 John reads this repo's markdown in [SilverBullet](https://silverbullet.md)
-2.11.0 (pinned in `flake.nix`; run `silverbullet .` from the repo root in the dev
+2.11.0 (pinned in `nix/flake.nix`; run `silverbullet .` from the repo root in the dev
 shell). The space root is the repo root (`CONFIG.md` and `Library/` live
 there). `SB_SPACE_IGNORE` in the flake (gitignore patterns, one per line,
 read once at server start) hides build output and agent state (`node_modules/`,

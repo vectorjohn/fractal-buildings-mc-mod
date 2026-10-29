@@ -5,7 +5,7 @@
 // frames sit under the chunk requests of both worlds and count as "lib". The top frame's owner is split into mc (net.minecraft.,
 // com.mojang.), jdk (java., jdk., sun., com.sun.) and lib (everything else: fastutil, Fabric, netty, ...).
 //
-//   nix develop -c java scripts/JfrAttrib.java [--event cpu|exec] [--top N] [--title T] [--chunks-out F] file.jfr...   (markdown on stdout;
+//   scripts/dev java scripts/JfrAttrib.java [--event cpu|exec] [--top N] [--title T] [--chunks-out F] file.jfr...   (markdown on stdout;
 //   --chunks-out writes "status<TAB>chunkX<TAB>chunkZ" for every minecraft.ChunkGeneration event, for scripts/profile-overlap.sh)
 //
 // --event cpu (default) reads jdk.CPUTimeSample (JDK 25, one sample per 10 ms of a thread's CPU time, every busy thread; needs the event

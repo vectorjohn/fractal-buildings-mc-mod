@@ -15,7 +15,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 UNITS=$1; DIR=$2; CX=${3:-2432}; CZ=${4:--5696}; R=${5:-1430}
 TMP=$(mktemp -d); trap 'rm -rf "$TMP"' EXIT
 for f in "$DIR"/mod-*.jfr; do
-	nix develop "$ROOT" -c java "$ROOT/scripts/JfrAttrib.java" --chunks-out "$TMP/$(basename "$f").chunks" "$f" > /dev/null 2>&1
+	"$ROOT/scripts/dev" --fresh java "$ROOT/scripts/JfrAttrib.java" --chunks-out "$TMP/$(basename "$f").chunks" "$f" > /dev/null 2>&1
 done
 cat "$TMP"/*.chunks | awk -F'\t' '$1=="minecraft:terrain" {print $2"\t"$3}' | sort -u > "$TMP/terrain"
 echo "Chunks the run generated (terrain step): $(wc -l < "$TMP/terrain"). Units: $(($(wc -l < "$UNITS") - 1))."

@@ -44,7 +44,7 @@ import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
  * newly computed noise unit (a whole chunk for exact reads, a single column for the others) is recorded with its position and purpose, so
  * {@code scripts/profile-overlap.sh} can join them with the chunks a server run generated. Afterwards the planner's caches are read by
  * reflection (a measurement, nothing depends on it): region cells decided, settlements found, skeletons built, intercity routes built.
- * Run: {@code nix develop -c ./gradlew :mod:test -Dfb.perf.reach=1 --tests '*PerfReachTest*'}; writes {@code mod/build/perf/reach.md}
+ * Run: {@code scripts/dev ./gradlew :mod:test -Dfb.perf.reach=1 --tests '*PerfReachTest*'}; writes {@code mod/build/perf/reach.md}
  * and {@code mod/build/perf/reach-units.tsv}.
  */
 class PerfReachTest {

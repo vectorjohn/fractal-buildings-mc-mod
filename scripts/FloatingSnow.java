@@ -1,4 +1,4 @@
-/** Counts snow layers with air under them in a saved world (ROADCLEAR 2026-10-27): {@code nix develop -c bash -c "cd scripts && javac -d /tmp/fs McaTop.java FloatingSnow.java && java -cp /tmp/fs FloatingSnow REGION_DIR"}. Prints the histogram of the air run under each and, for those over road blocks, samples. */
+/** Counts snow layers with air under them in a saved world (ROADCLEAR 2026-10-27): {@code scripts/dev bash -c "cd scripts && javac -d /tmp/fs McaTop.java FloatingSnow.java && java -cp /tmp/fs FloatingSnow REGION_DIR"}. Prints the histogram of the air run under each and, for those over road blocks, samples. */
 import java.nio.file.*; import java.util.*;
 public class FloatingSnow {
   static boolean air(String n){return n.equals("air")||n.equals("cave_air");}

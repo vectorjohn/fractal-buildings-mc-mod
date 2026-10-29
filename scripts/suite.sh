@@ -4,8 +4,8 @@
 # planner-core / mod test runs on 20 cores thrash; serialising a little is faster overall).
 #
 #   scripts/suite.sh <cmd> [args...]
-#   e.g. scripts/suite.sh nix develop -c ./gradlew :planner-core:test
-#        scripts/suite.sh nix develop -c ./gradlew build
+#   e.g. scripts/suite.sh scripts/dev ./gradlew :planner-core:test
+#        scripts/suite.sh scripts/dev ./gradlew build
 #
 # Use it for full `:planner-core:test`, `:mod:build` / `:mod:runGameTest`, `build`, `check`.
 # Not needed for single-class `--tests X` runs, CLI runs or docs. scripts/test-all.sh takes a

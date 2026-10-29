@@ -32,7 +32,7 @@ class SampleSettlementTest {
 				actual = IrJson.write(withoutBuildings(IrJson.read(actual)));
 			}
 			if (!actual.equals(expected)) {
-				fail(p + " is stale; regenerate: nix develop -c ./gradlew :cli:run --args=\"sample-city --out-dir viewer/fixtures/settlement/sample\" "
+				fail(p + " is stale; regenerate: scripts/dev ./gradlew :cli:run --args=\"sample-city --out-dir viewer/fixtures/settlement/sample\" "
 						+ "(from the repo root; then commit the files)");
 			}
 		}

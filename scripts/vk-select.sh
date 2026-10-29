@@ -39,7 +39,7 @@ fb_vk_select() {
 		export VK_DRIVER_FILES="$lvp"
 	fi
 	if [[ $lvp != *lvp_icd.* ]]; then
-		echo "$tag: VK_DRIVER_FILES is not the dev shell's lavapipe ICD ('$lvp'); run inside nix develop" >&2
+		echo "$tag: VK_DRIVER_FILES is not the dev shell's lavapipe ICD ('$lvp'); run inside scripts/dev" >&2
 		return 2
 	fi
 	export FB_VK_USED=lavapipe

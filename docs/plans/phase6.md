@@ -439,7 +439,7 @@ replaced by C3 from a screenshot), `CHANGELOG.md`, and a player README draft at
 `docs/release/README-player.md` (what it does, install, compat, known issues, how to
 report; C3 moves it to `README.md` and the agent README to `docs/AGENTS.md`).
 
-- **Evidence:** `nix develop -c ./gradlew :mod:build`, then `jar tf` on the jar shows
+- **Evidence:** `scripts/dev ./gradlew :mod:build`, then `jar tf` on the jar shows
   `LICENSE`, `fabric.mod.json` with the expanded version, the nested planner-core jar
   under `META-INF/jars/`, the icon; the jar name is `fractalbuildings-0.1.0+26.3.jar`.
 - Build-file changes are listed in the report (CLAUDE.md).

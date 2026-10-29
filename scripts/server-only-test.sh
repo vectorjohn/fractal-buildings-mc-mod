@@ -26,7 +26,7 @@ HEAVY_LOCK="$MAIN_ROOT/.claude/heavy.lock"
 if [ -z "${SERVER_ONLY_LOCKED:-}" ]; then
 	mkdir -p "$(dirname "$HEAVY_LOCK")"
 	echo "server-only-test: waiting for heavy lock $HEAVY_LOCK ..." >&2
-	exec env SERVER_ONLY_LOCKED=1 flock "$HEAVY_LOCK" nix develop "$ROOT" -c "$0" "$@"
+	exec env SERVER_ONLY_LOCKED=1 flock "$HEAVY_LOCK" "$ROOT/scripts/dev" --fresh "$0" "$@"
 fi
 
 SEED=12345; PORT=25599

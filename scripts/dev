@@ -1,0 +1,102 @@
+#!/usr/bin/env bash
+# Run a command in the project's dev shell, with the environment cached.
+#
+#   scripts/dev CMD [ARGS...]    e.g. scripts/dev ./gradlew :planner-core:test
+#   scripts/dev                  an interactive bash in the dev shell
+#   scripts/dev --fresh CMD...   load the env even when already inside a dev shell (resets
+#                                VK_DRIVER_FILES etc. as a nested `nix develop` did; scripts use it)
+#
+# Same environment as `nix develop path:<root>/nix -c CMD` (the bare fallback), but
+# evaluated once per hash of nix/flake.nix + nix/flake.lock, like nix-direnv:
+#   - the env script lives in ${XDG_CACHE_HOME:-~/.cache}/fractal-devshell/<hash>/env.sh,
+#     next to a nix profile (`profile`) that is a GC root for the env's whole closure, so
+#     garbage collection can't delete what a cached env points at;
+#   - entries are built under a per-hash flock, written to a temp file and renamed, so
+#     concurrent first runs are safe; only the 2 most recently used hashes are kept.
+# Already inside a dev shell (IN_NIX_SHELL set) and no --fresh: just runs CMD.
+#
+# The flake is in nix/ and is always used through `path:` (never `.` or `./nix`, which in a
+# git checkout mean git+file and copy the whole ~100 MB repo into the store per tree).
+# `path:` copies the whole nix/ folder, so it must hold only flake.nix and flake.lock;
+# this script refuses to run otherwise. The root is found from this script's location, not
+# git, so it also works in scripts/remote.sh copies (no .git).
+#
+# FB_DEV_REFRESH=1 re-evaluates the current hash (e.g. after a GC root was deleted by hand).
+set -euo pipefail
+
+FRESH=0
+if [[ ${1:-} == --fresh ]]; then FRESH=1; shift; fi
+if (( ! FRESH )) && [[ -n "${IN_NIX_SHELL:-}" ]]; then
+	(( $# )) || set -- "${SHELL:-bash}"
+	exec "$@"
+fi
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
+FLAKE_DIR="$ROOT/nix"
+
+extra=()
+for f in "$FLAKE_DIR"/* "$FLAKE_DIR"/.[!.]* "$FLAKE_DIR"/..?*; do
+	[[ -e $f || -L $f ]] || continue
+	case "${f##*/}" in flake.nix|flake.lock) ;; *) extra+=("$f") ;; esac
+done
+if (( ${#extra[@]} )); then
+	echo "dev: $FLAKE_DIR must contain only flake.nix and flake.lock (path: copies the whole" >&2
+	echo "dev: folder into the store on every change); move or delete: ${extra[*]}" >&2
+	exit 2
+fi
+[[ -f $FLAKE_DIR/flake.nix && -f $FLAKE_DIR/flake.lock ]] || {
+	echo "dev: $FLAKE_DIR/flake.nix or flake.lock missing" >&2; exit 2; }
+
+HASH=$(cat "$FLAKE_DIR/flake.nix" "$FLAKE_DIR/flake.lock" | sha256sum | cut -c1-16)
+CACHE="${XDG_CACHE_HOME:-$HOME/.cache}/fractal-devshell"
+ENTRY="$CACHE/$HASH"
+KEEP=2
+
+fresh() { [[ -f $ENTRY/env.sh && -e $ENTRY/profile ]]; }   # -e follows the profile into the store
+
+build() {
+	mkdir -p "$ENTRY"
+	rm -f "$ENTRY/env.sh" "$ENTRY"/profile*
+	local tmp="$ENTRY/env.sh.tmp.$$"
+	echo "dev: evaluating the dev shell (nix/ hash $HASH), once per flake change..." >&2
+	if ! nix print-dev-env --profile "$ENTRY/profile" "path:$FLAKE_DIR" > "$tmp"; then
+		rm -f "$tmp"; echo "dev: nix print-dev-env failed" >&2; return 1
+	fi
+	# nix develop also exports NIX_GCROOT (the env path); print-dev-env does not.
+	printf 'export NIX_GCROOT=%q\n' "$(readlink -f "$ENTRY/profile")" >> "$tmp"
+	mv -f "$tmp" "$ENTRY/env.sh"
+}
+
+prune() {
+	local d h n=0
+	# newest first by last use (the entry dir is touched on every run)
+	while IFS= read -r d; do
+		h=${d##*/}
+		[[ $h == "$HASH" ]] && continue
+		n=$((n + 1))
+		(( n < KEEP )) && continue
+		# skip an entry another process is building right now
+		(
+			flock -n 8 || exit 0
+			rm -rf "${CACHE:?}/$h"
+			rm -f "$CACHE/$h.lock"
+		) 8> "$CACHE/$h.lock"
+	done < <(find "$CACHE" -mindepth 1 -maxdepth 1 -type d -printf '%T@ %p\n' | sort -rn | cut -d' ' -f2-)
+}
+
+if [[ -n "${FB_DEV_REFRESH:-}" ]] || ! fresh; then
+	mkdir -p "$CACHE"
+	(
+		flock 9
+		if [[ -n "${FB_DEV_REFRESH:-}" ]] || ! fresh; then build; fi
+		prune
+	) 9> "$CACHE/$HASH.lock"
+fi
+touch "$ENTRY" 2> /dev/null || true
+
+(( $# )) || set -- bash
+# The env script is nix's own stdenv setup; it isn't written for set -eu.
+set +euo pipefail
+# shellcheck disable=SC1091
+source "$ENTRY/env.sh"
+exec "$@"

@@ -15,7 +15,7 @@ parallel** in their own worktrees; the brief names the ones near your code.
 
 ## Start by reading
 
-- `CLAUDE.md`: environment rules (NixOS, `nix develop -c`, flake deps, no GPU),
+- `CLAUDE.md`: environment rules (NixOS, `scripts/dev`, flake deps, no GPU),
   module boundaries, determinism rules, **Parallel work**, build and test
   commands. Follow them.
 - `docs/ROADMAP.md`: your item and its phase (`grep -n` and read that slice),
@@ -174,7 +174,7 @@ and mention them in the ROADMAP testing section.
   suites and client runs on whichever host frees first (run it in the
   background; `--status` shows the queue).
 - Run **full** suites through a suite slot (at most 2 machine-wide):
-  `scripts/suite.sh nix develop -c ./gradlew :planner-core:test` (same for
+  `scripts/suite.sh scripts/dev ./gradlew :planner-core:test` (same for
   `build`, `:mod:build`, `:mod:runGameTest`). `scripts/test-all.sh` takes one
   itself, so don't wrap it. Single-class `--tests X` runs don't need it. If it
   prints "waiting for suite slot", that wait is expected; budget for it in
@@ -187,13 +187,13 @@ and mention them in the ROADMAP testing section.
   `docs/REVIEW-ARCHIVE.md`, or a stale copy of an item with the same title;
   delete any it names (keep your own entries), or
   the verifier's squash merge refuses the branch.
-- If a dependency is missing, add it to `flake.nix` (CLAUDE.md); call it out.
+- If a dependency is missing, add it to `nix/flake.nix` (CLAUDE.md); call it out.
 
 ### Environment quirks
 
 - Never wait on `runClient` in the foreground: it doesn't exit. Prefer client
   game tests. If you must launch it:
-  `timeout ... flock <repo root>/.claude/heavy.lock xvfb-run -a nix develop -c ./gradlew :mod:runClient`,
+  `timeout ... flock <repo root>/.claude/heavy.lock xvfb-run -a scripts/dev ./gradlew :mod:runClient`,
   then read `run/logs/latest.log`.
 - If a client hangs after a crash, kill **your own** with
   `pkill -f "[K]notClient"` only when you're sure no one else's client is

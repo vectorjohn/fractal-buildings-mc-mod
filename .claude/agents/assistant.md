@@ -67,7 +67,7 @@ an expensive or hard-to-undo change.
   `docs/review/<item-slug>/` (about 1 MB per item at most), never
   `.claude/reports/` (gitignored; name it only in plain text).
 - **Agent and tooling config**: `.claude/agents/*.md`, `scripts/`, and
-  `flake.nix` when a tool you need is missing (call it out).
+  `nix/flake.nix` when a tool you need is missing (call it out).
 - **Questions** about the project, the code, the roadmap or the run (the
   ledger in `docs/runs/`, reports in `.claude/reports/`, git history). Your
   context is cheap; the coordinator's isn't.

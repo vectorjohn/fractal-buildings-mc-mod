@@ -423,7 +423,7 @@ after each merge into the run branch and on a periodic check (~30 min):
    possible) so John sees the latest. On a conflict keep John's text.
 5. Check SilverBullet answers (`curl -sf http://127.0.0.1:3000/ >/dev/null`).
    If not, restart it from that worktree:
-   `setsid -f nix develop -c silverbullet -L 127.0.0.1 -p 3000 . > /tmp/claude-1500/silverbullet-docs-feedback.log 2>&1 < /dev/null`.
+   `setsid -f scripts/dev silverbullet -L 127.0.0.1 -p 3000 . > /tmp/claude-1500/silverbullet-docs-feedback.log 2>&1 < /dev/null`.
 
 On a new session: check the server (step 5) and re-create the periodic check
 with CronCreate; cron jobs are session-only and expire after 7 days.

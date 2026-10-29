@@ -6,7 +6,7 @@ set -u
 cd "$(dirname "$0")/.."
 out="${1:-build/city-bench.txt}"
 mkdir -p "$(dirname "$out")"
-nix develop -c ./gradlew :cli:installDist -q >/dev/null 2>&1 || { echo "build failed" >&2; exit 1; }
+scripts/dev --fresh ./gradlew :cli:installDist -q >/dev/null 2>&1 || { echo "build failed" >&2; exit 1; }
 bin=cli/build/install/fractal-cli/bin/fractal-cli
 T=fixtures/terrain
 echo "commit: $(git rev-parse --short HEAD)" > "$out"
@@ -14,7 +14,7 @@ echo "commit: $(git rev-parse --short HEAD)" > "$out"
 run() { # title, city-bench args...
   echo "=== $1  (load before: $(cut -d' ' -f1-3 /proc/loadavg))" | tee -a "$out"
   shift
-  nix develop -c "$bin" city-bench "$@" 2>&1 | tee -a "$out" | grep -v '^$' | grep -v '^SUMMARY'
+  scripts/dev --fresh "$bin" city-bench "$@" 2>&1 | tee -a "$out" | grep -v '^$' | grep -v '^SUMMARY'
   echo "exit ${PIPESTATUS[0]}" >> "$out"
 }
 N=noise:7:64:20:200
@@ -44,7 +44,7 @@ if [ -z "${SKIP_SWEEPS:-}" ]; then
   # memory ceiling: smallest heap in which the city still plans
   for m in 64m 128m 256m 512m; do
     echo "=== HEAP -Xmx$m synthetic 4096^2, no scenes" | tee -a "$out"
-    JAVA_OPTS="-Xmx$m" nix develop -c "$bin" city-bench --label "heap-$m-syn-4096" --seed 1 --site 0,0,metropolis,2048 --cell-size 2048 --terrain $N --reps 3 --warm 1 --scenes 0 2>&1 | tee -a "$out" | grep -i "OutOfMemory\|^SUMMARY\|CityPlanner.plan total" | cut -c1-160
+    JAVA_OPTS="-Xmx$m" scripts/dev --fresh "$bin" city-bench --label "heap-$m-syn-4096" --seed 1 --site 0,0,metropolis,2048 --cell-size 2048 --terrain $N --reps 3 --warm 1 --scenes 0 2>&1 | tee -a "$out" | grep -i "OutOfMemory\|^SUMMARY\|CityPlanner.plan total" | cut -c1-160
   done
 fi
 grep '^SUMMARY' "$out" | cut -f2- > "$out.summary"

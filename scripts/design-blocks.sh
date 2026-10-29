@@ -13,7 +13,7 @@
 # Work files go to build/design-blocks/ (not committed). Enters the dev shell itself; ~10 s cold, ~3 s warm.
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-if [ -z "${IN_NIX_SHELL:-}" ]; then exec nix develop "$ROOT" -c "$0" "$@"; fi
+if [ -z "${IN_NIX_SHELL:-}" ]; then exec "$ROOT/scripts/dev" "$0" "$@"; fi
 CHECK=()
 for a in "$@"; do case "$a" in --check) CHECK=(--check) ;; *) echo "usage: $0 [--check]" >&2; exit 2 ;; esac; done
 VER="$(sed -n 's/^minecraft_version=//p' "$ROOT/gradle.properties")"
@@ -21,7 +21,7 @@ LOOM="${GRADLE_USER_HOME:-$HOME/.gradle}/caches/fabric-loom/$VER"
 SERVER_BUNDLE="$LOOM/minecraft-server.jar"
 CLIENT="$LOOM/minecraft-client.jar"
 for f in "$SERVER_BUNDLE" "$CLIENT"; do
-	[ -f "$f" ] || { echo "design-blocks: $f missing; run 'nix develop -c ./gradlew :mod:compileJava' once to let Loom fetch Minecraft $VER" >&2; exit 2; }
+	[ -f "$f" ] || { echo "design-blocks: $f missing; run 'scripts/dev ./gradlew :mod:compileJava' once to let Loom fetch Minecraft $VER" >&2; exit 2; }
 done
 WORK="$ROOT/build/design-blocks/$VER"
 mkdir -p "$WORK"

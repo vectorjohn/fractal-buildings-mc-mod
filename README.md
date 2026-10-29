@@ -7,8 +7,9 @@ see [docs/ROADMAP.md](docs/ROADMAP.md) for the plan and status,
 tracks, gates and where you give input, and
 [CLAUDE.md](CLAUDE.md) for how the repo is organised.
 
-Development happens inside the Nix dev shell: `nix develop` (or
-`nix develop -c <cmd>`).
+Development happens inside the Nix dev shell (`nix/flake.nix`): `scripts/dev` for a
+shell, `scripts/dev <cmd>` for one command (cached; bare fallback
+`nix develop path:./nix -c <cmd>`).
 
 ## Long runs with agents
 

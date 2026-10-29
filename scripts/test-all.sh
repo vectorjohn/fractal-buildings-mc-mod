@@ -9,7 +9,7 @@
 #   --planner-heavy  also run the tests tagged @Tag("heavy"): planner-core (-PfbTests=heavy, about 80 min; TESTSPEED) and the mod's (OrderSimMutantTest, ~1 min). Not part of --full: the to-main run adds it
 #   --perf        also run scripts/perf.sh (the 6.7 budget check, ~10 min, heavy lock; fails above the CI ceilings of mod/perf-budget.json)
 #
-# Works from any cwd and any worktree; re-execs itself inside `nix develop` when
+# Works from any cwd and any worktree; re-execs itself inside the dev shell (scripts/dev) when
 # not already in the dev shell. Each step's output goes to build/test-all/<step>.log
 # (gitignored); the terminal only shows progress and the summary. Exit status is
 # non-zero if any step fails.
@@ -48,7 +48,7 @@ done
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 if [[ -z "${IN_NIX_SHELL:-}" ]]; then
-	exec nix develop "$ROOT" -c "$ROOT/scripts/test-all.sh" "$@"
+	exec "$ROOT/scripts/dev" "$ROOT/scripts/test-all.sh" "$@"
 fi
 
 cd "$ROOT" || exit 2

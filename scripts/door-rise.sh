@@ -30,6 +30,6 @@ run() {
 }
 if [ -n "${IN_NIX_SHELL:-}" ]; then run; else
 	export -f run; export SCENES OUT; SITES_STR="$(printf '%q ' "${SITES[@]}")"
-	nix develop -c bash -c "SITES=($SITES_STR); $(declare -f run); run"
+	"$ROOT/scripts/dev" bash -c "SITES=($SITES_STR); $(declare -f run); run"
 fi
 echo "door-rise: $OUT/tables.md, $OUT/doors.tsv"

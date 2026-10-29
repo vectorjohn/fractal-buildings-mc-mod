@@ -4,7 +4,7 @@ import java.util.*;
 import java.util.zip.*;
 
 /**
- * Top-block map of a saved world, read straight from its region files (no server): {@code nix develop -c java scripts/McaTop.java
+ * Top-block map of a saved world, read straight from its region files (no server): {@code scripts/dev java scripts/McaTop.java
  * REGION_DIR x0 z0 x1 z1}, REGION_DIR e.g. {@code <world>/dimensions/minecraft/overworld/region}. Prints one row per z: for each column
  * a letter (legend at the end) and the y of the topmost block that is not air, a plant, leaves, snow layer, torch or lantern. For
  * checking what a playtest world actually holds at a reported spot (ROADJOIN 2026-10-27). Handles the 26.x chunk NBT: palette

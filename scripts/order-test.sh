@@ -34,7 +34,7 @@
 # Works from any cwd and worktree; enters the dev shell itself. Env: FB_ORDER_TIMEOUT (seconds per run, default 3000), FB_ORDER_PORT (first port, default 25610).
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-if [ -z "${IN_NIX_SHELL:-}" ]; then exec nix develop "$ROOT" -c "$0" "$@"; fi
+if [ -z "${IN_NIX_SHELL:-}" ]; then exec "$ROOT/scripts/dev" "$0" "$@"; fi
 # no .git in a scripts/remote.sh copy: then the main checkout is this one
 MAIN_ROOT="$(dirname "$(git -C "$ROOT" rev-parse --path-format=absolute --git-common-dir 2>/dev/null || echo "$ROOT/.git")")"
 JOBS=""; ONLY=""; RADIUS=1

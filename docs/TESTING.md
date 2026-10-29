@@ -28,7 +28,7 @@ The mapping lives in one table, [`scripts/test-scope.tsv`](../scripts/test-scope
 | `mod/.../roads`, `compat`, mixins | fast, client-full (compat, perf: consider; order: consider for roads, required for mixins) | road feature (own order digest), veto |
 | `mod/.../gameplay`, `config`, `teleport`, entrypoint, resources | fast, client-quick (server-only: consider) | |
 | viewer, CLI | fast, gallery | |
-| build files, `flake.*`, `gradle.properties` | everything | versions move vanilla behaviour and mixin targets |
+| build files, `nix/*` (the flake), `scripts/dev`, `gradle.properties` | everything | versions move vanilla behaviour and mixin targets |
 
 # Where order independence is already proven
 

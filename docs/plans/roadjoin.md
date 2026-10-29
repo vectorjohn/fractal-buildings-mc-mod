@@ -28,11 +28,11 @@ themselves join their approaches correctly (`WorldPlannerRoadsTest` checks the p
 Commands (all in planner-core, seconds each; env vars are not Gradle inputs, keep `--rerun`):
 
 ```sh
-FB_ROADJOIN=1 FB_ROADJOIN_CELLS=all nix develop -c ./gradlew :planner-core:test --rerun --tests '*RoadJoinProbeTest.probe' -i
-FB_ROADJOIN=w12345 nix develop -c ./gradlew :planner-core:test --rerun --tests '*RoadJoinProbeTest.probe' -i
-FB_ROADJOIN=1 FB_ROADJOIN_AT="3205,1685,24" nix develop -c ./gradlew :planner-core:test --rerun --tests '*RoadJoinProbeTest.at' -i
-FB_ROADJOIN=1 FB_ROADJOIN_MAP="3264,1856,128,4" nix develop -c ./gradlew :planner-core:test --rerun --tests '*RoadJoinProbeTest.map' -i
-nix develop -c java scripts/McaTop.java /home/agent/kaiju-survival-server/run/world/dimensions/minecraft/overworld/region 3598 1428 3630 1450
+FB_ROADJOIN=1 FB_ROADJOIN_CELLS=all scripts/dev ./gradlew :planner-core:test --rerun --tests '*RoadJoinProbeTest.probe' -i
+FB_ROADJOIN=w12345 scripts/dev ./gradlew :planner-core:test --rerun --tests '*RoadJoinProbeTest.probe' -i
+FB_ROADJOIN=1 FB_ROADJOIN_AT="3205,1685,24" scripts/dev ./gradlew :planner-core:test --rerun --tests '*RoadJoinProbeTest.at' -i
+FB_ROADJOIN=1 FB_ROADJOIN_MAP="3264,1856,128,4" scripts/dev ./gradlew :planner-core:test --rerun --tests '*RoadJoinProbeTest.map' -i
+scripts/dev java scripts/McaTop.java /home/agent/kaiju-survival-server/run/world/dimensions/minecraft/overworld/region 3598 1428 3630 1450
 ```
 
 `JoinWorld.joins` reports per approach: `drawn` / `masked` columns (masked = inside a district

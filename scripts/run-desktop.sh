@@ -36,4 +36,4 @@ else
 fi
 
 # SDL_VIDEO_X11_XINPUT2=0 is a VNC workaround; real desktops want XInput2.
-exec nix develop -c env -u SDL_VIDEO_X11_XINPUT2 "${vk_env[@]}" ./gradlew runClient "$@"
+exec scripts/dev --fresh env -u SDL_VIDEO_X11_XINPUT2 "${vk_env[@]}" ./gradlew runClient "$@"

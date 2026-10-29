@@ -27,7 +27,7 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
  *   <li>{@code map}: {@code FB_ROADJOIN_MAP="x,z,r,step;.."} a coarse map, the skeleton roads, gates and approaches, and the tile there;
  *   <li>{@code crossings}: {@code FB_ROADJOIN_CROSS=1} every graph-road crossing's deck against the stations' ground.
  * </ul>
- * Run: {@code FB_ROADJOIN=1 FB_ROADJOIN_CELLS=all nix develop -c ./gradlew :planner-core:test --rerun --tests '*RoadJoinProbeTest.probe' -i}
+ * Run: {@code FB_ROADJOIN=1 FB_ROADJOIN_CELLS=all scripts/dev ./gradlew :planner-core:test --rerun --tests '*RoadJoinProbeTest.probe' -i}
  * (env vars are not task inputs: keep {@code --rerun}).
  */
 @EnabledIfEnvironmentVariable(named = "FB_ROADJOIN", matches = ".+")

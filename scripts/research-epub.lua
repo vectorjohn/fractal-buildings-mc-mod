@@ -2,7 +2,7 @@
 -- (transitively, within the index's directory) into one document, so the links
 -- between notes keep working in an EPUB.
 --
---   nix develop -c pandoc docs/research/INDEX.md -f gfm \
+--   scripts/dev pandoc docs/research/INDEX.md -f gfm \
 --     --lua-filter scripts/research-epub.lua --toc-depth=1 -o build/research.epub
 --
 -- Each note becomes a chapter. Header ids are prefixed with the note's path

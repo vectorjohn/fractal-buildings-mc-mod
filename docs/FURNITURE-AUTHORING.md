@@ -46,7 +46,7 @@ rails are all cubes (the IR has no block shapes or facings).
 ## 1. A world to build in
 
 Any Minecraft 26.3 client works: your own launcher, or the dev client
-(`nix develop -c ./gradlew :mod:runClient`; its saves are under `mod/run/saves/`,
+(`scripts/dev ./gradlew :mod:runClient`; its saves are under `mod/run/saves/`,
 Loom's default run directory, not checked). Create a world: Creative, Superflat,
 Allow Commands on. The mod need not be installed to build and save.
 
@@ -153,7 +153,7 @@ copies, converts, tests and commits them. Several pieces at once is fine.
 ## 7. Convert *(F2)*
 
 ```sh
-nix develop -c ./gradlew :cli:installDist
+scripts/dev ./gradlew :cli:installDist
 cli/build/install/fractal-cli/bin/fractal-cli furniture import furniture/nbt/chair_banner_back.nbt
 ```
 
@@ -169,12 +169,12 @@ a cell needing support it does not have, no clear cell in front).
   medieval --out /home/agent/fractal-buildings-mc-mod/out/furniture.json` writes a test
   room with the piece in its four rotations; open
   `http://localhost:5173/?ir=/@fs/home/agent/fractal-buildings-mc-mod/out/furniture.json`
-  (dev server: `cd viewer && nix develop -c npm run dev`). The gallery preset
+  (dev server: `cd viewer && ../scripts/dev npm run dev`). The gallery preset
   `furniture` shows every piece in every style.
 - **In game** *(F4)*: `/fb furniture show chair_banner_back [style]` stamps it next to
   you in four rotations (every style in a row if no style is given). Or make a new world
   and `/fb locate village`.
-- **Tests:** `nix develop -c ./gradlew :planner-core:test` checks that every piece
+- **Tests:** `scripts/dev ./gradlew :planner-core:test` checks that every piece
   resolves in every style and that furnished rooms stay walkable on the gallery seeds.
 
 # The text format (option b)

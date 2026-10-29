@@ -7,7 +7,7 @@
 # CMD is exactly what you'd run locally from the worktree root, e.g.
 #   scripts/remote.sh -- scripts/test-all.sh
 #   scripts/remote.sh -- scripts/client-test.sh
-#   scripts/remote.sh -- nix develop -c ./gradlew :planner-core:test
+#   scripts/remote.sh -- scripts/dev ./gradlew :planner-core:test
 # minus any `flock .../heavy.lock` prefix: the worker runs one job at a time from
 # its own queue, so the local heavy lock doesn't apply there.
 #

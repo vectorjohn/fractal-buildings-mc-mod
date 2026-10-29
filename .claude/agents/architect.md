@@ -60,7 +60,7 @@ did not open is worthless. List every file you opened in the review.
   commands") prints each storey as text: read it for room layout, halls,
   stairs and doors rather than guessing from cutaways.
 - **IR JSON** (`docs/IR.md`): storey heights, volumes, roof forms, openings,
-  rooms. Use `jq` in the dev shell (`nix develop -c jq ...`) for numbers
+  rooms. Use `jq` in the dev shell (`scripts/dev jq ...`) for numbers
   (storey heights, window counts per facade, lot sizes).
 - You may run the CLI (`gen`, `batch`, the floor-plan command, `city`) from
   the worktree you were given, writing output under your scratchpad or

@@ -122,7 +122,7 @@ Work by path: `cd <worktree> && ...` or `git -C <worktree> ...`.
 8. **Docs.** ROADMAP checkbox right, nothing ticked beyond the ask, status
    table untouched (it's the coordinator's)? A log file in `docs/log/` that
    agrees with what was done?
-9. Note any changes to build files, `flake.nix`, `viewer/package.json`
+9. Note any changes to build files, `nix/flake.nix`, `viewer/package.json`
    dependencies or `.envrc`, for the human.
 
 Be thorough about this change, not the whole codebase. Flag real gaps, not
@@ -142,7 +142,7 @@ re-running** only if all of these hold:
    `git diff --name-only C claude/<slug>` lists only docs (`docs/`, `*.md`)
    and test sources the heavy layer doesn't run (e.g.
    `planner-core/src/test/`, `viewer/**/*.test.ts`). Any change under
-   `mod/`, `planner-core/src/main/`, build files, `flake.nix` or the
+   `mod/`, `planner-core/src/main/`, build files, `nix/flake.nix` or the
    gametest sources since `C` makes it stale.
 3. **Merged:** `C` contains the integration-branch commit `M` the coder
    merged in for its final run (the report names it;
