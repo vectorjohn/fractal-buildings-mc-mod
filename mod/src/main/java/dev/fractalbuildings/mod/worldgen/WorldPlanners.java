@@ -74,7 +74,7 @@ public final class WorldPlanners {
 	}
 
 	private static WorldPlanner create(NoiseBasedChunkGenerator gen, RandomState rs, long seed) {
-		LiveProbes lp = new LiveProbes(gen, rs);
+		LiveProbes lp = new LiveProbes(gen, rs, dev.fractalbuildings.mod.probe.ChunkFill.DEFAULT, LiveProbes.DEFAULT_CHUNKS, Workers.readsFanout()); // PARREADS
 		WorldProbes probes = lp.world(lp.exact());
 		WorldConfig cfg = config.get();
 		FractalBuildingsMod.LOGGER.info("Settlement planner created for seed {} (cell size {}, frequency {}, max radius {})", seed, cfg.cellSize(), cfg.frequency(), cfg.maxRadius());

@@ -80,6 +80,54 @@ public final class BoundedCache<K, V> {
 		return v;
 	}
 
+	/** Keys being computed by {@link #getOnce}, made on first use. */
+	private volatile java.util.concurrent.ConcurrentHashMap<K, java.util.concurrent.CompletableFuture<V>> flights;
+
+	/**
+	 * {@link #get}, but a thread that misses while another computes the same key waits for that value instead of computing it again
+	 * (PARREADS: several threads filling one memo). Only for functions that never wait, directly or not, on a key that waits on them (a leaf
+	 * such as a terrain chunk or a cell decision, or an acyclic graph): a waiter waits for a computation that is running. The answer is the
+	 * same as {@link #get}'s; a failure reaches every waiter and caches nothing. A waiter counts a miss, so {@link #misses} still counts asks.
+	 */
+	public V getOnce(K key, Function<K, V> compute) {
+		return get(key, k -> {
+			var fl = flights;
+			if (fl == null) {
+				synchronized (map) {
+					if ((fl = flights) == null) flights = fl = new java.util.concurrent.ConcurrentHashMap<>();
+				}
+			}
+			java.util.concurrent.CompletableFuture<V> mine = new java.util.concurrent.CompletableFuture<>();
+			java.util.concurrent.CompletableFuture<V> other = fl.putIfAbsent(k, mine);
+			if (other != null) {
+				try {
+					return other.join();
+				} catch (java.util.concurrent.CompletionException e) {
+					if (e.getCause() instanceof RuntimeException re) throw re;
+					if (e.getCause() instanceof Error er) throw er;
+					throw e;
+				}
+			}
+			try {
+				// stored before the flight is removed (finally), and re-checked after winning the claim: a thread that missed just before
+				// another's store and claims just after its remove finds the value instead of computing it again
+				V cached = peek(k);
+				if (cached != null) {
+					mine.complete(cached);
+					return cached;
+				}
+				V v = putIfAbsent(k, compute.apply(k));
+				mine.complete(v);
+				return v;
+			} catch (Throwable e) {
+				mine.completeExceptionally(e);
+				throw e;
+			} finally {
+				fl.remove(k, mine);
+			}
+		});
+	}
+
 	/** The cached value or null; counts no hit or miss and leaves the retention timestamp alone, but (access-order map) moves the entry to the LRU tail. */
 	public V peek(K key) {
 		synchronized (map) {

@@ -224,6 +224,9 @@ public final class JunctionField {
 		int x0 = box[0], z0 = box[1], x1 = box[0] + box[2] - 1, z1 = box[1] + box[3] - 1;
 		// lattice segments (Districts.borderStreets)
 		Arterials art = rules.arterials();
+		DistrictGrid grid = src.grid();
+		int reach = Districts.GRID_REACH + 2 * StreetRules.NODE;
+		if (src.reads().fanout().threads() > 1) src.reads().prefetch(edgeReads(rules, art, grid, lattice, x0, z0, x1, z1, reach)); // PARREADS
 		for (DistrictGrid.Segment s : art.segmentsIn(x0, z0, x1, z1)) {
 			RoadKind k = rules.borderKind(s);
 			if (k == null) continue;
@@ -235,8 +238,6 @@ public final class JunctionField {
 			}
 		}
 		// grid lines (Districts.gridStreets): every line of every tile interval over the box, followed as far as any tile's window reaches
-		DistrictGrid grid = src.grid();
-		int reach = Districts.GRID_REACH + 2 * StreetRules.NODE;
 		for (int axis = 0; axis < 2; axis++) {
 			boolean vertical = axis == DistrictGrid.AXIS_X;
 			int kLo = grid.indexOf(axis, vertical ? x0 : z0), kHi = grid.indexOf(axis, vertical ? x1 : z1);
@@ -251,6 +252,51 @@ public final class JunctionField {
 				}
 			}
 		}
+		return out;
+	}
+
+	/**
+	 * PARREADS: the columns {@link #wholeStreets} reads to test its edges, as point boxes in the order it reads them: both ends of every edge of a
+	 * border segment that is tested for water and slope, and of every grid-line edge on grid land ({@link StreetRules#gridSideLand}). The same
+	 * loops as there, without the terrain; a prefetch of them fills the chunks the edge tests then read.
+	 */
+	static List<int[]> edgeReads(StreetRules rules, Arterials art, DistrictGrid grid, boolean lattice, int x0, int z0, int x1, int z1, int reach) {
+		List<int[]> out = new ArrayList<>();
+		if (!lattice) {
+			for (DistrictGrid.Segment s : art.segmentsIn(x0, z0, x1, z1)) {
+				RoadKind k = rules.borderKind(s);
+				if (k == null || k == RoadKind.ARTERIAL) continue;
+				for (int a = s.from(); a < s.to(); a += StreetRules.NODE) {
+					int b = Math.min(s.to(), a + StreetRules.NODE);
+					out.add(point(Arterials.ax(s, a), Arterials.az(s, a)));
+					out.add(point(Arterials.ax(s, b), Arterials.az(s, b)));
+				}
+			}
+		}
+		for (int axis = 0; axis < 2; axis++) {
+			boolean vertical = axis == DistrictGrid.AXIS_X;
+			int kLo = grid.indexOf(axis, vertical ? x0 : z0), kHi = grid.indexOf(axis, vertical ? x1 : z1);
+			int lo = Math.floorDiv((vertical ? z0 : x0) - reach, StreetRules.NODE) * StreetRules.NODE, hi = Math.floorDiv((vertical ? z1 : x1) + reach, StreetRules.NODE) * StreetRules.NODE;
+			for (int k = kLo; k <= kHi; k++) {
+				for (int pos : rules.gridLines(axis, k)) {
+					for (int a = lo; a < hi; a += StreetRules.NODE) {
+						int b = Math.min(hi, a + StreetRules.NODE);
+						if (!rules.gridSideLand(axis, pos, a, b)) continue;
+						out.add(vertical ? point(pos, a) : point(a, pos));
+						out.add(vertical ? point(pos, b) : point(b, pos));
+					}
+				}
+			}
+		}
+		return out;
+	}
+
+	private static int[] point(int x, int z) { return new int[] {x, z, x, z}; }
+
+	/** PARREADS: the centre columns of the whole streets, which {@link #of} reads (water along every street, ground at every junction pad). */
+	static List<int[]> centreReads(List<Whole> ws) {
+		List<int[]> out = new ArrayList<>();
+		for (Whole w : ws) for (int[] c : w.cols()) out.add(point(c[0], c[1]));
 		return out;
 	}
 
@@ -277,6 +323,7 @@ public final class JunctionField {
 	public static JunctionField build(SkeletonSource src, TerrainProbe probe) {
 		TerrainProbe exact = new dev.fractalbuildings.core.probe.MemoProbe(probe); // the build reads most columns more than once
 		List<Whole> ws = wholeStreets(src, exact);
+		if (src.reads().fanout().threads() > 1) src.reads().prefetch(centreReads(ws)); // PARREADS: skeleton roads and arterials, read by nothing above
 		List<List<WallRing.Piece>> rings = Districts.wallRings(src);
 		if (rings.isEmpty()) return of(ws, exact);
 		int[][] levels = new int[rings.size()][];

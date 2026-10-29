@@ -115,8 +115,7 @@ public final class RegionWarmer {
 	}
 
 	private static void warmAt(WorldPlanner planner, State s, int x, int z, int radius, boolean ahead) {
-		planner.warm(x, z, radius);
-		planner.warmQuays(x, z, radius); // METROFILL R1: split from warm() so the region-layer budget row stays the region layer
+		planner.warm(x, z, radius, true); // with the quays (METROFILL R1), beside the road links where the reads run in parallel (PARREADS)
 		DistrictGrid.Tile t = planner.grid().tileAt(x, z);
 		long key = ((long) t.ix() << 32) ^ (t.iz() & 0xffffffffL);
 		if ((ahead ? s.lastAhead : s.lastTile) == key) return;

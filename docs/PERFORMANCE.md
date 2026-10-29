@@ -344,3 +344,11 @@ How to use it:
 - **Budget**: none for a freeze; the flight row (worst tick 3 s, ceiling 6 s) measures the gate-city flight only.
 - **Decision**: open.
 - **Improve**: ranked candidates in the write-up; first, take the quay trace out of the chunk pipeline and make it lazy.
+
+### Parallel terrain reads: region row 3x, quays 3.5x faster, same output (PARREADS, 2026-10-28)
+
+- **What**: the exact-terrain reads of a cold settlement (vanilla noise, pure in seed and position) now fill the chunk memo on a reads pool (`fractalbuildings-reads-N`, a third of the CPUs, 1 to 6) ahead of the planner's own single-threaded reads: the quay trace row by row of waterfront tiles, the junction field, region resolution and road links in parallel, the junction fields beside the road links; the warmer runs each quay trace right after its junction field (`warm(..., true)`). Caller-runs, so a call from a worldgen thread or a pool thread never waits for a helper that has not started.
+- **Measured** (local, 20 CPUs, `scripts/perf.sh` at 5209d507 then at 2fc92a0a, reads pool 6 + caller; loads 4.8 to 46 and 9 to 32, not quiet; evidence `.claude/reports/p6-parreads-base-evidence/5209d50703-20261028T230956Z/` and `.claude/reports/p6-parreads-evidence/2fc92a0ad3-20261028T225506Z/`): region row `region.cold.warm.ms` 30,476 to 9,983 ms; `region.cold.quays.ms` 57,377 to 16,200 ms; warmer path `region.warmed.worker.ms` 194,946 to 24,157 ms (the base number is inflated by load); `mod.cold.chunk.max.ms` 92,965 to 37,318 ms (still the quay trace in a structure start: the perf cold block runs no warmer first, COLDCHUNK). Count rows unchanged (chunk fills 4,924 to 4,928, sparse 68,343, road 14,587). Output: 11 live digests equal before and after (`ParReadsDigest`).
+- **Budget**: the region row (6 s, ceiling 10 s) is now just under its ceiling at that load; not re-decided.
+- **Decision**: open (the region row's budget, and the teleport tradeoff, still wait on John; REGIONPERF brief).
+- **Improve**: re-measure on a quiet machine; bind empty biome tags in `TerrainDumpTool` (the planner rows pay a "Tags not bound" exception per biome read that the game never pays, NOTES); take the quay trace out of the chunk pipeline (profile candidate 1) or make it lazy (candidate 2).

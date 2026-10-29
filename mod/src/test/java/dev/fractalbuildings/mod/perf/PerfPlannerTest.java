@@ -7,6 +7,7 @@ import dev.fractalbuildings.core.world.SettlementInfo;
 import dev.fractalbuildings.core.world.WorldConfig;
 import dev.fractalbuildings.core.world.WorldPlanner;
 import dev.fractalbuildings.mod.TerrainDumpTool;
+import dev.fractalbuildings.mod.probe.ChunkFill;
 import dev.fractalbuildings.mod.probe.LiveProbes;
 import dev.fractalbuildings.mod.worldgen.Workers;
 import java.nio.file.Path;
@@ -44,12 +45,16 @@ class PerfPlannerTest {
 
 	private static double ms(long t0) { return (System.nanoTime() - t0) / 1e6; }
 
+	/** PARREADS: the reads pool the game starts with the server ({@code Workers.start}), so every row measures the game's parallel terrain reads. */
+	private static volatile java.util.concurrent.ThreadPoolExecutor readsPool;
+	private static final dev.fractalbuildings.core.cache.Fanout READS = dev.fractalbuildings.core.cache.Fanout.over(() -> readsPool, Workers.readThreads());
+
 	/** The last planner's live probes (the region rows read their noise counters). */
 	private static LiveProbes lastProbes;
 
 	/** A cold planner over the game's own probes ({@link LiveProbes#world}), exact reads counted. */
 	private static WorldPlanner planner(NoiseBasedChunkGenerator gen, RandomState rs, ThreadPoolExecutor pool, Counting[] counter, WorldPlanner.Caches caps) {
-		LiveProbes lp = new LiveProbes(gen, rs);
+		LiveProbes lp = new LiveProbes(gen, rs, ChunkFill.DEFAULT, LiveProbes.DEFAULT_CHUNKS, READS);
 		Counting c = new Counting(lp.exact());
 		if (counter != null) counter[0] = c;
 		lastProbes = lp;
@@ -71,6 +76,17 @@ class PerfPlannerTest {
 		if (System.getenv("FB_PERF_FAIL") != null) throw new IllegalStateException("FB_PERF_FAIL set: deliberate failure to show perf.sh exits non-zero");
 		out.put("planner.load.before", PerfOut.load());
 		out.put("planner.cpus", Runtime.getRuntime().availableProcessors());
+		out.put("planner.readThreads", Workers.readThreads());
+		readsPool = Workers.readThreads() > 0 ? Workers.create(Workers.readThreads(), Workers.READS_PREFIX) : null;
+		try {
+			measure(gen, rs, out);
+		} finally {
+			if (readsPool != null) Workers.shutdown(readsPool);
+			readsPool = null;
+		}
+	}
+
+	private void measure(NoiseBasedChunkGenerator gen, RandomState rs, PerfOut out) throws Exception {
 
 		// --- Q2 and Q1: the metropolis, cold, on the calling thread (what the lane pays with no lead) -------------------------------------
 		Counting[] cnt = new Counting[1];
@@ -131,7 +147,7 @@ class PerfPlannerTest {
 		try {
 			WorldPlanner w = planner(gen, rs, pool, null, WorldPlanner.Caches.DEFAULT);
 			t0 = System.nanoTime();
-			pool.execute(() -> { w.warm(sx, sz, 2 * w.config().cellSize()); w.warmQuays(sx, sz, 2 * w.config().cellSize()); }); // as RegionWarmer.warmAt
+			pool.execute(() -> w.warm(sx, sz, 2 * w.config().cellSize(), true)); // as RegionWarmer.warmAt
 			Workers.awaitIdle(pool, 600_000);
 			out.put("region.warmed.worker.ms", ms(t0));
 			t0 = System.nanoTime();

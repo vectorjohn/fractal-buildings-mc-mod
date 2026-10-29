@@ -2,6 +2,7 @@ package dev.fractalbuildings.core.world;
 
 import dev.fractalbuildings.core.probe.BiomeProbe;
 import dev.fractalbuildings.core.probe.CoarseProbe;
+import dev.fractalbuildings.core.probe.ParallelReads;
 import dev.fractalbuildings.core.probe.TerrainProbe;
 import dev.fractalbuildings.core.region.RegionMap;
 import dev.fractalbuildings.core.region.RegionProbe;
@@ -14,14 +15,20 @@ import java.util.Objects;
  *
  * @param roadExact the exact terrain the road graph reads at its stations (the same values as {@code exact}; a live world gives single-column reads, since stations are sparse); null means {@code exact}
  * @param window the area a recorded dump covers, or null for an unbounded world; cells whose probe reach leaves it are not decided
+ * @param reads how the planner may fill the exact probe's memo and run pure pieces in parallel (PARREADS); null means {@link ParallelReads#NONE}
  */
-public record WorldProbes(RegionProbe region, CoarseProbe coarse, TerrainProbe exact, BiomeProbe biome, RegionMap.Window window, TerrainProbe roadExact) {
+public record WorldProbes(RegionProbe region, CoarseProbe coarse, TerrainProbe exact, BiomeProbe biome, RegionMap.Window window, TerrainProbe roadExact, ParallelReads reads) {
 	public WorldProbes {
 		Objects.requireNonNull(region);
 		Objects.requireNonNull(coarse);
 		Objects.requireNonNull(exact);
 		Objects.requireNonNull(biome);
 		if (roadExact == null) roadExact = exact;
+		if (reads == null) reads = ParallelReads.NONE;
+	}
+
+	public WorldProbes(RegionProbe region, CoarseProbe coarse, TerrainProbe exact, BiomeProbe biome, RegionMap.Window window, TerrainProbe roadExact) {
+		this(region, coarse, exact, biome, window, roadExact, null);
 	}
 
 	public WorldProbes(RegionProbe region, CoarseProbe coarse, TerrainProbe exact, BiomeProbe biome, RegionMap.Window window) {

@@ -38,6 +38,21 @@ class WorkersShutdownTest {
 		}
 	}
 
+	/** PARREADS: the server's start makes the reads pool the planners' fanout uses, and its stop takes it away (reads are then serial). */
+	@Test
+	void startAndStopBringTheReadsPool() {
+		try {
+			Workers.start();
+			assertEquals(Workers.readThreads() > 0 ? Workers.readThreads() + 1 : 1, Workers.readsFanout().threads());
+		} finally {
+			Workers.stop();
+		}
+		assertEquals(1, Workers.readsFanout().threads(), "no server: serial");
+		java.util.concurrent.atomic.AtomicInteger n = new java.util.concurrent.atomic.AtomicInteger();
+		Workers.readsFanout().each(5, i -> n.incrementAndGet());
+		assertEquals(5, n.get());
+	}
+
 	@Test
 	void aTaskThatIgnoresTheInterruptDoesNotHoldTheStopper() throws Exception {
 		ThreadPoolExecutor p = Workers.create(1);

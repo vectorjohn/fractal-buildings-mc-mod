@@ -45,6 +45,9 @@ public interface SkeletonSource {
 	 */
 	default java.util.List<ApproachLine> approaches() { return java.util.List.of(); }
 
+	/** How this settlement's builds may fill the exact probe's memo ahead of their reads (PARREADS); never changes an answer. */
+	default dev.fractalbuildings.core.probe.ParallelReads reads() { return dev.fractalbuildings.core.probe.ParallelReads.NONE; }
+
 	/**
 	 * A value worked out once from the whole settlement over the given exact terrain (the settlement's quay runs), by name. It must be a
 	 * pure function of the source and the probe, whichever tile asks first. This default builds it on every call; sources that serve many
@@ -107,6 +110,13 @@ public interface SkeletonSource {
 			if (!site.cells().contains(cell)) throw new IllegalArgumentException("cell " + cell + " is not part of " + site.id());
 			return memo.get(cell, c -> Skeletons.build(seed, view, c, probe, grid, program));
 		}
+
+		private volatile dev.fractalbuildings.core.probe.ParallelReads reads = dev.fractalbuildings.core.probe.ParallelReads.NONE;
+
+		/** The world planner's parallel reads (PARREADS). */
+		public Direct withReads(dev.fractalbuildings.core.probe.ParallelReads r) { reads = r == null ? dev.fractalbuildings.core.probe.ParallelReads.NONE : r; return this; }
+
+		@Override public dev.fractalbuildings.core.probe.ParallelReads reads() { return reads; }
 
 		private volatile java.util.function.Supplier<java.util.List<ApproachLine>> approachSource = java.util.List::of;
 		private volatile java.util.List<ApproachLine> approachMemo;

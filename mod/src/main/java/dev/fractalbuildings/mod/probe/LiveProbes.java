@@ -1,5 +1,6 @@
 package dev.fractalbuildings.mod.probe;
 
+import dev.fractalbuildings.core.cache.Fanout;
 import dev.fractalbuildings.core.probe.BiomeProbe;
 import dev.fractalbuildings.core.probe.CoarseProbe;
 import dev.fractalbuildings.core.probe.TerrainProbe;
@@ -21,6 +22,7 @@ public final class LiveProbes {
 	public static final int DEFAULT_ROAD_COLUMNS = 1 << 16;
 
 	private final LiveTerrainProbe exact;
+	private final LiveReads reads;
 	private final SparseColumns sparse;
 	/** The road graph's station reads: single exact columns (stations are 8 apart, so whole chunks would be waste), own memo so the lattice reads keep theirs. */
 	private final SparseColumns roadColumns;
@@ -34,8 +36,12 @@ public final class LiveProbes {
 	public LiveProbes(NoiseBasedChunkGenerator gen, RandomState rs, ChunkFill fill) { this(gen, rs, fill, DEFAULT_CHUNKS); }
 
 	/** {@code chunks}: the district memo's capacity (tests and benches; the game uses {@link #DEFAULT_CHUNKS}). */
-	public LiveProbes(NoiseBasedChunkGenerator gen, RandomState rs, ChunkFill fill, int chunks) {
+	public LiveProbes(NoiseBasedChunkGenerator gen, RandomState rs, ChunkFill fill, int chunks) { this(gen, rs, fill, chunks, Fanout.SERIAL); }
+
+	/** {@code fanout}: how {@link #reads} fills the chunk memo ahead of the planner (PARREADS; the game passes the reads pool, {@code Workers.readsFanout}). */
+	public LiveProbes(NoiseBasedChunkGenerator gen, RandomState rs, ChunkFill fill, int chunks, Fanout fanout) {
 		this.exact = new LiveTerrainProbe(gen, rs, fill, chunks);
+		this.reads = new LiveReads(exact.memo(), fanout);
 		this.sparse = new SparseColumns(gen, rs, DEFAULT_SPARSE);
 		this.roadColumns = new SparseColumns(gen, rs, DEFAULT_ROAD_COLUMNS);
 		this.biome = new LiveBiomeProbe(gen, rs, exact::surfaceY);
@@ -48,10 +54,13 @@ public final class LiveProbes {
 	 * {@code exact} is {@link #exact()} or a wrapper of it (the perf test counts its calls).
 	 */
 	public WorldProbes world(TerrainProbe exact) {
-		return new WorldProbes(region(), coarse(32), exact, biome(), null, roads());
+		return new WorldProbes(region(), coarse(32), exact, biome(), null, roads(), reads);
 	}
 
 	public TerrainProbe exact() { return exact; }
+
+	/** Parallel fills of the chunk memo ({@link LiveReads}). */
+	public LiveReads reads() { return reads; }
 
 	public LiveTerrainProbe exactLive() { return exact; }
 

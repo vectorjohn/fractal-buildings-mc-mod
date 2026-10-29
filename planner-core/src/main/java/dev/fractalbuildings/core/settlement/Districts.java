@@ -2102,6 +2102,11 @@ public final class Districts {
 		 * is the unclipped one. (A run that leaves those tiles ends at their border: no tile beyond would draw it.) Any tile may build it,
 		 * through its own terrain memo: the values are the probe's, so the result does not depend on which tile asked.
 		 */
+		/** How far round a waterfront tile's nodes the contour reads the exact terrain: {@link Quays#OFFSET} on the 4-lattice (PARREADS prefetch). */
+		static final int QUAY_READ = Quays.OFFSET + 4;
+		/** How far round a contour point its columns' first quay tests read (half a lattice step to the column, {@code clearOfWater} on the 4-lattice); the rarer {@code waterLevel} reach is left to the reads themselves. */
+		static final int QUAY_CHAIN_READ = 8;
+
 		List<QuayWhole> settlementQuays() {
 			int reach = den.maxRadius() + 2 * PAD, cx = src.site().centre().x(), cz = src.site().centre().z();
 			DistrictGrid.TileId lo = grid.tileOf(cx - reach, cz - reach), hi = grid.tileOf(cx + reach, cz + reach);
@@ -2116,9 +2121,25 @@ public final class Districts {
 				}
 			}
 			if (wf.isEmpty()) return List.of();
+			// PARREADS: the contour walks the lattice in z order, so the exact terrain of each row of waterfront tiles is filled (in parallel,
+			// where the probe can) when the walk reaches the row before it; a metropolis' waterfront is several memos' worth of chunks, so
+			// the whole of it at once would evict its own start. Answers do not change: the reads below are the same, in the same order.
+			TreeMap<Integer, List<int[]>> rowBoxes = new TreeMap<>();
+			for (long k : wf) {
+				DistrictGrid.Tile t = grid.tile((int) k, (int) (k >> 32));
+				rowBoxes.computeIfAbsent((int) (k >> 32), r -> new ArrayList<>()).add(new int[] {t.minX() - PAD - QUAY_READ, t.minZ() - PAD - QUAY_READ, t.maxX() + PAD + QUAY_READ, t.maxZ() + PAD + QUAY_READ});
+			}
+			var reads = src.reads();
+			int[] fetchedTo = {Integer.MIN_VALUE};
 			TreeMap<Long, Boolean> nearMemo = new TreeMap<>(); // the contour asks each lattice node up to four times
 			Quays.Near traced = (x, z) -> {
 				DistrictGrid.TileId c = grid.tileOf(x, z);
+				if (c.iz() + 1 > fetchedTo[0]) {
+					List<int[]> boxes = new ArrayList<>();
+					for (List<int[]> row : rowBoxes.subMap(fetchedTo[0], false, c.iz() + 1, true).values()) boxes.addAll(row);
+					fetchedTo[0] = c.iz() + 1;
+					if (!boxes.isEmpty()) reads.prefetch(boxes);
+				}
 				boolean in = false;
 				for (int dz = -1; dz <= 1 && !in; dz++) {
 					for (int dx = -1; dx <= 1 && !in; dx++) {
@@ -2133,8 +2154,12 @@ public final class Districts {
 				DistrictGrid.TileId t = grid.tileOf(c[0], c[1]);
 				return wf.contains(key(t.ix(), t.iz())) && quayOk(c);
 			};
+			List<List<Pt>> chains = Quays.contour(traced, x0, z0, x1, z1);
 			List<List<int[]>> runs = new ArrayList<>();
-			for (List<Pt> chain : Quays.contour(traced, x0, z0, x1, z1)) {
+			for (List<Pt> chain : chains) {
+				List<int[]> near = new ArrayList<>(); // what the chain's runs read next: the bank round its points (PARREADS, as above; the walk has moved on)
+				for (Pt p : chain) near.add(new int[] {p.x() - QUAY_CHAIN_READ, p.z() - QUAY_CHAIN_READ, p.x() + QUAY_CHAIN_READ, p.z() + QUAY_CHAIN_READ});
+				reads.prefetch(near);
 				List<int[]> cols = StreetCols.columns(chain);
 				if (chain.get(0).equals(chain.get(chain.size() - 1))) cols = breakRing(cols, ok);
 				for (List<int[]> whole : StreetCols.runs(cols, ok)) if (whole.size() >= Quays.MIN_LEN) runs.add(whole);

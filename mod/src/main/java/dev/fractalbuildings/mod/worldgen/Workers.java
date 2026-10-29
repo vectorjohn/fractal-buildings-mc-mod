@@ -1,5 +1,6 @@
 package dev.fractalbuildings.mod.worldgen;
 
+import dev.fractalbuildings.core.cache.Fanout;
 import dev.fractalbuildings.mod.FractalBuildingsMod;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ExecutorService;
@@ -17,11 +18,29 @@ public final class Workers {
 	public static final String PREFIX = "fractalbuildings-worker-";
 	private static final int QUEUE = 512;
 	private static volatile ThreadPoolExecutor current;
+	/** PARREADS: helper threads for parallel terrain reads ({@link #readsFanout}); separate from the planner tasks above so a helper never queues behind a multi-second plan. */
+	public static final String READS_PREFIX = "fractalbuildings-reads-";
+	private static volatile ThreadPoolExecutor reads;
+	/** The fanout every world's planner reads through: caller-runs over the reads pool while the server runs, serial otherwise. */
+	private static final Fanout READS_FANOUT = Fanout.over(() -> reads, readThreads());
 
 	private Workers() {}
 
 	/** Pool size: a quarter of the cpus, 1 to 4 (the chunk threads need the rest). */
 	public static int defaultSize() { return Math.max(1, Math.min(4, Runtime.getRuntime().availableProcessors() / 4)); }
+
+	/**
+	 * Reads helpers: a third of the cpus, 1 to 6 (property {@code fractalbuildings.readThreads} overrides). They only run while a cold planner
+	 * reads terrain the chunk threads are waiting for (a settlement's first tile), so they take cores from little else; PARREADS.
+	 */
+	public static int readThreads() {
+		Integer p = Integer.getInteger("fractalbuildings.readThreads");
+		if (p != null) return Math.max(0, Math.min(32, p));
+		return Math.max(1, Math.min(6, Runtime.getRuntime().availableProcessors() / 3));
+	}
+
+	/** The fanout of parallel terrain reads (serial while no server runs, or with {@code readThreads} 0). */
+	public static Fanout readsFanout() { return READS_FANOUT; }
 
 	public static void register() {
 		ServerLifecycleEvents.SERVER_STARTING.register(server -> start());
@@ -33,6 +52,7 @@ public final class Workers {
 		stop();
 		ThreadPoolExecutor p = create(defaultSize());
 		current = p;
+		reads = readThreads() > 0 ? create(readThreads(), READS_PREFIX) : null;
 		WorldPlanners.setWorkers(p);
 	}
 
@@ -41,16 +61,22 @@ public final class Workers {
 		current = null;
 		WorldPlanners.setWorkers(null);
 		if (p != null) shutdown(p);
+		ThreadPoolExecutor r = reads;
+		reads = null;
+		if (r != null) shutdown(r);
 	}
 
 	/** The running pool, or null. */
 	public static ThreadPoolExecutor pool() { return current; }
 
 	/** A pool of the given size with the production settings (tests make their own). */
-	public static ThreadPoolExecutor create(int threads) {
+	public static ThreadPoolExecutor create(int threads) { return create(threads, PREFIX); }
+
+	/** As {@link #create(int)}, threads named {@code prefix + n}. */
+	public static ThreadPoolExecutor create(int threads, String prefix) {
 		AtomicInteger n = new AtomicInteger();
 		ThreadPoolExecutor p = new ThreadPoolExecutor(threads, threads, 30, TimeUnit.SECONDS, new ArrayBlockingQueue<>(QUEUE), r -> {
-			Thread t = new Thread(r, PREFIX + n.getAndIncrement());
+			Thread t = new Thread(r, prefix + n.getAndIncrement());
 			t.setDaemon(true);
 			t.setPriority(Thread.MIN_PRIORITY);
 			return t;

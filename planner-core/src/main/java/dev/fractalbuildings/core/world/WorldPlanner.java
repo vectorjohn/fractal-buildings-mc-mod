@@ -150,7 +150,7 @@ public class WorldPlanner {
 		RegionPlanner rp = new RegionPlanner(field, probes.region());
 		rp.maxRadius = config.maxRadius();
 		rp.baseChance *= config.frequency();
-		this.fieldView = fixed != null ? null : new FieldRegionView(rp, probes.window(), caps.region());
+		this.fieldView = fixed != null ? null : new FieldRegionView(rp, probes.window(), caps.region()).withFanout(probes.reads().fanout());
 		this.roads = fixed == null && config.intercityRoads()
 				? new RoadNet(field, fieldView, probes.window(), probes.region(), probes.roadExact(), caps.region()) : null;
 		this.approaches = roads == null ? null : new BoundedCache<>(caps.sources());
@@ -211,6 +211,7 @@ public class WorldPlanner {
 		return sources.get(site.id(), id -> {
 			SkeletonSource.Direct d = new SkeletonSource.Direct(seed, view, site, probes.coarse(), TierPrograms.of(site.tier()), caps.skeletons());
 				d.withApproaches(() -> approachLines(site));
+			d.withReads(probes.reads());
 			return d;
 		});
 	}
@@ -366,23 +367,50 @@ public class WorldPlanner {
 	 * Resolves the region cells within {@code radius} blocks of the point and builds the street network and the junction field of every settlement found there and the intercity road edges near those cells,
 	 * on the calling thread. Never changes any answer; call it from a worker ahead of travellers.
 	 */
-	public void warm(int blockX, int blockZ, int radius) {
+	public void warm(int blockX, int blockZ, int radius) { warm(blockX, blockZ, radius, false); }
+
+	/**
+	 * {@link #warm}, and with {@code quays} also {@link #warmQuays}: each settlement's quay trace right after its junction field, beside the
+	 * road links where the probes run in parallel (PARREADS: the warmer's whole job, so a waterfront city's trace is done as early as it can be,
+	 * on the warmer's pool, before a chunk's structure start has to run it on a worldgen thread the server may be waiting for).
+	 */
+	public void warm(int blockX, int blockZ, int radius, boolean quays) {
 		TreeMap<String, SettlementSite> found = new TreeMap<>();
 		int s = config.cellSize();
+		if (fieldView != null) { // PARREADS: the cells' own resolutions in parallel where the probes can
+			List<dev.fractalbuildings.core.region.CellKey> own = new ArrayList<>();
+			for (int cz = Math.floorDiv(blockZ - radius, s); cz <= Math.floorDiv(blockZ + radius, s); cz++) {
+				for (int cx = Math.floorDiv(blockX - radius, s); cx <= Math.floorDiv(blockX + radius, s); cx++) if (decidable(new Cell(cx, cz))) own.add(new dev.fractalbuildings.core.region.CellKey(cx, cz));
+			}
+			fieldView.resolveAll(own);
+		}
 		for (int cz = Math.floorDiv(blockZ - radius, s); cz <= Math.floorDiv(blockZ + radius, s); cz++) {
 			for (int cx = Math.floorDiv(blockX - radius, s); cx <= Math.floorDiv(blockX + radius, s); cx++) {
 				siteOf(new Cell(cx, cz)).ifPresent(site -> found.put(site.id(), site));
 			}
 		}
-		for (SettlementSite site : found.values()) {
-			source(site).network();
-			source(site).junctions(probes.exact()); // JUNCTION: the settlement's junction field reads its whole streets' terrain once, ahead of the first tile
-		}
+		List<dev.fractalbuildings.core.region.CellKey> cells = new ArrayList<>();
 		if (roads != null) {
 			for (int cz = Math.floorDiv(blockZ - radius, s); cz <= Math.floorDiv(blockZ + radius, s); cz++) {
-				for (int cx = Math.floorDiv(blockX - radius, s); cx <= Math.floorDiv(blockX + radius, s); cx++) roads.edgesNearCell(new dev.fractalbuildings.core.region.CellKey(cx, cz));
+				for (int cx = Math.floorDiv(blockX - radius, s); cx <= Math.floorDiv(blockX + radius, s); cx++) cells.add(new dev.fractalbuildings.core.region.CellKey(cx, cz));
 			}
 		}
+		// PARREADS: the junction fields (chunk reads) and the road links (lattice and station reads) are independent: side by side where the
+		// probes can, each cell's links in parallel too; serially, in this order, otherwise
+		probes.reads().fanout().each(2, part -> {
+			if (part == 0) {
+				for (SettlementSite site : found.values()) {
+					SkeletonSource src = source(site);
+					List<Cell> member = new ArrayList<>(site.cells());
+					if (member.size() > 1) probes.reads().fanout().each(member.size(), i -> src.skeleton(member.get(i))); // the network's cell skeletons (coarse reads) side by side
+					src.network();
+					source(site).junctions(probes.exact()); // JUNCTION: the settlement's junction field reads its whole streets' terrain once, ahead of the first tile
+				}
+				if (quays) for (SettlementSite site : found.values()) dev.fractalbuildings.core.settlement.Districts.warmQuays(source(site), probes.exact());
+			} else {
+				probes.reads().fanout().each(cells.size(), i -> roads.edgesNearCell(cells.get(i)));
+			}
+		});
 	}
 
 	// ---- intercity roads (ADR 0004) ----

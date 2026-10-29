@@ -215,6 +215,16 @@ public final class RoadNet {
 
 	private List<Settlement> scan(int px, int pz, int dist, java.util.Set<CellKey> skip) {
 		long reach = (long) dist + slack;
+		if (!logging && view.fanout().threads() > 1) { // PARREADS: resolve the cells in parallel; the loop below reads them from the view's memo
+			List<CellKey> ks = new ArrayList<>();
+			for (int cz = Math.floorDiv((int) (pz - reach), S); cz <= Math.floorDiv((int) (pz + reach), S); cz++) {
+				for (int cx = Math.floorDiv((int) (px - reach), S); cx <= Math.floorDiv((int) (px + reach), S); cx++) {
+					CellKey k = new CellKey(cx, cz);
+					if ((skip == null || !skip.contains(k)) && d2(field.siteX(cx, cz), field.siteZ(cx, cz), px, pz) <= reach * reach && view.decidable(cx, cz)) ks.add(k);
+				}
+			}
+			view.resolveAll(ks);
+		}
 		TreeMap<CellKey, Settlement> found = new TreeMap<>();
 		for (int cz = Math.floorDiv((int) (pz - reach), S); cz <= Math.floorDiv((int) (pz + reach), S); cz++) {
 			for (int cx = Math.floorDiv((int) (px - reach), S); cx <= Math.floorDiv((int) (px + reach), S); cx++) {
@@ -779,6 +789,7 @@ public final class RoadNet {
 			} finally {
 				nearScan = false;
 			}
+			if (!logging && first.size() > 1 && view.fanout().threads() > 1) view.fanout().each(first.size(), i -> edgesOf(first.get(i))); // PARREADS: their routes in parallel
 			for (Settlement a : first) cand.addAll(edgesOf(a));
 			List<EdgeKey> out = new ArrayList<>();
 			for (EdgeKey e : cand) {

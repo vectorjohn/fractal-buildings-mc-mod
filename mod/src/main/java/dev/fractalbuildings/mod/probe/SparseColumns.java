@@ -9,6 +9,7 @@ public final class SparseColumns {
 	private final NoiseBasedChunkGenerator gen;
 	private final RandomState rs;
 	private final BoundedCache<Long, int[]> cache;
+	private final java.util.concurrent.atomic.AtomicLong fills = new java.util.concurrent.atomic.AtomicLong();
 
 	public SparseColumns(NoiseBasedChunkGenerator gen, RandomState rs, int capacity) {
 		this.gen = gen;
@@ -18,7 +19,10 @@ public final class SparseColumns {
 
 	/** The cached {surface, floor}; internal, never handed out (callers could corrupt the memo). */
 	private int[] cached(int x, int z) {
-		return cache.get(((long) x << 32) | (z & 0xffffffffL), k -> LiveTerrainProbe.column(gen, rs, x, z));
+		return cache.getOnce(((long) x << 32) | (z & 0xffffffffL), k -> { // once: parallel decisions and routes (PARREADS) share columns
+			fills.incrementAndGet();
+			return LiveTerrainProbe.column(gen, rs, x, z);
+		});
 	}
 
 	/** A copy of {surface, floor}. */
@@ -30,5 +34,6 @@ public final class SparseColumns {
 
 	public int water(int x, int z) { int[] c = cached(x, z); return c[0] - c[1]; }
 
-	public long misses() { return cache.misses(); }
+	/** Columns generated (refills after eviction included; a column two threads asked for at once counts once). */
+	public long misses() { return fills.get(); }
 }

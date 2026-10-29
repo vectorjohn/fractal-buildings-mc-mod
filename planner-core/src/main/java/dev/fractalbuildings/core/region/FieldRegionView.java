@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import dev.fractalbuildings.core.cache.BoundedCache;
+import dev.fractalbuildings.core.cache.Fanout;
 
 /**
  * The join rule (ADR 0003 R2, ROADMAP 5.8) over a {@link RegionPlanner}: big settlements claim the cells
@@ -41,6 +42,7 @@ public final class FieldRegionView {
 	private final BoundedCache<CellKey, Claim> claims;
 	private final BoundedCache<CellKey, Boolean> survives;
 	private final BoundedCache<CellKey, Resolved> resolved;
+	private volatile Fanout fanout = Fanout.SERIAL;
 
 	private record Claim(CellDecision d, long priority, int radius, List<CellKey> cells) {}
 
@@ -110,8 +112,20 @@ public final class FieldRegionView {
 		return sx - reach >= window.x0() && sx + reach <= window.x1() && sz - reach >= window.z0() && sz + reach <= window.z1();
 	}
 
+	/** How resolutions may decide cells in parallel (PARREADS); never changes an answer. */
+	public FieldRegionView withFanout(Fanout f) { fanout = f == null ? Fanout.SERIAL : f; return this; }
+
+	public Fanout fanout() { return fanout; }
+
+	/** Resolves these cells, in parallel where the fanout can (a road scan asks for all of them next); never changes an answer. */
+	public void resolveAll(List<CellKey> cells) {
+		List<CellKey> todo = new ArrayList<>();
+		for (CellKey k : cells) if (resolved.peek(k) == null) todo.add(k);
+		if (todo.size() > 1 && fanout.threads() > 1) fanout.each(todo.size(), i -> cell(todo.get(i).cx(), todo.get(i).cz()));
+	}
+
 	public CellDecision decision(CellKey k) {
-		return decisions.get(k, c -> planner.decide(c.cx(), c.cz()));
+		return decisions.getOnce(k, c -> planner.decide(c.cx(), c.cz())); // once: parallel resolutions (PARREADS) share a claimant's decision
 	}
 
 	private static boolean before(CellKey a, long pa, CellKey b, long pb) {
@@ -151,6 +165,18 @@ public final class FieldRegionView {
 	/** Claimants whose centre may lie within {@code dist} of (px, pz), found by site and a slack, in (cz, cx) order. */
 	private List<CellKey> claimantsNear(int px, int pz, int dist) {
 		int reach = dist + slack;
+		if (fanout.threads() > 1) { // PARREADS: decide the possible claimants in parallel; the loop below then reads them from the memo
+			List<CellKey> big = new ArrayList<>();
+			for (int cz = Math.floorDiv(pz - reach, S); cz <= Math.floorDiv(pz + reach, S); cz++) {
+				for (int cx = Math.floorDiv(px - reach, S); cx <= Math.floorDiv(px + reach, S); cx++) {
+					long dx = (long) field.siteX(cx, cz) - px, dz = (long) field.siteZ(cx, cz) - pz;
+					if (dx * dx + dz * dz > (long) reach * reach) continue;
+					CellKey k = new CellKey(cx, cz);
+					if (Tiers.radius(field.seed, cx, cz, Tiers.tier(field.seed, cx, cz), R) > claimFrac * S && available(k) && claims.peek(k) == null) big.add(k);
+				}
+			}
+			if (big.size() > 1) fanout.each(big.size(), i -> claim(big.get(i)));
+		}
 		List<CellKey> out = new ArrayList<>();
 		for (int cz = Math.floorDiv(pz - reach, S); cz <= Math.floorDiv(pz + reach, S); cz++) {
 			for (int cx = Math.floorDiv(px - reach, S); cx <= Math.floorDiv(px + reach, S); cx++) {

@@ -155,6 +155,14 @@ final class StreetRules {
 	 * {@value #EDGE_RISE}. Pointwise: a function of the seed and the positions, so every tile on the line draws the same runs.
 	 */
 	boolean gridSideEdgeOk(TerrainProbe exact, int axis, int pos, int a, int b) {
+		if (!gridSideLand(axis, pos, a, b)) return false;
+		boolean vertical = axis == DistrictGrid.AXIS_X;
+		int x0 = vertical ? pos : a, z0 = vertical ? a : pos, x1 = vertical ? pos : b, z1 = vertical ? b : pos;
+		return !wet(exact, x0, z0) && !wet(exact, x1, z1) && slopeOk(exact, x0, z0, x1, z1);
+	}
+
+	/** The part of {@link #gridSideEdgeOk} that reads no terrain: is the edge grid land, and not beside a main road (PARREADS: which edges will read). */
+	boolean gridSideLand(int axis, int pos, int a, int b) {
 		boolean vertical = axis == DistrictGrid.AXIS_X;
 		int other = vertical ? DistrictGrid.AXIS_Z : DistrictGrid.AXIS_X;
 		int[] along = between(other, Math.floorDiv(a + b, 2));
@@ -163,8 +171,7 @@ final class StreetRules {
 		boolean grid = vertical ? gridAt(c0, m) || gridAt(c1, m) : gridAt(m, c0) || gridAt(m, c1);
 		if (!grid) return false;
 		if (tier.atLeast(Tier.CITY) && lattice() && network.parallelMain(axis, pos, along[0], along[1], RoadNetwork.GRID_YIELD)) return false; // judged per block side, like the grid land test
-		int x0 = vertical ? pos : a, z0 = vertical ? a : pos, x1 = vertical ? pos : b, z1 = vertical ? b : pos;
-		return !wet(exact, x0, z0) && !wet(exact, x1, z1) && slopeOk(exact, x0, z0, x1, z1);
+		return true;
 	}
 
 	/** A border street edge: bridges are allowed, so only dry edges are checked for slope. */
