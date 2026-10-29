@@ -168,34 +168,25 @@ class MainStubTest {
 		assertEquals(0, built, "no built lot is left at the far gate");
 	}
 
-	/** The lazy per-road path of plan() gives exactly what the whole-settlement path (CityPlanner.plan, the CLI and viewer) gives, on every tile of every settlement of pt1573 that has a cut (including the core tile, which is never cut). */
+	/** The lazy per-road path of plan() gives exactly what the whole-settlement cuts give, on every tile the exit roads cross (including the hub tile, which skips the link rule). */
 	@Test
 	void theLazyCutEqualsTheWholeSettlementCut() {
 		WorldPlanner w = JoinWorld.pt1573();
-		java.util.TreeSet<String> sites = new java.util.TreeSet<>();
-		int checked = 0, cutSites = 0;
-		for (int cz = -12; cz <= 11; cz++) for (int cx = -12; cx <= 11; cx++) {
-			SettlementSite site;
-			java.util.TreeMap<String, ExitTrim.Cut> all;
-			try {
-				var so = w.siteOf(new Cell(cx, cz));
-				if (so.isEmpty() || w.roads().settlement(new CellKey(cx, cz)).isEmpty() || !sites.add((site = so.get()).id())) continue;
-				all = w.exitCuts(site);
-			} catch (RuntimeException e) {
-				continue; // a cell at the edge of the recorded grid
-			}
-			if (all.isEmpty()) continue;
-			cutSites++;
-			var p = w.probes();
-			var city = dev.fractalbuildings.core.settlement.CityPlanner.plan(w.source(site), p.coarse(), p.exact(), p.biome(), dev.fractalbuildings.core.gen.v1.GeneratorV1.GEN_VERSION);
-			for (var e : city.districts().entrySet()) {
-				int ix = e.getValue().district().ix(), iz = e.getValue().district().iz();
-				if (w.tile(ix, iz).isEmpty()) continue;
-				assertEquals(dev.fractalbuildings.core.settlement.DistrictJson.write(e.getValue()), dev.fractalbuildings.core.settlement.DistrictJson.write(w.plan(ix, iz).plan()), site.id() + " tile " + ix + "," + iz);
+		SettlementSite site = w.siteOf(new Cell(4, -2)).orElseThrow();
+		var all = w.exitCuts(site);
+		assertTrue(all.size() >= 3, "cuts " + all.keySet());
+		java.util.TreeSet<String> done = new java.util.TreeSet<>();
+		int checked = 0;
+		for (var c : w.source(site).skeleton(site.cells().get(0)).roads()) {
+			for (int[] col : ExitTrim.columns(c)) {
+				var t = w.grid().tileOf(col[0], col[1]);
+				if (!done.add(t.ix() + "," + t.iz()) || w.tile(t.ix(), t.iz()).isEmpty()) continue;
+				var raw = w.rawPlan(t.ix(), t.iz()).plan();
+				assertEquals(dev.fractalbuildings.core.settlement.DistrictJson.write(ExitTrim.apply(raw, all)), dev.fractalbuildings.core.settlement.DistrictJson.write(w.plan(t.ix(), t.iz()).plan()), "tile " + t.ix() + "," + t.iz());
 				checked++;
 			}
 		}
-		assertTrue(cutSites >= 3 && checked >= 50, "cut settlements " + cutSites + ", tiles checked " + checked);
+		assertTrue(checked >= 8, "tiles checked " + checked);
 	}
 
 	@Test

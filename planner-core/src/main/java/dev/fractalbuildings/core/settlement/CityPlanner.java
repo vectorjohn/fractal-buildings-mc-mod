@@ -62,10 +62,7 @@ public final class CityPlanner {
 		TreeMap<String, DistrictPlan> raw = new TreeMap<>(districts);
 		ExitTrim.Plans rawPlans = (ix, iz) -> raw.get(Ids.district(ix, iz));
 		TreeMap<String, ExitTrim.Cut> cuts = ExitTrim.cuts(src, rawPlans);
-		for (DistrictSummary d : plan.districts()) { // the core tile is never cut, as in the world's lazy path
-			DistrictPlan dp = districts.get(d.id());
-			if (dp != null && !ExitTrim.inCore(src, d.ix(), d.iz())) districts.put(d.id(), ExitTrim.apply(dp, cuts));
-		}
+		for (var e : districts.entrySet()) e.setValue(ExitTrim.apply(e.getValue(), cuts));
 		if (!cuts.isEmpty()) plan = plan.withTrimmedExits(cuts);
 		List<ExitTrim.Stub> stubs = ExitTrim.stubs(src, rawPlans, cuts), stubsBefore = ExitTrim.stubs(src, rawPlans, java.util.Map.of());
 		Pt hub = site.centre();
@@ -124,7 +121,6 @@ public final class CityPlanner {
 		Optional<Tile> raw = planTile(src, ix, iz, styles, exact);
 		if (raw.isEmpty()) return raw;
 		ExitTrim.Plans plans = (x, z) -> x == ix && z == iz ? raw.get().plan() : planTile(src, x, z, styles, exact).map(Tile::plan).orElse(null);
-		if (ExitTrim.inCore(src, ix, iz)) return raw; // never cut, as in the world's lazy path
 		DistrictPlan p = ExitTrim.apply(raw.get().plan(), ExitTrim.cutsThrough(src, plans, ix, iz));
 		return p == raw.get().plan() ? raw : Optional.of(new Tile(p, raw.get().landmarks(), raw.get().notes(), raw.get().firstPlazaReached()));
 	}
