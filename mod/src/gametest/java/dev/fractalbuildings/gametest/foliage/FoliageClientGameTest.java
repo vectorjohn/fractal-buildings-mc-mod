@@ -82,13 +82,14 @@ public class FoliageClientGameTest implements FabricClientGameTest {
 	record Spot(String kind, int x, int y, int z, int orphans) {}
 
 	static final class Count {
-		int columns, leaves, orphanLeaves, orphanLogs, orphanVines, headroom, hangingSnow, streetLogs, streetDirt;
+		int columns, leaves, orphanLeaves, orphanLogs, orphanVines, headroom, unclaimedHead, hangingSnow, streetLogs, streetDirt;
 		final List<int[]> cols = new ArrayList<>();
 		final List<String> headSamples = new ArrayList<>();
+		final List<int[]> headXyz = new ArrayList<>();
 		final List<String> samples = new ArrayList<>();
 		final List<int[]> sampleXyz = new ArrayList<>();
 		Spot worst;
-		String line() { return "STREETSNOW/TRUNKDIRT: snow layers over air above the street clear " + hangingSnow + ", logs in street air " + streetLogs + ", dirt under them " + streetDirt + "; foliage in the clear volume (surface+1..4) at the end " + headroom + " (grew in after the chunk pass; SpillClear removes natural leaves there, CITYQ r7); " + columns + " columns, " + leaves + " leaves above them, orphans: " + orphanLeaves + " leaves, " + orphanLogs + " logs, " + orphanVines + " vines"; }
+		String line() { return "STREETSNOW/TRUNKDIRT: snow layers over air above the street clear " + hangingSnow + ", logs in street air " + streetLogs + ", dirt under them " + streetDirt + "; foliage in the clear volume (claimed air of surface+1..4) at the end " + headroom + " (grew in after the chunk pass; SpillClear and BuildingAirClear remove natural leaves there, CITYQ r7), natural leaves in its unclaimed cells " + unclaimedHead + " (no pass owns them, FOLIAGEFAIL); " + columns + " columns, " + leaves + " leaves above them, orphans: " + orphanLeaves + " leaves, " + orphanLogs + " logs, " + orphanVines + " vines"; }
 		int orphans() { return orphanLeaves + orphanLogs + orphanVines; }
 	}
 
@@ -206,6 +207,9 @@ public class FoliageClientGameTest implements FabricClientGameTest {
 		}
 		Count c = new Count();
 		int airId = Block.BLOCK_STATE_REGISTRY.getId(Blocks.AIR.defaultBlockState());
+		Map<Long, Integer> states;
+		dev.fractalbuildings.mod.worldgen.SpillClear.clearTrace();
+		dev.fractalbuildings.mod.worldgen.SpillClear.TRACE = on;
 		try (PieceLedger.Recording rec = PieceLedger.start()) {
 			for (ChunkPos p : chunks) level.getChunkSource().getChunk(p.x(), p.z(), ChunkStatus.FULL, true);
 			// street columns: the highest claimed cell is air, with a solid claimed cell right under the claimed air
@@ -227,10 +231,47 @@ public class FoliageClientGameTest implements FabricClientGameTest {
 				if (seen.add(e.getKey())) { measure(level, c, x, v[0], z, "street", on); streetAir(level, c, rec.states(), airId, x, v[0], v[1], z); }
 			}
 			if (on) inject(level, planner, col, airId, best.x(), best.z(), best.r());
+			states = rec.states();
 		}
-		c.headroom = headroom(level, c, false);
+		c.headroom = headroom(level, c, false, states, airId);
+		if (on) for (int[] h : c.headXyz) say("  explain " + explain(level, planner, states, airId, h[0], h[1], h[2]));
+		dev.fractalbuildings.mod.worldgen.SpillClear.TRACE = false;
 		spots[0] = c.worst;
 		return c;
+	}
+
+	/** FOLIAGEFAIL: who owns the column of a leaf left in the clear volume, and what the clearing passes did there. */
+	static String explain(ServerLevel level, WorldPlanner planner, Map<Long, Integer> states, int airId, int x, int y, int z) {
+		StringBuilder sb = new StringBuilder(x + "," + y + "," + z + ":");
+		sb.append(" ledger");
+		for (int yy = y - 8; yy <= y + 4; yy++) {
+			Integer id = states.get(PieceLedger.pack(x, yy, z));
+			if (id == null) continue;
+			sb.append(' ').append(yy).append('=').append(id == airId ? "air" : Block.BLOCK_STATE_REGISTRY.byId(id).getBlock().getDescriptionId().replace("block.minecraft.", ""));
+		}
+		var g = planner.grid();
+		var t = g.tileOf(x, z);
+		sb.append(" | tile ").append(t.ix()).append(',').append(t.iz());
+		for (int iz = t.iz() - 1; iz <= t.iz() + 1; iz++) for (int ix = t.ix() - 1; ix <= t.ix() + 1; ix++) {
+			if (planner.tile(ix, iz).isEmpty()) continue;
+			for (var l : planner.plan(ix, iz).plan().lots()) {
+				if (x >= l.x() - 2 && x < l.x() + l.w() + 2 && z >= l.z() - 2 && z < l.z() + l.d() + 2) sb.append(" | lot ").append(l.id()).append(' ').append(l.type()).append(' ').append(l.status()).append(" at ").append(l.x()).append(',').append(l.z()).append(' ').append(l.w()).append('x').append(l.d()).append(" front ").append(l.front()).append(" frontY ").append(l.frontY()).append(x >= l.x() && x < l.x() + l.w() && z >= l.z() && z < l.z() + l.d() ? " (inside)" : " (beside)");
+			}
+			for (var b : planner.buildings(ix, iz)) {
+				var pb = b.box();
+				if (x < pb.x() || x >= pb.maxX() || z < pb.z() || z >= pb.maxZ()) continue;
+				StringBuilder r = new StringBuilder();
+				int ry0 = Math.max(pb.y(), y - 8), ry1 = Math.min(pb.maxY(), y + 5);
+				if (ry1 > ry0) planner.raster(b.ref(), new dev.fractalbuildings.core.ir.Box3(x, ry0, z, 1, ry1 - ry0, 1), (cx, cy, cz, role, blockId, shape) -> r.append(' ').append(cy).append('=').append(role));
+				sb.append(" | building ").append(b.brief().id()).append(' ').append(b.brief().type()).append(" box ").append(pb).append(" raster").append(r);
+			}
+			for (var gp : planner.ground(ix, iz)) for (var bx : gp.boxes()) {
+				var q = bx.box();
+				if (x >= q.x() && x < q.maxX() && z >= q.z() && z < q.maxZ() && q.y() <= y + 4 && q.maxY() >= y - 8) sb.append(" | ground ").append(gp.chunkX()).append(',').append(gp.chunkZ()).append(' ').append(bx.role()).append(' ').append(q.y()).append("..").append(q.maxY() - 1);
+			}
+		}
+		sb.append(" | spill ").append(dev.fractalbuildings.mod.worldgen.SpillClear.why(x, z));
+		return sb.toString();
 	}
 
 	/** STREETSNOW / TRUNKDIRT: a snow layer over air just above the claimed street air; a log in a claimed air cell of the column, and dirt under the lowest. */
@@ -332,22 +373,30 @@ public class FoliageClientGameTest implements FabricClientGameTest {
 				if (seen.add(PieceLedger.pack(col.x(), 0, col.z()))) measure(level, c, col.x(), col.y() - 1, col.z(), "road", on);
 			}
 		}
-		c.headroom = headroom(level, c, false);
+		c.headroom = headroom(level, c, false, null, 0); // road columns: the measured window is RoadSurface.HEADROOM, all of it the road's clear
 		spots[1] = c.worst;
 		return c;
 	}
 
 	// ---- reading the world
 
-	/** Foliage (any leaf, log or vine, held or not) in the clear volume, surface +1..+4, over the measured columns. */
-	static int headroom(ServerLevel level, Count c, boolean late) {
+	/**
+	 * Natural leaves in the clear volume, surface +1..+4, over the measured columns. With {@code claimed} (street columns: the ledger) only the
+	 * cells a piece claims as air count: that is the volume the passes keep clear (SpillClear for street air, BuildingAirClear for a
+	 * building's). A street claims all 4; a building claims less over some columns (FOLIAGEFAIL: a PORCHSTEP step in front of a door is
+	 * the top solid of its column, with 3 claimed air cells over it, so surface+4 is nobody's air and a neighbour's crown may stay there,
+	 * as it may anywhere outside the plan). Leaves in unclaimed cells of the window are counted in {@link Count#unclaimedHead} (reported only).
+	 */
+	static int headroom(ServerLevel level, Count c, boolean late, Map<Long, Integer> claimed, int airId) {
 		BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
 		int n = 0;
 		for (int[] col : c.cols) for (int h = 1; h <= 4; h++) {
 			BlockState s = level.getBlockState(pos.set(col[0], col[1] + h, col[2]));
 			if (s.is(BlockTags.LEAVES) && !s.getValueOrElse(net.minecraft.world.level.block.LeavesBlock.PERSISTENT, false)) {
+				if (claimed != null) { Integer id = claimed.get(PieceLedger.pack(col[0], col[1] + h, col[2])); if (id == null || id != airId) { c.unclaimedHead++; continue; } }
 				n++;
 				if (c.headSamples.size() < 12) c.headSamples.add((late ? "late " : "") + col[0] + "," + (col[1] + h) + "," + col[2] + " " + s.getBlock().getDescriptionId());
+				if (c.headXyz.size() < 6) c.headXyz.add(new int[] {col[0], col[1] + h, col[2]});
 			}
 		}
 		return n;
