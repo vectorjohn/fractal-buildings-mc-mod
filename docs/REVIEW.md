@@ -421,6 +421,11 @@ in `.claude/reports/` (John, 2026-10-28; earlier report copies are in
   Where: [review/regionperf-decision.md](review/regionperf-decision.md) (who pays it, why it is slow, what each piece buys, options, a recommendation); numbers in [PERFORMANCE.md](PERFORMANCE.md), "Region layer row".
   Result:
 
+- [ ] **Phase 6 gate: the playtest (C2 kit)**: three seeds, about an hour each, on the release candidate.
+  Where: [review/phase6/gate-kit/README.md](review/phase6/gate-kit/README.md) (checklist, one page per seed with settlements near spawn, road links, a route and fly-through frames; [known issues](review/phase6/gate-kit/KNOWN-ISSUES.md)). The copy there now was made on the run branch before the release candidate; it is regenerated on the candidate with `scripts/playtest-kit.sh --fly`.
+  Look for: per seed pass or fail, the worst three things (FBNOTE names or coordinates), and whether any blocks the release. Also say whether the two seeds you have played count, or all three must be fresh (`--seeds random,random,random`).
+  Result:
+
 ## Furnishings (7.5)
 
 - [x] **6.8 Fly-through frames (B9)**: do the settlements read as places from the air and at street level, per tier, in the game itself

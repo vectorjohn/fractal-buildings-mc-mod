@@ -48,3 +48,6 @@ Keep a gallery under about 1 MB per dozen shots in git: lower `--width` or `--qu
 `scripts/dev node scripts/playtest-gallery.test.mjs` (part of `scripts/test-all.sh`).
 
 To read text out of old screenshots that have no sidecar, use `scripts/ocr-screenshots.py`.
+
+The Phase 6 gate playtest kit (seeds, settlements near spawn, a route, checklist, known issues) is in
+[review/phase6/gate-kit/README.md](review/phase6/gate-kit/README.md); regenerate it with `scripts/playtest-kit.sh`.
