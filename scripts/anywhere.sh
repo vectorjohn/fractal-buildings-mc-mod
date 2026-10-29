@@ -49,14 +49,17 @@
 # a leading `X=1` gets the `env` added). Tests of this script: scripts/anywhere-selftest.sh.
 #
 # Never kills anything. SIGTERM/INT while waiting: drops the ticket and exits 143/130. After the
-# start: passed on to CMD (remote.sh then cancels its beebox job), and CMD's status is returned.
+# start: passed on to CMD (remote.sh then cancels its beebox job), and CMD's status is returned;
+# SIGHUP after a start on beebox is passed on as HUP: remote.sh detaches and the job runs on.
+# Re-attach (this waiter or its session died): the route file in build/anywhere/ names the beebox
+# job ("remote job fb-..."); `scripts/remote.sh --list` / `--attach <job>` fetch its results.
 # Exit: CMD's status; 6 --wait timeout; 2 bad usage.
 # Test hooks: FB_ANY_DIR (state dir), FB_ANY_LOADAVG (file, default /proc/loadavg),
 # FB_ANY_BEEBOX_STATUS / FB_ANY_BEEBOX_CHECK (shell commands replacing the ssh probes),
 # FB_ANY_REMOTE (replaces scripts/remote.sh), FB_HEAVY_LOCK, FB_SUITE_LOCK_DIR, FB_SUITE_SLOTS.
 set -uo pipefail
 
-usage() { sed -n '2,56p' "$0" | sed 's/^# \{0,1\}//'; }
+usage() { sed -n '2,59p' "$0" | sed 's/^# \{0,1\}//'; }
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 # shellcheck source-path=SCRIPTDIR source=lib/suite-slot.sh
@@ -431,12 +434,15 @@ WAITED=$((SECONDS - START))
 LINE="anywhere: -> $DECISION ($WHY) after ${WAITED}s; kind=$KIND; cmd: $*"
 echo "$LINE" >&2
 echo "$(date '+%F %T') pid $$ ${ROOT##*/}: $LINE" >> "$DIR/route.log"
-mkdir -p "$ROOT/build/anywhere" && echo "$LINE" > "$ROOT/build/anywhere/route-$(date +%s)-$$.txt"
+ROUTE_FILE="$ROOT/build/anywhere/route-$(date +%s)-$$.txt"
+mkdir -p "$ROOT/build/anywhere" && echo "$LINE" > "$ROUTE_FILE"
 
 SLOT_FD=${SUITE_SLOT_FD:-}
 if [[ $DECISION == beebox ]]; then
+	# remote.sh appends "remote job <name> (...)" to the route file once queued, so the evidence names
+	# the job to re-attach to (scripts/remote.sh --attach <name>) if this waiter dies.
 	# shellcheck disable=SC2093
-	"$REMOTE" "${REMOTE_ARGS[@]}" -- "$@" {DLOCK}>&- &
+	FB_REMOTE_ANNOUNCE="$ROUTE_FILE" "$REMOTE" "${REMOTE_ARGS[@]}" -- "$@" {DLOCK}>&- &
 else
 	if [[ -n $SLOT_FD ]]; then "$@" {DLOCK}>&- {SLOT_FD}>&- & else "$@" {DLOCK}>&- & fi
 fi
@@ -450,7 +456,10 @@ if [[ $DECISION == local && $KIND != light ]]; then lclaim="$DIR/claims/local-ru
 rm -f "$TICKET"; TICKET=""
 flock -u "$DLOCK"; exec {DLOCK}>&-
 
-trap 'kill -TERM "$child" 2>/dev/null' TERM HUP
+trap 'kill -TERM "$child" 2>/dev/null' TERM
+# HUP (a session or tool call ended): remote.sh detaches and its beebox job runs on (--attach later);
+# a local command gets TERM as before.
+if [[ $DECISION == beebox ]]; then trap 'kill -HUP "$child" 2>/dev/null' HUP; else trap 'kill -TERM "$child" 2>/dev/null' HUP; fi
 trap 'kill -INT "$child" 2>/dev/null' INT
 trap 'rm -f ${claim:+"$claim"} ${lclaim:+"$lclaim"}' EXIT
 while :; do

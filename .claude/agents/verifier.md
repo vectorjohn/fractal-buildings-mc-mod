@@ -374,6 +374,8 @@ path `M`. Don't review each item again.
 
 ## Re-verification (when resumed)
 
+After a restart or compaction, run `scripts/remote.sh --list` in your worktree first and re-attach any unfetched beebox job (`scripts/evidence.sh <slug> scripts/remote.sh --attach <job>`) instead of re-running it.
+
 Read the new report and the new commits only. For each gap you reported,
 confirm it's fixed and covered by a test; apply steps 3–4 to the new changes;
 run the tests again (step 5); look at changed output. Then report and merge as

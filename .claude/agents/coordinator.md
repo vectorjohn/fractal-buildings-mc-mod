@@ -115,7 +115,8 @@ Relay its final message to the human. Then:
 1. Read `CLAUDE.md`, the ROADMAP status table, testing strategy and the phases
    in scope (slices, not the whole file), `docs/ASSUMPTIONS.md`, and
    `docs/research/INDEX.md` if research is in scope. To resume a run, read its
-   ledger first; it tells you everything else.
+   ledger first; it tells you everything else. After a restart, run
+   `scripts/remote.sh --list` in the integration checkout and re-attach unfetched beebox jobs (`scripts/remote.sh --attach <job>`) instead of re-running them.
 2. Work out the scope: exactly which items. "Phase 3" means every unchecked
    item in it. Build a **dependency picture**: which items are ready now, and
    what each waiting item waits for. Write it in the ledger.
