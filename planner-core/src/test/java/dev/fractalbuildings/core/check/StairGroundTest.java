@@ -88,7 +88,7 @@ class StairGroundTest {
 		for (long seed = 1; seed <= 12 && b == null; seed++) {
 			rq = request(FLIGHT_TYPES[(int) (seed % FLIGHT_TYPES.length)], seed, "plane:70:1:0:6");
 			try { s = new GeneratorV1().generate(rq); } catch (IllegalArgumentException e) { continue; }
-			if (s.buildings().get(0).siteBoxes().stream().anyMatch(x -> x.role() == Role.STAIR)) b = s.buildings().get(0);
+			if (s.buildings().get(0).siteBoxes().stream().filter(x -> x.role() == Role.STAIR).count() >= 2) b = s.buildings().get(0); // PORCHSTEP: a one-step flight (a door a block over the ground) leaves a drop a walker may take
 		}
 		assertTrue(b != null, "no building with a flight");
 		boolean[][] fp = InstancePassV1.footprint(b.shell());

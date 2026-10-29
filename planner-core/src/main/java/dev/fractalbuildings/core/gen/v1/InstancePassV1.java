@@ -382,13 +382,37 @@ public final class InstancePassV1 {
 					lowFront |= ground[fi] < oy;
 				}
 			boolean wide = front.size() > 1 && lowFront;
+			// PORCHSTEP r2: a double door over ground a block under the sill steps under every leaf, or (where one leaf cannot hold a step) none: a plain drop
+			int leaves = (ob0.maxX() - ob0.x()) * (ob0.maxZ() - ob0.z()), stepFrom = oy + 1;
+			if (!wide && leaves > 1) {
+				boolean any = false, fits = front.size() == leaves;
+				for (int fi : front) {
+					if (ground[fi] != oy) continue;
+					any = true;
+					int cx = x0 + fi % nx, cz = z0 + fi / nx;
+					fits &= !(cx >= 0 && cz >= 0 && cx < fp.length && cz < fp[0].length && fp[cx][cz]) && (grid.get(cx, oy - base, cz) == Role.AIR || grid.get(cx, oy - base, cz) == Role.STAIR) && flightTop[fi] == Integer.MIN_VALUE && !deckCells[fi]; // (a step the site level already put there counts)
+				}
+				if (any && !fits) stepFrom = oy;
+				if (any && fits) {
+					for (int fi : front) {
+						deckCells[fi] = true;
+						blocked[fi] = true;
+						if (ground[fi] != oy) continue;
+						int cx = x0 + fi % nx, cz = z0 + fi / nx;
+						flightTop[fi] = oy;
+						if (grid.get(cx, oy - base, cz) != Role.STAIR) site.add(new Box(Box3.of(cx, oy - base, cz, 1, 1, 1), Role.STAIR, Layer.FOUNDATION, Box.NO_STOREY));
+						treads.add(new int[] {cx, cz, oy, RAIL_DROP_LANDING});
+					}
+					continue;
+				}
+			}
 			if (ground[s0] <= oy + 1 - stoopRise && !secondary(shell, o) || wide) { // a back or side door (DS-35) takes a plain flight: the stoop is the shopfront's
 				for (int[] cand : stoopCandidates(out, sx, sz, x0, x1, z0, z1, nx, ground, oy, base, grid, fp)) {
-					if (wide) { boolean covers = true; for (int fi : front) if (ground[fi] < oy) { boolean in = false; for (int c : cand) in |= c == fi; covers &= in; } if (!covers) continue; }
+					if (wide) { boolean covers = true; for (int fi : front) if (ground[fi] < oy + 1) { boolean in = false; for (int c : cand) in |= c == fi; covers &= in; } if (!covers) continue; }
 					candidates.add(cand);
 				}
 				if (wide) { // just the width of the door
-					int[] strip = front.stream().filter(fi -> ground[fi] < oy).mapToInt(Integer::intValue).toArray();
+					int[] strip = front.stream().filter(fi -> ground[fi] < oy + 1).mapToInt(Integer::intValue).toArray();
 					boolean ok = true;
 					for (int fi : strip) ok &= deckOk(x0 + fi % nx, z0 + fi / nx, x0, x1, z0, z1, nx, ground, oy, base, grid, fp);
 					if (ok) candidates.add(strip);
@@ -403,11 +427,13 @@ public final class InstancePassV1 {
 				if (kept.length == 0 || kept.length == full.length || !connected(kept, s0, nx)) continue;
 				candidates.add(kept);
 			}
+			if (wide) candidates.removeIf(cand -> { for (int fi : front) if (ground[fi] < oy + 1) { boolean in = false; for (int c : cand) in |= c == fi; if (!in) return true; } return false; }); // PORCHSTEP r2: a landing under every leaf (also the trimmed ones)
 			nDeck = candidates.size();
 			candidates.add(new int[] {s0});
 			boolean[] deck = null;
 			int foundPass = -1, foundCi = -1;
 			for (int strictPass = 0; strictPass < 3 && found < 0; strictPass++) { // pass 0: only landings and flights whose open sides lie inside the lot (every one can be railed); pass 1: flights only (a landing on the lot line stays); pass 2: any route
+			for (int stepLo = stepFrom; stepLo >= oy && found < 0; stepLo--) { // PORCHSTEP: first a door whose outside ground is a block under the sill gets a step (ground >= sill - 0); only where no route is found, the plain drop to the ground of old (stepLo = oy)
 			for (int runLimit = SiteLevel.LEGACY.get() ? 1 : 0; runLimit < 2 && found < 0; runLimit++) { // 0: DS-45 stair runs (at most 3 risers without a level tread); 1: where no such route fits at this rail pass, today's shortest flight (a railed long run before an unrailed short one)
 			boolean limited = runLimit == 0;
 			boolean strict = strictPass <= 1, strictLanding = strictPass == 0;
@@ -424,7 +450,7 @@ public final class InstancePassV1 {
 					java.util.Arrays.fill(parent, -2);
 					if (limited) {
 						boolean[] mg = {false};
-						found = searchRuns(srcs, s0, ci, nDeck, strict, strictLanding, pass, nx, nz, x0, x1, z0, z1, oy, base, ground, outG, blocked, flightTop, grid, out, sx, sz, nOut, parent, depth, mg);
+						found = searchRuns(srcs, s0, ci, nDeck, strict, strictLanding, stepLo, pass, nx, nz, x0, x1, z0, z1, oy, base, ground, outG, blocked, flightTop, grid, out, sx, sz, nOut, parent, depth, mg);
 						merged = mg[0];
 						continue;
 					}
@@ -441,7 +467,7 @@ public final class InstancePassV1 {
 						int cx = x0 + c % nx, cz = z0 + c / nx, d = depth[c];
 						int g = ground[c];
 						int h = oy - d;
-						boolean ends = d == 0 ? g >= oy && g <= oy + 1 : g >= h + 1 && g <= h + 2; // off the door floor (top oy + 1) or the last stair (top h + 3/2, one cell back) onto ground at most a block below and at most half a block above
+						boolean ends = d == 0 ? g >= stepLo && g <= oy + 1 : g >= h + 1 && g <= h + 2; // off the door floor (top oy + 1) or the last stair (top h + 3/2, one cell back) onto ground at most a block below and at most half a block above
 						if (ci < nDeck && (cx - sx) * out.dx + (cz - sz) * out.dz != nOut) ends = false; // a flight from a landing must come down on the lot's street row, not behind the building
 						int top = ends ? g : h; // highest solid under the feet
 						// the cells the walker occupies (and the step block itself) must be free of the building
@@ -484,6 +510,7 @@ public final class InstancePassV1 {
 			}
 			}
 			}
+			}
 			if (found < 0) {
 				unreachable.add(o);
 				continue;
@@ -518,6 +545,15 @@ public final class InstancePassV1 {
 					site.add(new Box(Box3.of(cx, h - base, cz, 1, 1, 1), Role.STAIR, Layer.FOUNDATION, Box.NO_STOREY));
 					treads.add(new int[] {cx, cz, h, parent[c] >= 0 && depth[parent[c]] == depth[c] ? RAIL_DROP_LANDING : RAIL_DROP_FLIGHT});
 				}
+			}
+			if (wide) for (int fi : front) { // PORCHSTEP r2: a leaf of a double door whose ground is only a block under the sill has no step of the flight or landing beside it: it gets its own
+				if (ground[fi] != oy || flightTop[fi] != Integer.MIN_VALUE) continue;
+				int cx = x0 + fi % nx, cz = z0 + fi / nx;
+				if (cx >= 0 && cz >= 0 && cx < fp.length && cz < fp[0].length && fp[cx][cz] || grid.get(cx, oy - base, cz) != Role.AIR) continue;
+				blocked[fi] = true;
+				flightTop[fi] = oy;
+				site.add(new Box(Box3.of(cx, oy - base, cz, 1, 1, 1), Role.STAIR, Layer.FOUNDATION, Box.NO_STOREY));
+				treads.add(new int[] {cx, cz, oy, RAIL_DROP_LANDING});
 			}
 		}
 		boolean[] doorFront = new boolean[nx * nz]; // every cell in front of a door leaf (a wide door has several): a rail there would wall the door
@@ -595,7 +631,7 @@ public final class InstancePassV1 {
 	 * (half blocks + 1) / 2 blocks and may not pass {@code MAX_RISERS}. Routes never use a cell twice. Returns the cell the route ends at (or, for
 	 * a merge onto an earlier flight, the last step), or -1; {@code parent} and {@code depth} (per cell) hold the route.
 	 */
-	private static int searchRuns(int[] srcs, int s0, int ci, int nDeck, boolean strict, boolean strictLanding, int pass, int nx, int nz, int x0, int x1, int z0, int z1,
+	private static int searchRuns(int[] srcs, int s0, int ci, int nDeck, boolean strict, boolean strictLanding, int stepLo, int pass, int nx, int nz, int x0, int x1, int z0, int z1,
 			int oy, int base, int[] ground, int[] outG, boolean[] blocked, int[] flightTop, VoxelGrid grid, Facing out, int sx, int sz, int nOut, int[] parent, int[] depth, boolean[] merged) {
 		int maxD = 2;
 		for (int gi : ground) maxD = Math.max(maxD, oy - gi + 3);
@@ -623,7 +659,7 @@ public final class InstancePassV1 {
 			boolean arrivedLevel = cur == 0;
 			boolean row = (cx - sx) * out.dx + (cz - sz) * out.dz == nOut;
 			if (d == 0 && !arrivedLevel) { // the source cell itself standing on ground: no flight
-				boolean ends = g >= oy && g <= oy + 1 && !(ci < nDeck && !row);
+				boolean ends = g >= stepLo && g <= oy + 1 && !(ci < nDeck && !row);
 				boolean free = true;
 				int y0 = grid.get(cx, g - base, cz) == Role.STAIR ? g + 1 - base : g - base; // the step below the door (a stair block the dig-in put there) is what the walker stands on
 				for (int y = y0; y <= g + 3 - base && free; y++) free = grid.get(cx, y, cz) == Role.AIR;

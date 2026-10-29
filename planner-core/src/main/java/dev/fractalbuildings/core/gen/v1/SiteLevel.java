@@ -330,7 +330,7 @@ final class SiteLevel {
 					if (approachEnd[i] && !isFootprint(x, z) && (filled[i] || raw[i] >= oy + 1) && free(shellGrid, x, 0, z)) out.add(new Box(Box3.of(x, 0, z, 1, 1, 1), Role.STAIR, Layer.FOUNDATION, Box.NO_STOREY));
 				}
 		// the step below the door: where the approach is two or more cells deep, the door's outside cell is a stair block (a half step down to the well floor, not a full block)
-		if (forecourt && approachRows >= 2)
+		if (forecourt) // PORCHSTEP (was: only an approach two or more cells deep): the door row too when it is the lot edge; a plain cell there is a full block under the sill
 			for (int z = z0; z < z0 + nz; z++)
 				for (int x = x0; x < x0 + nx; x++) {
 					int i = idx(x, z);

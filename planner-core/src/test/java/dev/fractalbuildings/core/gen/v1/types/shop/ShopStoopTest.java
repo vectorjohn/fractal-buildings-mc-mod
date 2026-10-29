@@ -102,8 +102,8 @@ class ShopStoopTest {
 						int wx = b.placement().worldX(door.box().x(), door.box().z() - 1), wz = b.placement().worldZ(door.box().x(), door.box().z() - 1);
 						int rise = b.oy() + door.box().y() - eff.floorY(wx, wz); // the door's rise above the ground in front of it (the lot's own, not the street's)
 						int row = door.box().z() - 1, landing = 0;
-						for (Box x : b.siteBoxes()) if (x.role() == Role.STAIR && x.box().y() == 0 && x.box().z() == row && b.siteBoxes().stream().noneMatch(q -> q.role() == Role.PAVING && q.box().y() == -1 && q.box().z() == row && q.box().x() <= x.box().x() && x.box().x() < q.box().maxX())) landing++; // (a stair block on the areaway paving is the step below the door, not a stoop)
-						if (landing > 0) { stoops++; assertTrue(rise >= 2, what + ": a stoop at rise " + rise); }
+						for (Box x : b.siteBoxes()) if (x.role() == Role.STAIR && x.box().y() == 0 && x.box().z() == row && b.siteBoxes().stream().noneMatch(q -> q.role() == Role.PAVING && q.box().y() == -1 && q.box().z() == row && q.box().x() <= x.box().x() && x.box().x() < q.box().maxX())) landing++; // (a stair block on the areaway paving is the step below the door, not a stoop; PORCHSTEP: nor is the one step in front of a door at rise 1, so a stoop is 2 or more cells)
+						if (landing > 1) { stoops++; assertTrue(rise >= 2, what + ": a stoop at rise " + rise); }
 						if (rise == 2) rise2++;
 						for (dev.fractalbuildings.core.check.DoorRise.Door d : dev.fractalbuildings.core.check.DoorChecks.doors(s, b, rq.terrain()))
 							if (d.front()) assertTrue(d.rise() <= 2, what + ": rise " + d.rise() + " from the street");

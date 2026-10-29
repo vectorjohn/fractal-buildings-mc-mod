@@ -588,7 +588,7 @@ public final class Invariants {
 					int c = queue[head++];
 					int cx = x0 + c % nx, cz = z0 + (c / nx) % nz, cy = ylo + c / (nx * nz);
 					int col = (cz - z0) * nx + (cx - x0);
-					if (!footprint[col] && cy - 1 == top[col]) {
+					if (!footprint[col] && (cy - 1 == top[col] || cy - 2 == top[col] && g.get(cx, cy - 1, cz) == Role.STAIR)) { // PORCHSTEP: or a step standing on the ground itself (a door a block over the ground gets one, in the lot edge row too)
 						int wx = g.worldX(cx, cz), wz = g.worldZ(cx, cz);
 						for (Lot l : lots) if (l.containsColumn(wx, wz)) ok = true;
 						if (ok) break;
