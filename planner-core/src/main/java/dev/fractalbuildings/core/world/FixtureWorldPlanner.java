@@ -71,6 +71,11 @@ public final class FixtureWorldPlanner extends WorldPlanner {
 
 	@Override public DistrictGrid grid() { return grid; }
 
+	@Override public DistrictGrid.Tile tileAt(int x, int z) {
+		for (DistrictGrid.Tile t : tiles.values()) if (x >= t.minX() && x < t.maxX() && z >= t.minZ() && z < t.maxZ()) return t;
+		return grid.tileAt(x, z);
+	}
+
 	@Override public boolean isStartChunk(int chunkX, int chunkZ) {
 		for (DistrictGrid.Tile t : tiles.values()) if (t.originChunkX() == chunkX && t.originChunkZ() == chunkZ) return true;
 		return false;

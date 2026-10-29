@@ -10,7 +10,8 @@
 	"environment": "*",
 	"mixins": ["fractalbuildings.mixins.json"],
 	"entrypoints": {
-		"main": ["dev.fractalbuildings.mod.FractalBuildingsMod"]
+		"main": ["dev.fractalbuildings.mod.FractalBuildingsMod"],
+		"client": ["dev.fractalbuildings.mod.client.FbNoteClient"]
 	},
 	"depends": {
 		"fabricloader": ">=0.19.5",

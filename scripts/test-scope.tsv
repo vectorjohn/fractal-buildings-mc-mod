@@ -60,6 +60,7 @@ path	scripts/compat-matrix.sh	test-infra	compat	compat matrix runner
 path	scripts/fetch-test-mods.sh	test-infra	compat	compat mod sets
 path	scripts/design-blocks.sh	design-blocks	fast	test-all runs its --check
 path	scripts/DesignBlocks.java	design-blocks	fast	test-all runs its --check
+path	scripts/playtest-gallery*	test-infra	fast	test-all runs the gallery self-test
 path	scripts/*	scripts	-	process tooling (evidence, snapshots, merges): exercise it by hand
 path	tools/*	tools	-	helper tools
 
@@ -146,6 +147,7 @@ path	@mod/config/*	config	fast,client-quick	config pinned per world (ConfigGameT
 path	@mod/api/*	api	fast	public API
 path	@mod/FractalBuildingsMod.java	entrypoint	fast,client-quick,server-only?	registration and init
 path	@mod/HelloHut.java	entrypoint	fast,client-quick	the hello hut
+path	mod/src/main/java/dev/fractalbuildings/mod/client/*	fbnote-client	fast,client-quick,server-only	client entrypoint (/fbnote): client-only classes must not load on a server
 path	mod/src/main/resources/data/*/worldgen/*	worldgen	fast,order,client-full	structure sets, placement, features
 path	mod/src/main/resources/*	mod-resources	fast,client-quick,server-only?	fabric.mod.json, mixin configs, loot, tags, assets
 

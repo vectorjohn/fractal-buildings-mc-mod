@@ -192,6 +192,9 @@ public class WorldPlanner {
 
 	public DistrictGrid grid() { return grid; }
 
+	/** The district tile holding a world column (the fixture planner answers from its own tiles). */
+	public DistrictGrid.Tile tileAt(int x, int z) { return grid.tileAt(x, z); }
+
 	/** Is this chunk the centre chunk of its district tile (the structure start chunk)? Pure geometry: no probes, no caches. */
 	public boolean isStartChunk(int chunkX, int chunkZ) {
 		DistrictGrid.Tile t = grid.tileAt(chunkX * 16, chunkZ * 16);

@@ -253,6 +253,14 @@ else
 	skip design-blocks
 fi
 
+# --- Playtest gallery script self-test (FBNOTE; node + ImageMagick from the dev shell; cheap) ---
+if [[ -f "$ROOT/scripts/playtest-gallery.test.mjs" ]]; then
+	run_logged playtest-gallery node "$ROOT/scripts/playtest-gallery.test.mjs"; rc=$?
+	if (( rc == 0 )); then record playtest-gallery pass "scripts/playtest-gallery.mjs self-test"; else record playtest-gallery fail "exit $rc; see ${LOGS[playtest-gallery]}"; fi
+else
+	skip playtest-gallery
+fi
+
 # --- Viewer: unit tests (layer 1 for the viewer) ------------------------------
 VIEWER="$ROOT/viewer"
 npm_scripts=""
