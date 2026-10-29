@@ -25,7 +25,7 @@ class WorkshopOpenGroundTest {
 		int a = hall.box().z();
 		if (a < 2 || a > 3) p.add("porch depth " + a);
 		Opening door = null;
-		for (Opening o : b.openings()) if (o.kind() == OpeningKind.DOOR && Opening.OUTSIDE.equals(o.to())) door = o;
+		for (Opening o : b.openings()) if (o.kind() == OpeningKind.DOOR && Opening.OUTSIDE.equals(o.to()) && o.facing() == dev.fractalbuildings.core.ir.Facing.NORTH && (door == null || o.box().sx() > door.box().sx())) door = o; // the main entrance faces the front (DS35DOORS adds secondary doors on other faces)
 		if (door == null) return List.of("no entrance");
 		List<Volume> posts = b.volumes().stream().filter(v -> v.id().startsWith("post")).toList();
 		if (posts.size() < 2) p.add(posts.size() + " posts");

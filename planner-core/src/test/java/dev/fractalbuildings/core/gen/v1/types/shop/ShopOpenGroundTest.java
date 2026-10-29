@@ -39,7 +39,7 @@ class ShopOpenGroundTest {
 	static List<String> problems(BuildingIr b) {
 		List<String> p = new ArrayList<>();
 		Opening door = null;
-		for (Opening o : b.openings()) if (o.kind() == OpeningKind.DOOR && Opening.OUTSIDE.equals(o.to())) door = o;
+		for (Opening o : b.openings()) if (o.kind() == OpeningKind.DOOR && Opening.OUTSIDE.equals(o.to()) && o.facing() == dev.fractalbuildings.core.ir.Facing.NORTH) door = o; // the main entrance faces the front (DS35DOORS adds secondary doors on other faces)
 		if (door == null) return List.of("no entrance");
 		switch (form(b)) {
 			case ARCADE -> {

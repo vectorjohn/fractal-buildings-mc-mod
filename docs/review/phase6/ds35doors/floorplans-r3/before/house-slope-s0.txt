@@ -1,0 +1,72 @@
+# Building b0: house, style medieval, seed -8319545343212965862, gen v2
+footprint 14 x 12 blocks (x by z), height 8, 1 storeys, roof auto
+placed at world (1, 65, 1), rotation 0 quarter turns clockwise, front faces north, lots lot0
+lot lot0: 16 x 14 at (0, 0), street side north
+grid is the building's local frame: x to the right, z down, the front (z = 0, the street side) at the top; a backtick is outside the building.
+
+## Storey 0: floor slab y=0 (standing y=1), floor-to-floor height 4, clear air about 3 blocks, ceiling at y=4
+     0         1
+     01234567890123   (x)
+  0 |``````````````
+  1 |!~#%#!````````
+  2 |~c...~````````
+  3 |#.A..#````````
+  4 |~....~````````
+  5 |#+/++#````````
+  6 |~....~````````
+  7 |#tB..#````````
+  8 |~....~````````
+  9 |#.c.h#````````
+ 10 |!#~~#!````````
+ 11 |``````````````
+Legend: # exterior wall, + interior wall, ~ window, / interior door, % door to outside, : arch (doorless), ^ > v < stair rising from here (direction of ascent), @ top step of a stair arriving from below, O opening in the floor (stairwell), . room floor, , floor outside a room, | fence/rail, ! post/beam, = other stair block, ` outside; A-Z/0-9 room labels (table below); furniture: c chest, h hearth, t table
+
+Rooms on storey 0:
+ch   id    use          area   volume   connects to (opening, dir)
+A    r0    entry        12     main0    r1 (door o0, leave heading south); outside (door o1, leave heading north)
+B    r1    kitchen      16     main0    r0 (door o0, enter heading south)
+
+Openings (heights relative to the floor surface (top of the slab); "faces" is the direction of travel from -> to):
+o0   door   at x=2..2 z=5..5 y=1..2 (0..2 above floor surface), faces south, r0 -> r1
+o1   door   at x=3..3 z=1..1 y=1..2 (0..2 above floor surface), faces north, r0 -> outside
+o2   window at x=1..1 z=1..1 y=2..3 (1..3 above floor surface), faces north, r0 -> outside, sill +1 head +3
+o3   window at x=5..5 z=2..2 y=2..3 (1..3 above floor surface), faces east, r0 -> outside, sill +1 head +3
+o4   window at x=5..5 z=4..4 y=2..3 (1..3 above floor surface), faces east, r0 -> outside, sill +1 head +3
+o5   window at x=5..5 z=6..6 y=2..3 (1..3 above floor surface), faces east, r1 -> outside, sill +1 head +3
+o6   window at x=5..5 z=8..8 y=2..3 (1..3 above floor surface), faces east, r1 -> outside, sill +1 head +3
+o7   window at x=2..2 z=10..10 y=2..3 (1..3 above floor surface), faces south, r1 -> outside, sill +1 head +3
+o8   window at x=3..3 z=10..10 y=2..3 (1..3 above floor surface), faces south, r1 -> outside, sill +1 head +3
+o9   window at x=0..0 z=2..2 y=2..3 (1..3 above floor surface), faces west, r0 -> outside, sill +1 head +3
+o10  window at x=0..0 z=4..4 y=2..3 (1..3 above floor surface), faces west, r0 -> outside, sill +1 head +3
+o11  window at x=0..0 z=6..6 y=2..3 (1..3 above floor surface), faces west, r1 -> outside, sill +1 head +3
+o12  window at x=0..0 z=8..8 y=2..3 (1..3 above floor surface), faces west, r1 -> outside, sill +1 head +3
+
+Furniture hooks:
+h0    c chest      room r0   at x=1 z=2 y=1 facing south
+h1    h hearth     room r1   at x=4 z=9 y=1 facing north
+h2    c chest      room r1   at x=2 z=9 y=1 facing north
+h3    t table      room r1   at x=1 z=7 y=1 facing east
+
+## Circulation
+Entrances from outside:
+  o1 (door) into r0 (entry) at x=3 z=1, facing north
+Rooms not reachable from outside through doors, arches and stairs: none
+Windows: 11, rooms: 2, furniture hooks: 4
+
+## Roof
+roof hip over main0, base y=5, pitch 1/1, ridge none
+Top block height map (local y of the highest block in each column, base 36: 0-9 then a=10 ... z=35, + above; ` empty):
+     0         1
+     01234567890123   (x)
+  0 |4444444```````
+  1 |5555554```````
+  2 |5666654```````
+  3 |5677654```````
+  4 |5677654```````
+  5 |5677654```````
+  6 |5677654```````
+  7 |5677654```````
+  8 |5677654```````
+  9 |5666654```````
+ 10 |5555554```````
+ 11 |4444444```````

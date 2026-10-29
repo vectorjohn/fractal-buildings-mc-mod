@@ -52,7 +52,7 @@ public final class FacadePass {
 		Massing m = c.massing();
 		List<FacadePlan.Entrance> entrances = new ArrayList<>();
 		for (int e = 0; e < m.entrances().size(); e++) entrances.add(entrance(c, m, layouts, m.entrances().get(e), e));
-		FacadePlan plan = new FacadePlan(layouts, entrances.get(0), entrances.subList(1, entrances.size()));
+		FacadePlan plan = new FacadePlan(layouts, entrances.get(0), entrances.subList(1, entrances.size()), ExtraDoors.add(c, layouts, entrances));
 		c.setFacadePlan(plan);
 		decorate(c, plan);
 	}
@@ -321,7 +321,18 @@ public final class FacadePass {
 				kinds.set(b, FacadePlan.DOOR);
 				layouts.set(pick[0], l.withKinds(kinds));
 				int width = 1, pos = l.centre(b);
-				if (st.doorWidth() == 2 && l.bays()[b] >= 4 && l.bays()[b] % 2 == 0) {
+				boolean wide = ExtraDoors.wideMain(c.type().id(), c.spec().width(), c.spec().depth()); // the main entrance of a high-rise is 2-3 wide (DS-35)
+				if (wide) { // on the axis of the front wall as drawn, corner to corner (architect, DS35DOORS r2): 2 leaves on an even front, 3 on an odd one
+					int leaves = (f.b() - f.a()) % 2 == 0 ? 2 : 3, p0 = (f.a() + f.b() - leaves) / 2;
+					boolean ok = p0 > f.a() && p0 + leaves < f.b() && p0 + leaves > l.bayStart(b) && p0 < l.bayStart(b) + l.bays()[b]; // clear of the corners, over this bay (and the piers beside it)
+					for (int k = 0; k < leaves && ok; k++) {
+						ok = !m.inCore(0, f.insideX(p0 + k), f.insideZ(p0 + k));
+						for (int ob = 0; ob < l.bays().length && ok; ob++) // never over another window bay
+							if (ob != b && p0 + k >= l.bayStart(ob) && p0 + k < l.bayStart(ob) + l.bays()[ob]) ok = false;
+					}
+					if (ok) return new FacadePlan.Entrance(f, p0, leaves);
+				}
+				if ((wide ? l.bays()[b] >= 2 : !c.type().id().equals("highrise") && st.doorWidth() == 2 && l.bays()[b] >= 4 && l.bays()[b] % 2 == 0)) {
 					int p0 = l.bayStart(b) + (l.bays()[b] - 2) / 2;
 					if (!m.inCore(0, f.insideX(p0), f.insideZ(p0)) && !m.inCore(0, f.insideX(p0 + 1), f.insideZ(p0 + 1))) {
 						width = 2;

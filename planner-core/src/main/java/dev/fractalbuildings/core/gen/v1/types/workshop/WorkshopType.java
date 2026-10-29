@@ -4,6 +4,7 @@ import dev.fractalbuildings.core.gen.v1.BuildContext;
 import dev.fractalbuildings.core.gen.v1.BuildingType;
 import dev.fractalbuildings.core.gen.v1.Program;
 import dev.fractalbuildings.core.gen.v1.TypeLimits;
+import dev.fractalbuildings.core.gen.v1.facade.ExtraDoors;
 import dev.fractalbuildings.core.gen.v1.facade.FacadePass;
 import dev.fractalbuildings.core.gen.v1.facade.FacadePlan;
 import dev.fractalbuildings.core.gen.v1.interior.RoomProgram;
@@ -32,13 +33,37 @@ public final class WorkshopType implements BuildingType {
 	private static final TypeLimits LIMITS = new TypeLimits(8, 6, 1, 2, 1, 2, 1, false,
 			List.of(new int[] {12, 12}, new int[] {16, 14}, new int[] {20, 16}, new int[] {24, 20}), 400, 1);
 
+	/** The living wing keeps the house programme (a kitchen with its job blocks, a bedroom: DS-35 workshop amendment); the lean-to is a store (woodshed or wash-house: chests, a counter, no bed). */
+	private static final dev.fractalbuildings.core.gen.v1.types.house.HouseRooms HOUSE = new dev.fractalbuildings.core.gen.v1.types.house.HouseRooms(true);
+
 	private static final RoomProgram ROOMS = new RoomProgram() {
 		@Override
 		public String use(Role role, int area, Draws d) { return role == Role.HALL ? "workshop" : RoomProgram.DEFAULT.use(role, area, d); }
 
 		@Override
+		public String use(Role role, String massKind, int area, Where w, Draws d) {
+			if (role == Role.HALL) return "workshop";
+			return massKind.equals(ExtraDoors.LEAN_TO) ? "store" : HOUSE.use(role, area, w, d);
+		}
+
+		@Override
+		public void refine(Role[] roles, int[] areas, String[] uses, Where w, Draws d) {
+			if (!java.util.Arrays.asList(uses).contains("store")) HOUSE.refine(roles, areas, uses, w, d);
+		}
+
+		@Override
+		public void refineBuilding(List<Slot> rooms, Where w, Draws d) { HOUSE.refineBuilding(rooms, w, d); }
+
+		@Override
+		public String backUse(String use, Role role) { return HOUSE.backUse(use, role); }
+
+		@Override
+		public boolean newBand(int storey) { return HOUSE.newBand(storey); }
+
+		@Override
 		public List<String> hooks(String use, int area, Draws d) {
-			if (!use.equals("workshop")) return RoomProgram.DEFAULT.hooks(use, area, d);
+			if (use.equals("store")) return List.of("ceiling_light", "chest", "counter", "chest").subList(0, Math.min(4, 2 + area / 6)); // the hung light first (DS-24), costing no floor cell;
+			if (!use.equals("workshop")) return HOUSE.hooks(use, area, d);
 			List<String> h = new ArrayList<>(List.of("workstation", "workstation", "hearth", "chest"));
 			if (area >= 70) h.add(2, "workstation");
 			if (area >= 110) h.add("workstation");
@@ -91,7 +116,10 @@ public final class WorkshopType implements BuildingType {
 		if (door == null) throw new IllegalStateException("no front face for the cart door");
 		List<FacadePlan.Entrance> others = new ArrayList<>();
 		for (int e = 1; e < m.entrances().size(); e++) others.add(FacadePass.entrance(c, m, layouts, m.entrances().get(e), e));
-		FacadePlan plan = new FacadePlan(layouts, door, others);
+		List<FacadePlan.Entrance> prim = new ArrayList<>();
+		prim.add(door);
+		prim.addAll(others);
+		FacadePlan plan = new FacadePlan(layouts, door, others, ExtraDoors.add(c, layouts, prim));
 		c.setFacadePlan(plan);
 		FacadePass.decorate(c, plan);
 		porch(c, door);

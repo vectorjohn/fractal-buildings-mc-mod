@@ -22,7 +22,7 @@ final class BlockFacade {
 		FacadePlan plan = c.facadePlan();
 		Massing m = c.massing();
 		List<FacadePlan.Layout> layouts = new ArrayList<>(plan.layouts());
-		List<FacadePlan.Entrance> ents = new ArrayList<>(plan.entrances());
+		List<FacadePlan.Entrance> ents = new ArrayList<>(plan.primary());
 		boolean changed = false;
 		for (int i = 0; i < m.entrances().size(); i++) {
 			Mass u = m.mass(m.entrances().get(i));
@@ -40,7 +40,7 @@ final class BlockFacade {
 			ents.set(i, pick(c, m, layouts, u.id(), want, i));
 			changed = true;
 		}
-		if (changed) c.setFacadePlan(new FacadePlan(layouts, ents.get(0), ents.subList(1, ents.size())));
+		if (changed) c.setFacadePlan(new FacadePlan(layouts, ents.get(0), ents.subList(1, ents.size()), plan.extras()));
 	}
 
 	/** A door position on the unit's street face of storey 0, in a window bay if there is one, with a free cell inside. */

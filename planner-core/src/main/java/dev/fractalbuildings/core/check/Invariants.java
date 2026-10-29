@@ -149,6 +149,19 @@ public final class Invariants {
 			windowSize();
 			roomWalk();
 			doorRise();
+			entranceCount();
+		}
+
+		List<Lot> lotsOf(PlacedBuilding pb) {
+			List<Lot> lots = new ArrayList<>();
+			for (String id : pb.lots()) for (Lot l : scene.lots()) if (l.id().equals(id)) lots.add(l);
+			return lots;
+		}
+
+		void entranceCount() {
+			if (scene.genVersion() < 2) return;
+			List<String> problems = EntranceCount.measure(b, ground, raw, lotsOf(b)).problems();
+			if (!problems.isEmpty()) report(Invariant.ENTRANCE_COUNT, String.join("; ", problems), List.of(), 0);
 		}
 
 		void roomWalk() {

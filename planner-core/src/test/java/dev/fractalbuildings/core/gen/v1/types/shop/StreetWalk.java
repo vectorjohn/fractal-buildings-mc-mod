@@ -102,6 +102,7 @@ final class StreetWalk {
 		for (Opening o : b.shell().openings()) {
 			if (o.kind() != OpeningKind.DOOR || !Opening.OUTSIDE.equals(o.to())) continue;
 			Facing out = o.facing();
+			if (out != Facing.NORTH) continue; // DS-6 is the front door: a back door (DS35DOORS) opens into the yard behind the shop, which the street row cannot walk to between the neighbours
 			int sx = o.box().x() + out.dx, sz = o.box().z() + out.dz, sy = o.box().y();
 			n++;
 			if (!(seen(sx, sy, sz) || seen(sx, sy - 1, sz))) return false;

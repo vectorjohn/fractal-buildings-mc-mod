@@ -47,6 +47,6 @@ final class TempleFacade {
 			if (layouts.get(i).face().equals(front)) layouts.set(i, lay);
 		}
 		if (layouts.stream().noneMatch(l -> l.face().equals(front))) layouts.add(lay);
-		c.setFacadePlan(new FacadePlan(layouts, new FacadePlan.Entrance(front, cp), plan.others()));
+		c.setFacadePlan(new FacadePlan(layouts, new FacadePlan.Entrance(front, cp), plan.others(), plan.extras()));
 	}
 }

@@ -42,7 +42,7 @@ public final class TowerPiers {
 			}
 			out.add(changed ? l.withKinds(kinds) : l);
 		}
-		c.setFacadePlan(new FacadePlan(out, fp.entrance(), fp.others()));
+		c.setFacadePlan(fp.withLayouts(out));
 	}
 
 	private static boolean meets(FacadePlan.Layout l, int bay, Mass a, TowerBlock b) {

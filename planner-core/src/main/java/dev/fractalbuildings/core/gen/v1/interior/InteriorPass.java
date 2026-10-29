@@ -33,7 +33,7 @@ public final class InteriorPass {
 	private InteriorPass() {}
 
 	/** What constrains the plan of one mass on one storey; cells relative to the mass's interior. */
-	private record Info(int h, boolean[][] reserved, boolean[][] clear, boolean[][] core, List<int[]> entry, List<int[]> join) {
+	private record Info(int h, boolean[][] reserved, boolean[][] clear, boolean[][] core, List<int[]> entry, List<int[]> join, List<int[]> back) {
 		boolean same(Info o) {
 			return h == o.h && Arrays.deepEquals(reserved, o.reserved) && Arrays.deepEquals(clear, o.clear) && Arrays.deepEquals(core, o.core);
 		}
@@ -144,7 +144,7 @@ public final class InteriorPass {
 	private static Info info(BuildContext c, RoomProgram prog, Massing m, int idx, Mass a, int s) {
 		int w = a.sx() - 2, d = a.sz() - 2, ox = a.x() + 1, oz = a.z() + 1;
 		boolean[][] reserved = new boolean[w][d], clear = new boolean[w][d], core = new boolean[w][d];
-		List<int[]> entry = new ArrayList<>(), join = new ArrayList<>();
+		List<int[]> entry = new ArrayList<>(), join = new ArrayList<>(), back = new ArrayList<>();
 		FacadePlan fp = c.facadePlan();
 		for (FacadePlan.Layout l : fp.layouts()) {
 			Face f = l.face();
@@ -164,7 +164,7 @@ public final class InteriorPass {
 				int x = f.insideX(e.pos() + k) - ox, z = f.insideZ(e.pos() + k) - oz;
 				mark(reserved, x, z);
 				mark(clear, x, z);
-				entry.add(new int[] {x, z});
+				(fp.extras().contains(e) ? back : entry).add(new int[] {x, z}); // a back or side door (DS-35): its room is a day room, not an entry hall
 			}
 		}
 		for (Core k : m.cores()) {
@@ -190,7 +190,7 @@ public final class InteriorPass {
 			mark(clear, in[0] - ox, in[1] - oz);
 			join.add(new int[] {in[0] - ox, in[1] - oz});
 		}
-		return new Info(c.massing().grid().height(s), reserved, clear, core, entry, join);
+		return new Info(c.massing().grid().height(s), reserved, clear, core, entry, join, back);
 	}
 
 	/** The cell inside {@code a} next to the strip cell {@code pos}. */
@@ -250,7 +250,7 @@ public final class InteriorPass {
 			uses[l] = prog.use(role, a.kind(), lf.area(), new RoomProgram.Where(s, g.count()), c.draws("interior/use", idx, s, l));
 		}
 		prog.refine(roles, areas, uses, new RoomProgram.Where(s, c.massing().grid().count()), c.draws("interior/refine", idx, s));
-		return new Draft(s, idx, info, plan, roles, areas, uses, null);
+		return new Draft(s, idx, info, plan, roles, areas, uses, new boolean[n]);
 	}
 
 	/** A draft from the type's own floor planner: its uses are final; roles are corridor, stair (use {@code stairwell}) or room. */
@@ -275,7 +275,10 @@ public final class InteriorPass {
 		for (Draft dr : all) {
 			base.put(dr, slots.size());
 			for (int l = 0; l < dr.uses().length; l++) {
-				slots.add(new RoomProgram.Slot(dr.idx(), dr.start(), span(drafts, dr), dr.roles()[l], dr.areas()[l], dr.uses()[l]));
+				RoomProgram.Slot sl = new RoomProgram.Slot(dr.idx(), dr.start(), span(drafts, dr), dr.roles()[l], dr.areas()[l], dr.uses()[l]);
+				FloorPlan.Leaf lf = dr.plan().leaves().get(l);
+				for (int[] b : dr.info().back()) sl.back |= lf.contains(b[0], b[1]);
+				slots.add(sl);
 				owner.add(dr);
 				leaf.add(l);
 			}
@@ -287,7 +290,11 @@ public final class InteriorPass {
 				y.next().add(x);
 			}
 		prog.refineBuilding(slots, new RoomProgram.Where(0, storeys), c.draws("interior/program"));
-		for (int k = 0; k < slots.size(); k++) owner.get(k).uses()[leaf.get(k)] = slots.get(k).use;
+		for (RoomProgram.Slot sl : slots) if (sl.back) sl.use = prog.backUse(sl.use, sl.role); // DS-35: a back or side door never opens into a bedroom
+		for (int k = 0; k < slots.size(); k++) {
+			owner.get(k).uses()[leaf.get(k)] = slots.get(k).use;
+			if (slots.get(k).needsBed && owner.get(k).needsBed() != null) owner.get(k).needsBed()[leaf.get(k)] = true;
+		}
 	}
 
 	private static int span(Draft[][] drafts, Draft dr) {

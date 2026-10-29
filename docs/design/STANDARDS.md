@@ -1039,8 +1039,12 @@ DS-25 with an exception for deliberate repeating patterns.
 - **Enforcement:** code candidate `entrance-count` (two or more exterior
   doors for buildings with 2+ storeys or a footprint of 80+ cells; high-rises
   on two faces, the main one 2+ wide); every door meets DS-4 and DS-6 and
-  opens into a hall, kitchen, lobby or shop floor, never a bedroom. None
-  today: `Massing.entrances()` gives one door per mass.
+  opens into a hall, kitchen, lobby or shop floor, never a bedroom. Code,
+  exists (DS35DOORS, 2026-10-28): invariant `entrance-count`, enforced on
+  every lot, sloping ones too (John, REVIEW 2026-10-28), exempt only where
+  the ground leaves no non-front wall a plain flight of at most 3 risers;
+  corner-building doors and the door every
+  12-20 blocks of a long frontage are not built or checked yet.
 - **Status:** #Approved by @John on 2026-10-28. **Source:** John, playtest notes 2026-10-25;
   drafted by the architect.
 
@@ -1053,8 +1057,8 @@ DS-25 with an exception for deliberate repeating patterns.
 - **Why:** John, playtest 2026-10-26 (21.27.38), "back door to the
   lean-to"; in 124 CLI workshop plans the cart door is the only way out.
 - **Scope:** type `workshop`.
-- **Enforcement:** code candidate, folds into DS-35's `entrance-count`.
-  None today.
+- **Enforcement:** code, exists (DS35DOORS, 2026-10-28): folded into
+  `entrance-count` (a workshop wing and lean-to each have a door).
 - **Status:** #Approved by @John on 2026-10-28 (amends DS-35). **Source:** interior
   designer, playtest questions 2026-10-27
   ([playtest1026-qs-interior.md](../review/reports/playtest1026-qs-interior.md), Q3).

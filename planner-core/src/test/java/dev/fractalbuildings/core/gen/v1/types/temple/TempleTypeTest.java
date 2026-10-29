@@ -58,7 +58,7 @@ class TempleTypeTest {
 		Opening found = null;
 		for (Opening o : ir.openings()) {
 			if (o.kind() == OpeningKind.DOOR && (o.to().equals(Opening.OUTSIDE) || o.from().equals(Opening.OUTSIDE))) {
-				if (found != null) throw new AssertionError("two exterior doors");
+				if (found != null) continue; // the first is the main entrance; the side doors (DS35DOORS) come after it
 				found = o;
 			}
 		}

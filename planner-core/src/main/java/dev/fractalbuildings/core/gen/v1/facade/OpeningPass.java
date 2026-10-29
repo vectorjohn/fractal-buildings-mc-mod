@@ -19,6 +19,8 @@ import java.util.List;
  * lintels and shutters, each only where the style asks for it and the cell is free (see {@link Decor}).
  */
 public final class OpeningPass {
+	private static final java.util.Set<String> WALL_TYPES = java.util.Set.of("wall", "curtain", "bastion");
+
 	private OpeningPass() {}
 
 	private record Cut(Face face, int pos, int y, int h) {}
@@ -53,7 +55,8 @@ public final class OpeningPass {
 			}
 		}
 
-		if (st.doorSurround()) for (FacadePlan.Entrance e : doors) surround(d, e);
+		boolean marked = st.doorSurround() || !WALL_TYPES.contains(c.type().id()); // the main entrance carries a head and jambs in every style (DS-26); a secondary door never does
+		if (marked) for (FacadePlan.Entrance e : doors) if (!plan.extras().contains(e)) surround(d, e);
 		for (Cut k : cuts) {
 			if (st.lintels()) lintel(d, k);
 			if (st.sills()) sill(d, k);
@@ -92,7 +95,7 @@ public final class OpeningPass {
 			throw new IllegalStateException("entrance at " + e.x() + "," + e.z() + " is blocked inside");
 		}
 		int width = 1;
-		if (e.width() == 2 && secondCellOk(c, ef, e.pos() + 1, e.y(), room)) width = 2;
+		while (width < e.width() && secondCellOk(c, ef, e.pos() + width, e.y(), room)) width++; // a double or triple door: each further leaf where the wall and the room allow
 		boolean ns = ef.side() == dev.fractalbuildings.core.ir.Facing.NORTH || ef.side() == dev.fractalbuildings.core.ir.Facing.SOUTH;
 		int sx = ns ? width : 1, sz = ns ? 1 : width;
 		c.box(Role.DOOR, Layer.SHELL, ef.storey(), e.x(), e.y(), e.z(), sx, 2, sz);

@@ -1,0 +1,227 @@
+# Building b0: shop, style medieval, seed -1434448140745544216, gen v2
+footprint 9 x 15 blocks (x by z), height 23, 4 storeys, roof auto
+placed at world (1, 64, 1), rotation 0 quarter turns clockwise, front faces north, lots lot0
+lot lot0: 11 x 17 at (0, 0), street side north
+grid is the building's local frame: x to the right, z down, the front (z = 0, the street side) at the top; a backtick is outside the building.
+
+## Storey 0: floor slab y=0 (standing y=1), floor-to-floor height 5, clear air about 4 blocks, ceiling at y=5
+     012345678   (x)
+  0 |!`!`````!
+  1 |`````````
+  2 |!~~~%~~~!
+  3 |#c.....l~
+  4 |~....o..#
+  5 |#.......#
+  6 |#.......~
+  7 |~...A...#
+  8 |~.......~
+  9 |#.......#
+ 10 |~.......~
+ 11 |#..>>>>>#
+ 12 |!#~~####!
+ 13 |`````````
+ 14 |`````````
+Legend: # exterior wall, + interior wall, ~ window, / interior door, % door to outside, : arch (doorless), ^ > v < stair rising from here (direction of ascent), @ top step of a stair arriving from below, O opening in the floor (stairwell), . room floor, , floor outside a room, | fence/rail, ! post/beam, = other stair block, ` outside; A-Z/0-9 room labels (table below); furniture: b bed, c chest, o counter, l light, t table
+
+Rooms on storey 0:
+ch   id    use          area   volume   connects to (opening, dir)
+A    r0    shop         63     main0    r2@storey1 (stair o4, leave heading east); outside (door o7, leave heading north)
+
+Openings (heights relative to the floor surface (top of the slab); "faces" is the direction of travel from -> to):
+o4   stair  at x=3..7 z=11..11 ascends east over 5 blocks: goes UP from r0 to r2 (storey 1)
+o7   door   at x=4..4 z=2..2 y=1..2 (0..2 above floor surface), faces north, r0 -> outside
+o8   window at x=8..8 z=3..3 y=2..3 (1..3 above floor surface), faces east, r0 -> outside, sill +1 head +3
+o9   window at x=8..8 z=6..6 y=2..3 (1..3 above floor surface), faces east, r0 -> outside, sill +1 head +3
+o10  window at x=8..8 z=8..8 y=2..3 (1..3 above floor surface), faces east, r0 -> outside, sill +1 head +3
+o11  window at x=8..8 z=10..10 y=2..3 (1..3 above floor surface), faces east, r0 -> outside, sill +1 head +3
+o12  window at x=2..2 z=12..12 y=2..3 (1..3 above floor surface), faces south, r0 -> outside, sill +1 head +3
+o13  window at x=3..3 z=12..12 y=2..3 (1..3 above floor surface), faces south, r0 -> outside, sill +1 head +3
+o14  window at x=0..0 z=4..4 y=2..3 (1..3 above floor surface), faces west, r0 -> outside, sill +1 head +3
+o15  window at x=0..0 z=7..7 y=2..3 (1..3 above floor surface), faces west, r0 -> outside, sill +1 head +3
+o16  window at x=0..0 z=8..8 y=2..3 (1..3 above floor surface), faces west, r0 -> outside, sill +1 head +3
+o17  window at x=0..0 z=10..10 y=2..3 (1..3 above floor surface), faces west, r0 -> outside, sill +1 head +3
+o65  window at x=1..3 z=2..2 y=1..3 (0..3 above floor surface), faces north, r0 -> outside, sill +0 head +3
+o66  window at x=5..7 z=2..2 y=1..3 (0..3 above floor surface), faces north, r0 -> outside, sill +0 head +3
+
+Furniture hooks:
+h0    c chest      room r0   at x=1 z=3 y=1 facing east
+h1    l light      room r0   at x=7 z=3 y=1 facing south
+h13   o counter    room r0   at x=5 z=4 y=1 facing north
+
+## Storey 1: floor slab y=5 (standing y=6), floor-to-floor height 4, clear air about 3 blocks, ceiling at y=9
+     012345678   (x)
+  0 |!~!#~!~#!
+  1 |#.c.....~
+  2 |~...b...!
+  3 |~t..A...#
+  4 |!.......~
+  5 |#++++/++!
+  6 |~.......~
+  7 |~l......!
+  8 |!...B...~
+  9 |#.......!
+ 10 |~..<<<<.~
+ 11 |#..OOOO@#
+ 12 |!#~~!#~#!
+ 13 |,,##,,#,,
+ 14 |`````````
+Legend: # exterior wall, + interior wall, ~ window, / interior door, % door to outside, : arch (doorless), ^ > v < stair rising from here (direction of ascent), @ top step of a stair arriving from below, O opening in the floor (stairwell), . room floor, , floor outside a room, | fence/rail, ! post/beam, = other stair block, ` outside; A-Z/0-9 room labels (table below); furniture: b bed, c chest, o counter, l light, t table
+
+Rooms on storey 1:
+ch   id    use          area   volume   connects to (opening, dir)
+A    r1    room         28     jetty1   r2 (door o0, leave heading south)
+B    r2    stair        42     jetty1   r1 (door o0, enter heading south); r0@storey0 (stair o4, enter heading east); r4@storey2 (stair o5, leave heading west)
+
+Openings (heights relative to the floor surface (top of the slab); "faces" is the direction of travel from -> to):
+o0   door   at x=5..5 z=5..5 y=6..7 (0..2 above floor surface), faces south, r1 -> r2
+o4   stair  at x=3..7 z=11..11 ascends east over 5 blocks: arrives from below (r0) at r2, top step in the floor opening
+o5   stair  at x=3..6 z=10..10 ascends west over 4 blocks: goes UP from r2 to r4 (storey 2)
+o18  window at x=1..1 z=0..0 y=7..8 (1..3 above floor surface), faces north, r1 -> outside, sill +1 head +3
+o19  window at x=4..4 z=0..0 y=7..8 (1..3 above floor surface), faces north, r1 -> outside, sill +1 head +3
+o20  window at x=6..6 z=0..0 y=7..8 (1..3 above floor surface), faces north, r1 -> outside, sill +1 head +3
+o21  window at x=8..8 z=1..1 y=7..8 (1..3 above floor surface), faces east, r1 -> outside, sill +1 head +3
+o22  window at x=8..8 z=4..4 y=7..8 (1..3 above floor surface), faces east, r1 -> outside, sill +1 head +3
+o23  window at x=8..8 z=6..6 y=7..8 (1..3 above floor surface), faces east, r2 -> outside, sill +1 head +3
+o24  window at x=8..8 z=8..8 y=7..8 (1..3 above floor surface), faces east, r2 -> outside, sill +1 head +3
+o25  window at x=8..8 z=10..10 y=7..8 (1..3 above floor surface), faces east, r2 -> outside, sill +1 head +3
+o26  window at x=2..2 z=12..12 y=7..8 (1..3 above floor surface), faces south, r2 -> outside, sill +1 head +3
+o27  window at x=3..3 z=12..12 y=7..8 (1..3 above floor surface), faces south, r2 -> outside, sill +1 head +3
+o28  window at x=6..6 z=12..12 y=7..8 (1..3 above floor surface), faces south, r2 -> outside, sill +1 head +3
+o29  window at x=0..0 z=2..2 y=7..8 (1..3 above floor surface), faces west, r1 -> outside, sill +1 head +3
+o30  window at x=0..0 z=3..3 y=7..8 (1..3 above floor surface), faces west, r1 -> outside, sill +1 head +3
+o31  window at x=0..0 z=6..6 y=7..8 (1..3 above floor surface), faces west, r2 -> outside, sill +1 head +3
+o32  window at x=0..0 z=7..7 y=7..8 (1..3 above floor surface), faces west, r2 -> outside, sill +1 head +3
+o33  window at x=0..0 z=10..10 y=7..8 (1..3 above floor surface), faces west, r2 -> outside, sill +1 head +3
+
+Furniture hooks:
+h2    b bed        room r1   at x=4 z=2 y=6 facing north
+h3    c chest      room r1   at x=2 z=1 y=6 facing south
+h4    t table      room r1   at x=1 z=3 y=6 facing east
+h5    l light      room r2   at x=1 z=7 y=6 facing east
+
+## Storey 2: floor slab y=9 (standing y=10), floor-to-floor height 4, clear air about 3 blocks, ceiling at y=13
+     012345678   (x)
+  0 |!~!#~!~#!
+  1 |#.c.....~
+  2 |~...b...!
+  3 |~t..A...#
+  4 |!.......~
+  5 |#++++/++!
+  6 |~.......~
+  7 |~l......!
+  8 |!...B...~
+  9 |#.......!
+ 10 |~..@OOO.~
+ 11 |#..>>>>.#
+ 12 |!#~~!###!
+ 13 |``##`````
+ 14 |`````````
+Legend: # exterior wall, + interior wall, ~ window, / interior door, % door to outside, : arch (doorless), ^ > v < stair rising from here (direction of ascent), @ top step of a stair arriving from below, O opening in the floor (stairwell), . room floor, , floor outside a room, | fence/rail, ! post/beam, = other stair block, ` outside; A-Z/0-9 room labels (table below); furniture: b bed, c chest, o counter, l light, t table
+
+Rooms on storey 2:
+ch   id    use          area   volume   connects to (opening, dir)
+A    r3    room         28     jetty1   r4 (door o1, leave heading south)
+B    r4    stair        42     jetty1   r3 (door o1, enter heading south); r2@storey1 (stair o5, enter heading west); r7@storey3 (stair o6, leave heading east)
+
+Openings (heights relative to the floor surface (top of the slab); "faces" is the direction of travel from -> to):
+o1   door   at x=5..5 z=5..5 y=10..11 (0..2 above floor surface), faces south, r3 -> r4
+o5   stair  at x=3..6 z=10..10 ascends west over 4 blocks: arrives from below (r2) at r4, top step in the floor opening
+o6   stair  at x=3..6 z=11..11 ascends east over 4 blocks: goes UP from r4 to r7 (storey 3)
+o34  window at x=1..1 z=0..0 y=11..12 (1..3 above floor surface), faces north, r3 -> outside, sill +1 head +3
+o35  window at x=4..4 z=0..0 y=11..12 (1..3 above floor surface), faces north, r3 -> outside, sill +1 head +3
+o36  window at x=6..6 z=0..0 y=11..12 (1..3 above floor surface), faces north, r3 -> outside, sill +1 head +3
+o37  window at x=8..8 z=1..1 y=11..12 (1..3 above floor surface), faces east, r3 -> outside, sill +1 head +3
+o38  window at x=8..8 z=4..4 y=11..12 (1..3 above floor surface), faces east, r3 -> outside, sill +1 head +3
+o39  window at x=8..8 z=6..6 y=11..12 (1..3 above floor surface), faces east, r4 -> outside, sill +1 head +3
+o40  window at x=8..8 z=8..8 y=11..12 (1..3 above floor surface), faces east, r4 -> outside, sill +1 head +3
+o41  window at x=8..8 z=10..10 y=11..12 (1..3 above floor surface), faces east, r4 -> outside, sill +1 head +3
+o42  window at x=2..2 z=12..12 y=11..12 (1..3 above floor surface), faces south, r4 -> outside, sill +1 head +3
+o43  window at x=3..3 z=12..12 y=11..12 (1..3 above floor surface), faces south, r4 -> outside, sill +1 head +3
+o44  window at x=0..0 z=2..2 y=11..12 (1..3 above floor surface), faces west, r3 -> outside, sill +1 head +3
+o45  window at x=0..0 z=3..3 y=11..12 (1..3 above floor surface), faces west, r3 -> outside, sill +1 head +3
+o46  window at x=0..0 z=6..6 y=11..12 (1..3 above floor surface), faces west, r4 -> outside, sill +1 head +3
+o47  window at x=0..0 z=7..7 y=11..12 (1..3 above floor surface), faces west, r4 -> outside, sill +1 head +3
+o48  window at x=0..0 z=10..10 y=11..12 (1..3 above floor surface), faces west, r4 -> outside, sill +1 head +3
+
+Furniture hooks:
+h6    b bed        room r3   at x=4 z=2 y=10 facing north
+h7    c chest      room r3   at x=2 z=1 y=10 facing south
+h8    t table      room r3   at x=1 z=3 y=10 facing east
+h9    l light      room r4   at x=1 z=7 y=10 facing east
+
+## Storey 3: floor slab y=13 (standing y=14), floor-to-floor height 4, clear air about 3 blocks, ceiling at y=17
+     012345678   (x)
+  0 |!#~!#~~#!
+  1 |~.A.+...#
+  2 |!.b.+bB.~
+  3 |~...+...~
+  4 |!+/+++/+!
+  5 |~.......#
+  6 |!l......~
+  7 |#.......~
+  8 |~...C...!
+  9 |!.......#
+ 10 |~.......~
+ 11 |#..OOO@.#
+ 12 |!~!#~!~#!
+ 13 |`#``#`#``
+ 14 |`````````
+Legend: # exterior wall, + interior wall, ~ window, / interior door, % door to outside, : arch (doorless), ^ > v < stair rising from here (direction of ascent), @ top step of a stair arriving from below, O opening in the floor (stairwell), . room floor, , floor outside a room, | fence/rail, ! post/beam, = other stair block, ` outside; A-Z/0-9 room labels (table below); furniture: b bed, c chest, o counter, l light, t table
+
+Rooms on storey 3:
+ch   id    use          area   volume   connects to (opening, dir)
+A    r5    room         9      jetty1   r7 (door o2, leave heading south)
+B    r6    room         9      jetty1   r7 (door o3, leave heading south)
+C    r7    stair        49     jetty1   r5 (door o2, enter heading south); r6 (door o3, enter heading south); r4@storey2 (stair o6, enter heading east)
+
+Openings (heights relative to the floor surface (top of the slab); "faces" is the direction of travel from -> to):
+o2   door   at x=2..2 z=4..4 y=14..15 (0..2 above floor surface), faces south, r5 -> r7
+o3   door   at x=6..6 z=4..4 y=14..15 (0..2 above floor surface), faces south, r6 -> r7
+o6   stair  at x=3..6 z=11..11 ascends east over 4 blocks: arrives from below (r4) at r7, top step in the floor opening
+o49  window at x=2..2 z=0..0 y=15..16 (1..3 above floor surface), faces north, r5 -> outside, sill +1 head +3
+o50  window at x=5..5 z=0..0 y=15..16 (1..3 above floor surface), faces north, r6 -> outside, sill +1 head +3
+o51  window at x=6..6 z=0..0 y=15..16 (1..3 above floor surface), faces north, r6 -> outside, sill +1 head +3
+o52  window at x=8..8 z=2..2 y=15..16 (1..3 above floor surface), faces east, r6 -> outside, sill +1 head +3
+o53  window at x=8..8 z=3..3 y=15..16 (1..3 above floor surface), faces east, r6 -> outside, sill +1 head +3
+o54  window at x=8..8 z=6..6 y=15..16 (1..3 above floor surface), faces east, r7 -> outside, sill +1 head +3
+o55  window at x=8..8 z=7..7 y=15..16 (1..3 above floor surface), faces east, r7 -> outside, sill +1 head +3
+o56  window at x=8..8 z=10..10 y=15..16 (1..3 above floor surface), faces east, r7 -> outside, sill +1 head +3
+o57  window at x=1..1 z=12..12 y=15..16 (1..3 above floor surface), faces south, r7 -> outside, sill +1 head +3
+o58  window at x=4..4 z=12..12 y=15..16 (1..3 above floor surface), faces south, r7 -> outside, sill +1 head +3
+o59  window at x=6..6 z=12..12 y=15..16 (1..3 above floor surface), faces south, r7 -> outside, sill +1 head +3
+o60  window at x=0..0 z=1..1 y=15..16 (1..3 above floor surface), faces west, r5 -> outside, sill +1 head +3
+o61  window at x=0..0 z=3..3 y=15..16 (1..3 above floor surface), faces west, r5 -> outside, sill +1 head +3
+o62  window at x=0..0 z=5..5 y=15..16 (1..3 above floor surface), faces west, r7 -> outside, sill +1 head +3
+o63  window at x=0..0 z=8..8 y=15..16 (1..3 above floor surface), faces west, r7 -> outside, sill +1 head +3
+o64  window at x=0..0 z=10..10 y=15..16 (1..3 above floor surface), faces west, r7 -> outside, sill +1 head +3
+
+Furniture hooks:
+h10   b bed        room r5   at x=2 z=2 y=14 facing east
+h11   b bed        room r6   at x=5 z=2 y=14 facing north
+h12   l light      room r7   at x=1 z=6 y=14 facing east
+
+## Circulation
+Entrances from outside:
+  o7 (door) into r0 (shop) at x=4 z=2, facing north
+Rooms not reachable from outside through doors, arches and stairs: none
+Windows: 59, rooms: 8, furniture hooks: 14
+
+## Roof
+roof gable over jetty1, base y=18, pitch 1/1, ridge z
+Top block height map (local y of the highest block in each column, base 36: 0-9 then a=10 ... z=35, + above; ` empty):
+     012345678   (x)
+  0 |ijklmlkji
+  1 |ijklmlkji
+  2 |ijklmlkji
+  3 |ijklmlkji
+  4 |ijklmlkji
+  5 |ijklmlkji
+  6 |ijklmlkji
+  7 |ijklmlkji
+  8 |ijklmlkji
+  9 |ijklmlkji
+ 10 |ijklmlkji
+ 11 |ijklmlkji
+ 12 |ijklmlkji
+ 13 |hhhhhhhhh
+ 14 |`````````

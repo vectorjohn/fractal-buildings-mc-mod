@@ -1,0 +1,87 @@
+# Building b0: workshop, style medieval, seed 7422625232828705254, gen v2
+footprint 18 x 13 blocks (x by z), height 11, 1 storeys, roof auto
+placed at world (1, 78, 2), rotation 0 quarter turns clockwise, front faces north, lots lot0
+lot lot0: 20 x 16 at (0, 0), street side north
+grid is the building's local frame: x to the right, z down, the front (z = 0, the street side) at the top; a backtick is outside the building.
+
+## Storey 0: floor slab y=0 (standing y=1), floor-to-floor height 5, clear air about 4 blocks, ceiling at y=5
+     0         1
+     012345678901234567   (x)
+  0 |`!``!````!``!`````
+  1 |``````````````````
+  2 |`!#~##%%##~#!~#~#!
+  3 |`~.w........+..b.~
+  4 |`#........../.B..#
+  5 |`~..........+...c~
+  6 |`#w...A.....+t...#
+  7 |`~.........h+##~#!
+  8 |`#..........#`````
+  9 |`~.........c~`````
+ 10 |`#.....l.w..#`````
+ 11 |`!~#%#~#~#~#!`````
+ 12 |``````````````````
+Legend: # exterior wall, + interior wall, ~ window, / interior door, % door to outside, : arch (doorless), ^ > v < stair rising from here (direction of ascent), @ top step of a stair arriving from below, O opening in the floor (stairwell), . room floor, , floor outside a room, | fence/rail, ! post/beam, = other stair block, ` outside; A-Z/0-9 room labels (table below); furniture: b bed, c chest, h hearth, l light, t table, w workstation
+
+Rooms on storey 0:
+ch   id    use          area   volume   connects to (opening, dir)
+A    r0    workshop     80     main0    r1 (door o0, leave heading east); outside (door o1, leave heading north); outside (door o2, leave heading south)
+B    r1    bedroom      16     wing1    r0 (door o0, enter heading east)
+
+Openings (heights relative to the floor surface (top of the slab); "faces" is the direction of travel from -> to):
+o0   door   at x=12..12 z=4..4 y=1..2 (0..2 above floor surface), faces east, r0 -> r1
+o1   door   at x=6..7 z=2..2 y=1..2 (0..2 above floor surface), faces north, r0 -> outside
+o2   door   at x=4..4 z=11..11 y=1..2 (0..2 above floor surface), faces south, r0 -> outside
+o3   window at x=3..3 z=2..2 y=2..3 (1..3 above floor surface), faces north, r0 -> outside, sill +1 head +3
+o4   window at x=10..10 z=2..2 y=2..3 (1..3 above floor surface), faces north, r0 -> outside, sill +1 head +3
+o5   window at x=12..12 z=9..9 y=2..3 (1..3 above floor surface), faces east, r0 -> outside, sill +1 head +3
+o6   window at x=2..2 z=11..11 y=2..3 (1..3 above floor surface), faces south, r0 -> outside, sill +1 head +3
+o7   window at x=6..6 z=11..11 y=2..3 (1..3 above floor surface), faces south, r0 -> outside, sill +1 head +3
+o8   window at x=8..8 z=11..11 y=2..3 (1..3 above floor surface), faces south, r0 -> outside, sill +1 head +3
+o9   window at x=10..10 z=11..11 y=2..3 (1..3 above floor surface), faces south, r0 -> outside, sill +1 head +3
+o10  window at x=1..1 z=3..3 y=2..3 (1..3 above floor surface), faces west, r0 -> outside, sill +1 head +3
+o11  window at x=1..1 z=5..5 y=2..3 (1..3 above floor surface), faces west, r0 -> outside, sill +1 head +3
+o12  window at x=1..1 z=7..7 y=2..3 (1..3 above floor surface), faces west, r0 -> outside, sill +1 head +3
+o13  window at x=1..1 z=9..9 y=2..3 (1..3 above floor surface), faces west, r0 -> outside, sill +1 head +3
+o14  window at x=13..13 z=2..2 y=2..3 (1..3 above floor surface), faces north, r1 -> outside, sill +1 head +3
+o15  window at x=15..15 z=2..2 y=2..3 (1..3 above floor surface), faces north, r1 -> outside, sill +1 head +3
+o16  window at x=17..17 z=3..3 y=2..3 (1..3 above floor surface), faces east, r1 -> outside, sill +1 head +3
+o17  window at x=17..17 z=5..5 y=2..3 (1..3 above floor surface), faces east, r1 -> outside, sill +1 head +3
+o18  window at x=15..15 z=7..7 y=2..3 (1..3 above floor surface), faces south, r1 -> outside, sill +1 head +3
+
+Furniture hooks:
+h0    w workstation room r0   at x=2 z=6 y=1 facing east
+h1    w workstation room r0   at x=9 z=10 y=1 facing north
+h2    w workstation room r0   at x=3 z=3 y=1 facing south
+h3    h hearth     room r0   at x=11 z=7 y=1 facing west
+h4    c chest      room r0   at x=11 z=9 y=1 facing west
+h5    l light      room r0   at x=7 z=10 y=1 facing north
+h6    b bed        room r1   at x=15 z=3 y=1 facing east
+h7    c chest      room r1   at x=16 z=5 y=1 facing west
+h8    t table      room r1   at x=13 z=6 y=1 facing east
+
+## Circulation
+Entrances from outside:
+  o1 (door) into r0 (workshop) at x=6 z=2, facing north
+  o2 (door) into r0 (workshop) at x=4 z=11, facing south
+Rooms not reachable from outside through doors, arches and stairs: none
+Windows: 16, rooms: 2, furniture hooks: 9
+
+## Roof
+roof hip over main0, base y=6, pitch 1/1, ridge none
+roof hip over wing1, base y=6, pitch 1/1, ridge none
+Top block height map (local y of the highest block in each column, base 36: 0-9 then a=10 ... z=35, + above; ` empty):
+     0         1
+     012345678901234567   (x)
+  0 |`444444444444`````
+  1 |555555555555555555
+  2 |566666666666666666
+  3 |567777777777777776
+  4 |567888888888888876
+  5 |567899999988888876
+  6 |56789aaaa987777776
+  7 |56789aaaa987666666
+  8 |567899999987655555
+  9 |567888888887655555
+ 10 |567777777777655555
+ 11 |566666666666655555
+ 12 |555555555555555555

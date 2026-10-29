@@ -40,7 +40,7 @@ class WorkshopTypeTest {
 		if (!hall.id().equals("main0")) p.add("first volume is " + hall.id());
 		if (hall.box().sy() < 6) p.add("hall is only " + hall.box().sy() + " tall"); // 5 high storey + top slab
 		Opening door = null;
-		for (Opening o : b.openings()) if (o.kind() == OpeningKind.DOOR && Opening.OUTSIDE.equals(o.to())) door = o;
+		for (Opening o : b.openings()) if (o.kind() == OpeningKind.DOOR && Opening.OUTSIDE.equals(o.to()) && o.facing() == dev.fractalbuildings.core.ir.Facing.NORTH && (door == null || o.box().sx() > door.box().sx())) door = o; // the main entrance faces the front (DS35DOORS adds secondary doors on other faces)
 		if (door == null) return append(p, "no entrance");
 		if (door.box().sx() != 2) p.add("cart door is " + door.box().sx() + " wide");
 		if (door.box().z() != hall.box().z()) p.add("door is not on the hall's front");

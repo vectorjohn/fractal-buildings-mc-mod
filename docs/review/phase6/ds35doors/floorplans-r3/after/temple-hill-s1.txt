@@ -1,0 +1,177 @@
+# Building b0: temple, style medieval, seed -1150016697422908104, gen v2
+footprint 18 x 27 blocks (x by z), height 14, 2 storeys, roof auto
+placed at world (1, 79, 2), rotation 0 quarter turns clockwise, front faces north, lots lot0
+lot lot0: 20 x 30 at (0, 0), street side north
+grid is the building's local frame: x to the right, z down, the front (z = 0, the street side) at the top; a backtick is outside the building.
+
+## Storey 0: floor slab y=0 (standing y=1), floor-to-floor height 4, clear air about 3 blocks, ceiling at y=4
+     0         1
+     012345678901234567   (x)
+  0 |`````!~#%~#!``````
+  1 |`````~.....#``````
+  2 |`````#.....~``````
+  3 |`````~.....~``````
+  4 |`````#..A..#``````
+  5 |`````~.....~``````
+  6 |`````#.....#``````
+  7 |`````#l....#``````
+  8 |````!+++/+++!`````
+  9 |````#.b.....#`````
+ 10 |!~##+......b+#~#!`
+ 11 |#...+.......+...#`
+ 12 |~.D./...B.../.C.~`
+ 13 |#b..+.......+..b#`
+ 14 |!~##+......l+#~#!`
+ 15 |````#l......#`````
+ 16 |````#......b#`````
+ 17 |````!+++/+++!`````
+ 18 |`````#a....#``````
+ 19 |`````#.....#``````
+ 20 |`````~l....~``````
+ 21 |`````#..E..#``````
+ 22 |`````~.....%``````
+ 23 |`````#.....#``````
+ 24 |`````~c...l~``````
+ 25 |`````#.....#``````
+ 26 |`````!~##~#!``````
+Legend: # exterior wall, + interior wall, ~ window, / interior door, % door to outside, : arch (doorless), ^ > v < stair rising from here (direction of ascent), @ top step of a stair arriving from below, O opening in the floor (stairwell), . room floor, , floor outside a room, | fence/rail, ! post/beam, = other stair block, ` outside; A-Z/0-9 room labels (table below); furniture: a altar, b bench, c chest, l light
+
+Rooms on storey 0:
+ch   id    use          area   volume   connects to (opening, dir)
+A    r0    porch        35     porch0   r1 (door o0, leave heading south); outside (door o4, leave heading north)
+B    r1    nave         56     nave0    r0 (door o0, enter heading south); r2 (door o1, leave heading east); r3 (door o2, leave heading west); r4 (door o3, leave heading south)
+C    r2    chapel       9      transept1 r1 (door o1, enter heading east)
+D    r3    chapel       9      transept2 r1 (door o2, enter heading west)
+E    r4    sanctuary    40     apse0    r1 (door o3, enter heading south); outside (door o5, leave heading east)
+
+Openings (heights relative to the floor surface (top of the slab); "faces" is the direction of travel from -> to):
+o0   door   at x=8..8 z=8..8 y=1..2 (0..2 above floor surface), faces south, r0 -> r1
+o1   door   at x=12..12 z=12..12 y=1..2 (0..2 above floor surface), faces east, r1 -> r2
+o2   door   at x=4..4 z=12..12 y=1..2 (0..2 above floor surface), faces west, r1 -> r3
+o3   door   at x=8..8 z=17..17 y=1..2 (0..2 above floor surface), faces south, r1 -> r4
+o4   door   at x=8..8 z=0..0 y=1..2 (0..2 above floor surface), faces north, r0 -> outside
+o5   door   at x=11..11 z=22..22 y=1..2 (0..2 above floor surface), faces east, r4 -> outside
+o6   window at x=6..6 z=0..0 y=2..3 (1..3 above floor surface), faces north, r0 -> outside, sill +1 head +3
+o7   window at x=9..9 z=0..0 y=2..3 (1..3 above floor surface), faces north, r0 -> outside, sill +1 head +3
+o8   window at x=11..11 z=2..2 y=2..3 (1..3 above floor surface), faces east, r0 -> outside, sill +1 head +3
+o9   window at x=11..11 z=3..3 y=2..3 (1..3 above floor surface), faces east, r0 -> outside, sill +1 head +3
+o10  window at x=11..11 z=5..5 y=2..3 (1..3 above floor surface), faces east, r0 -> outside, sill +1 head +3
+o11  window at x=5..5 z=1..1 y=2..3 (1..3 above floor surface), faces west, r0 -> outside, sill +1 head +3
+o12  window at x=5..5 z=3..3 y=2..3 (1..3 above floor surface), faces west, r0 -> outside, sill +1 head +3
+o13  window at x=5..5 z=5..5 y=2..3 (1..3 above floor surface), faces west, r0 -> outside, sill +1 head +3
+o18  window at x=14..14 z=10..10 y=2..3 (1..3 above floor surface), faces north, r2 -> outside, sill +1 head +3
+o19  window at x=16..16 z=12..12 y=2..3 (1..3 above floor surface), faces east, r2 -> outside, sill +1 head +3
+o20  window at x=14..14 z=14..14 y=2..3 (1..3 above floor surface), faces south, r2 -> outside, sill +1 head +3
+o21  window at x=1..1 z=10..10 y=2..3 (1..3 above floor surface), faces north, r3 -> outside, sill +1 head +3
+o22  window at x=1..1 z=14..14 y=2..3 (1..3 above floor surface), faces south, r3 -> outside, sill +1 head +3
+o23  window at x=0..0 z=12..12 y=2..3 (1..3 above floor surface), faces west, r3 -> outside, sill +1 head +3
+o24  window at x=11..11 z=20..20 y=2..3 (1..3 above floor surface), faces east, r4 -> outside, sill +1 head +3
+o25  window at x=11..11 z=24..24 y=2..3 (1..3 above floor surface), faces east, r4 -> outside, sill +1 head +3
+o26  window at x=6..6 z=26..26 y=2..3 (1..3 above floor surface), faces south, r4 -> outside, sill +1 head +3
+o27  window at x=9..9 z=26..26 y=2..3 (1..3 above floor surface), faces south, r4 -> outside, sill +1 head +3
+o28  window at x=5..5 z=20..20 y=2..3 (1..3 above floor surface), faces west, r4 -> outside, sill +1 head +3
+o29  window at x=5..5 z=22..22 y=2..3 (1..3 above floor surface), faces west, r4 -> outside, sill +1 head +3
+o30  window at x=5..5 z=24..24 y=2..3 (1..3 above floor surface), faces west, r4 -> outside, sill +1 head +3
+
+Furniture hooks:
+h0    l light      room r0   at x=6 z=7 y=1 facing north
+h1    l light      room r1   at x=5 z=15 y=1 facing east
+h2    b bench      room r1   at x=11 z=10 y=1 facing west
+h3    b bench      room r1   at x=6 z=9 y=1 facing south
+h4    b bench      room r1   at x=11 z=16 y=1 facing west
+h5    l light      room r1   at x=11 z=14 y=1 facing west
+h6    b bench      room r2   at x=15 z=13 y=1 facing north
+h7    b bench      room r3   at x=1 z=13 y=1 facing north
+h8    a altar      room r4   at x=6 z=18 y=1 facing east
+h9    c chest      room r4   at x=6 z=24 y=1 facing east
+h10   l light      room r4   at x=10 z=24 y=1 facing west
+h11   l light      room r4   at x=6 z=20 y=1 facing east
+
+## Storey 1: floor slab y=4 (standing y=5), floor-to-floor height 4, clear air about 3 blocks, ceiling at y=8
+     0         1
+     012345678901234567   (x)
+  0 |````,#######,`````
+  1 |````,##,,,##,`````
+  2 |````,##,,,##,`````
+  3 |````,##,,,##,`````
+  4 |````,##,,,##,`````
+  5 |````,##,,,##,`````
+  6 |````,##,,,##,`````
+  7 |````,##,,,##,`````
+  8 |````!#!#~!##!`````
+  9 |,,,,#OOOOOOO~,,,,,
+ 10 |#####OOOOOOO#####,
+ 11 |#####OOOOOOO###+#,
+ 12 |#,,,#OOOOOOO#,,##,
+ 13 |#####OOOOOOO###+#,
+ 14 |#####OOOOOOO#####,
+ 15 |,,,,~OOOOOOO~,,,,,
+ 16 |````#OOOOOOO#`````
+ 17 |````!#######!`````
+ 18 |````,##,,,##,`````
+ 19 |````,##,,,##,`````
+ 20 |````,##,,,##,`````
+ 21 |````,##,,,##,`````
+ 22 |````,##,,,##,`````
+ 23 |````,##,,,##,`````
+ 24 |````,##,,,##,`````
+ 25 |````,##,,,##,`````
+ 26 |````,#######,`````
+Legend: # exterior wall, + interior wall, ~ window, / interior door, % door to outside, : arch (doorless), ^ > v < stair rising from here (direction of ascent), @ top step of a stair arriving from below, O opening in the floor (stairwell), . room floor, , floor outside a room, | fence/rail, ! post/beam, = other stair block, ` outside; A-Z/0-9 room labels (table below); furniture: a altar, b bench, c chest, l light
+
+Rooms on storey 1:
+ch   id    use          area   volume   connects to (opening, dir)
+(no rooms)
+
+Openings (heights relative to the floor surface (top of the slab); "faces" is the direction of travel from -> to):
+o14  window at x=8..8 z=8..8 y=5..6 (0..2 above floor surface), faces north, r1 -> outside, sill +0 head +2
+o15  window at x=12..12 z=9..9 y=5..6 (0..2 above floor surface), faces east, r1 -> outside, sill +0 head +2
+o16  window at x=12..12 z=15..15 y=5..6 (0..2 above floor surface), faces east, r1 -> outside, sill +0 head +2
+o17  window at x=4..4 z=15..15 y=5..6 (0..2 above floor surface), faces west, r1 -> outside, sill +0 head +2
+
+Furniture hooks:
+(none)
+
+## Circulation
+Entrances from outside:
+  o4 (door) into r0 (porch) at x=8 z=0, facing north
+  o5 (door) into r4 (sanctuary) at x=11 z=22, facing east
+Rooms not reachable from outside through doors, arches and stairs: none
+Windows: 25, rooms: 5, furniture hooks: 12
+
+## Roof
+roof gable over porch0, base y=5, pitch 1/1, ridge z
+roof gable over nave0, base y=9, pitch 1/1, ridge z
+roof hip over transept1, base y=5, pitch 1/1, ridge none
+roof gable over transept2, base y=5, pitch 1/1, ridge x
+roof gable over apse0, base y=5, pitch 1/1, ridge z
+Top block height map (local y of the highest block in each column, base 36: 0-9 then a=10 ... z=35, + above; ` empty):
+     0         1
+     012345678901234567   (x)
+  0 |````456787654`````
+  1 |````456787654`````
+  2 |````456787654`````
+  3 |````456787654`````
+  4 |````456787654`````
+  5 |````456787654`````
+  6 |````456787654`````
+  7 |```88888888888````
+  8 |```89abcdcba98````
+  9 |44489abcdcba984444
+ 10 |55589abcdcba985554
+ 11 |66689abcdcba986654
+ 12 |77789abcdcba987654
+ 13 |66689abcdcba986654
+ 14 |55589abcdcba985554
+ 15 |44489abcdcba984444
+ 16 |```89abcdcba98````
+ 17 |```89abcdcba98````
+ 18 |```88888888888````
+ 19 |````456787654`````
+ 20 |````456787654`````
+ 21 |````456787654`````
+ 22 |````456787654`````
+ 23 |````456787654`````
+ 24 |````456787654`````
+ 25 |````456787654`````
+ 26 |````456787654`````

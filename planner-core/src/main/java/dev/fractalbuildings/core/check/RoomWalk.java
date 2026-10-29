@@ -18,13 +18,13 @@ import java.util.List;
  * the use cell of every piece (the cell in front of it; for a bed, a cell beside either half). See {@link Walkability} for the
  * lane widths.
  */
-final class RoomWalk {
+public final class RoomWalk {
 	private RoomWalk() {}
 
 	/** A room that fails, with the number of cut-off targets and the local floor cells of its furniture (for the report). */
-	record Fail(String room, String use, int cut, List<Box3> cells) {}
+	public record Fail(String room, String use, int cut, List<Box3> cells) {}
 
-	static List<Fail> check(PlacedBuilding b, VoxelGrid g) {
+	public static List<Fail> check(PlacedBuilding b, VoxelGrid g) {
 		List<Fail> fails = new ArrayList<>();
 		for (Room r : b.shell().rooms()) {
 			List<Hook> hooks = new ArrayList<>();

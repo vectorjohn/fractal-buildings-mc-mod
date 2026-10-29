@@ -31,7 +31,7 @@ import java.util.Map;
  * lower, with two free blocks above the surface. The walk starts at the door's floor in the cell outside the door and
  * must reach a column's ground surface (not a foundation or step) inside the lot or the cells around it.
  */
-final class StairGround {
+public final class StairGround {
 	private StairGround() {}
 
 	/** Columns of road, paving and deck surfaces: the level (first free block) the scene's ground boxes give, by packed (x, z). */
@@ -66,12 +66,23 @@ final class StairGround {
 	/** One result per failing door: its id and the cell outside it (world). */
 	record Fail(String door, Box3 cell, String why) {}
 
+	/** The ids of the exterior doors of a placed building with no way down onto the ground (the {@code steps-reach-ground} measure, on the ground as the building leaves it, no roads); the generator walls up the secondary ones (DS-35). */
+	public static List<String> failingDoors(PlacedBuilding b, List<Lot> lots, TerrainProbe raw) {
+		List<String> ids = new ArrayList<>();
+		for (Fail f : check(lots, b, VoxelGrid.of(b), dev.fractalbuildings.core.terrain.SiteGround.probe(b, raw), Map.of())) ids.add(f.door());
+		return ids;
+	}
+
 	static List<Fail> check(SceneDoc scene, PlacedBuilding b, VoxelGrid g, TerrainProbe terrain, Map<Long, Integer> surface) {
+		List<Lot> lots = new ArrayList<>();
+		for (String id : b.lots()) for (Lot l : scene.lots()) if (l.id().equals(id)) lots.add(l);
+		return check(lots, b, g, terrain, surface);
+	}
+
+	private static List<Fail> check(List<Lot> lots, PlacedBuilding b, VoxelGrid g, TerrainProbe terrain, Map<Long, Integer> surface) {
 		List<Fail> fails = new ArrayList<>();
 		List<Opening> doors = doors(b);
 		if (doors.isEmpty()) return fails;
-		List<Lot> lots = new ArrayList<>();
-		for (String id : b.lots()) for (Lot l : scene.lots()) if (l.id().equals(id)) lots.add(l);
 		int x0 = g.minX, x1 = g.minX + g.sx - 1, z0 = g.minZ, z1 = g.minZ + g.sz - 1;
 		for (Lot l : lots)
 			for (int cx : new int[] {l.x(), l.x() + l.w() - 1})

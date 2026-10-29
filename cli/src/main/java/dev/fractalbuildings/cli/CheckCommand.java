@@ -1,6 +1,7 @@
 package dev.fractalbuildings.cli;
 
 import dev.fractalbuildings.core.check.DoorRise;
+import dev.fractalbuildings.core.check.EntranceCount;
 import dev.fractalbuildings.core.check.Glazing;
 import dev.fractalbuildings.core.check.HighriseChecks;
 import dev.fractalbuildings.core.check.InvariantReport;
@@ -28,6 +29,7 @@ final class CheckCommand {
 		InvariantReport report = new InvariantReport();
 		Glazing.Report byType = new Glazing.Report(), byStyle = new Glazing.Report();
 		DoorRise.Report doorRise = new DoorRise.Report();
+		EntranceCount.Report entrances = new EntranceCount.Report();
 		long t0 = System.nanoTime();
 		for (long seed = seeds[0]; seed <= seeds[1]; seed++) {
 			final long s = seed;
@@ -43,6 +45,7 @@ final class CheckCommand {
 					Glazing.Stats gs = Glazing.measure(pb);
 					byType.add(m.cells.get(i).type(), gs);
 					byStyle.add(m.cells.get(i).style(), gs);
+					entrances.add(EntranceCount.measure(pb, dev.fractalbuildings.core.terrain.SiteGround.probe(pb, req.terrain()), req.terrain(), scene.lots()));
 				}
 				doorRise.add(DoorRise.measure(scene, req.terrain()));
 				List<Violation> w = new java.util.ArrayList<>(HighriseChecks.check(scene));
@@ -55,7 +58,7 @@ final class CheckCommand {
 				report.addWarnings(label, m.cells.get(i).type().equals(HighriseChecks.TYPE), warnings[i]);
 			}
 		}
-		String md = report.toMarkdown() + "\n## Glazing (DS-33, report only)\n\nGlass cells over exterior wall-plane cells, ground to top ceiling.\n\n" + byType.toMarkdown("type") + "\n" + byStyle.toMarkdown("style") + "\n## Door rise (DS-45, report only)\n\nEntrance doors; rise = door level minus the street surface in front (limits: shops -2..2, houses and workshops at most 3 or 4-5 with a landing, no run over 3 risers).\n\n" + doorRise.toMarkdown();
+		String md = report.toMarkdown() + "\n## Glazing (DS-33, report only)\n\nGlass cells over exterior wall-plane cells, ground to top ceiling.\n\n" + byType.toMarkdown("type") + "\n" + byStyle.toMarkdown("style") + "\n## Door rise (DS-45, report only)\n\nEntrance doors; rise = door level minus the street surface in front (limits: shops -2..2, houses and workshops at most 3 or 4-5 with a landing, no run over 3 risers).\n\n" + doorRise.toMarkdown() + "\n## Entrances (DS-35, invariant entrance-count)\n\nExterior ground-floor doors per building; the last column counts buildings breaking the rule (2+ doors from 2 storeys or 80 cells, none into a bedroom, high-rises on two faces with a 2-wide main door, a workshop wing and lean-to each with a door).\n\n" + entrances.table();
 		double secs = (System.nanoTime() - t0) / 1e9;
 		System.err.printf("checked %d cases in %.1f s%n", report.cases(), secs);
 		if (o.has("out")) GenCommand.write(Path.of(o.get("out", null)), md.getBytes(StandardCharsets.UTF_8));

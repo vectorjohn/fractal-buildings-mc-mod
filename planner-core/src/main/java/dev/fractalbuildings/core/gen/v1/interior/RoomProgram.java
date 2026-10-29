@@ -45,6 +45,10 @@ public interface RoomProgram {
 		public final int mass, storey, area, span;
 		public final Role role;
 		public String use;
+		/** A back or side door (DS-35) opens into this room. */
+		public boolean back;
+		/** The room sleeps someone though it is not a bedroom (a one-room wing that is the kitchen-hall): it gets a bed hook. */
+		public boolean needsBed;
 		private final List<Slot> next = new java.util.ArrayList<>();
 
 		public Slot(int mass, int storey, int span, Role role, int area, String use) {
@@ -63,6 +67,9 @@ public interface RoomProgram {
 	default List<int[]> reserved(BuildContext c, Mass a, int s) { return List.of(); }
 
 	default void refineBuilding(List<Slot> rooms, Where where, Draws d) {}
+
+	/** The use of a room a back or side door opens into (DS-35: a hall, kitchen, lobby or shop floor, never a bedroom): the program's {@code use} unless it is a bedroom or a plain room, which become a hall. */
+	default String backUse(String use, Role role) { return use.equals("bedroom") || use.equals("room") ? "hall" : use; }
 
 	/** True if a floor plan must not be shared between storey {@code storey - 1} and {@code storey} of a mass (a type whose ground floor differs in use from the upper ones). */
 	default boolean newBand(int storey) { return false; }

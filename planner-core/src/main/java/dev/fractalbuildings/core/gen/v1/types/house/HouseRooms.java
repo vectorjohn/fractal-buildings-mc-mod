@@ -12,7 +12,14 @@ import java.util.List;
  * floors are for sleeping. Hooks: bed and chest in bedrooms, table and hearth in living rooms,
  * hearth and table in kitchens. A one-storey house sleeps on its ground floor.
  */
-final class HouseRooms implements RoomProgram {
+public class HouseRooms implements RoomProgram {
+	private final boolean everyoneSleeps;
+
+	public HouseRooms() { this(false); }
+
+	/** {@code everyoneSleeps}: a dwelling with no bedroom at all gets a bed in its biggest kitchen or living room (the living wing of a workshop). */
+	public HouseRooms(boolean everyoneSleeps) { this.everyoneSleeps = everyoneSleeps; }
+
 	static final int LIVING_MIN_AREA = 16, STAIR_ROOM_MAX_AREA = 24;
 
 	@Override
@@ -84,6 +91,46 @@ final class HouseRooms implements RoomProgram {
 	 */
 	@Override
 	public void refineBuilding(List<Slot> rooms, Where w, Draws d) {
+		refineHouse(rooms, w, d);
+		sleepSafeBack(rooms);
+		if (everyoneSleeps) someoneSleeps(rooms);
+	}
+
+	/** A dwelling with a bedroom nowhere (the wing of a workshop that is a stair room and a kitchen) sleeps in its biggest ground kitchen or living room: a kitchen-hall with a bed in the far corner. */
+	static void someoneSleeps(List<Slot> rooms) {
+		boolean habitable = false;
+		Slot pick = null;
+		for (Slot s : rooms) {
+			if (s.use.equals("bedroom") || s.needsBed) return;
+			if (lives(s.use)) habitable = true;
+			if (s.storey == 0 && s.role == Role.ROOM && (s.use.equals("kitchen") || s.use.equals("living")) && s.area >= 9 && (pick == null || s.area > pick.area)) pick = s;
+		}
+		if (habitable && pick != null) pick.needsBed = true;
+	}
+
+	/**
+	 * A back or side door (DS-35) never takes the dwelling's only bed: with another bedroom (upstairs too) the back-door room becomes a living room or the kitchen;
+	 * otherwise it trades uses with a ground kitchen or living room, which becomes the bedroom; a one-room wing becomes a kitchen-hall with a bed in the far corner.
+	 */
+	static void sleepSafeBack(List<Slot> rooms) {
+		for (Slot s : rooms) {
+			if (!s.back || !s.use.equals("bedroom")) continue;
+			int others = 0;
+			boolean hearth = false;
+			for (Slot t : rooms) {
+				if (t == s) continue;
+				if (t.use.equals("bedroom")) others++;
+				if (t.use.equals("kitchen")) hearth = true;
+			}
+			if (others > 0) { s.use = hearth ? "living" : "kitchen"; continue; }
+			Slot swap = null;
+			for (Slot t : rooms) if (swap == null && t != s && t.storey == 0 && !t.back && t.role == Role.ROOM && (t.use.equals("kitchen") || t.use.equals("living"))) swap = t;
+			if (swap != null) { s.use = swap.use; swap.use = "bedroom"; }
+			else { s.use = "kitchen"; s.needsBed = true; }
+		}
+	}
+
+	private void refineHouse(List<Slot> rooms, Where w, Draws d) {
 		List<Slot> ground = new ArrayList<>();
 		int habitable = 0;
 		for (Slot s : rooms) {
@@ -144,6 +191,7 @@ final class HouseRooms implements RoomProgram {
 			if (s.use.equals("kitchen") || s.use.equals("living")) score += 8; // a repeated type is the cheapest to change
 			if (s.role == Role.ROOM) score += 6;
 			if (s.area < 9) score -= 12;
+			if (s.back && use.equals("kitchen")) score += 30; // the back door (DS-35) opens from the kitchen
 			for (Slot n : s.next()) {
 				if (use.equals("kitchen") && (n.use.equals("living") || n.role == Role.ENTRY)) score += 12;
 				if (use.equals("living") && (n == kitchen || n.role == Role.ENTRY)) score += 12;
@@ -188,6 +236,9 @@ final class HouseRooms implements RoomProgram {
 		}
 		return h;
 	}
+
+	@Override
+	public String backUse(String use, Role role) { return use.equals("bedroom") || use.equals("room") ? "kitchen" : use; }
 
 	/** Ground floor and upper floors are different programs, so they never share a floor plan. */
 	@Override

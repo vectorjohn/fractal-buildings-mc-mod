@@ -183,7 +183,7 @@ class FacadeLayoutTest {
 		forAll((fx, style, seed, b) -> {
 			FacadePlan plan = b.cap().plan;
 			int expected = b.cap().base.massing().entrances().size();
-			assertEquals(expected, plan.entrances().size());
+			assertEquals(expected, plan.primary().size());
 			long doors = b.ir().openings().stream().filter(o -> o.kind() == OpeningKind.DOOR && o.to().equals(Opening.OUTSIDE)).count();
 			assertEquals(expected, doors, fx + " " + style + " seed " + seed);
 			long doorBays = plan.layouts().stream().flatMap(l -> l.kinds().stream()).filter(FacadePlan.DOOR::equals).count();
@@ -223,7 +223,8 @@ class FacadeLayoutTest {
 	void plainHasNoDecorAndMedievalDoes() {
 		for (Massing m : TestMassings.all().values()) {
 			BuildingIr plain = TestMassings.shell(m, 1, "plain");
-			assertFalse(plain.boxes().stream().anyMatch(b -> b.layer() != dev.fractalbuildings.core.ir.Layer.INTERIOR && (b.role() == Role.TRIM || b.role() == Role.BEAM || b.role() == Role.FOUNDATION)), "plain: all facade decor off (an interior archway lintel is no facade decor)");
+			assertFalse(plain.boxes().stream().anyMatch(b -> b.layer() != dev.fractalbuildings.core.ir.Layer.INTERIOR && (b.role() == Role.BEAM || b.role() == Role.FOUNDATION)), "plain: all facade decor off but the main entrance's head and jambs (DS-26)");
+			assertTrue(plain.boxes().stream().filter(b -> b.layer() != dev.fractalbuildings.core.ir.Layer.INTERIOR && b.role() == Role.TRIM).count() <= 6L * m.entrances().size(), "plain: trim only round the entrances");
 		}
 		BuildingIr med = TestMassings.shell(TestMassings.all().get("jetty"), 1, "medieval");
 		for (Role role : List.of(Role.FOUNDATION, Role.TRIM, Role.BEAM)) assertTrue(med.boxes().stream().anyMatch(b -> b.role() == role), "medieval has " + role);

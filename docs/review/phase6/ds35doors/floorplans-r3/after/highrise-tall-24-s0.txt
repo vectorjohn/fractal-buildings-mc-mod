@@ -1,0 +1,1503 @@
+# Building b0: highrise, style tall-brick, seed -8319545343212965862, gen v2
+footprint 22 x 22 blocks (x by z), height 63, 14 storeys, roof auto
+placed at world (1, 64, 1), rotation 0 quarter turns clockwise, front faces north, lots lot0
+lot lot0: 24 x 24 at (0, 0), street side north
+grid is the building's local frame: x to the right, z down, the front (z = 0, the street side) at the top; a backtick is outside the building.
+
+## Storey 0: floor slab y=0 (standing y=1), floor-to-floor height 6, clear air about 5 blocks, ceiling at y=6
+     0         1         2
+     0123456789012345678901   (x)
+  0 |##~~##~~#%%%#~~##~~##`
+  1 |#...o........e......#`
+  2 |~..................e~`
+  3 |#...................#`
+  4 |#e..................#`
+  5 |~....c....A....c....~`
+  6 |~e..................~`
+  7 |#...................#`
+  8 |#...................#`
+  9 |~......o........t...%`
+ 10 |#+++/++++#~#++++++/+#`
+ 11 |#...c...#,,,#t.t....#`
+ 12 |#...B...#,,,#......e~`
+ 13 |#.>>>>>>#l,,#t..C...~`
+ 14 |#++++++++###+...c..t#`
+ 15 |#....+....o.+.......#`
+ 16 |~.Dc./..Ec../.......~`
+ 17 |#h.h.+..h.h.+.e.e..h#`
+ 18 |##~~##~~##~##~~##~~##`
+ 19 |``````````````````````
+ 20 |``````````````````````
+ 21 |``````````````````````
+Legend: # exterior wall, + interior wall, ~ window, / interior door, % door to outside, : arch (doorless), ^ > v < stair rising from here (direction of ascent), @ top step of a stair arriving from below, O opening in the floor (stairwell), . room floor, , floor outside a room, | fence/rail, ! post/beam, = other stair block, ` outside; A-Z/0-9 room labels (table below); furniture: b bed, e bench, c ceiling_light, h chest, o counter, a hearth, l light, t table
+
+Rooms on storey 0:
+ch   id    use          area   volume   connects to (opening, dir)
+A    r0    lobby        171    main0    r1 (door o0, leave heading south); r2 (door o1, leave heading south); outside (door o89, leave heading north); outside (door o90, leave heading east)
+B    r1    stairwell    21     main0    r0 (door o0, enter heading south); r6@storey1 (stair o76, leave heading east)
+C    r2    office       49     main0    r0 (door o1, enter heading south); r4 (door o2, enter heading east)
+D    r3    storage      12     main0    r4 (door o3, leave heading east)
+E    r4    storage      18     main0    r2 (door o2, leave heading east); r3 (door o3, enter heading east)
+
+Openings (heights relative to the floor surface (top of the slab); "faces" is the direction of travel from -> to):
+o0   door   at x=4..4 z=10..10 y=1..2 (0..2 above floor surface), faces south, r0 -> r1
+o1   door   at x=18..18 z=10..10 y=1..2 (0..2 above floor surface), faces south, r0 -> r2
+o2   door   at x=12..12 z=16..16 y=1..2 (0..2 above floor surface), faces east, r4 -> r2
+o3   door   at x=5..5 z=16..16 y=1..2 (0..2 above floor surface), faces east, r3 -> r4
+o76  stair  at x=2..7 z=13..13 ascends east over 6 blocks: goes UP from r1 to r6 (storey 1)
+o89  door   at x=9..11 z=0..0 y=1..2 (0..2 above floor surface), faces north, r0 -> outside
+o90  door   at x=20..20 z=9..9 y=1..2 (0..2 above floor surface), faces east, r0 -> outside
+o91  window at x=2..2 z=0..0 y=2..5 (1..5 above floor surface), faces north, r0 -> outside, sill +1 head +5
+o92  window at x=3..3 z=0..0 y=2..5 (1..5 above floor surface), faces north, r0 -> outside, sill +1 head +5
+o93  window at x=6..6 z=0..0 y=2..5 (1..5 above floor surface), faces north, r0 -> outside, sill +1 head +5
+o94  window at x=7..7 z=0..0 y=2..5 (1..5 above floor surface), faces north, r0 -> outside, sill +1 head +5
+o95  window at x=13..13 z=0..0 y=2..5 (1..5 above floor surface), faces north, r0 -> outside, sill +1 head +5
+o96  window at x=14..14 z=0..0 y=2..5 (1..5 above floor surface), faces north, r0 -> outside, sill +1 head +5
+o97  window at x=17..17 z=0..0 y=2..5 (1..5 above floor surface), faces north, r0 -> outside, sill +1 head +5
+o98  window at x=18..18 z=0..0 y=2..5 (1..5 above floor surface), faces north, r0 -> outside, sill +1 head +5
+o99  window at x=20..20 z=2..2 y=2..5 (1..5 above floor surface), faces east, r0 -> outside, sill +1 head +5
+o100 window at x=20..20 z=5..5 y=2..5 (1..5 above floor surface), faces east, r0 -> outside, sill +1 head +5
+o101 window at x=20..20 z=6..6 y=2..5 (1..5 above floor surface), faces east, r0 -> outside, sill +1 head +5
+o102 window at x=20..20 z=12..12 y=2..5 (1..5 above floor surface), faces east, r2 -> outside, sill +1 head +5
+o103 window at x=20..20 z=13..13 y=2..5 (1..5 above floor surface), faces east, r2 -> outside, sill +1 head +5
+o104 window at x=20..20 z=16..16 y=2..5 (1..5 above floor surface), faces east, r2 -> outside, sill +1 head +5
+o105 window at x=2..2 z=18..18 y=2..5 (1..5 above floor surface), faces south, r3 -> outside, sill +1 head +5
+o106 window at x=3..3 z=18..18 y=2..5 (1..5 above floor surface), faces south, r3 -> outside, sill +1 head +5
+o107 window at x=6..6 z=18..18 y=2..5 (1..5 above floor surface), faces south, r4 -> outside, sill +1 head +5
+o108 window at x=7..7 z=18..18 y=2..5 (1..5 above floor surface), faces south, r4 -> outside, sill +1 head +5
+o109 window at x=10..10 z=18..18 y=2..5 (1..5 above floor surface), faces south, r4 -> outside, sill +1 head +5
+o110 window at x=13..13 z=18..18 y=2..5 (1..5 above floor surface), faces south, r2 -> outside, sill +1 head +5
+o111 window at x=14..14 z=18..18 y=2..5 (1..5 above floor surface), faces south, r2 -> outside, sill +1 head +5
+o112 window at x=17..17 z=18..18 y=2..5 (1..5 above floor surface), faces south, r2 -> outside, sill +1 head +5
+o113 window at x=18..18 z=18..18 y=2..5 (1..5 above floor surface), faces south, r2 -> outside, sill +1 head +5
+o114 window at x=0..0 z=2..2 y=2..5 (1..5 above floor surface), faces west, r0 -> outside, sill +1 head +5
+o115 window at x=0..0 z=5..5 y=2..5 (1..5 above floor surface), faces west, r0 -> outside, sill +1 head +5
+o116 window at x=0..0 z=6..6 y=2..5 (1..5 above floor surface), faces west, r0 -> outside, sill +1 head +5
+o117 window at x=0..0 z=9..9 y=2..5 (1..5 above floor surface), faces west, r0 -> outside, sill +1 head +5
+o118 window at x=0..0 z=16..16 y=2..5 (1..5 above floor surface), faces west, r3 -> outside, sill +1 head +5
+
+Furniture hooks:
+h0    c ceiling_light room r0   at x=5 z=5 y=1 facing north
+h1    c ceiling_light room r0   at x=15 z=5 y=1 facing north
+h2    o counter    room r0   at x=7 z=9 y=1 facing north
+h3    o counter    room r0   at x=4 z=1 y=1 facing south
+h4    e bench      room r0   at x=19 z=2 y=1 facing west
+h5    e bench      room r0   at x=1 z=6 y=1 facing east
+h6    e bench      room r0   at x=13 z=1 y=1 facing south
+h7    e bench      room r0   at x=1 z=4 y=1 facing east
+h8    t table      room r0   at x=16 z=9 y=1 facing north
+h9    c ceiling_light room r2   at x=16 z=14 y=1 facing north
+h10   h chest      room r2   at x=19 z=17 y=1 facing west
+h11   t table      room r2   at x=19 z=14 y=1 facing west
+h12   t table      room r2   at x=15 z=11 y=1 facing south
+h13   t table      room r2   at x=13 z=13 y=1 facing east
+h14   t table      room r2   at x=13 z=11 y=1 facing east
+h15   e bench      room r2   at x=16 z=17 y=1 facing north
+h16   e bench      room r2   at x=14 z=17 y=1 facing north
+h17   e bench      room r2   at x=19 z=12 y=1 facing west
+h18   c ceiling_light room r3   at x=3 z=16 y=1 facing north
+h19   h chest      room r3   at x=3 z=17 y=1 facing north
+h20   h chest      room r3   at x=1 z=17 y=1 facing north
+h21   c ceiling_light room r4   at x=9 z=16 y=1 facing north
+h22   h chest      room r4   at x=8 z=17 y=1 facing north
+h23   h chest      room r4   at x=10 z=17 y=1 facing north
+h24   o counter    room r4   at x=10 z=15 y=1 facing south
+h404  l light      room r0   at x=9 z=13 y=1 facing north
+h405  c ceiling_light room r1   at x=4 z=11 y=1 facing north
+
+## Storey 1: floor slab y=6 (standing y=7), floor-to-floor height 4, clear air about 3 blocks, ceiling at y=10
+     0         1         2
+     0123456789012345678901   (x)
+  0 |##~~##~~##~##~~##~~##`
+  1 |#o.a.+...b.+..t....h#`
+  2 |~....+.....+.....b..~`
+  3 |~hC..+..D..+...E....~`
+  4 |#..c./..c..+o...c...#`
+  5 |#t...+.....+........#`
+  6 |~...e+.h...+a.e.e...~`
+  7 |#+/+++++++++++++++/+#`
+  8 |#.........A.........#`
+  9 |~...c.....c.....c...~`
+ 10 |#+++/++++#~#++++++/+#`
+ 11 |#..Bc...#OOO#a..e...#`
+ 12 |#..<<<<.#OOO#.......~`
+ 13 |#.OOOOO@#OOO#...F..e#`
+ 14 |#++++++++###+h..c...#`
+ 15 |~....+......+.......~`
+ 16 |~.Gc./..Hcb./.......~`
+ 17 |#h.h.+..h...+..t..o.#`
+ 18 |##~~##~~##~##~~##~~##`
+ 19 |``````````````````````
+ 20 |``````````````````````
+ 21 |``````````````````````
+Legend: # exterior wall, + interior wall, ~ window, / interior door, % door to outside, : arch (doorless), ^ > v < stair rising from here (direction of ascent), @ top step of a stair arriving from below, O opening in the floor (stairwell), . room floor, , floor outside a room, | fence/rail, ! post/beam, = other stair block, ` outside; A-Z/0-9 room labels (table below); furniture: b bed, e bench, c ceiling_light, h chest, o counter, a hearth, l light, t table
+
+Rooms on storey 1:
+ch   id    use          area   volume   connects to (opening, dir)
+A    r5    corridor     38     main0    r6 (door o4, leave heading south); r7 (door o5, leave heading north); r9 (door o7, leave heading north); r10 (door o8, leave heading south)
+B    r6    stairwell    21     main0    r5 (door o4, enter heading south); r1@storey0 (stair o76, enter heading east); r14@storey2 (stair o77, leave heading west)
+C    r7    flat         24     main0    r5 (door o5, enter heading north); r8 (door o6, leave heading east)
+D    r8    bedroom      30     main0    r7 (door o6, enter heading east)
+E    r9    flat         48     main0    r5 (door o7, enter heading north)
+F    r10   flat         49     main0    r5 (door o8, enter heading south); r12 (door o10, enter heading east)
+G    r11   storage      12     main0    r12 (door o9, enter heading west)
+H    r12   bedroom      18     main0    r11 (door o9, leave heading west); r10 (door o10, leave heading east)
+
+Openings (heights relative to the floor surface (top of the slab); "faces" is the direction of travel from -> to):
+o4   door   at x=4..4 z=10..10 y=7..8 (0..2 above floor surface), faces south, r5 -> r6
+o5   door   at x=2..2 z=7..7 y=7..8 (0..2 above floor surface), faces north, r5 -> r7
+o6   door   at x=5..5 z=4..4 y=7..8 (0..2 above floor surface), faces east, r7 -> r8
+o7   door   at x=18..18 z=7..7 y=7..8 (0..2 above floor surface), faces north, r5 -> r9
+o8   door   at x=18..18 z=10..10 y=7..8 (0..2 above floor surface), faces south, r5 -> r10
+o9   door   at x=5..5 z=16..16 y=7..8 (0..2 above floor surface), faces west, r12 -> r11
+o10  door   at x=12..12 z=16..16 y=7..8 (0..2 above floor surface), faces east, r12 -> r10
+o76  stair  at x=2..7 z=13..13 ascends east over 6 blocks: arrives from below (r1) at r6, top step in the floor opening
+o77  stair  at x=3..6 z=12..12 ascends west over 4 blocks: goes UP from r6 to r14 (storey 2)
+o119 window at x=2..2 z=0..0 y=7..9 (0..3 above floor surface), faces north, r7 -> outside, sill +0 head +3
+o120 window at x=3..3 z=0..0 y=7..9 (0..3 above floor surface), faces north, r7 -> outside, sill +0 head +3
+o121 window at x=6..6 z=0..0 y=7..9 (0..3 above floor surface), faces north, r8 -> outside, sill +0 head +3
+o122 window at x=7..7 z=0..0 y=7..9 (0..3 above floor surface), faces north, r8 -> outside, sill +0 head +3
+o123 window at x=10..10 z=0..0 y=7..9 (0..3 above floor surface), faces north, r8 -> outside, sill +0 head +3
+o124 window at x=13..13 z=0..0 y=7..9 (0..3 above floor surface), faces north, r9 -> outside, sill +0 head +3
+o125 window at x=14..14 z=0..0 y=7..9 (0..3 above floor surface), faces north, r9 -> outside, sill +0 head +3
+o126 window at x=17..17 z=0..0 y=7..9 (0..3 above floor surface), faces north, r9 -> outside, sill +0 head +3
+o127 window at x=18..18 z=0..0 y=7..9 (0..3 above floor surface), faces north, r9 -> outside, sill +0 head +3
+o128 window at x=20..20 z=2..2 y=7..9 (0..3 above floor surface), faces east, r9 -> outside, sill +0 head +3
+o129 window at x=20..20 z=3..3 y=7..9 (0..3 above floor surface), faces east, r9 -> outside, sill +0 head +3
+o130 window at x=20..20 z=6..6 y=7..9 (0..3 above floor surface), faces east, r9 -> outside, sill +0 head +3
+o131 window at x=20..20 z=9..9 y=7..9 (0..3 above floor surface), faces east, r5 -> outside, sill +0 head +3
+o132 window at x=20..20 z=12..12 y=7..9 (0..3 above floor surface), faces east, r10 -> outside, sill +0 head +3
+o133 window at x=20..20 z=15..15 y=7..9 (0..3 above floor surface), faces east, r10 -> outside, sill +0 head +3
+o134 window at x=20..20 z=16..16 y=7..9 (0..3 above floor surface), faces east, r10 -> outside, sill +0 head +3
+o135 window at x=2..2 z=18..18 y=7..9 (0..3 above floor surface), faces south, r11 -> outside, sill +0 head +3
+o136 window at x=3..3 z=18..18 y=7..9 (0..3 above floor surface), faces south, r11 -> outside, sill +0 head +3
+o137 window at x=6..6 z=18..18 y=7..9 (0..3 above floor surface), faces south, r12 -> outside, sill +0 head +3
+o138 window at x=7..7 z=18..18 y=7..9 (0..3 above floor surface), faces south, r12 -> outside, sill +0 head +3
+o139 window at x=10..10 z=18..18 y=7..9 (0..3 above floor surface), faces south, r12 -> outside, sill +0 head +3
+o140 window at x=13..13 z=18..18 y=7..9 (0..3 above floor surface), faces south, r10 -> outside, sill +0 head +3
+o141 window at x=14..14 z=18..18 y=7..9 (0..3 above floor surface), faces south, r10 -> outside, sill +0 head +3
+o142 window at x=17..17 z=18..18 y=7..9 (0..3 above floor surface), faces south, r10 -> outside, sill +0 head +3
+o143 window at x=18..18 z=18..18 y=7..9 (0..3 above floor surface), faces south, r10 -> outside, sill +0 head +3
+o144 window at x=0..0 z=2..2 y=7..9 (0..3 above floor surface), faces west, r7 -> outside, sill +0 head +3
+o145 window at x=0..0 z=3..3 y=7..9 (0..3 above floor surface), faces west, r7 -> outside, sill +0 head +3
+o146 window at x=0..0 z=6..6 y=7..9 (0..3 above floor surface), faces west, r7 -> outside, sill +0 head +3
+o147 window at x=0..0 z=9..9 y=7..9 (0..3 above floor surface), faces west, r5 -> outside, sill +0 head +3
+o148 window at x=0..0 z=15..15 y=7..9 (0..3 above floor surface), faces west, r11 -> outside, sill +0 head +3
+o149 window at x=0..0 z=16..16 y=7..9 (0..3 above floor surface), faces west, r11 -> outside, sill +0 head +3
+
+Furniture hooks:
+h25   c ceiling_light room r5   at x=4 z=9 y=7 facing north
+h26   c ceiling_light room r5   at x=10 z=9 y=7 facing north
+h27   c ceiling_light room r5   at x=16 z=9 y=7 facing north
+h28   c ceiling_light room r7   at x=3 z=4 y=7 facing north
+h29   a hearth     room r7   at x=3 z=1 y=7 facing south
+h30   o counter    room r7   at x=1 z=1 y=7 facing south
+h31   h chest      room r7   at x=1 z=3 y=7 facing east
+h32   t table      room r7   at x=1 z=5 y=7 facing east
+h33   e bench      room r7   at x=4 z=6 y=7 facing west
+h34   c ceiling_light room r8   at x=8 z=4 y=7 facing north
+h35   b bed        room r8   at x=9 z=1 y=7 facing east
+h36   h chest      room r8   at x=7 z=6 y=7 facing north
+h37   c ceiling_light room r9   at x=16 z=4 y=7 facing north
+h38   b bed        room r9   at x=17 z=2 y=7 facing north
+h39   a hearth     room r9   at x=12 z=6 y=7 facing north
+h40   o counter    room r9   at x=12 z=4 y=7 facing east
+h41   h chest      room r9   at x=19 z=1 y=7 facing south
+h42   t table      room r9   at x=14 z=1 y=7 facing south
+h43   e bench      room r9   at x=14 z=6 y=7 facing north
+h44   e bench      room r9   at x=16 z=6 y=7 facing north
+h45   c ceiling_light room r10  at x=16 z=14 y=7 facing north
+h46   a hearth     room r10  at x=13 z=11 y=7 facing south
+h47   o counter    room r10  at x=18 z=17 y=7 facing north
+h48   h chest      room r10  at x=13 z=14 y=7 facing east
+h49   t table      room r10  at x=15 z=17 y=7 facing north
+h50   e bench      room r10  at x=16 z=11 y=7 facing south
+h51   e bench      room r10  at x=19 z=13 y=7 facing west
+h52   c ceiling_light room r11  at x=3 z=16 y=7 facing north
+h53   h chest      room r11  at x=3 z=17 y=7 facing north
+h54   h chest      room r11  at x=1 z=17 y=7 facing north
+h55   c ceiling_light room r12  at x=9 z=16 y=7 facing north
+h56   b bed        room r12  at x=10 z=16 y=7 facing north
+h57   h chest      room r12  at x=8 z=17 y=7 facing north
+h406  c ceiling_light room r6   at x=4 z=11 y=7 facing north
+
+## Storey 2: floor slab y=10 (standing y=11), floor-to-floor height 4, clear air about 3 blocks, ceiling at y=14
+     0         1         2
+     0123456789012345678901   (x)
+  0 |##~~##~~##~##~~##~~##`
+  1 |#o.a.+...b.+..t....h#`
+  2 |~....+.....+.....b..~`
+  3 |~hC..+..D..+...E....~`
+  4 |#..c./..c..+o...c...#`
+  5 |#t...+.....+........#`
+  6 |~...e+.h...+a.e.e...~`
+  7 |#+/+++++++++++++++/+#`
+  8 |#.........A.........#`
+  9 |~...c.....c.....c...~`
+ 10 |#+++/++++#~#++++++/+#`
+ 11 |#..Bc...#OOO#a..e...#`
+ 12 |#..@OOO.#OOO#.......~`
+ 13 |#.>>>>..#OOO#...F..e#`
+ 14 |#++++++++###+h..c...#`
+ 15 |~....+......+.......~`
+ 16 |~.Gc./..Hcb./.......~`
+ 17 |#h.h.+..h...+..t..o.#`
+ 18 |##~~##~~##~##~~##~~##`
+ 19 |``````````````````````
+ 20 |``````````````````````
+ 21 |``````````````````````
+Legend: # exterior wall, + interior wall, ~ window, / interior door, % door to outside, : arch (doorless), ^ > v < stair rising from here (direction of ascent), @ top step of a stair arriving from below, O opening in the floor (stairwell), . room floor, , floor outside a room, | fence/rail, ! post/beam, = other stair block, ` outside; A-Z/0-9 room labels (table below); furniture: b bed, e bench, c ceiling_light, h chest, o counter, a hearth, l light, t table
+
+Rooms on storey 2:
+ch   id    use          area   volume   connects to (opening, dir)
+A    r13   corridor     38     main0    r14 (door o11, leave heading south); r15 (door o12, leave heading north); r17 (door o14, leave heading north); r18 (door o15, leave heading south)
+B    r14   stairwell    21     main0    r13 (door o11, enter heading south); r6@storey1 (stair o77, enter heading west); r22@storey3 (stair o78, leave heading east)
+C    r15   flat         24     main0    r13 (door o12, enter heading north); r16 (door o13, leave heading east)
+D    r16   bedroom      30     main0    r15 (door o13, enter heading east)
+E    r17   flat         48     main0    r13 (door o14, enter heading north)
+F    r18   flat         49     main0    r13 (door o15, enter heading south); r20 (door o17, enter heading east)
+G    r19   storage      12     main0    r20 (door o16, enter heading west)
+H    r20   bedroom      18     main0    r19 (door o16, leave heading west); r18 (door o17, leave heading east)
+
+Openings (heights relative to the floor surface (top of the slab); "faces" is the direction of travel from -> to):
+o11  door   at x=4..4 z=10..10 y=11..12 (0..2 above floor surface), faces south, r13 -> r14
+o12  door   at x=2..2 z=7..7 y=11..12 (0..2 above floor surface), faces north, r13 -> r15
+o13  door   at x=5..5 z=4..4 y=11..12 (0..2 above floor surface), faces east, r15 -> r16
+o14  door   at x=18..18 z=7..7 y=11..12 (0..2 above floor surface), faces north, r13 -> r17
+o15  door   at x=18..18 z=10..10 y=11..12 (0..2 above floor surface), faces south, r13 -> r18
+o16  door   at x=5..5 z=16..16 y=11..12 (0..2 above floor surface), faces west, r20 -> r19
+o17  door   at x=12..12 z=16..16 y=11..12 (0..2 above floor surface), faces east, r20 -> r18
+o77  stair  at x=3..6 z=12..12 ascends west over 4 blocks: arrives from below (r6) at r14, top step in the floor opening
+o78  stair  at x=2..5 z=13..13 ascends east over 4 blocks: goes UP from r14 to r22 (storey 3)
+o150 window at x=2..2 z=0..0 y=11..13 (0..3 above floor surface), faces north, r15 -> outside, sill +0 head +3
+o151 window at x=3..3 z=0..0 y=11..13 (0..3 above floor surface), faces north, r15 -> outside, sill +0 head +3
+o152 window at x=6..6 z=0..0 y=11..13 (0..3 above floor surface), faces north, r16 -> outside, sill +0 head +3
+o153 window at x=7..7 z=0..0 y=11..13 (0..3 above floor surface), faces north, r16 -> outside, sill +0 head +3
+o154 window at x=10..10 z=0..0 y=11..13 (0..3 above floor surface), faces north, r16 -> outside, sill +0 head +3
+o155 window at x=13..13 z=0..0 y=11..13 (0..3 above floor surface), faces north, r17 -> outside, sill +0 head +3
+o156 window at x=14..14 z=0..0 y=11..13 (0..3 above floor surface), faces north, r17 -> outside, sill +0 head +3
+o157 window at x=17..17 z=0..0 y=11..13 (0..3 above floor surface), faces north, r17 -> outside, sill +0 head +3
+o158 window at x=18..18 z=0..0 y=11..13 (0..3 above floor surface), faces north, r17 -> outside, sill +0 head +3
+o159 window at x=20..20 z=2..2 y=11..13 (0..3 above floor surface), faces east, r17 -> outside, sill +0 head +3
+o160 window at x=20..20 z=3..3 y=11..13 (0..3 above floor surface), faces east, r17 -> outside, sill +0 head +3
+o161 window at x=20..20 z=6..6 y=11..13 (0..3 above floor surface), faces east, r17 -> outside, sill +0 head +3
+o162 window at x=20..20 z=9..9 y=11..13 (0..3 above floor surface), faces east, r13 -> outside, sill +0 head +3
+o163 window at x=20..20 z=12..12 y=11..13 (0..3 above floor surface), faces east, r18 -> outside, sill +0 head +3
+o164 window at x=20..20 z=15..15 y=11..13 (0..3 above floor surface), faces east, r18 -> outside, sill +0 head +3
+o165 window at x=20..20 z=16..16 y=11..13 (0..3 above floor surface), faces east, r18 -> outside, sill +0 head +3
+o166 window at x=2..2 z=18..18 y=11..13 (0..3 above floor surface), faces south, r19 -> outside, sill +0 head +3
+o167 window at x=3..3 z=18..18 y=11..13 (0..3 above floor surface), faces south, r19 -> outside, sill +0 head +3
+o168 window at x=6..6 z=18..18 y=11..13 (0..3 above floor surface), faces south, r20 -> outside, sill +0 head +3
+o169 window at x=7..7 z=18..18 y=11..13 (0..3 above floor surface), faces south, r20 -> outside, sill +0 head +3
+o170 window at x=10..10 z=18..18 y=11..13 (0..3 above floor surface), faces south, r20 -> outside, sill +0 head +3
+o171 window at x=13..13 z=18..18 y=11..13 (0..3 above floor surface), faces south, r18 -> outside, sill +0 head +3
+o172 window at x=14..14 z=18..18 y=11..13 (0..3 above floor surface), faces south, r18 -> outside, sill +0 head +3
+o173 window at x=17..17 z=18..18 y=11..13 (0..3 above floor surface), faces south, r18 -> outside, sill +0 head +3
+o174 window at x=18..18 z=18..18 y=11..13 (0..3 above floor surface), faces south, r18 -> outside, sill +0 head +3
+o175 window at x=0..0 z=2..2 y=11..13 (0..3 above floor surface), faces west, r15 -> outside, sill +0 head +3
+o176 window at x=0..0 z=3..3 y=11..13 (0..3 above floor surface), faces west, r15 -> outside, sill +0 head +3
+o177 window at x=0..0 z=6..6 y=11..13 (0..3 above floor surface), faces west, r15 -> outside, sill +0 head +3
+o178 window at x=0..0 z=9..9 y=11..13 (0..3 above floor surface), faces west, r13 -> outside, sill +0 head +3
+o179 window at x=0..0 z=15..15 y=11..13 (0..3 above floor surface), faces west, r19 -> outside, sill +0 head +3
+o180 window at x=0..0 z=16..16 y=11..13 (0..3 above floor surface), faces west, r19 -> outside, sill +0 head +3
+
+Furniture hooks:
+h58   c ceiling_light room r13  at x=4 z=9 y=11 facing north
+h59   c ceiling_light room r13  at x=10 z=9 y=11 facing north
+h60   c ceiling_light room r13  at x=16 z=9 y=11 facing north
+h61   c ceiling_light room r15  at x=3 z=4 y=11 facing north
+h62   a hearth     room r15  at x=3 z=1 y=11 facing south
+h63   o counter    room r15  at x=1 z=1 y=11 facing south
+h64   h chest      room r15  at x=1 z=3 y=11 facing east
+h65   t table      room r15  at x=1 z=5 y=11 facing east
+h66   e bench      room r15  at x=4 z=6 y=11 facing west
+h67   c ceiling_light room r16  at x=8 z=4 y=11 facing north
+h68   b bed        room r16  at x=9 z=1 y=11 facing east
+h69   h chest      room r16  at x=7 z=6 y=11 facing north
+h70   c ceiling_light room r17  at x=16 z=4 y=11 facing north
+h71   b bed        room r17  at x=17 z=2 y=11 facing north
+h72   a hearth     room r17  at x=12 z=6 y=11 facing north
+h73   o counter    room r17  at x=12 z=4 y=11 facing east
+h74   h chest      room r17  at x=19 z=1 y=11 facing south
+h75   t table      room r17  at x=14 z=1 y=11 facing south
+h76   e bench      room r17  at x=14 z=6 y=11 facing north
+h77   e bench      room r17  at x=16 z=6 y=11 facing north
+h78   c ceiling_light room r18  at x=16 z=14 y=11 facing north
+h79   a hearth     room r18  at x=13 z=11 y=11 facing south
+h80   o counter    room r18  at x=18 z=17 y=11 facing north
+h81   h chest      room r18  at x=13 z=14 y=11 facing east
+h82   t table      room r18  at x=15 z=17 y=11 facing north
+h83   e bench      room r18  at x=16 z=11 y=11 facing south
+h84   e bench      room r18  at x=19 z=13 y=11 facing west
+h85   c ceiling_light room r19  at x=3 z=16 y=11 facing north
+h86   h chest      room r19  at x=3 z=17 y=11 facing north
+h87   h chest      room r19  at x=1 z=17 y=11 facing north
+h88   c ceiling_light room r20  at x=9 z=16 y=11 facing north
+h89   b bed        room r20  at x=10 z=16 y=11 facing north
+h90   h chest      room r20  at x=8 z=17 y=11 facing north
+h407  c ceiling_light room r14  at x=4 z=11 y=11 facing north
+
+## Storey 3: floor slab y=14 (standing y=15), floor-to-floor height 6, clear air about 5 blocks, ceiling at y=20
+     0         1         2
+     0123456789012345678901   (x)
+  0 |##~##~~##~~##~~##~###,
+  1 |#....e.t...e.e.....+#,
+  2 |~.................e~#,
+  3 |~..................+#,
+  4 |#..................+#,
+  5 |#....c...A....c....~#,
+  6 |~..................~#,
+  7 |#..................+#,
+  8 |#..................+#,
+  9 |~.t....t.....h.t...~#,
+ 10 |#+++/++++#~#+++++/++#,
+ 11 |#..Bc...#OOO#..e...+#,
+ 12 |#<<<<<<.#OOO#h....t~#,
+ 13 |#.OOO@..#OOO#......~#,
+ 14 |#++++++++###+e.Cc.t+#,
+ 15 |~......+..h.+......+#,
+ 16 |~..Dc../.Ec./......~#,
+ 17 |#o.h.h.+.h..+..t..e+#,
+ 18 |##~##~~##~~##~~##~###,
+ 19 |,,,,,,,,,,,,,,,,,,,,,,
+ 20 |``````````````````````
+ 21 |``````````````````````
+Legend: # exterior wall, + interior wall, ~ window, / interior door, % door to outside, : arch (doorless), ^ > v < stair rising from here (direction of ascent), @ top step of a stair arriving from below, O opening in the floor (stairwell), . room floor, , floor outside a room, | fence/rail, ! post/beam, = other stair block, ` outside; A-Z/0-9 room labels (table below); furniture: b bed, e bench, c ceiling_light, h chest, o counter, a hearth, l light, t table
+
+Rooms on storey 3:
+ch   id    use          area   volume   connects to (opening, dir)
+A    r21   open         162    shaft1   r22 (door o18, leave heading south); r23 (door o19, leave heading south)
+B    r22   stairwell    21     shaft1   r21 (door o18, enter heading south); r14@storey2 (stair o78, enter heading east); r27@storey4 (stair o79, leave heading west)
+C    r23   office       42     shaft1   r21 (door o19, enter heading south); r25 (door o20, enter heading east)
+D    r24   storage      18     shaft1   r25 (door o21, leave heading east)
+E    r25   storage      12     shaft1   r23 (door o20, leave heading east); r24 (door o21, enter heading east)
+
+Openings (heights relative to the floor surface (top of the slab); "faces" is the direction of travel from -> to):
+o18  door   at x=4..4 z=10..10 y=15..16 (0..2 above floor surface), faces south, r21 -> r22
+o19  door   at x=17..17 z=10..10 y=15..16 (0..2 above floor surface), faces south, r21 -> r23
+o20  door   at x=12..12 z=16..16 y=15..16 (0..2 above floor surface), faces east, r25 -> r23
+o21  door   at x=7..7 z=16..16 y=15..16 (0..2 above floor surface), faces east, r24 -> r25
+o78  stair  at x=2..5 z=13..13 ascends east over 4 blocks: arrives from below (r14) at r22, top step in the floor opening
+o79  stair  at x=1..6 z=12..12 ascends west over 6 blocks: goes UP from r22 to r27 (storey 4)
+o181 window at x=2..2 z=0..0 y=15..18 (0..4 above floor surface), faces north, r21 -> outside, sill +0 head +4
+o182 window at x=5..5 z=0..0 y=15..18 (0..4 above floor surface), faces north, r21 -> outside, sill +0 head +4
+o183 window at x=6..6 z=0..0 y=15..18 (0..4 above floor surface), faces north, r21 -> outside, sill +0 head +4
+o184 window at x=9..9 z=0..0 y=15..18 (0..4 above floor surface), faces north, r21 -> outside, sill +0 head +4
+o185 window at x=10..10 z=0..0 y=15..18 (0..4 above floor surface), faces north, r21 -> outside, sill +0 head +4
+o186 window at x=13..13 z=0..0 y=15..18 (0..4 above floor surface), faces north, r21 -> outside, sill +0 head +4
+o187 window at x=14..14 z=0..0 y=15..18 (0..4 above floor surface), faces north, r21 -> outside, sill +0 head +4
+o188 window at x=17..17 z=0..0 y=15..18 (0..4 above floor surface), faces north, r21 -> outside, sill +0 head +4
+o189 window at x=19..19 z=2..2 y=15..18 (0..4 above floor surface), faces east, r21 -> outside, sill +0 head +4
+o190 window at x=19..19 z=5..5 y=15..18 (0..4 above floor surface), faces east, r21 -> outside, sill +0 head +4
+o191 window at x=19..19 z=6..6 y=15..18 (0..4 above floor surface), faces east, r21 -> outside, sill +0 head +4
+o192 window at x=19..19 z=9..9 y=15..18 (0..4 above floor surface), faces east, r21 -> outside, sill +0 head +4
+o193 window at x=19..19 z=12..12 y=15..18 (0..4 above floor surface), faces east, r23 -> outside, sill +0 head +4
+o194 window at x=19..19 z=13..13 y=15..18 (0..4 above floor surface), faces east, r23 -> outside, sill +0 head +4
+o195 window at x=19..19 z=16..16 y=15..18 (0..4 above floor surface), faces east, r23 -> outside, sill +0 head +4
+o196 window at x=2..2 z=18..18 y=15..18 (0..4 above floor surface), faces south, r24 -> outside, sill +0 head +4
+o197 window at x=5..5 z=18..18 y=15..18 (0..4 above floor surface), faces south, r24 -> outside, sill +0 head +4
+o198 window at x=6..6 z=18..18 y=15..18 (0..4 above floor surface), faces south, r24 -> outside, sill +0 head +4
+o199 window at x=9..9 z=18..18 y=15..18 (0..4 above floor surface), faces south, r25 -> outside, sill +0 head +4
+o200 window at x=10..10 z=18..18 y=15..18 (0..4 above floor surface), faces south, r25 -> outside, sill +0 head +4
+o201 window at x=13..13 z=18..18 y=15..18 (0..4 above floor surface), faces south, r23 -> outside, sill +0 head +4
+o202 window at x=14..14 z=18..18 y=15..18 (0..4 above floor surface), faces south, r23 -> outside, sill +0 head +4
+o203 window at x=17..17 z=18..18 y=15..18 (0..4 above floor surface), faces south, r23 -> outside, sill +0 head +4
+o204 window at x=0..0 z=2..2 y=15..18 (0..4 above floor surface), faces west, r21 -> outside, sill +0 head +4
+o205 window at x=0..0 z=3..3 y=15..18 (0..4 above floor surface), faces west, r21 -> outside, sill +0 head +4
+o206 window at x=0..0 z=6..6 y=15..18 (0..4 above floor surface), faces west, r21 -> outside, sill +0 head +4
+o207 window at x=0..0 z=9..9 y=15..18 (0..4 above floor surface), faces west, r21 -> outside, sill +0 head +4
+o208 window at x=0..0 z=15..15 y=15..18 (0..4 above floor surface), faces west, r24 -> outside, sill +0 head +4
+o209 window at x=0..0 z=16..16 y=15..18 (0..4 above floor surface), faces west, r24 -> outside, sill +0 head +4
+
+Furniture hooks:
+h91   c ceiling_light room r21  at x=5 z=5 y=15 facing north
+h92   c ceiling_light room r21  at x=14 z=5 y=15 facing north
+h93   h chest      room r21  at x=13 z=9 y=15 facing north
+h94   t table      room r21  at x=7 z=9 y=15 facing north
+h95   t table      room r21  at x=7 z=1 y=15 facing south
+h96   t table      room r21  at x=15 z=9 y=15 facing north
+h97   t table      room r21  at x=2 z=9 y=15 facing north
+h98   e bench      room r21  at x=13 z=1 y=15 facing south
+h99   e bench      room r21  at x=5 z=1 y=15 facing south
+h100  e bench      room r21  at x=11 z=1 y=15 facing south
+h101  e bench      room r21  at x=18 z=2 y=15 facing west
+h102  c ceiling_light room r23  at x=16 z=14 y=15 facing north
+h103  h chest      room r23  at x=13 z=12 y=15 facing east
+h104  t table      room r23  at x=18 z=14 y=15 facing west
+h105  t table      room r23  at x=15 z=17 y=15 facing north
+h106  t table      room r23  at x=18 z=12 y=15 facing west
+h107  e bench      room r23  at x=18 z=17 y=15 facing north
+h108  e bench      room r23  at x=13 z=14 y=15 facing east
+h109  e bench      room r23  at x=15 z=11 y=15 facing south
+h110  c ceiling_light room r24  at x=4 z=16 y=15 facing north
+h111  h chest      room r24  at x=3 z=17 y=15 facing north
+h112  h chest      room r24  at x=5 z=17 y=15 facing north
+h113  o counter    room r24  at x=1 z=17 y=15 facing north
+h114  c ceiling_light room r25  at x=10 z=16 y=15 facing north
+h115  h chest      room r25  at x=10 z=15 y=15 facing south
+h116  h chest      room r25  at x=9 z=17 y=15 facing north
+h408  c ceiling_light room r22  at x=4 z=11 y=15 facing north
+
+## Storey 4: floor slab y=20 (standing y=21), floor-to-floor height 4, clear air about 3 blocks, ceiling at y=24
+     0         1         2
+     0123456789012345678901   (x)
+  0 |##~##~~##~~##~~##~##``
+  1 |#....e.h+........a.#``
+  2 |~a......+o.........~``
+  3 |~...C...+....D....h#``
+  4 |#.b.c..o+e....c....#``
+  5 |#.......+....b.....~``
+  6 |~...t..e+..e...t...~``
+  7 |#+/++++++++++++++/+#``
+  8 |#........A.........#``
+  9 |~...c.....c.....c..~``
+ 10 |#+++/++++#~#+++++/+#``
+ 11 |#..Bc...#OOO#e.a...#``
+ 12 |#@OOOOO.#OOO#.....h~``
+ 13 |#.>>>>..#OOO#......~``
+ 14 |#++++++++###+..Ec.e#``
+ 15 |~......+.G..+......#``
+ 16 |~..Fc../.bc./......~``
+ 17 |#o.h.h.+....+..o..t#``
+ 18 |##~##~~##~~##~~##~##``
+ 19 |``````````````````````
+ 20 |``````````````````````
+ 21 |``````````````````````
+Legend: # exterior wall, + interior wall, ~ window, / interior door, % door to outside, : arch (doorless), ^ > v < stair rising from here (direction of ascent), @ top step of a stair arriving from below, O opening in the floor (stairwell), . room floor, , floor outside a room, | fence/rail, ! post/beam, = other stair block, ` outside; A-Z/0-9 room labels (table below); furniture: b bed, e bench, c ceiling_light, h chest, o counter, a hearth, l light, t table
+
+Rooms on storey 4:
+ch   id    use          area   volume   connects to (opening, dir)
+A    r26   corridor     36     shaft1   r27 (door o22, leave heading south); r28 (door o23, leave heading north); r29 (door o24, leave heading north); r30 (door o25, leave heading south)
+B    r27   stairwell    21     shaft1   r26 (door o22, enter heading south); r22@storey3 (stair o79, enter heading west); r34@storey5 (stair o80, leave heading east)
+C    r28   flat         42     shaft1   r26 (door o23, enter heading north)
+D    r29   flat         60     shaft1   r26 (door o24, enter heading north)
+E    r30   flat         42     shaft1   r26 (door o25, enter heading south); r32 (door o27, enter heading east)
+F    r31   storage      18     shaft1   r32 (door o26, enter heading west)
+G    r32   bedroom      12     shaft1   r31 (door o26, leave heading west); r30 (door o27, leave heading east)
+
+Openings (heights relative to the floor surface (top of the slab); "faces" is the direction of travel from -> to):
+o22  door   at x=4..4 z=10..10 y=21..22 (0..2 above floor surface), faces south, r26 -> r27
+o23  door   at x=2..2 z=7..7 y=21..22 (0..2 above floor surface), faces north, r26 -> r28
+o24  door   at x=17..17 z=7..7 y=21..22 (0..2 above floor surface), faces north, r26 -> r29
+o25  door   at x=17..17 z=10..10 y=21..22 (0..2 above floor surface), faces south, r26 -> r30
+o26  door   at x=7..7 z=16..16 y=21..22 (0..2 above floor surface), faces west, r32 -> r31
+o27  door   at x=12..12 z=16..16 y=21..22 (0..2 above floor surface), faces east, r32 -> r30
+o79  stair  at x=1..6 z=12..12 ascends west over 6 blocks: arrives from below (r22) at r27, top step in the floor opening
+o80  stair  at x=2..5 z=13..13 ascends east over 4 blocks: goes UP from r27 to r34 (storey 5)
+o210 window at x=2..2 z=0..0 y=21..23 (0..3 above floor surface), faces north, r28 -> outside, sill +0 head +3
+o211 window at x=5..5 z=0..0 y=21..23 (0..3 above floor surface), faces north, r28 -> outside, sill +0 head +3
+o212 window at x=6..6 z=0..0 y=21..23 (0..3 above floor surface), faces north, r28 -> outside, sill +0 head +3
+o213 window at x=9..9 z=0..0 y=21..23 (0..3 above floor surface), faces north, r29 -> outside, sill +0 head +3
+o214 window at x=10..10 z=0..0 y=21..23 (0..3 above floor surface), faces north, r29 -> outside, sill +0 head +3
+o215 window at x=13..13 z=0..0 y=21..23 (0..3 above floor surface), faces north, r29 -> outside, sill +0 head +3
+o216 window at x=14..14 z=0..0 y=21..23 (0..3 above floor surface), faces north, r29 -> outside, sill +0 head +3
+o217 window at x=17..17 z=0..0 y=21..23 (0..3 above floor surface), faces north, r29 -> outside, sill +0 head +3
+o218 window at x=19..19 z=2..2 y=21..23 (0..3 above floor surface), faces east, r29 -> outside, sill +0 head +3
+o219 window at x=19..19 z=5..5 y=21..23 (0..3 above floor surface), faces east, r29 -> outside, sill +0 head +3
+o220 window at x=19..19 z=6..6 y=21..23 (0..3 above floor surface), faces east, r29 -> outside, sill +0 head +3
+o221 window at x=19..19 z=9..9 y=21..23 (0..3 above floor surface), faces east, r26 -> outside, sill +0 head +3
+o222 window at x=19..19 z=12..12 y=21..23 (0..3 above floor surface), faces east, r30 -> outside, sill +0 head +3
+o223 window at x=19..19 z=13..13 y=21..23 (0..3 above floor surface), faces east, r30 -> outside, sill +0 head +3
+o224 window at x=19..19 z=16..16 y=21..23 (0..3 above floor surface), faces east, r30 -> outside, sill +0 head +3
+o225 window at x=2..2 z=18..18 y=21..23 (0..3 above floor surface), faces south, r31 -> outside, sill +0 head +3
+o226 window at x=5..5 z=18..18 y=21..23 (0..3 above floor surface), faces south, r31 -> outside, sill +0 head +3
+o227 window at x=6..6 z=18..18 y=21..23 (0..3 above floor surface), faces south, r31 -> outside, sill +0 head +3
+o228 window at x=9..9 z=18..18 y=21..23 (0..3 above floor surface), faces south, r32 -> outside, sill +0 head +3
+o229 window at x=10..10 z=18..18 y=21..23 (0..3 above floor surface), faces south, r32 -> outside, sill +0 head +3
+o230 window at x=13..13 z=18..18 y=21..23 (0..3 above floor surface), faces south, r30 -> outside, sill +0 head +3
+o231 window at x=14..14 z=18..18 y=21..23 (0..3 above floor surface), faces south, r30 -> outside, sill +0 head +3
+o232 window at x=17..17 z=18..18 y=21..23 (0..3 above floor surface), faces south, r30 -> outside, sill +0 head +3
+o233 window at x=0..0 z=2..2 y=21..23 (0..3 above floor surface), faces west, r28 -> outside, sill +0 head +3
+o234 window at x=0..0 z=3..3 y=21..23 (0..3 above floor surface), faces west, r28 -> outside, sill +0 head +3
+o235 window at x=0..0 z=6..6 y=21..23 (0..3 above floor surface), faces west, r28 -> outside, sill +0 head +3
+o236 window at x=0..0 z=9..9 y=21..23 (0..3 above floor surface), faces west, r26 -> outside, sill +0 head +3
+o237 window at x=0..0 z=15..15 y=21..23 (0..3 above floor surface), faces west, r31 -> outside, sill +0 head +3
+o238 window at x=0..0 z=16..16 y=21..23 (0..3 above floor surface), faces west, r31 -> outside, sill +0 head +3
+
+Furniture hooks:
+h117  c ceiling_light room r26  at x=4 z=9 y=21 facing north
+h118  c ceiling_light room r26  at x=10 z=9 y=21 facing north
+h119  c ceiling_light room r26  at x=16 z=9 y=21 facing north
+h120  c ceiling_light room r28  at x=4 z=4 y=21 facing north
+h121  b bed        room r28  at x=2 z=4 y=21 facing west
+h122  a hearth     room r28  at x=1 z=2 y=21 facing east
+h123  o counter    room r28  at x=7 z=4 y=21 facing west
+h124  h chest      room r28  at x=7 z=1 y=21 facing south
+h125  t table      room r28  at x=4 z=6 y=21 facing north
+h126  e bench      room r28  at x=5 z=1 y=21 facing south
+h127  e bench      room r28  at x=7 z=6 y=21 facing west
+h128  c ceiling_light room r29  at x=14 z=4 y=21 facing north
+h129  b bed        room r29  at x=13 z=5 y=21 facing south
+h130  a hearth     room r29  at x=17 z=1 y=21 facing south
+h131  o counter    room r29  at x=9 z=2 y=21 facing east
+h132  h chest      room r29  at x=18 z=3 y=21 facing west
+h133  t table      room r29  at x=15 z=6 y=21 facing north
+h134  e bench      room r29  at x=11 z=6 y=21 facing north
+h135  e bench      room r29  at x=9 z=4 y=21 facing east
+h136  c ceiling_light room r30  at x=16 z=14 y=21 facing north
+h137  a hearth     room r30  at x=15 z=11 y=21 facing south
+h138  o counter    room r30  at x=15 z=17 y=21 facing north
+h139  h chest      room r30  at x=18 z=12 y=21 facing west
+h140  t table      room r30  at x=18 z=17 y=21 facing west
+h141  e bench      room r30  at x=13 z=11 y=21 facing east
+h142  e bench      room r30  at x=18 z=14 y=21 facing west
+h143  c ceiling_light room r31  at x=4 z=16 y=21 facing north
+h144  h chest      room r31  at x=3 z=17 y=21 facing north
+h145  h chest      room r31  at x=5 z=17 y=21 facing north
+h146  o counter    room r31  at x=1 z=17 y=21 facing north
+h147  c ceiling_light room r32  at x=10 z=16 y=21 facing north
+h148  b bed        room r32  at x=9 z=16 y=21 facing south
+h409  c ceiling_light room r27  at x=4 z=11 y=21 facing north
+
+## Storey 5: floor slab y=24 (standing y=25), floor-to-floor height 4, clear air about 3 blocks, ceiling at y=28
+     0         1         2
+     0123456789012345678901   (x)
+  0 |##~##~~##~~##~~##~##``
+  1 |#....e.h+........a.#``
+  2 |~a......+o.........~``
+  3 |~...C...+....D....h#``
+  4 |#.b.c..o+e....c....#``
+  5 |#.......+....b.....~``
+  6 |~...t..e+..e...t...~``
+  7 |#+/++++++++++++++/+#``
+  8 |#........A.........#``
+  9 |~...c.....c.....c..~``
+ 10 |#+++/++++#~#+++++/+#``
+ 11 |#..Bc...#OOO#e.a...#``
+ 12 |#..<<<<.#OOO#.....h~``
+ 13 |#.OOO@..#OOO#......~``
+ 14 |#++++++++###+..Ec.e#``
+ 15 |~......+.G..+......#``
+ 16 |~..Fc../.bc./......~``
+ 17 |#o.h.h.+....+..o..t#``
+ 18 |##~##~~##~~##~~##~##``
+ 19 |``````````````````````
+ 20 |``````````````````````
+ 21 |``````````````````````
+Legend: # exterior wall, + interior wall, ~ window, / interior door, % door to outside, : arch (doorless), ^ > v < stair rising from here (direction of ascent), @ top step of a stair arriving from below, O opening in the floor (stairwell), . room floor, , floor outside a room, | fence/rail, ! post/beam, = other stair block, ` outside; A-Z/0-9 room labels (table below); furniture: b bed, e bench, c ceiling_light, h chest, o counter, a hearth, l light, t table
+
+Rooms on storey 5:
+ch   id    use          area   volume   connects to (opening, dir)
+A    r33   corridor     36     shaft1   r34 (door o28, leave heading south); r35 (door o29, leave heading north); r36 (door o30, leave heading north); r37 (door o31, leave heading south)
+B    r34   stairwell    21     shaft1   r33 (door o28, enter heading south); r27@storey4 (stair o80, enter heading east); r41@storey6 (stair o81, leave heading west)
+C    r35   flat         42     shaft1   r33 (door o29, enter heading north)
+D    r36   flat         60     shaft1   r33 (door o30, enter heading north)
+E    r37   flat         42     shaft1   r33 (door o31, enter heading south); r39 (door o33, enter heading east)
+F    r38   storage      18     shaft1   r39 (door o32, enter heading west)
+G    r39   bedroom      12     shaft1   r38 (door o32, leave heading west); r37 (door o33, leave heading east)
+
+Openings (heights relative to the floor surface (top of the slab); "faces" is the direction of travel from -> to):
+o28  door   at x=4..4 z=10..10 y=25..26 (0..2 above floor surface), faces south, r33 -> r34
+o29  door   at x=2..2 z=7..7 y=25..26 (0..2 above floor surface), faces north, r33 -> r35
+o30  door   at x=17..17 z=7..7 y=25..26 (0..2 above floor surface), faces north, r33 -> r36
+o31  door   at x=17..17 z=10..10 y=25..26 (0..2 above floor surface), faces south, r33 -> r37
+o32  door   at x=7..7 z=16..16 y=25..26 (0..2 above floor surface), faces west, r39 -> r38
+o33  door   at x=12..12 z=16..16 y=25..26 (0..2 above floor surface), faces east, r39 -> r37
+o80  stair  at x=2..5 z=13..13 ascends east over 4 blocks: arrives from below (r27) at r34, top step in the floor opening
+o81  stair  at x=3..6 z=12..12 ascends west over 4 blocks: goes UP from r34 to r41 (storey 6)
+o239 window at x=2..2 z=0..0 y=25..27 (0..3 above floor surface), faces north, r35 -> outside, sill +0 head +3
+o240 window at x=5..5 z=0..0 y=25..27 (0..3 above floor surface), faces north, r35 -> outside, sill +0 head +3
+o241 window at x=6..6 z=0..0 y=25..27 (0..3 above floor surface), faces north, r35 -> outside, sill +0 head +3
+o242 window at x=9..9 z=0..0 y=25..27 (0..3 above floor surface), faces north, r36 -> outside, sill +0 head +3
+o243 window at x=10..10 z=0..0 y=25..27 (0..3 above floor surface), faces north, r36 -> outside, sill +0 head +3
+o244 window at x=13..13 z=0..0 y=25..27 (0..3 above floor surface), faces north, r36 -> outside, sill +0 head +3
+o245 window at x=14..14 z=0..0 y=25..27 (0..3 above floor surface), faces north, r36 -> outside, sill +0 head +3
+o246 window at x=17..17 z=0..0 y=25..27 (0..3 above floor surface), faces north, r36 -> outside, sill +0 head +3
+o247 window at x=19..19 z=2..2 y=25..27 (0..3 above floor surface), faces east, r36 -> outside, sill +0 head +3
+o248 window at x=19..19 z=5..5 y=25..27 (0..3 above floor surface), faces east, r36 -> outside, sill +0 head +3
+o249 window at x=19..19 z=6..6 y=25..27 (0..3 above floor surface), faces east, r36 -> outside, sill +0 head +3
+o250 window at x=19..19 z=9..9 y=25..27 (0..3 above floor surface), faces east, r33 -> outside, sill +0 head +3
+o251 window at x=19..19 z=12..12 y=25..27 (0..3 above floor surface), faces east, r37 -> outside, sill +0 head +3
+o252 window at x=19..19 z=13..13 y=25..27 (0..3 above floor surface), faces east, r37 -> outside, sill +0 head +3
+o253 window at x=19..19 z=16..16 y=25..27 (0..3 above floor surface), faces east, r37 -> outside, sill +0 head +3
+o254 window at x=2..2 z=18..18 y=25..27 (0..3 above floor surface), faces south, r38 -> outside, sill +0 head +3
+o255 window at x=5..5 z=18..18 y=25..27 (0..3 above floor surface), faces south, r38 -> outside, sill +0 head +3
+o256 window at x=6..6 z=18..18 y=25..27 (0..3 above floor surface), faces south, r38 -> outside, sill +0 head +3
+o257 window at x=9..9 z=18..18 y=25..27 (0..3 above floor surface), faces south, r39 -> outside, sill +0 head +3
+o258 window at x=10..10 z=18..18 y=25..27 (0..3 above floor surface), faces south, r39 -> outside, sill +0 head +3
+o259 window at x=13..13 z=18..18 y=25..27 (0..3 above floor surface), faces south, r37 -> outside, sill +0 head +3
+o260 window at x=14..14 z=18..18 y=25..27 (0..3 above floor surface), faces south, r37 -> outside, sill +0 head +3
+o261 window at x=17..17 z=18..18 y=25..27 (0..3 above floor surface), faces south, r37 -> outside, sill +0 head +3
+o262 window at x=0..0 z=2..2 y=25..27 (0..3 above floor surface), faces west, r35 -> outside, sill +0 head +3
+o263 window at x=0..0 z=3..3 y=25..27 (0..3 above floor surface), faces west, r35 -> outside, sill +0 head +3
+o264 window at x=0..0 z=6..6 y=25..27 (0..3 above floor surface), faces west, r35 -> outside, sill +0 head +3
+o265 window at x=0..0 z=9..9 y=25..27 (0..3 above floor surface), faces west, r33 -> outside, sill +0 head +3
+o266 window at x=0..0 z=15..15 y=25..27 (0..3 above floor surface), faces west, r38 -> outside, sill +0 head +3
+o267 window at x=0..0 z=16..16 y=25..27 (0..3 above floor surface), faces west, r38 -> outside, sill +0 head +3
+
+Furniture hooks:
+h149  c ceiling_light room r33  at x=4 z=9 y=25 facing north
+h150  c ceiling_light room r33  at x=10 z=9 y=25 facing north
+h151  c ceiling_light room r33  at x=16 z=9 y=25 facing north
+h152  c ceiling_light room r35  at x=4 z=4 y=25 facing north
+h153  b bed        room r35  at x=2 z=4 y=25 facing west
+h154  a hearth     room r35  at x=1 z=2 y=25 facing east
+h155  o counter    room r35  at x=7 z=4 y=25 facing west
+h156  h chest      room r35  at x=7 z=1 y=25 facing south
+h157  t table      room r35  at x=4 z=6 y=25 facing north
+h158  e bench      room r35  at x=5 z=1 y=25 facing south
+h159  e bench      room r35  at x=7 z=6 y=25 facing west
+h160  c ceiling_light room r36  at x=14 z=4 y=25 facing north
+h161  b bed        room r36  at x=13 z=5 y=25 facing south
+h162  a hearth     room r36  at x=17 z=1 y=25 facing south
+h163  o counter    room r36  at x=9 z=2 y=25 facing east
+h164  h chest      room r36  at x=18 z=3 y=25 facing west
+h165  t table      room r36  at x=15 z=6 y=25 facing north
+h166  e bench      room r36  at x=11 z=6 y=25 facing north
+h167  e bench      room r36  at x=9 z=4 y=25 facing east
+h168  c ceiling_light room r37  at x=16 z=14 y=25 facing north
+h169  a hearth     room r37  at x=15 z=11 y=25 facing south
+h170  o counter    room r37  at x=15 z=17 y=25 facing north
+h171  h chest      room r37  at x=18 z=12 y=25 facing west
+h172  t table      room r37  at x=18 z=17 y=25 facing west
+h173  e bench      room r37  at x=13 z=11 y=25 facing east
+h174  e bench      room r37  at x=18 z=14 y=25 facing west
+h175  c ceiling_light room r38  at x=4 z=16 y=25 facing north
+h176  h chest      room r38  at x=3 z=17 y=25 facing north
+h177  h chest      room r38  at x=5 z=17 y=25 facing north
+h178  o counter    room r38  at x=1 z=17 y=25 facing north
+h179  c ceiling_light room r39  at x=10 z=16 y=25 facing north
+h180  b bed        room r39  at x=9 z=16 y=25 facing south
+h410  c ceiling_light room r34  at x=4 z=11 y=25 facing north
+
+## Storey 6: floor slab y=28 (standing y=29), floor-to-floor height 4, clear air about 3 blocks, ceiling at y=32
+     0         1         2
+     0123456789012345678901   (x)
+  0 |##~##~~##~~##~~##~##``
+  1 |#....e.h+........a.#``
+  2 |~a......+o.........~``
+  3 |~...C...+....D....h#``
+  4 |#.b.c..o+e....c....#``
+  5 |#.......+....b.....~``
+  6 |~...t..e+..e...t...~``
+  7 |#+/++++++++++++++/+#``
+  8 |#........A.........#``
+  9 |~...c.....c.....c..~``
+ 10 |#+++/++++#~#+++++/+#``
+ 11 |#..Bc...#OOO#e.a...#``
+ 12 |#..@OOO.#OOO#.....h~``
+ 13 |#.>>>>..#OOO#......~``
+ 14 |#++++++++###+..Ec.e#``
+ 15 |~......+.G..+......#``
+ 16 |~..Fc../.bc./......~``
+ 17 |#o.h.h.+....+..o..t#``
+ 18 |##~##~~##~~##~~##~##``
+ 19 |``````````````````````
+ 20 |``````````````````````
+ 21 |``````````````````````
+Legend: # exterior wall, + interior wall, ~ window, / interior door, % door to outside, : arch (doorless), ^ > v < stair rising from here (direction of ascent), @ top step of a stair arriving from below, O opening in the floor (stairwell), . room floor, , floor outside a room, | fence/rail, ! post/beam, = other stair block, ` outside; A-Z/0-9 room labels (table below); furniture: b bed, e bench, c ceiling_light, h chest, o counter, a hearth, l light, t table
+
+Rooms on storey 6:
+ch   id    use          area   volume   connects to (opening, dir)
+A    r40   corridor     36     shaft1   r41 (door o34, leave heading south); r42 (door o35, leave heading north); r43 (door o36, leave heading north); r44 (door o37, leave heading south)
+B    r41   stairwell    21     shaft1   r40 (door o34, enter heading south); r34@storey5 (stair o81, enter heading west); r48@storey7 (stair o82, leave heading east)
+C    r42   flat         42     shaft1   r40 (door o35, enter heading north)
+D    r43   flat         60     shaft1   r40 (door o36, enter heading north)
+E    r44   flat         42     shaft1   r40 (door o37, enter heading south); r46 (door o39, enter heading east)
+F    r45   storage      18     shaft1   r46 (door o38, enter heading west)
+G    r46   bedroom      12     shaft1   r45 (door o38, leave heading west); r44 (door o39, leave heading east)
+
+Openings (heights relative to the floor surface (top of the slab); "faces" is the direction of travel from -> to):
+o34  door   at x=4..4 z=10..10 y=29..30 (0..2 above floor surface), faces south, r40 -> r41
+o35  door   at x=2..2 z=7..7 y=29..30 (0..2 above floor surface), faces north, r40 -> r42
+o36  door   at x=17..17 z=7..7 y=29..30 (0..2 above floor surface), faces north, r40 -> r43
+o37  door   at x=17..17 z=10..10 y=29..30 (0..2 above floor surface), faces south, r40 -> r44
+o38  door   at x=7..7 z=16..16 y=29..30 (0..2 above floor surface), faces west, r46 -> r45
+o39  door   at x=12..12 z=16..16 y=29..30 (0..2 above floor surface), faces east, r46 -> r44
+o81  stair  at x=3..6 z=12..12 ascends west over 4 blocks: arrives from below (r34) at r41, top step in the floor opening
+o82  stair  at x=2..5 z=13..13 ascends east over 4 blocks: goes UP from r41 to r48 (storey 7)
+o268 window at x=2..2 z=0..0 y=29..31 (0..3 above floor surface), faces north, r42 -> outside, sill +0 head +3
+o269 window at x=5..5 z=0..0 y=29..31 (0..3 above floor surface), faces north, r42 -> outside, sill +0 head +3
+o270 window at x=6..6 z=0..0 y=29..31 (0..3 above floor surface), faces north, r42 -> outside, sill +0 head +3
+o271 window at x=9..9 z=0..0 y=29..31 (0..3 above floor surface), faces north, r43 -> outside, sill +0 head +3
+o272 window at x=10..10 z=0..0 y=29..31 (0..3 above floor surface), faces north, r43 -> outside, sill +0 head +3
+o273 window at x=13..13 z=0..0 y=29..31 (0..3 above floor surface), faces north, r43 -> outside, sill +0 head +3
+o274 window at x=14..14 z=0..0 y=29..31 (0..3 above floor surface), faces north, r43 -> outside, sill +0 head +3
+o275 window at x=17..17 z=0..0 y=29..31 (0..3 above floor surface), faces north, r43 -> outside, sill +0 head +3
+o276 window at x=19..19 z=2..2 y=29..31 (0..3 above floor surface), faces east, r43 -> outside, sill +0 head +3
+o277 window at x=19..19 z=5..5 y=29..31 (0..3 above floor surface), faces east, r43 -> outside, sill +0 head +3
+o278 window at x=19..19 z=6..6 y=29..31 (0..3 above floor surface), faces east, r43 -> outside, sill +0 head +3
+o279 window at x=19..19 z=9..9 y=29..31 (0..3 above floor surface), faces east, r40 -> outside, sill +0 head +3
+o280 window at x=19..19 z=12..12 y=29..31 (0..3 above floor surface), faces east, r44 -> outside, sill +0 head +3
+o281 window at x=19..19 z=13..13 y=29..31 (0..3 above floor surface), faces east, r44 -> outside, sill +0 head +3
+o282 window at x=19..19 z=16..16 y=29..31 (0..3 above floor surface), faces east, r44 -> outside, sill +0 head +3
+o283 window at x=2..2 z=18..18 y=29..31 (0..3 above floor surface), faces south, r45 -> outside, sill +0 head +3
+o284 window at x=5..5 z=18..18 y=29..31 (0..3 above floor surface), faces south, r45 -> outside, sill +0 head +3
+o285 window at x=6..6 z=18..18 y=29..31 (0..3 above floor surface), faces south, r45 -> outside, sill +0 head +3
+o286 window at x=9..9 z=18..18 y=29..31 (0..3 above floor surface), faces south, r46 -> outside, sill +0 head +3
+o287 window at x=10..10 z=18..18 y=29..31 (0..3 above floor surface), faces south, r46 -> outside, sill +0 head +3
+o288 window at x=13..13 z=18..18 y=29..31 (0..3 above floor surface), faces south, r44 -> outside, sill +0 head +3
+o289 window at x=14..14 z=18..18 y=29..31 (0..3 above floor surface), faces south, r44 -> outside, sill +0 head +3
+o290 window at x=17..17 z=18..18 y=29..31 (0..3 above floor surface), faces south, r44 -> outside, sill +0 head +3
+o291 window at x=0..0 z=2..2 y=29..31 (0..3 above floor surface), faces west, r42 -> outside, sill +0 head +3
+o292 window at x=0..0 z=3..3 y=29..31 (0..3 above floor surface), faces west, r42 -> outside, sill +0 head +3
+o293 window at x=0..0 z=6..6 y=29..31 (0..3 above floor surface), faces west, r42 -> outside, sill +0 head +3
+o294 window at x=0..0 z=9..9 y=29..31 (0..3 above floor surface), faces west, r40 -> outside, sill +0 head +3
+o295 window at x=0..0 z=15..15 y=29..31 (0..3 above floor surface), faces west, r45 -> outside, sill +0 head +3
+o296 window at x=0..0 z=16..16 y=29..31 (0..3 above floor surface), faces west, r45 -> outside, sill +0 head +3
+
+Furniture hooks:
+h181  c ceiling_light room r40  at x=4 z=9 y=29 facing north
+h182  c ceiling_light room r40  at x=10 z=9 y=29 facing north
+h183  c ceiling_light room r40  at x=16 z=9 y=29 facing north
+h184  c ceiling_light room r42  at x=4 z=4 y=29 facing north
+h185  b bed        room r42  at x=2 z=4 y=29 facing west
+h186  a hearth     room r42  at x=1 z=2 y=29 facing east
+h187  o counter    room r42  at x=7 z=4 y=29 facing west
+h188  h chest      room r42  at x=7 z=1 y=29 facing south
+h189  t table      room r42  at x=4 z=6 y=29 facing north
+h190  e bench      room r42  at x=5 z=1 y=29 facing south
+h191  e bench      room r42  at x=7 z=6 y=29 facing west
+h192  c ceiling_light room r43  at x=14 z=4 y=29 facing north
+h193  b bed        room r43  at x=13 z=5 y=29 facing south
+h194  a hearth     room r43  at x=17 z=1 y=29 facing south
+h195  o counter    room r43  at x=9 z=2 y=29 facing east
+h196  h chest      room r43  at x=18 z=3 y=29 facing west
+h197  t table      room r43  at x=15 z=6 y=29 facing north
+h198  e bench      room r43  at x=11 z=6 y=29 facing north
+h199  e bench      room r43  at x=9 z=4 y=29 facing east
+h200  c ceiling_light room r44  at x=16 z=14 y=29 facing north
+h201  a hearth     room r44  at x=15 z=11 y=29 facing south
+h202  o counter    room r44  at x=15 z=17 y=29 facing north
+h203  h chest      room r44  at x=18 z=12 y=29 facing west
+h204  t table      room r44  at x=18 z=17 y=29 facing west
+h205  e bench      room r44  at x=13 z=11 y=29 facing east
+h206  e bench      room r44  at x=18 z=14 y=29 facing west
+h207  c ceiling_light room r45  at x=4 z=16 y=29 facing north
+h208  h chest      room r45  at x=3 z=17 y=29 facing north
+h209  h chest      room r45  at x=5 z=17 y=29 facing north
+h210  o counter    room r45  at x=1 z=17 y=29 facing north
+h211  c ceiling_light room r46  at x=10 z=16 y=29 facing north
+h212  b bed        room r46  at x=9 z=16 y=29 facing south
+h411  c ceiling_light room r41  at x=4 z=11 y=29 facing north
+
+## Storey 7: floor slab y=32 (standing y=33), floor-to-floor height 4, clear air about 3 blocks, ceiling at y=36
+     0         1         2
+     0123456789012345678901   (x)
+  0 |##~##~~##~~##~~##~##``
+  1 |#....e.h+........a.#``
+  2 |~a......+o.........~``
+  3 |~...C...+....D....h#``
+  4 |#.b.c..o+e....c....#``
+  5 |#.......+....b.....~``
+  6 |~...t..e+..e...t...~``
+  7 |#+/++++++++++++++/+#``
+  8 |#........A.........#``
+  9 |~...c.....c.....c..~``
+ 10 |#+++/++++#~#+++++/+#``
+ 11 |#..Bc...#OOO#e.a...#``
+ 12 |#..<<<<.#OOO#.....h~``
+ 13 |#.OOO@..#OOO#......~``
+ 14 |#++++++++###+..Ec.e#``
+ 15 |~......+.G..+......#``
+ 16 |~..Fc../.bc./......~``
+ 17 |#o.h.h.+....+..o..t#``
+ 18 |##~##~~##~~##~~##~##``
+ 19 |``````````````````````
+ 20 |``````````````````````
+ 21 |``````````````````````
+Legend: # exterior wall, + interior wall, ~ window, / interior door, % door to outside, : arch (doorless), ^ > v < stair rising from here (direction of ascent), @ top step of a stair arriving from below, O opening in the floor (stairwell), . room floor, , floor outside a room, | fence/rail, ! post/beam, = other stair block, ` outside; A-Z/0-9 room labels (table below); furniture: b bed, e bench, c ceiling_light, h chest, o counter, a hearth, l light, t table
+
+Rooms on storey 7:
+ch   id    use          area   volume   connects to (opening, dir)
+A    r47   corridor     36     shaft1   r48 (door o40, leave heading south); r49 (door o41, leave heading north); r50 (door o42, leave heading north); r51 (door o43, leave heading south)
+B    r48   stairwell    21     shaft1   r47 (door o40, enter heading south); r41@storey6 (stair o82, enter heading east); r55@storey8 (stair o83, leave heading west)
+C    r49   flat         42     shaft1   r47 (door o41, enter heading north)
+D    r50   flat         60     shaft1   r47 (door o42, enter heading north)
+E    r51   flat         42     shaft1   r47 (door o43, enter heading south); r53 (door o45, enter heading east)
+F    r52   storage      18     shaft1   r53 (door o44, enter heading west)
+G    r53   bedroom      12     shaft1   r52 (door o44, leave heading west); r51 (door o45, leave heading east)
+
+Openings (heights relative to the floor surface (top of the slab); "faces" is the direction of travel from -> to):
+o40  door   at x=4..4 z=10..10 y=33..34 (0..2 above floor surface), faces south, r47 -> r48
+o41  door   at x=2..2 z=7..7 y=33..34 (0..2 above floor surface), faces north, r47 -> r49
+o42  door   at x=17..17 z=7..7 y=33..34 (0..2 above floor surface), faces north, r47 -> r50
+o43  door   at x=17..17 z=10..10 y=33..34 (0..2 above floor surface), faces south, r47 -> r51
+o44  door   at x=7..7 z=16..16 y=33..34 (0..2 above floor surface), faces west, r53 -> r52
+o45  door   at x=12..12 z=16..16 y=33..34 (0..2 above floor surface), faces east, r53 -> r51
+o82  stair  at x=2..5 z=13..13 ascends east over 4 blocks: arrives from below (r41) at r48, top step in the floor opening
+o83  stair  at x=3..6 z=12..12 ascends west over 4 blocks: goes UP from r48 to r55 (storey 8)
+o297 window at x=2..2 z=0..0 y=33..35 (0..3 above floor surface), faces north, r49 -> outside, sill +0 head +3
+o298 window at x=5..5 z=0..0 y=33..35 (0..3 above floor surface), faces north, r49 -> outside, sill +0 head +3
+o299 window at x=6..6 z=0..0 y=33..35 (0..3 above floor surface), faces north, r49 -> outside, sill +0 head +3
+o300 window at x=9..9 z=0..0 y=33..35 (0..3 above floor surface), faces north, r50 -> outside, sill +0 head +3
+o301 window at x=10..10 z=0..0 y=33..35 (0..3 above floor surface), faces north, r50 -> outside, sill +0 head +3
+o302 window at x=13..13 z=0..0 y=33..35 (0..3 above floor surface), faces north, r50 -> outside, sill +0 head +3
+o303 window at x=14..14 z=0..0 y=33..35 (0..3 above floor surface), faces north, r50 -> outside, sill +0 head +3
+o304 window at x=17..17 z=0..0 y=33..35 (0..3 above floor surface), faces north, r50 -> outside, sill +0 head +3
+o305 window at x=19..19 z=2..2 y=33..35 (0..3 above floor surface), faces east, r50 -> outside, sill +0 head +3
+o306 window at x=19..19 z=5..5 y=33..35 (0..3 above floor surface), faces east, r50 -> outside, sill +0 head +3
+o307 window at x=19..19 z=6..6 y=33..35 (0..3 above floor surface), faces east, r50 -> outside, sill +0 head +3
+o308 window at x=19..19 z=9..9 y=33..35 (0..3 above floor surface), faces east, r47 -> outside, sill +0 head +3
+o309 window at x=19..19 z=12..12 y=33..35 (0..3 above floor surface), faces east, r51 -> outside, sill +0 head +3
+o310 window at x=19..19 z=13..13 y=33..35 (0..3 above floor surface), faces east, r51 -> outside, sill +0 head +3
+o311 window at x=19..19 z=16..16 y=33..35 (0..3 above floor surface), faces east, r51 -> outside, sill +0 head +3
+o312 window at x=2..2 z=18..18 y=33..35 (0..3 above floor surface), faces south, r52 -> outside, sill +0 head +3
+o313 window at x=5..5 z=18..18 y=33..35 (0..3 above floor surface), faces south, r52 -> outside, sill +0 head +3
+o314 window at x=6..6 z=18..18 y=33..35 (0..3 above floor surface), faces south, r52 -> outside, sill +0 head +3
+o315 window at x=9..9 z=18..18 y=33..35 (0..3 above floor surface), faces south, r53 -> outside, sill +0 head +3
+o316 window at x=10..10 z=18..18 y=33..35 (0..3 above floor surface), faces south, r53 -> outside, sill +0 head +3
+o317 window at x=13..13 z=18..18 y=33..35 (0..3 above floor surface), faces south, r51 -> outside, sill +0 head +3
+o318 window at x=14..14 z=18..18 y=33..35 (0..3 above floor surface), faces south, r51 -> outside, sill +0 head +3
+o319 window at x=17..17 z=18..18 y=33..35 (0..3 above floor surface), faces south, r51 -> outside, sill +0 head +3
+o320 window at x=0..0 z=2..2 y=33..35 (0..3 above floor surface), faces west, r49 -> outside, sill +0 head +3
+o321 window at x=0..0 z=3..3 y=33..35 (0..3 above floor surface), faces west, r49 -> outside, sill +0 head +3
+o322 window at x=0..0 z=6..6 y=33..35 (0..3 above floor surface), faces west, r49 -> outside, sill +0 head +3
+o323 window at x=0..0 z=9..9 y=33..35 (0..3 above floor surface), faces west, r47 -> outside, sill +0 head +3
+o324 window at x=0..0 z=15..15 y=33..35 (0..3 above floor surface), faces west, r52 -> outside, sill +0 head +3
+o325 window at x=0..0 z=16..16 y=33..35 (0..3 above floor surface), faces west, r52 -> outside, sill +0 head +3
+
+Furniture hooks:
+h213  c ceiling_light room r47  at x=4 z=9 y=33 facing north
+h214  c ceiling_light room r47  at x=10 z=9 y=33 facing north
+h215  c ceiling_light room r47  at x=16 z=9 y=33 facing north
+h216  c ceiling_light room r49  at x=4 z=4 y=33 facing north
+h217  b bed        room r49  at x=2 z=4 y=33 facing west
+h218  a hearth     room r49  at x=1 z=2 y=33 facing east
+h219  o counter    room r49  at x=7 z=4 y=33 facing west
+h220  h chest      room r49  at x=7 z=1 y=33 facing south
+h221  t table      room r49  at x=4 z=6 y=33 facing north
+h222  e bench      room r49  at x=5 z=1 y=33 facing south
+h223  e bench      room r49  at x=7 z=6 y=33 facing west
+h224  c ceiling_light room r50  at x=14 z=4 y=33 facing north
+h225  b bed        room r50  at x=13 z=5 y=33 facing south
+h226  a hearth     room r50  at x=17 z=1 y=33 facing south
+h227  o counter    room r50  at x=9 z=2 y=33 facing east
+h228  h chest      room r50  at x=18 z=3 y=33 facing west
+h229  t table      room r50  at x=15 z=6 y=33 facing north
+h230  e bench      room r50  at x=11 z=6 y=33 facing north
+h231  e bench      room r50  at x=9 z=4 y=33 facing east
+h232  c ceiling_light room r51  at x=16 z=14 y=33 facing north
+h233  a hearth     room r51  at x=15 z=11 y=33 facing south
+h234  o counter    room r51  at x=15 z=17 y=33 facing north
+h235  h chest      room r51  at x=18 z=12 y=33 facing west
+h236  t table      room r51  at x=18 z=17 y=33 facing west
+h237  e bench      room r51  at x=13 z=11 y=33 facing east
+h238  e bench      room r51  at x=18 z=14 y=33 facing west
+h239  c ceiling_light room r52  at x=4 z=16 y=33 facing north
+h240  h chest      room r52  at x=3 z=17 y=33 facing north
+h241  h chest      room r52  at x=5 z=17 y=33 facing north
+h242  o counter    room r52  at x=1 z=17 y=33 facing north
+h243  c ceiling_light room r53  at x=10 z=16 y=33 facing north
+h244  b bed        room r53  at x=9 z=16 y=33 facing south
+h412  c ceiling_light room r48  at x=4 z=11 y=33 facing north
+
+## Storey 8: floor slab y=36 (standing y=37), floor-to-floor height 4, clear air about 3 blocks, ceiling at y=40
+     0         1         2
+     0123456789012345678901   (x)
+  0 |##~##~~##~~##~~##~##``
+  1 |#....e.h+........a.#``
+  2 |~a......+o.........~``
+  3 |~...C...+....D....h#``
+  4 |#.b.c..o+e....c....#``
+  5 |#.......+....b.....~``
+  6 |~...t..e+..e...t...~``
+  7 |#+/++++++++++++++/+#``
+  8 |#........A.........#``
+  9 |~...c.....c.....c..~``
+ 10 |#+++/++++#~#+++++/+#``
+ 11 |#..Bc...#OOO#e.a...#``
+ 12 |#..@OOO.#OOO#.....h~``
+ 13 |#.>>>>..#OOO#......~``
+ 14 |#++++++++###+..Ec.e#``
+ 15 |~......+.G..+......#``
+ 16 |~..Fc../.bc./......~``
+ 17 |#o.h.h.+....+..o..t#``
+ 18 |##~##~~##~~##~~##~##``
+ 19 |``````````````````````
+ 20 |``````````````````````
+ 21 |``````````````````````
+Legend: # exterior wall, + interior wall, ~ window, / interior door, % door to outside, : arch (doorless), ^ > v < stair rising from here (direction of ascent), @ top step of a stair arriving from below, O opening in the floor (stairwell), . room floor, , floor outside a room, | fence/rail, ! post/beam, = other stair block, ` outside; A-Z/0-9 room labels (table below); furniture: b bed, e bench, c ceiling_light, h chest, o counter, a hearth, l light, t table
+
+Rooms on storey 8:
+ch   id    use          area   volume   connects to (opening, dir)
+A    r54   corridor     36     shaft1   r55 (door o46, leave heading south); r56 (door o47, leave heading north); r57 (door o48, leave heading north); r58 (door o49, leave heading south)
+B    r55   stairwell    21     shaft1   r54 (door o46, enter heading south); r48@storey7 (stair o83, enter heading west); r62@storey9 (stair o84, leave heading east)
+C    r56   flat         42     shaft1   r54 (door o47, enter heading north)
+D    r57   flat         60     shaft1   r54 (door o48, enter heading north)
+E    r58   flat         42     shaft1   r54 (door o49, enter heading south); r60 (door o51, enter heading east)
+F    r59   storage      18     shaft1   r60 (door o50, enter heading west)
+G    r60   bedroom      12     shaft1   r59 (door o50, leave heading west); r58 (door o51, leave heading east)
+
+Openings (heights relative to the floor surface (top of the slab); "faces" is the direction of travel from -> to):
+o46  door   at x=4..4 z=10..10 y=37..38 (0..2 above floor surface), faces south, r54 -> r55
+o47  door   at x=2..2 z=7..7 y=37..38 (0..2 above floor surface), faces north, r54 -> r56
+o48  door   at x=17..17 z=7..7 y=37..38 (0..2 above floor surface), faces north, r54 -> r57
+o49  door   at x=17..17 z=10..10 y=37..38 (0..2 above floor surface), faces south, r54 -> r58
+o50  door   at x=7..7 z=16..16 y=37..38 (0..2 above floor surface), faces west, r60 -> r59
+o51  door   at x=12..12 z=16..16 y=37..38 (0..2 above floor surface), faces east, r60 -> r58
+o83  stair  at x=3..6 z=12..12 ascends west over 4 blocks: arrives from below (r48) at r55, top step in the floor opening
+o84  stair  at x=2..5 z=13..13 ascends east over 4 blocks: goes UP from r55 to r62 (storey 9)
+o326 window at x=2..2 z=0..0 y=37..39 (0..3 above floor surface), faces north, r56 -> outside, sill +0 head +3
+o327 window at x=5..5 z=0..0 y=37..39 (0..3 above floor surface), faces north, r56 -> outside, sill +0 head +3
+o328 window at x=6..6 z=0..0 y=37..39 (0..3 above floor surface), faces north, r56 -> outside, sill +0 head +3
+o329 window at x=9..9 z=0..0 y=37..39 (0..3 above floor surface), faces north, r57 -> outside, sill +0 head +3
+o330 window at x=10..10 z=0..0 y=37..39 (0..3 above floor surface), faces north, r57 -> outside, sill +0 head +3
+o331 window at x=13..13 z=0..0 y=37..39 (0..3 above floor surface), faces north, r57 -> outside, sill +0 head +3
+o332 window at x=14..14 z=0..0 y=37..39 (0..3 above floor surface), faces north, r57 -> outside, sill +0 head +3
+o333 window at x=17..17 z=0..0 y=37..39 (0..3 above floor surface), faces north, r57 -> outside, sill +0 head +3
+o334 window at x=19..19 z=2..2 y=37..39 (0..3 above floor surface), faces east, r57 -> outside, sill +0 head +3
+o335 window at x=19..19 z=5..5 y=37..39 (0..3 above floor surface), faces east, r57 -> outside, sill +0 head +3
+o336 window at x=19..19 z=6..6 y=37..39 (0..3 above floor surface), faces east, r57 -> outside, sill +0 head +3
+o337 window at x=19..19 z=9..9 y=37..39 (0..3 above floor surface), faces east, r54 -> outside, sill +0 head +3
+o338 window at x=19..19 z=12..12 y=37..39 (0..3 above floor surface), faces east, r58 -> outside, sill +0 head +3
+o339 window at x=19..19 z=13..13 y=37..39 (0..3 above floor surface), faces east, r58 -> outside, sill +0 head +3
+o340 window at x=19..19 z=16..16 y=37..39 (0..3 above floor surface), faces east, r58 -> outside, sill +0 head +3
+o341 window at x=2..2 z=18..18 y=37..39 (0..3 above floor surface), faces south, r59 -> outside, sill +0 head +3
+o342 window at x=5..5 z=18..18 y=37..39 (0..3 above floor surface), faces south, r59 -> outside, sill +0 head +3
+o343 window at x=6..6 z=18..18 y=37..39 (0..3 above floor surface), faces south, r59 -> outside, sill +0 head +3
+o344 window at x=9..9 z=18..18 y=37..39 (0..3 above floor surface), faces south, r60 -> outside, sill +0 head +3
+o345 window at x=10..10 z=18..18 y=37..39 (0..3 above floor surface), faces south, r60 -> outside, sill +0 head +3
+o346 window at x=13..13 z=18..18 y=37..39 (0..3 above floor surface), faces south, r58 -> outside, sill +0 head +3
+o347 window at x=14..14 z=18..18 y=37..39 (0..3 above floor surface), faces south, r58 -> outside, sill +0 head +3
+o348 window at x=17..17 z=18..18 y=37..39 (0..3 above floor surface), faces south, r58 -> outside, sill +0 head +3
+o349 window at x=0..0 z=2..2 y=37..39 (0..3 above floor surface), faces west, r56 -> outside, sill +0 head +3
+o350 window at x=0..0 z=3..3 y=37..39 (0..3 above floor surface), faces west, r56 -> outside, sill +0 head +3
+o351 window at x=0..0 z=6..6 y=37..39 (0..3 above floor surface), faces west, r56 -> outside, sill +0 head +3
+o352 window at x=0..0 z=9..9 y=37..39 (0..3 above floor surface), faces west, r54 -> outside, sill +0 head +3
+o353 window at x=0..0 z=15..15 y=37..39 (0..3 above floor surface), faces west, r59 -> outside, sill +0 head +3
+o354 window at x=0..0 z=16..16 y=37..39 (0..3 above floor surface), faces west, r59 -> outside, sill +0 head +3
+
+Furniture hooks:
+h245  c ceiling_light room r54  at x=4 z=9 y=37 facing north
+h246  c ceiling_light room r54  at x=10 z=9 y=37 facing north
+h247  c ceiling_light room r54  at x=16 z=9 y=37 facing north
+h248  c ceiling_light room r56  at x=4 z=4 y=37 facing north
+h249  b bed        room r56  at x=2 z=4 y=37 facing west
+h250  a hearth     room r56  at x=1 z=2 y=37 facing east
+h251  o counter    room r56  at x=7 z=4 y=37 facing west
+h252  h chest      room r56  at x=7 z=1 y=37 facing south
+h253  t table      room r56  at x=4 z=6 y=37 facing north
+h254  e bench      room r56  at x=5 z=1 y=37 facing south
+h255  e bench      room r56  at x=7 z=6 y=37 facing west
+h256  c ceiling_light room r57  at x=14 z=4 y=37 facing north
+h257  b bed        room r57  at x=13 z=5 y=37 facing south
+h258  a hearth     room r57  at x=17 z=1 y=37 facing south
+h259  o counter    room r57  at x=9 z=2 y=37 facing east
+h260  h chest      room r57  at x=18 z=3 y=37 facing west
+h261  t table      room r57  at x=15 z=6 y=37 facing north
+h262  e bench      room r57  at x=11 z=6 y=37 facing north
+h263  e bench      room r57  at x=9 z=4 y=37 facing east
+h264  c ceiling_light room r58  at x=16 z=14 y=37 facing north
+h265  a hearth     room r58  at x=15 z=11 y=37 facing south
+h266  o counter    room r58  at x=15 z=17 y=37 facing north
+h267  h chest      room r58  at x=18 z=12 y=37 facing west
+h268  t table      room r58  at x=18 z=17 y=37 facing west
+h269  e bench      room r58  at x=13 z=11 y=37 facing east
+h270  e bench      room r58  at x=18 z=14 y=37 facing west
+h271  c ceiling_light room r59  at x=4 z=16 y=37 facing north
+h272  h chest      room r59  at x=3 z=17 y=37 facing north
+h273  h chest      room r59  at x=5 z=17 y=37 facing north
+h274  o counter    room r59  at x=1 z=17 y=37 facing north
+h275  c ceiling_light room r60  at x=10 z=16 y=37 facing north
+h276  b bed        room r60  at x=9 z=16 y=37 facing south
+h413  c ceiling_light room r55  at x=4 z=11 y=37 facing north
+
+## Storey 9: floor slab y=40 (standing y=41), floor-to-floor height 4, clear air about 3 blocks, ceiling at y=44
+     0         1         2
+     0123456789012345678901   (x)
+  0 |##~##~~##~~##~~##~##``
+  1 |#....e.h+........a.#``
+  2 |~a......+o.........~``
+  3 |~...C...+....D....h#``
+  4 |#.b.c..o+e....c....#``
+  5 |#.......+....b.....~``
+  6 |~...t..e+..e...t...~``
+  7 |#+/++++++++++++++/+#``
+  8 |#........A.........#``
+  9 |~...c.....c.....c..~``
+ 10 |#+++/++++#~#+++++/+#``
+ 11 |#..Bc...#OOO#e.a...#``
+ 12 |#..<<<<.#OOO#.....h~``
+ 13 |#.OOO@..#OOO#......~``
+ 14 |#++++++++###+..Ec.e#``
+ 15 |~......+.G..+......#``
+ 16 |~..Fc../.bc./......~``
+ 17 |#o.h.h.+....+..o..t#``
+ 18 |##~##~~##~~##~~##~##``
+ 19 |``````````````````````
+ 20 |``````````````````````
+ 21 |``````````````````````
+Legend: # exterior wall, + interior wall, ~ window, / interior door, % door to outside, : arch (doorless), ^ > v < stair rising from here (direction of ascent), @ top step of a stair arriving from below, O opening in the floor (stairwell), . room floor, , floor outside a room, | fence/rail, ! post/beam, = other stair block, ` outside; A-Z/0-9 room labels (table below); furniture: b bed, e bench, c ceiling_light, h chest, o counter, a hearth, l light, t table
+
+Rooms on storey 9:
+ch   id    use          area   volume   connects to (opening, dir)
+A    r61   corridor     36     shaft1   r62 (door o52, leave heading south); r63 (door o53, leave heading north); r64 (door o54, leave heading north); r65 (door o55, leave heading south)
+B    r62   stairwell    21     shaft1   r61 (door o52, enter heading south); r55@storey8 (stair o84, enter heading east); r69@storey10 (stair o85, leave heading west)
+C    r63   flat         42     shaft1   r61 (door o53, enter heading north)
+D    r64   flat         60     shaft1   r61 (door o54, enter heading north)
+E    r65   flat         42     shaft1   r61 (door o55, enter heading south); r67 (door o57, enter heading east)
+F    r66   storage      18     shaft1   r67 (door o56, enter heading west)
+G    r67   bedroom      12     shaft1   r66 (door o56, leave heading west); r65 (door o57, leave heading east)
+
+Openings (heights relative to the floor surface (top of the slab); "faces" is the direction of travel from -> to):
+o52  door   at x=4..4 z=10..10 y=41..42 (0..2 above floor surface), faces south, r61 -> r62
+o53  door   at x=2..2 z=7..7 y=41..42 (0..2 above floor surface), faces north, r61 -> r63
+o54  door   at x=17..17 z=7..7 y=41..42 (0..2 above floor surface), faces north, r61 -> r64
+o55  door   at x=17..17 z=10..10 y=41..42 (0..2 above floor surface), faces south, r61 -> r65
+o56  door   at x=7..7 z=16..16 y=41..42 (0..2 above floor surface), faces west, r67 -> r66
+o57  door   at x=12..12 z=16..16 y=41..42 (0..2 above floor surface), faces east, r67 -> r65
+o84  stair  at x=2..5 z=13..13 ascends east over 4 blocks: arrives from below (r55) at r62, top step in the floor opening
+o85  stair  at x=3..6 z=12..12 ascends west over 4 blocks: goes UP from r62 to r69 (storey 10)
+o355 window at x=2..2 z=0..0 y=41..43 (0..3 above floor surface), faces north, r63 -> outside, sill +0 head +3
+o356 window at x=5..5 z=0..0 y=41..43 (0..3 above floor surface), faces north, r63 -> outside, sill +0 head +3
+o357 window at x=6..6 z=0..0 y=41..43 (0..3 above floor surface), faces north, r63 -> outside, sill +0 head +3
+o358 window at x=9..9 z=0..0 y=41..43 (0..3 above floor surface), faces north, r64 -> outside, sill +0 head +3
+o359 window at x=10..10 z=0..0 y=41..43 (0..3 above floor surface), faces north, r64 -> outside, sill +0 head +3
+o360 window at x=13..13 z=0..0 y=41..43 (0..3 above floor surface), faces north, r64 -> outside, sill +0 head +3
+o361 window at x=14..14 z=0..0 y=41..43 (0..3 above floor surface), faces north, r64 -> outside, sill +0 head +3
+o362 window at x=17..17 z=0..0 y=41..43 (0..3 above floor surface), faces north, r64 -> outside, sill +0 head +3
+o363 window at x=19..19 z=2..2 y=41..43 (0..3 above floor surface), faces east, r64 -> outside, sill +0 head +3
+o364 window at x=19..19 z=5..5 y=41..43 (0..3 above floor surface), faces east, r64 -> outside, sill +0 head +3
+o365 window at x=19..19 z=6..6 y=41..43 (0..3 above floor surface), faces east, r64 -> outside, sill +0 head +3
+o366 window at x=19..19 z=9..9 y=41..43 (0..3 above floor surface), faces east, r61 -> outside, sill +0 head +3
+o367 window at x=19..19 z=12..12 y=41..43 (0..3 above floor surface), faces east, r65 -> outside, sill +0 head +3
+o368 window at x=19..19 z=13..13 y=41..43 (0..3 above floor surface), faces east, r65 -> outside, sill +0 head +3
+o369 window at x=19..19 z=16..16 y=41..43 (0..3 above floor surface), faces east, r65 -> outside, sill +0 head +3
+o370 window at x=2..2 z=18..18 y=41..43 (0..3 above floor surface), faces south, r66 -> outside, sill +0 head +3
+o371 window at x=5..5 z=18..18 y=41..43 (0..3 above floor surface), faces south, r66 -> outside, sill +0 head +3
+o372 window at x=6..6 z=18..18 y=41..43 (0..3 above floor surface), faces south, r66 -> outside, sill +0 head +3
+o373 window at x=9..9 z=18..18 y=41..43 (0..3 above floor surface), faces south, r67 -> outside, sill +0 head +3
+o374 window at x=10..10 z=18..18 y=41..43 (0..3 above floor surface), faces south, r67 -> outside, sill +0 head +3
+o375 window at x=13..13 z=18..18 y=41..43 (0..3 above floor surface), faces south, r65 -> outside, sill +0 head +3
+o376 window at x=14..14 z=18..18 y=41..43 (0..3 above floor surface), faces south, r65 -> outside, sill +0 head +3
+o377 window at x=17..17 z=18..18 y=41..43 (0..3 above floor surface), faces south, r65 -> outside, sill +0 head +3
+o378 window at x=0..0 z=2..2 y=41..43 (0..3 above floor surface), faces west, r63 -> outside, sill +0 head +3
+o379 window at x=0..0 z=3..3 y=41..43 (0..3 above floor surface), faces west, r63 -> outside, sill +0 head +3
+o380 window at x=0..0 z=6..6 y=41..43 (0..3 above floor surface), faces west, r63 -> outside, sill +0 head +3
+o381 window at x=0..0 z=9..9 y=41..43 (0..3 above floor surface), faces west, r61 -> outside, sill +0 head +3
+o382 window at x=0..0 z=15..15 y=41..43 (0..3 above floor surface), faces west, r66 -> outside, sill +0 head +3
+o383 window at x=0..0 z=16..16 y=41..43 (0..3 above floor surface), faces west, r66 -> outside, sill +0 head +3
+
+Furniture hooks:
+h277  c ceiling_light room r61  at x=4 z=9 y=41 facing north
+h278  c ceiling_light room r61  at x=10 z=9 y=41 facing north
+h279  c ceiling_light room r61  at x=16 z=9 y=41 facing north
+h280  c ceiling_light room r63  at x=4 z=4 y=41 facing north
+h281  b bed        room r63  at x=2 z=4 y=41 facing west
+h282  a hearth     room r63  at x=1 z=2 y=41 facing east
+h283  o counter    room r63  at x=7 z=4 y=41 facing west
+h284  h chest      room r63  at x=7 z=1 y=41 facing south
+h285  t table      room r63  at x=4 z=6 y=41 facing north
+h286  e bench      room r63  at x=5 z=1 y=41 facing south
+h287  e bench      room r63  at x=7 z=6 y=41 facing west
+h288  c ceiling_light room r64  at x=14 z=4 y=41 facing north
+h289  b bed        room r64  at x=13 z=5 y=41 facing south
+h290  a hearth     room r64  at x=17 z=1 y=41 facing south
+h291  o counter    room r64  at x=9 z=2 y=41 facing east
+h292  h chest      room r64  at x=18 z=3 y=41 facing west
+h293  t table      room r64  at x=15 z=6 y=41 facing north
+h294  e bench      room r64  at x=11 z=6 y=41 facing north
+h295  e bench      room r64  at x=9 z=4 y=41 facing east
+h296  c ceiling_light room r65  at x=16 z=14 y=41 facing north
+h297  a hearth     room r65  at x=15 z=11 y=41 facing south
+h298  o counter    room r65  at x=15 z=17 y=41 facing north
+h299  h chest      room r65  at x=18 z=12 y=41 facing west
+h300  t table      room r65  at x=18 z=17 y=41 facing west
+h301  e bench      room r65  at x=13 z=11 y=41 facing east
+h302  e bench      room r65  at x=18 z=14 y=41 facing west
+h303  c ceiling_light room r66  at x=4 z=16 y=41 facing north
+h304  h chest      room r66  at x=3 z=17 y=41 facing north
+h305  h chest      room r66  at x=5 z=17 y=41 facing north
+h306  o counter    room r66  at x=1 z=17 y=41 facing north
+h307  c ceiling_light room r67  at x=10 z=16 y=41 facing north
+h308  b bed        room r67  at x=9 z=16 y=41 facing south
+h414  c ceiling_light room r62  at x=4 z=11 y=41 facing north
+
+## Storey 10: floor slab y=44 (standing y=45), floor-to-floor height 4, clear air about 3 blocks, ceiling at y=48
+     0         1         2
+     0123456789012345678901   (x)
+  0 |##~##~~##~~##~~##~##``
+  1 |#....e.h+........a.#``
+  2 |~a......+o.........~``
+  3 |~...C...+....D....h#``
+  4 |#.b.c..o+e....c....#``
+  5 |#.......+....b.....~``
+  6 |~...t..e+..e...t...~``
+  7 |#+/++++++++++++++/+#``
+  8 |#........A.........#``
+  9 |~...c.....c.....c..~``
+ 10 |#+++/++++#~#+++++/+#``
+ 11 |#..Bc...#OOO#e.a...#``
+ 12 |#..@OOO.#OOO#.....h~``
+ 13 |#.>>>>..#OOO#......~``
+ 14 |#++++++++###+..Ec.e#``
+ 15 |~......+.G..+......#``
+ 16 |~..Fc../.bc./......~``
+ 17 |#o.h.h.+....+..o..t#``
+ 18 |##~##~~##~~##~~##~##``
+ 19 |``````````````````````
+ 20 |``````````````````````
+ 21 |``````````````````````
+Legend: # exterior wall, + interior wall, ~ window, / interior door, % door to outside, : arch (doorless), ^ > v < stair rising from here (direction of ascent), @ top step of a stair arriving from below, O opening in the floor (stairwell), . room floor, , floor outside a room, | fence/rail, ! post/beam, = other stair block, ` outside; A-Z/0-9 room labels (table below); furniture: b bed, e bench, c ceiling_light, h chest, o counter, a hearth, l light, t table
+
+Rooms on storey 10:
+ch   id    use          area   volume   connects to (opening, dir)
+A    r68   corridor     36     shaft1   r69 (door o58, leave heading south); r70 (door o59, leave heading north); r71 (door o60, leave heading north); r72 (door o61, leave heading south)
+B    r69   stairwell    21     shaft1   r68 (door o58, enter heading south); r62@storey9 (stair o85, enter heading west); r76@storey11 (stair o86, leave heading east)
+C    r70   flat         42     shaft1   r68 (door o59, enter heading north)
+D    r71   flat         60     shaft1   r68 (door o60, enter heading north)
+E    r72   flat         42     shaft1   r68 (door o61, enter heading south); r74 (door o63, enter heading east)
+F    r73   storage      18     shaft1   r74 (door o62, enter heading west)
+G    r74   bedroom      12     shaft1   r73 (door o62, leave heading west); r72 (door o63, leave heading east)
+
+Openings (heights relative to the floor surface (top of the slab); "faces" is the direction of travel from -> to):
+o58  door   at x=4..4 z=10..10 y=45..46 (0..2 above floor surface), faces south, r68 -> r69
+o59  door   at x=2..2 z=7..7 y=45..46 (0..2 above floor surface), faces north, r68 -> r70
+o60  door   at x=17..17 z=7..7 y=45..46 (0..2 above floor surface), faces north, r68 -> r71
+o61  door   at x=17..17 z=10..10 y=45..46 (0..2 above floor surface), faces south, r68 -> r72
+o62  door   at x=7..7 z=16..16 y=45..46 (0..2 above floor surface), faces west, r74 -> r73
+o63  door   at x=12..12 z=16..16 y=45..46 (0..2 above floor surface), faces east, r74 -> r72
+o85  stair  at x=3..6 z=12..12 ascends west over 4 blocks: arrives from below (r62) at r69, top step in the floor opening
+o86  stair  at x=2..5 z=13..13 ascends east over 4 blocks: goes UP from r69 to r76 (storey 11)
+o384 window at x=2..2 z=0..0 y=45..47 (0..3 above floor surface), faces north, r70 -> outside, sill +0 head +3
+o385 window at x=5..5 z=0..0 y=45..47 (0..3 above floor surface), faces north, r70 -> outside, sill +0 head +3
+o386 window at x=6..6 z=0..0 y=45..47 (0..3 above floor surface), faces north, r70 -> outside, sill +0 head +3
+o387 window at x=9..9 z=0..0 y=45..47 (0..3 above floor surface), faces north, r71 -> outside, sill +0 head +3
+o388 window at x=10..10 z=0..0 y=45..47 (0..3 above floor surface), faces north, r71 -> outside, sill +0 head +3
+o389 window at x=13..13 z=0..0 y=45..47 (0..3 above floor surface), faces north, r71 -> outside, sill +0 head +3
+o390 window at x=14..14 z=0..0 y=45..47 (0..3 above floor surface), faces north, r71 -> outside, sill +0 head +3
+o391 window at x=17..17 z=0..0 y=45..47 (0..3 above floor surface), faces north, r71 -> outside, sill +0 head +3
+o392 window at x=19..19 z=2..2 y=45..47 (0..3 above floor surface), faces east, r71 -> outside, sill +0 head +3
+o393 window at x=19..19 z=5..5 y=45..47 (0..3 above floor surface), faces east, r71 -> outside, sill +0 head +3
+o394 window at x=19..19 z=6..6 y=45..47 (0..3 above floor surface), faces east, r71 -> outside, sill +0 head +3
+o395 window at x=19..19 z=9..9 y=45..47 (0..3 above floor surface), faces east, r68 -> outside, sill +0 head +3
+o396 window at x=19..19 z=12..12 y=45..47 (0..3 above floor surface), faces east, r72 -> outside, sill +0 head +3
+o397 window at x=19..19 z=13..13 y=45..47 (0..3 above floor surface), faces east, r72 -> outside, sill +0 head +3
+o398 window at x=19..19 z=16..16 y=45..47 (0..3 above floor surface), faces east, r72 -> outside, sill +0 head +3
+o399 window at x=2..2 z=18..18 y=45..47 (0..3 above floor surface), faces south, r73 -> outside, sill +0 head +3
+o400 window at x=5..5 z=18..18 y=45..47 (0..3 above floor surface), faces south, r73 -> outside, sill +0 head +3
+o401 window at x=6..6 z=18..18 y=45..47 (0..3 above floor surface), faces south, r73 -> outside, sill +0 head +3
+o402 window at x=9..9 z=18..18 y=45..47 (0..3 above floor surface), faces south, r74 -> outside, sill +0 head +3
+o403 window at x=10..10 z=18..18 y=45..47 (0..3 above floor surface), faces south, r74 -> outside, sill +0 head +3
+o404 window at x=13..13 z=18..18 y=45..47 (0..3 above floor surface), faces south, r72 -> outside, sill +0 head +3
+o405 window at x=14..14 z=18..18 y=45..47 (0..3 above floor surface), faces south, r72 -> outside, sill +0 head +3
+o406 window at x=17..17 z=18..18 y=45..47 (0..3 above floor surface), faces south, r72 -> outside, sill +0 head +3
+o407 window at x=0..0 z=2..2 y=45..47 (0..3 above floor surface), faces west, r70 -> outside, sill +0 head +3
+o408 window at x=0..0 z=3..3 y=45..47 (0..3 above floor surface), faces west, r70 -> outside, sill +0 head +3
+o409 window at x=0..0 z=6..6 y=45..47 (0..3 above floor surface), faces west, r70 -> outside, sill +0 head +3
+o410 window at x=0..0 z=9..9 y=45..47 (0..3 above floor surface), faces west, r68 -> outside, sill +0 head +3
+o411 window at x=0..0 z=15..15 y=45..47 (0..3 above floor surface), faces west, r73 -> outside, sill +0 head +3
+o412 window at x=0..0 z=16..16 y=45..47 (0..3 above floor surface), faces west, r73 -> outside, sill +0 head +3
+
+Furniture hooks:
+h309  c ceiling_light room r68  at x=4 z=9 y=45 facing north
+h310  c ceiling_light room r68  at x=10 z=9 y=45 facing north
+h311  c ceiling_light room r68  at x=16 z=9 y=45 facing north
+h312  c ceiling_light room r70  at x=4 z=4 y=45 facing north
+h313  b bed        room r70  at x=2 z=4 y=45 facing west
+h314  a hearth     room r70  at x=1 z=2 y=45 facing east
+h315  o counter    room r70  at x=7 z=4 y=45 facing west
+h316  h chest      room r70  at x=7 z=1 y=45 facing south
+h317  t table      room r70  at x=4 z=6 y=45 facing north
+h318  e bench      room r70  at x=5 z=1 y=45 facing south
+h319  e bench      room r70  at x=7 z=6 y=45 facing west
+h320  c ceiling_light room r71  at x=14 z=4 y=45 facing north
+h321  b bed        room r71  at x=13 z=5 y=45 facing south
+h322  a hearth     room r71  at x=17 z=1 y=45 facing south
+h323  o counter    room r71  at x=9 z=2 y=45 facing east
+h324  h chest      room r71  at x=18 z=3 y=45 facing west
+h325  t table      room r71  at x=15 z=6 y=45 facing north
+h326  e bench      room r71  at x=11 z=6 y=45 facing north
+h327  e bench      room r71  at x=9 z=4 y=45 facing east
+h328  c ceiling_light room r72  at x=16 z=14 y=45 facing north
+h329  a hearth     room r72  at x=15 z=11 y=45 facing south
+h330  o counter    room r72  at x=15 z=17 y=45 facing north
+h331  h chest      room r72  at x=18 z=12 y=45 facing west
+h332  t table      room r72  at x=18 z=17 y=45 facing west
+h333  e bench      room r72  at x=13 z=11 y=45 facing east
+h334  e bench      room r72  at x=18 z=14 y=45 facing west
+h335  c ceiling_light room r73  at x=4 z=16 y=45 facing north
+h336  h chest      room r73  at x=3 z=17 y=45 facing north
+h337  h chest      room r73  at x=5 z=17 y=45 facing north
+h338  o counter    room r73  at x=1 z=17 y=45 facing north
+h339  c ceiling_light room r74  at x=10 z=16 y=45 facing north
+h340  b bed        room r74  at x=9 z=16 y=45 facing south
+h415  c ceiling_light room r69  at x=4 z=11 y=45 facing north
+
+## Storey 11: floor slab y=48 (standing y=49), floor-to-floor height 4, clear air about 3 blocks, ceiling at y=52
+     0         1         2
+     0123456789012345678901   (x)
+  0 |####################,`
+  1 |#+~++~~++~++~~++~++#,`
+  2 |#..e.a.t.h+.h.e.b.+#,`
+  3 |~b...C....+...D...~#,`
+  4 |~....c....+a..c..t~#,`
+  5 |#e........+.......+#,`
+  6 |#.......o.+.o.e...+#,`
+  7 |#+/+++++++++++++/++#,`
+  8 |#........A........+#,`
+  9 |#..c.....c.....c..+#,`
+ 10 |#+++/++++#~#++++/++#,`
+ 11 |#..Bc...#OOO#.e...~#,`
+ 12 |#..<<<<.#OOO#....o~#,`
+ 13 |#.OOO@..#OOO#..E..+#,`
+ 14 |#++++++++###+a.c..+#,`
+ 15 |~......+.G..+....t~#,`
+ 16 |~..Fc../.bc./.....~#,`
+ 17 |#h..h..+....+.e.h.+#,`
+ 18 |##~##~~##~######~###,`
+ 19 |,,,,,,,,,,,,,,,,,,,,,`
+ 20 |``````````````````````
+ 21 |``````````````````````
+Legend: # exterior wall, + interior wall, ~ window, / interior door, % door to outside, : arch (doorless), ^ > v < stair rising from here (direction of ascent), @ top step of a stair arriving from below, O opening in the floor (stairwell), . room floor, , floor outside a room, | fence/rail, ! post/beam, = other stair block, ` outside; A-Z/0-9 room labels (table below); furniture: b bed, e bench, c ceiling_light, h chest, o counter, a hearth, l light, t table
+
+Rooms on storey 11:
+ch   id    use          area   volume   connects to (opening, dir)
+A    r75   corridor     34     crown2   r76 (door o64, leave heading south); r77 (door o65, leave heading north); r78 (door o66, leave heading north); r79 (door o67, leave heading south)
+B    r76   stairwell    21     crown2   r75 (door o64, enter heading south); r69@storey10 (stair o86, enter heading east); r83@storey12 (stair o87, leave heading west)
+C    r77   flat         45     crown2   r75 (door o65, enter heading north)
+D    r78   flat         35     crown2   r75 (door o66, enter heading north)
+E    r79   flat         35     crown2   r75 (door o67, enter heading south); r81 (door o69, enter heading east)
+F    r80   storage      18     crown2   r81 (door o68, enter heading west)
+G    r81   bedroom      12     crown2   r80 (door o68, leave heading west); r79 (door o69, leave heading east)
+
+Openings (heights relative to the floor surface (top of the slab); "faces" is the direction of travel from -> to):
+o64  door   at x=4..4 z=10..10 y=49..50 (0..2 above floor surface), faces south, r75 -> r76
+o65  door   at x=2..2 z=7..7 y=49..50 (0..2 above floor surface), faces north, r75 -> r77
+o66  door   at x=16..16 z=7..7 y=49..50 (0..2 above floor surface), faces north, r75 -> r78
+o67  door   at x=16..16 z=10..10 y=49..50 (0..2 above floor surface), faces south, r75 -> r79
+o68  door   at x=7..7 z=16..16 y=49..50 (0..2 above floor surface), faces west, r81 -> r80
+o69  door   at x=12..12 z=16..16 y=49..50 (0..2 above floor surface), faces east, r81 -> r79
+o86  stair  at x=2..5 z=13..13 ascends east over 4 blocks: arrives from below (r69) at r76, top step in the floor opening
+o87  stair  at x=3..6 z=12..12 ascends west over 4 blocks: goes UP from r76 to r83 (storey 12)
+o413 window at x=2..2 z=1..1 y=49..51 (0..3 above floor surface), faces north, r77 -> outside, sill +0 head +3
+o414 window at x=5..5 z=1..1 y=49..51 (0..3 above floor surface), faces north, r77 -> outside, sill +0 head +3
+o415 window at x=6..6 z=1..1 y=49..51 (0..3 above floor surface), faces north, r77 -> outside, sill +0 head +3
+o416 window at x=9..9 z=1..1 y=49..51 (0..3 above floor surface), faces north, r77 -> outside, sill +0 head +3
+o417 window at x=12..12 z=1..1 y=49..51 (0..3 above floor surface), faces north, r78 -> outside, sill +0 head +3
+o418 window at x=13..13 z=1..1 y=49..51 (0..3 above floor surface), faces north, r78 -> outside, sill +0 head +3
+o419 window at x=16..16 z=1..1 y=49..51 (0..3 above floor surface), faces north, r78 -> outside, sill +0 head +3
+o420 window at x=18..18 z=3..3 y=49..51 (0..3 above floor surface), faces east, r78 -> outside, sill +0 head +3
+o421 window at x=18..18 z=4..4 y=49..51 (0..3 above floor surface), faces east, r78 -> outside, sill +0 head +3
+o422 window at x=18..18 z=11..11 y=49..51 (0..3 above floor surface), faces east, r79 -> outside, sill +0 head +3
+o423 window at x=18..18 z=12..12 y=49..51 (0..3 above floor surface), faces east, r79 -> outside, sill +0 head +3
+o424 window at x=18..18 z=15..15 y=49..51 (0..3 above floor surface), faces east, r79 -> outside, sill +0 head +3
+o425 window at x=18..18 z=16..16 y=49..51 (0..3 above floor surface), faces east, r79 -> outside, sill +0 head +3
+o426 window at x=2..2 z=18..18 y=49..51 (0..3 above floor surface), faces south, r80 -> outside, sill +0 head +3
+o427 window at x=5..5 z=18..18 y=49..51 (0..3 above floor surface), faces south, r80 -> outside, sill +0 head +3
+o428 window at x=6..6 z=18..18 y=49..51 (0..3 above floor surface), faces south, r80 -> outside, sill +0 head +3
+o429 window at x=9..9 z=18..18 y=49..51 (0..3 above floor surface), faces south, r81 -> outside, sill +0 head +3
+o430 window at x=16..16 z=18..18 y=49..51 (0..3 above floor surface), faces south, r79 -> outside, sill +0 head +3
+o431 window at x=0..0 z=3..3 y=49..51 (0..3 above floor surface), faces west, r77 -> outside, sill +0 head +3
+o432 window at x=0..0 z=4..4 y=49..51 (0..3 above floor surface), faces west, r77 -> outside, sill +0 head +3
+o433 window at x=0..0 z=15..15 y=49..51 (0..3 above floor surface), faces west, r80 -> outside, sill +0 head +3
+o434 window at x=0..0 z=16..16 y=49..51 (0..3 above floor surface), faces west, r80 -> outside, sill +0 head +3
+
+Furniture hooks:
+h341  c ceiling_light room r75  at x=3 z=9 y=49 facing north
+h342  c ceiling_light room r75  at x=9 z=9 y=49 facing north
+h343  c ceiling_light room r75  at x=15 z=9 y=49 facing north
+h344  c ceiling_light room r77  at x=5 z=4 y=49 facing north
+h345  b bed        room r77  at x=1 z=3 y=49 facing north
+h346  a hearth     room r77  at x=5 z=2 y=49 facing south
+h347  o counter    room r77  at x=8 z=6 y=49 facing north
+h348  h chest      room r77  at x=9 z=2 y=49 facing south
+h349  t table      room r77  at x=7 z=2 y=49 facing south
+h350  e bench      room r77  at x=3 z=2 y=49 facing south
+h351  e bench      room r77  at x=1 z=5 y=49 facing east
+h352  c ceiling_light room r78  at x=14 z=4 y=49 facing north
+h353  b bed        room r78  at x=16 z=2 y=49 facing east
+h354  a hearth     room r78  at x=11 z=4 y=49 facing east
+h355  o counter    room r78  at x=12 z=6 y=49 facing north
+h356  h chest      room r78  at x=12 z=2 y=49 facing south
+h357  t table      room r78  at x=17 z=4 y=49 facing west
+h358  e bench      room r78  at x=14 z=2 y=49 facing south
+h359  e bench      room r78  at x=14 z=6 y=49 facing north
+h360  c ceiling_light room r79  at x=15 z=14 y=49 facing north
+h361  a hearth     room r79  at x=13 z=14 y=49 facing east
+h362  o counter    room r79  at x=17 z=12 y=49 facing west
+h363  h chest      room r79  at x=16 z=17 y=49 facing north
+h364  t table      room r79  at x=17 z=15 y=49 facing west
+h365  e bench      room r79  at x=14 z=11 y=49 facing south
+h366  e bench      room r79  at x=14 z=17 y=49 facing north
+h367  c ceiling_light room r80  at x=4 z=16 y=49 facing north
+h368  h chest      room r80  at x=1 z=17 y=49 facing east
+h369  h chest      room r80  at x=4 z=17 y=49 facing north
+h370  c ceiling_light room r81  at x=10 z=16 y=49 facing north
+h371  b bed        room r81  at x=9 z=16 y=49 facing south
+h416  c ceiling_light room r76  at x=4 z=11 y=49 facing north
+
+## Storey 12: floor slab y=52 (standing y=53), floor-to-floor height 4, clear air about 3 blocks, ceiling at y=56
+     0         1         2
+     0123456789012345678901   (x)
+  0 |``````````````````````
+  1 |##~##~~##~##~~##~##```
+  2 |#..e.a.t.h+.h.e.b.#```
+  3 |~b...C....+...D...~```
+  4 |~....c....+a..c..t~```
+  5 |#e........+.......#```
+  6 |#.......o.+.o.e...#```
+  7 |#+/+++++++++++++/+#```
+  8 |#........A........#```
+  9 |#..c.....c.....c..#```
+ 10 |#+++/++++#~#++++/+#```
+ 11 |#..Bc...#OOO#.e...~```
+ 12 |#..@OOO.#OOO#....o~```
+ 13 |#.>>>>..#OOO#..E..#```
+ 14 |#++++++++###+a.c..#```
+ 15 |~......+.G..+....t~```
+ 16 |~..Fc../.bc./.....~```
+ 17 |#h..h..+....+.e.h.#```
+ 18 |##~##~~##~######~##```
+ 19 |``````````````````````
+ 20 |``````````````````````
+ 21 |``````````````````````
+Legend: # exterior wall, + interior wall, ~ window, / interior door, % door to outside, : arch (doorless), ^ > v < stair rising from here (direction of ascent), @ top step of a stair arriving from below, O opening in the floor (stairwell), . room floor, , floor outside a room, | fence/rail, ! post/beam, = other stair block, ` outside; A-Z/0-9 room labels (table below); furniture: b bed, e bench, c ceiling_light, h chest, o counter, a hearth, l light, t table
+
+Rooms on storey 12:
+ch   id    use          area   volume   connects to (opening, dir)
+A    r82   corridor     34     crown2   r83 (door o70, leave heading south); r84 (door o71, leave heading north); r85 (door o72, leave heading north); r86 (door o73, leave heading south)
+B    r83   stairwell    21     crown2   r82 (door o70, enter heading south); r76@storey11 (stair o87, enter heading west); r89@storey13 (stair o88, leave heading east)
+C    r84   flat         45     crown2   r82 (door o71, enter heading north)
+D    r85   flat         35     crown2   r82 (door o72, enter heading north)
+E    r86   flat         35     crown2   r82 (door o73, enter heading south); r88 (door o75, enter heading east)
+F    r87   storage      18     crown2   r88 (door o74, enter heading west)
+G    r88   bedroom      12     crown2   r87 (door o74, leave heading west); r86 (door o75, leave heading east)
+
+Openings (heights relative to the floor surface (top of the slab); "faces" is the direction of travel from -> to):
+o70  door   at x=4..4 z=10..10 y=53..54 (0..2 above floor surface), faces south, r82 -> r83
+o71  door   at x=2..2 z=7..7 y=53..54 (0..2 above floor surface), faces north, r82 -> r84
+o72  door   at x=16..16 z=7..7 y=53..54 (0..2 above floor surface), faces north, r82 -> r85
+o73  door   at x=16..16 z=10..10 y=53..54 (0..2 above floor surface), faces south, r82 -> r86
+o74  door   at x=7..7 z=16..16 y=53..54 (0..2 above floor surface), faces west, r88 -> r87
+o75  door   at x=12..12 z=16..16 y=53..54 (0..2 above floor surface), faces east, r88 -> r86
+o87  stair  at x=3..6 z=12..12 ascends west over 4 blocks: arrives from below (r76) at r83, top step in the floor opening
+o88  stair  at x=2..5 z=13..13 ascends east over 4 blocks: goes UP from r83 to r89 (storey 13)
+o435 window at x=2..2 z=1..1 y=53..55 (0..3 above floor surface), faces north, r84 -> outside, sill +0 head +3
+o436 window at x=5..5 z=1..1 y=53..55 (0..3 above floor surface), faces north, r84 -> outside, sill +0 head +3
+o437 window at x=6..6 z=1..1 y=53..55 (0..3 above floor surface), faces north, r84 -> outside, sill +0 head +3
+o438 window at x=9..9 z=1..1 y=53..55 (0..3 above floor surface), faces north, r84 -> outside, sill +0 head +3
+o439 window at x=12..12 z=1..1 y=53..55 (0..3 above floor surface), faces north, r85 -> outside, sill +0 head +3
+o440 window at x=13..13 z=1..1 y=53..55 (0..3 above floor surface), faces north, r85 -> outside, sill +0 head +3
+o441 window at x=16..16 z=1..1 y=53..55 (0..3 above floor surface), faces north, r85 -> outside, sill +0 head +3
+o442 window at x=18..18 z=3..3 y=53..55 (0..3 above floor surface), faces east, r85 -> outside, sill +0 head +3
+o443 window at x=18..18 z=4..4 y=53..55 (0..3 above floor surface), faces east, r85 -> outside, sill +0 head +3
+o444 window at x=18..18 z=11..11 y=53..55 (0..3 above floor surface), faces east, r86 -> outside, sill +0 head +3
+o445 window at x=18..18 z=12..12 y=53..55 (0..3 above floor surface), faces east, r86 -> outside, sill +0 head +3
+o446 window at x=18..18 z=15..15 y=53..55 (0..3 above floor surface), faces east, r86 -> outside, sill +0 head +3
+o447 window at x=18..18 z=16..16 y=53..55 (0..3 above floor surface), faces east, r86 -> outside, sill +0 head +3
+o448 window at x=2..2 z=18..18 y=53..55 (0..3 above floor surface), faces south, r87 -> outside, sill +0 head +3
+o449 window at x=5..5 z=18..18 y=53..55 (0..3 above floor surface), faces south, r87 -> outside, sill +0 head +3
+o450 window at x=6..6 z=18..18 y=53..55 (0..3 above floor surface), faces south, r87 -> outside, sill +0 head +3
+o451 window at x=9..9 z=18..18 y=53..55 (0..3 above floor surface), faces south, r88 -> outside, sill +0 head +3
+o452 window at x=16..16 z=18..18 y=53..55 (0..3 above floor surface), faces south, r86 -> outside, sill +0 head +3
+o453 window at x=0..0 z=3..3 y=53..55 (0..3 above floor surface), faces west, r84 -> outside, sill +0 head +3
+o454 window at x=0..0 z=4..4 y=53..55 (0..3 above floor surface), faces west, r84 -> outside, sill +0 head +3
+o455 window at x=0..0 z=15..15 y=53..55 (0..3 above floor surface), faces west, r87 -> outside, sill +0 head +3
+o456 window at x=0..0 z=16..16 y=53..55 (0..3 above floor surface), faces west, r87 -> outside, sill +0 head +3
+
+Furniture hooks:
+h372  c ceiling_light room r82  at x=3 z=9 y=53 facing north
+h373  c ceiling_light room r82  at x=9 z=9 y=53 facing north
+h374  c ceiling_light room r82  at x=15 z=9 y=53 facing north
+h375  c ceiling_light room r84  at x=5 z=4 y=53 facing north
+h376  b bed        room r84  at x=1 z=3 y=53 facing north
+h377  a hearth     room r84  at x=5 z=2 y=53 facing south
+h378  o counter    room r84  at x=8 z=6 y=53 facing north
+h379  h chest      room r84  at x=9 z=2 y=53 facing south
+h380  t table      room r84  at x=7 z=2 y=53 facing south
+h381  e bench      room r84  at x=3 z=2 y=53 facing south
+h382  e bench      room r84  at x=1 z=5 y=53 facing east
+h383  c ceiling_light room r85  at x=14 z=4 y=53 facing north
+h384  b bed        room r85  at x=16 z=2 y=53 facing east
+h385  a hearth     room r85  at x=11 z=4 y=53 facing east
+h386  o counter    room r85  at x=12 z=6 y=53 facing north
+h387  h chest      room r85  at x=12 z=2 y=53 facing south
+h388  t table      room r85  at x=17 z=4 y=53 facing west
+h389  e bench      room r85  at x=14 z=2 y=53 facing south
+h390  e bench      room r85  at x=14 z=6 y=53 facing north
+h391  c ceiling_light room r86  at x=15 z=14 y=53 facing north
+h392  a hearth     room r86  at x=13 z=14 y=53 facing east
+h393  o counter    room r86  at x=17 z=12 y=53 facing west
+h394  h chest      room r86  at x=16 z=17 y=53 facing north
+h395  t table      room r86  at x=17 z=15 y=53 facing west
+h396  e bench      room r86  at x=14 z=11 y=53 facing south
+h397  e bench      room r86  at x=14 z=17 y=53 facing north
+h398  c ceiling_light room r87  at x=4 z=16 y=53 facing north
+h399  h chest      room r87  at x=1 z=17 y=53 facing east
+h400  h chest      room r87  at x=4 z=17 y=53 facing north
+h401  c ceiling_light room r88  at x=10 z=16 y=53 facing north
+h402  b bed        room r88  at x=9 z=16 y=53 facing south
+h417  c ceiling_light room r83  at x=4 z=11 y=53 facing north
+
+## Storey 13: floor slab y=56 (standing y=57), floor-to-floor height 4, clear air about 3 blocks, ceiling at y=60
+     0         1         2
+     0123456789012345678901   (x)
+  0 |,,,,,,,,,,,,,,,,,,,,``
+  1 |###################,``
+  2 |#+++++++++++++++++#,``
+  3 |#+++++++++++++++++#,``
+  4 |#+++++++++++++++++#,``
+  5 |#+++++++++++++++++#,``
+  6 |#+++++++++++++++++#,``
+  7 |#+++++++++++++++++#,``
+  8 |#+++++++++++++++++#,``
+  9 |#+++++++++++++++++#,``
+ 10 |#+++%+++++%+++++++#,``
+ 11 |#...=...+.=.++++++#,``
+ 12 |#...A...+Bc.++++++#,``
+ 13 |#.OOO@..+...++++++#,``
+ 14 |#+++++++++++++++++#,``
+ 15 |#+++++++++++++++++#,``
+ 16 |#+++++++++++++++++#,``
+ 17 |#+++++++++++++++++#,``
+ 18 |###################,``
+ 19 |,,,,,,,,,,,,,,,,,,,,``
+ 20 |``````````````````````
+ 21 |``````````````````````
+Legend: # exterior wall, + interior wall, ~ window, / interior door, % door to outside, : arch (doorless), ^ > v < stair rising from here (direction of ascent), @ top step of a stair arriving from below, O opening in the floor (stairwell), . room floor, , floor outside a room, | fence/rail, ! post/beam, = other stair block, ` outside; A-Z/0-9 room labels (table below); furniture: b bed, e bench, c ceiling_light, h chest, o counter, a hearth, l light, t table
+
+Rooms on storey 13:
+ch   id    use          area   volume   connects to (opening, dir)
+A    r89   stairwell    21     stair3   r83@storey12 (stair o88, enter heading east); outside (door o457, leave heading north)
+B    r90   plant        9      stair3   outside (door o458, leave heading north)
+
+Openings (heights relative to the floor surface (top of the slab); "faces" is the direction of travel from -> to):
+o88  stair  at x=2..5 z=13..13 ascends east over 4 blocks: arrives from below (r83) at r89, top step in the floor opening
+o457 door   at x=4..4 z=10..10 y=58..59 (1..3 above floor surface), faces north, r89 -> outside
+o458 door   at x=10..10 z=10..10 y=58..59 (1..3 above floor surface), faces north, r90 -> outside
+
+Furniture hooks:
+h403  c ceiling_light room r90  at x=10 z=12 y=57 facing north
+h418  c ceiling_light room r89  at x=4 z=11 y=57 facing north
+
+## Circulation
+Entrances from outside:
+  o89 (door) into r0 (lobby) at x=9 z=0, facing north
+  o90 (door) into r0 (lobby) at x=20 z=9, facing east
+  o457 (door) into r89 (stairwell) at x=4 z=10, facing north
+  o458 (door) into r90 (plant) at x=10 z=10, facing north
+Rooms not reachable from outside through doors, arches and stairs: none
+Windows: 366, rooms: 91, furniture hooks: 419
+
+## Roof
+roof flat over main0, base y=15, pitch 0/1, ridge none
+roof flat over shaft1, base y=49, pitch 0/1, ridge none
+roof flat over crown2, base y=57, pitch 0/1, ridge none
+roof flat over stair3, base y=61, pitch 0/1, ridge none
+Top block height map (local y of the highest block in each column, base 36: 0-9 then a=10 ... z=35, + above; ` empty):
+     0         1         2
+     0123456789012345678901   (x)
+  0 |+++++++++++++++++++++e
+  1 |+++++++++++++++++++++e
+  2 |+++++++++++++++++++++e
+  3 |+++++++++++++++++++++e
+  4 |+++++++++++++++++++++e
+  5 |+++++++++++++++++++++e
+  6 |+++++++++++++++++++++e
+  7 |+++++++++++++++++++++e
+  8 |+++++++++++++++++++++e
+  9 |+++++++++++++++++++++e
+ 10 |+++++++++++++++++++++e
+ 11 |+++++++++++++++++++++e
+ 12 |+++++++++++++++++++++e
+ 13 |+++++++++++++++++++++e
+ 14 |+++++++++++++++++++++e
+ 15 |+++++++++++++++++++++e
+ 16 |+++++++++++++++++++++e
+ 17 |+++++++++++++++++++++e
+ 18 |+++++++++++++++++++++e
+ 19 |+++++++++++++++++++++e
+ 20 |``````````````````````
+ 21 |``````````````````````

@@ -35,7 +35,7 @@ class ShopStoopTest {
 	private static Stoop measure(SceneDoc s, GenRequest rq) {
 		PlacedBuilding b = s.buildings().get(0);
 		Opening door = null;
-		for (Opening o : b.shell().openings()) if (o.kind() == OpeningKind.DOOR && Opening.OUTSIDE.equals(o.to())) door = o;
+		for (Opening o : b.shell().openings()) if (o.kind() == OpeningKind.DOOR && Opening.OUTSIDE.equals(o.to()) && o.facing() == dev.fractalbuildings.core.ir.Facing.NORTH) door = o; // the main entrance faces the front (DS35DOORS adds secondary doors on other faces)
 		int floorY = InstancePassV1.entranceStorey(b.shell()).y();
 		int wx = b.placement().worldX(door.box().x(), door.box().z() - 1), wz = b.placement().worldZ(door.box().x(), door.box().z() - 1);
 		int lift = b.oy() + floorY - rq.terrain().floorY(wx, wz);
@@ -98,7 +98,7 @@ class ShopStoopTest {
 						shops++;
 						var eff = dev.fractalbuildings.core.terrain.SiteGround.probe(b, rq.terrain());
 						Opening door = null;
-						for (Opening o : b.shell().openings()) if (o.kind() == OpeningKind.DOOR && Opening.OUTSIDE.equals(o.to())) door = o;
+						for (Opening o : b.shell().openings()) if (o.kind() == OpeningKind.DOOR && Opening.OUTSIDE.equals(o.to()) && o.facing() == dev.fractalbuildings.core.ir.Facing.NORTH) door = o; // the main entrance faces the front (DS35DOORS adds secondary doors on other faces)
 						int wx = b.placement().worldX(door.box().x(), door.box().z() - 1), wz = b.placement().worldZ(door.box().x(), door.box().z() - 1);
 						int rise = b.oy() + door.box().y() - eff.floorY(wx, wz); // the door's rise above the ground in front of it (the lot's own, not the street's)
 						int row = door.box().z() - 1, landing = 0;
@@ -142,7 +142,7 @@ class ShopStoopTest {
 		PlacedBuilding b = s.buildings().get(0);
 		if (b.shell().volumes().stream().noneMatch(v -> v.id().startsWith("leg"))) return;
 		Opening door = null;
-		for (Opening o : b.shell().openings()) if (o.kind() == OpeningKind.DOOR && Opening.OUTSIDE.equals(o.to())) door = o;
+		for (Opening o : b.shell().openings()) if (o.kind() == OpeningKind.DOOR && Opening.OUTSIDE.equals(o.to()) && o.facing() == dev.fractalbuildings.core.ir.Facing.NORTH) door = o; // the main entrance faces the front (DS35DOORS adds secondary doors on other faces)
 		assertTrue(w.reachesGround(door.box().x(), door.box().z() + 2), what + ": the open floor under the hall is not reachable from the street row");
 	}
 }

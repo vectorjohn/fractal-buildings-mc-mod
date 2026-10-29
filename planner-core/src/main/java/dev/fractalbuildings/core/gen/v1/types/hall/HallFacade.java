@@ -1,6 +1,7 @@
 package dev.fractalbuildings.core.gen.v1.types.hall;
 
 import dev.fractalbuildings.core.gen.v1.BuildContext;
+import dev.fractalbuildings.core.gen.v1.facade.ExtraDoors;
 import dev.fractalbuildings.core.gen.v1.facade.FacadePass;
 import dev.fractalbuildings.core.gen.v1.facade.FacadePlan;
 import dev.fractalbuildings.core.gen.v1.facade.OpeningPass;
@@ -40,7 +41,7 @@ final class HallFacade {
 		}
 		List<FacadePlan.Entrance> entrances = new ArrayList<>();
 		for (int e = 0; e < m.entrances().size(); e++) entrances.add(FacadePass.entrance(c, m, layouts, m.entrances().get(e), e));
-		FacadePlan plan = new FacadePlan(layouts, entrances.get(0), entrances.subList(1, entrances.size()));
+		FacadePlan plan = new FacadePlan(layouts, entrances.get(0), entrances.subList(1, entrances.size()), ExtraDoors.add(c, layouts, entrances));
 		c.setFacadePlan(plan);
 		FacadePass.decorate(c, plan);
 	}

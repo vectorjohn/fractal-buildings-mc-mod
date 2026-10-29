@@ -37,7 +37,7 @@ class ShopTypeTest {
 		int low = b.rooms().stream().mapToInt(Room::storey).min().orElse(0); // 1 on a market hall (the open floor under it is storey 0)
 		int floorY = b.storeys().get(low).y();
 		Opening door = null;
-		for (Opening o : b.openings()) if (o.kind() == OpeningKind.DOOR && Opening.OUTSIDE.equals(o.to())) door = o;
+		for (Opening o : b.openings()) if (o.kind() == OpeningKind.DOOR && Opening.OUTSIDE.equals(o.to()) && o.facing() == dev.fractalbuildings.core.ir.Facing.NORTH) door = o; // the main entrance faces the front (DS35DOORS adds secondary doors on other faces)
 		if (door == null) return List.of("no entrance");
 		if (Math.abs(door.box().x() - (w - 1) / 2) > 1) p.add("door at x " + door.box().x() + " is not centred in " + w);
 		int wins = 0;

@@ -11,8 +11,9 @@ import java.util.Objects;
  * @param layouts one per {@link Face} that got bays, in face order
  * @param entrance the main entrance: a door on the main mass's front face, storey 0
  * @param others one entrance for each other mass in {@code Massing.entrances()}, in that order
+ * @param extras the secondary doors of DS-35 (back, side, yard and house doors): one wide, plain, never the main door; see {@link ExtraDoors}
  */
-public record FacadePlan(List<Layout> layouts, Entrance entrance, List<Entrance> others) {
+public record FacadePlan(List<Layout> layouts, Entrance entrance, List<Entrance> others, List<Entrance> extras) {
 	public static final String WINDOW = "window";
 	public static final String DOOR = "door";
 	public static final String BLANK = "blank";
@@ -21,10 +22,24 @@ public record FacadePlan(List<Layout> layouts, Entrance entrance, List<Entrance>
 		layouts = List.copyOf(layouts);
 		Objects.requireNonNull(entrance);
 		others = List.copyOf(others);
+		extras = List.copyOf(extras);
 	}
 
-	/** The main entrance, then the others. */
+	/** A plan with no secondary doors. */
+	public FacadePlan(List<Layout> layouts, Entrance entrance, List<Entrance> others) { this(layouts, entrance, others, List.of()); }
+
+	/** The same plan with other layouts, keeping every door. */
+	public FacadePlan withLayouts(List<Layout> l) { return new FacadePlan(l, entrance, others, extras); }
+
+	/** The main entrance, the other masses' entrances, then the secondary doors. */
 	public List<Entrance> entrances() {
+		List<Entrance> all = primary();
+		all.addAll(extras);
+		return all;
+	}
+
+	/** The main entrance, then the other masses' entrances (one per entrance mass of the massing). */
+	public List<Entrance> primary() {
 		List<Entrance> all = new java.util.ArrayList<>();
 		all.add(entrance);
 		all.addAll(others);
@@ -86,13 +101,13 @@ public record FacadePlan(List<Layout> layouts, Entrance entrance, List<Entrance>
 
 	/**
 	 * The entrance door at position {@code pos} of {@code face} (2 high from the face's y0). {@code width}
-	 * 2 is a double door on {@code pos} and {@code pos + 1}; only the first cell is guaranteed free
+	 * 2 is a double door on {@code pos} and {@code pos + 1} (3, a high-rise's triple door on an odd front, one more); only the first cell is guaranteed free
 	 * inside (the interior pass keeps that one), so the opening pass cuts the second cell only if it can.
 	 */
 	public record Entrance(Face face, int pos, int width) {
 		public Entrance {
 			Objects.requireNonNull(face);
-			if (width < 1 || width > 2) throw new IllegalArgumentException("entrance width " + width);
+			if (width < 1 || width > 3) throw new IllegalArgumentException("entrance width " + width);
 			if (pos < face.a() || pos + width > face.b()) throw new IllegalArgumentException("entrance " + pos + " outside face " + face);
 		}
 

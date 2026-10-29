@@ -64,7 +64,11 @@ final class Shopfront {
 		else layouts.add(shop);
 		// the fascia: a trim band along the top row of the ground wall, between the posts
 		c.box(Role.TRIM, Layer.SHELL, 0, f.x(first), f.y0() + f.height() - 1, f.z(first), alongX(f) ? len : 1, 1, alongX(f) ? 1 : len);
-		FacadePlan plan = new FacadePlan(layouts, new FacadePlan.Entrance(f, door, dw), others);
+		FacadePlan.Entrance mainDoor = new FacadePlan.Entrance(f, door, dw);
+		List<FacadePlan.Entrance> prim = new ArrayList<>();
+		prim.add(mainDoor);
+		prim.addAll(others);
+		FacadePlan plan = new FacadePlan(layouts, mainDoor, others, dev.fractalbuildings.core.gen.v1.facade.ExtraDoors.add(c, layouts, prim));
 		c.setFacadePlan(plan);
 		FacadePass.decorate(c, plan);
 		arcade(c, f, plan.entrance());

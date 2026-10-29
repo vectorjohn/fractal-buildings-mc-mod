@@ -31,6 +31,9 @@ public final class InstancePassV1 {
 	private InstancePassV1() {}
 
 	/** The town-wall types, whose doors are walled up where the lot has no room for a flight down to the ground. */
+	/** Id prefix of the window that replaced a secondary door the placement walled up (DS-35): the {@code entrance-count} check reads it. */
+	public static final String SEALED = "sealed-";
+
 	private static final java.util.Set<String> WALL_TYPES = java.util.Set.of("wall", "curtain", "bastion");
 
 	public static PlacedBuilding place(BuildingIr shell, GenRequest req) { return place(shell, req, Types.get(shell.spec().type()).limits()); }
@@ -38,10 +41,90 @@ public final class InstancePassV1 {
 	/** With explicit margins (tests place shells of unregistered types). */
 	public static PlacedBuilding place(BuildingIr shell, GenRequest req, TypeLimits lim) { return placeChecked(shell, req, lim).building(); }
 
-	/** A placement, and whether every flight and landing in it can be railed inside the lot (DS-8) and every door has a way down. */
-	public record Placed(PlacedBuilding building, boolean guarded) {}
+	/** A placement, and whether every flight and landing in it can be railed inside the lot (DS-8) and every door has a way down; {@code dropped}: the secondary doors (DS-35) the placement walled up, {@code droppedSides} their outward faces (bit per {@code Facing.ordinal()}). */
+	public record Placed(PlacedBuilding building, boolean guarded, int droppedSides, List<Opening> dropped) {
+		public Placed(PlacedBuilding building, boolean guarded) { this(building, guarded, 0, List.of()); }
+	}
 
 	public static Placed placeChecked(BuildingIr shell, GenRequest req, TypeLimits lim) {
+		Placed p = placeKeepingDoors(shell, req, lim);
+		if (!diagonalGap(p.building()) || entranceDoors(shell).stream().noneMatch(o -> secondary(shell, o))) return p;
+		Placed bare = placeWithoutSecondaryDoors(shell, req, lim); // the rails of a secondary door's flight leave a gap: the door gives way
+		return diagonalGap(bare.building()) ? p : bare;
+	}
+
+	public static Placed placeKeepingDoors(BuildingIr shell, GenRequest req, TypeLimits lim) {
+		int sides = 0;
+		List<Opening> gone = new ArrayList<>();
+		BuildingIr cur = shell;
+		for (int round = 0; ; round++) { // DS-35: a back or side door the ground does not allow is walled up (its window back), the building keeps its other doors; sealing one door can leave another unwalkable
+			Once o = placeOnce(cur, req, lim);
+			if (o.dropped().isEmpty() || round >= 3) return new Placed(o.placed().building(), o.placed().guarded(), sides, List.copyOf(gone));
+			for (Opening d : o.dropped()) sides |= 1 << outward(d).ordinal();
+			gone.addAll(o.dropped());
+			cur = sealed(cur, o.dropped());
+		}
+	}
+
+	/** As above, with every secondary door walled up: the last resort when a flight or landing to one of them cannot be railed inside the lot (DS-8 comes before DS-35). */
+	public static Placed placeWithoutSecondaryDoors(BuildingIr shell, GenRequest req, TypeLimits lim) {
+		List<Opening> drop = new ArrayList<>();
+		for (Opening o : entranceDoors(shell)) if (secondary(shell, o)) drop.add(o);
+		if (drop.isEmpty()) return placeKeepingDoors(shell, req, lim);
+		Placed p = placeKeepingDoors(sealed(shell, drop), req, lim);
+		int sides = p.droppedSides();
+		for (Opening d : drop) sides |= 1 << outward(d).ordinal();
+		List<Opening> gone = new ArrayList<>(drop);
+		gone.addAll(p.dropped());
+		return new Placed(p.building(), p.guarded(), sides, List.copyOf(gone));
+	}
+
+	/** The secondary doors (DS-35) of a shell. */
+	public static List<Opening> secondaryDoors(BuildingIr shell) { return entranceDoors(shell).stream().filter(o -> secondary(shell, o)).toList(); }
+
+	/** The shell-local cell just outside a door. */
+	public static int[] outsideCell(Opening o) { Facing f = outward(o); return new int[] {o.box().x() + f.dx, o.box().z() + f.dz}; }
+
+	/** Types whose doors other than the front ones are secondary (DS-35): walled up where the ground allows no way down, never lifting the building for them. */
+	private static final java.util.Set<String> SECONDARY_TYPES = java.util.Set.of("house", "shop", "hall", "temple", "highrise", "workshop");
+
+	/** True if two rails of a placement meet diagonally at a tread with no rail, step or building cell in the corner between them (a gap wider than a player; the rail corner posts skip the cell in front of a door). */
+	public static boolean hasSecondaryDoor(BuildingIr shell) { return entranceDoors(shell).stream().anyMatch(o -> secondary(shell, o)); }
+
+	private static boolean diagonalGap(PlacedBuilding b) {
+		java.util.Set<Long> rails = new java.util.TreeSet<>(), steps = new java.util.TreeSet<>();
+		for (Box x : b.siteBoxes()) {
+			long k = ((long) x.box().x() << 32) ^ (x.box().z() & 0xffffffffL);
+			if (x.role() == Role.RAIL) rails.add(k);
+			else if (x.role() == Role.STAIR) steps.add(k);
+		}
+		Box3 bd = b.shell().bounds();
+		for (Box t : b.siteBoxes()) {
+			if (t.role() != Role.STAIR) continue;
+			for (int dx = -1; dx <= 1; dx += 2)
+				for (int dz = -1; dz <= 1; dz += 2) {
+					int tx = t.box().x(), tz = t.box().z();
+					long ka = ((long) (tx + dx) << 32) ^ (tz & 0xffffffffL), kb = ((long) tx << 32) ^ ((tz + dz) & 0xffffffffL), kc = ((long) (tx + dx) << 32) ^ ((tz + dz) & 0xffffffffL);
+					int cx = tx + dx, cz = tz + dz;
+					if (rails.contains(ka) && rails.contains(kb) && !rails.contains(kc) && !steps.contains(kc) && !(cx >= 0 && cz >= 0 && cx < bd.maxX() && cz < bd.maxZ())) return true;
+				}
+		}
+		return false;
+	}
+
+	/** A secondary door (DS-35): an entrance door of a type in {@link #SECONDARY_TYPES} that does not face the front (north in the shell's frame). */
+	static boolean secondary(BuildingIr shell, Opening o) {
+		if (!SECONDARY_TYPES.contains(shell.spec().type())) return false;
+		if (outward(o) != Facing.NORTH) return true;
+		if (!shell.spec().type().equals("workshop")) return false;
+		String in = o.to().equals(Opening.OUTSIDE) ? o.from() : o.to(); // a workshop's wing and lean-to doors may face the front too; the cart door is the hall's
+		for (dev.fractalbuildings.core.ir.Room r : shell.rooms()) if (r.id().equals(in)) return r.volume().startsWith("wing") || r.volume().startsWith("lean");
+		return false;
+	}
+
+	private record Once(Placed placed, List<Opening> dropped) {}
+
+	private static Once placeOnce(BuildingIr shell, GenRequest req, TypeLimits lim) {
 		Lot lot = req.lot();
 		int r = lot.front().ordinal();
 		boolean odd = (r & 1) == 1;
@@ -66,15 +149,19 @@ public final class InstancePassV1 {
 		SiteLevel dig = SiteLevel.applies(shell, req.brief()) ? new SiteLevel(shell, req, p0, fp) : null;
 		int oy = dig == null ? oy0 : dig.level(oy0);
 		Site placedSite = null;
+		List<Opening> drop = new ArrayList<>(); // secondary doors to wall up (DS-35)
 		// a door whose outside ground is higher than the slab would be buried: lift the slab to it (the ground as the site leaves it, cut included)
 		for (int round = 0; ; round++) {
 			placedSite = site(shell, lot, p0, fp, t, dig, oy, ox, oz, r);
 			TerrainProbe eff = dev.fractalbuildings.core.terrain.SiteGround.probe(placedSite.provisional(), t);
+			drop.clear();
 			int need = oy;
 			for (Opening o : entranceDoors(shell)) {
 				Facing f = outward(o);
 				int wx = p0.worldX(o.box().x() + f.dx, o.box().z() + f.dz), wz = p0.worldZ(o.box().x() + f.dx, o.box().z() + f.dz);
-				if (lot.containsColumn(wx, wz)) need = Math.max(need, eff.floorY(wx, wz) - entranceStorey(shell).y());
+				if (secondary(shell, o)) { // a back or side door never lifts the building: where the ground outside is above the floor or outside the lot, it is walled up
+					if (!lot.containsColumn(wx, wz) || eff.floorY(wx, wz) - entranceStorey(shell).y() > oy + 1) drop.add(o);
+				} else if (lot.containsColumn(wx, wz)) need = Math.max(need, eff.floorY(wx, wz) - entranceStorey(shell).y());
 			}
 			if (need <= oy || round >= 4) break;
 			oy = need;
@@ -88,6 +175,7 @@ public final class InstancePassV1 {
 		List<Box> all = new ArrayList<>(site);
 		List<Opening> unreachable = new ArrayList<>();
 		boolean guarded = steps(provisional, lot, t, all, stoopRise(shell, lim), placedSite.causeway(), placedSite.open(), unreachable) && unreachable.isEmpty();
+		for (Opening o : unreachable) if (secondary(shell, o) && !drop.contains(o)) drop.add(o);
 		BuildingIr built = shell;
 		if (walk != null) {
 			all.addAll(Types.get(shell.spec().type()).walkJoins(shell, walk));
@@ -95,7 +183,22 @@ public final class InstancePassV1 {
 		}
 		if (!unreachable.isEmpty() && WALL_TYPES.contains(shell.spec().type())) built = sealed(shell, unreachable); // a wall tower or gatehouse standing high above steep ground: no way down in the lot, so no door
 
-		return new Placed(new PlacedBuilding("b0", List.of(lot.id()), ox, oy, oz, r, built, all), guarded);
+		PlacedBuilding result = new PlacedBuilding("b0", List.of(lot.id()), ox, oy, oz, r, built, all);
+		if (drop.isEmpty() && shell.openings().stream().anyMatch(o -> o.kind() == OpeningKind.DOOR && secondary(shell, o))) { // the model of steps-reach-ground may judge a flight the search found unwalkable: such a secondary door is walled up too
+			java.util.Set<String> failing = new java.util.TreeSet<>(badSecondary(result, lot, t)); // no way down, a straight run over 3 risers (DS-45), or the ground outside well above the sill (a bank)
+			for (Opening o : entranceDoors(shell)) if (failing.contains(o.id()) && secondary(shell, o)) drop.add(o);
+		}
+		return new Once(new Placed(result, guarded), List.copyOf(drop));
+	}
+
+	/** Ids of the secondary doors of a placement that fail DS-45 or the ground: no way down, a straight run over 3 risers, or the ground past the lot straight out more than 2 blocks above the sill (DoorRise rise below -2, the DS-45 limit; round 2 had -1). */
+	private static java.util.Set<String> badSecondary(PlacedBuilding b, Lot lot, TerrainProbe t) {
+		java.util.Set<String> bad = new java.util.TreeSet<>();
+		dev.fractalbuildings.core.ir.TerrainPatch patch = dev.fractalbuildings.core.ir.TerrainPatch.sample(t, lot.x() - 2, lot.z() - 2, lot.w() + 4, lot.d() + 4);
+		dev.fractalbuildings.core.ir.SceneDoc scene = new dev.fractalbuildings.core.ir.SceneDoc(2, 0, patch, List.of(lot), List.of(b), List.of());
+		for (dev.fractalbuildings.core.check.DoorRise.Door d : dev.fractalbuildings.core.check.DoorRise.measure(scene, b, dev.fractalbuildings.core.terrain.SiteGround.probe(b, t), java.util.Map.of()))
+			if (!d.reached() || d.run() > 3 || d.rise() < -2) bad.add(d.door());
+		return bad;
 	}
 
 	/** The site boxes of a placement at slab level {@code oy} (foundation under the footprint, then the dig-in's cut and fill) and the provisional building they make. */
@@ -138,7 +241,14 @@ public final class InstancePassV1 {
 		for (Opening o : doors) {
 			int storey = Box.NO_STOREY;
 			for (Box b : shell.boxes()) if (b.role() == Role.DOOR && b.box().equals(o.box())) storey = b.storey();
-			boxes.add(new Box(o.box(), Role.WALL, Layer.SHELL, storey));
+			if (WALL_TYPES.contains(shell.spec().type()) || o.box().sy() < 2) boxes.add(new Box(o.box(), Role.WALL, Layer.SHELL, storey));
+			else { // the window the door replaced comes back: wall below, glass above
+				Box3 b = o.box();
+				boxes.add(new Box(Box3.of(b.x(), b.y(), b.z(), b.sx(), 1, b.sz()), Role.WALL, Layer.SHELL, storey));
+				boxes.add(new Box(Box3.of(b.x(), b.y() + 1, b.z(), b.sx(), 1, b.sz()), Role.WINDOW, Layer.SHELL, storey));
+				String room = o.to().equals(Opening.OUTSIDE) ? o.from() : o.to();
+				openings.add(new Opening(SEALED + o.id(), OpeningKind.WINDOW, Box3.of(b.x(), b.y() + 1, b.z(), b.sx(), 1, b.sz()), outward(o), room, Opening.OUTSIDE));
+			}
 			openings.remove(o);
 		}
 		return new BuildingIr(shell.spec(), shell.bounds(), shell.storeys(), shell.volumes(), shell.rooms(), openings, shell.roofs(), boxes, shell.hooks());
@@ -164,7 +274,7 @@ public final class InstancePassV1 {
 		return doors;
 	}
 
-	static Facing outward(Opening o) { return o.to().equals(Opening.OUTSIDE) ? o.facing() : o.facing().rotate(2); }
+	public static Facing outward(Opening o) { return o.to().equals(Opening.OUTSIDE) ? o.facing() : o.facing().rotate(2); }
 
 	/**
 	 * Front steps: for each entrance door, a landing one cell out at slab height, then a flight down
@@ -261,7 +371,7 @@ public final class InstancePassV1 {
 					lowFront |= ground[fi] < oy;
 				}
 			boolean wide = front.size() > 1 && lowFront;
-			if (ground[s0] <= oy + 1 - stoopRise || wide) {
+			if (ground[s0] <= oy + 1 - stoopRise && !secondary(shell, o) || wide) { // a back or side door (DS-35) takes a plain flight: the stoop is the shopfront's
 				for (int[] cand : stoopCandidates(out, sx, sz, x0, x1, z0, z1, nx, ground, oy, base, grid, fp)) {
 					if (wide) { boolean covers = true; for (int fi : front) if (ground[fi] < oy) { boolean in = false; for (int c : cand) in |= c == fi; covers &= in; } if (!covers) continue; }
 					candidates.add(cand);
