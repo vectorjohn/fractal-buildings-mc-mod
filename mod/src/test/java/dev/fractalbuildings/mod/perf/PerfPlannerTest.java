@@ -43,6 +43,10 @@ class PerfPlannerTest {
 		@Override public int surfaceY(int x, int z) { calls.incrementAndGet(); return in.surfaceY(x, z); }
 	}
 
+	private static long processCpuNanos() {
+		return ((com.sun.management.OperatingSystemMXBean) java.lang.management.ManagementFactory.getOperatingSystemMXBean()).getProcessCpuTime();
+	}
+
 	private static double ms(long t0) { return (System.nanoTime() - t0) / 1e6; }
 
 	/** PARREADS: the reads pool the game starts with the server ({@code Workers.start}), so every row measures the game's parallel terrain reads. */
@@ -132,11 +136,13 @@ class PerfPlannerTest {
 		out.put("district.cold.neighbour.ms", ms(t0));
 		// the median of several cold district plans (fresh tile each, skeleton warm): the budget is a median
 		List<Double> plans = new ArrayList<>();
+		long cpu0 = processCpuNanos(); // load-independent: process CPU (all threads, the parallel reads included) over the seven plans
 		for (int d = -3; d <= 3; d++) {
 			int ix = tile.ix() + d, iz = tile.iz() + 1;
 			t0 = System.nanoTime();
 			if (cold.tile(ix, iz).isPresent()) { cold.buildings(ix, iz); cold.ground(ix, iz); plans.add(ms(t0)); }
 		}
+		out.put("district.cold.cpu.ms", (processCpuNanos() - cpu0) / 1e6);
 		plans.sort(Double::compare);
 		out.put("district.cold.median.ms", plans.isEmpty() ? 0 : plans.get(plans.size() / 2));
 		out.put("district.cold.p95.ms", plans.isEmpty() ? 0 : plans.get(Math.min(plans.size() - 1, (int) Math.ceil(plans.size() * 0.95) - 1)));

@@ -651,6 +651,8 @@ public final class InstancePassV1 {
 			queue[tail++] = st;
 		}
 		Facing[] dirs = {out, out.rotate(1), out.rotate(3), out.rotate(2)};
+		int[] mark = new int[nx * nz], markState = new int[nx * nz]; // the cells of the route to the state being expanded (stamp), and their states: the route walks below become lookups
+		int stamp = 0;
 		while (head < tail) {
 			int st = queue[head++];
 			int c = st / stride, rest = st % stride, d = rest / curN, cur = rest % curN;
@@ -671,35 +673,38 @@ public final class InstancePassV1 {
 			int thr = arrivedLevel || ci < nDeck && d == 0 ? RAIL_DROP_LANDING : RAIL_DROP_FLIGHT;
 			if (strict && !(ci < nDeck && d == 0 && !strictLanding) && h - outG[c] >= thr) continue;
 			if (g > h + 2) continue;
+			stamp++;
+			int rlen = 0;
+			for (int s = st; s >= 0; s = from[s]) { int rc = s / stride; mark[rc] = stamp; markState[rc] = s; rlen++; }
 			for (Facing f : dirs) {
 				int nxx = cx + f.dx, nzz = cz + f.dz;
 				if (nxx < x0 || nxx > x1 || nzz < z0 || nzz > z1) continue;
 				int ni = (nzz - z0) * nx + (nxx - x0);
 				if (blocked[ni]) {
-					if (pass == 1 && flightTop[ni] != Integer.MIN_VALUE && (flightTop[ni] == h - 1 || flightTop[ni] == h) && !onRoute(st, ni, from, stride)) {
+					if (pass == 1 && flightTop[ni] != Integer.MIN_VALUE && (flightTop[ni] == h - 1 || flightTop[ni] == h) && mark[ni] != stamp) {
 						chain(st, from, stride, curN, parent, depth, c, null);
 						merged[0] = true;
 						return c;
 					}
 					continue;
 				}
-				if (isSrc[ni] || onRoute(st, ni, from, stride)) continue;
+				if (isSrc[ni] || mark[ni] == stamp) continue;
 				// the end: ground at most a block below the last step and at most half a block above it, on the lot's street row when the flight starts from a landing
 				int gn = ground[ni];
 				boolean endsHere = gn >= h && gn <= h + 1 && !(ci < nDeck && (nxx - sx) * out.dx + (nzz - sz) * out.dz != nOut) && (gn > h || cur + 1 <= MAX_CUR);
-				if (endsHere && !endTouchesOk(st, c, ni, gn, from, stride, curN, oy, nx, isSrc, nz)) endsHere = false;
-				if (endsHere && routeLength(st, from) + 1 > d + 1 + (d + 1) / 3 + 3) endsHere = false; // a route much longer than the descent needs (a landing every 3 risers and a corner or two) is a walk across the lot, not a flight
+				if (endsHere && !endTouchesOk(c, ni, gn, mark, markState, stamp, stride, curN, oy, nx, isSrc, nz)) endsHere = false;
+				if (endsHere && rlen + 1 > d + 1 + (d + 1) / 3 + 3) endsHere = false; // a route much longer than the descent needs (a landing every 3 risers and a corner or two) is a walk across the lot, not a flight
 				if (endsHere) {
 					boolean fr = true;
 					for (int y = gn - base; y <= gn + 3 - base && fr; y++) fr = grid.get(nxx, y, nzz) == Role.AIR;
 					if (fr) { chain(st, from, stride, curN, parent, depth, ni, new int[] {c, d + 1}); return ni; }
 				}
-				if (d + 1 <= maxD && cur + 2 <= MAX_CUR && touchesRouteOk(st, c, ni, oy - d - 1, false, from, stride, curN, oy, nx, isSrc, nz, ground)) { // a step down
+				if (d + 1 <= maxD && cur + 2 <= MAX_CUR && touchesRouteOk(c, ni, oy - d - 1, false, mark, markState, stamp, stride, curN, oy, nx, isSrc, nz, ground)) { // a step down
 					int ns1 = ni * stride + (d + 1) * curN + cur + 2;
 					if (!seen[ns1]) { seen[ns1] = true; from[ns1] = st; queue[tail++] = ns1; }
 				}
 				int nl = ni * stride + d * curN; // a level landing cell: ends the run
-				if (!seen[nl] && touchesRouteOk(st, c, ni, h, true, from, stride, curN, oy, nx, isSrc, nz, ground)) { seen[nl] = true; from[nl] = st; queue[tail++] = nl; }
+				if (!seen[nl] && touchesRouteOk(c, ni, h, true, mark, markState, stamp, stride, curN, oy, nx, isSrc, nz, ground)) { seen[nl] = true; from[nl] = st; queue[tail++] = nl; }
 			}
 		}
 		return -1;
@@ -711,17 +716,16 @@ public final class InstancePassV1 {
 	 * where the route walks on the natural ground (its step is buried) may stand no more than the rail threshold above that ground. The landing cells (the
 	 * stoop) count as treads at the door's level.
 	 */
-	private static boolean touchesRouteOk(int st, int cur0, int cell, int lvl, boolean levelMove, int[] from, int stride, int curN, int oy, int nx, boolean[] isSrc, int nz, int[] ground) {
+	private static boolean touchesRouteOk(int cur0, int cell, int lvl, boolean levelMove, int[] mark, int[] markState, int stamp, int stride, int curN, int oy, int nx, boolean[] isSrc, int nz, int[] ground) {
 		int cx = cell % nx, cz = cell / nx;
 		int thrN = levelMove ? RAIL_DROP_LANDING : RAIL_DROP_FLIGHT, topN = Math.max(lvl + 1, ground[cell]);
-		for (int[] dd : new int[][] {{1, 0}, {-1, 0}, {0, 1}, {0, -1}}) { // the landing cells are treads at the door's level
-			int ax = cx + dd[0], az = cz + dd[1];
-			if (ax < 0 || az < 0 || ax >= nx || az >= nz || !isSrc[az * nx + ax] || az * nx + ax == cur0) continue;
-			if (!edgeOk(oy, RAIL_DROP_LANDING, oy + 1, lvl, thrN, topN)) return false;
-		}
-		for (int s = from[st]; s >= 0; s = from[s]) {
-			int rc = s / stride;
-			if (Math.abs(rc % nx - cx) + Math.abs(rc / nx - cz) != 1) continue;
+		for (int k = 0; k < 4; k++) { // the four ways; the landing cells are treads at the door's level
+			int ax = cx + DX4[k], az = cz + DZ4[k];
+			if (ax < 0 || az < 0 || ax >= nx || az >= nz) continue;
+			int rc = az * nx + ax;
+			if (isSrc[rc] && rc != cur0 && !edgeOk(oy, RAIL_DROP_LANDING, oy + 1, lvl, thrN, topN)) return false;
+			if (mark[rc] != stamp || rc == cur0) continue; // an earlier cell of the route other than the one it comes from
+			int s = markState[rc];
 			int d = (s % stride) / curN, cur = s % curN, rl = oy - d;
 			if (!edgeOk(rl, cur == 0 || d == 0 ? RAIL_DROP_LANDING : RAIL_DROP_FLIGHT, Math.max(rl + 1, ground[rc]), lvl, thrN, topN)) return false;
 		}
@@ -729,16 +733,15 @@ public final class InstancePassV1 {
 	}
 
 	/** The ground cell a route ends on ({@code ground} first free level): it may not stand a rail threshold or more below an earlier tread beside it, which has no rail there (the end cell is part of the route). */
-	private static boolean endTouchesOk(int st, int cur0, int cell, int ground, int[] from, int stride, int curN, int oy, int nx, boolean[] isSrc, int nz) {
+	private static boolean endTouchesOk(int cur0, int cell, int ground, int[] mark, int[] markState, int stamp, int stride, int curN, int oy, int nx, boolean[] isSrc, int nz) {
 		int cx = cell % nx, cz = cell / nx;
-		for (int[] dd : new int[][] {{1, 0}, {-1, 0}, {0, 1}, {0, -1}}) {
-			int ax = cx + dd[0], az = cz + dd[1];
-			if (ax < 0 || az < 0 || ax >= nx || az >= nz || !isSrc[az * nx + ax] || az * nx + ax == cur0) continue;
-			if (oy - ground >= RAIL_DROP_LANDING) return false;
-		}
-		for (int s = from[st]; s >= 0; s = from[s]) {
-			int rc = s / stride;
-			if (Math.abs(rc % nx - cx) + Math.abs(rc / nx - cz) != 1) continue;
+		for (int k = 0; k < 4; k++) {
+			int ax = cx + DX4[k], az = cz + DZ4[k];
+			if (ax < 0 || az < 0 || ax >= nx || az >= nz) continue;
+			int rc = az * nx + ax;
+			if (isSrc[rc] && rc != cur0 && oy - ground >= RAIL_DROP_LANDING) return false;
+			if (mark[rc] != stamp || rc == cur0) continue;
+			int s = markState[rc];
 			int d = (s % stride) / curN, cur = s % curN;
 			if (oy - d - ground >= (cur == 0 || d == 0 ? RAIL_DROP_LANDING : RAIL_DROP_FLIGHT)) return false;
 		}
@@ -750,16 +753,7 @@ public final class InstancePassV1 {
 		return Math.abs(lm - ln) <= 1 && lm - topN < thrM && ln - topM < thrN;
 	}
 
-	private static int routeLength(int st, int[] from) {
-		int n = 0;
-		for (int s = st; s >= 0; s = from[s]) n++;
-		return n;
-	}
-
-	private static boolean onRoute(int st, int cell, int[] from, int stride) {
-		for (int s = st; s >= 0; s = from[s]) if (s / stride == cell) return true;
-		return false;
-	}
+	private static final int[] DX4 = {1, -1, 0, 0}, DZ4 = {0, 0, 1, -1};
 
 	/** Writes the route ending at state {@code st} (and, for a ground end, the extra last cell {cell parent, depth}) into the per-cell arrays. */
 	private static void chain(int st, int[] from, int stride, int curN, int[] parent, int[] depth, int endCell, int[] last) {

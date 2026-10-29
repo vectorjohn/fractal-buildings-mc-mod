@@ -111,7 +111,8 @@ public final class DistrictScenes {
 	 * Generates every {@code build} lot of a filled plan with generator v1 (see {@link #generateLot}). A pure function of the plan and
 	 * the probes; each lot depends on its own brief alone.
 	 */
-	public static Lots generateLots(DistrictPlan plan, TerrainProbe exact, BiomeProbe biome) {
+	public static Lots generateLots(DistrictPlan plan, TerrainProbe exactIn, BiomeProbe biome) {
+		TerrainProbe exact = new dev.fractalbuildings.core.probe.MemoProbe(exactIn); // DISTPERF: the door retries and checks read the same columns many times; one thread, one district
 		List<Generated> out = new ArrayList<>();
 		List<LotBrief> newLots = new ArrayList<>();
 		List<String> fallbacks = new ArrayList<>();
