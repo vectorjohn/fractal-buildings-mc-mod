@@ -41,17 +41,18 @@ class OrderSimHarnessTest {
 	void smokeFastOrdersPass() {
 		Scenario s = sc1(3);
 		s.plan(); // the reference raster is built once per scenario: time the orders, not it
-		long t0 = System.nanoTime();
+		long t0 = System.nanoTime(), c0 = java.lang.management.ManagementFactory.getThreadMXBean().getCurrentThreadCpuTime();
 		OrderSim.Result res = OrderSim.runAll(s, fast(s), true);
 		long ms = (System.nanoTime() - t0) / 1_000_000;
+		long cpuMs = (java.lang.management.ManagementFactory.getThreadMXBean().getCurrentThreadCpuTime() - c0) / 1_000_000; // this thread CPU time: independent of host load (wall clock flaked at 10115 ms on a busy beebox)
 		SimReport.write(res);
-		System.out.println("[ordersim] SC1 smoke: " + res.runs.size() + " orders in " + ms + " ms, loadavg " + SimReport.load());
+		System.out.println("[ordersim] SC1 smoke: " + res.runs.size() + " orders in " + ms + " ms (cpu " + cpuMs + " ms), loadavg " + SimReport.load());
 		assertEquals(List.of(), res.failed());
 		assertEquals(6, res.runs.size());
 		assertTrue(res.runs.get(0).features.placed() > 20, "the hashed features really place: " + res.runs.get(0).features);
 		assertTrue(res.runs.get(0).ledgerCells > 1000, "the window claims cells");
 		assertTrue(res.runs.get(0).contractViolations == 0 && res.runs.get(1).contractViolations == 0, "C5 ran in forward and reverse");
-		assertTrue(ms < 10_000, "a few seconds (3 s on a quiet host, the limit is loose for a busy one): " + ms);
+		assertTrue(cpuMs < 30_000, "a few seconds of CPU (3 s on a quiet host): " + cpuMs + " cpu ms, " + ms + " wall ms");
 	}
 
 	@Test

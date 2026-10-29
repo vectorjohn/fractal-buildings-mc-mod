@@ -256,12 +256,12 @@ class RoomSplitTest {
 	void sixtyStoreyTowerPlansAFewBandsAndStaysConnected() {
 		StoreyGrid g = StoreyGrid.of(60, 4, 4);
 		Massing tower = new Massing(g, List.of(Mass.ground("main0", "main", 4, 4, 16, 16, 60)), List.of(new Core(6, 8, 5, 2, 0, 60)));
-		long t0 = System.nanoTime();
+		long t0 = java.lang.management.ManagementFactory.getThreadMXBean().getCurrentThreadCpuTime();
 		var scene = TestMassings.scene(tower, 1, "plain", FixturePipelineTest.GROUND.get("flat"));
-		long ms = (System.nanoTime() - t0) / 1_000_000;
+		long ms = (java.lang.management.ManagementFactory.getThreadMXBean().getCurrentThreadCpuTime() - t0) / 1_000_000; // thread CPU time: load-independent
 		List<Violation> v = Invariants.check(scene);
 		assertTrue(v.isEmpty(), v.isEmpty() ? "" : v.get(0).invariant() + " " + v.get(0).message());
-		assertTrue(ms < 20_000, "generation took " + ms + " ms");
+		assertTrue(ms < 20_000, "generation took " + ms + " cpu ms");
 		BuildingIr ir = scene.buildings().get(0).shell();
 		assertEquals(plan(ir, 4), plan(ir, 6), "typical floors repeat within a facade band");
 		assertEquals(plan(ir, 40), plan(ir, 42), "typical floors repeat within a facade band");

@@ -219,10 +219,10 @@ class InvariantsTest {
 	@Test
 	void speed() {
 		SceneDoc s = SampleScenes.house();
-		long t0 = System.nanoTime();
+		long t0 = java.lang.management.ManagementFactory.getThreadMXBean().getCurrentThreadCpuTime();
 		for (int i = 0; i < 10_000; i++) Invariants.check(s);
-		double ms = (System.nanoTime() - t0) / 1e6;
-		System.out.println("10,000 sample checks: " + ms + " ms");
+		double ms = (java.lang.management.ManagementFactory.getThreadMXBean().getCurrentThreadCpuTime() - t0) / 1e6; // thread CPU time: load-independent
+		System.out.println("10,000 sample checks: " + ms + " cpu ms");
 		assertTrue(ms < 20_000);
 	}
 
