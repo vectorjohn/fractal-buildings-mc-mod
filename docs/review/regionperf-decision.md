@@ -117,3 +117,27 @@ Measured by COLDCHUNK (`.claude/reports/p6-coldchunk.md`), and seen again in the
   - (b) is cheapest to build, but it moves the wait to settlement start, so it doesn't remove it.
   - (a) and (c) cut the cost itself.
   - (d) trades some quay accuracy for speed.
+
+## 7. Update 2026-10-29: HEAVY6 numbers (after PARREADS)
+
+`scripts/perf.sh` at 6ea46a67 on both hosts (forensic source: `.claude/reports/heavy6-perf-local-evidence/` and `heavy6-perf-evidence/`, not tracked). Local is this machine, 20 CPUs, quiet (load at most 7.1). beebox is the worker box, 12 CPUs (load at most 7.9). Worst cold chunk and the teleport hold come from the same batch (HEAVY6 verifier summary).
+
+| What | Local, quiet | beebox | Budget | CI ceiling |
+|---|---|---|---|---|
+| Worst cold chunk, metropolis (the wait a player teleporting in sees) | 21.8 s | 37.8 s | none yet | none yet |
+| Region layer + roads, cold (`region.cold.warm`) | 8.1 s | 11.2 s (FAIL) | 6 s | 10 s |
+| `/locate` settlement, fresh area | 2.7 s | 4.6 s | 3 s | 5 s |
+| `/locate` settlement from spawn | 1.2 s | 1.8 s | 2 s | 4 s |
+| First tile of a metropolis, cold | 1.3 s | 1.2 s | 1 s | 4 s |
+| Cold district plan, median | 1263 ms | 655 ms | 300 ms | 1500 ms |
+| Cold district plan, p95 | 1846 ms | 848 ms | 1000 ms | 3000 ms |
+| Worst server tick, elytra flight into a city | 776 ms | 317 ms | 3000 ms | 6000 ms |
+| Heap after GC, mod world vs none | 142 MB | 148 MB | 500 MB | 1000 MB |
+
+- **Cold chunk:** down from 70-120 s (section 6) and about 37 s before PARREADS on a busy machine, to 21.8 s on a quiet one. The slower host still takes 37.8 s.
+- **Region layer:** passes its ceiling locally and fails it on beebox. The 10 s ceiling now depends on the host.
+- **Teleport hold:** in the client test (load about 45) it gave up 5 times at 30 s. That isn't new: the hold limit is below the worst cold chunk on a loaded or slower machine.
+- **District plan median:** rose from 400-480 ms to 655-1263 ms. That's probably DS36ROOFS, and a separate item is diagnosing it. It's not the region layer.
+- **DEADPORT's verifier run** (beebox, load 2-5, run twice in ABBA order) agrees: region layer cold 11.0-13.2 s, `/locate` fresh 3.77 s, first metropolis tile 1.2-1.5 s.
+
+**Recommendation for 0.1.0 (release-plan question 4):** accept a cold-arrival wait of up to 60 s. 30 s is already missed on the slower host and on a loaded machine. Keep the `/locate` ceiling at 5 s: fresh is 2.7-4.6 s, so 6 s isn't needed yet. Raise the teleport hold's 30 s limit to that budget, and give the region-layer ceiling room for the slower host (or a value per host), so the tests stop failing there.

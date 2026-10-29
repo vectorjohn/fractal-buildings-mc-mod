@@ -93,7 +93,9 @@ pauseOnLostFocus:false
 renderDistance:8
 O
 export DISPLAY_NUM=97
-Xvfb :$DISPLAY_NUM -screen 0 1280x720x24 >"$OUT/xvfb.log" 2>&1 &
+# No LD_LIBRARY_PATH for Xvfb: with the dev shell's it offers an sRGB GLX visual and the client renders
+# OpenGL on llvmpipe instead of the Vulkan driver vk-select picks (HEAVY6, 2026-10-29).
+env -u LD_LIBRARY_PATH Xvfb :$DISPLAY_NUM -screen 0 1280x720x24 >"$OUT/xvfb.log" 2>&1 &
 XPID=$!
 sleep 2
 # Renderer for the client: Intel iGPU by default, lavapipe as fallback or with FB_VK=lavapipe.
@@ -124,6 +126,8 @@ SN=$(wc -l < "$SLOG"); CN=$(wc -l < "$CLOG")
 echo stop >&3; sleep 10
 kill -- -"$CPID" 2>/dev/null; kill $XPID 2>/dev/null
 cp "$SLOG" "$OUT/server.log" 2>/dev/null; cp "$CLOG" "$OUT/client.log" 2>/dev/null
+# Which backend the vanilla client really used (warn only; see fb_vk_backend_check in scripts/vk-select.sh).
+fb_vk_backend_check "$OUT/client.log" "${FB_VK_USED:-intel}" server-only-test 2> >(tee -a "$RES" >&2) || true
 
 BAD='disconnect\|Disconnected\|mismatch\|Missing registry\|Unknown registry\|unknown registry\|Failed to decode\|Network Protocol Error\|Exception\|lost connection'
 say "--- problem lines (server):"; head -n "$SN" "$OUT/server.log" | grep -i "$BAD" | head -20 | tee -a "$RES"

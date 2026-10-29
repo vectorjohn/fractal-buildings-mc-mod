@@ -80,3 +80,37 @@ fb_vk_select() {
 	export VK_DRIVER_FILES="$icd" MESA_VK_WSI_DEBUG="${MESA_VK_WSI_DEBUG:-sw}" FB_VK_USED=intel
 	echo "$tag: renderer intel ($node), VK_DRIVER_FILES=$VK_DRIVER_FILES MESA_VK_WSI_DEBUG=$MESA_VK_WSI_DEBUG" >&2
 }
+
+# Which backend did the client actually use? Minecraft tries OpenGL before Vulkan, so if the X server
+# offers an sRGB-capable GLX visual the client silently renders OpenGL on llvmpipe (CPU) whatever
+# FB_VK picked. That happened when Xvfb inherited the dev shell's LD_LIBRARY_PATH (HEAVY6, 2026-10-29;
+# docs/NOTES.md): start Xvfb with LD_LIBRARY_PATH unset. Usable from any shell (no dev shell needed):
+#
+#   fb_vk_backend_check <game log> <intel|lavapipe|worker> [tag]
+#
+# Reads the "Using graphics backend X" / "Using graphics device: Y" lines and prints one line on stderr:
+# "<tag>: backend OK: ..." (return 0), "<tag>: BACKEND MISMATCH: ..." (return 1), or
+# "<tag>: BACKEND UNKNOWN: ..." (return 2; no such line, e.g. the client died before creating it).
+# Expected: intel -> Vulkan on an Intel device; lavapipe -> Vulkan on llvmpipe; worker -> any backend
+# whose device is not llvmpipe (the worker box renders hardware OpenGL on radeonsi).
+fb_vk_backend_check() {
+	local log=$1 used=$2 tag="${3:-vk-select}" be dev want ok=1
+	be=$(grep -m1 -oE 'Using graphics backend [A-Za-z]+' "$log" 2> /dev/null | awk '{print $4}' || true)
+	dev=$(grep -m1 -oE 'Using graphics device: .*' "$log" 2> /dev/null | cut -d' ' -f4- | cut -c1-100 || true)
+	if [[ -z $be ]]; then
+		echo "$tag: BACKEND UNKNOWN: no 'Using graphics backend' line in $log (selected $used)" >&2
+		return 2
+	fi
+	case $used in
+		intel) want="Vulkan on the Intel iGPU"; [[ $be == Vulkan && $dev == *Intel* ]] && ok=0 ;;
+		lavapipe) want="Vulkan on lavapipe"; [[ $be == Vulkan && $dev == llvmpipe* ]] && ok=0 ;;
+		worker) want="the worker's GPU (not llvmpipe)"; [[ -n $dev && $dev != llvmpipe* ]] && ok=0 ;;
+		*) echo "$tag: BACKEND UNKNOWN: selected renderer '$used' is not intel, lavapipe or worker" >&2; return 2 ;;
+	esac
+	if ((ok == 0)); then
+		echo "$tag: backend OK: $be on $dev (selected $used)" >&2
+		return 0
+	fi
+	echo "$tag: BACKEND MISMATCH: selected $used (want $want), but the client ran $be on '$dev'. A GLX visual leaked into the X server (Xvfb started with the dev shell's LD_LIBRARY_PATH?); timings and screenshots of this run are not from the selected renderer." >&2
+	return 1
+}

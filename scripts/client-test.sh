@@ -40,6 +40,11 @@
 # a "client-test: FALLBACK" line; a failing test never triggers a rerun. FB_VK=lavapipe forces Mesa's CPU
 # renderer. The NVIDIA card is not approved: FB_VK=nvidia (or anything else) is refused, and only one ICD
 # is ever listed, so the loader cannot see that GPU. Findings: docs/research/spikes/gpu-intel.md.
+# Backend guard: after the run the "Using graphics backend/device" lines must match the selected renderer
+# (intel: Vulkan on Intel; lavapipe: Vulkan on llvmpipe; worker: not llvmpipe). A mismatch logs
+# "client-test: BACKEND MISMATCH", keeps the log as gradle-backend-mismatch.log and turns a passing run
+# into exit 3 (FB_BACKEND_CHECK=warn only warns, =off skips). Xvfb is started without LD_LIBRARY_PATH,
+# which otherwise lets Minecraft pick OpenGL on llvmpipe (HEAVY6, 2026-10-29).
 #
 # Layers (TESTLAYERS): FB_LAYER=quick (default here) runs Hello, District (B1), Gameplay (B5), Terrain (B3), TeleportHold; FB_LAYER=full adds
 # Roads, Foliage and the compat world (about twice the time). FB_ONLY=<TestClass> (e.g. RoadsClientGameTest) runs that one client test only, whatever
@@ -72,7 +77,7 @@ OUT_DIR="$ROOT/build/client-test"
 OUT_LOG="$OUT_DIR/gradle.log"
 START_MARK="$OUT_DIR/.start"
 # Lines that mean the run has failed and the JVM should exit by itself soon. "Failed to create backend
-# Vulkan": Vulkan is the last backend tried (after OpenGL, which always fails on Xvfb); without one the
+# Vulkan": Vulkan is the last backend tried (after OpenGL, which fails on an Xvfb started without the dev shell's LD_LIBRARY_PATH); without one the
 # client sits on an error and never exits.
 CRASH_RE='Minecraft has crashed|Failed to create backend Vulkan|#@!@# Game crashed!|Client gametests failed with an exception|Exception in thread "(Test thread|Render thread|main)"'
 
@@ -140,7 +145,10 @@ build_cmd() { # renderer [gradle args]
 	local xvfb=(xvfb-run -a)
 	[[ ${FB_USE_DISPLAY:-} == 1 ]] && xvfb=()
 	# The renderer is picked inside the dev shell, where VK_DRIVER_FILES (lavapipe) and vulkaninfo live.
-	CMD=(env -u WAYLAND_DISPLAY SDL_VIDEODRIVER=x11 FB_VK="$vk" FB_VK_LOG_TAG=client-test
+	# Xvfb must not inherit the dev shell's LD_LIBRARY_PATH (set when this script is called from inside
+	# it, e.g. by test-all.sh): with the flake's libglvnd, Xvfb offers an sRGB GLX visual and Minecraft
+	# picks OpenGL on llvmpipe over the selected Vulkan driver (HEAVY6). scripts/dev --fresh restores it.
+	CMD=(env -u WAYLAND_DISPLAY -u LD_LIBRARY_PATH SDL_VIDEODRIVER=x11 FB_VK="$vk" FB_VK_LOG_TAG=client-test
 		"${xvfb[@]}" "$ROOT/scripts/dev" --fresh bash -c '
 			source "$1/scripts/vk-select.sh" && fb_vk_select || exit 2
 			shift; exec "$@"' client-test "$ROOT" ./gradlew --console=plain --no-daemon :mod:runClientGameTest "$@")
@@ -221,4 +229,28 @@ case $REASON in
 		exit 1 ;;
 esac
 if [[ -n $CRASH_AT ]] && (( rc == 0 )); then rc=1; fi
+
+# Backend guard: the renderer vk-select picked (its "client-test: renderer ..." line in the log) must be
+# the one the client used. FB_BACKEND_CHECK=fail (default: a mismatch turns a passing run into exit 3),
+# warn (log only) or off. Skipped with FB_CLIENT_CMD.
+BCHECK="${FB_BACKEND_CHECK:-fail}"
+if [[ -z ${FB_CLIENT_CMD:-} && $BCHECK != off ]]; then
+	source "$ROOT/scripts/vk-select.sh"
+	USED=$(grep -m1 -oE '^client-test: renderer (intel|lavapipe|worker)' "$OUT_LOG" 2> /dev/null | awk '{print $3}' || true)
+	BLOG="$OUT_LOG"
+	grep -q 'Using graphics backend' "$OUT_LOG" 2> /dev/null || BLOG="$GAME_LOG"
+	brc=0
+	if [[ -z $USED ]]; then
+		log "BACKEND UNKNOWN: no 'client-test: renderer' line in $OUT_LOG"
+	else
+		fb_vk_backend_check "$BLOG" "$USED" client-test || brc=$?
+	fi
+	if (( brc == 1 )); then
+		cp "$OUT_LOG" "$OUT_DIR/gradle-backend-mismatch.log" 2> /dev/null || true
+		if [[ $BCHECK == fail ]] && (( rc == 0 )); then
+			log "FAILED: backend mismatch (FB_BACKEND_CHECK=fail); the tests themselves passed. FB_BACKEND_CHECK=warn only warns."
+			rc=3
+		fi
+	fi
+fi
 exit "$rc"
