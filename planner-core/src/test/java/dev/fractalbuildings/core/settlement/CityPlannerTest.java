@@ -57,8 +57,7 @@ class CityPlannerTest {
 		for (DistrictSummary d : sums) {
 			if (!a.districts().containsKey(d.id())) continue;
 			SkeletonSource fresh = s.source();
-			var det = Districts.plan(fresh, d.ix(), d.iz(), s.p().terrain()).orElseThrow();
-			DistrictPlan alone = Briefs.fill(det.plan(), fresh.quarters()::at, styles, s.p().terrain());
+			DistrictPlan alone = CityPlanner.planTileTrimmed(fresh, d.ix(), d.iz(), styles, s.p().terrain()).orElseThrow().plan();
 			assertEquals(DistrictJson.write(a.districts().get(d.id())), DistrictJson.write(alone), d.id() + " planned alone");
 			if (++checked >= 12) break;
 		}

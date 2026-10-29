@@ -135,8 +135,7 @@ class MultiCellCityTest {
 			for (DistrictSummary d : sums.subList(0, Math.min(40, sums.size()))) {
 				ids.add(d.id());
 				fs.add(ex.submit(() -> {
-					var det = Districts.plan(shared, d.ix(), d.iz(), f.p().terrain()).orElseThrow();
-					return DistrictJson.write(Briefs.fill(det.plan(), shared.quarters()::at, styles, f.p().terrain()));
+					return DistrictJson.write(CityPlanner.planTileTrimmed(shared, d.ix(), d.iz(), styles, f.p().terrain()).orElseThrow().plan());
 				}));
 			}
 			for (int i = 0; i < ids.size(); i++) assertEquals(DistrictJson.write(batch.districts().get(ids.get(i))), fs.get(i).get(), ids.get(i));
@@ -165,8 +164,7 @@ class MultiCellCityTest {
 			for (int rot = 0; rot < order.size(); rot++) {
 				SkeletonSource src = f.source(2);
 				for (int i = 0; i < order.size(); i++) src.skeleton(order.get((rot + i) % order.size()));
-				var det = Districts.plan(src, dp.district().ix(), dp.district().iz(), f.p().terrain()).orElseThrow();
-				assertEquals(want, DistrictJson.write(Briefs.fill(det.plan(), src.quarters()::at, styles, f.p().terrain())), dp.district().id() + " with " + order.get(rot) + " first");
+				assertEquals(want, DistrictJson.write(CityPlanner.planTileTrimmed(src, dp.district().ix(), dp.district().iz(), styles, f.p().terrain()).orElseThrow().plan()), dp.district().id() + " with " + order.get(rot) + " first");
 			}
 			if (straddling >= 6) break;
 		}

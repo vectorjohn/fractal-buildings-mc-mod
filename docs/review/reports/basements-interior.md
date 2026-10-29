@@ -195,3 +195,4 @@ Three proposed rules:
 
 For John: decide whether a skull niche belongs in crypts, and whether finished
 basements (rec room or club room) are wanted at all.
+  - @John 2026-10-29: yes finished basements are wanted. There is a speakeasy on the basement level of the Omni hotel in Pittsburgh, “hidden” things like that would be nice. We can have two phases, any basement at all with storage followed by event spaces, gyms, bars, finished basements, etc. Yes to skull niche. None of this is in p6 it would be backlog. Basements obviously don't need daylight, so yes it has to be an exception. I like the dense dill rate suggestion. They should be lighted for now which reduces (removes?) the spawn risk. I thought elsewhere we did something to prevent spawning without light, though maybe that covers whole chunks.

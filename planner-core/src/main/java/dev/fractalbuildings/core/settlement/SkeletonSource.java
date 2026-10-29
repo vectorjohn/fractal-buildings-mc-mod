@@ -45,6 +45,21 @@ public interface SkeletonSource {
 	 */
 	default java.util.List<ApproachLine> approaches() { return java.util.List.of(); }
 
+	/**
+	 * Whether a road continues beyond the exit gate at (x, z): a drawn approach leaves from it (6.25 MAINSTUB). This default knows the skeletons'
+	 * approaches (the CLI with a road graph); {@code WorldPlanner} supplies the approaches its link rule keeps. A gate that is not served keeps its
+	 * road only as far as lots and streets use it ({@link ExitTrim}).
+	 */
+	default boolean exitServed(int x, int z) {
+		for (Cell c : site().cells()) {
+			for (Road r : skeleton(c).approaches()) {
+				Pt p = r.points().get(0);
+				if (Math.abs(p.x() - x) <= 2 && Math.abs(p.z() - z) <= 2) return true;
+			}
+		}
+		return false;
+	}
+
 	/** How this settlement's builds may fill the exact probe's memo ahead of their reads (PARREADS); never changes an answer. */
 	default dev.fractalbuildings.core.probe.ParallelReads reads() { return dev.fractalbuildings.core.probe.ParallelReads.NONE; }
 
@@ -128,6 +143,16 @@ public interface SkeletonSource {
 			java.util.List<ApproachLine> a = approachMemo;
 			if (a == null) approachMemo = a = approachSource.get();
 			return a;
+		}
+
+		private volatile java.util.function.BiPredicate<Integer, Integer> exitSource;
+
+		/** Where the served exits come from (the world planner's link rule); without it the skeletons' approaches decide. */
+		public Direct withExitServed(java.util.function.BiPredicate<Integer, Integer> s) { exitSource = s; return this; }
+
+		@Override public boolean exitServed(int x, int z) {
+			java.util.function.BiPredicate<Integer, Integer> s = exitSource;
+			return s != null ? s.test(x, z) : SkeletonSource.super.exitServed(x, z);
 		}
 
 		private volatile RoadNetwork network;

@@ -20,6 +20,8 @@ import dev.fractalbuildings.core.settlement.FixedSiteView;
 import dev.fractalbuildings.core.settlement.RegionView;
 import dev.fractalbuildings.core.settlement.LotBrief;
 import dev.fractalbuildings.core.settlement.SettlementSite;
+import dev.fractalbuildings.core.settlement.ExitTrim;
+import dev.fractalbuildings.core.settlement.Rect;
 import dev.fractalbuildings.core.settlement.SkeletonSource;
 import dev.fractalbuildings.core.settlement.Tier;
 import dev.fractalbuildings.core.settlement.TierPrograms;
@@ -122,6 +124,12 @@ public class WorldPlanner {
 	private final BoundedCache<String, SkeletonSource> sources;
 	private final BoundedCache<Long, Optional<TileInfo>> tiles;
 	private final FlightCache<Long, TilePlan> plans;
+	/** The tile plans as the district planner made them, before 6.25 MAINSTUB cuts exit roads: what the road layer's approaches read (the cut reads the link rule, which reads these). */
+	private final FlightCache<Long, TilePlan> rawPlans;
+	/** Each settlement's exit-road cuts ({@link ExitTrim}), by site id. Null with no roads' planner. */
+	private final BoundedCache<String, java.util.TreeMap<String, ExitTrim.Cut>> exitCuts;
+	/** The cut of one exit road as the plans say, whatever its gate's link state ({@code site id/road id}). */
+	private final BoundedCache<String, java.util.Optional<ExitTrim.Cut>> fullCuts;
 	private final FlightCache<Long, List<BuildingPiece>> buildings;
 	private final FlightCache<Long, List<GroundPiece>> grounds;
 
@@ -173,6 +181,9 @@ public class WorldPlanner {
 		this.sources = new BoundedCache<>(caps.sources(), caps.graceNanos(), caps.hardFactor(), System::nanoTime); // det-ok: retention only, never an answer
 		this.tiles = new BoundedCache<>(caps.tiles());
 		this.plans = new FlightCache<>(caps.plans(), caps.graceNanos(), caps.hardFactor(), System::nanoTime); // det-ok: retention only, never an answer
+		this.rawPlans = new FlightCache<>(caps.plans(), caps.graceNanos(), caps.hardFactor(), System::nanoTime); // det-ok: retention only, never an answer
+		this.exitCuts = new BoundedCache<>(Math.max(LINK_MEMO_FLOOR, caps.sources()));
+		this.fullCuts = new BoundedCache<>(Math.max(LINK_MEMO_FLOOR, caps.sources()));
 		this.buildings = new FlightCache<>(caps.buildings(), caps.graceNanos(), caps.hardFactor(), System::nanoTime); // det-ok: retention only, never an answer
 		this.grounds = new FlightCache<>(caps.ground(), caps.graceNanos(), caps.hardFactor(), System::nanoTime); // det-ok: retention only, never an answer
 	}
@@ -197,6 +208,9 @@ public class WorldPlanner {
 		this.sources = null;
 		this.tiles = null;
 		this.plans = null;
+		this.rawPlans = null;
+		this.exitCuts = null;
+		this.fullCuts = null;
 		this.buildings = null;
 		this.grounds = null;
 	}
@@ -229,6 +243,7 @@ public class WorldPlanner {
 		return sources.get(site.id(), id -> {
 			SkeletonSource.Direct d = new SkeletonSource.Direct(seed, view, site, probes.coarse(), TierPrograms.of(site.tier()), caps.skeletons());
 				d.withApproaches(() -> approachLines(site));
+			if (roads != null) d.withExitServed((x, z) -> exitServedAt(site, x, z));
 			d.withReads(probes.reads());
 			return d;
 		});
@@ -286,7 +301,38 @@ public class WorldPlanner {
 	 * Throws {@link IllegalArgumentException} for any other tile.
 	 */
 	public TilePlan plan(int ix, int iz) {
-		return plans.get(key(ix, iz), k -> computePlan(ix, iz));
+		return plans.get(key(ix, iz), k -> trimmedPlan(ix, iz));
+	}
+
+	/** The tile's plan before the exit roads with nothing beyond their gate are cut ({@link ExitTrim}); same lots, plazas and landmarks. */
+	TilePlan rawPlan(int ix, int iz) {
+		return rawPlans.get(key(ix, iz), k -> computePlan(ix, iz));
+	}
+
+	private TilePlan trimmedPlan(int ix, int iz) {
+		TilePlan raw = rawPlan(ix, iz);
+		SettlementSite site = raw.info().site();
+		SkeletonSource src = source(site);
+		Rect rect = raw.plan().district().rect();
+		ExitTrim.Plans lookup = (x, z) -> tile(x, z).filter(i -> i.site().id().equals(site.id())).isPresent() ? rawPlan(x, z).plan() : null;
+		java.util.TreeMap<String, ExitTrim.Cut> cuts = new java.util.TreeMap<>();
+		if (!ExitTrim.inCore(src, rect)) { // the tile that holds the centre is never cut: the first tile of a settlement pays nothing here
+			for (String id : ExitTrim.exitRoadIds(src)) { // only the exit roads that cross this tile; the link rule and the neighbours' plans are paid when a cut can reach it
+				if (!ExitTrim.isExitRoad(src, id)) continue;
+				int m = ExitTrim.maxIndexIn(src, id, rect);
+				if (m < 0 || ExitTrim.cutBeyond(src, id, m, raw.plan(), rect)) continue;
+				ExitTrim.Cut c = fullCuts.getOnce(site.id() + "/" + id, k -> java.util.Optional.ofNullable(ExitTrim.fullCut(src, id, lookup))).orElse(null);
+				if (c == null || c.index() >= m || ExitTrim.gateServed(src, id)) continue;
+				cuts.put(id, c);
+			}
+		}
+		var p = ExitTrim.apply(raw.plan(), cuts);
+		return p == raw.plan() ? raw : new TilePlan(raw.info(), p, raw.landmarks(), raw.notes(), raw.firstPlazaReached());
+	}
+
+	/** The cuts of one settlement's exit roads (pure in the raw plans and the link rule; computed once per settlement). */
+	java.util.TreeMap<String, ExitTrim.Cut> exitCuts(SettlementSite site) {
+		return exitCuts.getOnce(site.id(), id -> ExitTrim.cuts(source(site), (ix, iz) -> tile(ix, iz).filter(t -> t.site().id().equals(site.id())).isPresent() ? rawPlan(ix, iz).plan() : null));
 	}
 
 	private TilePlan computePlan(int ix, int iz) {
@@ -539,7 +585,7 @@ public class WorldPlanner {
 				int ix = home.ix() + dx, iz = home.iz() + dz;
 				Optional<TileInfo> info = tile(ix, iz);
 				if (info.isEmpty() || !info.get().site().id().equals(site.id())) continue;
-				for (var s : plan(ix, iz).plan().streets()) {
+				for (var s : rawPlan(ix, iz).plan().streets()) {
 					int[] hit = s.nearest(x, z);
 					if (hit[0] > s.width() / 2 + 1 + extra) continue;
 					if (hit[0] < bestD || (hit[0] == bestD && s.id().compareTo(bestId) < 0)) { bestD = hit[0]; bestY = hit[1]; bestId = s.id(); }
@@ -552,7 +598,7 @@ public class WorldPlanner {
 				int ix = home.ix() + dx, iz = home.iz() + dz;
 				Optional<TileInfo> info = tile(ix, iz);
 				if (info.isEmpty() || !info.get().site().id().equals(site.id())) continue;
-				for (var p : plan(ix, iz).plan().plazas()) {
+				for (var p : rawPlan(ix, iz).plan().plazas()) {
 					if (x >= p.x() - plazaExtra && x < p.x() + p.w() + plazaExtra && z >= p.z() - plazaExtra && z < p.z() + p.d() + plazaExtra) return OptionalInt.of(p.y());
 				}
 			}
@@ -810,6 +856,17 @@ public class WorldPlanner {
 		return out;
 	}
 
+	/** Does a drawn approach of the settlement leave from the exit gate at (x, z)? (6.25 MAINSTUB; a site the graph does not know serves none.) */
+	private boolean exitServedAt(SettlementSite site, int x, int z) {
+		RoadNet.Settlement owner = graphNode(site);
+		if (owner == null) return false;
+		for (Approach a : drawnApproaches(site, owner)) {
+			var p = a.road().points().get(0);
+			if (Math.abs(p.x() - x) <= 2 && Math.abs(p.z() - z) <= 2) return true;
+		}
+		return false;
+	}
+
 	/** The approaches the road layer draws: {@link #approachRoads} without those to a dropped link. */
 	List<Approach> drawnApproaches(SettlementSite site, RoadNet.Settlement owner) {
 		List<Approach> out = new ArrayList<>();
@@ -943,7 +1000,7 @@ public class WorldPlanner {
 		for (RoadNet.Col c : a.columns()) {
 			if (Math.max(Math.abs(c.x() - gate[0]), Math.abs(c.z() - gate[1])) <= ALT_GATE_ZONE) continue;
 			var id = grid.tileOf(c.x(), c.z());
-			List<LotBrief> l = lots.computeIfAbsent(key(id.ix(), id.iz()), k -> tile(id.ix(), id.iz()).isPresent() ? plan(id.ix(), id.iz()).plan().lots() : List.of());
+			List<LotBrief> l = lots.computeIfAbsent(key(id.ix(), id.iz()), k -> tile(id.ix(), id.iz()).isPresent() ? rawPlan(id.ix(), id.iz()).plan().lots() : List.of());
 			for (LotBrief b : l) if (c.x() >= b.x() && c.x() < b.x() + b.w() && c.z() >= b.z() && c.z() < b.z() + b.d()) return true;
 		}
 		return false;
@@ -1240,6 +1297,7 @@ public class WorldPlanner {
 		sources.clear();
 		tiles.clear();
 		plans.clear();
+		rawPlans.clear();
 		buildings.clear();
 		grounds.clear();
 		if (roads != null) roads.evictAll();

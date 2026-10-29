@@ -85,6 +85,19 @@ public record SettlementPlan(int genVersion, long seed, SettlementSite site, Rec
 		return new SettlementPlan(genVersion, seed, site, bounds, coarse, quarters, cells, districts, new ArrayList<>(r), g, landmarks, walls, violations, approaches);
 	}
 
+	/** The plan with the cut exit roads shortened and their gates gone (an EXIT gate) or left without a road (a CELL gate), 6.25 MAINSTUB. */
+	public SettlementPlan withTrimmedExits(java.util.Map<String, ExitTrim.Cut> cuts) {
+		List<Road> r = new ArrayList<>();
+		for (Road x : roads) r.add(cuts.containsKey(x.id()) ? ExitTrim.shorten(x, cuts.get(x.id())) : x);
+		List<Gate> g = new ArrayList<>();
+		for (Gate x : gates) {
+			if (x.road() == null || !cuts.containsKey(x.road())) { g.add(x); continue; }
+			if (x.kind() == GateKind.WALL) g.add(x); // the road still runs through the wall (ExitTrim keeps it past the gate)
+			else if (x.kind() != GateKind.EXIT) g.add(new Gate(x.id(), x.kind(), x.x(), x.z(), x.cells(), null));
+		}
+		return new SettlementPlan(genVersion, seed, site, bounds, coarse, quarters, cells, districts, r, g, landmarks, walls, violations, approaches);
+	}
+
 	public SettlementPlan withViolations(List<Violation> v) {
 		return new SettlementPlan(genVersion, seed, site, bounds, coarse, quarters, cells, districts, roads, gates, landmarks, walls, new ArrayList<>(v), approaches);
 	}

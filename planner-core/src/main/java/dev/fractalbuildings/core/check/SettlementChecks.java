@@ -13,6 +13,7 @@ import dev.fractalbuildings.core.settlement.CellGeometry;
 import dev.fractalbuildings.core.settlement.DistrictInfo;
 import dev.fractalbuildings.core.settlement.CellSkeleton;
 import dev.fractalbuildings.core.settlement.DistrictPlan;
+import dev.fractalbuildings.core.settlement.ExitTrim;
 import dev.fractalbuildings.core.settlement.Gate;
 import dev.fractalbuildings.core.settlement.GateKind;
 import dev.fractalbuildings.core.settlement.Road;
@@ -803,6 +804,21 @@ public final class SettlementChecks {
 					out.add(v(BRIDGE_DEAD_END, "road " + r.id() + " bridges to its end at " + end.x() + "," + end.z() + ", a shore column with nothing beyond", end.x(), end.z(), 1, 1));
 				}
 			}
+		}
+		return out;
+	}
+
+	public static final String EXIT_STUB = "exit-stub";
+
+	/**
+	 * 6.25 MAINSTUB {@code exit-stub}: a main road that ends at a gate with nothing beyond it runs at most {@link ExitTrim#MAX_STUB} columns past the
+	 * last lot, plaza or street beside it (a stub of town road to nowhere is the player's "road that goes nowhere").
+	 */
+	public static List<Violation> exitStubs(List<ExitTrim.Stub> stubs) {
+		List<Violation> out = new ArrayList<>();
+		for (ExitTrim.Stub s : stubs) {
+			if (s.columns() <= ExitTrim.MAX_STUB) continue;
+			out.add(v(EXIT_STUB, "road " + s.road() + " runs " + s.columns() + " columns to its end at " + s.x() + "," + s.z() + " past its last lot or street, to a gate with no road beyond", s.x(), s.z(), 1, 1));
 		}
 		return out;
 	}

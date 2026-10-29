@@ -123,6 +123,8 @@ final class CityCheckCommand {
 	/** Entrance door rise of every building in the scenes built (DS-45 report, SHOPLOW S0). */
 	private static final DoorRise.Report DOOR_RISE = new DoorRise.Report();
 	private static final java.util.concurrent.atomic.AtomicInteger GATE_CUTS = new java.util.concurrent.atomic.AtomicInteger();
+	/** 6.25 MAINSTUB: gateless exit roads seen, those over the stub limit as planned and after the cut, and the roads cut. */
+	private static final java.util.concurrent.atomic.AtomicInteger STUB_ROADS = new java.util.concurrent.atomic.AtomicInteger(), STUB_BEFORE = new java.util.concurrent.atomic.AtomicInteger(), STUB_AFTER = new java.util.concurrent.atomic.AtomicInteger(), STUB_CUT = new java.util.concurrent.atomic.AtomicInteger();
 	/** {@code --door-rise}: also build every scene with interiors and measure door rise (about 2.5x the run time). */
 	private static boolean doorRiseOn;
 	/** {@code --junctions-near X,Z[,R]}: print the junction field's junctions with a pad end within R blocks of (X, Z) (debugging JUNCTION). */
@@ -203,6 +205,8 @@ final class CityCheckCommand {
 			// DS-18 edge taper (CITYQ r4): a high-rise with no built lot within 120 blocks outward. A warning, since the per-tile cap (BuiltEdge) cannot see
 			// other tiles' lots and leaves a few; EdgeTaperTest holds the count down.
 			for (Violation v : dev.fractalbuildings.core.check.SettlementChecks.cityEdgeTaper(city.districts().values(), site.centre(), new dev.fractalbuildings.core.settlement.BuiltEdge(src)::depth)) warnings.add(v.invariant() + ": " + v.message());
+			for (var s : city.stubsBefore()) { STUB_ROADS.incrementAndGet(); if (s.columns() > dev.fractalbuildings.core.settlement.ExitTrim.MAX_STUB) STUB_BEFORE.incrementAndGet(); }
+			for (var s : city.stubsAfter()) { if (s.cut()) STUB_CUT.incrementAndGet(); if (s.columns() > dev.fractalbuildings.core.settlement.ExitTrim.MAX_STUB) STUB_AFTER.incrementAndGet(); }
 			int gateCuts = 0;
 			for (var row : dev.fractalbuildings.core.check.GateCut.measure(city.plan(), city.districts().values(), p.terrain())) {
 				if (row.over()) { gateCuts++; warnings.add("gate-cut: " + row + " (> " + dev.fractalbuildings.core.check.GateCut.LIMIT + ", fix is 7.19)"); }
@@ -248,6 +252,7 @@ final class CityCheckCommand {
 
 	private static String toMarkdown(Result[] rs, int scenes, Set<String> ignore) {
 		StringBuilder sb = new StringBuilder("# city-check\n\n");
+		sb.append("exit-stub (6.25 MAINSTUB; gateless exit roads running over ").append(dev.fractalbuildings.core.settlement.ExitTrim.MAX_STUB).append(" columns past their last built lot): ").append(STUB_ROADS.get()).append(" roads, ").append(STUB_BEFORE.get()).append(" over as planned, ").append(STUB_CUT.get()).append(" cut, ").append(STUB_AFTER.get()).append(" over after the cut\n\n");
 		sb.append("gate-cut > ").append(dev.fractalbuildings.core.check.GateCut.LIMIT).append(" (EXIT gates whose street end is more than that below or above the ground; report only, fix is 7.19): ").append(GATE_CUTS.get()).append("\n\n");
 		int bad = 0, problems = 0;
 		TreeMap<String, Integer> byInvariant = new TreeMap<>();

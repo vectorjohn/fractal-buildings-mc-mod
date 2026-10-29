@@ -108,14 +108,14 @@ class SettlementDeterminismTest {
 	static String districtBytes(DistrictPlan d) { return d == null ? "missing" : DistrictJson.write(d); }
 
 	static DistrictPlan planDistrict(Setup s, SkeletonSource src, StyleField styles, DistrictSummary d) {
-		var det = Districts.plan(src, d.ix(), d.iz(), s.p().terrain());
-		return det.isEmpty() ? null : Briefs.fill(det.get().plan(), src.quarters()::at, styles, s.p().terrain());
+		var t = CityPlanner.planTileTrimmed(src, d.ix(), d.iz(), styles, s.p().terrain());
+		return t.isEmpty() ? null : t.get().plan();
 	}
 
 	static String sceneBytes(Setup s, SkeletonSource src, StyleField styles, DistrictSummary d) {
-		var det = Districts.plan(src, d.ix(), d.iz(), s.p().terrain()).orElseThrow();
-		DistrictPlan dp = Briefs.fill(det.plan(), src.quarters()::at, styles, s.p().terrain());
-		return IrJson.write(DistrictScenes.build(dp, det.landmarks(), s.p().terrain(), s.p().biome(), true, src.site().tier()).scene());
+		var t = CityPlanner.planTileTrimmed(src, d.ix(), d.iz(), styles, s.p().terrain()).orElseThrow();
+		DistrictPlan dp = t.plan();
+		return IrJson.write(DistrictScenes.build(dp, t.landmarks(), s.p().terrain(), s.p().biome(), true, src.site().tier()).scene());
 	}
 
 	/** Reference bytes from a plain in-order {@link CityPlanner#plan} on a fresh {@link SkeletonSource.Direct}. */

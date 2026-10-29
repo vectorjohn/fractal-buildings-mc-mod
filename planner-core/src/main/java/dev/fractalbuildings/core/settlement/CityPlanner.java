@@ -31,9 +31,10 @@ public final class CityPlanner {
 	 * @param notes the district planner's notes, prefixed with the district id
 	 * @param hub the hub column, or the site centre if no cell skeleton has one
 	 * @param hubPiece columns in the street piece that holds the hub, of {@code streetColumns} in all
+	 * @param stubsBefore each gateless exit road's stub as planned, before the cut (6.25 MAINSTUB); {@code stubsAfter} once cut
 	 * @param strays street fragments that reach neither the hub, a skeleton road nor a lot front (counted, not violations)
 	 */
-	public record City(SettlementPlan plan, SortedMap<String, DistrictPlan> districts, SortedMap<String, List<Landmark>> landmarks, List<String> notes, Pt hub, int strays, int hubPiece, int streetColumns) {}
+	public record City(SettlementPlan plan, SortedMap<String, DistrictPlan> districts, SortedMap<String, List<Landmark>> landmarks, List<String> notes, Pt hub, int strays, int hubPiece, int streetColumns, List<ExitTrim.Stub> stubsBefore, List<ExitTrim.Stub> stubsAfter) {}
 
 	/** Plans the skeleton and every district (not scenes). {@code coarse} feeds the skeleton, {@code exact} the layouts and briefs. */
 	public static City plan(SkeletonSource src, CoarseProbe coarse, TerrainProbe exact, BiomeProbe biome, int genVersion) {
@@ -57,6 +58,13 @@ public final class CityPlanner {
 			for (String n : tile.get().notes()) notes.add(d.id() + ": " + n);
 			out.add(summary(d, dp));
 		}
+		// 6.25 MAINSTUB: exit roads with nothing beyond their gate end at the last frontage; the check then reads the result
+		TreeMap<String, DistrictPlan> raw = new TreeMap<>(districts);
+		ExitTrim.Plans rawPlans = (ix, iz) -> raw.get(Ids.district(ix, iz));
+		TreeMap<String, ExitTrim.Cut> cuts = ExitTrim.cuts(src, rawPlans);
+		for (var e : districts.entrySet()) e.setValue(ExitTrim.apply(e.getValue(), cuts));
+		if (!cuts.isEmpty()) plan = plan.withTrimmedExits(cuts);
+		List<ExitTrim.Stub> stubs = ExitTrim.stubs(src, rawPlans, cuts), stubsBefore = ExitTrim.stubs(src, rawPlans, java.util.Map.of());
 		Pt hub = site.centre();
 		Cell centreCell = CellGeometry.owner(src.view().field(), hub.x(), hub.z());
 		if (site.cells().contains(centreCell) && RoadNetwork.roadHub(src.skeleton(centreCell)) != null) hub = RoadNetwork.roadHub(src.skeleton(centreCell));
@@ -79,7 +87,8 @@ public final class CityPlanner {
 		v.addAll(cr.violations());
 		v.addAll(SettlementChecks.cityTileBorders(districts.values()));
 		v.addAll(SettlementChecks.cityJunctionHeights(districts.values())); // JUNCTION: streets that share ground meet within a block
-		return new City(plan.withDistricts(out).withViolations(v), districts, landmarks, notes, hub, cr.strays(), cr.hubPiece(), cr.total());
+		v.addAll(SettlementChecks.exitStubs(stubs));
+		return new City(plan.withDistricts(out).withViolations(v), districts, landmarks, notes, hub, cr.strays(), cr.hubPiece(), cr.total(), stubsBefore, stubs);
 	}
 
 	/**
@@ -102,6 +111,18 @@ public final class CityPlanner {
 		if (det.isEmpty()) return Optional.empty();
 		DistrictPlan dp = Briefs.fill(det.get().plan(), src.quarters()::at, styles, exact);
 		return Optional.of(new Tile(dp, det.get().landmarks(), det.get().notes(), det.get().firstPlazaReached()));
+	}
+
+	/**
+	 * {@link #planTile} with the exit roads that end at a gate with nothing beyond cut ({@link ExitTrim}), exactly as {@link #plan} gives the tile: the
+	 * cuts need the raw plans of the other tiles along those roads, which this plans on the way (pure, so any order gives the same bytes).
+	 */
+	public static Optional<Tile> planTileTrimmed(SkeletonSource src, int ix, int iz, StyleField styles, TerrainProbe exact) {
+		Optional<Tile> raw = planTile(src, ix, iz, styles, exact);
+		if (raw.isEmpty()) return raw;
+		ExitTrim.Plans plans = (x, z) -> x == ix && z == iz ? raw.get().plan() : planTile(src, x, z, styles, exact).map(Tile::plan).orElse(null);
+		DistrictPlan p = ExitTrim.apply(raw.get().plan(), ExitTrim.cutsThrough(src, plans, ix, iz));
+		return p == raw.get().plan() ? raw : Optional.of(new Tile(p, raw.get().landmarks(), raw.get().notes(), raw.get().firstPlazaReached()));
 	}
 
 	/**
