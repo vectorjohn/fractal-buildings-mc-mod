@@ -341,6 +341,9 @@ in `.claude/reports/` (John, 2026-10-28; earlier report copies are in
 ## STAIRGROUND (gate follow-up on steps)
 
 - [ ] **STAIRGROUND (p5-stairground)**: answers your "I see a lot of places where the stairs out of a building don't reach the ground". The flights stopped one to two blocks above the real ground, and doors one block too high got no steps at all (an off-by-one in the step rule); a new check `steps-reach-ground` found 156 such doors in 18 scenes of the 9 gate windows and none now.
+## STAIRGROUND (gate follow-up on steps)
+
+- [x] **STAIRGROUND (p5-stairground)**: answers your "I see a lot of places where the stairs out of a building don't reach the ground". The flights stopped one to two blocks above the real ground, and doors one block too high got no steps at all (an off-by-one in the step rule); a new check `steps-reach-ground` found 156 such doors in 18 scenes of the 9 gate windows and none now.
   Where: `docs/review/phase5/stairground/`: `house-slope-before.jpg` / `-after.jpg` (a house on a 1-in-6 slope: no steps before, two after), `shop-slope-before.jpg` / `-after.jpg` (a shop: one step floating above the ground before), `shop-stoop-before.jpg` / `-after.jpg` (a shopfront in the temperate gate city: the door now has a landing), `shop-desert-before.jpg` / `-after.jpg` (a flight one block short, now reaching the sand). The red cube in the "before" pictures is the invariant marker for the failing door.
   Look for: does each flight now end on the ground in front of the door (last step level with the ground, no gap under it)? Do the added steps and landings look natural, or too many on slopes? Anything still hanging in the air in the city views (tell me where), including the wall ramps between curtain sections, which this check does not cover.
   Result:

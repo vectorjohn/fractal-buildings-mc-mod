@@ -112,6 +112,12 @@ public final class ExitTrim {
 		return best;
 	}
 
+	/** Whether district tile (ix, iz) is the core tile. */
+	public static boolean inCore(SkeletonSource src, int ix, int iz) {
+		DistrictGrid.Tile t = src.grid().tile(ix, iz);
+		return inCore(src, new Rect(t.minX(), t.minZ(), t.widthX(), t.widthZ()));
+	}
+
 	/** Whether the tile is the core tile (no cut can touch it). */
 	public static boolean inCore(SkeletonSource src, Rect tile) {
 		if (!hasCore(src)) return false;
