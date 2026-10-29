@@ -319,7 +319,9 @@ lock is busy and `scripts/remote.sh --check` succeeds, the client and
 fly-through layers can go to the worker box instead, from the same snapshot:
 `'scripts/remote.sh -- env FB_LAYER=full scripts/client-test.sh' 'scripts/remote.sh -- scripts/flythrough.sh'`
 (keep `scripts/perf.sh` local; say which host ran each). Open at least two screenshots and the
-fly-through frames, and read the perf table. If something fails, rerun only
+fly-through frames, and read the perf table. A `PERF SKIPPED (load)` row is not a pass:
+name it in the report; `PERF SKIPPED ROW FAR OVER CEILING` (perf.sh exit 5) is a
+FAIL like any other, not load noise. If something fails, rerun only
 that command once (a pass is a flake: see "Flakes"); if it fails again,
 bisect over the squash commits in `<range>` with that command
 (`--name heavy`), as in a train. **Don't revert**: report the culprit
@@ -381,7 +383,28 @@ confirm it's fixed and covered by a test; apply steps 3–4 to the new changes;
 run the tests again (step 5); look at changed output. Then report and merge as
 usual; the squash commit covers all rounds.
 
-## Report (your final message)
+## Report
+
+Write the full report (format below) to
+`<repo root>/.claude/reports/<slug>-verify[-rN].md` (not committed; for a train
+`train-<first slug>-verify.md`, a heavy batch `heavy-<short H>-verify.md`, a
+phase merge `to-main-<phase>-verify.md`). Your system prompt may say not to
+write report files; that line exempts files that are input for others, which
+this is. **Your final message is the verdict block plus the report path, no
+more than about 15 lines**; the coordinator reads only that unless the verdict
+is FAILING or INCOMPLETE. The block, at most 8 lines:
+
+```
+## Verdict block
+Verdict: COMPLETE | INCOMPLETE | FAILING   (train: one line per item; heavy batch: PASS | FAIL (<culprit sha>))
+Merge: merged <sha>, post-merge pending | not merged (<reason>) | MERGE CONFLICT (<files>) | none
+Breaking: <N>   then one line each: <what> — <evidence>   (at most 2; "+N more in the report")
+Evidence: <evidence folder(s), or "none">
+For John: <one line, or "none">
+Report: <report path>
+```
+
+The report file starts with the same block, then:
 
 ```
 ## Verdict: COMPLETE | INCOMPLETE | FAILING

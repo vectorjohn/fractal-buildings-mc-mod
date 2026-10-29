@@ -191,6 +191,9 @@ and mention them in the ROADMAP testing section.
 
 ### Environment quirks
 
+- Waiting on a long or heavy job (a beebox run, `scripts/anywhere.sh`, a
+  client test in the background): wait with one long Monitor / until loop on
+  its result, not many short wakes; each wake costs tokens for nothing.
 - Never wait on `runClient` in the foreground: it doesn't exit. Prefer client
   game tests. If you must launch it:
   `timeout ... flock <repo root>/.claude/heavy.lock xvfb-run -a scripts/dev ./gradlew :mod:runClient`,
@@ -241,6 +244,14 @@ if one is too big for it, say so in the report (it goes to the polish
 backlog) rather than half-fixing it.
 
 ```
+## Verdict block
+Result: done | partial | blocked
+Commits: <sha> <subject>; <sha> <subject>   (or "<N> commits, <first>..<last>")
+Tests: <layers run> → <pass/fail with counts>; heavy: <pass/fail | not needed>
+Blockers: <N>   then one line each (at most 2; "+N more in the report")
+Evidence: <evidence folder(s), or "none">
+For John: <one line, or "none">
+
 ## Result: done | partial | blocked
 ## Did
 - <what changed, by behaviour, with the main files>
@@ -263,9 +274,11 @@ backlog) rather than half-fixing it.
   parallel items must know>
 ```
 
-**Your final message** is all the coordinator sees by default. About 15 lines:
-the result, the report path, the commits, the test result line, blockers, and
-the 2–4 notes that matter most.
+**The report file starts with the verdict block** (at most 8 lines: result,
+commits, tests, blockers, evidence, anything for John). **Your final message is
+that block plus the report path, no more than about 15 lines** (add at most
+2–4 notes that matter most). It is all the coordinator reads unless the result
+is partial or blocked or the verifier fails it; the detail stays in the file.
 
 Don't claim anything you didn't run or see. "Not run" is a fine answer. A
 false "passes" is not.

@@ -51,13 +51,17 @@ time.
   in the background and you're notified as each finishes. Handle each
   notification as it arrives (verify, merge, start the next ready item); never
   wait for a batch to finish before starting more.
-- **Soft cap:** about **5 coding items** (coder or lead-coder) in flight at once,
+- **Soft cap:** about **3 coding items** (coder or lead-coder) in flight at once
+  (John 2026-10-29: down from 5; a host load of 40-70 slowed everything),
   plus their verifiers and any number of research or docs agents. The human
   can change the cap in the ledger. Fewer if items are heavy (Minecraft
   client tests share the heavy lock, so several of those in parallel mostly
   queue). When the worker box is up (`scripts/remote.sh --check`), there are
   two heavy slots: the local heavy lock and the worker's queue (CLAUDE.md
   "Parallel work"). Tell heavy items' agents to send their heavy runs there.
+- **Waiting on a heavy job:** tell agents (and do it yourself) to wait with one
+  long Monitor / until loop on the job's result, not many short wakes; each
+  wake re-reads context and costs tokens for nothing.
 - **Split for parallelism.** When you or a plan break work into steps, prefer
   steps that can run side by side (planner vs viewer against a fixture JSON;
   one building type per item; one spike per question) over a long chain.
@@ -213,9 +217,11 @@ pass `isolation`: the agent makes its own worktree. The prompt includes:
 - for a follow-up: the previous report file(s) and the verifier's breaking
   findings, quoted
 
-**4. Read the agent's final message.** It's short: result, report path
-(`<repo root>/.claude/reports/<item-slug>[-rN].md`), commits, test result,
-blockers, key notes. Open the report only when you need detail.
+**4. Read the agent's final message.** It's short: a verdict block of at most
+8 lines (result, commits, tests, blockers, evidence, anything for John) and the
+report path (`<repo root>/.claude/reports/<item-slug>[-rN].md`). Verifiers and
+design reviewers answer the same way. Open a report only on FAILING,
+INCOMPLETE, partial or blocked, or when you need detail.
 
 **5. Verify.** Start a `verifier` with:
 - the ask (item text plus your brief)
@@ -262,17 +268,19 @@ rules" list for John (and into the gate package); only John adds them to
 coder report lists design questions, send them to the reviewer
 (`mode: question`) and pass the answer back in the next brief.
 
-**Quick pass.** For a simple change (a data tweak, a small contained fix, docs
-plus a test), start the verifier with `model: "sonnet"`. Keep the default for
-new mechanics, threading, determinism, rendering, worldgen, re-verification
-after FAILING, and `merge: to-main`.
+**Quick pass.** Use `model: "sonnet"` verifiers for small, clear items (flake
+fixes, test-only changes, docs plus a test, data tweaks, small contained fixes),
+and batch 2-4 of them as a merge train (below) rather than one verifier
+each. Keep the default model for new mechanics, threading, determinism,
+rendering, worldgen, re-verification after FAILING, and `merge: to-main`.
 
-**Merge trains.** You may give one verifier 2–4 small, independent items
+**Merge trains.** Give one verifier 2–4 small, independent items
 (data tweaks, docs plus a test, small contained fixes) with `merge: train`, one
 block per item. It reviews each diff separately, squash-merges them one after
 another, runs the fast suite once, and on a failure bisects, reverts the
-culprit and reports it FAILING (re-open it). Never for large items or anything
-that needs `level: full`.
+culprit and reports it FAILING (re-open it). A train of such items can run on
+`model: "sonnet"` too. Never for large items or anything that needs
+`level: full`.
 
 **Batched heavy runs.** Items merge after the quick check, so the heavy layers
 (client game tests, `scripts/perf.sh`, `scripts/flythrough.sh`) run on the run
@@ -286,9 +294,9 @@ post-merge failure.
 
 **6. Act on the verdict.**
 - *COMPLETE and merged*: mark it done in the ledger with the merge commit.
-  Copy the verifier's non-breaking findings into the ROADMAP **Polish
-  backlog** and its human-review items into `docs/REVIEW.md` (if not already
-  there). A REVIEW item links copies of its 1-3 key files in
+  Copy the verifier's non-breaking findings (from its report file) into the
+  ROADMAP **Polish backlog** and its human-review items into `docs/REVIEW.md`
+  (if not already there). A REVIEW item links copies of its 1-3 key files in
   `docs/review/<item-slug>/`, never `.claude/reports/` (CLAUDE.md). Start
   whatever this item unblocked.
 - *Merged, post-merge pending* (the normal case): `squash-merge.sh` starts
@@ -403,7 +411,18 @@ served by SilverBullet on `127.0.0.1:3000`. He doesn't commit; his feedback
 is signed `@John` (inline `-- @John`, or a line `@John <date>: ...`, which
 agents answer as a threaded, indented list item `  - @<role> <date>: ...` naming
 the role that answered) and may include questions for agents. You alone sync it,
-after each merge into the run branch and on a periodic check (~30 min):
+after each merge into the run branch and on a periodic check (~30 min).
+
+**Run `scripts/docs-sync.sh` from the integration checkout; act only on a
+non-zero exit.** It does steps 1, 2, 4 and 5 below plus the post-merge check
+mechanically and prints one line, `docs-sync: nothing new`, when there is
+nothing to do. Exit 10: John's feedback was merged; read the diff it names and
+do step 3. Exit 11: `main` has commits the run branch lacks; merge it (step 1).
+Exit 12: a post-merge run newly FAIL / KILLED / DIED (handle as in "Act on the
+verdict"). Exit 1: an error or conflict, merge aborted and left clean; do the
+step it names by hand. The periodic check's cron prompt is: "run
+scripts/docs-sync.sh; if it prints nothing new, end the turn with no other
+action". The steps it automates, for doing them by hand:
 
 1. In that worktree, if `git status` shows changes, commit them all as
    `John feedback: <files>`. Never discard, reset or stash John's edits.
@@ -431,8 +450,9 @@ after each merge into the run branch and on a periodic check (~30 min):
    If not, restart it from that worktree:
    `setsid -f scripts/dev silverbullet -L 127.0.0.1 -p 3000 . > /tmp/claude-1500/silverbullet-docs-feedback.log 2>&1 < /dev/null`.
 
-On a new session: check the server (step 5) and re-create the periodic check
-with CronCreate; cron jobs are session-only and expire after 7 days.
+On a new session: run `scripts/docs-sync.sh` (it checks the server) and
+re-create the periodic check with CronCreate (the prompt above); cron jobs are
+session-only and expire after 7 days.
 
 John's own branches, `john/<claude branch it came from>` (e.g.
 `john/adr-worldgen`), and `john-work` are merged into the run branch and

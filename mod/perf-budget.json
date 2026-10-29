@@ -1,5 +1,5 @@
 {
-  "about": "B8 (ROADMAP 6.7). budget = the target from docs/plans/phase6.md 'Budgets'; ci = the ceiling scripts/perf.sh fails above (default 2 x budget; a few are set from a measured miss, see docs/log/2026-10-23-p6-b8-perf.md). Do not loosen a budget without the coordinator. Timing rows are not failed when the loadavg seen during the run reached 8 (PERF_LOAD_SKIP); a full run fails on any unmeasured row.",
+  "about": "B8 (ROADMAP 6.7). budget = the target from docs/plans/phase6.md 'Budgets'; ci = the ceiling scripts/perf.sh fails above (default 2 x budget; a few are set from a measured miss, see docs/log/2026-10-23-p6-b8-perf.md). Do not loosen a budget without the coordinator. Timing rows are not failed when the loadavg seen during the run reached 8 (PERF_LOAD_SKIP); a full run fails on any unmeasured row. A row with loadSkipGuard F (cold arrival, first tile, /locate fresh) still fails (exit 5, PERF SKIPPED ROW FAR OVER CEILING) when it is skipped for load but above F x ci: a load-skip hides noise, not a 10x regression (F set from the loaded runs of 2026-10-26..29; PERF_SKIP_FAR overrides every F).",
   "budgets": [
     {
       "key": "district.cold.median.ms",
@@ -20,7 +20,8 @@
       "label": "First tile of a metropolis, cold (skeleton warm)",
       "unit": "ms",
       "budget": 1000,
-      "ci": 4000
+      "ci": 4000,
+      "loadSkipGuard": 3
     },
     {
       "key": "district.warmed.lane.ms",
@@ -33,7 +34,8 @@
       "label": "Region layer + road network, cold, metropolis",
       "unit": "ms",
       "budget": 6000,
-      "ci": 10000
+      "ci": 10000,
+      "loadSkipGuard": 7
     },
     {
       "key": "region.cold.warm.chunkFills",
@@ -110,14 +112,16 @@
       "label": "/locate settlement in a fresh area",
       "unit": "ms",
       "budget": 3000,
-      "ci": 5000
+      "ci": 5000,
+      "loadSkipGuard": 4
     },
     {
       "key": "locate.village.fresh.ms",
       "label": "/locate a vanilla village (veto) in a fresh area, server thread",
       "unit": "ms",
       "budget": 10000,
-      "ci": 20000
+      "ci": 20000,
+      "loadSkipGuard": 3
     },
     {
       "key": "locate.spawn.ms",

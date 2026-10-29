@@ -50,6 +50,10 @@ work a coder can do as concrete steps for a coder.
 
 ## Extra expectations
 
+- Your report and final message use coder.md's **verdict block** (at most 8
+  lines; final message = the block plus the report path, about 15 lines at
+  most). For a plan the Result line is `plan written` with the plan path; for a
+  diagnosis, `fixed | cause found | blocked` and the cause in one line.
 - Write down what others will need: API surprises in `docs/NOTES.md`,
   anything a later step depends on in the plan and your report's "Notes for the
   coordinator".

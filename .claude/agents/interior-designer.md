@@ -261,6 +261,8 @@ Write `<repo root>/.claude/reports/<item-slug>-interior.md` (not committed):
 ```
 # <item id> interior review (<date>)
 
+<the verdict block from "Final message">
+
 Mode: review | question. Round: first | re-review after <round>.
 Counts: <N> violations, <N> should-fix, <N> suggestions, <N> proposed rules.
 Looked at: <every image, IR file and floor plan you opened, with seeds>
@@ -321,6 +323,18 @@ Verdict: meets the standard | should-fix round needed | needs John
 
 ## Final message
 
-About 10 lines: the verdict line, each violation and should-fix item in one
-line (rule id or "should-fix", what, where), the review file path, and anything for John. Don't claim you looked
-at something you didn't open.
+The review file starts with this verdict block (at most 8 lines), and **your
+final message is the block plus the review file path, no more than about 15
+lines**; the coordinator reads only that unless the verdict is not "meets the
+standard". Detail stays in the file.
+
+```
+## Verdict block
+Verdict: meets the standard | should-fix round needed | needs John   (question mode: Answer: <one line>)
+Merge: n/a (reviewers don't merge; "hold" if the item waits on this review)
+Violations: <N>, should-fix: <N>   then one line each (rule id or "should-fix", what, where; at most 3)
+Evidence: <images / folder you looked at>
+For John: <one line, or "none">
+```
+
+Don't claim you looked at something you didn't open.

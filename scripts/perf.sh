@@ -16,6 +16,8 @@
 #      --client runs the OLD form instead: mod:runClientGameTest with FB_PERF=only (PerfClientGameTest, in a lavapipe-rendered client),
 #      kept to compare old and new numbers.
 #   3. scripts/perf-check.mjs compares both with the budget (fails above the CI ceiling, warns above the budget) and prints a table;
+#      a timing row skipped for load prints a `PERF SKIPPED (load)` line, and a `loadSkipGuard` row (first tile, region cold,
+#      /locate fresh) skipped far over its ceiling exits 5 (`PERF SKIPPED ROW FAR OVER CEILING`); self-test node scripts/perf-check.test.mjs;
 #      also writes mod/build/perf/summary.md.
 # Quiet-machine rule: numbers that decide a budget need loadavg under 2; the check prints the load measured.
 set -euo pipefail

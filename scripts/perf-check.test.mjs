@@ -22,4 +22,26 @@ const good = run({ 'flight.lookups.done': 90, 'flight.lookups.joined': 8, 'fligh
 check('2 % inline passes', good.status === 0);
 const worse = run({ 'flight.lookups.done': 50, 'flight.lookups.joined': 0, 'flight.lookups.inline': 50 });
 check('50 % inline fails', worse.status === 1 && worse.stdout.includes('FAIL'));
+
+// loadSkipGuard: recorded runs (scripts/perf-fixtures/README.md) against the real mod/perf-budget.json, planner-only style (--allow-absent).
+function fixture(name, env = {}) {
+	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'perfcheck-'));
+	fs.cpSync(path.join(import.meta.dirname, 'perf-fixtures', name), dir, { recursive: true });
+	const budgetFile = path.join(import.meta.dirname, '..', 'mod', 'perf-budget.json');
+	const e = { ...process.env, ...env };
+	for (const k of ['PERF_SKIP_FAR', 'PERF_LOAD_SKIP']) if (!(k in env)) delete e[k];
+	const r = spawnSync('node', [path.join(import.meta.dirname, 'perf-check.mjs'), budgetFile, dir, '--allow-absent'], { encoding: 'utf8', env: e });
+	fs.rmSync(dir, { recursive: true });
+	return r;
+}
+const ms = fixture('mainstub-87869d24d3');
+check('MAINSTUB 60 s first tile under load exits 5', ms.status === 5 && ms.stdout.includes('PERF SKIPPED ROW FAR OVER CEILING'));
+check('MAINSTUB prints the loud skip line', ms.stdout.includes('PERF SKIPPED (load) district.cold.plan.ms value=59807 ceiling=4000'));
+check('MAINSTUB region row (2.1x, guard 7) is skipped, not far', ms.stdout.includes('PERF SKIPPED (load) region.cold.warm.ms') && !/FAR OVER CEILING[\s\S]*region\.cold/.test(ms.stdout));
+const msLoose = fixture('mainstub-87869d24d3', { PERF_SKIP_FAR: '20' });
+check('PERF_SKIP_FAR=20 lets it through, still loud', msLoose.status === 0 && msLoose.stdout.includes('PERF SKIPPED (load) district.cold.plan.ms'));
+const msQuiet = fixture('mainstub-87869d24d3', { PERF_LOAD_SKIP: '100' });
+check('not loaded: plain FAIL, exit 1', msQuiet.status === 1 && msQuiet.stdout.includes('PERF FAIL'));
+const lo = fixture('leaforder-ac2f7fc037');
+check('loaded run within its guards passes, rows printed as skipped', lo.status === 0 && lo.stdout.includes('PERF SKIPPED (load) district.cold.plan.ms') && lo.stdout.includes('rows skipped for load'));
 process.exit(bad ? 1 : 0);
