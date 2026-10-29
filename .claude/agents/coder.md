@@ -83,6 +83,10 @@ list them in the report.
 
 Judgments only the human can make (does it look like a person built it; does
 a style read right; in-game feel) go in `docs/REVIEW.md` (format at its top).
+When you add an item there, copy the 1-3 key files it asks John to look at
+into `docs/review/<item-slug>/` (downscaled, about 1 MB per item at most) and
+link the copies relatively; `.claude/reports/` is gitignored and John can't
+open it, so name it only in plain text as the forensic source.
 That file is not a substitute for a test you could write.
 
 If the plan or brief is wrong in a small way, make the simplest correct choice

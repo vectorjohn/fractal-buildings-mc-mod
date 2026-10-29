@@ -65,6 +65,11 @@ that works in all three. Full conventions: `docs/SILVERBULLET.md`.
   agents never touch it (procedure in `.claude/agents/coordinator.md`).
 - John's own working branches are `john/<claude branch it came from>` (e.g.
   `john/adr-worldgen`); the coordinator merges them like `john-work`.
+- A `docs/REVIEW.md` item that asks John to look at something (screenshots,
+  plan maps, a report excerpt) copies the 1-3 key files into a tracked
+  `docs/review/<item-slug>/` (downscaled, about 1 MB per item at most) and
+  links the copies relatively. `.claude/reports/` is gitignored and John can't
+  open it: name it only in plain text, as the forensic source.
 
 ## Module boundaries
 

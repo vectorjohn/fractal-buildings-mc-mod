@@ -315,6 +315,9 @@ Verdict: meets the standard | should-fix round needed | needs John
 - **Proposed rule**: when you made a call no rule covers and it should hold
   everywhere. You don't edit `STANDARDS.md`, `REVIEW.md` or the ROADMAP; the
   coordinator records proposals for John.
+- **For John to look at**: name the 1-3 files (screenshots, plan maps) that
+  show the point best; whoever writes the REVIEW item copies them into
+  `docs/review/<item-slug>/`, since John can't open `.claude/reports/`.
 - If you could not see something (no picture of the back, no interior shot,
   the floor-plan command not available), say "not seen", don't guess.
 - **Verdict** (the last line; "good enough" is your call): `meets the

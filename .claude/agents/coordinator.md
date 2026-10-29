@@ -287,7 +287,9 @@ post-merge failure.
 - *COMPLETE and merged*: mark it done in the ledger with the merge commit.
   Copy the verifier's non-breaking findings into the ROADMAP **Polish
   backlog** and its human-review items into `docs/REVIEW.md` (if not already
-  there). Start whatever this item unblocked.
+  there). A REVIEW item links copies of its 1-3 key files in
+  `docs/review/<item-slug>/`, never `.claude/reports/` (CLAUDE.md). Start
+  whatever this item unblocked.
 - *Merged, post-merge pending* (the normal case): `squash-merge.sh` starts
   the post-merge tests detached on the snapshot and exits, so the verifier
   reports `post-merge: pending` with a `POSTMERGE PENDING` line. Check them

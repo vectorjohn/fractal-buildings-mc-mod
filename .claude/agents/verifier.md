@@ -406,6 +406,7 @@ usual; the squash commit covers all rounds.
 - <build/flake/package changes>   (or "none")
 ## Human review
 - <id>: <what to look at> — <what to judge>   (only what a human must judge, not already in docs/REVIEW.md; or "none")
+  (name the 1-3 files to look at; a REVIEW item links copies in docs/review/<item-slug>/, never .claude/reports/)
 ```
 
 COMPLETE: works as asked, main behaviour tested, tests pass. INCOMPLETE: tests
