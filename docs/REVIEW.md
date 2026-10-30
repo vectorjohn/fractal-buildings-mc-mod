@@ -1,5 +1,7 @@
 # Things for John to review
 
+Decisions waiting for you are listed one line each in [QUESTIONS.md](QUESTIONS.md); this file holds the items to look at.
+
 Open items only. Resolved items, with their answers, are in
 [REVIEW-ARCHIVE.md](REVIEW-ARCHIVE.md).
 

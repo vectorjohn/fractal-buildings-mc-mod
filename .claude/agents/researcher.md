@@ -72,5 +72,6 @@ hand-backs and output apply to you too. This file only adds what's different.
 As in `assistant.md`: a short final message (about 15 lines) with one line per
 note (subject, path, one-line verdict), the branch and commits, new subjects
 worth a note, the questions you couldn't settle, and anything the human should
-decide. Longer material goes in `<repo root>/.claude/reports/research-<slug>.md`.
+decide (a question that needs John's decision also gets a line in
+`docs/QUESTIONS.md`, format at its top). Longer material goes in `<repo root>/.claude/reports/research-<slug>.md`.
 Don't claim anything you didn't check.

@@ -260,7 +260,9 @@ with a verdict line; route by it and its sections:
   item merges only after its round, or after you record in the ledger why the
   round was skipped.
 - `needs John` → add the question to `docs/REVIEW.md` and tell John; the
-  item waits for his answer (other work carries on).
+  item waits for his answer (other work carries on). A question that needs John's decision also gets a line in `docs/QUESTIONS.md` (format at its top). When John answers
+  one (on its line or in the linked place), record the answer there and remove
+  the line.
 
 **Suggestions** go to the ROADMAP Polish backlog; **proposed rules** go to the ledger's "Proposed
 rules" list for John (and into the gate package); only John adds them to

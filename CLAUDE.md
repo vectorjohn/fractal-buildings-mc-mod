@@ -24,6 +24,7 @@ throwaway spikes before the architecture is locked in. The plan is in
 | Plans for large items | `docs/plans/<slug>.md` | lead-coder (`mode: plan`) |
 | Performance issues and accepted tradeoffs | `docs/PERFORMANCE.md` | anyone, append; decisions by the human |
 | Things only the human can judge (looks, "would a person build this", in-game feel) | `docs/REVIEW.md` | anyone, append only; results by the human |
+| Open questions for John: one line per decision waiting for him, linking where it's discussed | `docs/QUESTIONS.md` | anyone appends; the coordinator removes answered lines |
 | Finished phases' full text, old material | `docs/archive/` | coordinator at a phase merge |
 
 Agents read **slices** of the big docs (`grep -n` the item, then read that

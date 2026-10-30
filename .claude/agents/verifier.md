@@ -432,6 +432,7 @@ The report file starts with the same block, then:
 ## Human review
 - <id>: <what to look at> — <what to judge>   (only what a human must judge, not already in docs/REVIEW.md; or "none")
   (name the 1-3 files to look at; a REVIEW item links copies in docs/review/<item-slug>/, never .claude/reports/)
+  (a question that needs John's decision also gets a line in docs/QUESTIONS.md)
 ```
 
 COMPLETE: works as asked, main behaviour tested, tests pass. INCOMPLETE: tests
