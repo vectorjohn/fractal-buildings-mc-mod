@@ -134,6 +134,9 @@ final class CityCommand {
 		} else {
 			all.addAll(plan.violations());
 		}
+		int coarseStep = ProbeSpecs.coarseDumpStep(p.terrain());
+		if (coarseStep > 0 && all.stream().anyMatch(v -> v.invariant().equals(dev.fractalbuildings.core.check.SettlementChecks.SETTLEMENT_EMPTY)))
+			System.err.println("city: note: " + ProbeSpecs.coarseDumpNote(coarseStep));
 		for (Violation v : all) {
 			String line = v.invariant() + ": " + v.message();
 			System.err.println("city: " + line);

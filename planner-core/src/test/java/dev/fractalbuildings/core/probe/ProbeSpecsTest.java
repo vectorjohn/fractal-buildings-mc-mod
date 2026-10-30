@@ -18,6 +18,15 @@ class ProbeSpecsTest {
 		assertEquals("minecraft:sunflower_plains", r.biome().biome(-832, -3840));
 	}
 
+	/** 6.24 EMPTYCITY: a dump coarser than the 32-block skeleton lattice is flagged; finer dumps and synthetic terrain are not. */
+	@Test
+	void coarseDumps() {
+		assertEquals(64, ProbeSpecs.coarseDumpStep(ProbeSpecs.parse("recorded:../fixtures/terrain/pt3141-world-s64.json.gz").terrain()));
+		assertEquals(0, ProbeSpecs.coarseDumpStep(ProbeSpecs.parse("recorded:../fixtures/terrain/w12345-river-s8.json.gz").terrain()));
+		assertEquals(0, ProbeSpecs.coarseDumpStep(ProbeSpecs.parse("noise:5:64:6:32").terrain()));
+		assertTrue(ProbeSpecs.coarseDumpNote(64).contains("dump artefact"));
+	}
+
 	@Test
 	void badSpecs() {
 		for (String s : new String[] {"", "bogus:1", "flat", "flat:x", "flat:1:2", "plane:1:2:3:0", "hill:1:2:0", "noise:1:2:3", "recorded:", "recorded:/nope/x.json"}) {

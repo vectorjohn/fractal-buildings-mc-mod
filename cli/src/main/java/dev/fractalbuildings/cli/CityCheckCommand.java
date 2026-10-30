@@ -110,10 +110,28 @@ final class CityCheckCommand {
 		int bad = 0;
 		for (Result r : results) if (r.error() != null || r.problems().stream().anyMatch(p -> !ignore.contains(rule(p)))) bad++;
 		System.err.printf(Locale.ROOT, "city-check: %d sites, %d failing, %d gate-cut > 4, %.1f s%n", results.length, bad, GATE_CUTS.get(), secs);
+		if (!coarseEmpties(results).isEmpty()) System.err.println("city-check: note: empty settlements on coarse terrain, likely dump artefacts (see the report)");
 		if (o.has("fill-json")) GenCommand.write(Path.of(o.get("fill-json", null)), FillReport.json(fillSites(results)).getBytes(StandardCharsets.UTF_8)); // METROFILL M0
 		if (o.has("out")) GenCommand.write(Path.of(o.get("out", null)), md.getBytes(StandardCharsets.UTF_8));
 		else System.out.print(md);
 		return bad == 0 && lotLosses == 0 ? 0 : 1;
+	}
+
+	/** The end of a warning that 6.24 EMPTYCITY downgraded: an empty settlement on a dump coarser than the skeleton lattice. */
+	static final String ARTEFACT = ": likely a dump artefact, 6.24)";
+
+	/** The report's list of empty settlements on coarse terrain with the note on why they are likely dump artefacts; empty with none. */
+	static String coarseEmpties(Result[] rs) {
+		StringBuilder sb = new StringBuilder();
+		int step = 0;
+		for (Result r : rs) {
+			for (String w : r.warnings()) {
+				if (!w.startsWith(dev.fractalbuildings.core.check.SettlementChecks.SETTLEMENT_EMPTY + ":") || !w.endsWith(ARTEFACT)) continue;
+				step = Integer.parseInt(w.replaceAll(".*\\(terrain step (\\d+):.*", "$1"));
+				sb.append("- ").append(r.job().label()).append(": ").append(w).append('\n');
+			}
+		}
+		return sb.isEmpty() ? "" : "Empty settlements on coarse terrain (warnings, not violations): " + ProbeSpecs.coarseDumpNote(step) + ".\n\n" + sb;
 	}
 
 	/** Violations listed per site in the report ({@code --list}). */
@@ -201,9 +219,17 @@ final class CityCheckCommand {
 					if (hit) System.out.println(j.label() + " junction level " + jn.level() + " ground " + jn.ground() + " pads " + jn.pads());
 				}
 			}
-			// 6.23: settlement-empty is a warning here: the coarse 64-block world maps resolve a few settlements with no urban column (not the
-			// road-link bug, which SettlementEmptyTest guards); `city --check` and the world planner treat it as a violation.
-			for (Violation v : CityPlanner.check(city)) (v.invariant().equals(dev.fractalbuildings.core.check.SettlementChecks.SETTLEMENT_EMPTY) ? warnings : problems).add(v.invariant() + ": " + v.message());
+			// 6.24 EMPTYCITY: settlement-empty fails on fine terrain; on a dump coarser than the skeleton lattice (the 64-block world maps) it is a
+			// warning marked as a likely dump artefact (every one checked was built in full on live terrain: EmptySettlementLiveTest in the mod).
+			// An empty settlement's hub has no street, so its roads-connected "no street ... of the hub" goes with it.
+			int coarseStep = ProbeSpecs.coarseDumpStep(p.terrain());
+			List<Violation> checked = CityPlanner.check(city);
+			boolean empty = checked.stream().anyMatch(v -> v.invariant().equals(dev.fractalbuildings.core.check.SettlementChecks.SETTLEMENT_EMPTY));
+			for (Violation v : checked) {
+				boolean artefact = coarseStep > 0 && empty && (v.invariant().equals(dev.fractalbuildings.core.check.SettlementChecks.SETTLEMENT_EMPTY)
+						|| v.invariant().equals(dev.fractalbuildings.core.check.SettlementChecks.ROADS_CONNECTED) && v.message().endsWith("of the hub"));
+				(artefact ? warnings : problems).add(v.invariant() + ": " + v.message() + (artefact ? " (terrain step " + coarseStep + ARTEFACT : ""));
+			}
 			// DS-18 edge taper (CITYQ r4): a high-rise with no built lot within 120 blocks outward. A warning, since the per-tile cap (BuiltEdge) cannot see
 			// other tiles' lots and leaves a few; EdgeTaperTest holds the count down.
 			for (Violation v : dev.fractalbuildings.core.check.SettlementChecks.cityEdgeTaper(city.districts().values(), site.centre(), new dev.fractalbuildings.core.settlement.BuiltEdge(src)::depth)) warnings.add(v.invariant() + ": " + v.message());
@@ -283,6 +309,8 @@ final class CityCheckCommand {
 			design.forEach((k, n) -> sb.append(k).append(" ").append(n).append("; "));
 			sb.append("\n\n");
 		}
+		String artefacts = coarseEmpties(rs);
+		if (!artefacts.isEmpty()) sb.append(artefacts).append('\n');
 		sb.append("| site | id | tier | radius | cells | districts | lots | scenes | hub piece % | strays | violations | ms |\n|---|---|---|---|---|---|---|---|---|---|---|---|\n");
 		for (Result r : rs) {
 			sb.append(String.format(Locale.ROOT, "| %s | %s | %s | %d | %d | %d | %d | %d | %d | %d | %s | %.0f |%n", r.job().label(), r.siteId(), r.tier(), r.radius(), r.cells(), r.districts(), r.lots(), r.scenes(), r.hubPct(), r.strays(),

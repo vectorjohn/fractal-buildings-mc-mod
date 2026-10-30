@@ -12,6 +12,25 @@ public final class ProbeSpecs {
 	public static final String PLAINS = "minecraft:plains";
 	public static final String RIVER = "minecraft:river";
 
+	/** The skeleton's coarse lattice (the CLI and the game read {@link CoarseProbe} at this stride). */
+	public static final int SKELETON_LATTICE = 32;
+
+	/**
+	 * 6.24 EMPTYCITY: the step of a recorded dump coarser than the skeleton lattice, else 0. On such a dump (the 64-block world maps) the
+	 * skeleton's 32-block columns and the exact terrain are interpolated between samples 64 apart: a river sample floods 64 blocks around
+	 * it and a lone low sample becomes a pit no road can leave, so a settlement can come out with no street or building that the game
+	 * builds in full (seed 3141592653589793238 city sm1_0, five hamlets and villages; `EmptySettlementLiveTest` in the mod plans them on
+	 * live terrain). Tools that report {@code settlement-empty} (or other planning results) from such a dump say so.
+	 */
+	public static int coarseDumpStep(TerrainProbe t) {
+		return t instanceof RecordedProbe r && r.step() > SKELETON_LATTICE ? r.step() : 0;
+	}
+
+	/** The note tools print with a result from a dump of {@link #coarseDumpStep} {@code step}. */
+	public static String coarseDumpNote(int step) {
+		return "terrain step " + step + " is coarser than the " + SKELETON_LATTICE + "-block skeleton lattice: hubs, main roads and lots are planned on interpolated ground, so an empty settlement here (settlement-empty, roads-connected at the hub) is most likely a dump artefact; plan it on a dump of step " + SKELETON_LATTICE + " or finer (TerrainDumpTool) or on live terrain before reporting it (6.24 EMPTYCITY)";
+	}
+
 	/**
 	 * A base terrain spec, optionally followed by modifiers joined with {@code +}: {@code river:<x0>:<width>:<depth>} (a
 	 * north-south river over x in [x0, x0+width): floor lowered by depth, filled with water, biome river) and

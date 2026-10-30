@@ -97,6 +97,22 @@ class CityCheckTest {
 		assertEquals(0, run("city-check", "--seeds", "987654321", "--sites", "cells", "--terrain", "recorded:../fixtures/terrain/world-987654321-s64.json.gz", "--out", md.toString()), Files.readString(md).substring(0, 400));
 	}
 
+	/**
+	 * 6.24 EMPTYCITY: on a dump coarser than the skeleton lattice an empty settlement is a warning marked as a likely dump artefact (city
+	 * sm1_0 of seed 3141592653589793238 has no road off its hub on the 64-block dump and 355 buildings on live terrain); on fine terrain
+	 * it fails the check.
+	 */
+	@Test
+	void anEmptySettlementFailsOnlyOnFineTerrain(@TempDir Path dir) throws Exception {
+		Path coarse = dir.resolve("coarse.md"), fine = dir.resolve("fine.md");
+		assertEquals(0, run("city-check", "--seeds", "3141592653589793238", "--sites", "at:-384,256,city,704", "--terrain", "recorded:../fixtures/terrain/pt3141-world-s64.json.gz", "--out", coarse.toString()));
+		String c = Files.readString(coarse);
+		assertTrue(c.contains("settlement-empty: settlement sm1_0 has no building (terrain step 64: likely a dump artefact, 6.24)"), c);
+		assertEquals(1, run("city-check", "--seeds", "1", "--sites", "at:0,0,hamlet,60", "--terrain", "flat:64+river:-2000:4000:6", "--out", fine.toString())); // all water
+		String f = Files.readString(fine);
+		assertTrue(f.contains("- settlement-empty: settlement") && !f.contains("dump artefact"), f);
+	}
+
 	@Test
 	void badArgumentsExit2(@TempDir Path dir) {
 		assertEquals(2, run("city-check", "--seeds", "1", "--sites", "nowhere"));
