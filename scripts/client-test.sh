@@ -44,7 +44,8 @@
 # (intel: Vulkan on Intel; lavapipe: Vulkan on llvmpipe; worker: not llvmpipe). A mismatch logs
 # "client-test: BACKEND MISMATCH", keeps the log as gradle-backend-mismatch.log and turns a passing run
 # into exit 3 (FB_BACKEND_CHECK=warn only warns, =off skips). Xvfb is started without LD_LIBRARY_PATH,
-# which otherwise lets Minecraft pick OpenGL on llvmpipe (HEAVY6, 2026-10-29).
+# which otherwise lets Minecraft pick OpenGL on llvmpipe (HEAVY6, 2026-10-29), and CI unset: with CI set
+# (test-all.sh exports CI=1) Loom runs the client in a nested xvfb-run of its own that has the same leak (HEAVY8).
 #
 # Layers (TESTLAYERS): FB_LAYER=quick (default here) runs Hello, District (B1), Gameplay (B5), Terrain (B3), TeleportHold; FB_LAYER=full adds
 # Roads, Foliage and the compat world (about twice the time). FB_ONLY=<TestClass> (e.g. RoadsClientGameTest) runs that one client test only, whatever
@@ -148,7 +149,10 @@ build_cmd() { # renderer [gradle args]
 	# Xvfb must not inherit the dev shell's LD_LIBRARY_PATH (set when this script is called from inside
 	# it, e.g. by test-all.sh): with the flake's libglvnd, Xvfb offers an sRGB GLX visual and Minecraft
 	# picks OpenGL on llvmpipe over the selected Vulkan driver (HEAVY6). scripts/dev --fresh restores it.
-	CMD=(env -u WAYLAND_DISPLAY -u LD_LIBRARY_PATH SDL_VIDEODRIVER=x11 FB_VK="$vk" FB_VK_LOG_TAG=client-test
+	# CI is unset too: with CI set (test-all.sh exports CI=1) Loom's run task wraps the client in its own
+	# xvfb-run (AbstractRunTask useXvfb), started from the dev-shell env with LD_LIBRARY_PATH, so the client
+	# sat on that nested Xvfb and took OpenGL on llvmpipe again (HEAVY8, 2026-10-29).
+	CMD=(env -u WAYLAND_DISPLAY -u LD_LIBRARY_PATH -u CI SDL_VIDEODRIVER=x11 FB_VK="$vk" FB_VK_LOG_TAG=client-test
 		"${xvfb[@]}" "$ROOT/scripts/dev" --fresh bash -c '
 			source "$1/scripts/vk-select.sh" && fb_vk_select || exit 2
 			shift; exec "$@"' client-test "$ROOT" ./gradlew --console=plain --no-daemon :mod:runClientGameTest "$@")

@@ -98,10 +98,12 @@ export DISPLAY_NUM=97
 env -u LD_LIBRARY_PATH Xvfb :$DISPLAY_NUM -screen 0 1280x720x24 >"$OUT/xvfb.log" 2>&1 &
 XPID=$!
 sleep 2
+# CI unset for the client: with CI set Loom wraps runClient in its own xvfb-run (dev-shell env, sRGB GLX
+# visual), and the client would render OpenGL on llvmpipe there instead of on :$DISPLAY_NUM (HEAVY8, 2026-10-29).
 # Renderer for the client: Intel iGPU by default, lavapipe as fallback or with FB_VK=lavapipe.
 source "$ROOT/scripts/vk-select.sh"
 FB_VK_LOG_TAG=server-only-test fb_vk_select 2> >(tee -a "$RES" >&2) || { say "FAIL: bad FB_VK"; exit 2; }
-env -u WAYLAND_DISPLAY DISPLAY=:$DISPLAY_NUM SDL_VIDEODRIVER=x11 setsid ./gradlew --console=plain -p tools/vanilla-client -PserverPort=$PORT runClient > "$OUT/gradle-client.log" 2>&1 &
+env -u WAYLAND_DISPLAY -u CI DISPLAY=:$DISPLAY_NUM SDL_VIDEODRIVER=x11 setsid ./gradlew --console=plain -p tools/vanilla-client -PserverPort=$PORT runClient > "$OUT/gradle-client.log" 2>&1 &
 CPID=$!
 for i in $(seq 1 180); do grep -q 'Vanilla joined the game' "$SLOG" 2>/dev/null && break; sleep 2; done
 grep -q 'Vanilla joined the game' "$SLOG" || { say "FAIL: client did not join"; kill $XPID; exit 1; }

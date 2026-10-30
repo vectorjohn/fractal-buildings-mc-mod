@@ -111,6 +111,6 @@ fb_vk_backend_check() {
 		echo "$tag: backend OK: $be on $dev (selected $used)" >&2
 		return 0
 	fi
-	echo "$tag: BACKEND MISMATCH: selected $used (want $want), but the client ran $be on '$dev'. A GLX visual leaked into the X server (Xvfb started with the dev shell's LD_LIBRARY_PATH?); timings and screenshots of this run are not from the selected renderer." >&2
+	echo "$tag: BACKEND MISMATCH: selected $used (want $want), but the client ran $be on '$dev'. A GLX visual leaked into the X server (Xvfb started with the dev shell's LD_LIBRARY_PATH, or CI set so Loom ran the client in its own xvfb-run; docs/NOTES.md); timings and screenshots of this run are not from the selected renderer." >&2
 	return 1
 }
