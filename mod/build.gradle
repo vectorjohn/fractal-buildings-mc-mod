@@ -117,6 +117,19 @@ loom.runs {
 	}
 }
 
+// PORTALCOLD: a dedicated server per case (-Pfb.portalCase=town|metro|wild; scripts/portalcold.sh), run dir build/run/portalcold/<case>.
+loom.runs {
+	portalColdServer {
+		server()
+		source sourceSets.gametest
+		runDir "build/run/portalcold/${(findProperty('fb.portalCase') ?: 'town')}"
+		ideConfigGenerated false
+		property 'fb.testHook', 'dev.fractalbuildings.gametest.perf.PortalColdHarness'
+		property 'fb.portal.case', (findProperty('fb.portalCase') ?: 'town').toString()
+		property 'fb.portal.out', (findProperty('fb.portalOut') ?: layout.buildDirectory.dir('portalcold').get().asFile.path).toString()
+	}
+}
+
 // Forward -Dfb.* options to the test JVM (e.g. -Dfb.dump=12345:0:0:64:384:384:name).
 tasks.named('test') {
 	useJUnitPlatform()

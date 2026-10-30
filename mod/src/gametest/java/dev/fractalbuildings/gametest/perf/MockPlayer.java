@@ -21,17 +21,22 @@ final class MockPlayer {
 
 	/** Adds a spectator to the player list; {@code viewDistance} is what its "client" requests. */
 	static ServerPlayer join(MinecraftServer server, ServerLevel level, String name, int viewDistance) {
+		return join(server, level, name, viewDistance, GameType.SPECTATOR);
+	}
+
+	/** As above with a game mode (PORTALCOLD uses creative: a portal takes a creative player at once). */
+	static ServerPlayer join(MinecraftServer server, ServerLevel level, String name, int viewDistance, GameType mode) {
 		GameProfile profile = new GameProfile(UUID.nameUUIDFromBytes(name.getBytes()), name);
 		ClientInformation d = ClientInformation.createDefault();
 		ClientInformation info = new ClientInformation(d.language(), viewDistance, d.chatVisibility(), d.chatColors(), d.modelCustomisation(), d.mainHand(), d.textFilteringEnabled(), d.allowsListing(), d.particleStatus());
 		CommonListenerCookie cookie = CommonListenerCookie.createInitial(profile, false);
 		ServerPlayer p = new ServerPlayer(server, level, profile, info) {
-			@Override public GameType gameMode() { return GameType.SPECTATOR; }
+			@Override public GameType gameMode() { return mode; }
 		};
 		Connection c = new Connection(PacketFlow.SERVERBOUND);
 		new EmbeddedChannel(c);
 		server.getPlayerList().placeNewPlayer(c, p, cookie);
-		p.setGameMode(GameType.SPECTATOR);
+		p.setGameMode(mode);
 		return p;
 	}
 
