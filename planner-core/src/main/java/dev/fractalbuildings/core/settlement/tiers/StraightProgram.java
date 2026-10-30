@@ -205,8 +205,95 @@ abstract class StraightProgram extends DefaultProgram {
 		for (Pt t : targets) {
 			if (l != null && (t.equals(l.a()) || t.equals(l.b()))) out.add(new Route(t, List.of(l.start(), t), List.of()));
 			else if (l != null && l.junction() != null && (t.equals(l.c1()) || t.equals(l.c2()))) out.add(new Route(t, List.of(l.junction(), t), List.of()));
-			else out.add(route(c, hub, t));
+			else {
+				Route via = l == null ? null : viaStreet(c, l, t);
+				out.add(via != null ? via : route(c, hub, t));
+			}
 		}
 		return out;
+	}
+
+	/**
+	 * HAMLETEMPTY: a road to a link exit (not one of the street's own ends) runs along the main street to its nearer end and leaves from
+	 * there in a straight line. Run straight from the hub, a diagonal path took the room the frontage lots need and a hamlet came out with
+	 * no building. Null when the street has no end, the leg is not dry and gentle, or the exit is within a lattice step of the street's end.
+	 */
+	static Route viaStreet(SkeletonContext c, Layout l, Pt t) {
+		List<Pt> best = null;
+		double bestLen = Double.MAX_VALUE;
+		for (Pt e : new Pt[] {l.a(), l.b()}) {
+			if (e == null) continue;
+			int n = Math.abs(e.x() - l.start().x()) + Math.abs(e.z() - l.start().z()), sx = Integer.signum(e.x() - l.start().x()), sz = Integer.signum(e.z() - l.start().z());
+			// the road leaves the street at its end, or, when the exit does not lie ahead of the end, at a T junction on the street
+			List<Pt> mine = null;
+			double mineLen = Double.MAX_VALUE;
+			for (int k = n; k >= 1; k--) {
+				Pt p = k == n ? e : new Pt(l.start().x() + sx * k, l.start().z() + sz * k);
+				for (List<Pt> pts : viaPoints(l.start(), p, t)) {
+					boolean ok = true;
+					for (int i = 1; i + 1 < pts.size() && ok; i++) ok = straight(c, pts.get(i), pts.get(i + 1));
+					double len = length(pts);
+					if (ok && len < mineLen - 1e-9) { mineLen = len; mine = pts; }
+				}
+				if (mine != null) break; // the farthest junction that works: the lots near the hub keep their room
+			}
+			if (mine != null && mineLen < bestLen - 1e-9) { bestLen = mineLen; best = mine; }
+		}
+		return best == null ? null : new Route(t, best, List.of());
+	}
+
+	/** Longest accepted route, as a multiple of the straight distance hub to exit (round 2: no detours). */
+	static final double MAX_DETOUR = 1.3;
+
+	/**
+	 * The routes hub -> street end {@code e} -> exit {@code t} with segments axis-aligned or at 45 degrees (the diagonal leg first, or the
+	 * axis leg first), minus those that double back: a turn of more than 90 degrees at any bend (the exit must lie ahead of the street's
+	 * end, so nothing overshoots) or a length over {@link #MAX_DETOUR} times the straight distance.
+	 */
+	static List<List<Pt>> viaPoints(Pt start, Pt e, Pt t) {
+		List<List<Pt>> out = new ArrayList<>();
+		int dx = t.x() - e.x(), dz = t.z() - e.z(), m = Math.min(Math.abs(dx), Math.abs(dz)), big = Math.max(Math.abs(dx), Math.abs(dz));
+		if (big == 0) return out;
+		List<Pt> corners = new ArrayList<>();
+		if (m == 0 || m == big) corners.add(null);
+		else {
+			corners.add(new Pt(e.x() + Integer.signum(dx) * m, e.z() + Integer.signum(dz) * m)); // diagonal first
+			corners.add(Math.abs(dx) > Math.abs(dz) ? new Pt(t.x() - Integer.signum(dx) * m, e.z()) : new Pt(e.x(), t.z() - Integer.signum(dz) * m)); // axis first
+		}
+		double direct = StrictMath.hypot(t.x() - start.x(), t.z() - start.z());
+		for (Pt k : corners) {
+			List<Pt> pts = new ArrayList<>(List.of(start, e));
+			if (k != null) pts.add(k);
+			pts.add(t);
+			boolean ok = length(pts) <= MAX_DETOUR * direct;
+			for (int i = 0; i + 1 < pts.size() && ok; i++) ok = StrictMath.hypot(t.x() - pts.get(i + 1).x(), t.z() - pts.get(i + 1).z()) <= StrictMath.hypot(t.x() - pts.get(i).x(), t.z() - pts.get(i).z()) + 1e-9; // every leg gets closer to the exit: never away and back
+			for (int i = 0; i + 2 < pts.size() && ok; i++) {
+				long ax = pts.get(i + 1).x() - pts.get(i).x(), az = pts.get(i + 1).z() - pts.get(i).z(), bx = pts.get(i + 2).x() - pts.get(i + 1).x(), bz = pts.get(i + 2).z() - pts.get(i + 1).z();
+				if (ax == 0 && az == 0 || bx == 0 && bz == 0) continue;
+				ok = ax * bx + az * bz >= 0; // a turn of at most 90 degrees
+			}
+			if (ok) out.add(pts);
+		}
+		return out;
+	}
+
+	static double length(List<Pt> pts) {
+		double s = 0;
+		for (int i = 0; i + 1 < pts.size(); i++) s += StrictMath.hypot(pts.get(i + 1).x() - pts.get(i).x(), pts.get(i + 1).z() - pts.get(i).z());
+		return s;
+	}
+
+	/** The straight line between two points stays dry and gentle at every SAMPLE step along it. */
+	static boolean straight(SkeletonContext c, Pt a, Pt b) {
+		double n = Math.max(Math.abs(b.x() - a.x()), Math.abs(b.z() - a.z()));
+		int px = a.x(), pz = a.z();
+		for (int d = SAMPLE; d < n + SAMPLE; d += SAMPLE) {
+			double f = Math.min(1.0, d / n);
+			int x = (int) Math.round(a.x() + (b.x() - a.x()) * f), z = (int) Math.round(a.z() + (b.z() - a.z()) * f);
+			if (c.terrain.water(x, z) || Math.abs(c.terrain.surfaceY(x, z) - c.terrain.surfaceY(px, pz)) > MAX_DY) return false;
+			px = x;
+			pz = z;
+		}
+		return true;
 	}
 }

@@ -212,6 +212,9 @@ public final class CityPlanner {
 		for (DistrictPlan p : city.districts().values()) {
 			for (Violation v : p.violations()) out.add(new Violation(v.invariant(), v.building(), p.district().id() + ": " + v.message(), v.cells()));
 		}
+		int builds = 0;
+		for (DistrictPlan p : city.districts().values()) builds += (int) p.lots().stream().filter(LotBrief::builds).count();
+		out.addAll(dev.fractalbuildings.core.check.SettlementChecks.settlementEmpty(city.plan().site().id(), builds, city.plan().site().centre().x(), city.plan().site().centre().z()));
 		return out;
 	}
 }

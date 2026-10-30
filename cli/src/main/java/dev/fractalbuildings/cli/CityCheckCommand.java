@@ -201,7 +201,9 @@ final class CityCheckCommand {
 					if (hit) System.out.println(j.label() + " junction level " + jn.level() + " ground " + jn.ground() + " pads " + jn.pads());
 				}
 			}
-			for (Violation v : CityPlanner.check(city)) problems.add(v.invariant() + ": " + v.message());
+			// 6.23: settlement-empty is a warning here: the coarse 64-block world maps resolve a few settlements with no urban column (not the
+			// road-link bug, which SettlementEmptyTest guards); `city --check` and the world planner treat it as a violation.
+			for (Violation v : CityPlanner.check(city)) (v.invariant().equals(dev.fractalbuildings.core.check.SettlementChecks.SETTLEMENT_EMPTY) ? warnings : problems).add(v.invariant() + ": " + v.message());
 			// DS-18 edge taper (CITYQ r4): a high-rise with no built lot within 120 blocks outward. A warning, since the per-tile cap (BuiltEdge) cannot see
 			// other tiles' lots and leaves a few; EdgeTaperTest holds the count down.
 			for (Violation v : dev.fractalbuildings.core.check.SettlementChecks.cityEdgeTaper(city.districts().values(), site.centre(), new dev.fractalbuildings.core.settlement.BuiltEdge(src)::depth)) warnings.add(v.invariant() + ": " + v.message());

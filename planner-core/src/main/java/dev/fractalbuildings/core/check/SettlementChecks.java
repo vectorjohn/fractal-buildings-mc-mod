@@ -909,6 +909,15 @@ public final class SettlementChecks {
 		return out;
 	}
 
+	/** {@code settlement-empty} (HAMLETEMPTY): a settlement that resolves, owns districts and has streets or roads, but no building anywhere in it (a player finds roads and nothing else). */
+	public static final String SETTLEMENT_EMPTY = "settlement-empty";
+
+	/** {@code buildings}: buildings (or lots to build) the whole settlement came to. */
+	public static List<Violation> settlementEmpty(String settlementId, int buildings, int x, int z) {
+		if (buildings > 0) return List.of();
+		return List.of(v(SETTLEMENT_EMPTY, "settlement " + settlementId + " has no building", x, z, 1, 1));
+	}
+
 	private static Violation v(String id, String msg, int x, int z, int w, int d) {
 		return new Violation(id, null, msg, List.of(new Box3(x, 0, z, w, 1, d)));
 	}
