@@ -15,6 +15,7 @@ Every decision waiting for you, one line each, newest first under each heading. 
 
 # Perf
 
+- [ ] **PORTALCOLD** (2026-10-30): a first nether-portal trip into an unvisited city plans it on the server thread before vanilla's loading screen opens (`PortalForcer.createPortal` needs FULL chunks). Inferred, not measured: a silent freeze of seconds in a town, possibly past the 60 s watchdog in a cold metropolis. After measuring, pick: (a) accept, (b) warm the scaled overworld exit point while a player stands in a portal, (c) hold the portal transition like TPHOLD. Measurement item PORTALCOLD-M in progress. [ROADMAP 6.30](ROADMAP.md), [teleport-loading-screen.md](research/worldgen/teleport-loading-screen.md).
 - [ ] **Metro flight warmer** (2026-10-29): the region warmer starts only ~2 km out on an elytra flight (worst tick 2.2 s local, 22.5 s beebox); start it earlier, scaled by speed, now in P6 or in P7? [profile-metropolis.md](review/profile-metropolis.md), win candidate 8.
 - [ ] **REGIONPERF budget** (2026-10-27): what cold-arrival wait is acceptable for 0.1.0, and does the `/locate` ceiling move? Rec: 60 s cold arrival, `/locate` stays 5 s. [regionperf-decision.md](review/regionperf-decision.md) section 7; release-plan Q4.
 

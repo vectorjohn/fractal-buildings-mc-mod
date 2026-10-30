@@ -34,7 +34,13 @@ How to use it:
 - **Improve**: hold the teleport on the server until the destination is
   warm, or show a loading screen; see
   [teleport-loading-screen.md](research/worldgen/teleport-loading-screen.md).
-  Joins, respawns and dimension changes already get vanilla's loading screen.
+  Joins and respawns already get vanilla's loading screen. A dimension change
+  gets it too, but only after the exit portal is found: on a first
+  nether-portal trip vanilla builds the exit portal (`PortalForcer.createPortal`)
+  on the server thread before the screen opens, which generates the overworld
+  chunks there, so a cold city is planned during a silent server freeze
+  (inferred from the 26.3 bytecode, not measured; ROADMAP 6.30 PORTALCOLD,
+  measurement item PORTALCOLD-M).
   Deeper fix: the W2 coarse-screen fallback (plan phase 6) to make the region
   layer cheaper; `warm()` on join and respawn.
 

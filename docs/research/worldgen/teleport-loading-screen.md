@@ -33,8 +33,18 @@ Loom-decompiled Minecraft 26.3 (`LevelLoadingScreen`, `LevelLoadTracker`,
 - Join: `PrepareSpawnTask` (configuration phase) adds a `PLAYER_SPAWN`
   ticket (radius 3) with `addTicketAndLoadWithRadius` and lets the player in
   only when those chunks are FULL; the client shows its loading screen.
-- So **joins, respawns and dimension changes into a cold city are already
-  hidden by vanilla**. Only a same-dimension teleport is not:
+- So **joins and respawns into a cold city are already hidden by
+  vanilla**. A dimension change only partly (correction 2026-10-30,
+  inferred from the 26.3 bytecode, not measured): before the teleport,
+  `NetherPortalBlock.getExitPortal` runs on the server thread, and on a
+  first trip with no portal in range `PortalForcer.createPortal` reads
+  `getHeight` and `getBlockState` around the exit, which generates those
+  overworld chunks then and there. A cold city is therefore planned as a
+  silent server freeze while the player still stands in the portal; the
+  loading screen opens only afterwards. RegionWarmer warms overworld
+  players only, so nothing plans ahead from the nether. To be measured
+  (ROADMAP 6.30 PORTALCOLD, measurement item PORTALCOLD-M).
+- A same-dimension teleport is not hidden at all:
   `ServerPlayer.teleport` sends just a position packet when the level is
   unchanged; the client stays in the world and sees void until chunks come.
 
