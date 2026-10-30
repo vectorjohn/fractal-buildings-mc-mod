@@ -112,6 +112,31 @@ public final class ExitTrim {
 		return best;
 	}
 
+	/** The largest column index any street piece of the road in the core tile's raw plan reaches (a piece can overhang the tile border), or 0. */
+	static int coreReach(SkeletonSource src, String roadId, List<int[]> cols, Plans plans) {
+		if (!hasCore(src)) return 0;
+		DistrictGrid.Tile t = src.grid().tileAt(src.site().centre().x(), src.site().centre().z());
+		DistrictPlan core = plans.raw(t.ix(), t.iz());
+		if (core == null) return 0;
+		Map<Long, Integer> at = new TreeMap<>();
+		for (int i = 0; i < cols.size(); i++) at.putIfAbsent(((long) cols.get(i)[0] << 32) ^ (cols.get(i)[1] & 0xffffffffL), i);
+		int best = 0;
+		for (Street s : core.streets()) {
+			if (!baseId(s.id()).equals(roadId)) continue;
+			for (Pt p : s.points()) {
+				Integer i = at.get(((long) p.x() << 32) ^ (p.z() & 0xffffffffL));
+				if (i != null) best = Math.max(best, i);
+			}
+		}
+		return best;
+	}
+
+	/** Whether district tile (ix, iz) is the core tile. */
+	public static boolean inCore(SkeletonSource src, int ix, int iz) {
+		DistrictGrid.Tile t = src.grid().tile(ix, iz);
+		return inCore(src, new Rect(t.minX(), t.minZ(), t.widthX(), t.widthZ()));
+	}
+
 	/** Whether the tile is the core tile (no cut can touch it). */
 	public static boolean inCore(SkeletonSource src, Rect tile) {
 		if (!hasCore(src)) return false;
@@ -206,7 +231,7 @@ public final class ExitTrim {
 			int top = k == null ? cols.size() - 1 : k.index();
 			int last = Math.max(lastServed(src, c.road().id(), c.road().width(), cols.subList(0, top + 1), cached, deckColumns(c.road(), cols.size())), wallColumn(cols.subList(0, top + 1), c.walls()));
 			// a road that ends inside the core tile (the settlement centre; never cut, ExitTrim.coreTile) is the town itself, not a stub. Last 0: nothing at all stands beside the road (a hamlet's only street, or a road through tiles no one builds): it is kept whole and not counted
-			out.add(new Stub(c.road().id(), cols.get(top)[0], cols.get(top)[1], last <= 0 || top <= coreIndex(src, cols) ? 0 : top - last, k != null, last <= 0));
+			out.add(new Stub(c.road().id(), cols.get(top)[0], cols.get(top)[1], last <= 0 || top <= Math.max(coreIndex(src, cols), coreReach(src, c.road().id(), cols, plans)) ? 0 : top - last, k != null, last <= 0));
 		}
 		return out;
 	}
@@ -281,6 +306,7 @@ public final class ExitTrim {
 			if (s > lastAll && s <= keep) keep = s;
 		}
 		keep = Math.max(keep, coreIndex(src, cols)); // the town's core is never cut
+		keep = Math.max(keep, coreReach(src, r.id(), cols, plans)); // ... nor the pieces of its streets that overhang the tile border (the core tile is not cut, so the neighbour must agree with it)
 		if (keep >= n - 1) return null;
 		java.util.Set<String> dropped = new java.util.TreeSet<>();
 		if (stop >= 0) {
