@@ -148,6 +148,9 @@ re-runs only if it's missing, stale (code changed after that commit; docs
 and unrelated tests are fine) or suspicious. So run heavy layers last, and
 report for each: the commit, the integration-branch commit you merged in
 before it, the command, the result and the evidence folder.
+A timing from a busy host is not a measurement: check `scripts/quiet-check.sh`
+before a timed run, report numbers only from a quiet one with host and load
+(CLAUDE.md "Parallel work"), and say "not measured" otherwise.
 
 **Flakes:** if a test fails and then passes on an identical rerun, say so in
 the report and add a line to `docs/NOTES.md` ("Tests and known flakes":

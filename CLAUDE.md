@@ -250,9 +250,25 @@ agents can work and test at once. The rules below exist to make that safe.
   it can, so two of these at once slow each other down and make
   timing-sensitive tests flaky. Run them as
   `flock <repo root>/.claude/heavy.lock <cmd>` (it waits its turn).
-  Timing numbers taken while other agents are busy are noisy: record the load
-  (`cat /proc/loadavg`) next to them, and re-measure on a quiet machine before
-  a number decides a gate.
+  **A timing taken on a busy machine is not a measurement** (John
+  2026-10-30): don't report it as a result, in a log, brief, review or
+  PERFORMANCE entry; measure again on a quiet host. **Quiet means no other
+  job or agent work on the host** for the whole timed run (not a loadavg
+  threshold: the measured job's own threads raise the load, 4 to 6 on beebox
+  under a perf run). **Measure on beebox**, sent when `ssh beebox job status`
+  shows nothing else running or queued, and checked again after. This host
+  is not quiet (John runs his own Minecraft client here, and other agents
+  work all day): don't wait for local quiet. `scripts/quiet-check.sh`
+  checks it (no suite slot, heavy lock or `scripts/anywhere.sh` job held, no
+  other beebox job, processes outside the run's own session under half a
+  core; exit 0 quiet, 1 busy; `--beebox` asks beebox from here), and
+  `scripts/perf.sh` runs it before and after each step into
+  `mod/build/perf/quiet.txt` and ends with `perf: quiet host` or `perf: NOT
+  A MEASUREMENT`. Record host, renderer and the loadavg sampled just before
+  the run next to every number, and compare like with like (mod against the
+  vanilla base on the same host; never beebox against local). The one
+  exception: a speed-up so large it shows despite the load may be reported,
+  labelled "busy host, speed-up only", never as the new number.
 - **Full fast suites take a suite slot**: at most `FB_SUITE_SLOTS` (default 2)
   full fast test suites run at once machine-wide, since several overlapping
   planner-core / mod test runs (each forking and multi-threaded) thrash the

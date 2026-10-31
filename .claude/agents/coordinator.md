@@ -303,7 +303,11 @@ head>..<integration head>` and the integration checkout. It runs
 them on a snapshot, so merges carry on meanwhile. Record each run in the
 ledger's "Heavy runs" (range, head, PASS/FAIL, evidence folder). On FAIL it
 names the culprit squash commit; decide revert vs fix-forward as for a
-post-merge failure.
+post-merge failure. **A timing from a busy host is not a measurement**
+(John 2026-10-30; CLAUDE.md "Parallel work", `scripts/quiet-check.sh`):
+don't relay it to John, into PERFORMANCE.md, a brief or a ledger outcome;
+schedule the measurement again on beebox with nothing else running or
+queued (this host is never quiet: John plays here).
 
 **6. Act on the verdict.**
 - *COMPLETE and merged*: mark it done in the ledger with the merge commit.

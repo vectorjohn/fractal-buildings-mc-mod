@@ -19,7 +19,9 @@
 #      a timing row skipped for load prints a `PERF SKIPPED (load)` line, and a `loadSkipGuard` row (first tile, region cold,
 #      /locate fresh) skipped far over its ceiling exits 5 (`PERF SKIPPED ROW FAR OVER CEILING`); self-test node scripts/perf-check.test.mjs;
 #      also writes mod/build/perf/summary.md.
-# Quiet-machine rule: numbers that decide a budget need loadavg under 2; the check prints the load measured.
+# Quiet-machine rule (CLAUDE.md): a timing from a busy host is not a measurement. scripts/quiet-check.sh judges the host when the
+# heavy lock is taken and after each step (no other job or agent work on the host: locks, beebox jobs, other processes' CPU;
+# loadavg recorded, not judged) in mod/build/perf/quiet.txt; the run ends with "perf: quiet host" or "perf: NOT A MEASUREMENT (busy host)".
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 # A copy without .git (scripts/remote.sh on the worker) uses its own root.
@@ -42,15 +44,24 @@ if [ "$CHECK_ONLY" = 0 ]; then
 		echo "perf: wrote $SRV/eula.txt (standing EULA approval, local test server)" >&2
 	fi
 	rm -f mod/build/perf/*.json
+	# Quiet-machine rule (CLAUDE.md "Parallel work"): judged once the heavy lock is ours (the first line, "start"); later lines
+	# record load and other holders (that load includes this run's own work)
+	: > "$LOGDIR/quiet.txt"
+	qc() { local l=$1; [ -s "$LOGDIR/quiet.txt" ] || l=start; "$ROOT/scripts/quiet-check.sh" --own-heavy --label "$l" >> "$LOGDIR/quiet.txt" || true; }
 	echo "perf: waiting for heavy lock ..." >&2
 	# a failing gradle run (build error, test exception, crashed client) must fail the script: no `| ... || true`
 	if [ "$MOD_ONLY" = 0 ] && [ "$WORLD_ONLY" = 0 ]; then
 	set +e
-	flock "$HEAVY_LOCK" "$ROOT/scripts/dev" --fresh ./gradlew --console=plain :mod:test -Dfb.perf=1 --tests '*PerfPlannerTest*' --rerun-tasks > "$LOGDIR/planner.log" 2>&1
+	exec 9>"$HEAVY_LOCK"
+	flock 9
+	qc start
+	"$ROOT/scripts/dev" --fresh ./gradlew --console=plain :mod:test -Dfb.perf=1 --tests '*PerfPlannerTest*' --rerun-tasks 9>&- > "$LOGDIR/planner.log" 2>&1
 	rc=$?
 	set -e
 	grep -E "PERF |FAILED" "$LOGDIR/planner.log" || true
 	if [ "$rc" != 0 ]; then echo "PERF FAIL: the planner run exited $rc (see $LOGDIR/planner.log)" >&2; tail -30 "$LOGDIR/planner.log" >&2; exit 1; fi
+	qc after-planner
+	exec 9>&-
 	fi
 	if [ "$PLANNER_ONLY" = 0 ] && [ "$CLIENT" = 1 ]; then
 		# scripts/client-test.sh takes the heavy lock itself and watches for hangs and crashes
@@ -65,6 +76,7 @@ if [ "$CHECK_ONLY" = 0 ]; then
 		mkdir -p "$SRV"
 		exec 9>"$HEAVY_LOCK"
 		flock 9
+		qc world-start
 		VARIANTS="${FB_PERF_VARIANTS:-mod base}"; [ "$MOD_ONLY" = 1 ] && VARIANTS=mod && export FB_LANE_LOG=1 # per-start [LANE-START] lines, diagnostics only
 		for v in $VARIANTS; do
 			rm -rf "$SRV/world" "$SRV/logs"
@@ -90,9 +102,19 @@ P
 			grep -E "\[PERF\]|FAILED|BUILD" "$LOGDIR/world-$v.log" || true
 			if [ "$rc" != 0 ] || [ ! -f "$LOGDIR/world-$v.json" ]; then echo "PERF FAIL: the $v server run exited $rc or wrote no rows (see $LOGDIR/world-$v.log)" >&2; tail -30 "$LOGDIR/world-$v.log" >&2; exit 1; fi
 		done
+		qc world-end
 		exec 9>&-
 		if [ "$MOD_ONLY" = 1 ]; then echo "perf: --world-mod-only: diagnostic run, no merge and no budget check (see $LOGDIR/world-mod.log)" >&2; exit 0; fi
 		"$ROOT/scripts/dev" --fresh node scripts/perf-merge.mjs "$LOGDIR"
+	fi
+fi
+if [ "$CHECK_ONLY" = 0 ] && [ -f "$LOGDIR/quiet.txt" ]; then
+	cat "$LOGDIR/quiet.txt"
+	# other job or agent work on the host at any step (not our own load): not a measurement
+	if grep -q "^quiet-check: [a-z-]* BUSY" "$LOGDIR/quiet.txt"; then
+		echo "perf: NOT A MEASUREMENT (busy host, see $LOGDIR/quiet.txt): its timings are not reported as results (CLAUDE.md quiet-machine rule)" >&2
+	else
+		echo "perf: quiet host ($LOGDIR/quiet.txt)" >&2
 	fi
 fi
 ALLOW=""

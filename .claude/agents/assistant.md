@@ -90,6 +90,9 @@ an expensive or hard-to-undo change.
   measurements yourself without the heavy lock (CLAUDE.md); everything else is
   fine. Or run them on the worker box with `scripts/remote.sh`, which has its
   own queue.
+- **Timings count only from a quiet host** (`scripts/quiet-check.sh`, CLAUDE.md
+  "Parallel work"): a number from a busy machine is not a result; don't put
+  it in a brief, PERFORMANCE entry or REVIEW item.
 
 ## Where you work
 

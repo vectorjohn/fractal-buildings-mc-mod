@@ -7,6 +7,13 @@ the cost buys, and the options. Numbers are from beebox (12 CPUs, load
 about 2) at 83c7a808 unless marked. *Estimate* means it was worked out from
 those numbers and not measured.
 
+**2026-10-31:** the timings in sections 1 to 6 were taken before the
+quiet-machine rule (CLAUDE.md "Parallel work") and without a check for other
+work, so treat them as background, not results. The valid numbers, mod
+against vanilla on a quiet beebox, are in section 7. The options are in
+section 8, which replaces the recommendations of sections 5 and 7 (John
+rejected the 60 s one).
+
 ## 1. What the row measures, and who pays it
 
 The perf row "Region layer + road network, cold, metropolis" times one call:
@@ -118,27 +125,53 @@ Measured by COLDCHUNK (`.claude/reports/p6-coldchunk.md`), and seen again in the
   - (a) and (c) cut the cost itself.
   - (d) trades some quay accuracy for speed.
 
-## 7. Update 2026-10-29: HEAVY6 numbers (after PARREADS)
+## 7. Measured 2026-10-31 on a quiet beebox: mod against vanilla
 
-`scripts/perf.sh` at 6ea46a67 on both hosts (forensic source: `.claude/reports/heavy6-perf-local-evidence/` and `heavy6-perf-evidence/`, not tracked). Local is this machine, 20 CPUs, quiet (load at most 7.1). beebox is the worker box, 12 CPUs (load at most 7.9). Worst cold chunk and the teleport hold come from the same batch (HEAVY6 verifier summary).
+Rewritten 2026-10-31 (assistant, QUIETPERF). The HEAVY6 table that stood here was not a measurement: see the last line of this section.
 
-| What | Local, quiet | beebox | Budget | CI ceiling |
+**How it was measured.** `scripts/perf.sh`, twice (plus a third planner-only run for the region rows), on beebox (12 CPUs, AMD GPU; the world half runs on a dedicated server with no renderer). Each run was sent when `ssh beebox job status` showed nothing else running or queued. It was checked every minute during the run and again after: nothing else ran on beebox at any point. Run 2 also ran `scripts/quiet-check.sh` inside the job before and after each step (no other job, other processes under 0.05 cores). Run 1 did the mod world first, run 2 the vanilla base first. The product code is the same as run-branch 64d76a52 in both (the branch commits differ only in scripts and docs). The load is the 1-min loadavg sampled just before each step. It includes the run's own build and threads, so it is recorded, not judged. Evidence (forensic source, not tracked): `.claude/reports/quietperf-bee-r1-evidence/d43e5638cc-20261031T070329Z/` and `quietperf-bee-r2-evidence/3ee0a7b1ab-20261031T071801Z/`.
+
+**The vanilla baseline** is the same server, seed (987654321) and path with the region layer's frequency at 0: the same terrain with no settlements, roads or quays (`base.*` rows). Rows marked "no vanilla equivalent" are work vanilla never does, so their only reference is the budget.
+
+| What is timed (start → end) | Mod, run 1 / run 2 | Vanilla, run 1 / run 2 | Mod ÷ vanilla | Budget / ceiling |
 |---|---|---|---|---|
-| Worst cold chunk, metropolis (the wait a player teleporting in sees) | 21.8 s | 37.8 s | none yet | none yet |
-| Region layer + roads, cold (`region.cold.warm`) | 8.1 s | 11.2 s (FAIL) | 6 s | 10 s |
-| `/locate` settlement, fresh area | 2.7 s | 4.6 s | 3 s | 5 s |
-| `/locate` settlement from spawn | 1.2 s | 1.8 s | 2 s | 4 s |
-| First tile of a metropolis, cold | 1.3 s | 1.2 s | 1 s | 4 s |
-| Cold district plan, median | 1263 ms | 655 ms | 300 ms | 1500 ms |
-| Cold district plan, p95 | 1846 ms | 848 ms | 1000 ms | 3000 ms |
-| Worst server tick, elytra flight into a city | 776 ms | 317 ms | 3000 ms | 6000 ms |
-| Heap after GC, mod world vs none | 142 MB | 148 MB | 500 MB | 1000 MB |
+| Slowest chunk of a 9 x 9 block at the metropolis centre, cold: `getChunk(FULL)` call → chunk FULL, server thread, no player there | 53.3 s / 53.9 s | 0.33 s / 0.32 s | about 165x | none |
+| The whole 9 x 9 block, cold (81 chunks one after another) | 59.7 s / 60.3 s | 2.65 s / 2.58 s | about 23x | none |
+| Median chunk of that block, cold | 39 ms / 39 ms | 27 ms / 26 ms | 1.5x | none |
+| Mean chunk of the next 9 x 9 block, after the warmer ran | 56 ms / 56 ms | 26 ms / 25 ms | 2.2x | 3x / 4.5x |
+| Worst server tick, elytra-speed flight to the gate city | 2.07 s / 0.78 s | 0.19 s / 0.22 s | 3.5x to 11x | 3 s / 6 s |
+| p95 server tick, same flight | 10.4 ms / 10.2 ms | 10.3 ms / 9.3 ms | about 1x | 50 / 100 ms |
+| Heap after GC, after the flight and 162 city chunks | +156 MB / +150 MB over vanilla | | | 500 / 1000 MB |
+| Region layer + roads, cold (`region.cold.warm`): one `WorldPlanner.warm` call in a JUnit test, no server | 14.8 s / 11.6 s (run 3: 11.7 s) | no vanilla equivalent | | 6 s / 10 s |
+| Quay trace of the metropolis (`region.cold.quays`), same test | 21.5 s / 19.9 s (run 3: 20.8 s) | no vanilla equivalent | | none |
+| Warm + quays on a worker, as the warmer runs them (`region.warmed.worker`) | 30.6 s / 31.0 s (run 3: 31.9 s) | no vanilla equivalent | | none |
+| `/locate structure #fractalbuildings:settlement`, fresh area, server thread | 5.27 s / 5.21 s | not measured in the base world | | 3 s / 5 s |
+| `/locate` settlement from spawn | 1.67 s / 1.70 s | not measured | | 2 s / 4 s |
+| `/locate structure #minecraft:village`, fresh area (goes through our veto) | 4.86 s / 4.87 s | not measured in the base world | | 10 s / 20 s |
+| First tile of the metropolis, cold, planner | 1.21 s / 1.24 s | no vanilla equivalent | | 1 s / 4 s |
+| Load just before the planner step / the mod world / the base world | 4.3 / 2.3 / 3.3 (run 1); 1.9 / 3.5 / 2.0 (run 2) | | | |
 
-- **Cold chunk:** down from 70-120 s (section 6) and about 37 s before PARREADS on a busy machine, to 21.8 s on a quiet one. The slower host still takes 37.8 s.
-- **Region layer:** passes its ceiling locally and fails it on beebox. The 10 s ceiling now depends on the host.
-- **Teleport hold:** in the client test (load about 45) it gave up 5 times at 30 s. That isn't new: the hold limit is below the worst cold chunk on a loaded or slower machine.
-- **District plan median:** rose from 400-480 ms to 655-1263 ms. That's probably DS36ROOFS, and a separate item is diagnosing it. It's not the region layer.
-- **DEADPORT's verifier run** (beebox, load 2-5, run twice in ABBA order) agrees: region layer cold 11.0-13.2 s, `/locate` fresh 3.77 s, first metropolis tile 1.2-1.5 s.
+- **Cold arrival.** No row times "teleport → first frame" or "teleport → chunks around the player ready". The closest is the cold 9 x 9 block, and against vanilla it is the clear outlier: one chunk waits about 53 s where vanilla takes a third of a second, and the block takes a minute where vanilla takes under 3 s. The other 80 chunks cost about the same as vanilla (median 1.5x). The wait is the settlement-wide work a structure start waits for: the junction field and the quay trace (section 6).
+- **Spread between the runs**: the region row was 14.8 s in run 1 and 11.6 s / 11.7 s in runs 2 and 3 (run 3 was planner-only, `quietperf-bee-r3-evidence/`). Run 1's planner step started at load 4.3, right after its own build. So about 11.7 s is typical and run 1 is high. The worst flight tick differs by 2.7x between runs 1 and 2. Everything else agrees within 5 %. Before PARREADS, on the same quiet beebox, the region row was 36.4 s, the quays 69.5 s and the warmer path 103 s (5209d507, [PERFORMANCE](../PERFORMANCE.md) PARREADS).
+- **These are beebox numbers only.** They aren't comparable with local ones, and the old budgets were set from local runs.
+- **Not valid (busy host).** All of HEAVY6, which was this section's earlier table: locally the 15-min load was 21 at the start and the world half ran at load 6, and there was no check on beebox for other jobs. Also not valid: the teleport-hold give-ups (a client test at load about 45), DEADPORT's verifier run (load 2 to 5, unchecked), and the "about 37 s before PARREADS". None of them is used above.
 
-**Recommendation for 0.1.0 (release-plan question 4):** accept a cold-arrival wait of up to 60 s. 30 s is already missed on the slower host and on a loaded machine. Keep the `/locate` ceiling at 5 s: fresh is 2.7-4.6 s, so 6 s isn't needed yet. Raise the teleport hold's 30 s limit to that budget, and give the region-layer ceiling room for the slower host (or a value per host), so the tests stop failing there.
-  - @John 2026-10-30: NO.gif. What are these numbers compared to? 
+~~**Recommendation for 0.1.0 (release-plan question 4):** accept a cold-arrival wait of up to 60 s. [...]~~ Rejected by John 2026-10-30. The options are below.
+  - @John 2026-10-30: NO.gif. What are these numbers compared to?
+    - @assistant 2026-10-31: Mostly to nothing but their budgets, and none of them were valid measurements. What each row of the old table was: (1) "Worst cold chunk" was the wall time of one `getChunk(FULL)` call on a dedicated server, the slowest of a 9 x 9 block at the metropolis. There was no teleport and no client, so it was never "the wait a player teleporting in sees". It has a vanilla baseline (`base.cold.chunk.max`, the same block with settlements off), which the table left out. (2) The region layer, the quays, the first tile and the district plan are planner calls in a JUnit test. Vanilla does no such work, so there is no baseline, only the budget. (3) The `/locate` rows run only in the mod world, so there is no vanilla baseline. (4) The flight tick has a vanilla baseline (`base.flight.tick.max`), also left out. (5) Heap was already mod minus vanilla. Hosts and load: "Local, quiet" wasn't quiet (15-min load 21 at the start, the world half at load 6, other work unchecked). beebox wasn't checked for other jobs. The teleport-hold line came from a client test at load 45. Under the rule now in CLAUDE.md ("Parallel work": no other job or agent work on the host; measure on beebox), none of it counts. The table above replaces it: beebox only, quiet, mod against vanilla, run twice.
+
+## 8. Options for the cold-arrival wait (for John)
+
+The numbers are from section 7 (beebox, quiet). "Wait" means the cold 9 x 9 block at the metropolis: about 60 s with the mod against 2.6 s in vanilla. Its slowest chunk is about 53 s against 0.33 s.
+
+| Option | What the player sees | Cost to build | Risk |
+|---|---|---|---|
+| 1. Keep the 30 s teleport hold and the current work | A cold far teleport into a metropolis waits 30 s at "Generating terrain", then lands among chunks that keep arriving for about another 25 to 30 s (*estimate*, from the 53 s chunk) | None | The 30 s limit is already below the measured wait, so landing in ungenerated terrain is normal for metropolises |
+| 2. Raise the hold to cover the measured wait (about 60 s) | Up to a minute on "Generating terrain", then a ready city. About 23 times vanilla's wait for the same block | XS (one constant and its test) | Makes the slow path official. Nothing gets faster |
+| 3. Hold only for what the destination tile needs (section 4 B) | Shorter hold away from water. Waterfront tiles still wait for the quays (about 20 s of planner time) | S | Chunks further out appear later, as in vanilla |
+| 4. Take the quay trace out of the chunk pipeline, or make it lazy (sections 4 E and 6 a) | The cold chunk drops by most of the quay share. How much is not measured: 20 s of the 31 s warmer path is quays | M | Must keep `tile-border-agree` (quays cut the same way on both sides of a tile border) |
+| 5. Cheaper region work (section 4 D, F) | Shorter region row (11.6 to 14.8 s now, ceiling 10 s) | S to M each | F may bring back junction steps |
+| 6. Save warmed data with the world (section 4 H) | Nothing on the first visit. No second payment after a restart | M | File format, invalidation on `genVersion` |
+| 7. Raise the region row's ceiling to what beebox measures, or set ceilings per host | Nothing | XS | Hides growth unless the count rows stay (they do) |
+
+What you'd decide: (a) the acceptable cold-arrival wait, either in seconds or as a multiple of vanilla's wait for the same chunks; (b) whether 0.1.0 waits for 3 and/or 4, or ships with 1 or 2 and does them after; (c) the region row's ceiling (7, or after 5). Missing before (a) can be set from a real number: a perf row that teleports the mock player into the metropolis and times "teleport → every chunk in view distance is FULL" in both worlds. It isn't measured today; it's a small test-harness item.

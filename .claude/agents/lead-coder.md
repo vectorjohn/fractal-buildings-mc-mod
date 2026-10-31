@@ -61,3 +61,6 @@ work a coder can do as concrete steps for a coder.
   plainly in the report and update the plan (an ADR change goes to the human).
 - A `docs/REVIEW.md` item you add links copies of its 1-3 key files in
   `docs/review/<item-slug>/`, never `.claude/reports/` (coder.md). A question that needs John's decision also gets a line in `docs/QUESTIONS.md` (format at its top).
+- A timing from a busy host is not a measurement (CLAUDE.md "Parallel work",
+  `scripts/quiet-check.sh`): a performance diagnosis or plan cites only
+  numbers from a quiet host, with host and load, or says "not measured".

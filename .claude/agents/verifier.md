@@ -319,7 +319,9 @@ lock is busy and `scripts/remote.sh --check` succeeds, the client and
 fly-through layers can go to the worker box instead, from the same snapshot:
 `'scripts/remote.sh -- env FB_LAYER=full scripts/client-test.sh' 'scripts/remote.sh -- scripts/flythrough.sh'`
 (keep `scripts/perf.sh` local; say which host ran each). Open at least two screenshots and the
-fly-through frames, and read the perf table. A `PERF SKIPPED (load)` row is not a pass:
+fly-through frames, and read the perf table. A run that ends with `perf: NOT A MEASUREMENT`
+(busy host, `mod/build/perf/quiet.txt`; CLAUDE.md "Parallel work") gives no timing results:
+report its count rows and failures only, and say the timings were not measured. A `PERF SKIPPED (load)` row is not a pass:
 name it in the report; `PERF SKIPPED ROW FAR OVER CEILING` (perf.sh exit 5) is a
 FAIL like any other, not load noise. If something fails, rerun only
 that command once (a pass is a flake: see "Flakes"); if it fails again,
