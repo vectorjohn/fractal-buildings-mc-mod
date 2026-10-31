@@ -8,10 +8,12 @@
 # See CLAUDE.md "Parallel work". REVIEW.md: a union merge can also bring back
 # items already moved to REVIEW-ARCHIVE.md; scripts/review-check.sh finds them
 # (squash-merge.sh runs it).
+# docs/QUESTIONS.md is NOT union-merged (2026-10-31): the coordinator removes
+# answered lines, and union brought them back; a real conflict there now
+# stops docs-sync for a manual merge. See docs/NOTES.md.
 docs/research/INDEX.md  merge=union
 docs/NOTES.md           merge=union
 docs/ASSUMPTIONS.md     merge=union
 docs/REVIEW.md          merge=union
-docs/QUESTIONS.md       merge=union
 docs/REVIEW-ARCHIVE.md  merge=union
 planner-core/src/main/resources/styles/index.txt merge=union

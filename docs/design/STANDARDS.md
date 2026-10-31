@@ -382,9 +382,14 @@ and Minecraft block facts ([blocks.md](blocks.md), from John's
   another kind (most of the time, not always).
 - **Why:** "Lean towards having multiple bedrooms before ever having multiple
   other types of rooms."
-- **Scope:** houses.
+- **Scope:** houses, on the storeys at and above ground (the designed
+  living space). Basement rooms are not counted for or against it, a
+  basement bedroom included; DS-75 alone governs basement rooms (John
+  2026-10-31).
 - **Enforcement:** code, exists: `HouseProgramTest` (CIRC2).
-- **Status:** accepted. **Source:** John, REVIEW 5.11 CIRC, 2026-10-21.
+- **Status:** accepted. **Source:** John, REVIEW 5.11 CIRC, 2026-10-21;
+  scope (basements out) John 2026-10-31, chat with the coordinator ("Let
+  it be resolved (yes)").
 
 ## DS-32 High-rise floor programme
 
@@ -553,6 +558,10 @@ and Minecraft block facts ([blocks.md](blocks.md), from John's
   square to the facade, at least door width + 2 wide, inside a forecourt,
   with DS-45 rests. A rise of more than that is not built: the lobby goes
   at street level and the base cuts into the slope.
+- **Lobby at grade by default** (decided, John 2026-10-31): the lobby
+  floor is at the level of the street the main door faces (at most 2
+  broad steps, no front stair), the tower dug into a slope; the wide
+  flight is built only where 3-6 risers remain, in a forecourt.
 - **Why:** John, playtest 2026-10-31 (03.16.21): "a building of this
   enormity would have stairs (if any) more like this"; 6.31 STAIRJOG (a
   1-wide flight that jogs below a triple door with 1-3 rows of lot in
@@ -563,24 +572,42 @@ and Minecraft block facts ([blocks.md](blocks.md), from John's
   (ROADMAP 7.24 HRENTRY). None today. Hard (reachability of the main
   door).
 - **Status:** accepted (amends accepted DS-45). **Source:** John,
-  [QUESTIONS.md](../QUESTIONS.md), 2026-10-31 ("accept!"); proposed by
+  [QUESTIONS.md](../QUESTIONS.md), 2026-10-31 ("accept!"); lobby at
+  grade by default: John, QUESTIONS.md "High-rise lobby at street level",
+  2026-10-31 ("yes"); proposed by
   the architect, playtest answers 2026-10-31, Q1
   ([architect.md](../review/playtest1031-qs/architect.md)).
 
 ## DS-54 The built environment is walkable without jumping
 
-- **Rule:** a player can walk everywhere the settlement means people to go
-  (roads, streets, paths, stoops, porches, doors, stairs inside and out)
-  without jumping: every rise along the way is at most a half block (a slab
-  or a stair step).
+- **Rule** (narrowed to routes, John 2026-10-31): these routes are
+  walkable without jumping, every rise at most a half block (a slab, a
+  stair step, a path-to-slab step): (1) from the street or path in front
+  of a building to each of its doors (stoops, porches, landings,
+  thresholds); (2) inside buildings, between every room and storey
+  (ladders only where DS-22 allows them; wall walks by their stairs,
+  DS-9); (3) along every paved road, street, kerb (DS-31's half block),
+  junction, bridge end and sidewalk-to-door crossing. Tracks and paths in
+  a material without a half block follow the ground and keep DS-31's
+  full-block steps at least 3 apart (the exception below). Open ground,
+  gardens and yards off these routes are not covered. Hard.
+- **Door steps keep street headroom** (John 2026-10-31): a door step (the
+  step or landing cell in front of an exterior door) claims the 4 cells
+  above it as air, like a street, so no neighbour's tree crown, leaf or
+  trunk sits 3 above it. Hard. Work item: ROADMAP 6.32 DOORAIR.
+- **Wording as accepted on 2026-10-29** (before the narrowing): a player
+  can walk everywhere the settlement means people to go (roads, streets,
+  paths, stoops, porches, doors, stairs inside and out) without jumping:
+  every rise along the way is at most a half block (a slab or a stair
+  step).
 - **Why:** John, playtest 2026-10-28 (20.36.35, a house door one block above
   its path): "Rule proposal: the built environment should be walkable by the
   player without jumping." Also 20.17.47: "I would like as much as possible
   for the 'built environment' to be walkable by the player."
-- **Scope:** all tiers and types (as written). It overlaps DS-4, DS-5, DS-31
-  and DS-45, and would make every full-block step on a road, street crest,
-  kerb or stoop a violation, which is much of today's output (7.11 part 1
-  smooth roads is the road half).
+- **Scope:** all tiers and types, on the routes above. It overlaps DS-4,
+  DS-5, DS-31 and DS-45, and makes every full-block step on a paved road,
+  street crest, kerb or stoop a violation, which is much of today's output
+  (7.11 part 1 smooth roads is the road half).
 - **Exception (John 2026-10-29):** tracks and paths in a material with no
   half block (`dirt_path`, gravel and the like) may keep full-block steps, as
   DS-31 describes and as vanilla village paths do. John: "Lets allow tracks
@@ -595,7 +622,12 @@ and Minecraft block facts ([blocks.md](blocks.md), from John's
   Phase 6 is still running, a violation found is filed as a `#backlog` line
   (ROADMAP "Backlog (unscheduled)"), not as a P6 bug. John's words: "Approved
   by @John on 2026-10-29 with caveat - violations got to #backlog while still
-  in P6." **Source:** John,
+  in P6." Narrowed to routes 2026-10-31 (John, [QUESTIONS.md](../QUESTIONS.md):
+  "approved"; the architect's wording,
+  [playtest1028-qs/architect.md](../review/playtest1028-qs/architect.md) Q3).
+  Door-step headroom added 2026-10-31 (John, QUESTIONS.md "Door step air":
+  "yes"; from FOLIAGEFAIL 6.26,
+  [log](../log/2026-10-29-p6-foliagefail.md)). **Source:** John,
   [playtest notes 2026-10-28](../review/phase6/playtest-2026-10-28/review.md),
   20.36.35.
 
@@ -747,7 +779,12 @@ and Minecraft block facts ([blocks.md](blocks.md), from John's
   - a **lived-in lower level** (a split-level or walk-out basement that
     reads as a small flat rather than a cellar: a wet bar or kitchenette,
     a bath and a bedroom) as a rarer variant of the above, most likely on
-    a falling lot with a walk-out side.
+    a falling lot with a walk-out side;
+  - a **converted basement** (a growing family turned it into bedrooms):
+    an exception whose odds rise when the house above is small or has
+    fewer bedrooms than its programme wants (John 2026-10-31; how much
+    they rise is an agent's number,
+    [ASSUMPTIONS.md](../ASSUMPTIONS.md)).
 - **Rule (hard):** any basement room, these included, meets DS-53
   (reachable by a stair stacked with the main stair or a hatch, areaway
   or walk-out that meets DS-4, DS-6 and DS-8; never below nearby water)
@@ -755,10 +792,11 @@ and Minecraft block facts ([blocks.md](blocks.md), from John's
   more on every walkable cell; no window needed). A basement kitchen with
   a hearth or stove that smokes has a chimney (DS-15). DS-48 (rooms are
   walkable) holds.
-- **DS-12** (agent's reading, John to confirm): basement service and
-  finished rooms don't count for DS-12 (bedrooms first); a basement
-  bedroom counts as a bedroom, and a basement kitchen or living room as a
-  room of its kind.
+- **DS-12** (decided, John 2026-10-31): DS-12 (bedrooms first) applies
+  to the storeys at and above ground only. Basement rooms, bedrooms and
+  kitchens included, are not counted for or against it; this rule alone
+  governs them (the default basement uses and the seeded exceptions
+  above).
 - **Why:** John 2026-10-31 on the interior designer's "never a bedroom
   or a kitchen": "too prescriptive. Sometimes basements have bedrooms and
   kitchens *especially* in modern cities. I think it's more like,
@@ -774,7 +812,9 @@ and Minecraft block facts ([blocks.md](blocks.md), from John's
   use and the bedroom and kitchen shares stay near the defaults; every
   basement room is reachable and lit (hard). None today.
 - **Status:** accepted as chance-based (John 2026-10-31). **Source:**
-  John, [QUESTIONS.md](../QUESTIONS.md), 2026-10-31; proposed by the
+  John, [QUESTIONS.md](../QUESTIONS.md), 2026-10-31; DS-12 scope and the converted-basement
+  exception: John 2026-10-31, chat with the coordinator ("Let it be
+  resolved (yes)"); proposed by the
   interior designer, basements question 2026-10-26
   ([basements-interior.md](../review/reports/basements-interior.md),
   "Basements are service space").
@@ -990,6 +1030,31 @@ and Minecraft block facts ([blocks.md](blocks.md), from John's
   [QUESTIONS.md](../QUESTIONS.md), 2026-10-31 ("Yes accept"); proposed
   by the architect, playtest answers 2026-10-31, Q2
   ([architect.md](../review/playtest1031-qs/architect.md)).
+
+## DS-56 Roads end at something
+
+- **Rule:** every road, street and track ends at a junction, a settlement
+  gate, a building or yard it serves, or a destination feature (ferry
+  landing, quarry, lookout, farm gate); never in open ground. A road that
+  loses its destination is removed back to its last junction. Only tracks
+  and paths (2 wide or less) may end at a natural place (shore, viewpoint,
+  field edge).
+- **Why:** John, playtest 2026-10-28 (20.42.25: "Two roads to nowhere";
+  [20.43.12](../review/phase6/playtest-2026-10-28/images/2026-10-28_20.43.12.jpg):
+  "an intentional, arterial road that abruptly just stops with nothing
+  around it").
+- **Scope:** roads between settlements, exits and streets; all tiers.
+- **Enforcement:** code candidate: every road end node is a junction,
+  gate, door or yard, or a tagged feature; extends `dead-end-port`,
+  `main-dead-end` and `bridge-dead-end` (6.15/6.16) to all ranks. Partial
+  today. A stub that must stay ends at a ferry landing (the architect's
+  answer to DEADPORT case (c) and the long crossings). Hard (agent's
+  reading: no road ends in open ground).
+- **Status:** accepted, including the P6 trim of stubs back to the last
+  junction and the ferry-landing end for a stub that must stay. **Source:**
+  John, [QUESTIONS.md](../QUESTIONS.md), 2026-10-31 ("Yes, approved.");
+  proposed by the architect, playtest 2026-10-28 questions, Q2
+  ([answers](../review/playtest1028-qs/architect.md)).
 
 ## DS-21 Hamlets and villages are not ruler-straight
 
@@ -1253,15 +1318,26 @@ DS-25 with an exception for deliberate repeating patterns.
 - **Addition** to DS-35: a workshop's lean-to and its
   living wing each get their own exterior person door (the lean-to's onto
   the yard on its back or side face; the living wing's from its kitchen),
-  besides the cart door.
+  besides the cart door. A living wing too small for a kitchen (a lone
+  bedroom, under about 20 interior cells; agent's number) gets no door of
+  its own: the hall gets a plain person door instead, since a bedroom
+  never takes an outside door (DS-35). The lean-to keeps its yard door at
+  every size.
 - **Why:** John, playtest 2026-10-26 (21.27.38), "back door to the
   lean-to"; in 124 CLI workshop plans the cart door is the only way out.
 - **Scope:** type `workshop`.
 - **Enforcement:** code, exists (DS35DOORS, 2026-10-28): folded into
-  `entrance-count` (a workshop wing and lean-to each have a door).
+  `entrance-count` (a workshop wing and lean-to each have a door). The
+  generator already builds the small-wing case this way (36 of 90 wings
+  in the interior designer's sample put the door on the hall).
 - **Status:** #Approved by @John on 2026-10-28 (amends DS-35). **Source:** interior
   designer, playtest questions 2026-10-27
   ([playtest1026-qs-interior.md](../review/reports/playtest1026-qs-interior.md), Q3).
+  Small-wing clause added 2026-10-31: John, [QUESTIONS.md](../QUESTIONS.md)
+  ("take interior designer's rec here"), from the interior designer's
+  DS35DOORS round 2 recommendation
+  ([p6-ds35doors-interior.md](../review/phase6/ds35doors/p6-ds35doors-interior.md),
+  "For John").
 
 ## DS-36 Smooth pitched roofs
 
@@ -1398,30 +1474,9 @@ copies are under `docs/review/` where they exist.
   questions, Q1 ([answers](../review/playtest1028-qs/architect.md), from
   playtest1028-qs-architect.md).
 
-## DS-56 Roads end at something
-
-- **Rule:** every road, street and track ends at a junction, a settlement
-  gate, a building or yard it serves, or a destination feature (ferry
-  landing, quarry, lookout, farm gate); never in open ground. A road that
-  loses its destination is removed back to its last junction. Only tracks
-  and paths (2 wide or less) may end at a natural place (shore, viewpoint,
-  field edge).
-- **Why:** John, playtest 2026-10-28 (20.42.25: "Two roads to nowhere";
-  [20.43.12](../review/phase6/playtest-2026-10-28/images/2026-10-28_20.43.12.jpg):
-  "an intentional, arterial road that abruptly just stops with nothing
-  around it").
-- **Scope:** roads between settlements, exits and streets; all tiers.
-- **Enforcement:** code candidate: every road end node is a junction,
-  gate, door or yard, or a tagged feature; extends `dead-end-port`,
-  `main-dead-end` and `bridge-dead-end` (6.15/6.16) to all ranks. Partial
-  today. A stub that must stay ends at a ferry landing (the architect's
-  answer to DEADPORT case (c) and the long crossings; John to decide).
-- **Status:** proposed. **Source:** architect, playtest 2026-10-28
-  questions, Q2 ([answers](../review/playtest1028-qs/architect.md)).
-
 ## DS-56 amendment: exit roads with nothing beyond
 
-- **Proposed addition** to proposed DS-56: an exit gate keeps its exit
+- **Proposed addition** to DS-56 (accepted 2026-10-31): an exit gate keeps its exit
   road only while a drawn road continues beyond it. Otherwise the road is
   kept only through continuous frontage from the town outward, ending at
   the last junction or one lot depth past the last lot, in a turning head
@@ -1440,7 +1495,7 @@ copies are under `docs/review/` where they exist.
   frontage, plus a bridge-on-unserved-exit check; extend `main-dead-end`
   to count lot-free exit length. Partial today (6.22 DEADPORT, 6.25
   MAINSTUB).
-- **Status:** proposed (amends the proposed DS-56). **Source:** architect,
+- **Status:** proposed (amends DS-56, accepted 2026-10-31). **Source:** architect,
   p6-mainstub-architect.md and p6-deadport-architect.md (2026-10-29).
 
 ## DS-57 Roads don't double back

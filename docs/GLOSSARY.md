@@ -48,6 +48,7 @@ Item codes (PARREADS, MAINSTUB, TPHOLD, ...) and run terms, one row each. **Gene
 | DL |  | Phase 5 step: district layout (5.2 detail half) | done | [[docs/log/2026-10-21-p5-dl-layout|log]] |
 | docs-feedback |  | the worktree where John edits docs in SilverBullet; the coordinator syncs it into the run branch | - | [[CLAUDE|CLAUDE]] |
 | DOOR2 |  | wide-door steps on sloped blocks | done | [[docs/log/2026-10-26-p7-door2|log]] |
+| DOORAIR | 6.32 | door steps claim street headroom | open | [[docs/ROADMAP|ROADMAP 6.32]] |
 | DOORBANK | 6.20 | doors below an embankment street | done | [[docs/ROADMAP|ROADMAP 6.20]] |
 | DOORGLASS |  | a shop-front door set between glass panes; panes don't attach to a door, so the glazing stops short of it.... | polish | [[docs/ROADMAP|ROADMAP polish]] |
 | DORMER |  | dormer stairs: dormer roofs built as stair blocks (John's 2026-10-26 playtest) | polish | [[docs/ROADMAP|ROADMAP polish]] |

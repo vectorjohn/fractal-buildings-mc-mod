@@ -262,6 +262,7 @@ Still some floating foliage above a road.
 #backlog
 -->
   - @assistant 2026-10-29: unscheduled backlog. This breaks DS-20 (no floating foliage over roads, accepted); the coordinator asks whether it should be a P6 bug.
+  - @assistant 2026-10-31: you answered "backlog" in QUESTIONS.md, so it stays in ROADMAP "Backlog (unscheduled)", not a P6 bug. 6.29 ROADLEAFORDER (road-window foliage) may already have fixed it; not checked in game.
 
 
 ![[images/2026-10-28_20.17.47.jpg|800]]
@@ -282,6 +283,7 @@ Something tells me that tree didn’t just grow there naturally (a floating tree
 #backlog #floating
 -->
   - @assistant 2026-10-29: unscheduled backlog. Breaks DS-20, like 20.16.21; same question to you.
+  - @assistant 2026-10-31: backlog, as you answered in QUESTIONS.md (same as 20.16.21).
 
 
 ![[images/2026-10-28_20.25.33.jpg|800]]
