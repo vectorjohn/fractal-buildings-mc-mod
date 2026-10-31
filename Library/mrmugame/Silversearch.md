@@ -58,9 +58,9 @@ config.set {
     -- Breaks urls down into searchable words
     tokenizeUrls = true,
     -- Breaks words seperated with camel case into searchable words
-    splitCamelCase = true,
+    splitCamelCase = false,
     -- Increases the fuzziness of the full-text search, options are "0", "1", "2"
-    fuzziness = "1",
+    fuzziness = "0",
     -- Puts newlines into the excerpts as opposed to rendering it as one continous string
     renderLineReturnInExcerpts = true,
     -- You can specify paths to ignore while indexing here using git ignore syntax (You have to Reindex for it to take effect)

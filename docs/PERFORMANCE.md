@@ -358,3 +358,4 @@ How to use it:
 - **Budget**: the region row (6 s, ceiling 10 s) is now just under its ceiling at that load; not re-decided.
 - **Decision**: open (the region row's budget, and the teleport tradeoff, still wait on John; REGIONPERF brief).
 - **Improve**: re-measure on a quiet machine; bind empty biome tags in `TerrainDumpTool` (the planner rows pay a "Tags not bound" exception per biome read that the game never pays, NOTES); take the quay trace out of the chunk pipeline (profile candidate 1) or make it lazy (candidate 2).
+- @John 2026-10-30: @coordinator For future reference, if you didn’t measure performance on a quiet machine **you did not measure**. Don’t report invalid results like this please. Do it again. Unless it shows such a drastic improvement that you get a speedup despite being busy.

@@ -141,3 +141,4 @@ Measured by COLDCHUNK (`.claude/reports/p6-coldchunk.md`), and seen again in the
 - **DEADPORT's verifier run** (beebox, load 2-5, run twice in ABBA order) agrees: region layer cold 11.0-13.2 s, `/locate` fresh 3.77 s, first metropolis tile 1.2-1.5 s.
 
 **Recommendation for 0.1.0 (release-plan question 4):** accept a cold-arrival wait of up to 60 s. 30 s is already missed on the slower host and on a loaded machine. Keep the `/locate` ceiling at 5 s: fresh is 2.7-4.6 s, so 6 s isn't needed yet. Raise the teleport hold's 30 s limit to that budget, and give the region-layer ceiling room for the slower host (or a value per host), so the tests stop failing there.
+  - @John 2026-10-30: NO.gif. What are these numbers compared to? 
