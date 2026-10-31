@@ -1,0 +1,33 @@
+plugins {
+	id 'net.fabricmc.fabric-loom' version "${loom_version}"
+}
+
+// PERFBASE: the vanilla half of the perf world run. Contains only the measuring harness (VanillaPerfHarness) and the two mod-free helper
+// files it shares with the mod's perf harness (compiled from mod/src/gametest, so the rows are produced by the same code). The harness's
+// own tiny mod id is "fbperfbase"; nothing of fractalbuildings (no jar, no mixin, no entrypoint, no planner-core) is on the classpath.
+dependencies {
+	minecraft "com.mojang:minecraft:${project.minecraft_version}"
+	implementation "net.fabricmc:fabric-loader:${project.loader_version}"
+	implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
+}
+
+sourceSets.main.java {
+	srcDir 'src/main/java'
+	srcDir '../../mod/src/gametest/java'
+	include 'dev/fractalbuildings/gametest/perf/PerfCore.java'
+	include 'dev/fractalbuildings/gametest/perf/MockPlayer.java'
+	include 'dev/fractalbuildings/gametest/perf/VanillaPerfHarness.java'
+}
+
+loom {
+	runs {
+		// Seed, view distance and eula come from the run dir (written by scripts/perf.sh). -Pfb.perfMode=main|arrival, -Pfb.perfOut=<dir>.
+		perfBase {
+			server()
+			runDir "../../mod/build/run/perfServerBase"
+			ideConfigGenerated false
+			property 'fb.perf.mode', (findProperty('fb.perfMode') ?: 'main').toString()
+			property 'fb.perf.out', (findProperty('fb.perfOut') ?: file('../../mod/build/perf').path).toString()
+		}
+	}
+}

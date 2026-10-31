@@ -1,0 +1,11 @@
+{
+	"schemaVersion": 1,
+	"id": "fbperfbase",
+	"version": "1.0.0",
+	"name": "Perf base harness (vanilla)",
+	"description": "Measuring harness only (PERFBASE); changes nothing about world generation.",
+	"license": "MIT",
+	"environment": "server",
+	"entrypoints": { "server": ["dev.fractalbuildings.gametest.perf.VanillaPerfHarness"] },
+	"depends": { "fabricloader": ">=0.19.5", "minecraft": "~26.3", "java": ">=25", "fabric-api": "*" }
+}

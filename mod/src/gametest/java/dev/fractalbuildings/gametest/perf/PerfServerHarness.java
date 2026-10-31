@@ -26,6 +26,7 @@ public final class PerfServerHarness {
 
 	private final PerfSupport s = new PerfSupport();
 	private final boolean mod = !"base".equals(System.getProperty("fb.perf.variant", "mod"));
+	// PERFBASE: the base half is tools/vanilla-server (VanillaPerfHarness), not this class; the frequency-0 variant below is kept only for ad-hoc comparison.
 	private final String p = mod ? "mod." : "base.";
 	private final PerfProfile prof = new PerfProfile(s, p, mod ? "mod" : "base");
 	private final List<Double> tickMs = new ArrayList<>();

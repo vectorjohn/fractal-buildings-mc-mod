@@ -157,7 +157,7 @@ Rewritten 2026-10-31 (assistant, QUIETPERF). The HEAVY6 table that stood here wa
 
 **How it was measured.** `scripts/perf.sh`, twice (plus a third planner-only run for the region rows), on beebox (12 CPUs, AMD GPU; the world half runs on a dedicated server with no renderer). Each run was sent when `ssh beebox job status` showed nothing else running or queued. It was checked every minute during the run and again after: nothing else ran on beebox at any point. Run 2 also ran `scripts/quiet-check.sh` inside the job before and after each step (no other job, other processes under 0.05 cores). Run 1 did the mod world first, run 2 the vanilla base first. The product code is the same as run-branch 64d76a52 in both (the branch commits differ only in scripts and docs). The load is the 1-min loadavg sampled just before each step. It includes the run's own build and threads, so it is recorded, not judged. Evidence (forensic source, not tracked): `.claude/reports/quietperf-bee-r1-evidence/d43e5638cc-20261031T070329Z/` and `quietperf-bee-r2-evidence/3ee0a7b1ab-20261031T071801Z/`.
 
-**The vanilla baseline** is the same server, seed (987654321) and path with the region layer's frequency at 0: the same terrain with no settlements, roads or quays (`base.*` rows). Rows marked "no vanilla equivalent" are work vanilla never does, so their only reference is the budget.
+**The vanilla baseline (WRONG, see the correction below the table; it was the mod with frequency 0):** the same server, seed (987654321) and path with the region layer's frequency at 0: the same terrain with no settlements, roads or quays (`base.*` rows). Rows marked "no vanilla equivalent" are work vanilla never does, so their only reference is the budget.
 
 | What is timed (start → end) | Mod, run 1 / run 2 | Vanilla, run 1 / run 2 | Mod ÷ vanilla | Budget / ceiling |
 |---|---|---|---|---|
@@ -180,6 +180,25 @@ Rewritten 2026-10-31 (assistant, QUIETPERF). The HEAVY6 table that stood here wa
 | `/locate structure #minecraft:village`, fresh area, **base world** (the vanilla baseline of the two `/locate` rows above; 5.26 s / 5.26 s) | | 5.26 s / 5.26 s | our settlement locate 1.02x, our veto-ed village locate 0.92x | none |
 | First tile of the metropolis, cold, planner | 1.21 s / 1.24 s | no vanilla equivalent | | 1 s / 4 s |
 | Load just before the planner step / the mod world / the base world | 4.3 / 2.3 / 3.3 (run 1); 1.9 / 3.5 / 2.0 (run 2) | | | |
+
+**Correction 2026-10-31 (PERFBASE): the "vanilla" column above was not vanilla.** `scripts/perf.sh` ran its base world as the mod with the region layer's frequency at 0. Before SKIPROLL that world still did region reads for the village veto, so its village `/locate` cost 5.26 s; after SKIPROLL it skips them (0.25 s). The "mod ÷ vanilla" ratios in this section, in COLDARRIVAL and in the HEAVY10 report therefore compared against a moving, non-vanilla baseline. Since PERFBASE the base half is `tools/vanilla-server`: Minecraft + Fabric Loader + Fabric API and the measuring harness only (no fractalbuildings jar, mixin, structure or log line; `perf.sh` fails the run if the base log mentions the mod). Same seed, coordinates and rows. Corrected numbers, **two `scripts/perf.sh` runs on beebox (12 CPUs, dedicated server, no renderer), quiet both times** (`quiet-check`: no other jobs, other-cpu 0.03 to 0.05; loadavg 1.1 to 4.0, all from the run's own work), commit `eb35c7664c`, evidence `p6-perfbase-evidence/eb35c7664c-20261031T183830Z` and `...T185453Z`:
+
+| What is timed | Mod, run 1 / 2 | Vanilla, run 1 / 2 | Mod ÷ vanilla |
+|---|---|---|---|
+| Cold 9 x 9 block at the metropolis, whole block | 49.7 s / 49.6 s | 2.35 s / 2.35 s | about 21x |
+| Slowest chunk of it | 38.9 s / 38.7 s | 0.20 s / 0.18 s | about 190x to 215x |
+| Median chunk of it | 39 ms / 40 ms | 24 ms / 25 ms | 1.6x |
+| Mean chunk of the next block (warmed) | 63.6 ms / 62.1 ms | 23.7 ms / 23.6 ms | 2.7x / 2.6x |
+| Worst server tick, flight to the gate city | 914 ms / 901 ms | 135 ms / 170 ms | 6.8x / 5.3x |
+| p95 server tick, same flight | 10.6 ms / 11.1 ms | 9.7 ms / 9.6 ms | about 1.1x |
+| Heap after GC | 482 MB / 480 MB | 290 MB / 290 MB | +192 MB / +190 MB |
+| Region-file growth, 162 chunks | 2.26 MB / 2.26 MB | 1.70 MB / 1.72 MB | +32 % / +31 % |
+| Village `/locate`, fresh area (through our veto) | 3.92 s / 3.93 s | 0.23 s / 0.30 s | about 17x / 13x |
+| Settlement `/locate`, fresh area (no vanilla equivalent; vs vanilla village locate) | 4.91 s / 4.89 s | 0.23 s / 0.30 s | about 21x / 16x |
+| Cold arrival (teleport to the metropolis centre, 9 x 9 view FULL) | 69.9 s / 68.9 s | 4.5 s / 3.6 s | about 15.6x / 19.0x |
+| Longest server tick during that arrival | 9.5 s / 8.5 s | 96 ms / 78 ms | about 98x / 109x |
+
+What changed against the old table: vanilla's `/locate` is 0.25 s, not 5.26 s, so the "our locate costs the same as vanilla (1.02x)" reading was wrong: it is 13x to 21x. Vanilla's cold block is about 2.4 s (was 2.6 s), its arrival 3.6 to 4.5 s (was 4.7 to 5.1 s). The mod-side numbers moved with later work (QUAYLAZY, SKIPROLL), not with this change. Vanilla arrival varies 0.9 s between its two runs; the vanilla `/locate` 0.06 s.
 
 - **Cold arrival.** No row times "teleport → first frame" or "teleport → chunks around the player ready". The closest is the cold 9 x 9 block, and against vanilla it is the clear outlier: one chunk waits about 53 s where vanilla takes a third of a second, and the block takes a minute where vanilla takes under 3 s. The other 80 chunks cost about the same as vanilla (median 1.5x). The wait is the settlement-wide work a structure start waits for: the junction field and the quay trace (section 6).
 - **Spread between the runs**: the region row was 14.8 s in run 1 and 11.6 s / 11.7 s in runs 2 and 3 (run 3 was planner-only, `quietperf-bee-r3-evidence/`). Run 1's planner step started at load 4.3, right after its own build. So about 11.7 s is typical and run 1 is high. The worst flight tick differs by 2.7x between runs 1 and 2. Everything else agrees within 5 %. Before PARREADS, on the same quiet beebox, the region row was 36.4 s, the quays 69.5 s and the warmer path 103 s (5209d507, [PERFORMANCE](../PERFORMANCE.md) PARREADS).

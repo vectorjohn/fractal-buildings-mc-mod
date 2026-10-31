@@ -55,6 +55,7 @@ path	scripts/order-test.sh	test-infra	order	order harness
 path	scripts/perf*	test-infra	perf	perf runner and budget check
 path	scripts/flythrough.sh	test-infra	flythrough	fly-through runner
 path	scripts/server-only-test.sh	test-infra	server-only	server-only runner
+path	tools/vanilla-server/*	test-infra	perf	the vanilla server of the perf base world (PERFBASE)
 path	tools/vanilla-client/*	test-infra	server-only	the unmodded client of the server-only test
 path	scripts/compat-matrix.sh	test-infra	compat	compat matrix runner
 path	scripts/fetch-test-mods.sh	test-infra	compat	compat mod sets

@@ -9,8 +9,9 @@
 # Takes the heavy lock itself (timings); don't wrap it in flock. Steps:
 #   1. mod:test PerfPlannerTest (no server): cold plan, region layer, multi-player cache pressure, veto query -> mod/build/perf/planner.json
 #   2. the world half, on a DEDICATED SERVER with no client and no renderer (PERFSRV; timings no longer share cores with lavapipe):
-#      :mod:runPerfServer twice, variant mod then base (PerfServerHarness: /locate, a mock player's elytra-speed flight, cold and warmed
-#      chunks vs a no-settlement world, region growth, heap, lane counters) -> world-mod.json, world-base.json, merged by
+#      the mod world (:mod:runPerfServer, PerfServerHarness) then the VANILLA world (PERFBASE: tools/vanilla-server runPerfBase, VanillaPerfHarness,
+#      Fabric Loader + Fabric API and the harness only, no fractalbuildings; it was the mod with settlement frequency 0 before): /locate, a mock
+#      player's elytra-speed flight, cold and warmed chunks vs vanilla, region growth, heap, lane counters) -> world-mod.json, world-base.json, merged by
 #      scripts/perf-merge.mjs into mod/build/perf/world.json. The run dir mod/build/run/perfServer needs eula.txt with eula=true; the script
 #      writes it when missing (CLAUDE.md standing EULA approval: a local test server, 127.0.0.1, online-mode=false, set below).
 #      --client runs the OLD form instead: mod:runClientGameTest with FB_PERF=only (PerfClientGameTest, in a lavapipe-rendered client),
@@ -37,6 +38,7 @@ PLANNER_ONLY=0; CHECK_ONLY=0; CLIENT=0; MOD_ONLY=0; WORLD_ONLY=0
 for a in "$@"; do case "$a" in --planner-only) PLANNER_ONLY=1 ;; --check-only) CHECK_ONLY=1 ;; --client) CLIENT=1 ;; --world-mod-only) MOD_ONLY=1 ;; --world-only) WORLD_ONLY=1 ;; *) echo "unknown $a" >&2; exit 2 ;; esac; done
 LOGDIR="$ROOT/mod/build/perf"
 SRV="$ROOT/mod/build/run/perfServer"
+SRVBASE="$ROOT/mod/build/run/perfServerBase"
 if [ "$CHECK_ONLY" = 0 ]; then
 	if [ "$PLANNER_ONLY" = 0 ] && [ "$CLIENT" = 0 ] && ! grep -qx 'eula=true' "$SRV/eula.txt" 2>/dev/null; then
 		# standing EULA approval (CLAUDE.md): local test server bound to 127.0.0.1 with online-mode=false (server.properties below)
@@ -82,8 +84,10 @@ if [ "$CHECK_ONLY" = 0 ]; then
 		for mode in $MODES; do
 		OUTN="world"; [ "$mode" = arrival ] && OUTN="world-arrival"
 		for v in $VARIANTS; do
-			rm -rf "$SRV/world" "$SRV/logs"; rm -f "$LOGDIR/$OUTN-$v.json"
-			cat > "$SRV/server.properties" <<P
+			VSRV="$SRV"; [ "$v" = base ] && VSRV="$SRVBASE" # PERFBASE: the base world is the vanilla server of tools/vanilla-server (no fractalbuildings at all)
+			mkdir -p "$VSRV"; echo eula=true > "$VSRV/eula.txt"
+			rm -rf "$VSRV/world" "$VSRV/logs"; rm -f "$LOGDIR/$OUTN-$v.json"
+			cat > "$VSRV/server.properties" <<P
 online-mode=false
 server-ip=127.0.0.1
 server-port=25598
@@ -99,10 +103,16 @@ spawn-protection=0
 max-tick-time=-1
 P
 			set +e
-			timeout "${FB_PERF_TIMEOUT:-3600}" "$ROOT/scripts/dev" --fresh ./gradlew --console=plain --no-daemon :mod:runPerfServer -Pfb.perfVariant=$v -Pfb.perfMode=$mode -Pfb.perfOut="$LOGDIR" 9>&- > "$LOGDIR/$OUTN-$v.log" 2>&1
+			if [ "$v" = base ]; then
+				timeout "${FB_PERF_TIMEOUT:-3600}" "$ROOT/scripts/dev" --fresh ./gradlew --console=plain --no-daemon -p tools/vanilla-server runPerfBase -Pfb.perfMode=$mode -Pfb.perfOut="$LOGDIR" 9>&- > "$LOGDIR/$OUTN-$v.log" 2>&1
+			else
+				timeout "${FB_PERF_TIMEOUT:-3600}" "$ROOT/scripts/dev" --fresh ./gradlew --console=plain --no-daemon :mod:runPerfServer -Pfb.perfVariant=$v -Pfb.perfMode=$mode -Pfb.perfOut="$LOGDIR" 9>&- > "$LOGDIR/$OUTN-$v.log" 2>&1
+			fi
 			rc=$?
 			set -e
 			grep -E "\[PERF\]|FAILED|BUILD" "$LOGDIR/$OUTN-$v.log" || true
+			# PERFBASE: the vanilla run must contain nothing of ours (checked on its log), or it is not a vanilla baseline
+			if [ "$v" = base ] && grep -qi "fractalbuildings\|Fractal Buildings" "$LOGDIR/$OUTN-$v.log" "$VSRV/logs/latest.log" 2>/dev/null; then echo "PERF FAIL: the base run mentions fractalbuildings: not a vanilla baseline" >&2; exit 1; fi
 			if [ "$rc" != 0 ] || [ ! -f "$LOGDIR/$OUTN-$v.json" ]; then echo "PERF FAIL: the $mode $v server run exited $rc or wrote no rows (see $LOGDIR/$OUTN-$v.log)" >&2; tail -30 "$LOGDIR/$OUTN-$v.log" >&2; exit 1; fi
 		done
 		done

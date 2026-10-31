@@ -1,0 +1,10 @@
+// Standalone build (NOT part of the root build): a dedicated Minecraft server with Fabric Loader and Fabric API only, NO fractalbuildings
+// (PERFBASE): the vanilla half of scripts/perf.sh. Run with: ./gradlew -p tools/vanilla-server runPerfBase
+pluginManagement {
+	repositories {
+		maven { name = 'Fabric'; url = 'https://maven.fabricmc.net/' }
+		mavenCentral()
+		gradlePluginPortal()
+	}
+}
+rootProject.name = 'vanilla-server'
