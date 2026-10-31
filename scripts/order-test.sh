@@ -31,7 +31,12 @@
 # copies, which leave ignored files out, work): local test servers in the project's test dirs, 127.0.0.1, online-mode=false, covered by
 # the standing EULA approval in CLAUDE.md. Each run checks its server.properties binds 127.0.0.1 with online-mode=false (else that run FAILs, unstarted).
 #
-# Works from any cwd and worktree; enters the dev shell itself. Env: FB_ORDER_TIMEOUT (seconds per run, default 3000), FB_ORDER_PORT (first port, default 25610).
+# Bounded shutdown (ORDERHANG): once a run's verdict file exists the run has FB_ORDER_GRACE seconds (default 120) to exit; after that
+# the script prints `SHUTDOWN SLOW`, saves a jstack of its java processes (build/order-test/<label>.hang-jstack.<pid>), kills that
+# run's own process group and counts the run by its verdict (not INCOMPLETE). FB_ORDER_TIMEOUT only limits runs with no verdict.
+# Self-test: scripts/order-run-bounded.test.sh.
+#
+# Works from any cwd and worktree; enters the dev shell itself. Env: FB_ORDER_TIMEOUT (seconds per run without a verdict, default 3000), FB_ORDER_GRACE (shutdown grace, default 120), FB_ORDER_PORT (first port, default 25610).
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 if [ -z "${IN_NIX_SHELL:-}" ]; then exec "$ROOT/scripts/dev" "$0" "$@"; fi
@@ -140,7 +145,7 @@ P
 	rm -f "$dir/config/fractalbuildings.json"
 	[ "$label" = config ] && echo '{"cellSize": 2048}' > "$dir/config/fractalbuildings.json"
 	local t0=$SECONDS rc=0
-	timeout "${FB_ORDER_TIMEOUT:-3000}" ./gradlew --console=plain --no-daemon :mod:runOrderServer -Pfb.orderRun="$label" -Pfb.orderOut="$OUT" -Pfb.orderRadius="$RADIUS" > "$OUT/$label.log" 2>&1 || rc=$?
+	"$ROOT/scripts/order-run-bounded.sh" "$OUT/$label.verdict" "${FB_ORDER_TIMEOUT:-3000}" "${FB_ORDER_GRACE:-120}" -- ./gradlew --console=plain --no-daemon :mod:runOrderServer -Pfb.orderRun="$label" -Pfb.orderOut="$OUT" -Pfb.orderRadius="$RADIUS" > "$OUT/$label.log" 2>&1 || rc=$?
 	cp "$dir/logs/latest.log" "$OUT/$label.server.log" 2>/dev/null || true
 	echo "order-test: $label finished in $((SECONDS - t0)) s (exit $rc): $(cat "$OUT/$label.verdict" 2>/dev/null | cut -c1-200 || true)" >&2
 }
