@@ -2,6 +2,8 @@ package dev.fractalbuildings.mod.teleport;
 
 import dev.fractalbuildings.mod.FractalBuildingsMod;
 import dev.fractalbuildings.mod.worldgen.RegionWarmer;
+import dev.fractalbuildings.mod.worldgen.WorldPlanners;
+import dev.fractalbuildings.mod.worldgen.Workers;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -42,13 +44,25 @@ public final class TeleportHold {
 	static final int RADIUS = 1;
 	/** Jumps shorter than this are never held, whatever the view distance. */
 	static final int MIN_DISTANCE = 64;
+	/** The default of {@link #timeoutMillis}: 90 s (TPHOLD15 r2, John 2026-10-31: until QUAYLAZY lands and is measured; the hold still ends as soon as the 3 x 3 is FULL, so the cap only matters on cold metropolis arrivals, about 70 s). */
+	public static final long DEFAULT_TIMEOUT_MILLIS = 90_000;
 	/** Longest wait, milliseconds of wall clock (a lagging server still counts real time), before the teleport happens anyway. */
-	public static volatile long timeoutMillis = 30_000;
+	public static volatile long timeoutMillis = DEFAULT_TIMEOUT_MILLIS;
 	/** Jumps shorter than this many blocks are never held; null means the server's view distance. */
 	public static volatile Integer minDistanceOverride = null;
 	public static volatile boolean enabled = !"false".equals(System.getProperty("fractalbuildings.teleportHold"));
+	/**
+	 * TPHOLD15 option 3 (John: "hold for what the tile requires"): on a planner-backed level the hold ends once the destination tile is planned
+	 * and warmed (or at the limit), without waiting for the 3 x 3 chunks. OFF by default: the teleport then places the player in a chunk that is
+	 * not FULL yet, and vanilla loads it synchronously on the server thread, which freezes the whole server until it is generated (observed:
+	 * about 40 s on beebox after a 15 s limit, see docs/log/2026-10-31-p6-tphold15.md). Players never fall or take damage. On with
+	 * -Dfractalbuildings.teleportHoldReleaseOnPlan=true.
+	 */
+	public static volatile boolean releaseOnPlan = "true".equals(System.getProperty("fractalbuildings.teleportHoldReleaseOnPlan"));
 	/** Test hook: replaces the "destination chunks are FULL" future. */
 	public static volatile Supplier<CompletableFuture<?>> testLoad = null;
+	/** Test hook: replaces the destination warm future and marks the level as planner-backed. */
+	public static volatile Supplier<CompletableFuture<Void>> testWarm = null;
 	/** Test hook: sees (player, destination chunk all FULL?, timed out?) at the moment a held teleport is replayed. */
 	public static volatile Released testReleased = null;
 
@@ -62,10 +76,12 @@ public final class TeleportHold {
 		CompletableFuture<Void> warm;
 		CompletableFuture<?> load;
 		boolean ticketed;
+		boolean planned; // a planner-backed level: the hold ends when the destination is planned, not when its chunks are FULL
 		ServerLevel ticketLevel;
 		Vec3 dest;
 		int age;
-		final long deadline = System.nanoTime() + timeoutMillis * 1_000_000L;
+		final long limitMillis = timeoutMillis;
+		final long deadline = System.nanoTime() + limitMillis * 1_000_000L;
 		final Supplier<CompletableFuture<?>> load0 = testLoad;
 		final Released released = testReleased;
 
@@ -99,7 +115,9 @@ public final class TeleportHold {
 		Hold h = new Hold(player, t);
 		h.dest = d;
 		h.pos = ChunkPos.containing(BlockPos.containing(d));
-		h.warm = RegionWarmer.warmPoint(level, (int) Math.floor(d.x), (int) Math.floor(d.z));
+		Supplier<CompletableFuture<Void>> tw = testWarm;
+		h.planned = tw != null || (releaseOnPlan && WorldPlanners.of(level, level.getChunkSource().getGenerator()).isPresent() && Workers.pool() != null);
+		h.warm = tw != null ? tw.get() : RegionWarmer.warmPoint(level, (int) Math.floor(d.x), (int) Math.floor(d.z));
 		HOLDS.put(player.getUUID(), h);
 		player.sendOverlayMessage(message());
 		return true;
@@ -146,11 +164,11 @@ public final class TeleportHold {
 				h.ticketLevel = level;
 				h.load = test != null ? test.get() : level.getChunkSource().addTicketAndLoadWithRadius(TICKET, h.pos, RADIUS);
 			}
-			boolean ready = h.load != null && h.load.isDone();
+			boolean ready = (h.load != null && h.load.isDone()) || (h.planned && h.warm.isDone());
 			boolean timedOut = !ready && System.nanoTime() - h.deadline >= 0;
 			if (!ready && !timedOut) continue;
 			HOLDS.remove(p.getUUID());
-			if (timedOut) FractalBuildingsMod.LOGGER.warn("Teleport hold for {} timed out after {} ms; teleporting anyway", p.getName().getString(), timeoutMillis);
+			if (timedOut) FractalBuildingsMod.LOGGER.warn("Teleport hold for {} timed out after {} ms; teleporting anyway", p.getName().getString(), (System.nanoTime() - h.deadline) / 1_000_000L + h.limitMillis);
 			Released r = h.released;
 			if (r != null) r.on(p, loaded(level, h.pos), timedOut);
 			REPLAYING.set(true);

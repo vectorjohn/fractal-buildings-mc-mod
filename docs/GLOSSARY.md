@@ -116,6 +116,7 @@ Item codes (PARREADS, MAINSTUB, TPHOLD, ...) and run terms, one row each. **Gene
 | PARTITIONS |  | high-rise corridors in exposed brick on both sides; inner walls should be plaster (DS-49) | polish | [[docs/ROADMAP|ROADMAP polish]], [[docs/design/STANDARDS|STANDARDS]] |
 | PBLOCKS |  | process item: the generated block reference for the design agents (`scripts/design-blocks.sh`) | done | [[docs/design/blocks|blocks]] |
 | PDESIGN |  | process item: the design reviewer agents (architect, interior designer) and the design standards | done | [[docs/design/STANDARDS|STANDARDS]] |
+| PERFBASE |  | the perf base world is vanilla | done | [[docs/log/2026-10-31-p6-perfbase|log]] |
 | PERFSRV |  | perf.sh world half off the renderer | done | [[docs/log/2026-10-26-p6-perfsrv|log]] |
 | PFLOOR |  | process item: `fractal-cli floorplan`, storeys as ASCII grids for text-reading reviewers | done | [[docs/log/2026-10-25-proc-floorplan|2026-10-25-proc-floorplan]] |
 | PLAN6 |  | the Phase 6 plan | done | [[docs/plans/phase6|phase6]] |
@@ -205,6 +206,7 @@ Item codes (PARREADS, MAINSTUB, TPHOLD, ...) and run terms, one row each. **Gene
 | TOKENSAVE |  | agent-definition change to save tokens: at most 3 coding items, verdict blocks, Sonnet verifiers for small... | done | [coordinator](../.claude/agents/coordinator.md) |
 | TOMAINn |  | the n-th merge of the run branch into main (TOMAIN3, ...) | - | [[docs/runs/2026-10-22-phase6|2026-10-22-phase6]] |
 | TPHOLD | 6.7 | hold far teleports until the destination is generated | done | [[docs/log/2026-10-23-p6-tphold|log]] |
+| TPHOLD15 |  | shorter teleport hold, and what happens after it gives up | done | [[docs/log/2026-10-31-p6-tphold15|log]] |
 | TPORTS |  | test tooling: one viewer-screenshot port per run | done | [[docs/runs/2026-10-22-phase6|2026-10-22-phase6]] |
 | TR |  | Phase 5 step: terrain response (5.3) | done | [[docs/log/2026-10-21-p5-tr-terrain|log]] |
 | TREEIN | 6.14 | vanilla trees grow into buildings | done | [[docs/ROADMAP|ROADMAP 6.14]] |

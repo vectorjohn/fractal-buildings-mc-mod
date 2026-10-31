@@ -28,10 +28,17 @@ public class TeleportHoldGameTest {
 		});
 	}
 
+	/** The FULL-chunk behaviour of the hold (a planner-backed level would end it when the tile is planned: see releasesWhenThePlanIsReady). */
+	private static void teleportFull(ServerPlayer p, TeleportTransition t) {
+		boolean old = TeleportHold.releaseOnPlan;
+		TeleportHold.releaseOnPlan = false;
+		try { p.teleport(t); } finally { TeleportHold.releaseOnPlan = old; }
+	}
+
 	private static void reset() {
 		TeleportHold.testLoad = null;
 		TeleportHold.testReleased = null;
-		TeleportHold.timeoutMillis = 30_000;
+		TeleportHold.timeoutMillis = TeleportHold.DEFAULT_TIMEOUT_MILLIS;
 	}
 
 	@GameTest(maxTicks = TestArea.TICKS)
@@ -45,11 +52,11 @@ public class TeleportHoldGameTest {
 		TeleportHold.testReleased = (pl, full, timedOut) -> {
 			seen.set("full=" + full + " timedOut=" + timedOut + " movedYet=" + (pl.position().distanceTo(start) > 1));
 		};
-		// the hold measures its deadline in wall time, and another test may block the server thread for longer than 30 s (B7 Veto scans for
+		// the hold measures its deadline in wall time, and another test may block the server thread for longer than the hold limit (B7 Veto scans for
 		// ~50 s in one tick on a busy machine); this test is about waiting for FULL chunks, timeoutTeleportsAnyway covers the timeout
 		TeleportHold.timeoutMillis = 600_000;
-		p.teleport(to(level, tx, tz));
-		TeleportHold.timeoutMillis = 30_000;
+		teleportFull(p, to(level, tx, tz));
+		TeleportHold.timeoutMillis = TeleportHold.DEFAULT_TIMEOUT_MILLIS;
 		TeleportHold.testReleased = null; // captured by the hold; a test hook left set leaks into holds other tests start later
 		check(p.position().equals(start), "the player must stay put while the hold runs: " + p.position());
 		check(TeleportHold.holding(p), "the teleport must be held");
@@ -69,8 +76,8 @@ public class TeleportHoldGameTest {
 		TeleportHold.testLoad = () -> new CompletableFuture<>(); // never completes
 		AtomicInteger timedOut = new AtomicInteger();
 		TeleportHold.testReleased = (pl, full, to) -> { if (to) timedOut.incrementAndGet(); };
-		p.teleport(to(level, tx, tz));
-		TeleportHold.timeoutMillis = 30_000; // the hold captured its own deadline, load and callback; do not leak them into other tests
+		teleportFull(p, to(level, tx, tz));
+		TeleportHold.timeoutMillis = TeleportHold.DEFAULT_TIMEOUT_MILLIS; // the hold captured its own deadline, load and callback; do not leak them into other tests
 		TeleportHold.testLoad = null;
 		TeleportHold.testReleased = null;
 		check(TeleportHold.holding(p), "the teleport must be held");
@@ -86,7 +93,7 @@ public class TeleportHoldGameTest {
 		ServerPlayer p = helper.makeMockServerPlayerInLevel();
 		Vec3 start = p.position();
 		Vec3 dest = start.add(20, 0, 0);
-		p.teleport(to(level, dest.x, dest.z));
+		teleportFull(p, to(level, dest.x, dest.z));
 		check(!TeleportHold.holding(p), "a short hop must not be held");
 		check(p.position().distanceTo(new Vec3(dest.x, 80, dest.z)) < 2, "the player must move at once: " + p.position());
 		helper.succeed();
@@ -118,7 +125,7 @@ public class TeleportHoldGameTest {
 		ServerPlayer p = helper.makeMockServerPlayerInLevel();
 		p.setPos(30000.5, 80, 30000.5); // far from the origin, where a "~ ~5 ~" read as absolute would look like a long jump
 		Vec3 start = p.position();
-		p.teleport(rel(level, 0, 5, 0));
+		teleportFull(p, rel(level, 0, 5, 0));
 		check(!TeleportHold.holding(p), "/tp ~ ~5 ~ must not be held");
 		check(p.position().distanceTo(start.add(0, 5, 0)) < 1, "the player must move at once: " + p.position());
 		helper.succeed();
@@ -133,7 +140,7 @@ public class TeleportHoldGameTest {
 		Vec3 dest = start.add(10000, 0, 0);
 		CompletableFuture<Void> gate = new CompletableFuture<>(); // the real FULL wait is covered by longJumpWaitsForFullChunks; here only the destination matters
 		TeleportHold.testLoad = () -> gate;
-		p.teleport(rel(level, 10000, 0, 0));
+		teleportFull(p, rel(level, 10000, 0, 0));
 		TeleportHold.testLoad = null;
 		check(TeleportHold.holding(p), "/tp ~10000 ~ ~ must be held");
 		check(p.position().equals(start), "the player must stay put");
@@ -148,9 +155,9 @@ public class TeleportHoldGameTest {
 		ServerPlayer p = helper.makeMockServerPlayerInLevel();
 		CompletableFuture<Void> gate = new CompletableFuture<>();
 		TeleportHold.testLoad = () -> gate;
-		p.teleport(to(level, 38000.5, 38000.5));
+		teleportFull(p, to(level, 38000.5, 38000.5));
 		check(TeleportHold.holding(p), "first teleport held");
-		p.teleport(to(level, -38000.5, 38500.5));
+		teleportFull(p, to(level, -38000.5, 38500.5));
 		TeleportHold.testLoad = null;
 		check(TeleportHold.holding(p) && !TeleportHold.ticketHeld(p), "the second hold starts fresh");
 		gate.complete(null);
@@ -162,7 +169,7 @@ public class TeleportHoldGameTest {
 		ServerLevel level = helper.getLevel();
 		ServerPlayer p = helper.makeMockServerPlayerInLevel();
 		TeleportHold.testLoad = () -> new CompletableFuture<>();
-		p.teleport(to(level, 46000.5, 46000.5));
+		teleportFull(p, to(level, 46000.5, 46000.5));
 		TeleportHold.testLoad = null;
 		check(TeleportHold.holding(p), "held");
 		p.setHealth(0f);
@@ -170,6 +177,33 @@ public class TeleportHoldGameTest {
 			check(!TeleportHold.holding(p), "a dead player's hold must be dropped");
 			check(p.getX() < 100, "and the player must not be teleported: " + p.position());
 			helper.succeed();
+		});
+	}
+
+	/** TPHOLD15: on a planner-backed level the hold ends when the destination tile is planned, without waiting for the chunks (and not before). */
+	@GameTest(maxTicks = TestArea.TICKS)
+	public void releasesWhenThePlanIsReady(GameTestHelper helper) {
+		ServerLevel level = helper.getLevel();
+		ServerPlayer p = helper.makeMockServerPlayerInLevel();
+		CompletableFuture<Void> plan = new CompletableFuture<>();
+		TeleportHold.testWarm = () -> plan;
+		TeleportHold.testLoad = () -> new CompletableFuture<>(); // the chunks never become FULL
+		AtomicReference<String> seen = new AtomicReference<>();
+		TeleportHold.testReleased = (pl, full, to) -> seen.set("full=" + full + " timedOut=" + to);
+		TeleportHold.timeoutMillis = 600_000; // wall-clock deadline: another test may stall the server thread for longer than the real limit
+		p.teleport(to(level, 47000.5, -47000.5));
+		TeleportHold.timeoutMillis = TeleportHold.DEFAULT_TIMEOUT_MILLIS;
+		TeleportHold.testWarm = null;
+		TeleportHold.testLoad = null;
+		TeleportHold.testReleased = null;
+		check(TeleportHold.holding(p), "held while the plan is not ready");
+		helper.runAfterDelay(10, () -> {
+			check(TeleportHold.holding(p), "still held: the plan is not ready");
+			plan.complete(null);
+			waitThen(helper, () -> !TeleportHold.holding(p), () -> {
+				check("full=false timedOut=false".equals(seen.get()), "released with " + seen.get());
+				check(p.getX() > 46000, "the player must have been teleported: " + p.position());
+			});
 		});
 	}
 }
