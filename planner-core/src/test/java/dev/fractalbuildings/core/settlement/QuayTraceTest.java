@@ -56,7 +56,9 @@ class QuayTraceTest {
 		public List<QuayWhole> grade(List<List<int[]>> runs) {
 			List<QuayWhole> out = new ArrayList<>();
 			List<Map<Long, Integer>> index = new ArrayList<>();
-			for (List<int[]> run : Districts.canonicalQuays(runs)) {
+			List<List<int[]>> canonical = Districts.canonicalQuays(runs);
+			for (int r = 0; r < canonical.size(); r++) {
+				List<int[]> run = canonical.get(r);
 				List<List<int[]>> parts = run.size() % 3 == 0 ? List.of(run.subList(0, run.size() / 2), run.subList(run.size() / 2, run.size())) : List.of(run);
 				for (int k = 0; k < parts.size(); k++) {
 					List<int[]> cols = new ArrayList<>(parts.get(k));
@@ -77,7 +79,7 @@ class QuayTraceTest {
 						mine.put(QuayTrace.key(c[0], c[1]), y[i]);
 					}
 					index.add(mine);
-					out.add(new QuayWhole(cols, y, new boolean[y.length], QuayTrace.orderKey(run, k)));
+					out.add(new QuayWhole(cols, y, new boolean[y.length], QuayTrace.orderKey(canonical, r, k)));
 				}
 			}
 			return out;
@@ -189,5 +191,89 @@ class QuayTraceTest {
 			TreeSet<String> seen = new TreeSet<>();
 			for (QuayWhole q : reference(new Fake(seed, field(seed)))) assertTrue(seen.add(Arrays.toString(q.order())), "tie in the canonical order, seed " + seed);
 		}
+	}
+
+	/** QUAYLAZY 3b: one trace serves several worldgen threads at once; every thread's every tile still gets the global answer. */
+	@Test
+	void severalThreadsShareOneTrace() throws Exception {
+		int threads = 8;
+		java.util.concurrent.ExecutorService pool = java.util.concurrent.Executors.newFixedThreadPool(threads);
+		try {
+			for (long seed = 0; seed < 40; seed++) {
+				Fake bank = new Fake(seed, field(seed));
+				List<QuayWhole> ref = reference(bank);
+				List<int[]> tiles = tiles();
+				QuayTrace t = new QuayTrace(window());
+				java.util.concurrent.CountDownLatch go = new java.util.concurrent.CountDownLatch(1);
+				List<java.util.concurrent.Future<String>> results = new ArrayList<>();
+				for (int k = 0; k < threads; k++) {
+					long shuffle = seed * 131 + k;
+					results.add(pool.submit(() -> {
+						List<int[]> order = new ArrayList<>(tiles);
+						Collections.shuffle(order, new Random(shuffle));
+						go.await();
+						for (int[] box : order) {
+							String want = digest(filter(ref, box, M)), got = digest(t.near(bank, box[0], box[1], box[2], box[3], M));
+							if (!want.equals(got)) return "tile " + Arrays.toString(box) + " differs";
+						}
+						return "";
+					}));
+				}
+				go.countDown();
+				for (var f : results) assertEquals("", f.get(), "seed " + seed);
+				assertSame(ref, t.all(bank), "all after the threads, seed " + seed);
+			}
+		} finally {
+			pool.shutdownNow();
+		}
+	}
+
+	/** Two runs through the same smallest column, from the same first column, of one size: one order whatever the input order, and distinct keys. */
+	@Test
+	void tiedRunsGetOneOrderAndDistinctKeys() {
+		List<int[]> a = new ArrayList<>(), b = new ArrayList<>();
+		for (int i = 0; i < 6; i++) { a.add(new int[] {i, 0}); b.add(new int[] {i < 3 ? i : 2, i < 3 ? 0 : i - 2}); }
+		List<List<int[]>> ab = Districts.canonicalQuays(List.of(a, b)), ba = Districts.canonicalQuays(List.of(b, a));
+		assertEquals(QuayTrace.smallest(ab.get(0)), QuayTrace.smallest(ab.get(1)), "the fixture ties on the smallest column");
+		assertEquals(ab.get(0).size(), ab.get(1).size(), "and on size");
+		StringBuilder x = new StringBuilder(), y = new StringBuilder();
+		for (int r = 0; r < 2; r++) {
+			for (int[] c : ab.get(r)) x.append(c[0]).append(',').append(c[1]).append(' ');
+			for (int[] c : ba.get(r)) y.append(c[0]).append(',').append(c[1]).append(' ');
+			x.append('|');
+			y.append('|');
+		}
+		assertEquals(x.toString(), y.toString(), "the input order does not matter");
+		assertFalse(Arrays.equals(QuayTrace.orderKey(ab, 0, 0), QuayTrace.orderKey(ab, 1, 0)), "tied runs get distinct order keys");
+		assertTrue(Arrays.compare(QuayTrace.orderKey(ab, 0, 1), QuayTrace.orderKey(ab, 1, 0)) < 0, "every part of the first comes before the second");
+	}
+
+	/** A grade that asks the trace for its own cluster again fails at once instead of waiting on itself. */
+	@Test
+	void aGradeThatCallsBackIntoTheTraceThrows() {
+		long seed = 3;
+		Fake fake = new Fake(seed, field(seed));
+		List<QuayWhole> ref = reference(fake);
+		int[] box = null;
+		for (int[] b : tiles()) if (!filter(ref, b, M).isEmpty()) { box = b; break; }
+		assertNotNull(box, "a tile with quays");
+		int[] tile = box;
+		QuayTrace t = new QuayTrace(window());
+		QuayTrace.Bank reentrant = new QuayTrace.Bank() {
+			public boolean near(int x, int z) { return fake.near(x, z); }
+
+			public boolean ok(int[] c) { return fake.ok(c); }
+
+			public void prefetch(List<int[]> boxes) {}
+
+			public List<QuayWhole> grade(List<List<int[]>> runs) {
+				t.near(this, tile[0], tile[1], tile[2], tile[3], M);
+				return fake.grade(runs);
+			}
+		};
+		assertTimeoutPreemptively(java.time.Duration.ofSeconds(20), () -> {
+			IllegalStateException e = assertThrows(IllegalStateException.class, () -> t.near(reentrant, tile[0], tile[1], tile[2], tile[3], M));
+			assertTrue(e.getMessage().contains("must not call back"), e.getMessage());
+		});
 	}
 }

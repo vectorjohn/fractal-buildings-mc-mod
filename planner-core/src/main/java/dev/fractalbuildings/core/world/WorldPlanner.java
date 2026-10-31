@@ -239,14 +239,15 @@ public class WorldPlanner {
 	private static long key(int ix, int iz) { return ((long) ix << 32) ^ (iz & 0xffffffffL); }
 
 	/** The settlement's source: its skeletons and road network, shared by all its tiles. */
-	SkeletonSource source(SettlementSite site) {
-		return sources.get(site.id(), id -> {
-			SkeletonSource.Direct d = new SkeletonSource.Direct(seed, view, site, probes.coarse(), TierPrograms.of(site.tier()), caps.skeletons());
-				d.withApproaches(() -> approachLines(site));
-			if (roads != null) d.withExitServed((x, z) -> exitServedAt(site, x, z));
-			d.withReads(probes.reads());
-			return d;
-		});
+	SkeletonSource source(SettlementSite site) { return sources.get(site.id(), id -> newSource(site)); }
+
+	/** A new source for the settlement, sharing nothing with {@link #source}'s (its own shared values and junction field): for tests of tile independence. */
+	SkeletonSource.Direct newSource(SettlementSite site) {
+		SkeletonSource.Direct d = new SkeletonSource.Direct(seed, view, site, probes.coarse(), TierPrograms.of(site.tier()), caps.skeletons());
+		d.withApproaches(() -> approachLines(site));
+		if (roads != null) d.withExitServed((x, z) -> exitServedAt(site, x, z));
+		d.withReads(probes.reads());
+		return d;
 	}
 
 	private boolean decidable(Cell c) { return fieldView == null || fieldView.decidable(c.cx(), c.cz()); }

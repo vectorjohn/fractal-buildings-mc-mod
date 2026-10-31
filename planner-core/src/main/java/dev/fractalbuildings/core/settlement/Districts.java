@@ -121,30 +121,62 @@ public final class Districts {
 	 */
 	public static List<String> quayRuns(SkeletonSource src, int ix, int iz, TerrainProbe exact) {
 		List<String> out = new ArrayList<>();
-		for (QuayWhole q : new Build(src, ix, iz, exact).quayWholes()) {
-			StringBuilder sb = new StringBuilder();
-			for (int i = 0; i < q.cols().size(); i++) sb.append(i == 0 ? "" : " ").append(q.cols().get(i)[0]).append(',').append(q.cols().get(i)[1]).append(':').append(q.y()[i]);
-			out.add(sb.toString());
-		}
+		for (QuayWhole q : new Build(src, ix, iz, exact).quayWholes()) out.add(runLine(q));
 		return out;
 	}
 
 	/**
-	 * Builds the settlement's quay runs (a value shared by every tile, {@link SkeletonSource#shared}) ahead of the first tile that needs
-	 * them, through the first waterfront tile the settlement plans; nothing when it has none. Never changes any answer.
+	 * Traces and grades every quay run of the settlement ({@link QuayTrace#all} on the trace every tile shares, {@link SkeletonSource#shared})
+	 * ahead of the tiles that need them, through the first waterfront tile the settlement plans; nothing when it has none. Never changes
+	 * any answer. (QUAYLAZY: a tile no longer needs this; it traces only the quays near it.)
 	 */
 	public static void warmQuays(SkeletonSource src, TerrainProbe exact) {
-		if (!src.site().tier().atLeast(Tier.TOWN)) return;
+		Build b = firstWaterfront(src, exact);
+		if (b == null) return;
+		if (src.quayReference()) b.quayWholes();
+		else b.quayTrace().all(b.bank(b.quayTrace().area(), true));
+	}
+
+	/** A build of the first owned waterfront tile of a town or larger (tile order), or null. */
+	private static Build firstWaterfront(SkeletonSource src, TerrainProbe exact) {
+		if (!src.site().tier().atLeast(Tier.TOWN)) return null;
 		int r = src.density().maxRadius() + 2 * PAD, cx = src.site().centre().x(), cz = src.site().centre().z();
 		DistrictGrid.TileId lo = src.grid().tileOf(cx - r, cz - r), hi = src.grid().tileOf(cx + r, cz + r);
 		for (int iz = lo.iz(); iz <= hi.iz(); iz++) {
 			for (int ix = lo.ix(); ix <= hi.ix(); ix++) {
 				Build b = new Build(src, ix, iz, exact, false);
-				if (!b.hasWaterfront() || !owns(src, ix, iz)) continue;
-				b.quayWholes();
-				return;
+				if (b.hasWaterfront() && owns(src, ix, iz)) return b;
 			}
 		}
+		return null;
+	}
+
+	/**
+	 * Every quay run of the settlement in the canonical order, one line each as {@link #quayRuns}: the reference whole trace when the source
+	 * asks for it ({@link SkeletonSource#quayReference}), else the lazy trace's {@link QuayTrace#all}. For tests.
+	 */
+	public static List<String> allQuayRuns(SkeletonSource src, TerrainProbe exact) {
+		Build b = firstWaterfront(src, exact);
+		if (b == null) return List.of();
+		List<QuayWhole> all = src.quayReference() ? src.shared("quaysReference", exact, b::settlementQuaysReference) : b.quayTrace().all(b.bank(b.quayTrace().area(), true));
+		List<String> out = new ArrayList<>();
+		for (QuayWhole q : all) out.add(runLine(q));
+		return out;
+	}
+
+	/** The order keys of the lazy trace's parts ({@link QuayTrace#orderKey}), in the order {@link #allQuayRuns} lists them. For tests. */
+	public static List<long[]> allQuayOrder(SkeletonSource src, TerrainProbe exact) {
+		Build b = firstWaterfront(src, exact);
+		if (b == null) return List.of();
+		List<long[]> out = new ArrayList<>();
+		for (QuayWhole q : b.quayTrace().all(b.bank(b.quayTrace().area(), true))) out.add(q.order().clone());
+		return out;
+	}
+
+	private static String runLine(QuayWhole q) {
+		StringBuilder sb = new StringBuilder();
+		for (int i = 0; i < q.cols().size(); i++) sb.append(i == 0 ? "" : " ").append(q.cols().get(i)[0]).append(',').append(q.cols().get(i)[1]).append(':').append(q.y()[i]);
+		return sb.toString();
 	}
 
 	/**
@@ -180,7 +212,9 @@ public final class Districts {
 	/**
 	 * Quay runs as every tile that sees them grades them: each from its end with the smaller column key (a contour chain starts where
 	 * the window cuts it, so the same run can come either way), in order of their smallest column (ties by first column), the order a
-	 * later run meets an earlier one in.
+	 * later run meets an earlier one in. A tie on all three (two runs through the same smallest column, from the same first column, of one
+	 * size) is broken by the column sequence, so the order never depends on the order the runs came in (QUAYLAZY: the lazy trace meets them
+	 * in another order than the whole one).
 	 */
 	static List<List<int[]>> canonicalQuays(List<List<int[]>> runs) {
 		List<List<int[]>> out = new ArrayList<>();
@@ -189,8 +223,17 @@ public final class Districts {
 			if (qkey(o.get(o.size() - 1)[0], o.get(o.size() - 1)[1]) < qkey(o.get(0)[0], o.get(0)[1])) java.util.Collections.reverse(o);
 			out.add(o);
 		}
-		out.sort(Comparator.comparingLong((List<int[]> r) -> qsmallest(r)).thenComparingLong(r -> qkey(r.get(0)[0], r.get(0)[1])).thenComparingInt(List::size));
+		out.sort(Comparator.comparingLong((List<int[]> r) -> qsmallest(r)).thenComparingLong(r -> qkey(r.get(0)[0], r.get(0)[1])).thenComparingInt(List::size).thenComparing(Districts::compareCols));
 		return out;
+	}
+
+	/** Column sequences compared column by column ({@link #qkey}), then by length. */
+	static int compareCols(List<int[]> a, List<int[]> b) {
+		for (int i = 0; i < Math.min(a.size(), b.size()); i++) {
+			int c = Long.compare(qkey(a.get(i)[0], a.get(i)[1]), qkey(b.get(i)[0], b.get(i)[1]));
+			if (c != 0) return c;
+		}
+		return Integer.compare(a.size(), b.size());
 	}
 
 	private static long qkey(int x, int z) { return ((long) z << 32) ^ (x & 0xffffffffL); }
@@ -2086,17 +2129,30 @@ public final class Districts {
 
 		List<QuayWhole> quayWholes;
 
+		/** How far from the tile a quay run's footprint may come and still be the tile's: the reach of the window the runs were once traced in. */
+		static final int QUAY_REACH = Quays.MIN_LEN + MARGIN + 2 * Quays.STEP;
+
 		/**
-		 * The settlement's quay runs that come near the tile (their footprint within the reach of the window quays were once traced in): see
-		 * {@link #settlementQuays}. Ahead of the tile's other streets, so a subdivision street or lane laid before the quays still meets
-		 * them at their level.
+		 * The settlement's quay runs that come near the tile (a footprint cell within {@link #QUAY_REACH} of it), in the canonical order.
+		 * Ahead of the tile's other streets, so a subdivision street or lane laid before the quays still meets them at their level.
+		 *
+		 * <p>Every promenade run of the settlement is graded once (JUNCTION), in the canonical order: a pure function of the source and the
+		 * probe, so every tile that sees a run grades it, and cuts it where it cannot meet a street, alike. (Traced and graded through each
+		 * tile's own window, a run was clipped where the window ended; its profile, and so where {@link #quayParts} cut it, then depended on
+		 * the window: METROFILL R1, {@code tile-border-agree} where a quay crossed a border street.) Where a run overlaps a whole street it
+		 * takes the street's level from the junction field, and where it overlaps another quay the level of the one that comes first.
+		 *
+		 * <p>QUAYLAZY: the runs come from the settlement's {@link QuayTrace} ({@link #quayTrace}), which walks only the contour chains near
+		 * this tile and grades only the clusters they belong to, and gives exactly the parts the whole trace ({@link #settlementQuaysReference},
+		 * used instead when {@link SkeletonSource#quayReference}) gives near the tile.
 		 */
 		List<QuayWhole> quayWholes() {
 			if (quayWholes != null) return quayWholes;
 			if (!hasWaterfront()) return quayWholes = List.of();
-			int m = Quays.MIN_LEN + MARGIN + 2 * Quays.STEP; // the reach of the window the runs were once traced in
-			int h = Quays.WIDTH / 2;
-			List<QuayWhole> all = src.quayReference() ? src.shared("quaysReference", exact, this::settlementQuaysReference) : src.shared("quays", exact, this::settlementQuays);
+			int m = QUAY_REACH, h = Quays.WIDTH / 2;
+			// the trace keeps runs with a column within m + h (a superset: the footprint reaches 1 block below a column and 2 above); the exact filter is here
+			List<QuayWhole> all = src.quayReference() ? src.shared("quaysReference", exact, this::settlementQuaysReference)
+				: quayTrace().near(bank(quayTrace().area(), false), tile.minX(), tile.minZ(), tile.maxX(), tile.maxZ(), m + h);
 			List<QuayWhole> near = new ArrayList<>();
 			for (QuayWhole q : all) {
 				// some footprint cell of a column within m of the tile (not the run's bounding box: a curved run's box can reach a tile its columns do not)
@@ -2107,25 +2163,21 @@ public final class Districts {
 			return quayWholes = List.copyOf(near);
 		}
 
-		/**
-		 * Every promenade run of the settlement, each graded once (JUNCTION), in the canonical order: a pure function of the source and the
-		 * probe, so every tile that sees a run grades it, and cuts it where it cannot meet a street, alike. (Traced and graded through each
-		 * tile's own window, a run was clipped where the window ended; its profile, and so where {@link #quayParts} cut it, then depended on
-		 * the window: METROFILL R1, {@code tile-border-agree} where a quay crossed a border street.)
-		 *
-		 * <p>Where a run overlaps a whole street it takes the street's level from the junction field (not from a tile's pieces), and where
-		 * it overlaps another quay it takes the level of the one whose smallest column comes first. The contour is traced over the tiles the
-		 * settlement plans that screen as waterfront ({@link #hasWaterfront(DistrictGrid.Tile)}), and {@value #PAD} blocks round them, and a
-		 * quay column must lie in such a tile, so every quay column is inside the traced area by more than a contour cell, where the contour
-		 * is the unclipped one. (A run that leaves those tiles ends at their border: no tile beyond would draw it.) Any tile may build it,
-		 * through its own terrain memo: the values are the probe's, so the result does not depend on which tile asked.
-		 */
-		/** How far round a waterfront tile's nodes the contour reads the exact terrain: {@link Quays#OFFSET} on the 4-lattice (PARREADS prefetch). */
-		static final int QUAY_READ = Quays.OFFSET + 4;
-		/** How far round a contour point its columns' first quay tests read (half a lattice step to the column, {@code clearOfWater} on the 4-lattice); the rarer {@code waterLevel} reach is left to the reads themselves. */
-		static final int QUAY_CHAIN_READ = 8;
+		/** The settlement's lazy quay trace, one per source and exact probe, shared by every tile (and thread) that plans with them. */
+		QuayTrace quayTrace() { return src.shared("quayTrace", exact, () -> new QuayTrace(quayArea())); }
 
-		List<QuayWhole> settlementQuays() {
+		/** How far round a waterfront tile's nodes the contour reads the exact terrain: {@link Quays#OFFSET} on the 4-lattice (PARREADS prefetch). */
+		static final int QUAY_READ = QuayTrace.QUAY_READ;
+		/** How far round a contour point its columns' first quay tests read (half a lattice step to the column, {@code clearOfWater} on the 4-lattice); the rarer {@code waterLevel} reach is left to the reads themselves. */
+		static final int QUAY_CHAIN_READ = QuayTrace.QUAY_CHAIN_READ;
+
+		/**
+		 * What the quays are traced over: the tiles the settlement plans that screen as waterfront ({@link #hasWaterfront(DistrictGrid.Tile)}),
+		 * and the contour's cell window, the box of those tiles {@value #PAD} blocks round (the reference's {@code Quays.contour} window). A
+		 * quay column must lie in such a tile, so every quay column is inside the traced area by more than a contour cell, where the contour
+		 * is the unclipped one. Cheap: the screen reads no exact terrain.
+		 */
+		QuayTrace.Area quayArea() {
 			int reach = den.maxRadius() + 2 * PAD, cx = src.site().centre().x(), cz = src.site().centre().z();
 			DistrictGrid.TileId lo = grid.tileOf(cx - reach, cz - reach), hi = grid.tileOf(cx + reach, cz + reach);
 			TreeSet<Long> wf = new TreeSet<>();
@@ -2138,51 +2190,56 @@ public final class Districts {
 					x0 = Math.min(x0, t.minX() - PAD); z0 = Math.min(z0, t.minZ() - PAD); x1 = Math.max(x1, t.maxX() + PAD); z1 = Math.max(z1, t.maxZ() + PAD);
 				}
 			}
-			if (wf.isEmpty()) return List.of();
-			// PARREADS: the contour walks the lattice in z order, so the exact terrain of each row of waterfront tiles is filled (in parallel,
-			// where the probe can) when the walk reaches the row before it; a metropolis' waterfront is several memos' worth of chunks, so
-			// the whole of it at once would evict its own start. Answers do not change: the reads below are the same, in the same order.
-			TreeMap<Integer, List<int[]>> rowBoxes = new TreeMap<>();
-			for (long k : wf) {
-				DistrictGrid.Tile t = grid.tile((int) k, (int) (k >> 32));
-				rowBoxes.computeIfAbsent((int) (k >> 32), r -> new ArrayList<>()).add(new int[] {t.minX() - PAD - QUAY_READ, t.minZ() - PAD - QUAY_READ, t.maxX() + PAD + QUAY_READ, t.maxZ() + PAD + QUAY_READ});
-			}
+			if (wf.isEmpty()) return new QuayTrace.Area(wf, 0, 0, -1, -1);
+			return new QuayTrace.Area(wf, Math.floorDiv(x0, Quays.STEP), Math.floorDiv(z0, Quays.STEP), Math.floorDiv(x1, Quays.STEP), Math.floorDiv(z1, Quays.STEP));
+		}
+
+		/**
+		 * This build as the trace's terrain bank (one thread's: the build's memos are not thread-safe). {@code near} is the field the reference
+		 * contours ("water within OFFSET" inside the waterfront tiles and {@value #PAD} round them, false elsewhere); {@code ok} the quay test
+		 * inside those tiles; {@code grade} {@link #gradeRuns}. {@code rows}: the whole trace's row-by-row prefetch (the full scan walks the
+		 * lattice in z order); a tile's request prefetches its own scan box instead ({@link QuayTrace#near}).
+		 */
+		QuayTrace.Bank bank(QuayTrace.Area area, boolean rows) {
+			TreeSet<Long> wf = area.wf();
 			var reads = src.reads();
-			int[] fetchedTo = {Integer.MIN_VALUE};
-			TreeMap<Long, Boolean> nearMemo = new TreeMap<>(); // the contour asks each lattice node up to four times
-			Quays.Near traced = (x, z) -> {
-				DistrictGrid.TileId c = grid.tileOf(x, z);
-				if (c.iz() + 1 > fetchedTo[0]) {
-					List<int[]> boxes = new ArrayList<>();
-					for (List<int[]> row : rowBoxes.subMap(fetchedTo[0], false, c.iz() + 1, true).values()) boxes.addAll(row);
-					fetchedTo[0] = c.iz() + 1;
-					if (!boxes.isEmpty()) reads.prefetch(boxes);
+			TreeMap<Integer, List<int[]>> rowBoxes = new TreeMap<>();
+			if (rows) {
+				for (long k : wf) {
+					DistrictGrid.Tile t = grid.tile((int) k, (int) (k >> 32));
+					rowBoxes.computeIfAbsent((int) (k >> 32), r -> new ArrayList<>()).add(new int[] {t.minX() - PAD - QUAY_READ, t.minZ() - PAD - QUAY_READ, t.maxX() + PAD + QUAY_READ, t.maxZ() + PAD + QUAY_READ});
 				}
-				boolean in = false;
-				for (int dz = -1; dz <= 1 && !in; dz++) {
-					for (int dx = -1; dx <= 1 && !in; dx++) {
-						if (!wf.contains(key(c.ix() + dx, c.iz() + dz))) continue;
-						DistrictGrid.Tile t = grid.tile(c.ix() + dx, c.iz() + dz);
-						in = x >= t.minX() - PAD && x <= t.maxX() + PAD && z >= t.minZ() - PAD && z <= t.maxZ() + PAD;
-					}
-				}
-				return in && nearMemo.computeIfAbsent(key(x, z), k -> nearWater(x, z));
-			};
-			java.util.function.Predicate<int[]> ok = c -> {
-				DistrictGrid.TileId t = grid.tileOf(c[0], c[1]);
-				return wf.contains(key(t.ix(), t.iz())) && quayOk(c);
-			};
-			List<List<Pt>> chains = Quays.contour(traced, x0, z0, x1, z1);
-			List<List<int[]>> runs = new ArrayList<>();
-			for (List<Pt> chain : chains) {
-				List<int[]> near = new ArrayList<>(); // what the chain's runs read next: the bank round its points (PARREADS, as above; the walk has moved on)
-				for (Pt p : chain) near.add(new int[] {p.x() - QUAY_CHAIN_READ, p.z() - QUAY_CHAIN_READ, p.x() + QUAY_CHAIN_READ, p.z() + QUAY_CHAIN_READ});
-				reads.prefetch(near);
-				List<int[]> cols = StreetCols.columns(chain);
-				if (chain.get(0).equals(chain.get(chain.size() - 1))) cols = breakRing(cols, ok);
-				for (List<int[]> whole : StreetCols.runs(cols, ok)) if (whole.size() >= Quays.MIN_LEN) runs.add(whole);
 			}
-			return gradeRuns(runs);
+			int[] fetchedTo = {Integer.MIN_VALUE};
+			return new QuayTrace.Bank() {
+				@Override public boolean near(int x, int z) {
+					DistrictGrid.TileId c = grid.tileOf(x, z);
+					if (rows && c.iz() + 1 > fetchedTo[0]) {
+						List<int[]> boxes = new ArrayList<>();
+						for (List<int[]> row : rowBoxes.subMap(fetchedTo[0], false, c.iz() + 1, true).values()) boxes.addAll(row);
+						fetchedTo[0] = c.iz() + 1;
+						if (!boxes.isEmpty()) reads.prefetch(boxes);
+					}
+					boolean in = false;
+					for (int dz = -1; dz <= 1 && !in; dz++) {
+						for (int dx = -1; dx <= 1 && !in; dx++) {
+							if (!wf.contains(key(c.ix() + dx, c.iz() + dz))) continue;
+							DistrictGrid.Tile t = grid.tile(c.ix() + dx, c.iz() + dz);
+							in = x >= t.minX() - PAD && x <= t.maxX() + PAD && z >= t.minZ() - PAD && z <= t.maxZ() + PAD;
+						}
+					}
+					return in && nearWater(x, z);
+				}
+
+				@Override public boolean ok(int[] c) {
+					DistrictGrid.TileId t = grid.tileOf(c[0], c[1]);
+					return wf.contains(key(t.ix(), t.iz())) && quayOk(c);
+				}
+
+				@Override public List<QuayWhole> grade(List<List<int[]>> runs) { return gradeRuns(runs); }
+
+				@Override public void prefetch(List<int[]> boxes) { reads.prefetch(boxes); }
+			};
 		}
 
 		/** Marks a part whose order key the grading loop has not set (the reference trace's). */
@@ -2190,14 +2247,16 @@ public final class Districts {
 
 		/**
 		 * Grades quay runs (any set of whole runs) in the canonical order, each with the junction field and every earlier part it touches
-		 * (JUNCTION), and keys every part by its place in that order ({@code {smallest column key, first column key, run size, part index}}:
-		 * the key sorts any subset of the settlement's parts into the sequence the whole trace lists them in). The loop is the whole
-		 * trace's; the lazy trace grades one cluster of runs through it.
+		 * (JUNCTION), and keys every part by its place in that order ({@link QuayTrace#orderKey}: the key sorts any subset of the settlement's
+		 * parts into the sequence the whole trace lists them in). The loop is the whole trace's; the lazy trace grades one cluster of runs
+		 * through it. It reads the junction field and the terrain, never the quay trace.
 		 */
 		List<QuayWhole> gradeRuns(List<List<int[]>> runs) {
 			JunctionField jf = junctions();
 			List<QuayWhole> out = new ArrayList<>();
-			for (List<int[]> whole : canonicalQuays(runs)) {
+			List<List<int[]>> canonical = canonicalQuays(runs);
+			for (int r = 0; r < canonical.size(); r++) {
+				List<int[]> whole = canonical.get(r);
 				int[] b = footprintBox(whole, Quays.WIDTH);
 				b = new int[] {b[0] - 1, b[1] - 1, b[2] + 1, b[3] + 1};
 				List<Layer> layers = new ArrayList<>();
@@ -2207,10 +2266,10 @@ public final class Districts {
 					if (l != null) layers.add(l);
 				}
 				int first = out.size();
-				quayParts(whole, layers, false, out);
+				quayParts(whole, layers, false, out); // appends the run's parts in its recursion order
 				for (int k = first; k < out.size(); k++) {
 					QuayWhole q = out.get(k);
-					out.set(k, new QuayWhole(q.cols(), q.y(), q.steep(), new long[] {qsmallest(whole), qkey(whole.get(0)[0], whole.get(0)[1]), whole.size(), k - first}));
+					out.set(k, new QuayWhole(q.cols(), q.y(), q.steep(), QuayTrace.orderKey(canonical, r, k - first)));
 				}
 			}
 			return List.copyOf(out);
@@ -2347,17 +2406,8 @@ public final class Districts {
 
 		static int[] zs(List<int[]> cols) { int[] o = new int[cols.size()]; for (int i = 0; i < o.length; i++) o[i] = cols.get(i)[1]; return o; }
 
-		/** A closed ring of columns, rotated to start just after a column that is no quay, so a run through the ring's start is not split (the start depends on where the contour was traced from). */
-		static List<int[]> breakRing(List<int[]> ring, java.util.function.Predicate<int[]> ok) {
-			List<int[]> cols = new ArrayList<>(ring.subList(0, ring.size() - 1));
-			for (int k = 0; k < cols.size(); k++) {
-				if (ok.test(cols.get(k))) continue;
-				List<int[]> out = new ArrayList<>(cols.subList(k + 1, cols.size()));
-				out.addAll(cols.subList(0, k));
-				return out;
-			}
-			return ring; // every column is a quay: one closed promenade, cut where the ring starts
-		}
+		/** {@link QuayTrace#breakRing} (one copy). */
+		static List<int[]> breakRing(List<int[]> ring, java.util.function.Predicate<int[]> ok) { return QuayTrace.breakRing(ring, ok); }
 
 		/** A lane from the column of a quay nearest to a road or street, to that street; null when none is within reach or the route is bad. */
 		/**

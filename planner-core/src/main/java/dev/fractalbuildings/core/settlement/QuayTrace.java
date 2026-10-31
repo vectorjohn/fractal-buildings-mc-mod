@@ -25,8 +25,9 @@ import java.util.function.Predicate;
  * that close. A cluster is graded alone, in canonical order of its own runs, which is a subsequence of the global order;</li>
  * <li>every result carries an order key ({@link #orderKey}), and outputs are sorted by it, never by discovery order.</li>
  * </ul>
- * State is concurrent maps that are never iterated for output. The chain source is a seam: {@link ChainSource} is
- * a stand-in that contours the whole window once; step 1's {@code Quays.chainThrough} replaces it with a walk that reads only its own cells.
+ * State is concurrent maps that are never iterated for output, so one trace may serve several threads at once, each with its own
+ * {@link Bank}. Chains come from {@link Quays#seeds} and {@link Quays#chainThrough} (a walk that reads only the cells of its chain) through
+ * the caller's bank and a node memo every caller shares; {@link #withSource} swaps in another {@link ChainSource} for a test.
  */
 final class QuayTrace {
 	/** Two runs interact when some column of one is within this many blocks (Chebyshev) of a column of the other (the {@code meetPins} arithmetic above). */
@@ -35,13 +36,15 @@ final class QuayTrace {
 	static final int CLUSTER_REACH = Quays.STEP;
 	/** How far round a contour point its columns' first quay tests read, blocks (as {@code Districts.Build.QUAY_CHAIN_READ}). */
 	static final int QUAY_CHAIN_READ = 8;
+	/** How far round a lattice node the field reads the exact terrain, blocks (as {@code Districts.Build.QUAY_READ}). */
+	static final int QUAY_READ = Quays.OFFSET + 4;
 
 	static {
 		// a column of another chain within MEET_REACH lies on a segment inside a cell within MEET_REACH of ours; segments sit within half a step of the cell edge
 		if (CLUSTER_REACH < MEET_REACH + Quays.STEP / 2) throw new AssertionError("cluster reach too short");
 	}
 
-	/** What the trace needs from its caller (Districts supplies the terrain-reading implementation). */
+	/** What the trace needs from its caller (Districts supplies the terrain-reading implementation). A bank serves one thread. */
 	interface Bank {
 		/** The raw "water within OFFSET" value at a lattice node, false outside the area; no memo (the trace memoises). */
 		boolean near(int x, int z);
@@ -49,7 +52,11 @@ final class QuayTrace {
 		/** Whether a column can carry a quay (pointwise). */
 		boolean ok(int[] col);
 
-		/** Grades one cluster's runs: orients and sorts them canonically, grades each against the earlier parts, sets {@code order}. */
+		/**
+		 * Grades one cluster's runs: orients and sorts them canonically, grades each against the earlier parts, sets {@code order}
+		 * ({@link #orderKey}). It must not call back into this trace: a cluster is graded on the thread that asks first, and a request
+		 * from inside that grading for the same cluster would wait on itself (the trace throws instead).
+		 */
 		List<QuayWhole> grade(List<List<int[]>> runs);
 
 		/** A hint that the exact terrain in these boxes {@code [minX, minZ, maxX, maxZ]} is about to be read. */
@@ -74,12 +81,15 @@ final class QuayTrace {
 	private final ConcurrentHashMap<Long, Chain> chains = new ConcurrentHashMap<>();
 	private final ConcurrentHashMap<Long, List<Long>> partners = new ConcurrentHashMap<>();
 	private final ConcurrentHashMap<Long, Long> clusterOf = new ConcurrentHashMap<>();
+	private final ConcurrentHashMap<Long, List<Long>> clusterMembers = new ConcurrentHashMap<>();
 	private final ConcurrentHashMap<Long, FutureTask<List<QuayWhole>>> clusters = new ConcurrentHashMap<>();
+	/** The thread grading each cluster right now (so a re-entrant request throws instead of waiting on itself). */
+	private final ConcurrentHashMap<Long, Thread> gradingBy = new ConcurrentHashMap<>();
 	private volatile ChainSource source;
 
 	QuayTrace(Area area) { this.area = area; }
 
-	/** For a test or step 1: a chain source other than the stand-in. */
+	/** For a test: a chain source other than the walker over the caller's bank. */
 	QuayTrace withSource(ChainSource s) { source = s; return this; }
 
 	Area area() { return area; }
@@ -91,6 +101,8 @@ final class QuayTrace {
 		int ci0 = Math.max(area.i0(), Math.floorDiv(minX - r, Quays.STEP)), ci1 = Math.min(area.i1(), Math.floorDiv(maxX + r, Quays.STEP));
 		int cj0 = Math.max(area.j0(), Math.floorDiv(minZ - r, Quays.STEP)), cj1 = Math.min(area.j1(), Math.floorDiv(maxZ + r, Quays.STEP));
 		if (ci0 > ci1 || cj0 > cj1) return List.of();
+		// PARREADS: the seed scan reads every node of these cells, each within QUAY_READ; one call, so a live probe fills the chunks in parallel
+		bank.prefetch(List.of(new int[] {ci0 * Quays.STEP - QUAY_READ, cj0 * Quays.STEP - QUAY_READ, (ci1 + 1) * Quays.STEP + QUAY_READ, (cj1 + 1) * Quays.STEP + QUAY_READ}));
 		TreeSet<Long> wanted = new TreeSet<>();
 		for (Pt seed : src.seeds(ci0, cj0, ci1, cj1)) {
 			Chain c = chainOf(bank, src, seed);
@@ -104,7 +116,7 @@ final class QuayTrace {
 		return out;
 	}
 
-	/** Every quay of the area in canonical order: today's whole trace (serial contour, every cluster graded). */
+	/** Every quay of the area in canonical order: today's whole trace (every node of the window, every cluster graded). */
 	List<QuayWhole> all(Bank bank) {
 		ChainSource src = source(bank);
 		TreeSet<Long> ids = new TreeSet<>();
@@ -118,9 +130,23 @@ final class QuayTrace {
 		return out;
 	}
 
-	/** The key that sorts parts into the global canonical order: smallest column key, first column key, run size, then the part's index in its run's recursion order. */
-	static long[] orderKey(List<int[]> run, int part) {
-		return new long[] {smallest(run), key(run.get(0)[0], run.get(0)[1]), run.size(), part};
+	/**
+	 * The key that sorts parts into the global canonical order. For run {@code r} of a list in {@code Districts.canonicalQuays} order: its
+	 * smallest column key, first column key and size; its rank among the runs just before it with those same three (canonicalQuays breaks
+	 * such a tie by the column sequence); then the part's index in the run's {@code quayParts} recursion order. The key is total. Two runs
+	 * that tie share their smallest column, so they meet (distance 0) and always sit in the same cluster: a run's rank in its cluster's
+	 * canonical list is its rank in the settlement's.
+	 */
+	static long[] orderKey(List<List<int[]>> canonical, int r, int part) {
+		List<int[]> run = canonical.get(r);
+		long s = smallest(run), f = key(run.get(0)[0], run.get(0)[1]);
+		int tie = 0;
+		for (int k = r - 1; k >= 0; k--) {
+			List<int[]> o = canonical.get(k);
+			if (smallest(o) != s || key(o.get(0)[0], o.get(0)[1]) != f || o.size() != run.size()) break;
+			tie++;
+		}
+		return new long[] {s, f, run.size(), tie, part};
 	}
 
 	static final Comparator<QuayWhole> BY_ORDER = (a, b) -> Arrays.compare(a.order(), b.order());
@@ -137,7 +163,7 @@ final class QuayTrace {
 		return best;
 	}
 
-	/** A closed ring of columns, rotated to start just after a column that is no quay ({@code Districts.Build.breakRing}). */
+	/** A closed ring of columns, rotated to start just after a column that is no quay, so a run through the ring's start is not split (the start depends on where the contour was traced from). */
 	static List<int[]> breakRing(List<int[]> ring, Predicate<int[]> ok) {
 		List<int[]> cols = new ArrayList<>(ring.subList(0, ring.size() - 1));
 		for (int k = 0; k < cols.size(); k++) {
@@ -146,7 +172,7 @@ final class QuayTrace {
 			out.addAll(cols.subList(0, k));
 			return out;
 		}
-		return ring;
+		return ring; // every column is a quay: one closed promenade, cut where the ring starts
 	}
 
 	/** The runs of one contour chain, as the whole trace cuts them. */
@@ -170,15 +196,16 @@ final class QuayTrace {
 
 	// ---- chains
 
+	/** The chain source of one request: the walker over the cell window, reading through the caller's bank (never kept: a bank serves one thread). */
 	private ChainSource source(Bank bank) {
 		ChainSource s = source;
-		if (s == null) {
-			synchronized (this) {
-				if (source == null) source = new WholeWindow(memoised(bank), area);
-				s = source;
-			}
-		}
-		return s;
+		if (s != null) return s;
+		Quays.Near near = memoised(bank);
+		return new ChainSource() {
+			@Override public List<Pt> seeds(int ci0, int cj0, int ci1, int cj1) { return Quays.seeds(near, ci0, cj0, ci1, cj1); }
+
+			@Override public List<Pt> chainThrough(Pt seed) { return Quays.chainThrough(near, area.i0(), area.j0(), area.i1(), area.j1(), seed); }
+		};
 	}
 
 	private Quays.Near memoised(Bank bank) {
@@ -205,7 +232,7 @@ final class QuayTrace {
 		Chain c = new Chain(id, List.copyOf(pts), runsOf(pts, bank::ok));
 		Chain prev = chains.putIfAbsent(id, c);
 		if (prev != null) c = prev;
-		for (Pt p : pts) pointIndex.put(key(p), id);
+		for (Pt p : pts) pointIndex.put(key(p), id); // after the chain: a thread that finds the id here finds the chain
 		return c;
 	}
 
@@ -257,12 +284,10 @@ final class QuayTrace {
 			for (long p : partnersOf(bank, src, c)) if (seen.add(p)) todo.add(p);
 		}
 		long id = seen.first();
+		clusterMembers.put(id, List.copyOf(seen)); // before any clusterOf entry: a thread that reads the id there goes on to read the members
 		for (long k : seen) clusterOf.put(k, id);
-		clusterMembers.put(id, List.copyOf(seen));
 		return id;
 	}
-
-	private final ConcurrentHashMap<Long, List<Long>> clusterMembers = new ConcurrentHashMap<>();
 
 	private List<QuayWhole> graded(Bank bank, long clusterId) {
 		FutureTask<List<QuayWhole>> task = clusters.get(clusterId);
@@ -273,7 +298,18 @@ final class QuayTrace {
 				return List.copyOf(bank.grade(runs));
 			});
 			task = clusters.putIfAbsent(clusterId, mine);
-			if (task == null) { task = mine; mine.run(); }
+			if (task == null) {
+				task = mine;
+				gradingBy.put(clusterId, Thread.currentThread());
+				try {
+					mine.run();
+				} finally {
+					gradingBy.remove(clusterId);
+				}
+			}
+		}
+		if (!task.isDone() && gradingBy.get(clusterId) == Thread.currentThread()) {
+			throw new IllegalStateException("cluster " + clusterId + " asked for while this thread grades it: Bank.grade must not call back into the trace");
 		}
 		try {
 			return task.get();
@@ -285,37 +321,6 @@ final class QuayTrace {
 			if (e.getCause() instanceof Error er) throw er;
 			throw new IllegalStateException(e.getCause());
 		}
-	}
-
-	/** Stand-in chain source: contours the whole window once (so it reads the whole area; step 1's walker does not). */
-	private static final class WholeWindow implements ChainSource {
-		private final TreeMap<Long, List<Pt>> byPoint = new TreeMap<>();
-		private final TreeMap<Long, List<Pt>> byCell = new TreeMap<>();
-
-		WholeWindow(Quays.Near near, Area a) {
-			for (List<Pt> c : Quays.contour(near, a.i0() * Quays.STEP, a.j0() * Quays.STEP, a.i1() * Quays.STEP, a.j1() * Quays.STEP)) {
-				for (Pt p : c) {
-					byPoint.put(key(p), c);
-					int i = Math.floorDiv(p.x(), Quays.STEP), j = Math.floorDiv(p.z(), Quays.STEP);
-					boolean horizontalEdge = Math.floorMod(p.z(), Quays.STEP) == 0; // between (i, j-1) and (i, j)
-					byCell.computeIfAbsent(key(i, j), k -> new ArrayList<>()).add(p);
-					byCell.computeIfAbsent(horizontalEdge ? key(i, j - 1) : key(i - 1, j), k -> new ArrayList<>()).add(p);
-				}
-			}
-		}
-
-		@Override
-		public List<Pt> seeds(int ci0, int cj0, int ci1, int cj1) {
-			java.util.LinkedHashSet<Pt> out = new java.util.LinkedHashSet<>();
-			for (int j = cj0; j <= cj1; j++) for (int i = ci0; i <= ci1; i++) {
-				List<Pt> l = byCell.get(key(i, j));
-				if (l != null) out.addAll(l);
-			}
-			return new ArrayList<>(out);
-		}
-
-		@Override
-		public List<Pt> chainThrough(Pt seed) { return byPoint.get(key(seed)); }
 	}
 
 	/** Test hook: the most chains any traced cluster holds so far. */

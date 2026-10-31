@@ -18,6 +18,7 @@ Every decision waiting for you, one line each, newest first under each heading. 
 # Perf
 
 - [ ] **PORTALCOLD** (2026-10-30, measured): a first nether-portal trip into an unvisited city freezes the whole server inside `getPortalDestination` (it generates 25x25 chunks on the server thread) before vanilla's loading screen opens. Measured on beebox: wild 12.7 s, town 36.6 s, metropolis core 65.3 s (over the 60 s dedicated-server watchdog). The exit portal damaged nothing in either sample (plaza, forest floor). Options: (a) accept (not defensible for metropolises); (b) warm ahead while a player stands in a portal (can't finish in vanilla's 4 s wait); (c) hold the portal trip with a message, hooking `getPortalDestination` and loading the chunks off the server thread. **Recommendation: (c).** P6 bug or P7? [ROADMAP 6.30](ROADMAP.md), [findings](research/spikes/portalcold.md) (lands with PORTALCOLD-M).
+  - @John 2026-10-31: lets do c. P6 bug. A hard crash is a problem.
 - [ ] **Metro flight warmer** (2026-10-29): the region warmer starts only ~2 km out on an elytra flight (worst tick 2.2 s local, 22.5 s beebox); start it earlier, scaled by speed, now in P6 or in P7? [profile-metropolis.md](review/profile-metropolis.md), win candidate 8.
 - [ ] **REGIONPERF budget** (2026-10-27, redone 2026-10-31): you rejected the 60 s cold arrival. New numbers in [regionperf-decision.md](review/regionperf-decision.md) section 7, measured on a quiet beebox, mod against vanilla: at a cold metropolis the slowest chunk takes 53 s (vanilla 0.33 s) and the 9 x 9 block 60 s (vanilla 2.6 s); the region row takes 11.6 to 14.8 s (ceiling 10 s), `/locate` fresh 5.2 s (ceiling 5 s, no vanilla baseline). To decide (section 8): the acceptable cold-arrival wait (seconds, or a multiple of vanilla), whether 0.1.0 waits for the cheaper-work options (hold only what the tile needs; quays out of the chunk pipeline), and the region-row ceiling; release-plan Q4.
 
@@ -28,7 +29,9 @@ Every decision waiting for you, one line each, newest first under each heading. 
 # Design
 
 - [ ] **PORCHSTEP main step** (2026-10-29): should the main door get a 3-wide step to mark it? [REVIEW 6.19 PORCHSTEP](REVIEW.md), [picture](review/p6-porchstep/house-door-step.png).
+  - @John 2026-10-31: yes
 - [ ] **LEAFORDER trees** (2026-10-29): a few more crowns by walls and over streets at chunk lines, fewer big trees against buildings: acceptable? [REVIEW 6.28](REVIEW.md), [picture](review/p6-leaforder/street-after.png).
+  - @John 2026-10-31: yes
 - [ ] **Flat junction pad** (2026-10-29): the deep main-road cut at 20.14.21 comes from a flat junction pad on overlapping main roads; fix it as a P6 bug or as a 7.19 line? Spike says fix first. [road-refine](research/spikes/road-refine.md).
 - [ ] **Road refine pass** (2026-10-29): add the main-road refine pass (T = 8) to 7.x, after the pad fix? Spike recommends it. [road-refine](research/spikes/road-refine.md).
 - [ ] **Unlit house rooms** (2026-10-28): make "a light in every habitable room" (DS-24) its own item now? [REVIEW](REVIEW.md), [interior review](review/phase6/ds35doors/p6-ds35doors-interior.md).

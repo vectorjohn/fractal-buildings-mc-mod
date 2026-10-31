@@ -54,6 +54,12 @@ record QuaySites(String label, boolean heavy, Supplier<WorldPlanner> planner, ja
 
 		/** The owned waterfront tiles, in tile order. */
 		List<DistrictGrid.TileId> waterfront() { return Districts.waterfrontTiles(source, exact()); }
+
+		/** A new source of the same planner and settlement that shares nothing with any other (QUAYLAZY: a fresh trace per tile). */
+		SkeletonSource.Direct fresh() { return planner.newSource(site); }
+
+		/** A new source that traces the quays the reference way (the verbatim pre-QUAYLAZY whole trace). */
+		SkeletonSource.Direct reference() { return planner.newSource(site).withQuayReference(true); }
 	}
 
 	/** A fresh planner and source. */

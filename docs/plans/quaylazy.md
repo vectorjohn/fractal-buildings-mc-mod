@@ -278,6 +278,7 @@ Files: `Districts.java`, `QuayWindowTest.java`, new `QuayLazyTest.java`.
     the test, at least 3).
 - Done when: all of the above pass, `ParallelReadsPlannerTest`, `MainStubTest`, `SettlementGoldenTest` and
   `DistrictsTest` are unchanged and green, and `scripts/test-scope.sh` layers pass.
+- *Done 2026-10-31 (log 2026-10-31-p6-quaylazy-3b). Deviations:* the s4_m2 tile-pair border test lives in `QuayLazyTest` (heavy; it needs `QuaySites`), not `QuayWindowTest`; the cost guard samples 9 tiles of s4_m2; `canonicalQuays` got the R2 column-sequence tiebreak (both paths; no fixture has a tie) and the order key a tie rank `{smallest, first, size, tie, part}`; the chain source is built per request over the caller's bank (a bank is one thread's `Build`), so step 4 can build one per fanned-out piece (`Bank.fork()`) without touching the trace.
 
 ## Step 4: (c), parallel walks and cluster grading (S-M; after 3b, parallel with 5)
 

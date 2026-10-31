@@ -48,7 +48,7 @@ Item codes (PARREADS, MAINSTUB, TPHOLD, ...) and run terms, one row each. **Gene
 | DL |  | Phase 5 step: district layout (5.2 detail half) | done | [[docs/log/2026-10-21-p5-dl-layout|log]] |
 | docs-feedback |  | the worktree where John edits docs in SilverBullet; the coordinator syncs it into the run branch | - | [[CLAUDE|CLAUDE]] |
 | DOOR2 |  | wide-door steps on sloped blocks | done | [[docs/log/2026-10-26-p7-door2|log]] |
-| DOORAIR | 6.32 | door steps claim street headroom | open | [[docs/ROADMAP|ROADMAP 6.32]] |
+| DOORAIR | 6.32 | door steps claim street headroom | done | [[docs/ROADMAP|ROADMAP 6.32]] |
 | DOORBANK | 6.20 | doors below an embankment street | done | [[docs/ROADMAP|ROADMAP 6.20]] |
 | DOORGLASS |  | a shop-front door set between glass panes; panes don't attach to a door, so the glazing stops short of it.... | polish | [[docs/ROADMAP|ROADMAP polish]] |
 | DORMER |  | dormer stairs: dormer roofs built as stair blocks (John's 2026-10-26 playtest) | polish | [[docs/ROADMAP|ROADMAP polish]] |
@@ -172,6 +172,7 @@ Item codes (PARREADS, MAINSTUB, TPHOLD, ...) and run terms, one row each. **Gene
 | SHOPLOW | 7.17 | doors sit near the street (shops, houses, workshops) | open | [[docs/ROADMAP|ROADMAP 7.17]], [[docs/plans/shoplow|plan]] |
 | SIMTIMEFLAKE |  | wall-clock asserts in fast tests | done | [[docs/log/2026-10-29-p6-simtimeflake|log]] |
 | SK |  | Phase 5 step: cell skeleton | done | [[docs/log/2026-10-21-p5-sk-skeleton|log]] |
+| SKIPROLL |  | skip the terrain reads for region cells whose roll can never settle | done | [[docs/ROADMAP|ROADMAP]] |
 | SKYLINE |  | a smaller tall core and a longer tail (D3 gate feedback) | done | [[docs/log/2026-10-21-p5-skyline|log]] |
 | SPARSEREADS |  | read fewer exact terrain columns (checkerboard / 1-in-3) where shape is enough | done | [[docs/ROADMAP|ROADMAP]] |
 | SPILLDIRT |  | the concrete->dirt [unknown] order-test flake | done | [[docs/log/2026-10-27-p6-spilldirt|log]] |
