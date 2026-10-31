@@ -51,3 +51,7 @@ To read text out of old screenshots that have no sidecar, use `scripts/ocr-scree
 
 The Phase 6 gate playtest kit (seeds, settlements near spawn, a route, checklist, known issues) is in
 [review/phase6/gate-kit/README.md](review/phase6/gate-kit/README.md); regenerate it with `scripts/playtest-kit.sh`.
+
+# Where to test 
+
+It would be helpful to use the [[docs/review/phase6/gate-kit/README|gate-kit]].
