@@ -118,3 +118,4 @@ the end of its track's list. Notes use [TEMPLATE.md](TEMPLATE.md).
 - [Intel iGPU for client tests](spikes/gpu-intel.md) — yes: FB_VK=intel renders on the UHD 770 (sw present path under Xvfb); buys frame time (4-7 ms at rd 32) and wide views, not world generation (~44 chunks/s, vanilla caps 4 concurrent player chunk generations; rd 32 fresh metropolis ~118 s) — new
 
 - [road-refine](spikes/road-refine.md): main-road deep cuts come mostly from flat junction pads on overlapping main roads; a 32-lattice refine pass cuts >8 columns by 31%; finer intercity lattice and D* Lite not worth it. Status: new
+- [late-stairs](worldgen/late-stairs.md): the playtest flight pit comes from vanilla beard_thin raising ground around buildings while the planner builds flights on bare noise ground; recommends a late planner pass reading beard-adjusted ground (7.26 BEARDFIT). Status: new

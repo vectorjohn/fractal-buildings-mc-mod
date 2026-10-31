@@ -23,6 +23,7 @@ Item codes (PARREADS, MAINSTUB, TPHOLD, ...) and run terms, one row each. **Gene
 | B8 |  | Phase 6 step: performance budget in CI (6.7) | done | [[docs/log/2026-10-23-p6-b8-perf|log]] |
 | B9 |  | Phase 6 step: fly-through screenshots (6.8) | done | [[docs/log/2026-10-23-p6-b9-fly|log]] |
 | BASEMENT | 7.18 | storeys below the entrance (cellars, undercrofts, walk-outs, high-rise plant levels) | open | [[docs/ROADMAP|ROADMAP 7.18]] |
+| BEARDFIT | 7.26 | entrance flights fitted to the ground the beard leaves | open | [[docs/ROADMAP|ROADMAP 7.26]] |
 | BEDFIX |  | bed halves lost at chunk borders | done | [[docs/log/2026-10-23-p6-bedfix|log]] |
 | beebox |  | the worker box: a second machine for heavy jobs and long runs, reached by `scripts/remote.sh` | - | [[CLAUDE|CLAUDE]] |
 | BLK16 |  | fix: the entrance-reachable check failed at the steepest allowed grade (Phase 5) | done | [[docs/runs/2026-10-21-phase5|2026-10-21-phase5]] |
@@ -100,6 +101,7 @@ Item codes (PARREADS, MAINSTUB, TPHOLD, ...) and run terms, one row each. **Gene
 | LEAFORDER | 6.28 | end state of crowns over streets varies between runs | done | [[docs/ROADMAP|ROADMAP 6.28]] |
 | LINKBRAID | 7.25 | roads between settlements that share a valley share a road | open | [[docs/ROADMAP|ROADMAP 7.25]] |
 | LOTRAIL |  | railed flights inside the lot, landings as wide as the door | done | [[docs/log/2026-10-25-p6-lotrail|log]] |
+| MAINSTEP | 6.33 | a 3-wide step at the main door | open | [[docs/ROADMAP|ROADMAP 6.33]] |
 | MAINSTUB | 6.25 | main roads that end at a gate with nothing beyond | done | [[docs/ROADMAP|ROADMAP 6.25]] |
 | MAINSTUB-CORE |  | 6.25 MAINSTUB follow-up: the city core tile on the whole-settlement path | done | [[docs/log/2026-10-29-p6-mainstub-core|2026-10-29-p6-mainstub-core]] |
 | MC1 |  | Phase 5 step: join rule (region half of 5.8) | done | [[docs/log/2026-10-21-p5-mc1-join|log]] |

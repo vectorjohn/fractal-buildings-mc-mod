@@ -28,10 +28,7 @@ Every decision waiting for you, one line each, newest first under each heading. 
 
 # Design
 
-- [ ] **PORCHSTEP main step** (2026-10-29): should the main door get a 3-wide step to mark it? [REVIEW 6.19 PORCHSTEP](REVIEW.md), [picture](review/p6-porchstep/house-door-step.png).
-  - @John 2026-10-31: yes
-- [ ] **LEAFORDER trees** (2026-10-29): a few more crowns by walls and over streets at chunk lines, fewer big trees against buildings: acceptable? [REVIEW 6.28](REVIEW.md), [picture](review/p6-leaforder/street-after.png).
-  - @John 2026-10-31: yes
+- [ ] **BEARDFIT** (2026-10-31): your "add stairs later" question (02.44.32). Diagnosed: Minecraft's beard (the terrain it pulls toward each building's slab) raised the ground a block, so the bottom step sank. Fix which way: (c) a late planner pass that re-reads the ground with the beard at each flight and fits the foot (recommended; amends ADR 0003, worldgen, rule D4), (d1) no beard, the planner grades lots itself (bigger, exact), or (d2) the beard plane at the floor surface (no step at the door)? And P7 (recommended: walkable, needs the ADR amendment) or P6? [ROADMAP 7.26](ROADMAP.md), [late-stairs](research/worldgen/late-stairs.md), [REVIEW reply](review/phase6/playtest-2026-10-31/REVIEW.md).
 - [ ] **Flat junction pad** (2026-10-29): the deep main-road cut at 20.14.21 comes from a flat junction pad on overlapping main roads; fix it as a P6 bug or as a 7.19 line? Spike says fix first. [road-refine](research/spikes/road-refine.md).
 - [ ] **Road refine pass** (2026-10-29): add the main-road refine pass (T = 8) to 7.x, after the pad fix? Spike recommends it. [road-refine](research/spikes/road-refine.md).
 - [ ] **Unlit house rooms** (2026-10-28): make "a light in every habitable room" (DS-24) its own item now? [REVIEW](REVIEW.md), [interior review](review/phase6/ds35doors/p6-ds35doors-interior.md).

@@ -21,6 +21,51 @@ How do routes read terrain today, and why do they cut deep? Would a finer lattic
   - *Streets inside a settlement* are a separate system. They route on the skeleton's 32-block lattice (`CityProgram.octilinear`, else `DefaultProgram.route`). A step is forbidden above 1 in 3 between nodes, and nothing between nodes is read. `JunctionField` and `Grading` then grade them with exact reads.
 - **John's cut is a metropolis main road, not an intercity road.** It is `r3_m2_2` (MAIN, 9 wide); no intercity or approach column lies within 3 chunks. At 3600,-1264 the ground is 133 and the road is at 108: a 25-block cut. Two causes:
   - **Main cause: a junction pad pins a long stretch flat.** `r3_m2_2` and `r3_m2_3` are both routed from the hub, and they share about 400 blocks of columns. `JunctionField` treats that whole overlap as one pad and pins it flat at level 108 (ground median 114). So the road cuts 10 to 17 blocks everywhere on it, and 25 at the hump. The two deepest cuts in the metropolis come from the same pattern: `r4_m2_3` and `r4_m2_4` share about 150 blocks pinned at 94 under ground up to 142, a 47-block cut.
+    - @John 2026-10-31: I don't know what you mean. What is pinned flat? The whole city’s roads? I need some kind of diagram to visualize. Ascii if it's that simple, but an image (linked) or even gif animation or some othet animating tool would help.
+      - @assistant 2026-10-31: Not the whole city's roads: only the stretch where two main roads lie on top of each other. Everywhere else a road follows the ground as before.
+        - **What a junction pad normally is.** Where two streets cross, the cells they share must have one surface, or one street would meet the other with a step. So the planner (`JunctionField`, 6.3 JUNCTION) takes the few blocks of each street whose 9-wide footprint touches the other street (the *pad*) and holds them at one height, the *junction level*. Each street then slopes away from the pad at most 1 in 3. A normal pad is short, about one road width:
+
+          ```
+                    |   |
+                    |   |        === the pad: the blocks where the two
+               -----+===+-----       footprints touch, about 9 x 9,
+                    |   |            all at one height
+                    |   |
+          ```
+
+        - **Why two roads become one giant pad.** `r3_m2_2` and `r3_m2_3` start at the same hub (3808,-1536, the hub of the city's western cells) and the route planner sends both down the same columns for about 420 blocks before they part. The rule "every block where one street's footprint touches the other's is pad" was written for crossings, so here *every* block of that shared stretch qualifies, and the whole 420-block stretch becomes one pad with one level. Plan view (north up, not to scale):
+
+          ```
+           r3_m2_3 goes on                              * hub (3808,-1536)
+           north-west                                  ##
+                 \                                    ##
+                  \  they part                       ##
+                   ##########                      ##     ## = both roads on
+             loop  #        ####                 ##            the same columns:
+            r3_m2_2           ####             ##              one pad, held
+            turns               ####         ##                at y = 108
+            south                 ####     ##
+            and east                ####  ##
+                                      #X#   <- X: the hump at 3600,-1264
+                                                   (ground 133, road 108)
+          ```
+
+        - **Why that stretch sits at one height whatever the hills do.** A pad is flat by design, so all 420 blocks share one level. The planner starts from the median ground under the pad (114), then moves it so neighbouring crossings stay within a 1-in-3 climb of each other; here the outcome is a compromise with the hub crossing just before it (ground 85), which ends at 109 while this pad ends at 108. The ground under the stretch is mostly 112 to 133 (lower near its far end), so the road is dug into it. Side profile along the shared stretch:
+
+          ```
+           y
+          133 |                      /\          <- hump: ground 133
+          125 |               __/\__/  \
+          115 |  ___/\_______/      |   \__       ground (median 114)
+          108 |  =================================  road: one flat level, 108
+          100 |                     |         \__
+              +---------------------|--------------> blocks along r3_m2_2
+                 |<-- shared pad, about 420 blocks -->|
+                 cut = ground - road: 5 to 17 most of the way, 25 at the hump
+          ```
+
+        - **The real numbers** (planner output on the recorded pt1573 terrain; road levels from `JunctionField`, ground from the exact terrain). [Side profile of r3_m2_2](../../review/road-refine/profile-r3_m2_2.png): the yellow band is the shared pad, grey bands are ordinary crossing pads a few blocks wide, red is cut. After the pad ends the road follows the ground down again. [Plan of the two routes](../../review/road-refine/plan-r3_m2_2.png), overlap in yellow. The 47-block cut is the same pattern on `r4_m2_3` and `r4_m2_4` ([profile](../../review/road-refine/profile-r4_m2_3.png), [plan](../../review/road-refine/plan-r4_m2_3.png)): they share two long stretches, one from the hub held at 92 (over ground near 65, so fill) and one held at 94 while the ground rises to 141; past its end the road can climb only 1 in 3, so the cut runs on past the pad.
+        - **The fix the spike recommends**: grade the shared stretch once, as one street that follows the ground, instead of treating it as a crossing; or plan the two roads as one that forks where they part. Only the ends where they meet other streets would stay flat.
   - Minor cause: a hump the lattice can't see. Both 32-lattice nodes read 118, and the ground between them peaks at 133.
 - **Main roads, with a refine pass** (all 22 main roads of the pt1573 metropolis; cut is ground minus graded level, counted per column):
 
