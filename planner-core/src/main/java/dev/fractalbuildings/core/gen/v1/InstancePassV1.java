@@ -432,25 +432,27 @@ public final class InstancePassV1 {
 			candidates.add(new int[] {s0});
 			boolean[] deck = null;
 			int foundPass = -1, foundCi = -1;
+			for (int mode = 0; mode < 3 && found < 0; mode++) { // STAIRJOG: mode 0 tries only flights that run straight (no turn on the way down, DS-45 run and turn sizes) over every rail pass; mode 1 is the search as before
 			for (int strictPass = 0; strictPass < 3 && found < 0; strictPass++) { // pass 0: only landings and flights whose open sides lie inside the lot (every one can be railed); pass 1: flights only (a landing on the lot line stays); pass 2: any route
 			for (int stepLo = stepFrom; stepLo >= oy && found < 0; stepLo--) { // PORCHSTEP: first a door whose outside ground is a block under the sill gets a step (ground >= sill - 0); only where no route is found, the plain drop to the ground of old (stepLo = oy)
 			for (int runLimit = SiteLevel.LEGACY.get() ? 1 : 0; runLimit < 2 && found < 0; runLimit++) { // 0: DS-45 stair runs (at most 3 risers without a level tread); 1: where no such route fits at this rail pass, today's shortest flight (a railed long run before an unrailed short one)
 			boolean limited = runLimit == 0;
+			if (mode < 2 && (!limited || strictPass > 1)) continue; // straight only where every rail stays inside the lot or on the lot line; an unrailed straight flight does not beat a railed jog
 			boolean strict = strictPass <= 1, strictLanding = strictPass == 0;
 			for (int ci = 0; ci < candidates.size(); ci++) {
 				int[] srcs = candidates.get(ci);
-				if (strictPass == 0 && nDeck > 0 && ci >= nDeck) continue; // a stoop door keeps its landing while one is possible
+				if ((strictPass == 0 || mode < 2) && nDeck > 0 && ci >= nDeck) continue; // a stoop door keeps its landing while one is possible (mode 0: always, the bare door cell is the old search's last resort)
 				if (strictLanding && ci < nDeck) { boolean edge = false; for (int c : srcs) edge |= oy - outG[c] >= RAIL_DROP_LANDING; if (edge) continue; }
 				boolean[] saved = blocked.clone();
 				for (int c : srcs) blocked[c] = false;
 				// pass 1: a flight of its own to the terrain. Pass 2 (only if pass 1 found none, e.g. earlier flights wall
 				// the margin off on a steep slope): the flight may also end by stepping onto an earlier flight, one block
 				// down or level, and share the rest of its way down.
-				for (int pass = 0; pass < 2 && found < 0; pass++) {
+				for (int pass = 0; pass < (mode < 2 ? 1 : 2) && found < 0; pass++) { // mode 0: a flight of its own only (merging onto an earlier flight is for the old search)
 					java.util.Arrays.fill(parent, -2);
 					if (limited) {
 						boolean[] mg = {false};
-						found = searchRuns(srcs, s0, ci, nDeck, strict, strictLanding, stepLo, pass, nx, nz, x0, x1, z0, z1, oy, base, ground, outG, blocked, flightTop, grid, out, sx, sz, nOut, parent, depth, mg);
+						found = searchRuns(srcs, s0, ci, nDeck, strict, strictLanding, stepLo, pass, nx, nz, x0, x1, z0, z1, oy, base, ground, outG, blocked, flightTop, grid, out, sx, sz, nOut, parent, depth, mg, mode < 2, mode == 0);
 						merged = mg[0];
 						continue;
 					}
@@ -507,6 +509,7 @@ public final class InstancePassV1 {
 				}
 				System.arraycopy(saved, 0, blocked, 0, blocked.length);
 				merged = false;
+			}
 			}
 			}
 			}
@@ -632,7 +635,7 @@ public final class InstancePassV1 {
 	 * a merge onto an earlier flight, the last step), or -1; {@code parent} and {@code depth} (per cell) hold the route.
 	 */
 	private static int searchRuns(int[] srcs, int s0, int ci, int nDeck, boolean strict, boolean strictLanding, int stepLo, int pass, int nx, int nz, int x0, int x1, int z0, int z1,
-			int oy, int base, int[] ground, int[] outG, boolean[] blocked, int[] flightTop, VoxelGrid grid, Facing out, int sx, int sz, int nOut, int[] parent, int[] depth, boolean[] merged) {
+			int oy, int base, int[] ground, int[] outG, boolean[] blocked, int[] flightTop, VoxelGrid grid, Facing out, int sx, int sz, int nOut, int[] parent, int[] depth, boolean[] merged, boolean straight, boolean minRun) {
 		int maxD = 2;
 		for (int gi : ground) maxD = Math.max(maxD, oy - gi + 3);
 		maxD = Math.min(maxD, 40);
@@ -693,22 +696,31 @@ public final class InstancePassV1 {
 				int gn = ground[ni];
 				boolean endsHere = gn >= h && gn <= h + 1 && !(ci < nDeck && (nxx - sx) * out.dx + (nzz - sz) * out.dz != nOut) && (gn > h || cur + 1 <= MAX_CUR);
 				if (endsHere && !endTouchesOk(c, ni, gn, mark, markState, stamp, stride, curN, oy, nx, isSrc, nz)) endsHere = false;
+				if (endsHere && minRun && cur < 4 && restBefore(st, from, stride, curN)) endsHere = false; // STAIRJOG r2: DS-45 runs of at least 2 risers: no single riser between the last rest and the ground
 				if (endsHere && rlen + 1 > d + 1 + (d + 1) / 3 + 3) endsHere = false; // a route much longer than the descent needs (a landing every 3 risers and a corner or two) is a walk across the lot, not a flight
 				if (endsHere) {
 					boolean fr = true;
 					for (int y = gn - base; y <= gn + 3 - base && fr; y++) fr = grid.get(nxx, y, nzz) == Role.AIR;
 					if (fr) { chain(st, from, stride, curN, parent, depth, ni, new int[] {c, d + 1}); return ni; }
 				}
+				if (straight && from[st] >= 0 && (cx - (x0 + from[st] / stride % nx) != f.dx || cz - (z0 + from[st] / stride / nx) != f.dz)) continue; // STAIRJOG mode 0: no turn after the first move (only the last step onto the ground may leave the line)
 				if (d + 1 <= maxD && cur + 2 <= MAX_CUR && touchesRouteOk(c, ni, oy - d - 1, false, mark, markState, stamp, stride, curN, oy, nx, isSrc, nz, ground)) { // a step down
 					int ns1 = ni * stride + (d + 1) * curN + cur + 2;
 					if (!seen[ns1]) { seen[ns1] = true; from[ns1] = st; queue[tail++] = ns1; }
 				}
+				if (minRun && d > 0 && cur > 0 && cur < 4) continue; // no rest after a single riser (the level move is the only move left past here)
 				int nl = ni * stride + d * curN; // a level landing cell: ends the run
 				if (!seen[nl] && touchesRouteOk(c, ni, h, true, mark, markState, stamp, stride, curN, oy, nx, isSrc, nz, ground)) { seen[nl] = true; from[nl] = st; queue[tail++] = nl; }
 			}
 		}
 		return -1;
 	}
+	/** True if the route to state {@code st} already had a rest (a level cell below the door level). */
+	private static boolean restBefore(int st, int[] from, int stride, int curN) {
+		for (int s = st; s >= 0; s = from[s]) { int rest = s % stride; if (rest % curN == 0 && rest / curN > 0) return true; }
+		return false;
+	}
+
 
 	/**
 	 * A new tread at level {@code lvl} may touch (four ways) an earlier cell of the route other than the one it comes from only if no open edge is left
@@ -857,6 +869,35 @@ public final class InstancePassV1 {
 
 	/** Most cells a stoop is trimmed at one end to make room for the flight. */
 	private static final int STOOP_MAX_TRIM = 8;
+	/** True if a flight or landing tread has an open edge inside the building's cell range's outside, at least a flight rail threshold above the ground beside it, with no rail and no step on it (the test {@code RailingTest.unguardedEdges}, in the core for the STAIRJOG setback). */
+	static boolean unguarded(PlacedBuilding b, TerrainProbe raw) {
+		java.util.Set<Long> columns = new java.util.TreeSet<>(), railCols = new java.util.TreeSet<>();
+		for (Box x : b.siteBoxes()) {
+			long k = ((long) x.box().x() << 32) ^ (x.box().z() & 0xffffffffL);
+			if (x.role() == Role.RAIL) railCols.add(k);
+			else if (x.role() == Role.STAIR) columns.add(k);
+		}
+		Box3 bd = b.shell().bounds();
+		TerrainProbe eff = dev.fractalbuildings.core.terrain.SiteGround.probe(b, raw);
+		java.util.Set<Long> doorFront = new java.util.TreeSet<>();
+		for (Opening o : b.shell().openings())
+			if (o.kind() == OpeningKind.DOOR) {
+				Facing out = outward(o);
+				for (int x = o.box().x(); x < o.box().maxX(); x++) for (int z = o.box().z(); z < o.box().maxZ(); z++) doorFront.add(((long) (x + out.dx) << 32) ^ ((z + out.dz) & 0xffffffffL));
+			}
+		for (Box t : b.siteBoxes()) {
+			if (t.role() != Role.STAIR) continue;
+			for (Facing f : Facing.values()) {
+				int cx = t.box().x() + f.dx, cz = t.box().z() + f.dz;
+				long k = ((long) cx << 32) ^ (cz & 0xffffffffL);
+				if (cx >= 0 && cz >= 0 && cx < bd.maxX() && cz < bd.maxZ() || doorFront.contains(k) || columns.contains(k)) continue;
+				if (b.oy() + t.box().y() - eff.floorY(b.placement().worldX(cx, cz), b.placement().worldZ(cx, cz)) < RAIL_DROP_FLIGHT) continue;
+				if (!railCols.contains(k)) return true;
+			}
+		}
+		return false;
+	}
+
 
 	/**
 	 * Candidate landings (stoops) in front of a door that sits above the ground: the door's row and, when the

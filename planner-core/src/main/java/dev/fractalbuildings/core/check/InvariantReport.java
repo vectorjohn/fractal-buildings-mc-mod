@@ -63,6 +63,9 @@ public final class InvariantReport {
 			List<String> ids = new ArrayList<>(HighriseChecks.IDS);
 			ids.add("door-rise");
 			ids.add("flight-landings");
+			ids.add("flight-turns");
+			ids.add("flight-runs");
+			ids.add("flight-rail");
 			for (String id : ids) sb.append("| ").append(id).append(" | ").append(warningBuildings.getOrDefault(id, 0)).append(" | ").append(warningCount(id)).append(" |\n");
 			sb.append("\n");
 			for (var e : firstWarning.entrySet()) sb.append("- first ").append(e.getKey()).append(" `").append(e.getValue()).append("`\n");

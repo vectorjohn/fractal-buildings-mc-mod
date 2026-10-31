@@ -148,6 +148,7 @@ public final class DoorChecks {
 		if (scene.genVersion() < 2) return out;
 		Map<Long, Integer> surface = !scene.ground().isEmpty() ? StairGround.surfaceLevels(scene) : Map.of();
 		for (PlacedBuilding b : scene.buildings()) {
+			out.addAll(flightShape(b));
 			List<DoorRise.Door> doors = DoorRise.measure(scene, b, dev.fractalbuildings.core.terrain.SiteGround.probe(b, raw), surface);
 			for (Object[] t : tooHigh(scene, b, doors, raw)) {
 				if ((Boolean) t[1]) continue; // within the contract: the invariant reports it
@@ -166,4 +167,94 @@ public final class DoorChecks {
 		}
 		return out;
 	}
+
+	/**
+	 * DS-45 amendment "run and turn sizes" on a building's site boxes (STAIRJOG): the placed treads ({@link Role#STAIR} site boxes) of each flight are
+	 * walked as a path; a tread with two path neighbours at right angles is a turn, and two turns one riser apart (a jog) are
+	 * {@code flight-turns}. A {@link Role#RAIL} post on a tread's own cell is {@code flight-rail} (no rail post in a landing cell). Turns on the same level
+	 * (the two cells of a half landing) are one landing and are not counted.
+	 */
+	public static List<Violation> flightShape(PlacedBuilding b) {
+		List<Violation> out = new ArrayList<>();
+		Map<Long, Integer> tread = new java.util.TreeMap<>();
+		List<int[]> rails = new ArrayList<>();
+		for (dev.fractalbuildings.core.ir.Box x : b.siteBoxes()) {
+			Box3 bx = x.box();
+			if (x.role() == dev.fractalbuildings.core.ir.Role.STAIR && bx.sx() == 1 && bx.sz() == 1) tread.put(key(bx.x(), bx.z()), bx.y());
+			else if (x.role() == dev.fractalbuildings.core.ir.Role.RAIL) for (int i = 0; i < bx.sx(); i++) for (int k = 0; k < bx.sz(); k++) rails.add(new int[] {bx.x() + i, bx.z() + k, bx.y()});
+		}
+		for (int[] r : rails) {
+			Integer y = tread.get(key(r[0], r[1]));
+			if (y != null) out.add(new Violation("flight-rail", b.id(), "a rail post stands in the tread cell " + r[0] + "," + r[1] + " (local)", List.of(b.placement().toWorld(Box3.of(r[0], r[2], r[1], 1, 1, 1)))));
+		}
+		int[] dx = {1, -1, 0, 0}, dz = {0, 0, 1, -1};
+		Map<Long, java.util.List<Long>> nb = new java.util.TreeMap<>();
+		for (var e : tread.entrySet()) {
+			int x = (int) (e.getKey() >> 32), z = (int) (long) e.getKey();
+			List<Long> l = new ArrayList<>();
+			for (int k = 0; k < 4; k++) { Integer y = tread.get(key(x + dx[k], z + dz[k])); if (y != null && Math.abs(y - e.getValue()) <= 1) l.add(key(x + dx[k], z + dz[k])); }
+			nb.put(e.getKey(), l);
+		}
+		int top = Integer.MIN_VALUE;
+		for (int y : tread.values()) top = Math.max(top, y);
+		// group the turns by flight: the connected set of treads
+		java.util.Set<Long> seen = new java.util.TreeSet<>();
+		for (long start : tread.keySet()) {
+			if (!seen.add(start)) continue;
+			List<Long> comp = new ArrayList<>(), stack = new ArrayList<>();
+			stack.add(start);
+			while (!stack.isEmpty()) {
+				long c = stack.remove(stack.size() - 1);
+				comp.add(c);
+				for (long n : nb.get(c)) if (seen.add(n)) stack.add(n);
+			}
+			int ctop = Integer.MIN_VALUE;
+			for (long c : comp) ctop = Math.max(ctop, tread.get(c));
+			java.util.TreeMap<Integer, List<Long>> turns = new java.util.TreeMap<>(); // riser index below the landing -> turn cells
+			for (long c : comp) {
+				List<Long> n = nb.get(c);
+				if (n.size() != 2) continue;
+				int ax = (int) (n.get(0) >> 32) - (int) (c >> 32), az = (int) (long) (long) n.get(0) - (int) c, bx2 = (int) (n.get(1) >> 32) - (int) (c >> 32), bz = (int) (long) (long) n.get(1) - (int) c;
+				if (ax * bx2 + az * bz != 0) continue; // collinear (opposite sides) is not a turn
+				turns.computeIfAbsent(ctop - tread.get(c), r -> new ArrayList<>()).add(c);
+			}
+			// runs (DS-45 amendment: every run at least 2 risers; a flight of a single run, e.g. one step to a door landing, is exempt)
+			java.util.Set<Long> walked = new java.util.TreeSet<>();
+			for (long s0 : comp) {
+				if (tread.get(s0) >= ctop) continue;
+				boolean fromLanding = false;
+				for (long n : nb.get(s0)) fromLanding |= tread.get(n) >= ctop;
+				if (!fromLanding || !walked.add(s0)) continue;
+				List<Integer> runs = new ArrayList<>();
+				List<Long> runEnd = new ArrayList<>();
+				int run = 1; // the step off the landing
+				long cur = s0;
+				while (true) {
+					long next = Long.MIN_VALUE;
+					for (long n : nb.get(cur)) if (tread.get(n) < ctop && !walked.contains(n)) { next = n; break; }
+					if (next == Long.MIN_VALUE) break;
+					walked.add(next);
+					if (tread.get(next) < tread.get(cur)) run++;
+					else if (run > 0) { runs.add(run); runEnd.add(cur); run = 0; }
+					cur = next;
+				}
+				if (run > 0) { runs.add(run); runEnd.add(cur); }
+				if (runs.size() > 1) for (int i = 0; i < runs.size(); i++) if (runs.get(i) < 2) {
+					long c = runEnd.get(i);
+					out.add(new Violation("flight-runs", b.id(), "a run of " + runs.get(i) + " riser between rests near " + (int) (c >> 32) + "," + (int) c + " (local): DS-45 asks 2 or more", List.of(b.placement().toWorld(Box3.of((int) (c >> 32), tread.get(c), (int) c, 1, 1, 1)))));
+				}
+			}
+			Integer prev = null;
+			for (int r : turns.keySet()) {
+				if (prev != null && r - prev == 1) {
+					long c = turns.get(r).get(0);
+					out.add(new Violation("flight-turns", b.id(), "two turns one riser apart (a jog) at " + (int) (c >> 32) + "," + (int) c + " (local): DS-45 asks 2 or more risers between turns", List.of(b.placement().toWorld(Box3.of((int) (c >> 32), tread.get(c), (int) c, 1, 1, 1)))));
+				}
+				prev = r;
+			}
+		}
+		return out;
+	}
+
+	private static long key(int x, int z) { return ((long) x << 32) | (z & 0xffffffffL); }
 }

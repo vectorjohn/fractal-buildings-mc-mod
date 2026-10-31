@@ -545,8 +545,8 @@ and Minecraft block facts ([blocks.md](blocks.md), from John's
 - **Why:** John, playtest 2026-10-26 (21.38.53): "hard to walk up ...
   more generous on the switchbacks".
 - **Scope:** every exterior flight.
-- **Enforcement:** code candidate: extend the planned `flight-landings`
-  check (`MIN_RUN = 2`). None today.
+- **Enforcement:** design warnings `flight-turns` (two turns one riser apart) and `flight-rail` (a rail post on a tread cell) in `DoorChecks.flightShape` (6.31 STAIRJOG; shown by `check` and `city-check`); `flight-landings` (runs over 3) stays a warning. Code candidate still open: extend the planned `flight-landings`
+  check (`MIN_RUN = 2`, minimum run length): none today.
 - **Status:** #Approved by @John on 2026-10-28 (amends accepted DS-45). **Source:** architect,
   playtest questions 2026-10-27
   ([playtest1026-qs-architect.md](../review/reports/playtest1026-qs-architect.md), P3).

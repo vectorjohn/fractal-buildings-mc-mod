@@ -80,6 +80,20 @@ public final class GeneratorV1 implements Generator {
 				} catch (IllegalArgumentException e) { /* no room for a setback: keep the placement as it was */ }
 			}
 		}
+		// STAIRJOG (DS-45 run and turn sizes): a flight that still jogs (two turns one riser apart) after the straight-run search found no straight way down: set the
+		// building back further, one row more each time, and keep the first placement that is railed and has no jog
+		if (!SiteLevel.LEGACY.get() && placed.guarded() && jogs(placed.building()) && !NO_SETBACK.contains(req.type())) {
+			for (int step = 0; step < JOG_SETBACKS.length; step++) {
+				int f = JOG_SETBACKS[step][0], s = JOG_SETBACKS[step][1];
+				TypeLimits back = new TypeLimits(lim.minWidth(), lim.minDepth(), lim.minStoreys(), lim.maxStoreys(), lim.side() + s, lim.front() + f, lim.back() + s, lim.allStreets(), lim.testLots(), lim.propertySeeds(), lim.maxGrade(), lim.stoop());
+				try {
+					BuildingSpec s2 = SpecPolicyV1.spec(req, back);
+					Doors d2 = withDoors(s2, req, back, bare);
+					InstancePassV1.Placed p2 = d2.placed();
+					if (p2.guarded() && !jogs(p2.building()) && !InstancePassV1.unguarded(p2.building(), req.terrain()) && sound(p2.building(), s2, back, req)) { placed = p2; spec = s2; lim = back; walks = d2.walks(); break; }
+				} catch (IllegalArgumentException e) { /* no room for this setback */ }
+			}
+		}
 		return new Result(placed, spec, lim, walks);
 	}
 
@@ -216,6 +230,18 @@ public final class GeneratorV1 implements Generator {
 
 	/** Extra margin tried in turn: {front, sides and back}. */
 	private static final int[][] SETBACKS = {{1, 0}, {1, 1}, {2, 1}, {2, 2}};
+
+	/** Further front setbacks (rows, sides) tried for a flight that jogs (STAIRJOG; a rise of 6 needs 7 or 8 rows). */
+	private static final int[][] JOG_SETBACKS = {{3, 0}, {4, 1}, {6, 1}, {8, 2}};
+
+	private static boolean jogs(PlacedBuilding b) { return dev.fractalbuildings.core.check.DoorChecks.flightShape(b).stream().anyMatch(v -> v.invariant().equals("flight-turns")); }
+
+	/** The placement passes the building invariants as a scene of its own (a STAIRJOG setback is kept only if it does). */
+	private static boolean sound(PlacedBuilding b, BuildingSpec spec, TypeLimits lim, GenRequest req) {
+		var lot = req.lot();
+		TerrainPatch terrain = TerrainPatch.sample(req.terrain(), lot.x() - 2, lot.z() - 2, lot.w() + 4, lot.d() + 4);
+		return dev.fractalbuildings.core.check.Invariants.check(new SceneDoc(GEN_VERSION, req.worldSeed(), terrain, List.of(spec.lead() > 0 ? lot.withAir(spec.lead() - lim.front(), req.brief().frontY()) : lot), List.of(b), List.of()), req.terrain()).isEmpty();
+	}
 
 	/** Town-wall types stand on the ring's walk and keep their margins. */
 	private static final java.util.Set<String> NO_SETBACK = java.util.Set.of("wall", "curtain", "bastion");
