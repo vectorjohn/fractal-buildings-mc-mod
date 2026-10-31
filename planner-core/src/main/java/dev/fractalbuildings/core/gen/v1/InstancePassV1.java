@@ -573,8 +573,8 @@ public final class InstancePassV1 {
 		return guarded;
 	}
 
-	/** Blocks of claimed air over every step, landing and door approach (STEPBURY: the world's terrain, a beard or a tree must not close a flight). */
-	static final int HEADROOM = 3;
+	/** Blocks of claimed air over every step, landing and door approach: 4 like a street (DS-54 "door steps keep street headroom", DOORAIR 6.32; STEPBURY 6.13 had 3): the world's terrain, a beard or a tree must not close a flight). */
+	static final int HEADROOM = 4;
 	/** Test switch (STEPBURY client test control): false leaves the old site boxes, without the claimed headroom. Set before the planner of a world is built. */
 	public static volatile boolean HEADROOM_ENABLED = !Boolean.getBoolean("fb.noheadroom");
 	private static final int NONE = Integer.MIN_VALUE;

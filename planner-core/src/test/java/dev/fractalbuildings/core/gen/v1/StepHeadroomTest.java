@@ -16,6 +16,14 @@ import org.junit.jupiter.api.Test;
 
 /** STEPBURY (6.13): the air over every step is claimed (an AIR site box), so the world's terrain or a tree cannot close a flight. */
 class StepHeadroomTest {
+	/** DS-54 "door steps keep street headroom" (DOORAIR 6.32): the 4 cells a street claims, written out so changing the planner constant cannot weaken the test. */
+	static final int STREET_AIR = 4;
+
+	@Test
+	void headroomIsTheStreetsFour() {
+		assertEquals(STREET_AIR, InstancePassV1.HEADROOM);
+	}
+
 	private static boolean covered(List<Box> site, int x, int y, int z) {
 		for (Box b : site) {
 			Box3 q = b.box();
@@ -32,7 +40,7 @@ class StepHeadroomTest {
 			if (s.role() != Role.STAIR) continue;
 			Box3 q = s.box();
 			steps[0]++;
-			for (int dy = 1; dy <= InstancePassV1.HEADROOM; dy++) {
+			for (int dy = 1; dy <= STREET_AIR; dy++) {
 				boolean shell = bare.inGrid(q.x(), q.y() + dy, q.z()) && bare.get(q.x(), q.y() + dy, q.z()) != Role.AIR;
 				if (!shell && !covered(b.siteBoxes(), q.x(), q.y() + dy, q.z())) bad++;
 			}
