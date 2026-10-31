@@ -58,6 +58,15 @@ I suggest you give it.
   is broken, not a looks issue. It's probably small: the stair foot needs a
   standing cell, and `furnished-rooms-walkable` could check it. Tag
   `#backlog-p6`.
+- [ ] **6.31 STAIRJOG: a high-rise entrance flight that jogs with no room to turn** (2026-10-31,
+  [03.10.40](phase6/playtest-2026-10-31/2026-10-31_03.10.40.jpg),
+  [03.12.04](phase6/playtest-2026-10-31/2026-10-31_03.12.04.jpg),
+  [03.14.45](phase6/playtest-2026-10-31/2026-10-31_03.14.45.jpg) at
+  4184,95,-1114). Not started. You tagged it `#backlog-p6`. Blocks: a main
+  entrance whose flight is hard to walk. Cheap fix first: start the flight one
+  cell further along so it runs straight. Added by the 2026-10-31 triage; the
+  other 2026-10-31 notes went to the Backlog (unscheduled), the Polish backlog
+  and hype.md, with one question in QUESTIONS.md (deep street cuts).
 - [x] **The rest of the 2026-10-28 notes.** Triaged 2026-10-29 by your
   tags; no new release blocker. 22 `#backlog` notes went to the new
   Backlog (unscheduled) section of the [ROADMAP](../ROADMAP.md) (proposed,

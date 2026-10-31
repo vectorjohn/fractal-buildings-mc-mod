@@ -157,6 +157,17 @@ final class PerfSupport {
 		put("locate.village.repeat.ms", (System.nanoTime() - t0) / 1e6);
 	}
 
+	/** COLDARRIVAL: the vanilla baseline of the {@code /locate} rows: the same village locate, fresh area, in the base world (no settlements, no veto work). */
+	void locateRowsBase(MinecraftServer server) {
+		long t0 = System.nanoTime();
+		String loc = command(server, "locate structure #minecraft:village", -30000, -30000);
+		put("base.locate.village.fresh.ms", (System.nanoTime() - t0) / 1e6);
+		put("base.locate.village.fresh.text", loc);
+		t0 = System.nanoTime();
+		command(server, "locate structure #minecraft:village", -30000, -30000);
+		put("base.locate.village.repeat.ms", (System.nanoTime() - t0) / 1e6);
+	}
+
 	/**
 	 * The lane counters after the flight (mod world only). {@code flight.startsInProgress} is how many starts were still planning when they were read:
 	 * a cold warm of a metropolis region takes longer than the flight, so counters read at the landing can all be 0 (PERFSRV r4).

@@ -6,6 +6,7 @@ Every decision waiting for you, one line each, newest first under each heading. 
 
 # Release (0.1.0)
 
+- [ ] **Deep street cuts you can't climb out of** (2026-10-31): you tagged 03.00.46 and 03.02.36 `#backlog` (7.19 FALLSTREETS, after the release), but in 03.02.36 you were trapped in a cut with no way up to the high-rises. Keep it `#backlog`, or add a cheap P6 stopgap: a stair or stepped bank out of any street cut deeper than about 3 blocks, every N blocks? [playtest 2026-10-31](review/phase6/playtest-2026-10-31/REVIEW.md), [ROADMAP Backlog (unscheduled)](ROADMAP.md).
 - [ ] **Release scope** (2026-10-29): is the P6 checklist the whole release scope, with nothing added? See [release-plan.md](review/release-plan.md) section 3, Q1.
 - [ ] **PORCHSTEP, DOORBANK, STAIRFOOT** (2026-10-29): release blockers, or any of them to P7? (All three are merged now.) [release-plan.md](review/release-plan.md) Q2.
 - [ ] **Long crossings at approaches** (2026-10-29): for 6.15, drop the approach, or allow a long deck at town tier and up until 7.3? Architect: allow the deck. [release-plan.md](review/release-plan.md) Q3, [REVIEW 6.15 ROADJOIN](REVIEW.md), [architect](review/roadjoin/p6-roadjoin-s1-architect.md).

@@ -31,6 +31,7 @@ Item codes (PARREADS, MAINSTUB, TPHOLD, ...) and run terms, one row each. **Gene
 | CIRC |  | 5.11 interior circulation (hub door graph, fewer walk-through rooms) | done | [[docs/archive/roadmap-phase-5|roadmap-phase-5]] |
 | CIRC2 |  | squarer rooms, bedrooms first | done | [[docs/log/2026-10-21-p5-circ2|log]] |
 | CITYQ |  | sparse and "ocean" cities in the B9 fly-through | done | [[docs/log/2026-10-23-p6-cityq|log]] |
+| COLDARRIVAL |  | cold-arrival perf row and vanilla /locate baseline | done | [[docs/log/2026-10-31-p6-coldarrival|log]] |
 | COLDCHUNK |  | what the 70-120 s cold chunk is doing | done | [[docs/log/2026-10-28-coldchunk|log]] |
 | D0 |  | Phase 5 step: city pipeline end to end, city-check, presets | done | [[docs/log/2026-10-21-p5-d0-pipeline|log]] |
 | D2 |  | Phase 5 step: town program, walls and gates | done | [[docs/log/2026-10-21-p5-d2-town|log]] |
@@ -176,6 +177,7 @@ Item codes (PARREADS, MAINSTUB, TPHOLD, ...) and run terms, one row each. **Gene
 | STAIRFILL |  | no stair blocks under a step | done | [[docs/log/2026-10-26-p7-stairfill|log]] |
 | STAIRFOOT | 6.21 | inner stair foot at a drop | done | [[docs/ROADMAP|ROADMAP 6.21]] |
 | STAIRGROUND |  | front steps that end above the ground | done | [[docs/log/2026-10-22-p5-stairground|log]] |
+| STAIRJOG | 6.31 | a high-rise entrance flight that jogs with no room to turn | open | [[docs/ROADMAP|ROADMAP 6.31]] |
 | STAIRS | 6.11 | interior flights one step short | done | [[docs/ROADMAP|ROADMAP 6.11]] |
 | STEPBURY | 6.13 | steps and door approaches buried or blocked by the world | done | [[docs/ROADMAP|ROADMAP 6.13]] |
 | STEPTOP | 6.12 | exterior flights end in a one-block jump | done | [[docs/ROADMAP|ROADMAP 6.12]] |

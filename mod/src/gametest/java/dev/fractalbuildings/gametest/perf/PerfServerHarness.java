@@ -36,6 +36,14 @@ public final class PerfServerHarness {
 	private static final int QUIET_TICKS = 100;
 	private static final int SETTLE_MAX_S = 240;
 	private boolean flying, finished;
+	/** COLDARRIVAL: {@code -Pfb.perfMode=arrival} runs only the cold-arrival row (a fresh world per variant, so the metropolis is cold). */
+	private final boolean arrivalMode = "arrival".equals(System.getProperty("fb.perf.mode", "main"));
+	private static final int ARRIVAL_SETTLE_TICKS = 40, ARRIVAL_MAX_S = Integer.parseInt(System.getenv().getOrDefault("FB_PERF_ARRIVAL_MAX_S", "600"));
+	private int arrTicks;
+	private long arrStart;
+	private double arrMaxTick;
+	private long holdEngagedNs = -1, holdEndedNs = -1;
+	private boolean arrTeleported, holdTimedOut, holdChunksFull;
 
 	/** Entry point of the mod's test hook, called while the mod initialises (before the world exists). */
 	public static void install() {
@@ -51,9 +59,14 @@ public final class PerfServerHarness {
 
 	private void started(MinecraftServer server) {
 		s.put(p + "load.start", load());
+		if (arrivalMode) {
+			player = MockPlayer.join(server, server.overworld(), "perf-arriver", VIEW);
+			flying = true;
+			return;
+		}
 		if (mod) prof.phase("locate");
 		LaneStats.reset();
-		if (mod) s.locateRows(server);
+		if (mod) s.locateRows(server); else s.locateRowsBase(server);
 		LaneStats.reset();
 		// after /locate: the per-start lines (and their nearest-settlement read) cover the flight and what follows. Diagnostic only
 		// (FB_LANE_LOG=1, set by perf.sh --world-mod-only): they cost log I/O and region reads inside the timed chunks.
@@ -109,7 +122,57 @@ public final class PerfServerHarness {
 	}
 
 
+	/**
+	 * COLDARRIVAL: a player at spawn teleports (the {@code /tp} path, {@code ServerPlayer.teleport}, so TeleportHold can take it over) to the
+	 * metropolis centre of the cold-chunk rows; the clock stops when the teleport has happened and every chunk within the player's view radius
+	 * (VIEW = the server's view-distance, set by scripts/perf.sh) is FULL. "Sent" is not observable: the mock connection never acks batches.
+	 */
+	private void arrivalTick(MinecraftServer server) {
+		if (finished) return;
+		var level = server.overworld();
+		if (arrTicks < ARRIVAL_SETTLE_TICKS) { arrTicks++; return; }
+		if (!arrTeleported) {
+			arrTeleported = true;
+			dev.fractalbuildings.mod.teleport.TeleportHold.testReleased = (pl, full, timedOut) -> { holdChunksFull = full; holdTimedOut = timedOut; };
+			s.put(p + "arrival.load.start", load());
+			arrStart = System.nanoTime();
+			player.teleportTo(level, METRO_X + 0.5, 160, METRO_Z + 0.5, java.util.Set.<net.minecraft.world.entity.Relative>of(), 0f, 0f, true);
+			s.put(p + "arrival.teleport.call.ms", (System.nanoTime() - arrStart) / 1e6);
+			return;
+		}
+		double tm = (System.nanoTime() - tickStart) / 1e6;
+		if (tm > arrMaxTick) arrMaxTick = tm;
+		boolean holding = dev.fractalbuildings.mod.teleport.TeleportHold.holding(player);
+		if (holding && holdEngagedNs < 0) holdEngagedNs = System.nanoTime();
+		if (!holding && holdEngagedNs >= 0 && holdEndedNs < 0) holdEndedNs = System.nanoTime();
+		if (!holding) level.getChunkSource().move(player); // what the client's move packets do (MockPlayer.flyTo)
+		boolean there = !holding && Math.abs(player.getX() - METRO_X) < 2 && Math.abs(player.getZ() - METRO_Z) < 2;
+		int cx = METRO_X >> 4, cz = METRO_Z >> 4, ready = 0, want = (2 * VIEW + 1) * (2 * VIEW + 1);
+		for (int dz = -VIEW; dz <= VIEW; dz++) for (int dx = -VIEW; dx <= VIEW; dx++) if (level.getChunkSource().getChunkNow(cx + dx, cz + dz) != null) ready++;
+		boolean all = there && ready == want;
+		long secs = (System.nanoTime() - arrStart) / 1_000_000_000L;
+		if (arrTicks++ % 100 == 0) dev.fractalbuildings.mod.FractalBuildingsMod.LOGGER.info("[PERF-DIAG] arrival {} s holding={} there={} chunks FULL {}/{}", secs, holding, there, ready, want);
+		if (!all && secs <= ARRIVAL_MAX_S) return;
+		finished = true;
+		try {
+			double ms = (System.nanoTime() - arrStart) / 1e6;
+			s.put(p + "arrival.cold.metro.ms", all ? ms : -1);
+			s.put(p + "arrival.cold.metro.ready", ready);
+			s.put(p + "arrival.cold.metro.radius", VIEW);
+			s.put(p + "arrival.maxTick.ms", arrMaxTick);
+			s.put(p + "arrival.hold.engaged", holdEngagedNs >= 0 ? 1 : 0);
+			s.put(p + "arrival.hold.ms", holdEngagedNs >= 0 ? ((holdEndedNs < 0 ? System.nanoTime() : holdEndedNs) - holdEngagedNs) / 1e6 : 0);
+			s.put(p + "arrival.hold.timedOut", holdTimedOut ? 1 : 0);
+			s.put(p + "arrival.hold.chunksFullAtRelease", holdChunksFull ? 1 : 0);
+			s.put(p + "arrival.load.end", load());
+			s.write(Path.of(System.getProperty("fb.perf.out", "build/perf")).resolve("world-arrival-" + (mod ? "mod" : "base") + ".json"));
+		} finally {
+			server.halt(false);
+		}
+	}
+
 	private void tickEnd(MinecraftServer server) {
+		if (arrivalMode) { if (flying) arrivalTick(server); return; }
 		if (!flying || finished) return;
 		if (ticks == 0) flightStart = System.nanoTime();
 		else if (grace == 0) tickMs.add((System.nanoTime() - tickStart) / 1e6);

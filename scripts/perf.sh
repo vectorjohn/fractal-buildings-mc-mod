@@ -78,8 +78,11 @@ if [ "$CHECK_ONLY" = 0 ]; then
 		flock 9
 		qc world-start
 		VARIANTS="${FB_PERF_VARIANTS:-mod base}"; [ "$MOD_ONLY" = 1 ] && VARIANTS=mod && export FB_LANE_LOG=1 # per-start [LANE-START] lines, diagnostics only
+		MODES="main"; [ "${FB_PERF_ARRIVAL:-1}" = 1 ] && [ "$MOD_ONLY" = 0 ] && MODES="main arrival" # COLDARRIVAL: a second pair of fresh worlds, so the metropolis is cold
+		for mode in $MODES; do
+		OUTN="world"; [ "$mode" = arrival ] && OUTN="world-arrival"
 		for v in $VARIANTS; do
-			rm -rf "$SRV/world" "$SRV/logs"
+			rm -rf "$SRV/world" "$SRV/logs"; rm -f "$LOGDIR/$OUTN-$v.json"
 			cat > "$SRV/server.properties" <<P
 online-mode=false
 server-ip=127.0.0.1
@@ -96,11 +99,12 @@ spawn-protection=0
 max-tick-time=-1
 P
 			set +e
-			timeout "${FB_PERF_TIMEOUT:-3600}" "$ROOT/scripts/dev" --fresh ./gradlew --console=plain --no-daemon :mod:runPerfServer -Pfb.perfVariant=$v -Pfb.perfOut="$LOGDIR" 9>&- > "$LOGDIR/world-$v.log" 2>&1
+			timeout "${FB_PERF_TIMEOUT:-3600}" "$ROOT/scripts/dev" --fresh ./gradlew --console=plain --no-daemon :mod:runPerfServer -Pfb.perfVariant=$v -Pfb.perfMode=$mode -Pfb.perfOut="$LOGDIR" 9>&- > "$LOGDIR/$OUTN-$v.log" 2>&1
 			rc=$?
 			set -e
-			grep -E "\[PERF\]|FAILED|BUILD" "$LOGDIR/world-$v.log" || true
-			if [ "$rc" != 0 ] || [ ! -f "$LOGDIR/world-$v.json" ]; then echo "PERF FAIL: the $v server run exited $rc or wrote no rows (see $LOGDIR/world-$v.log)" >&2; tail -30 "$LOGDIR/world-$v.log" >&2; exit 1; fi
+			grep -E "\[PERF\]|FAILED|BUILD" "$LOGDIR/$OUTN-$v.log" || true
+			if [ "$rc" != 0 ] || [ ! -f "$LOGDIR/$OUTN-$v.json" ]; then echo "PERF FAIL: the $mode $v server run exited $rc or wrote no rows (see $LOGDIR/$OUTN-$v.log)" >&2; tail -30 "$LOGDIR/$OUTN-$v.log" >&2; exit 1; fi
+		done
 		done
 		qc world-end
 		exec 9>&-

@@ -44,4 +44,10 @@ const msQuiet = fixture('mainstub-87869d24d3', { PERF_LOAD_SKIP: '100' });
 check('not loaded: plain FAIL, exit 1', msQuiet.status === 1 && msQuiet.stdout.includes('PERF FAIL'));
 const lo = fixture('leaforder-ac2f7fc037');
 check('loaded run within its guards passes, rows printed as skipped', lo.status === 0 && lo.stdout.includes('PERF SKIPPED (load) district.cold.plan.ms') && lo.stdout.includes('rows skipped for load'));
+// COLDARRIVAL: a report-only row (budget null) is printed with its vanilla value and ratio, never judged, even far over anything
+budget.budgets = [{ key: 'a.ms', baseKey: 'base.a.ms', label: 'arr', unit: 'ms', budget: null }];
+const ro = run({ 'a.ms': 60000, 'base.a.ms': 2000 });
+check('report-only row: exit 0, ratio 30.0x, status report', ro.status === 0 && ro.stdout.includes('30.0x') && ro.stdout.includes('| report |'));
+const roAbsent = run({});
+check('report-only row absent from a full run still fails', roAbsent.status === 1);
 process.exit(bad ? 1 : 0);

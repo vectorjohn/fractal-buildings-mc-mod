@@ -32,9 +32,11 @@ for (const b of spec.budgets) {
 		const d = data['flight.lookups.done'], j = data['flight.lookups.joined'], i = data['flight.lookups.inline'];
 		v = d === undefined || (d + j + i) === 0 ? undefined : (100 * i) / (d + j + i); // no lookups at all = nothing measured, not 0 % (PERFSRV r4)
 	} else v = data[b.key];
-	const ci = b.ci ?? b.budget * 2;
+	const reportOnly = b.budget === null || b.budget === undefined; // COLDARRIVAL: measured and printed, never judged (John sets budgets)
+	const ci = reportOnly ? null : (b.ci ?? b.budget * 2);
 	let st = 'ok';
 	if (typeof v !== 'number') { st = 'absent'; absent++; }
+	else if (reportOnly) st = 'report';
 	else if (loaded && timing.has(b.unit) && v > ci) {
 		st = 'skip(load)'; skipped++;
 		const far = b.loadSkipGuard ? farOf(b) : NaN;
@@ -44,10 +46,11 @@ for (const b of spec.budgets) {
 	}
 	else if (v > ci) { st = 'FAIL'; failed++; }
 	else if (v > b.budget) { st = 'miss'; missed++; }
-	rows.push({ label: b.label, unit: b.unit, budget: b.budget, ci, v, st });
+	const bv = b.baseKey ? data[b.baseKey] : undefined; // vanilla value of the same row, and mod / vanilla
+	rows.push({ label: b.label, unit: b.unit, budget: reportOnly ? '-' : b.budget, ci: reportOnly ? '-' : ci, v, st, bv, ratio: typeof v === 'number' && typeof bv === 'number' && bv > 0 ? v / bv : undefined });
 }
-let md = `| What | Measured | Budget | CI ceiling | Status |\n|---|---|---|---|---|\n`;
-for (const r of rows) md += `| ${r.label} | ${fmt(r.v)} ${r.unit} | ${r.budget} | ${r.ci} | ${r.st} |\n`;
+let md = `| What | Measured | Vanilla (base world) | Mod / vanilla | Budget | CI ceiling | Status |\n|---|---|---|---|---|---|---|\n`;
+for (const r of rows) md += `| ${r.label} | ${fmt(r.v)} ${r.unit} | ${r.bv === undefined ? '-' : fmt(r.bv) + ' ' + r.unit} | ${r.ratio === undefined ? '-' : r.ratio.toFixed(1) + 'x'} | ${r.budget} | ${r.ci} | ${r.st} |\n`;
 md += `\nloadavg at start of the planner run: ${data['planner.load.before'] ?? '?'}; at its end: ${data['planner.load.after'] ?? '?'}; world run start ${data['mod.load.start'] ?? '?'}, end ${data['mod.load.end'] ?? '?'}\n`;
 console.log(md);
 fs.writeFileSync(path.join(dir, 'summary.md'), md);

@@ -109,6 +109,7 @@
     },
     {
       "key": "locate.fresh.ms",
+      "baseKey": "base.locate.village.fresh.ms",
       "label": "/locate settlement in a fresh area",
       "unit": "ms",
       "budget": 3000,
@@ -117,6 +118,7 @@
     },
     {
       "key": "locate.village.fresh.ms",
+      "baseKey": "base.locate.village.fresh.ms",
       "label": "/locate a vanilla village (veto) in a fresh area, server thread",
       "unit": "ms",
       "budget": 10000,
@@ -129,6 +131,33 @@
       "unit": "ms",
       "budget": 2000,
       "ci": 4000
+    },
+    {
+      "key": "arrival.cold.metro.ms",
+      "baseKey": "base.arrival.cold.metro.ms",
+      "label": "Cold arrival (COLDARRIVAL, report-only): teleport call -> teleport done and every chunk of the 9 x 9 view (radius 4) FULL, metropolis centre, fresh world",
+      "unit": "ms",
+      "budget": null
+    },
+    {
+      "key": "arrival.maxTick.ms",
+      "baseKey": "base.arrival.maxTick.ms",
+      "label": "Longest server tick during that wait (report-only)",
+      "unit": "ms",
+      "budget": null
+    },
+    {
+      "key": "arrival.hold.ms",
+      "baseKey": "base.arrival.hold.ms",
+      "label": "TeleportHold engaged for (report-only; 0 = did not engage)",
+      "unit": "ms",
+      "budget": null
+    },
+    {
+      "key": "base.locate.village.fresh.ms",
+      "label": "Vanilla /locate village, fresh area, base world (baseline of the two locate rows above; report-only)",
+      "unit": "ms",
+      "budget": null
     },
     {
       "key": "multi3.recomputes",

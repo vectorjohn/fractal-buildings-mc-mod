@@ -385,7 +385,7 @@ downtown. Passed 2026-10-22 (John, REVIEW "Phase 5 gate").
 
 ## Phase 6: Minecraft integration and release
 
-Updated: 2026-10-30
+Updated: 2026-10-31
 
 Wire the proven core into worldgen using the approach fixed in the Phase 2 ADR.
 Plan: [plans/phase6.md](plans/phase6.md) (steps A1–C3; ten decisions for John, each with a default).
@@ -473,6 +473,9 @@ Plan: [plans/phase6.md](plans/phase6.md) (steps A1–C3; ten decisions for John,
     Measure first (PORTALCOLD-M: worst server tick of a portal arrival into a cold metropolis and a town), then John picks: (a) accept, (b) warm the scaled overworld exit point while a player stands in a portal, (c) hold the portal transition like TPHOLD.
     *Measured (PORTALCOLD-M, 2026-10-30):* the stall is 36.6 s into a cold town and 65 s into a cold metropolis core (12.7 s wild control, beebox), 625 chunks generated inside one `getPortalDestination` call; exit portals landed on open ground, no building or street damage in the two samples; findings [spikes/portalcold.md](research/spikes/portalcold.md). Numbers point to (c) with the hook on `getPortalDestination` (TPHOLD's hook is too late) and async chunk tickets. Awaiting John's pick.
 
+- [ ] **Playtest 2026-10-31 bug list** (John, [notes](review/phase6/playtest-2026-10-31/REVIEW.md), build 75974145, seed 1573336981619055086; the generator is unchanged between that build and 1fe724f4; release-blocking bugs only, per [release-plan](review/release-plan.md); triage 2026-10-31, other notes in the Backlog (unscheduled) and Polish backlog sections):
+  - [ ] **6.31 STAIRJOG: a high-rise entrance flight that jogs with no room to turn** (`#backlog-p6`; [03.10.40](review/phase6/playtest-2026-10-31/2026-10-31_03.10.40.jpg) "I don't like this staircase. Seems like we should get stairs working", [03.12.04](review/phase6/playtest-2026-10-31/2026-10-31_03.12.04.jpg) "the landing just needs a little more room", [03.14.45](review/phase6/playtest-2026-10-31/2026-10-31_03.14.45.jpg) John's in-game fix; at 4184,95,-1114: metropolis s4_m2, lot d26_m7.l2, high-rise b2, tall-stone, seed -5447130581950790135, 45 storeys). Planner rebuild (2026-10-31, terrain dumps `pt1573-metro-s8` over `pt1573-world-s64`, the `JoinWorld.pt1573()` world of `DeadPortPlaytestTest`; the building comes out as b1 of d26_m7, same lot and seed, placed at 4177,94,-1112): main door o513 is triple (local x 12-14, world 4189-4191, z -1112), faces north, standing level 95 against ground about 88-89, and the lot leaves only two rows in front (z -1113, -1114). Site boxes (local x, tread y, z): landing stairs (12-14, 0, -1); flight (11,-1,-1), (10,-2,-1), (9,-2,-1) level, then out into the lot-edge row (9,-3,-2), (8,-4,-2), (7,-5,-2), (6,-5,-2), (5,-6,-2); rail posts at (8,-1,-1) beside the level cell and along row -1 inside the lower flight. Two turns one riser apart and a rail post next to the turn break the approved DS-45 amendment "run and turn sizes" (turns at least 2 risers apart; no rail post or wall in a landing cell); no check enforces it (`flight-landings` is only planned) and `city --check` flags nothing. Code: `InstancePassV1.steps` / `searchRuns` (planner-core `gen/v1`; the DS-45 runs-of-3 search with the strict rail passes). Cheap fix to try first (John: "if it's cheaper than a more expansive front/landing area"): start the flight one cell further along, so it runs straight down along the facade with a landing cell between it and the door; in the rebuild the wall row has 7 cells west of the door, enough for 6 risers and one rest (not tried). The alternative is to set the building back for a deeper landing. Add a check for the amendment's numbers (turn spacing, landing cells clear of rails) to `check` and `city-check`, so the next case is found in the planner. Repro needs a throwaway test today, since `fractal-cli city --terrain` takes only one recorded dump (it fails "outside the recorded grid" on `pt1573-metro-s8` alone).
+
 **Gate:** a fresh world on three seeds plays well for an hour; then a first
 public release.
 
@@ -550,7 +553,7 @@ After the first release; no plan yet. Items wait for Phase 6 unless noted.
 
 ## Backlog (unscheduled)
 
-Updated: 2026-10-29
+Updated: 2026-10-31
 
 *Proposed* ([release-plan](review/release-plan.md) section 2, decision 7;
 not yet accepted by John): plain `#backlog` notes land here, one line each,
@@ -583,11 +586,20 @@ From the playtest of 2026-10-27/28 ([notes](review/phase6/playtest-2026-10-28/re
 - A maze of raised roads on solid fill; piers would look like a real elevated road, but the layout needs straightening too (21.13.10 at 4241,102,-1630). Covered by 7.19 FALLSTREETS (evidence added).
 - DS-54 walk-graph check (DS-54 accepted by John 2026-10-29; the check is a suggestion of the architect, [playtest 2026-10-28 answers](review/playtest1028-qs/architect.md) part 3): a walk graph from the street to every door (and between rooms and storeys) that flags any rise over a half block; it would turn the DS-54 caveat's `#backlog` filing into a check. Tension with DS-31: dirt and gravel tracks keep full-block steps, which DS-54 as written counts as violations; the architect's narrowing (exempt tracks, routes only) is a suggestion John hasn't taken, so the check needs a decision on tracks first.
 
+From the playtest of 2026-10-31 ([notes](review/phase6/playtest-2026-10-31/REVIEW.md), build 75974145, seed 1573336981619055086; triage 2026-10-31):
+
+- A switchback detour on a road outside village s2_m2 (02.35.52 at 2899,141,-1608; untagged, John: "an odd pathing artifact"). Not diagnosed; like the road loop of 20.15.58 above. The proposed DS-57 "Roads don't double back" (`road-doubles-back`) would catch it.
+- A village path stepping down in full blocks by green p0 of s2_m2 (02.50.07 at 2632,105,-1604; untagged, "another big stair in the road"). Covered by 7.11 part 1 (DS-31); see the DS-54 narrowing question (dirt tracks keep full steps).
+- A very deep cut on a main street, raw faces both sides (03.00.46 at 3580,98,-1284; s4_m2 d22_m9, street r3_m2_2.1, 9 wide). Covered by 7.19 FALLSTREETS (DS-46).
+- Trapped in a deep street cut: arrived on a road from out of town and can't reach the high-rises above it (03.02.36 at 3779,98,-1514; s4_m2 d23_m10, street szm1512_3696, 5 wide). Covered by 7.19 FALLSTREETS; [QUESTIONS](QUESTIONS.md) asks John whether to add a P6 stopgap (a stair out of deep cuts). Also 03.20.42 (`#hype`): "rats nests of raised roads and deep road cuts you can't get out of" round 3913,77,-924.
+- Grand entrances for high-rises: a wide straight flight to the main door (John's mock-up in 03.16.21 at 4186,95,-1123, beside the tower of 6.31 STAIRJOG), and many entrances (`#ideas`). Needs room in front (a setback or forecourt), which today's lots don't leave; question for the architect. The "door every 12-20 blocks of a long frontage" clause of DS-35 (approved) covers "many entrances" and isn't built yet.
+- Two roads between settlements crisscrossing in one valley; detect and merge them (03.33.50 at -2796,140,1544, `#roads`). Each link is routed alone and cached per edge, so nothing knows of the other; shared corridors (a cost discount on cells of routed links) or a merge pass would make one route depend on others, a design question against ADR 0004's per-edge determinism.
+
 ---
 
 ## Polish backlog
 
-Updated: 2026-10-29
+Updated: 2026-10-31
 
 Non-breaking known issues from verified items, one line each with the item id.
 Fixed opportunistically or scheduled as items.
@@ -762,6 +774,8 @@ Performance issues and the tradeoffs we accepted are tracked separately in
 - 6.27 DISTPERF (verifier, p6-distperf): time gain not reproduced in local ABBA (probes 154230 -> 67078 confirmed): re-measure district cold median on a quiet host in the next heavy batch; the new district.cold.cpu.ms row is not really load-independent.
 - 6.28 LEAFORDER (verifier, p6-leaforder): stale "counts as free" wording in the TreeFeatureMixin javadoc and the scripts/test-scope.tsv row; the repeat diff is printed, not asserted.
 - 6.25 MAINSTUB (verifier r2, p6-mainstub-r2): beebox's "Region layer + road network" row (11.3 s) fails the 10 s ceiling on base too; give the region ceiling room for beebox or split ceilings per host.
+- COLDARRIVAL (cold-arrival perf rows; verifier, p6-coldarrival-verify): with FB_PERF_ARRIVAL=0 a full perf.sh still exits 1 (arrival rows reported absent); pass --allow-absent to perf-check in that case. Also: the 9-11 s server tick during cold metropolis arrival on beebox (52 ms locally) is unexplained.
+- Playtest 2026-10-31 (02.44.32 at 2713,95,-1627, untagged; village s2_m2, lot d16_m11.l3, workshop b3, seed 7613073995594729505): the foot step of the entrance flight sits a block into the grass with an open pit beside it, so the flight was built for ground one block lower than the world; walkable. Not diagnosed (the village is outside the 8-block dump `pt1573-metro-s8`); suspects: the 6.13 STEPBURY claimed air in front of the foot, or the planner ground at the foot. Related: the 6.19 PORCHSTEP r3 line (a door in a pit below the street).
 
 ## Open questions and risks
 

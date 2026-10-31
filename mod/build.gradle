@@ -244,6 +244,7 @@ loom.runs {
 		ideConfigGenerated false
 		property 'fb.testHook', 'dev.fractalbuildings.gametest.perf.PerfServerHarness'
 		property 'fb.perf.variant', (findProperty('fb.perfVariant') ?: 'mod').toString()
+		property 'fb.perf.mode', (findProperty('fb.perfMode') ?: 'main').toString()
 		property 'fb.perf.out', (findProperty('fb.perfOut') ?: layout.buildDirectory.dir('perf').get().asFile.path).toString()
 	}
 }
