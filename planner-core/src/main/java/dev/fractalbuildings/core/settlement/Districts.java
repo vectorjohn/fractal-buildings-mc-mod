@@ -2239,6 +2239,10 @@ public final class Districts {
 				@Override public List<QuayWhole> grade(List<List<int[]>> runs) { return gradeRuns(runs); }
 
 				@Override public void prefetch(List<int[]> boxes) { reads.prefetch(boxes); }
+
+				@Override public QuayTrace.Bank fork() { return new Build(src, ix, iz, exact, false).bank(area, false); } // its own memos and fields: this build's are one thread's
+
+				@Override public dev.fractalbuildings.core.cache.Fanout fanout() { return reads.fanout(); }
 			};
 		}
 

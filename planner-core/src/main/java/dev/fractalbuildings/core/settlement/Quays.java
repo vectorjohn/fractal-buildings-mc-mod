@@ -74,6 +74,36 @@ final class Quays {
 	}
 
 	/**
+	 * One seed per set of segments joined inside the cells {@code [ci0, ci1] x [cj0, cj1]} (QUAYLAZY step 4): the first of {@link #seeds} in
+	 * each group, in scan order. Seeds of one group are on one chain; two groups may still be one chain that joins outside the box.
+	 */
+	static List<Pt> distinctSeeds(Near near, int ci0, int cj0, int ci1, int cj1) {
+		java.util.TreeMap<Long, Long> parent = new java.util.TreeMap<>(); // union-find over point keys, lookup only
+		List<Pt> firsts = new ArrayList<>();
+		for (int j = cj0; j <= cj1; j++) {
+			for (int i = ci0; i <= ci1; i++) {
+				for (Pt[] sg : segments(near, i, j)) {
+					firsts.add(sg[0]);
+					parent.putIfAbsent(key(sg[0]), key(sg[0]));
+					parent.putIfAbsent(key(sg[1]), key(sg[1]));
+					long a = find(parent, key(sg[0])), b = find(parent, key(sg[1]));
+					if (a != b) parent.put(Math.max(a, b), Math.min(a, b));
+				}
+			}
+		}
+		List<Pt> out = new ArrayList<>();
+		java.util.TreeSet<Long> done = new java.util.TreeSet<>();
+		for (Pt p : firsts) if (done.add(find(parent, key(p)))) out.add(p);
+		return out;
+	}
+
+	private static long find(java.util.TreeMap<Long, Long> parent, long k) {
+		long r = k;
+		while (parent.get(r) != r) r = parent.get(r);
+		return r;
+	}
+
+	/**
 	 * The chain of {@link #contour} over the cell window {@code [i0, i1] x [j0, j1]} (cell indices) that holds {@code seed}, found
 	 * by walking from the seed in both directions and reading only the cells on the way. It is the contour's own list (same first
 	 * point, same direction): the visited cells go through the contour's code in scan order. A chain ends at the window edge.

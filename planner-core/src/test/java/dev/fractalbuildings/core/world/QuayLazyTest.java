@@ -2,6 +2,7 @@ package dev.fractalbuildings.core.world;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import dev.fractalbuildings.core.probe.TerrainProbe;
@@ -310,5 +311,106 @@ class QuayLazyTest {
 		System.out.println("QuayLazyTest cost: whole trace " + whole + " chunks; lazy tiles " + lazy + " (median " + median + ", " + (100 * median / whole) + " %)");
 		assertTrue(whole > 5000, "the reference reads the whole waterfront: " + whole);
 		assertTrue(median * 4 <= whole, "a tile's lazy quays read " + median + " chunks, more than a quarter of the whole trace's " + whole);
+	}
+
+	// ---- QUAYLAZY step 4: parallel walks and cluster grading on the reads pool
+
+	/** A pool whose tasks start after a random delay, so helpers finish pieces in any order. */
+	static final class SlowPool extends java.util.concurrent.ThreadPoolExecutor {
+		final Random delays;
+
+		SlowPool(int threads, long seed) {
+			super(threads, threads, 1, java.util.concurrent.TimeUnit.SECONDS, new java.util.concurrent.LinkedBlockingQueue<>());
+			delays = new Random(seed);
+		}
+
+		@Override public void execute(Runnable r) {
+			int ms;
+			synchronized (delays) { ms = delays.nextInt(5); }
+			super.execute(() -> {
+				try { Thread.sleep(ms); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
+				r.run();
+			});
+		}
+	}
+
+	/** Every tile's quays, then the whole list, on a source whose reads fan out on {@code pool}, against the reference. */
+	static void sameOnPool(QuaySites s, ExecutorService pool, int helpers, List<DistrictGrid.TileId> order, String what) {
+		Data d = data(s);
+		ParallelReadsPlannerTest.PoolReads reads = new ParallelReadsPlannerTest.PoolReads(pool, helpers, d.open().exact());
+		SkeletonSource.Direct src = d.open().fresh().withReads(reads);
+		for (DistrictGrid.TileId t : order) assertEquals(d.refTile().get(id(t)), Districts.quayRuns(src, t.ix(), t.iz(), d.open().exact()), s.label() + " " + what + " tile " + id(t));
+		assertEquals(d.refAll(), Districts.allQuayRuns(src, d.open().exact()), s.label() + " " + what + ": the whole list");
+		assertTrue(reads.boxes.get() > 0, "the trace prefetched through the pool");
+	}
+
+	/** The lazy path on a pool equals the serial run, called from the test thread, from inside a pool thread, with the pool free and saturated (as PARREADS did). */
+	@Test
+	void aPoolGivesTheSameQuays() throws Exception {
+		for (QuaySites s : sites(false)) {
+			Data d = data(s);
+			List<DistrictGrid.TileId> order = new ArrayList<>(d.tiles());
+			Collections.shuffle(order, new Random(s.label().hashCode()));
+			ExecutorService pool = Executors.newFixedThreadPool(6);
+			try {
+				sameOnPool(s, pool, 6, order, "free pool");
+			} finally {
+				pool.shutdownNow();
+			}
+			ExecutorService one = Executors.newFixedThreadPool(1);
+			try { // from the pool's only thread: the helpers it asks for queue behind it, the caller does the pieces
+				assertTimeoutPreemptively(java.time.Duration.ofMinutes(5), () -> one.submit(() -> sameOnPool(s, one, 3, order, "inside the pool")).get());
+			} finally {
+				one.shutdownNow();
+			}
+			ExecutorService busy = Executors.newFixedThreadPool(2);
+			CountDownLatch release = new CountDownLatch(1);
+			try { // every pool thread is held by someone else: helpers never start, the caller does all
+				for (int k = 0; k < 2; k++) busy.submit(() -> { release.await(); return null; });
+				assertTimeoutPreemptively(java.time.Duration.ofMinutes(5), () -> sameOnPool(s, busy, 4, order, "saturated pool"));
+			} finally {
+				release.countDown();
+				busy.shutdownNow();
+			}
+		}
+	}
+
+	/** Pieces that finish in random order, on several threads planning tiles of one shared lazy source at once: still the reference, in each of five rounds. */
+	@Test
+	void concurrentTilesShareOneTraceOnAPoolWithRandomCompletionOrder() throws Exception {
+		int threads = 8, rounds = 5;
+		ExecutorService callers = Executors.newFixedThreadPool(threads);
+		try {
+			for (QuaySites s : sites(false)) {
+				Data d = data(s);
+				for (int round = 0; round < rounds; round++) {
+					SlowPool pool = new SlowPool(6, 41L * round + s.label().hashCode());
+					try {
+						SkeletonSource.Direct shared = d.open().fresh().withReads(new ParallelReadsPlannerTest.PoolReads(pool, 5, d.open().exact()));
+						CountDownLatch go = new CountDownLatch(1);
+						List<Future<String>> results = new ArrayList<>();
+						for (int k = 0; k < threads; k++) {
+							long shuffle = 613L * round + k;
+							results.add(callers.submit(() -> {
+								List<DistrictGrid.TileId> order = new ArrayList<>(d.tiles());
+								Collections.shuffle(order, new Random(shuffle));
+								go.await();
+								for (DistrictGrid.TileId t : order) {
+									if (!d.refTile().get(id(t)).equals(Districts.quayRuns(shared, t.ix(), t.iz(), d.open().exact()))) return "tile " + id(t) + " differs";
+								}
+								return "";
+							}));
+						}
+						go.countDown();
+						for (Future<String> f : results) assertEquals("", f.get(), s.label() + " round " + round);
+						assertEquals(d.refAll(), Districts.allQuayRuns(shared, d.open().exact()), s.label() + " round " + round + ": the whole list");
+					} finally {
+						pool.shutdownNow();
+					}
+				}
+			}
+		} finally {
+			callers.shutdownNow();
+		}
 	}
 }

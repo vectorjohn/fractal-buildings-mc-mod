@@ -1,5 +1,6 @@
 package dev.fractalbuildings.core.settlement;
 
+import dev.fractalbuildings.core.cache.Fanout;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -61,7 +62,19 @@ final class QuayTrace {
 
 		/** A hint that the exact terrain in these boxes {@code [minX, minZ, maxX, maxZ]} is about to be read. */
 		void prefetch(List<int[]> boxes);
+
+		/**
+		 * A bank for another thread (a bank's memos are not thread-safe). The default is this bank itself, right only for a bank whose
+		 * {@link #fanout} is serial.
+		 */
+		default Bank fork() { return this; }
+
+		/** Runs independent pieces of this request, maybe on several threads (each piece asks {@link #fork} for its own bank); serial by default. */
+		default Fanout fanout() { return Fanout.SERIAL; }
 	}
+
+	/** How far ahead of a chain walk the exact terrain is prefetched when the walk leaves the box prefetched so far, blocks (a box of about 5 x 5 chunks). */
+	static final int WALK_AHEAD = 32;
 
 	/** The traced area: the waterfront tile keys (kept for the caller) and the contour's cell window, inclusive. */
 	record Area(TreeSet<Long> wf, int i0, int j0, int i1, int j1) {}
@@ -71,6 +84,9 @@ final class QuayTrace {
 		List<Pt> seeds(int ci0, int cj0, int ci1, int cj1);
 
 		List<Pt> chainThrough(Pt seed);
+
+		/** One seed per group of segments joined inside the cell range ({@link Quays#distinctSeeds}); every chain of the range has one. */
+		default List<Pt> distinctSeeds(int ci0, int cj0, int ci1, int cj1) { return seeds(ci0, cj0, ci1, cj1); }
 	}
 
 	private record Chain(long id, List<Pt> points, List<List<int[]>> runs) {}
@@ -96,36 +112,68 @@ final class QuayTrace {
 
 	/** The quays with a column within {@code m} blocks (Chebyshev) of the window {@code [minX, maxX] x [minZ, maxZ]}, in canonical order. */
 	List<QuayWhole> near(Bank bank, int minX, int minZ, int maxX, int maxZ, int m) {
-		ChainSource src = source(bank);
 		int r = m + Quays.STEP;
 		int ci0 = Math.max(area.i0(), Math.floorDiv(minX - r, Quays.STEP)), ci1 = Math.min(area.i1(), Math.floorDiv(maxX + r, Quays.STEP));
 		int cj0 = Math.max(area.j0(), Math.floorDiv(minZ - r, Quays.STEP)), cj1 = Math.min(area.j1(), Math.floorDiv(maxZ + r, Quays.STEP));
 		if (ci0 > ci1 || cj0 > cj1) return List.of();
 		// PARREADS: the seed scan reads every node of these cells, each within QUAY_READ; one call, so a live probe fills the chunks in parallel
-		bank.prefetch(List.of(new int[] {ci0 * Quays.STEP - QUAY_READ, cj0 * Quays.STEP - QUAY_READ, (ci1 + 1) * Quays.STEP + QUAY_READ, (cj1 + 1) * Quays.STEP + QUAY_READ}));
+		int[] scan = {ci0 * Quays.STEP, cj0 * Quays.STEP, (ci1 + 1) * Quays.STEP, (cj1 + 1) * Quays.STEP}; // the nodes the seed scan reads
+		bank.prefetch(List.of(new int[] {scan[0] - QUAY_READ, scan[1] - QUAY_READ, scan[2] + QUAY_READ, scan[3] + QUAY_READ}));
+		Forks forks = new Forks(bank);
+		// the seed scan reads every node of the box, serially (one memo pass, the box is prefetched); then one walk per group of joined segments,
+		// and each walk's cluster, run on the fanout: each piece writes only its own slot and the id-keyed memos
+		List<Pt> seeds = source(bank, scan).distinctSeeds(ci0, cj0, ci1, cj1);
+		long[] ids = new long[seeds.size()];
+		bank.fanout().each(seeds.size(), i -> {
+			Bank b = forks.get();
+			ChainSource src = source(b, scan);
+			Chain c = chainOf(b, src, seeds.get(i));
+			ids[i] = touches(c, minX - m, minZ - m, maxX + m, maxZ + m) ? clusterId(b, src, c) : NONE;
+		});
 		TreeSet<Long> wanted = new TreeSet<>();
-		for (Pt seed : src.seeds(ci0, cj0, ci1, cj1)) {
-			Chain c = chainOf(bank, src, seed);
-			if (touches(c, minX - m, minZ - m, maxX + m, maxZ + m)) wanted.add(clusterId(bank, src, c));
-		}
+		for (long id : ids) if (id != NONE) wanted.add(id);
 		List<QuayWhole> out = new ArrayList<>();
-		for (long id : wanted) {
-			for (QuayWhole q : graded(bank, id)) if (touches(q.cols(), minX - m, minZ - m, maxX + m, maxZ + m)) out.add(q);
+		for (List<QuayWhole> parts : gradeAll(forks, new ArrayList<>(wanted))) {
+			for (QuayWhole q : parts) if (touches(q.cols(), minX - m, minZ - m, maxX + m, maxZ + m)) out.add(q);
 		}
 		sort(out);
 		return out;
 	}
 
+	private static final long NONE = Long.MIN_VALUE;
+
+	/** Grades the clusters on the fanout, each wholly on one thread (the re-entry guard is per thread), and returns the results in the order of {@code ids}. */
+	private List<List<QuayWhole>> gradeAll(Forks forks, List<Long> ids) {
+		@SuppressWarnings("unchecked") List<QuayWhole>[] res = new List[ids.size()];
+		forks.root.fanout().each(ids.size(), i -> res[i] = graded(forks.get(), ids.get(i)));
+		return Arrays.asList(res);
+	}
+
+	/** The caller's bank for the caller's thread, and one fork per other thread that runs a piece of the request. */
+	private static final class Forks {
+		final Bank root;
+		private final Thread owner = Thread.currentThread();
+		private final ConcurrentHashMap<Thread, Bank> others = new ConcurrentHashMap<>();
+
+		Forks(Bank root) { this.root = root; }
+
+		Bank get() {
+			Thread t = Thread.currentThread();
+			return t == owner ? root : others.computeIfAbsent(t, k -> root.fork());
+		}
+	}
+
 	/** Every quay of the area in canonical order: today's whole trace (every node of the window, every cluster graded). */
 	List<QuayWhole> all(Bank bank) {
-		ChainSource src = source(bank);
+		int[] whole = {Integer.MIN_VALUE, Integer.MIN_VALUE, Integer.MAX_VALUE, Integer.MAX_VALUE}; // the bank's row prefetch covers the scan: no walk-ahead
+		ChainSource src = source(bank, whole);
 		TreeSet<Long> ids = new TreeSet<>();
 		for (Pt seed : src.seeds(area.i0(), area.j0(), area.i1(), area.j1())) {
 			Chain c = chainOf(bank, src, seed);
 			if (!c.runs().isEmpty()) ids.add(clusterId(bank, src, c));
 		}
 		List<QuayWhole> out = new ArrayList<>();
-		for (long id : ids) out.addAll(graded(bank, id));
+		for (List<QuayWhole> parts : gradeAll(new Forks(bank), new ArrayList<>(ids))) out.addAll(parts);
 		sort(out);
 		return out;
 	}
@@ -197,22 +245,37 @@ final class QuayTrace {
 	// ---- chains
 
 	/** The chain source of one request: the walker over the cell window, reading through the caller's bank (never kept: a bank serves one thread). */
-	private ChainSource source(Bank bank) {
+	private ChainSource source(Bank bank, int[] fetched) {
 		ChainSource s = source;
 		if (s != null) return s;
-		Quays.Near near = memoised(bank);
+		Quays.Near near = memoised(bank, fetched.clone());
 		return new ChainSource() {
 			@Override public List<Pt> seeds(int ci0, int cj0, int ci1, int cj1) { return Quays.seeds(near, ci0, cj0, ci1, cj1); }
+
+			@Override public List<Pt> distinctSeeds(int ci0, int cj0, int ci1, int cj1) { return Quays.distinctSeeds(near, ci0, cj0, ci1, cj1); }
 
 			@Override public List<Pt> chainThrough(Pt seed) { return Quays.chainThrough(near, area.i0(), area.j0(), area.i1(), area.j1(), seed); }
 		};
 	}
 
-	private Quays.Near memoised(Bank bank) {
+	/**
+	 * The node memo over one bank. {@code fetched} is the node box {@code [minX, minZ, maxX, maxZ]} whose terrain the caller has prefetched; a read
+	 * that misses the memo outside it prefetches {@link #WALK_AHEAD} blocks round the node first (a live probe fills a whole chunk per first read,
+	 * so a walk reading one node at a time would fill chunks one by one). Only a hint: the answers are the same.
+	 */
+	private Quays.Near memoised(Bank bank, int[] fetched) {
 		return (x, z) -> {
 			long k = key(x, z);
 			Boolean v = nodes.get(k);
-			if (v == null) { v = bank.near(x, z); nodes.put(k, v); }
+			if (v == null) {
+				if (x < fetched[0] || z < fetched[1] || x > fetched[2] || z > fetched[3]) {
+					int a = WALK_AHEAD;
+					fetched[0] = x - a; fetched[1] = z - a; fetched[2] = x + a; fetched[3] = z + a;
+					bank.prefetch(List.of(new int[] {x - a - QUAY_READ, z - a - QUAY_READ, x + a + QUAY_READ, z + a + QUAY_READ}));
+				}
+				v = bank.near(x, z);
+				nodes.put(k, v);
+			}
 			return v;
 		};
 	}

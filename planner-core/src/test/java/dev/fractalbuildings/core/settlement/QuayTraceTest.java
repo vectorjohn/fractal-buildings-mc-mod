@@ -276,4 +276,82 @@ class QuayTraceTest {
 			assertTrue(e.getMessage().contains("must not call back"), e.getMessage());
 		});
 	}
+
+	/**
+	 * A bank that fans out on a pool whose helpers start after random delays (so pieces finish in any order), forks a bank per worker thread
+	 * and fails if one bank is ever used by two threads (a Districts bank's memos are one thread's).
+	 */
+	static final class Parallel implements QuayTrace.Bank {
+		final Fake fake;
+		final dev.fractalbuildings.core.cache.Fanout fanout;
+		final java.util.concurrent.atomic.AtomicReference<Thread> user = new java.util.concurrent.atomic.AtomicReference<>();
+		final java.util.concurrent.atomic.AtomicInteger forks;
+		final java.util.concurrent.atomic.AtomicReference<String> failure;
+
+		Parallel(Fake fake, dev.fractalbuildings.core.cache.Fanout fanout, java.util.concurrent.atomic.AtomicInteger forks, java.util.concurrent.atomic.AtomicReference<String> failure) {
+			this.fake = fake;
+			this.fanout = fanout;
+			this.forks = forks;
+			this.failure = failure;
+		}
+
+		private void use() {
+			Thread me = Thread.currentThread();
+			Thread was = user.compareAndSet(null, me) ? me : user.get();
+			if (was != me) failure.compareAndSet(null, "a bank used by " + was.getName() + " and " + me.getName());
+		}
+
+		public boolean near(int x, int z) { use(); return fake.near(x, z); }
+
+		public boolean ok(int[] c) { use(); return fake.ok(c); }
+
+		public void prefetch(List<int[]> boxes) { use(); }
+
+		public List<QuayWhole> grade(List<List<int[]>> runs) { use(); return fake.grade(runs); }
+
+		@Override public QuayTrace.Bank fork() {
+			forks.incrementAndGet();
+			return new Parallel(fake, fanout, forks, failure);
+		}
+
+		@Override public dev.fractalbuildings.core.cache.Fanout fanout() { return fanout; }
+	}
+
+	/**
+	 * QUAYLAZY step 4: the walks and cluster gradings of one request run on several threads, each on its own bank, started after random delays
+	 * so which piece ends first changes from run to run; every tile, and the whole trace, still give the global answer byte for byte.
+	 */
+	@Test
+	void parallelWalksAndGradesGiveTheGlobalAnswerInAnyCompletionOrder() throws Exception {
+		java.util.concurrent.ThreadPoolExecutor pool = new java.util.concurrent.ThreadPoolExecutor(6, 6, 1, java.util.concurrent.TimeUnit.SECONDS, new java.util.concurrent.LinkedBlockingQueue<>());
+		Random delays = new Random(7);
+		java.util.concurrent.Executor slow = r -> pool.execute(() -> {
+			try { Thread.sleep(delays.nextInt(4)); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
+			r.run();
+		});
+		java.util.concurrent.atomic.AtomicInteger forks = new java.util.concurrent.atomic.AtomicInteger();
+		java.util.concurrent.atomic.AtomicReference<String> failure = new java.util.concurrent.atomic.AtomicReference<>();
+		try {
+			int checked = 0;
+			for (long seed = 0; seed < 30; seed++) {
+				Fake fake = new Fake(seed, field(seed));
+				List<QuayWhole> ref = reference(fake);
+				QuayTrace t = new QuayTrace(window());
+				List<int[]> order = new ArrayList<>(tiles());
+				Collections.shuffle(order, new Random(seed));
+				for (int[] box : order) {
+					Parallel bank = new Parallel(fake, dev.fractalbuildings.core.cache.Fanout.over(() -> slow, 5), forks, failure);
+					assertSame(filter(ref, box, M), t.near(bank, box[0], box[1], box[2], box[3], M), "seed " + seed + " tile " + Arrays.toString(box));
+					checked++;
+				}
+				assertNull(failure.get());
+				assertSame(ref, new QuayTrace(window()).all(new Parallel(fake, dev.fractalbuildings.core.cache.Fanout.over(() -> slow, 5), forks, failure)), "seed " + seed + " whole");
+			}
+			assertNull(failure.get(), failure.get());
+			assertTrue(forks.get() > 0, "some piece ran on a helper's own bank (else the test covers nothing parallel)");
+			System.out.println("QuayTraceTest parallel: " + checked + " tile requests, " + forks.get() + " forked banks");
+		} finally {
+			pool.shutdownNow();
+		}
+	}
 }
