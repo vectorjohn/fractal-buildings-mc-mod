@@ -5,11 +5,15 @@
 // `PERF SKIPPED (load)` line, and a row with `loadSkipGuard: F` (true = 3; env PERF_SKIP_FAR overrides every F) fails with
 // `PERF SKIPPED ROW FAR OVER CEILING` (exit 5) when its skipped value is above F x ci (MAINSTUB: a 50-60 s first tile passed as
 // skip(load)). Exit: 0 ok | 1 FAIL above a ceiling, or a missing row in a full run | 5 a guarded row far over its ceiling while skipped.
+// Flags: --allow-absent (planner-, world- or check-only runs: no missing row fails); --allow-absent-prefix P (repeatable: only missing
+// rows whose key starts with P are allowed; perf.sh passes `arrival.` when FB_PERF_ARRIVAL=0 skipped the cold-arrival worlds).
 import fs from 'node:fs';
 import path from 'node:path';
 
 const [budgetFile, dir, ...flags] = process.argv.slice(2);
 const allowAbsent = flags.includes('--allow-absent');
+const absentPrefixes = flags.flatMap((f, i) => (f === '--allow-absent-prefix' && flags[i + 1] ? [flags[i + 1]] : []));
+const absentAllowed = (b) => allowAbsent || (typeof b.key === 'string' && absentPrefixes.some((p) => b.key.startsWith(p)));
 const LOAD_SKIP = Number(process.env.PERF_LOAD_SKIP ?? 8);
 const FAR_ENV = process.env.PERF_SKIP_FAR;
 const farOf = (b) => (FAR_ENV !== undefined ? Number(FAR_ENV) : b.loadSkipGuard === true ? 3 : Number(b.loadSkipGuard));
@@ -25,7 +29,7 @@ const timing = new Set(['ms', 'x', '%']) // 'ratio' (region-file size) is a size
 const fmt = (x) => (typeof x === 'number' ? (Math.abs(x) >= 100 ? x.toFixed(0) : x.toFixed(2)) : '-');
 const rows = [];
 const skipLines = [], farLines = [];
-let failed = 0, missed = 0, absent = 0, skipped = 0;
+let failed = 0, missed = 0, absent = 0, absentBad = 0, skipped = 0;
 for (const b of spec.budgets) {
 	let v;
 	if (b.expr === 'inlineShare') {
@@ -35,7 +39,7 @@ for (const b of spec.budgets) {
 	const reportOnly = b.budget === null || b.budget === undefined; // COLDARRIVAL: measured and printed, never judged (John sets budgets)
 	const ci = reportOnly ? null : (b.ci ?? b.budget * 2);
 	let st = 'ok';
-	if (typeof v !== 'number') { st = 'absent'; absent++; }
+	if (typeof v !== 'number') { st = 'absent'; absent++; if (!absentAllowed(b)) absentBad++; }
 	else if (reportOnly) st = 'report';
 	else if (loaded && timing.has(b.unit) && v > ci) {
 		st = 'skip(load)'; skipped++;
@@ -58,7 +62,7 @@ if (load >= 2) console.log(`NOTE: highest loadavg seen during the run was ${load
 if (skipped) console.log(`${skipped} timing rows were above their ceiling but not failed because the load reached ${load} (>= ${LOAD_SKIP}); counts, sizes and heap are always enforced. NOT a pass for these rows:`);
 for (const l of skipLines) console.log(l);
 if (farLines.length) console.log(`PERF SKIPPED ROW FAR OVER CEILING: ${farLines.length} load-skipped row(s) above loadSkipGuard x ci; load does not explain that:\n${farLines.join('\n')}`);
-if (absent) { console.log(`${absent} budgets had no measurement`); if (!allowAbsent) { console.log('PERF FAIL: rows are missing from a full run (a step failed or was skipped)'); process.exit(1); } }
+if (absent) { console.log(`${absent} budgets had no measurement${!allowAbsent && absentBad < absent ? ` (${absent - absentBad} allowed by --allow-absent-prefix ${absentPrefixes.join(' ')})` : ''}`); if (absentBad) { console.log('PERF FAIL: rows are missing from a full run (a step failed or was skipped)'); process.exit(1); } }
 if (failed) { console.log(`PERF FAIL: ${failed} above the CI ceiling`); process.exit(1); }
 if (farLines.length) process.exit(5);
 console.log(`perf ok (${missed} above budget but under the ceiling${skipped ? `; ${skipped} rows skipped for load, see the PERF SKIPPED lines` : ''})`);

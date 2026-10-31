@@ -132,5 +132,6 @@ if [ "$CHECK_ONLY" = 0 ] && [ -f "$LOGDIR/quiet.txt" ]; then
 	fi
 fi
 ALLOW=""
-if [ "$PLANNER_ONLY" = 1 ] || [ "$CHECK_ONLY" = 1 ] || [ "$WORLD_ONLY" = 1 ]; then ALLOW="--allow-absent"; fi
+if [ "$PLANNER_ONLY" = 1 ] || [ "$CHECK_ONLY" = 1 ] || [ "$WORLD_ONLY" = 1 ]; then ALLOW="--allow-absent"
+elif [ "${FB_PERF_ARRIVAL:-1}" != 1 ]; then ALLOW="--allow-absent-prefix arrival."; fi # COLDARRIVAL pair not run: only its rows may be missing
 exec "$ROOT/scripts/dev" --fresh node scripts/perf-check.mjs mod/perf-budget.json mod/build/perf $ALLOW

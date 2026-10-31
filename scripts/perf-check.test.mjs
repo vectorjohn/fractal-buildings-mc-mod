@@ -23,11 +23,15 @@ check('2 % inline passes', good.status === 0);
 const worse = run({ 'flight.lookups.done': 50, 'flight.lookups.joined': 0, 'flight.lookups.inline': 50 });
 check('50 % inline fails', worse.status === 1 && worse.stdout.includes('FAIL'));
 
-// loadSkipGuard: recorded runs (scripts/perf-fixtures/README.md) against the real mod/perf-budget.json, planner-only style (--allow-absent).
+// loadSkipGuard: recorded runs (scripts/perf-fixtures/README.md) against the timing rows (ms, x, %) of the real mod/perf-budget.json,
+// planner-only style (--allow-absent). Count/size rows are left out: they are exact per commit, so a later tightening (SKIPROLL
+// 6437f6cb: sparseColumns ceiling 85000 -> 64000, the fixtures recorded 68,343) made an old recording FAIL on a row this test is not about.
 function fixture(name, env = {}) {
 	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'perfcheck-'));
 	fs.cpSync(path.join(import.meta.dirname, 'perf-fixtures', name), dir, { recursive: true });
-	const budgetFile = path.join(import.meta.dirname, '..', 'mod', 'perf-budget.json');
+	const real = JSON.parse(fs.readFileSync(path.join(import.meta.dirname, '..', 'mod', 'perf-budget.json'), 'utf8'));
+	const budgetFile = path.join(dir, 'timing-budget.json');
+	fs.writeFileSync(budgetFile, JSON.stringify({ budgets: real.budgets.filter((b) => ['ms', 'x', '%'].includes(b.unit)) }));
 	const e = { ...process.env, ...env };
 	for (const k of ['PERF_SKIP_FAR', 'PERF_LOAD_SKIP']) if (!(k in env)) delete e[k];
 	const r = spawnSync('node', [path.join(import.meta.dirname, 'perf-check.mjs'), budgetFile, dir, '--allow-absent'], { encoding: 'utf8', env: e });
@@ -50,4 +54,10 @@ const ro = run({ 'a.ms': 60000, 'base.a.ms': 2000 });
 check('report-only row: exit 0, ratio 30.0x, status report', ro.status === 0 && ro.stdout.includes('30.0x') && ro.stdout.includes('| report |'));
 const roAbsent = run({});
 check('report-only row absent from a full run still fails', roAbsent.status === 1);
+// COLDARRIVAL polish: FB_PERF_ARRIVAL=0 makes perf.sh pass --allow-absent-prefix arrival.: only those rows may be missing
+budget.budgets = [{ key: 'arrival.cold.metro.ms', label: 'arr', unit: 'ms', budget: null }, { key: 'other.ms', label: 'o', unit: 'ms', budget: 10 }];
+const noArr = run({ 'other.ms': 5 }, ['--allow-absent-prefix', 'arrival.']);
+check('--allow-absent-prefix arrival.: missing arrival row passes', noArr.status === 0 && noArr.stdout.includes('1 allowed by --allow-absent-prefix arrival.'));
+const noOther = run({}, ['--allow-absent-prefix', 'arrival.']);
+check('--allow-absent-prefix arrival.: another missing row still fails', noOther.status === 1 && noOther.stdout.includes('rows are missing'));
 process.exit(bad ? 1 : 0);
