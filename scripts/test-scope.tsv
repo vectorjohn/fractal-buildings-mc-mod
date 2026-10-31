@@ -61,6 +61,7 @@ path	scripts/fetch-test-mods.sh	test-infra	compat	compat mod sets
 path	scripts/design-blocks.sh	design-blocks	fast	test-all runs its --check
 path	scripts/DesignBlocks.java	design-blocks	fast	test-all runs its --check
 path	scripts/playtest-gallery*	test-infra	fast	test-all runs the gallery self-test
+path	scripts/glossary*	glossary	-	docs/GLOSSARY.md generator: run scripts/glossary.sh --check (test-all runs it; stale is reported, not failed)
 path	scripts/*	scripts	-	process tooling (evidence, snapshots, merges): exercise it by hand
 path	tools/*	tools	-	helper tools
 

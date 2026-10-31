@@ -1,0 +1,84 @@
+# Hand-kept rows for docs/GLOSSARY.md (scripts/glossary.sh reads this file; rerun it after an edit).
+# Codes and run terms that are not ROADMAP items, or whose log/polish heading says too little.
+# Tab-separated: CODE <tab> meaning (plain words) <tab> link relative to docs/ (may be empty) <tab> status (optional: open, done, -)
+# A code a ROADMAP item or plan already defines is ignored here (the script warns); one known only from a log or a
+# Polish backlog line takes its meaning from here.
+#
+# --- item and tooling codes the generator can't find (from the run ledgers, QUESTIONS.md, REVIEW.md)
+ADR4	ADR 0004, roads between settlements (with John's water rule)	adr/0004-roads-between-settlements.md	done
+BLK16	fix: the entrance-reachable check failed at the steepest allowed grade (Phase 5)	runs/2026-10-21-phase5.md	done
+BRIDGEENDS	bridge ends and high road embankments faced in foundation stone (abutments)	REVIEW.md	done
+CIRC	5.11 interior circulation (hub door graph, fewer walk-through rooms)	archive/roadmap-phase-5.md	done
+DAEMONSTOP	rule: never run `./gradlew --stop`; it stops every agent's Gradle daemon	NOTES.md	done
+DEEPFLATS	high-rise flats that are too deep: back strip becomes wardrobes and closets (7.13 follow-up)	runs/2026-10-22-phase6.md
+DETFLAKE	intermittent chunk-order determinism failure in the server game tests; a test-isolation problem, fixed by TESTISO	log/2026-10-25-p6-testiso.md	done
+DORMER	dormer stairs: dormer roofs built as stair blocks (John's 2026-10-26 playtest)
+DS-n	a numbered design rule (DS-1, DS-45, ...) in the design standards	design/STANDARDS.md
+DS34LOOKS	remaining work on DS-34 (high-rises come in several looks)	design/STANDARDS.md	open
+DS39FIX	upper-floor window sills one block higher for shops and city blocks in every style (DS-39); folded into FACADE2	log/2026-10-26-p7-facade2.md	done
+DS40TIER	remaining work on DS-40 (settlement tier follows the lots actually built)	design/STANDARDS.md	open
+DSROADS	road links that end on a 3-wide lane instead of the main street at the gate (DS-52)	REVIEW.md
+DEVSHELL	the Nix flake moved to nix/ and `scripts/dev` caches the dev shell	../CLAUDE.md	done
+FBWATCH	debug switch that logs every worldgen block write inside watched boxes (who wrote what)	NOTES.md	done
+FORKFLAKE	flake: a full planner-core test run lost a forked test JVM on a loaded host	NOTES.md
+FRONTAGE	buildings face every street in dense cores (hand-over from METROFILL)	plans/metrofill.md	open
+HEAVY	a batched heavy run: client tests, order test, perf and server-only on one commit, for several merged items at once	runs/2026-10-22-phase6.md
+HEAVYn	the n-th batched heavy run (HEAVY1 ... HEAVY9); results in the run ledger, "Heavy runs"	runs/2026-10-22-phase6.md
+HOUSEPROG	whole-house room program across wings (every house gets a kitchen and a living room)	log/2026-10-21-p5-house-program.md	done
+ITEOF	planner-core test failures (end of file) caused by two Gradle runs in the same checkout	NOTES.md	done
+MAINSTUB-CORE	6.25 MAINSTUB follow-up: the city core tile on the whole-settlement path	log/2026-10-29-p6-mainstub-core.md	done
+ORDERMEM	the order test picks how many worlds to run at once from free memory	../CLAUDE.md	done
+PARTITIONS	high-rise corridors in exposed brick on both sides; inner walls should be plaster (DS-49)	design/STANDARDS.md
+PBLOCKS	process item: the generated block reference for the design agents (`scripts/design-blocks.sh`)	design/blocks.md	done
+PDESIGN	process item: the design reviewer agents (architect, interior designer) and the design standards	design/STANDARDS.md	done
+PFLOOR	process item: `fractal-cli floorplan`, storeys as ASCII grids for text-reading reviewers	log/2026-10-25-proc-floorplan.md	done
+PLAN6	the Phase 6 plan	plans/phase6.md	done
+PLAYTEST1026	John's 2026-10-26 playtest notes, triaged into items 6.12 to 6.18 and polish lines	ROADMAP.md	done
+PLAYTEST1028-QS	the architect's answers to the questions from John's 2026-10-28 playtest	review/playtest1028-qs/architect.md	done
+POSTMERGEDETACH	post-merge tests run detached from `scripts/squash-merge.sh` so a tool time limit can't kill them	../CLAUDE.md	done
+PPROC	process item: agent files, CLAUDE.md and squash-merge.sh rules	../CLAUDE.md	done
+PREG	process item: game tests register themselves	log/2026-10-25-proc-gametest-reg.md	done
+PROFILE	profile of the metropolis worst case against plain vanilla on the same seed	review/profile-metropolis.md	done
+QUAYOUT	take the quay trace out of structure starts so a late warmer can't freeze the server	PERFORMANCE.md	open
+QUIETLOCAL	`scripts/anywhere.sh --local-max`: cap heavy jobs on this machine while John uses it	../CLAUDE.md	done
+QUIETPERF	quiet-machine rule: a timing taken on a busy host is not a measurement (John 2026-10-30)	../CLAUDE.md
+REARCORE	high-rise follow-up left from the 7.13 tower steps (rear stair core); see the run ledger	runs/2026-10-22-phase6.md	open
+RELEASEPLAN	the 0.1.0 release plan and its open questions	review/release-plan.md	done
+REMOTEATTACH	`scripts/remote.sh --attach`: fetch the results of a worker-box job whose waiter died	../CLAUDE.md	done
+REVIEWLINKS	rule: REVIEW items link tracked copies under docs/review/ that John can open	../CLAUDE.md	done
+RNFLAKE	RoadNetTest flake; a real race in RoadNet.flight, fixed by RNFIX	log/2026-10-25-p6-rnfix.md	done
+ROADCLEAR2	6.17 ROADCLEAR follow-ups: STREETSNOW and TRUNKDIRT	log/2026-10-27-p6-roadclear2.md	done
+ROADS1	7.10 roads in one material per kind (city arterial surface, bridge decks)	ROADMAP.md
+ROADSATTACH	older roads-attached and bridge-dead-end violations seen by `city-check --roads`	runs/2026-10-22-phase6.md	open
+S10M	spike S10, mod half: per-chunk road feature, digest, cost	runs/2026-10-21-phase5.md	done
+S10P	spike S10, planner half: road graph between settlements, chunk query, determinism	runs/2026-10-21-phase5.md	done
+SBCFG	SilverBullet config: hide source, build and data files from the docs space	SILVERBULLET.md	done
+SETBACKSILL	window sills on high-rise setbacks; folded into HR-B3b	runs/2026-10-22-phase6.md	done
+SHOPBACK	shops chain bedrooms behind the shop floor; shop rear rooms need their own program	runs/2026-10-22-phase6.md	open
+STREETSNOW	snow left on streets after clearing (6.17 follow-up, StreetAirFix)	log/2026-10-27-p6-roadclear2.md	done
+SUBDIVIDE	old-town lot subdivision (5.13)	archive/roadmap-phase-5.md	done
+SWITCHBACK	exterior flights round a plinth that turn every step or two; make switchbacks more generous
+TOKENSAVE	agent-definition change to save tokens: at most 3 coding items, verdict blocks, Sonnet verifiers for small items	../.claude/agents/coordinator.md	done
+TOMAINn	the n-th merge of the run branch into main (TOMAIN3, ...)	runs/2026-10-22-phase6.md
+TPORTS	test tooling: one viewer-screenshot port per run	runs/2026-10-22-phase6.md	done
+TRUNKDIRT	dirt left under tree trunks next to streets (6.17 follow-up, StreetAirFix)	log/2026-10-27-p6-roadclear2.md	done
+VPAL	viewer: one palette per building in district scenes	log/2026-10-21-p5-viewer-palette.md	done
+WORKSHOP	workshop lean-to stores: a back door to the yard and the right furniture (became part of DS35DOORS)
+WPOTFLAKE	flake: WorldPlannerOrderTest's 8-thread tiny-cache case timed out on a loaded host (compute-bound, not a deadlock)		done
+XVFBLEAK2	`test-all.sh` exported CI=1, so Loom wrapped the client in its own Xvfb on software OpenGL instead of the Intel GPU	../CLAUDE.md	done
+#
+# --- run terms
+anywhere	`scripts/anywhere.sh`: runs a job on whichever host (this machine or beebox) frees first	../CLAUDE.md
+beebox	the worker box: a second machine for heavy jobs and long runs, reached by `scripts/remote.sh`	../CLAUDE.md
+docs-feedback	the worktree where John edits docs in SilverBullet; the coordinator syncs it into the run branch	../CLAUDE.md
+evidence	the pinned record of a heavy run (commit, command, result, load, logs) from `scripts/evidence.sh`	../CLAUDE.md
+gate	the review at the end of a phase: John looks and approves before the next phase starts	ROADMAP.md
+heavy lock	the machine-wide lock that lets only one Minecraft client test or timing run go at a time	../CLAUDE.md
+heavy run	a run of the heavy test layers (client tests, order test, perf); see HEAVY	../CLAUDE.md
+post-merge	the test run on the merged commit, started by `scripts/squash-merge.sh` in a separate worktree	../CLAUDE.md
+quay trace	tracing the quay lines along water for a waterfront settlement tile; slow, so the warmer does it ahead of players	PERFORMANCE.md
+run branch	the integration branch of a run (`claude/run-phase6`): items merge here, then it merges into main	../CLAUDE.md
+run ledger	the coordinator's record of a run: what's in flight, who's on it, outcomes	runs/2026-10-22-phase6.md
+suite slot	one of the few slots that limit how many full fast test suites run at once	../CLAUDE.md
+to-main	merging the run branch into main, after a full test run	runs/2026-10-22-phase6.md
+warmer	RegionWarmer: plans settlements and roads on background threads ahead of the player, so chunks don't wait	NOTES.md

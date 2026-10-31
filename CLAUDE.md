@@ -26,6 +26,7 @@ throwaway spikes before the architecture is locked in. The plan is in
 | Things only the human can judge (looks, "would a person build this", in-game feel) | `docs/REVIEW.md` | anyone, append only; results by the human |
 | Open questions for John: one line per decision waiting for him, linking where it's discussed | `docs/QUESTIONS.md` | anyone appends; the coordinator removes answered lines |
 | Finished phases' full text, old material | `docs/archive/` | coordinator at a phase merge |
+| Glossary: every item code (PARREADS, TPHOLD, ...) and run term, one line each, with its ROADMAP number, link and status | `docs/GLOSSARY.md` (generated) | `scripts/glossary.sh` only; non-item codes and terms go in `docs/glossary-extra.tsv` (anyone), then rerun |
 
 Agents read **slices** of the big docs (`grep -n` the item, then read that
 range), not whole files. Keep every doc lean: the log lives in per-item files
@@ -49,6 +50,12 @@ that works in all three. Full conventions: `docs/SILVERBULLET.md`.
 - Backtick a `#word` you don't mean as a tag. Docs are 2.x: no v1 syntax.
 - ROADMAP phase sections carry an `Updated: YYYY-MM-DD` line; update it when
   you edit that section.
+- **Gloss item codes for John.** In anything meant for John (`docs/REVIEW.md`,
+  `docs/QUESTIONS.md`, `docs/review/`, report summaries he reads, messages to
+  him), give an item code a gloss on first use, "MAINSTUB (main roads that end
+  at a gate)", or link its ROADMAP entry. [docs/GLOSSARY.md](docs/GLOSSARY.md)
+  is the lookup; a new code that isn't a ROADMAP item gets a row in
+  `docs/glossary-extra.tsv`, then `scripts/glossary.sh`.
 
 ## Human review loop
 
@@ -220,6 +227,7 @@ source of truth, and update it when a command changes.)*
 - REVIEW guard: `scripts/review-check.sh [--source worktree|index|<rev>] [--base <rev>]` exits 1 when REVIEW.md brings back an item or heading already in REVIEW-ARCHIVE.md (the union merge can resurrect them) or a second top-level item with the same bold title (a stale unticked copy; with `--base`, only one new against it); `scripts/squash-merge.sh` runs it (exit 7)
 - Docs-feedback sync (coordinator): `scripts/docs-sync.sh [--run-branch B] [--checkout DIR]` (defaults: the checkout it runs in and its branch) commits John's edits in `.claude/worktrees/docs-feedback`, merges them into the run branch (merge lock, review-check, aborted on conflict), fast-forwards docs-feedback, restarts SilverBullet if down and reports new post-merge FAIL/KILLED/DIED; exit 0 with one line `docs-sync: nothing new`, 10 feedback merged (sha, files, stat), 11 `main` has commits the run branch lacks, 12 a new post-merge failure, 1 error or conflict (left clean); self-test `scripts/docs-sync-selftest.sh`
 - Design block reference: `scripts/design-blocks.sh` regenerates `docs/design/blocks.md` and the table between `<!-- BLOCKS:BEGIN -->` and `<!-- BLOCKS:END -->` in `.claude/agents/*.md` from Minecraft's own `blocks.json` report and textures plus `docs/design/blocks-notes.md` (needs Loom's cached jars for the `minecraft_version` in `gradle.properties`; any mod build fetches them; enters the dev shell itself); `--check` writes nothing and exits 1 if stale (2 if the jars are missing); rerun after a Minecraft version bump or an edit to `blocks-notes.md`; `scripts/test-all.sh` runs the check
+- Glossary: `scripts/glossary.sh` regenerates `docs/GLOSSARY.md` (one row per item code or run term) from the bold ROADMAP and archived item names, plans named after a code, work-log headings, `6.x` Polish backlog lines and the hand-kept `docs/glossary-extra.tsv` (CODE, meaning, link relative to `docs/`, status); sorted, deterministic, under a second; `--check` writes nothing and exits 1 if stale, `--stdout` prints it; `scripts/test-all.sh` runs the check and reports `stale` without failing
 - Whole Gradle build (all three modules + boundary check): `scripts/dev ./gradlew build`
 - Boundary check alone: `scripts/dev ./gradlew :planner-core:checkNoMinecraft` (also part of `check` and run before `compileJava`)
 - **Any of the above on the worker box:** `scripts/remote.sh -- <command>`, the command exactly as you'd run it from the worktree root but without a `flock .../heavy.lock` prefix (e.g. `scripts/remote.sh -- scripts/test-all.sh`, `scripts/remote.sh -- scripts/client-test.sh`, `scripts/remote.sh -- scripts/dev ./gradlew :planner-core:test`). It copies the worktree (no `.git`, nothing gitignored), queues the command, prints the last 40 lines and saves the full log to `build/remote/<job>.log`, copies results back to the same paths (`build/test-all/`, JUnit XML, `mod/build/screenshots/`, client test logs, `viewer/out/`; `--fetch PATH` for more) and exits with the command's status (137, with a `JOB OOM-KILLED` line, when the job went over beebox's per-job memory cap, MemoryMax 28 % = 7.9 GiB). Output written elsewhere doesn't come back unless you `--fetch` it. Each job has a state file `build/remote/<job>.state` (id, command, fetch paths, commit, status) and its copy on beebox is kept until the results are back, so a job whose waiter died (SIGKILL, or SIGHUP when a tool call or session ends; SIGINT/SIGTERM still cancel it) runs on: `scripts/remote.sh --list` shows this worktree's unfetched jobs, `--attach <job>` / `--attach-last` waits if needed, fetches, writes the log and exits with the job's status, and `scripts/evidence.sh <label> scripts/remote.sh --attach <job>` pins evidence for it; copies older than 3 days (`FB_REMOTE_KEEP_DAYS`) are deleted on the next call. `scripts/remote.sh --check` exits 0 if the worker is reachable; `--help` for the rest.

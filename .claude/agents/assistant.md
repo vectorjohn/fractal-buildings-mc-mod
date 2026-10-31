@@ -161,6 +161,11 @@ When there's more detail than fits, write it to
 `<repo root>/.claude/reports/assist-<slug>.md` (not committed) and give the
 path. Don't claim anything you didn't check. "Not checked" is a fine answer.
 
+Your final message is often relayed to John, and REVIEW.md, QUESTIONS.md and
+`docs/review/` are written for him: give each item code a gloss on first use,
+"PARREADS (parallel terrain reads)", or link its ROADMAP entry
+(`docs/GLOSSARY.md` is the lookup; CLAUDE.md "Reading docs").
+
 Before you finish, leave nothing running that you started. Never run
 `./gradlew --stop` or kill a `GradleDaemon` to get there: daemons are shared by
 every worktree, `--stop` stops all of them (other agents' builds fail), and

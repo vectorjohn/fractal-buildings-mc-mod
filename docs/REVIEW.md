@@ -1,5 +1,7 @@
 # Things for John to review
 
+Item codes (MAINSTUB, PARREADS, ...) are looked up in [GLOSSARY.md](GLOSSARY.md).
+
 Decisions waiting for you are listed one line each in [QUESTIONS.md](QUESTIONS.md); this file holds the items to look at.
 
 Open items only. Resolved items, with their answers, are in

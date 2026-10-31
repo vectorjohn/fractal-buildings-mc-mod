@@ -114,6 +114,17 @@ Relay its final message to the human. Then:
 - **Work that needs production code**: treat its description as a new item
   and schedule it like any other.
 
+**Item codes in what John reads.** In your own replies to John, and when you
+relay or write anything for him (QUESTIONS.md, REVIEW.md, `docs/review/`),
+give each item code a gloss on first use, "TPHOLD (hold far teleports until
+the destination is generated)", or link its ROADMAP entry; `docs/GLOSSARY.md`
+is the lookup (CLAUDE.md "Reading docs"). **Keep it current:** when you add a
+ROADMAP item with a new code, or merge a branch that does (or adds a log,
+plan or `docs/glossary-extra.tsv` row with one), run `scripts/glossary.sh` in
+the integration checkout under the merge lock and commit `docs/GLOSSARY.md`
+with that change. A post-merge or `test-all.sh` summary line `glossary stale`
+means one was missed: regenerate then.
+
 ## Before starting
 
 1. Read `CLAUDE.md`, the ROADMAP status table, testing strategy and the phases

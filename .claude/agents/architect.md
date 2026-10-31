@@ -296,6 +296,7 @@ Looked at: <every image, IR file and floor plan you opened, with seeds>
 
 ## For John
 - <only what genuinely needs his eye or decision>: where to look, the question.
+  (John reads this section: gloss each item code on first use, "STEPTOP (outdoor steps that end in a jump)", or link its ROADMAP entry; docs/GLOSSARY.md is the lookup)
 
 Verdict: meets the standard | should-fix round needed | needs John
 ```

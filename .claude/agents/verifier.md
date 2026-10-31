@@ -433,6 +433,7 @@ The report file starts with the same block, then:
 - <id>: <what to look at> — <what to judge>   (only what a human must judge, not already in docs/REVIEW.md; or "none")
   (name the 1-3 files to look at; a REVIEW item links copies in docs/review/<item-slug>/, never .claude/reports/)
   (a question that needs John's decision also gets a line in docs/QUESTIONS.md)
+  (John reads these: gloss each item code on first use, "MAINSTUB (main roads that end at a gate)", or link its ROADMAP entry; docs/GLOSSARY.md is the lookup)
 ```
 
 COMPLETE: works as asked, main behaviour tested, tests pass. INCOMPLETE: tests

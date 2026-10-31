@@ -253,6 +253,16 @@ else
 	skip design-blocks
 fi
 
+# --- Glossary of item codes up to date (cheap, well under a second): scripts/glossary.sh --check, 0 current, 1 stale ---
+# A stale glossary is reported as "stale" but does not fail the run: a ROADMAP edit that adds a code would otherwise turn
+# every post-merge run red until someone regenerates it (the coordinator runs scripts/glossary.sh at merges).
+if [[ -x "$ROOT/scripts/glossary.sh" ]]; then
+	run_logged glossary "$ROOT/scripts/glossary.sh" --check; rc=$?
+	if (( rc == 0 )); then record glossary pass "docs/GLOSSARY.md current"; elif (( rc == 1 )); then record glossary stale "run scripts/glossary.sh and commit; see ${LOGS[glossary]}"; else record glossary fail "exit $rc; see ${LOGS[glossary]}"; fi
+else
+	skip glossary
+fi
+
 # --- Playtest gallery script self-test (FBNOTE; node + ImageMagick from the dev shell; cheap) ---
 if [[ -f "$ROOT/scripts/playtest-gallery.test.mjs" ]]; then
 	run_logged playtest-gallery node "$ROOT/scripts/playtest-gallery.test.mjs"; rc=$?
