@@ -20,6 +20,7 @@ public final class BiomeClass {
 
 	private static final Entry DEFAULT;
 	private static final Map<String, Entry> TABLE = new TreeMap<>();
+	private static final double MAX;
 
 	static {
 		try (InputStream in = BiomeClass.class.getResourceAsStream("/region/biome-classes.json")) {
@@ -33,6 +34,9 @@ public final class BiomeClass {
 		} catch (IOException e) {
 			throw new IllegalStateException(e);
 		}
+		double m = DEFAULT.multiplier();
+		for (Entry e : TABLE.values()) m = Math.max(m, e.multiplier());
+		MAX = m;
 	}
 
 	private static Entry entry(Object o) {
@@ -60,6 +64,11 @@ public final class BiomeClass {
 	public static double multiplier(String id) {
 		if (isWater(id) || isPeak(id)) return 0;
 		return TABLE.getOrDefault(path(id), DEFAULT).multiplier();
+	}
+
+	/** The largest multiplier any biome can have, so no footprint suitability can exceed it. */
+	public static double maxMultiplier() {
+		return MAX;
 	}
 
 	/** Coarse palette group; a settlement "straddles" when two groups each cover a fifth of it. */

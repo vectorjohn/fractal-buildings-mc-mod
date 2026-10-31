@@ -33,6 +33,12 @@ public final class RegionPlanner {
 	public int maxRadius = Tiers.DEFAULT_MAX_RADIUS;
 	/** Water bias (5.10): off gives the pre-R2 decisions for every tier (A/B tests, evidence). */
 	public boolean waterBias = true;
+	/**
+	 * SKIPROLL: a cell whose roll is at or above the largest chance it could have (baseChance times the best biome
+	 * multiplier) can never settle, so it is decided with no terrain read (reason "roll", terrain numbers empty). Off
+	 * reads every cell in full (tests compare the two; settlements are identical).
+	 */
+	public boolean skipDeadRolls = true;
 
 	public RegionPlanner(RegionField field, RegionProbe probe) {
 		this.field = field;
@@ -178,6 +184,12 @@ public final class RegionPlanner {
 		Tier tier = Tiers.tier(seed, cx, cz);
 		int drawn = Tiers.radius(seed, cx, cz, tier, maxRadius);
 		int radius = Math.min(drawn, (int) (clampFrac * field.cellSize));
+		if (skipDeadRolls && roll >= baseChance * BiomeClass.maxMultiplier()) {
+			int siteX = snap(sx), siteZ = snap(sz);
+			int edge = (int) Math.round(field.edgeDistance(siteX, siteZ)), fit = (int) Math.floor(0.95 * edge);
+			return new CellDecision(cx, cz, siteX, siteZ, false, "roll", tier, siteX, siteZ, drawn, Math.min(radius, fit), fit, edge,
+				roll, 0, 0, 0, 0, 0, 0, Map.of(), -1, false);
+		}
 		double bias = biasOf(cx, cz);
 		boolean biased = bias > 0;
 		WaterCache wcache = new WaterCache(sx, sz);

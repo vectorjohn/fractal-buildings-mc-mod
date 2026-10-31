@@ -59,7 +59,8 @@ class RegionPlannerTest {
 		RegionPlanner p = new RegionPlanner(new RegionField(3, 1024), sea);
 		for (CellDecision c : cells(p, 3)) {
 			assertFalse(c.settled());
-			assertEquals("water", c.reason());
+			// a cell that can never roll in is decided without reading terrain (SKIPROLL): "roll" then, "water" otherwise
+			assertTrue(c.reason().equals("water") || c.reason().equals("roll") && c.roll() >= p.baseChance * BiomeClass.maxMultiplier(), c.reason());
 		}
 	}
 

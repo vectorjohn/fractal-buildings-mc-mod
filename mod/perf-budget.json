@@ -46,10 +46,10 @@
     },
     {
       "key": "region.cold.warm.sparseColumns",
-      "label": "Same: single lattice columns generated (region + coarse; 68,343)",
+      "label": "Same: single lattice columns generated (region + coarse; 51,054 after SKIPROLL, was 68,343)",
       "unit": "count",
-      "budget": 70000,
-      "ci": 85000
+      "budget": 52500,
+      "ci": 64000
     },
     {
       "key": "region.cold.warm.roadColumns",
