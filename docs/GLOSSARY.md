@@ -89,6 +89,7 @@ Item codes (PARREADS, MAINSTUB, TPHOLD, ...) and run terms, one row each. **Gene
 | HR-A3 |  | mass-timber family (7.7) | done | [[docs/log/2026-10-25-p7-hr-a3|log]] |
 | HR-B1 |  | tower massing | done | [[docs/log/2026-10-25-p7-hr-b1|log]] |
 | HR-B2 |  | tower plate templates | done | [[docs/log/2026-10-25-p7-hr-b2|log]] |
+| HRENTRY | 7.24 | high-rise entrances (forecourt, lobby at grade, podium, wide flight, more doors) | open | [[docs/ROADMAP|ROADMAP 7.24]] |
 | INN | 7.22 | an inn building type for roadside hamlets | open | [[docs/ROADMAP|ROADMAP 7.22]] |
 | IRR1 |  | old-town subdivision and diagonal-avenue frontage (5.13) | done | [[docs/log/2026-10-21-p5-irr1-oldtown|log]] |
 | ITEOF |  | planner-core test failures (end of file) caused by two Gradle runs in the same checkout | done | [[docs/NOTES|NOTES]] |
@@ -96,6 +97,7 @@ Item codes (PARREADS, MAINSTUB, TPHOLD, ...) and run terms, one row each. **Gene
 | JUNCTION |  | street heights where streets meet (round 1: rule and diagnosis; round 2: the planner fix) | done | [[docs/log/2026-10-23-p6-junction|log]] |
 | LAMPS |  | every high-rise room gets a standing lantern and a hung one (`HighriseRooms.hooks` adds `light` and always... | polish | [[docs/ROADMAP|ROADMAP polish]] |
 | LEAFORDER | 6.28 | end state of crowns over streets varies between runs | done | [[docs/ROADMAP|ROADMAP 6.28]] |
+| LINKBRAID | 7.25 | roads between settlements that share a valley share a road | open | [[docs/ROADMAP|ROADMAP 7.25]] |
 | LOTRAIL |  | railed flights inside the lot, landings as wide as the door | done | [[docs/log/2026-10-25-p6-lotrail|log]] |
 | MAINSTUB | 6.25 | main roads that end at a gate with nothing beyond | done | [[docs/ROADMAP|ROADMAP 6.25]] |
 | MAINSTUB-CORE |  | 6.25 MAINSTUB follow-up: the city core tile on the whole-settlement path | done | [[docs/log/2026-10-29-p6-mainstub-core|2026-10-29-p6-mainstub-core]] |
@@ -127,6 +129,7 @@ Item codes (PARREADS, MAINSTUB, TPHOLD, ...) and run terms, one row each. **Gene
 | PROFILE |  | profile of the metropolis worst case against plain vanilla on the same seed | done | [[docs/review/profile-metropolis|profile-metropolis]] |
 | PROPFIX |  | V1PropertyTest skips policy rejections | done | [[docs/log/2026-10-21-p5-propfix|log]] |
 | quay trace |  | tracing the quay lines along water for a waterfront settlement tile; slow, so the warmer does it ahead of... | - | [[docs/PERFORMANCE|PERFORMANCE]] |
+| QUAYLAZY |  | , a lazy quay trace that runs in parallel | - | [[docs/plans/quaylazy|plan]] |
 | QUAYOUT |  | take the quay trace out of structure starts so a late warmer can't freeze the server | open | [[docs/PERFORMANCE|PERFORMANCE]] |
 | QUIETLOCAL |  | `scripts/anywhere.sh --local-max`: cap heavy jobs on this machine while John uses it | done | [[CLAUDE|CLAUDE]] |
 | QUIETPERF |  | quiet-machine rule: a timing taken on a busy host is not a measurement (John 2026-10-30) | - | [[CLAUDE|CLAUDE]] |
@@ -163,6 +166,7 @@ Item codes (PARREADS, MAINSTUB, TPHOLD, ...) and run terms, one row each. **Gene
 | SC | 5.9 | Phase 5 step: scale check | done | [[docs/log/2026-10-21-p5-sc-scale|log]] |
 | SETBACKSILL |  | window sills on high-rise setbacks; folded into HR-B3b | done | [[docs/runs/2026-10-22-phase6|2026-10-22-phase6]] |
 | SHOPBACK |  | shops chain bedrooms behind the shop floor; shop rear rooms need their own program | open | [[docs/runs/2026-10-22-phase6|2026-10-22-phase6]] |
+| SHOPFLAT | 7.23 | a shop's rooms follow a programme (one household upstairs, store and kitchen behind) | open | [[docs/ROADMAP|ROADMAP 7.23]] |
 | SHOPLAND |  | shopfront landings | done | [[docs/log/2026-10-21-p5-shopland|log]] |
 | SHOPLOW | 7.17 | doors sit near the street (shops, houses, workshops) | open | [[docs/ROADMAP|ROADMAP 7.17]], [[docs/plans/shoplow|plan]] |
 | SIMTIMEFLAKE |  | wall-clock asserts in fast tests | done | [[docs/log/2026-10-29-p6-simtimeflake|log]] |

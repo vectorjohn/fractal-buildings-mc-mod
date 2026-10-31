@@ -29,6 +29,21 @@ records the reviewers' proposals) and update the Enforcement line when a test
 lands. Where a rule gives a number and the source didn't, the number is an
 agent's and is marked "(agent's number)".
 
+**Default and exceptions** (John, 2026-10-31, [QUESTIONS.md](../QUESTIONS.md)
+on DS-77: "I don't want to rule out the weirdness, and I have concerns
+about DS rules being too strict and prescriptive to the point that they
+dictate one way to do things"). A taste or programme rule (looks, room
+uses, layouts, counts) describes the **default**: most buildings follow
+it, and a seeded, deterministic minority are deliberate exceptions, "the
+eccentric architect". A rule about safety, reachability or invariants
+(walkable without jumping, no floating blocks, doors and rooms
+reachable, no open roofs) stays **hard**: no exceptions. A rule says
+which it is where that isn't obvious, and a chance-based rule gives its
+default share (agent's number unless John gave one); a reviewer checks a
+chance-based rule over a seed batch, not one building. Reviewers
+(`architect`, `interior-designer`) say for every rule they propose
+whether it is hard or chance-based.
+
 **What a rule holds** (John, 2026-10-25). Only the **Rule** (the outcome,
 in John's words), the **Why** (his quote or the reason), the **Scope**, and
 a short checkable condition in **Enforcement** (what a test or reviewer
@@ -531,6 +546,27 @@ and Minecraft block facts ([blocks.md](blocks.md), from John's
   playtest questions 2026-10-27
   ([playtest1026-qs-architect.md](../review/reports/playtest1026-qs-architect.md), P3).
 
+## DS-45 amendment: high-rise entrances
+
+- **Addition** to DS-45: a high-rise's or city block's main door rises at
+  most 2 from the street it faces. A rise of 3-6 takes a straight flight
+  square to the facade, at least door width + 2 wide, inside a forecourt,
+  with DS-45 rests. A rise of more than that is not built: the lobby goes
+  at street level and the base cuts into the slope.
+- **Why:** John, playtest 2026-10-31 (03.16.21): "a building of this
+  enormity would have stairs (if any) more like this"; 6.31 STAIRJOG (a
+  1-wide flight that jogs below a triple door with 1-3 rows of lot in
+  front).
+- **Scope:** highrise, block; city and metropolis.
+- **Enforcement:** code candidate: extend `door-rise` to these types
+  (rise and flight width), plus the run-and-turn check 6.31 adds
+  (ROADMAP 7.24 HRENTRY). None today. Hard (reachability of the main
+  door).
+- **Status:** accepted (amends accepted DS-45). **Source:** John,
+  [QUESTIONS.md](../QUESTIONS.md), 2026-10-31 ("accept!"); proposed by
+  the architect, playtest answers 2026-10-31, Q1
+  ([architect.md](../review/playtest1031-qs/architect.md)).
+
 ## DS-54 The built environment is walkable without jumping
 
 - **Rule:** a player can walk everywhere the settlement means people to go
@@ -659,6 +695,89 @@ and Minecraft block facts ([blocks.md](blocks.md), from John's
   basements question 2026-10-26
   ([basements-interior.md](../review/reports/basements-interior.md),
   "Temple").
+
+## DS-77 A shop sleeps one household (by default)
+
+- **Rule (chance):** by default a shop's upper storeys are one flat for
+  the shopkeeper's household. A kitchen-living room comes first, by the
+  stair (a living room instead when the ground floor has the kitchen,
+  DS-67); then up to 2-3 bedrooms (the main one with a double bed where
+  3x4 fits); rooms left over are stock rooms, a study or a second living
+  room. Beds: at most 3 in a two-storey shop, 4 in any village shop, 5 in
+  a town shop of 3+ storeys (agent's numbers). No workstations in the
+  flat. A seeded minority of shops (about 1 in 10; agent's number,
+  [ASSUMPTIONS.md](../ASSUMPTIONS.md)) are the eccentric architect's
+  instead, for example a lodging-house shop with more beds than the cap,
+  a flat without a kitchen, or a workroom upstairs; the roll is
+  deterministic (hashed from the seed and the building).
+- **Rule (hard):** every bedroom opens off a landing, hall or living
+  room, never only through another bedroom, in the eccentric variants
+  too (circulation; see also DS-48).
+- **Why:** John 2026-10-31: "I like DS-77 as written so long as it is
+  based on chance, where we still sometimes get the eccentric
+  architect." Today every upstairs room of a shop is a generic bedroom
+  (`ShopType` sends every non-shop room to the default programme): 16 of
+  16 CLI shops have no kitchen or living room, with 4-7 beds on two
+  storeys and up to 15 on four, and bedrooms reached through bedrooms;
+  such a shop reads as an inn (John's playtest note 02.42.59), and 7.22
+  INN gives the inn its own type.
+- **Scope:** type `shop` (DS-67 covers its ground floor).
+- **Enforcement:** code candidate (ROADMAP 7.23 SHOPFLAT): over a seed
+  batch, at least about 80 % of shops have one kitchen or living room
+  per flat and beds within the cap (the default), and some variants
+  occur; no shop at all has a bedroom whose only doors lead to bedrooms
+  (hard). None today.
+- **Status:** accepted as chance-based (John's condition). **Source:**
+  John, [QUESTIONS.md](../QUESTIONS.md), 2026-10-31; proposed by the
+  interior designer, playtest answer 2026-10-31
+  ([interior.md](../review/playtest1031-qs/interior.md)).
+
+## DS-75 Basement rooms favour basement uses
+
+- **Rule (chance):** basement rooms take basement uses first: in 7.18
+  phase 1 service uses (storage, cellar, plant, lockers, laundry,
+  workshop, crypt, vault; the desert sardab), in phase 2 also finished
+  uses (bar, gym, event or club room, rec room, a hidden room). A seeded,
+  deterministic minority of basements have living rooms too (agent's
+  numbers, [ASSUMPTIONS.md](../ASSUMPTIONS.md)):
+  - a **bedroom** in about 1 basement in 20 in hamlets, villages and
+    towns, and about 1 in 8 in modern styles or cities and metropolises;
+  - a **kitchen** (or wet bar) in about 1 in 30, and about 1 in 10 in
+    modern styles or cities and metropolises;
+  - a **lived-in lower level** (a split-level or walk-out basement that
+    reads as a small flat rather than a cellar: a wet bar or kitchenette,
+    a bath and a bedroom) as a rarer variant of the above, most likely on
+    a falling lot with a walk-out side.
+- **Rule (hard):** any basement room, these included, meets DS-53
+  (reachable by a stair stacked with the main stair or a hatch, areaway
+  or walk-out that meets DS-4, DS-6 and DS-8; never below nearby water)
+  and DS-24 with its basement amendment (placed lights, block light 1 or
+  more on every walkable cell; no window needed). A basement kitchen with
+  a hearth or stove that smokes has a chimney (DS-15). DS-48 (rooms are
+  walkable) holds.
+- **DS-12** (agent's reading, John to confirm): basement service and
+  finished rooms don't count for DS-12 (bedrooms first); a basement
+  bedroom counts as a bedroom, and a basement kitchen or living room as a
+  room of its kind.
+- **Why:** John 2026-10-31 on the interior designer's "never a bedroom
+  or a kitchen": "too prescriptive. Sometimes basements have bedrooms and
+  kitchens *especially* in modern cities. I think it's more like,
+  basement rooms should prioritize basement uses, with some chance (low)
+  of having a bedroom. Houses vary a lot! My friend had a sort of split
+  level where the basement did in fact have a kitchen (maybe more of a
+  wet bar) and bath and bedroom. That was less of a cellar." Earlier
+  (2026-10-29) he set the two phases ("any basement at all with storage
+  followed by event spaces, gyms, bars, finished basements, etc.").
+- **Scope:** all types with basements (7.18 BASEMENT).
+- **Enforcement:** code candidate (room-use check per storey): over a
+  seed batch, most basement rooms (about 80 % or more) have a basement
+  use and the bedroom and kitchen shares stay near the defaults; every
+  basement room is reachable and lit (hard). None today.
+- **Status:** accepted as chance-based (John 2026-10-31). **Source:**
+  John, [QUESTIONS.md](../QUESTIONS.md), 2026-10-31; proposed by the
+  interior designer, basements question 2026-10-26
+  ([basements-interior.md](../review/reports/basements-interior.md),
+  "Basements are service space").
 
 # Settlements
 
@@ -853,6 +972,24 @@ and Minecraft block facts ([blocks.md](blocks.md), from John's
   None today.
 - **Status:** #Approved by @John on 2026-10-28. **Source:** architect, playtest questions
   2026-10-27 ([playtest1026-qs-architect.md](../review/reports/playtest1026-qs-architect.md), P5).
+
+## DS-76 Links that share a valley share a road
+
+- **Rule:** two roads between settlements don't run side by side within
+  about 16 blocks for more than about 96 blocks, and don't cross each
+  other more than once (agent's numbers). Where their routes meet, they
+  share one road and part at a junction.
+- **Why:** John, playtest 2026-10-31 (03.33.50): "crisscrossing back and
+  forth ... Ideal if we could detect and merge".
+- **Scope:** links and approaches outside settlements.
+- **Enforcement:** code candidate `links-braid` (report-only first);
+  none today (ROADMAP 7.25 LINKBRAID, which needs an amendment to ADR
+  0004, roads between settlements). Related to DS-17 and the proposed
+  DS-57 (no doubling back).
+- **Status:** accepted. **Source:** John,
+  [QUESTIONS.md](../QUESTIONS.md), 2026-10-31 ("Yes accept"); proposed
+  by the architect, playtest answers 2026-10-31, Q2
+  ([architect.md](../review/playtest1031-qs/architect.md)).
 
 ## DS-21 Hamlets and villages are not ruler-straight
 
@@ -1720,22 +1857,3 @@ copies are under `docs/review/` where they exist.
   pass); client foliage tests.
 - **Status:** proposed (clarifies DS-20). **Source:** architect,
   ROADLEAFORDER review 2026-10-29 (p6-roadleaforder-architect.md).
-
-## DS-75 Basement rooms take basement uses
-
-- **Proposed rule:** a basement room takes a basement use: in 7.18
-  phase 1 a service use (storage, cellar, plant, lockers, laundry, crypt,
-  vault; the desert sardab excepted), in phase 2 also a finished use (bar,
-  gym, event or club room, rec room, a hidden room); never a bedroom or a
-  kitchen. Basement rooms don't count for DS-12 (bedrooms first).
-- **Why:** period practice; no daylight. John 2026-10-29 widened the
-  agents' "service space only" to two phases ("any basement at all with
-  storage followed by event spaces, gyms, bars, finished basements,
-  etc.") but did not say whether basement rooms count for DS-12, or
-  whether bedrooms or kitchens are ever allowed below grade.
-- **Scope:** all types with basements (7.18 BASEMENT).
-- **Enforcement:** code candidate (room-use check per storey).
-- **Status:** proposed (the DS-12 count and the bedroom/kitchen ban
-  await John). **Source:** interior designer, basements question
-  2026-10-26 ([basements-interior.md](../review/reports/basements-interior.md),
-  "Basements are service space").

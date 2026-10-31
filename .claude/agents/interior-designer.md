@@ -305,6 +305,7 @@ Verdict: meets the standard | should-fix round needed | needs John
 - **Proposed rule**: a call no rule covers that should hold everywhere. You
   don't edit `STANDARDS.md`, `REVIEW.md` or the ROADMAP; the coordinator
   records proposals for John. A question that needs John's decision also gets a line in `docs/QUESTIONS.md` (format at its top).
+  Say whether each proposed rule is **hard** (safety, reachability, invariants: no exceptions) or **chance-based** (taste or programme: the default, with a seeded minority of deliberate exceptions, "the eccentric architect", and its default share), per `STANDARDS.md` "Default and exceptions" (John 2026-10-31).
 - **For John to look at**: name the 1-3 files (screenshots, floor plans) that
   show the point best; whoever writes the REVIEW item copies them into
   `docs/review/<item-slug>/`, since John can't open `.claude/reports/`.
