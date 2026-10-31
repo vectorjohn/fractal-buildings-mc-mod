@@ -1,0 +1,869 @@
+<title>Inside the City Planner</title>
+<meta name="description" content="How the Fractal Buildings planner goes from a seed to a city and its roads, where it reads terrain, and where the time goes.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,750&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<style>
+/* Layout: a surveyor's field notebook. One wide column; the timeline stage is a map table (canvas + notes panel side by side, stacked on phones). */
+:root {
+  --bg: #f2f3ef;
+  --surface: #fbfbf8;
+  --sunk: #e8eae4;
+  --ink: #17201c;
+  --ink2: #46514b;
+  --muted: #6c7670;
+  --rule: #d3d8d1;
+  --accent: #0d6a70;
+  --accent-ink: #ffffff;
+  --accent-soft: #d5ebe9;
+  --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --s4: #eda100; --s5: #e87ba4; --s6: #008300; --s7: #4a3aa7; --s8: #e34948;
+  --mod: #c0462f;
+  --van: #6f7b75;
+  --warn-bg: #fbecd9; --warn-ink: #7a3d06;
+  --ok-bg: #dcefe1; --ok-ink: #1d5a2c;
+  --no-bg: #f6dedb; --no-ink: #7d2219;
+  --f-display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  --f-body: "IBM Plex Sans", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  --gutter: 16px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #121715; --surface: #1a201d; --sunk: #232a27; --ink: #e8eeea; --ink2: #b9c3bd; --muted: #8b958f; --rule: #2f3834;
+    --accent: #5ec2c0; --accent-ink: #08201f; --accent-soft: #19393a;
+    --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500; --s5: #d55181; --s6: #2f9a2f; --s7: #9085e9; --s8: #e66767;
+    --mod: #e8735b; --van: #9aa59f;
+    --warn-bg: #3a2a14; --warn-ink: #f2c48a; --ok-bg: #173323; --ok-ink: #9ed9ae; --no-bg: #3b1d1a; --no-ink: #f0a59c;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #121715; --surface: #1a201d; --sunk: #232a27; --ink: #e8eeea; --ink2: #b9c3bd; --muted: #8b958f; --rule: #2f3834;
+  --accent: #5ec2c0; --accent-ink: #08201f; --accent-soft: #19393a;
+  --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500; --s5: #d55181; --s6: #2f9a2f; --s7: #9085e9; --s8: #e66767;
+  --mod: #e8735b; --van: #9aa59f;
+  --warn-bg: #3a2a14; --warn-ink: #f2c48a; --ok-bg: #173323; --ok-ink: #9ed9ae; --no-bg: #3b1d1a; --no-ink: #f0a59c;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 16px; line-height: 1.55; margin: 0; }
+.wrap { max-width: 1180px; margin: 0 auto; padding-inline: var(--gutter); padding-block: 28px 64px; }
+h1, h2, h3 { font-family: var(--f-display); text-wrap: balance; line-height: 1.12; margin: 0; letter-spacing: -0.01em; }
+h1 { font-size: clamp(2rem, 5vw, 3.3rem); font-weight: 750; }
+h2 { font-size: clamp(1.45rem, 3vw, 2rem); font-weight: 750; }
+h3 { font-size: 1.12rem; font-weight: 600; }
+p { margin: 0; max-width: 68ch; }
+a { color: var(--accent); text-underline-offset: 2px; }
+a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+code, .mono { font-family: var(--f-mono); font-size: 0.86em; }
+code { background: var(--sunk); padding: 0.05em 0.3em; border-radius: 3px; overflow-wrap: anywhere; }
+.eyebrow { font-family: var(--f-mono); font-size: 0.74rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+.lede { font-size: 1.12rem; color: var(--ink2); max-width: 66ch; }
+.stack { display: flex; flex-direction: column; gap: 14px; }
+section { padding-block: 40px 8px; border-top: 1px solid var(--rule); margin-top: 32px; }
+section > .stack > h2 { margin-bottom: 2px; }
+.src { font-size: 0.78rem; color: var(--muted); max-width: none; }
+.src code { font-size: 0.95em; background: none; padding: 0; }
+.note { font-size: 0.9rem; color: var(--ink2); }
+.tag { display: inline-block; font-family: var(--f-mono); font-size: 0.7rem; letter-spacing: 0.04em; padding: 1px 6px; border-radius: 3px; vertical-align: 0.1em; white-space: nowrap; }
+.tag.real { background: var(--ok-bg); color: var(--ok-ink); }
+.tag.schem { background: var(--warn-bg); color: var(--warn-ink); }
+.tag.guess { background: var(--no-bg); color: var(--no-ink); }
+.code { font-family: var(--f-mono); font-weight: 500; font-size: 0.86em; color: var(--ink); }
+nav.toc { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 0.92rem; }
+nav.toc a { color: var(--ink2); text-decoration: none; border-bottom: 1px solid var(--rule); }
+nav.toc a:hover { color: var(--accent); border-color: var(--accent); }
+
+/* header read-kind key */
+.kinds { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 12px; margin-top: 6px; }
+.kind { background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 12px 14px; display: grid; grid-template-columns: 44px 1fr; gap: 12px; align-items: start; min-width: 0; }
+.kind svg { width: 44px; height: 44px; }
+.kind b { font-family: var(--f-mono); font-weight: 500; }
+.kind p { font-size: 0.9rem; color: var(--ink2); }
+
+/* timeline stage */
+.stage { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); gap: 0; background: var(--surface); border: 1px solid var(--rule); border-radius: 8px; overflow: hidden; }
+.canvas-box { background: var(--surface); min-width: 0; display: flex; flex-direction: column; }
+.cwrap { position: relative; background: var(--sunk); }
+.below { padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; border-top: 1px solid var(--rule); }
+.canvas-box canvas { display: block; width: 100%; height: auto; aspect-ratio: 4 / 3.25; max-width: 100%; touch-action: pan-y; }
+.overlay-label { position: absolute; left: 10px; bottom: 8px; font-family: var(--f-mono); font-size: 0.72rem; color: var(--ink2); background: color-mix(in srgb, var(--surface) 82%, transparent); padding: 2px 6px; border-radius: 3px; pointer-events: none; }
+.scale-label { position: absolute; right: 10px; bottom: 8px; font-family: var(--f-mono); font-size: 0.72rem; color: var(--ink2); background: color-mix(in srgb, var(--surface) 82%, transparent); padding: 2px 6px; border-radius: 3px; pointer-events: none; }
+.panel { padding: 16px 18px; display: flex; flex-direction: column; gap: 10px; min-width: 0; border-left: 1px solid var(--rule); max-height: 760px; overflow-y: auto; }
+.panel h3 { font-size: 1.3rem; }
+.panel .stepno { font-family: var(--f-mono); font-size: 0.75rem; color: var(--muted); letter-spacing: 0.08em; }
+.panel p { font-size: 0.94rem; }
+.facts { display: grid; grid-template-columns: auto 1fr; gap: 4px 10px; font-size: 0.86rem; margin: 2px 0 0; }
+.facts dt { color: var(--muted); font-family: var(--f-mono); font-size: 0.74rem; text-transform: uppercase; letter-spacing: 0.06em; padding-top: 2px; }
+.facts dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
+.legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 0.8rem; color: var(--ink2); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.sw { width: 12px; height: 12px; border-radius: 2px; display: inline-block; flex: none; }
+.sw.dot { border-radius: 50%; width: 8px; height: 8px; }
+.sw.line { height: 3px; width: 16px; border-radius: 2px; }
+.controls { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; padding: 10px 12px; border-top: 1px solid var(--rule); background: var(--surface); grid-column: 1 / -1; }
+button.ctl, select.ctl { font: inherit; font-size: 0.88rem; border: 1px solid var(--rule); background: var(--bg); color: var(--ink); border-radius: 5px; padding: 5px 10px; cursor: pointer; min-height: 34px; }
+button.ctl:hover { border-color: var(--accent); }
+button.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
+input[type=range].scrub { flex: 1 1 200px; min-width: 140px; accent-color: var(--accent); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; grid-column: 1 / -1; padding: 10px 12px; border-top: 1px solid var(--rule); background: var(--surface); }
+.chip { font-family: var(--f-mono); font-size: 0.72rem; border: 1px solid var(--rule); border-radius: 999px; padding: 3px 9px; background: var(--bg); color: var(--ink2); cursor: pointer; }
+.chip[aria-current="step"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.chip .grp { opacity: 0.65; }
+.meter { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 4px; }
+.meter div { background: var(--bg); border: 1px solid var(--rule); border-radius: 5px; padding: 6px 8px; min-width: 0; }
+.meter b { display: block; font-family: var(--f-mono); font-weight: 500; font-size: 1.02rem; font-variant-numeric: tabular-nums; }
+.meter small { font-size: 0.7rem; color: var(--muted); line-height: 1.2; display: block; }
+
+/* figures */
+.fig { background: var(--surface); border: 1px solid var(--rule); border-radius: 8px; padding: 16px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.fig h3 { font-size: 1.05rem; }
+.scroll-x { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); gap: 16px; }
+.grid3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 290px), 1fr)); gap: 14px; }
+table { border-collapse: collapse; font-size: 0.86rem; width: 100%; }
+th, td { text-align: left; padding: 5px 8px; border-bottom: 1px solid var(--rule); vertical-align: top; }
+th { font-weight: 600; color: var(--ink2); font-size: 0.78rem; }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; font-family: var(--f-mono); font-size: 0.82rem; white-space: nowrap; }
+.bars svg { width: 100%; height: auto; display: block; }
+.bars text { font-family: var(--f-body); }
+.tip { position: fixed; z-index: 10; pointer-events: none; background: var(--ink); color: var(--bg); font-size: 0.8rem; padding: 6px 8px; border-radius: 4px; max-width: 280px; line-height: 1.35; display: none; }
+
+/* experiments */
+.card { background: var(--surface); border: 1px solid var(--rule); border-radius: 8px; padding: 14px 16px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.card .verdict { font-family: var(--f-mono); font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; padding: 2px 7px; border-radius: 3px; align-self: flex-start; }
+.verdict.no { background: var(--no-bg); color: var(--no-ink); }
+.verdict.yes { background: var(--ok-bg); color: var(--ok-ink); }
+.verdict.part { background: var(--warn-bg); color: var(--warn-ink); }
+.card p { font-size: 0.9rem; }
+.card .big { font-family: var(--f-mono); font-size: 1.25rem; font-weight: 500; font-variant-numeric: tabular-nums; }
+.toy { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+.toy canvas { width: 100%; height: auto; aspect-ratio: 1; display: block; border-radius: 6px; background: var(--sunk); max-width: 100%; }
+.toy fieldset { border: 1px solid var(--rule); border-radius: 6px; padding: 8px 10px; margin: 0; display: flex; flex-wrap: wrap; gap: 4px 12px; min-width: 0; }
+.toy legend { font-size: 0.76rem; color: var(--muted); font-family: var(--f-mono); text-transform: uppercase; letter-spacing: 0.06em; padding: 0 4px; }
+.toy label { font-size: 0.88rem; display: inline-flex; gap: 5px; align-items: center; cursor: pointer; }
+.result { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.result div { background: var(--bg); border: 1px solid var(--rule); border-radius: 5px; padding: 8px; min-width: 0; }
+.result b { font-family: var(--f-mono); font-size: 1.1rem; font-weight: 500; display: block; font-variant-numeric: tabular-nums; }
+.result small { color: var(--muted); font-size: 0.74rem; display: block; line-height: 1.25; }
+.costbar { height: 10px; border-radius: 3px; background: var(--s4); margin-top: 6px; max-width: 100%; transition: width 0.25s; }
+.decisions { display: flex; flex-direction: column; gap: 10px; }
+.decision { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); gap: 6px 18px; padding: 12px 0; border-bottom: 1px solid var(--rule); }
+.decision h3 { font-size: 1rem; }
+.decision p { font-size: 0.9rem; color: var(--ink2); }
+.status { font-family: var(--f-mono); font-size: 0.72rem; color: var(--muted); }
+.arch svg { min-width: 980px; width: 100%; height: auto; display: block; }
+.arch text { font-family: var(--f-body); }
+img.figimg { max-width: 100%; height: auto; border-radius: 4px; border: 1px solid var(--rule); background: #fff; }
+@media (max-width: 900px) {
+  .stage { grid-template-columns: minmax(0, 1fr); }
+  .panel { border-left: none; border-top: 1px solid var(--rule); max-height: none; order: 2; }
+  .controls { order: 1; }
+  .chips { order: 3; }
+  .toy { grid-template-columns: minmax(0, 1fr); }
+  .decision { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 480px) {
+  body { font-size: 15px; }
+  .meter { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .meter b { font-size: 0.88rem; }
+}
+@media (prefers-reduced-motion: reduce) { .costbar { transition: none; } }
+</style>
+
+<div class="wrap">
+<header class="stack">
+  <div class="eyebrow">Fractal Buildings &middot; planner explainer &middot; 2026-10-31</div>
+  <h1>Inside the City Planner</h1>
+  <p class="lede">How the mod gets from a world seed to a metropolis and the roads around it, where it asks Minecraft for terrain on the way, and why a cold arrival takes about 70 seconds where vanilla takes 4. The animated timeline uses real planner output for one city: metropolis <span class="code">s2_m6</span> on seed 987654321, the same city every performance row measures.</p>
+  <nav class="toc" aria-label="Sections">
+    <a href="#timeline">1. The timeline</a><a href="#architecture">2. Architecture and threads</a><a href="#time">3. Where the time goes</a><a href="#experiments">4. What we tried</a><a href="#decisions">5. Open decisions</a><a href="#glossary">Glossary</a>
+  </nav>
+  <div class="kinds" aria-label="The two ways we read terrain">
+    <div class="kind">
+      <svg viewBox="0 0 44 44" aria-hidden="true"><rect x="2" y="2" width="40" height="40" rx="3" fill="none" stroke="var(--rule)"/><circle cx="22" cy="22" r="4" fill="var(--s1)"/></svg>
+      <div><b>Column read</b><p>One block column: floor height and water depth from vanilla's noise (<code>getBaseColumn</code> through <code>SparseColumns</code>). About 0.35 to 0.55 ms each. Used on sparse lattices: region cells every 64 blocks, the skeleton every 32, road stations every 8.</p></div>
+    </div>
+    <div class="kind">
+      <svg viewBox="0 0 44 44" aria-hidden="true"><rect x="2" y="2" width="40" height="40" rx="3" fill="var(--s4)" opacity="0.85"/><g stroke="var(--surface)" stroke-width="0.6" opacity="0.6"><path d="M12 2v40M22 2v40M32 2v40M2 12h40M2 22h40M2 32h40"/></g></svg>
+      <div><b>Chunk fill</b><p>All 256 columns of a 16 x 16 chunk at once (<code>ColumnMemo</code> + <code>ChunkFill.WINDOWED</code>). About 1.9 ms, so one column read costs about a quarter of a chunk. Used where reads are dense: the junction field, the quay trace, district plans.</p></div>
+    </div>
+    <div class="kind">
+      <svg viewBox="0 0 44 44" aria-hidden="true"><rect x="2" y="2" width="40" height="40" rx="3" fill="none" stroke="var(--rule)"/><text x="22" y="27" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--ink2)">0 ms</text></svg>
+      <div><b>Nothing exists yet</b><p>Planning runs before the chunks exist, so it can't read generated blocks. Every answer is a pure function of (seed, position): chunks can generate in any order, and nothing we read is reused by vanilla later.</p></div>
+    </div>
+  </div>
+  <p class="src">Read costs: <code>docs/review/regionperf-decision.md</code> section 4 ("Two ways we read terrain"); A1 log <code>docs/log/2026-10-22-p6-a1-probes.md</code> (1.9 ms windowed fill against 141.6 ms for 256 single columns, measured under load, so ratios only); SPARSEREADS note in <code>docs/NOTES.md</code>.</p>
+</header>
+
+<section id="timeline">
+  <div class="stack">
+    <div class="eyebrow">1 &middot; Step by step</div>
+    <h2>From a seed to a street, animated</h2>
+    <p>Press play, or pick a step. Each step says what the planner decides, which code does it, which thread runs it in the game, and what it reads. Read counts are real: every column and chunk that one cold plan of this metropolis computed, recorded by <code>PerfReachTest</code> with Minecraft's own noise. Geometry (cells, roads, streets, lots, quays) is the CLI's real output for the same city. The order of dots inside one step is not recorded; they appear outward from the city centre.</p>
+    <div class="stage" id="stage">
+      <div class="canvas-box">
+        <div class="cwrap">
+          <canvas id="tl" width="960" height="780" aria-label="Animated map of the planning step"></canvas>
+          <div class="overlay-label" id="tlCoord"></div>
+          <div class="scale-label" id="tlScale"></div>
+        </div>
+        <div class="below" id="below"></div>
+      </div>
+      <div class="panel" id="panel" aria-live="polite"></div>
+      <div class="controls">
+        <button class="ctl primary" id="btnPlay" type="button">Play</button>
+        <button class="ctl" id="btnPrev" type="button" aria-label="Previous step">&larr; Step</button>
+        <button class="ctl" id="btnNext" type="button" aria-label="Next step">Step &rarr;</button>
+        <input class="scrub" id="scrub" type="range" min="0" max="10000" value="0" aria-label="Timeline position">
+        <select class="ctl" id="speed" aria-label="Speed"><option value="0.5">0.5x</option><option value="1" selected>1x</option><option value="2">2x</option><option value="4">4x</option></select>
+        <button class="ctl" id="btnRestart" type="button">From the start</button>
+      </div>
+      <div class="chips" id="chips"></div>
+    </div>
+    <p class="src" id="tlSrc"></p>
+  </div>
+</section>
+
+<section id="architecture">
+  <div class="stack">
+    <div class="eyebrow">2 &middot; Architecture</div>
+    <h2>Which code does each phase, and on which thread</h2>
+    <p>Two halves. <code>planner-core</code> is pure Java and never sees Minecraft: it reads terrain only through probe interfaces. <code>mod</code> supplies the live probes (vanilla noise), runs the planner from Minecraft's structure system and its own worker pools, and writes the blocks. The CLI and the viewer use the same planner over recorded terrain, which is why every picture on this page could be made outside the game.</p>
+    <div class="fig arch">
+      <div class="scroll-x">__ARCH_SVG__</div>
+      <p class="src">Classes as of run branch 16e72430 (<code>planner-core/src/main/java/dev/fractalbuildings/core/</code>, <code>mod/src/main/java/dev/fractalbuildings/mod/</code>). Threads: <code>Workers.java</code> (worker pool: a quarter of the CPUs, 1 to 4; reads pool: a third, 1 to 6), <code>RegionWarmer.java</code>, <code>TeleportHold.java</code>, <code>docs/ARCHITECTURE.md</code> "Worldgen primer".</p>
+    </div>
+    <div class="fig">
+      <h3>Who runs what in the game</h3>
+      <div class="scroll-x"><table>
+        <thead><tr><th>Thread</th><th>What it runs of ours</th><th>When</th><th>Waits on</th></tr></thead>
+        <tbody>
+          <tr><td><b>Server thread</b> (one)</td><td>Ticks; <code>RegionWarmer.tick</code> once a second (only queues work); <code>TeleportHold</code> polling; <code>/locate</code> through our veto; vanilla's portal search (<code>getPortalDestination</code>)</td><td>Always</td><td>Any chunk it needs that isn't FULL. That is how a slow structure start freezes everyone (the 9.5 s tick on cold arrival)</td></tr>
+          <tr><td><b>Vanilla worldgen workers</b> (<code>Worker-Main-N</code>)</td><td>Structure starts: <code>DistrictPlacement</code> (is this chunk a tile's start chunk? pure geometry), <code>DistrictStructure</code>/<code>GroundStructure</code> (tile lookup, then lazy pieces: plan, buildings, ground). Features: <code>TilePiece</code> writes its chunk's cells, <code>RoadFeature</code> writes intercity road columns, then the clean-up passes (<code>SpillClear</code>, <code>BuildingAirClear</code>, <code>FoliageClear</code>, <code>StreetAirFix</code>)</td><td>Whenever a chunk is generated</td><td>Our planner caches. If the warmer hasn't finished, the start computes the missing settlement-wide work itself (junction field, quays) on this thread</td></tr>
+          <tr><td><b><code>fractalbuildings-worker-N</code></b> (1 to 4)</td><td>The warmer: <code>WorldPlanner.warm</code> (region cells, road links, skeletons, junction field, and today the whole quay trace) around each player and 5 s ahead; tile prefetch; <code>warmPoint</code> for the teleport hold</td><td>Once a second per player; on a held teleport</td><td>The reads pool</td></tr>
+          <tr><td><b><code>fractalbuildings-reads-N</code></b> (1 to 6)</td><td>PARREADS (parallel terrain reads): fills the chunk memo and the column memo ahead of the single-threaded planner code (caller-runs, so nothing waits for a helper that hasn't started)</td><td>Only while a cold planner reads terrain</td><td>Vanilla noise (pure, thread-safe)</td></tr>
+        </tbody>
+      </table></div>
+      <p class="src"><code>mod/.../worldgen/Workers.java</code>, <code>RegionWarmer.java</code>, <code>DistrictStructure.java</code>, <code>TilePiece.java</code>, <code>roads/RoadFeature.java</code>, <code>teleport/TeleportHold.java</code>; ARCHITECTURE "Worldgen primer" (starts, references and features run on a serial lane per dimension; terrain runs in parallel).</p>
+    </div>
+  </div>
+</section>
+
+<section id="time">
+  <div class="stack">
+    <div class="eyebrow">3 &middot; Where the time goes</div>
+    <h2>Mod against true vanilla, measured on a quiet machine</h2>
+    <p>Only measurements taken under the quiet-machine rule (QUIETPERF: nothing else running on the host) are shown, all on the worker box <b>beebox</b> (12 CPUs, dedicated server, no renderer), two runs each. The vanilla column is a real vanilla server since PERFBASE (perf base = true vanilla). Earlier ratios used a "base" world that was the mod with zero settlements, which still read terrain for the village veto; its <code>/locate</code> took 5.26 s instead of 0.25 s, so the old ratios understated our cost.</p>
+    <div class="fig bars">
+      <h3>The same work in both worlds (metropolis s2_m6, seed 987654321)</h3>
+      <div class="legend"><span><i class="sw" style="background:var(--mod)"></i>With the mod (mean of 2 runs)</span><span><i class="sw" style="background:var(--van)"></i>Vanilla (mean of 2 runs)</span><span>Each row has its own scale</span></div>
+      <div id="vsChart"></div>
+      <details><summary class="note">Table view</summary><div class="scroll-x" id="vsTable"></div></details>
+      <p class="src">PERFBASE correction table in <code>docs/review/regionperf-decision.md</code> section 7 on branch <code>claude/p6-perfbase</code> (being verified; commit eb35c7664c; evidence <code>p6-perfbase-evidence/eb35c7664c-20261031T183830Z</code> and <code>...T185453Z</code>, quiet-check QUIET at all checks). Load 1.1 to 4.0, all from the run's own work.</p>
+    </div>
+    <div class="grid2">
+      <div class="fig bars">
+        <h3>Planner time for one cold metropolis, single call</h3>
+        <p class="note">Measured with no server, in a JUnit test (<code>PerfPlannerTest</code>). "Region" is <code>WorldPlanner.warm</code> (region cells, road links, skeletons, junction field); "quays" is the whole quay trace. The game's warmer runs both back to back.</p>
+        <div class="legend"><span><i class="sw" style="background:var(--s1)"></i>Region layer + roads (+ junction field)</span><span><i class="sw" style="background:var(--s5)"></i>Quay trace</span></div>
+        <div id="plannerChart"></div>
+        <p class="src">Before PARREADS: 5209d507, 1 quiet run; after: 64d76a52, 3 quiet runs (PERFORMANCE.md "Parallel terrain reads"). After SKIPROLL: HEAVY10 at f97d403b, 2 quiet runs (<code>.claude/reports/heavy10.md</code>, forensic). Warmer path measured only before SKIPROLL (30.6 / 31.0 / 31.9 s). CI ceiling for the region row: 10 s.</p>
+      </div>
+      <div class="fig bars">
+        <h3>What one cold plan computes, by purpose</h3>
+        <p class="note">Counts are exact (deterministic). The bar is count x unit cost: a <em>model</em> of single-thread noise time (2.8 ms per chunk, 0.27 ms per column, the in-game rates from the profile), not a measurement. Before PARREADS and SKIPROLL.</p>
+        <div id="unitsChart"></div>
+        <details><summary class="note">Table view with probe calls</summary><div class="scroll-x" id="unitsTable"></div></details>
+        <p class="src"><code>PerfReachTest</code> at 7ba928e4 (<code>docs/review/profile-metropolis.md</code>, "follow-up 1"; raw units in <code>.claude/reports/profile-evidence/reach-7ba928e426/</code>, forensic). The test ran at load 30 to 50, which doesn't matter for counts. SKIPROLL later cut the region columns from 68,343 to 51,054.</p>
+      </div>
+    </div>
+    <div class="grid3">
+      <div class="card">
+        <h3>Why the first chunk waits ~39 s</h3>
+        <p>A structure start for a tile can't place its pieces until its settlement's shared work exists: the street network, the junction field and the quay runs near it. In a cold world nothing has computed them, so one vanilla worker computes them inside the start. The other 80 chunks of the block cost 1.6x vanilla (39 against 24 ms median).</p>
+        <p class="src">regionperf section 6 (COLDCHUNK: what the cold chunk is doing), PERFBASE table.</p>
+      </div>
+      <div class="card">
+        <h3>Why the server freezes</h3>
+        <p>The server thread itself runs none of our planning. It freezes because vanilla code on it (spawning, the player's own chunk) asks for a chunk whose structure start is still waiting. On cold arrival the longest tick is 8.5 to 9.5 s against 78 to 96 ms in vanilla. An earlier local profile caught a 104 s freeze on an elytra flight into this city (busy host, not a valid timing; the mechanism is structural).</p>
+        <p class="src">PERFBASE table; <code>docs/review/profile-metropolis.md</code> "What the player actually feels".</p>
+      </div>
+      <div class="card">
+        <h3>95 % of it is vanilla's noise</h3>
+        <p>Of the CPU on the cold block, our own code is 2 to 3 %. The rest is vanilla's terrain noise that our probes ask for (<code>GradientNoise.permute</code>, aquifers, density functions). So the levers are fewer chunk fills, more threads, or doing the work earlier; making our own code faster barely moves the total.</p>
+        <p class="src">profile-metropolis "Top-down" (local i7, load 1 to 3.6, before the quiet rule: use the shares, not the seconds).</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="experiments">
+  <div class="stack">
+    <div class="eyebrow">4 &middot; What we tried</div>
+    <h2>Why reading fewer columns doesn't help</h2>
+    <p>The tempting idea: read half the columns (a checkerboard) and interpolate. It fails because cost is per <em>chunk filled</em>, not per column. A chunk fill costs about the same as 4 to 5 single columns, and the busy consumers already touch 14 to 17 columns in every chunk they touch. Thinning skips no chunks. On a line (a street) it is worse: an unread column is interpolated from its four neighbours, and two of those lie off the street, so the checkerboard reads more columns, in more chunks. Try it.</p>
+    <div class="fig">
+      <div class="toy">
+        <div><canvas id="toy" width="560" height="560" aria-label="Chunk grid showing columns read and chunks filled"></canvas>
+          <div class="legend" style="margin-top:8px"><span><i class="sw" style="background:var(--s4)"></i>Chunk filled</span><span><i class="sw dot" style="background:var(--s1)"></i>Column read</span><span><i class="sw dot" style="background:var(--muted)"></i>Needed, interpolated</span><span><i class="sw line" style="background:var(--ink2)"></i>Chunk border (16 blocks)</span></div>
+        </div>
+        <div class="stack" style="gap:10px">
+          <fieldset><legend>What needs terrain</legend>
+            <label><input type="radio" name="toyScene" value="streets" checked> City streets (junction field)</label>
+            <label><input type="radio" name="toyScene" value="route"> One intercity road (stations every 8)</label>
+            <label><input type="radio" name="toyScene" value="lattice"> Region lattice (every 64)</label>
+            <label><input type="radio" name="toyScene" value="area"> Quay area scan (dense water tests near the shore)</label>
+          </fieldset>
+          <fieldset><legend>Sampling</legend>
+            <label><input type="radio" name="toySample" value="all" checked> Every needed column</label>
+            <label><input type="radio" name="toySample" value="checker"> Checkerboard (half; on a road, every 2nd station)</label>
+            <label><input type="radio" name="toySample" value="third"> One in three (every 3rd station)</label>
+          </fieldset>
+          <div class="result" id="toyResult"></div>
+          <p class="note" id="toyNote"></p>
+          <p class="src">Schematic geometry on a 256 x 256 block window. Sampling rule as <code>SparseTerrain</code> (SPARSEREADS): an unread point takes the mean of its read 4-neighbours; the wet/dry guard is left out. Cost model 0.45 ms per column read (0.35 to 0.55 measured), 1.9 ms per chunk fill. Measured outcome on the nine gate cities: the checkerboard raised junction-field reads from 188k to 283k columns and chunks from 13.2k to 19.7k (<code>docs/review/sparse-reads.md</code> 4.1).</p>
+        </div>
+      </div>
+    </div>
+    <h3 style="margin-top:10px">Didn't help, and why</h3>
+    <div class="grid3" id="noCards"></div>
+    <h3 style="margin-top:10px">Did help</h3>
+    <div class="grid3" id="yesCards"></div>
+  </div>
+</section>
+
+<section id="decisions">
+  <div class="stack">
+    <div class="eyebrow">5 &middot; Open decisions</div>
+    <h2>What these numbers feed into</h2>
+    <div class="decisions" id="decList"></div>
+  </div>
+</section>
+
+<section id="glossary">
+  <div class="stack">
+    <div class="eyebrow">Glossary</div>
+    <h2>Item codes on this page</h2>
+    <div class="scroll-x"><table id="glossTable"><thead><tr><th>Code</th><th>Meaning</th><th>Status</th></tr></thead><tbody></tbody></table></div>
+    <p class="src">From <code>docs/GLOSSARY.md</code> (generated by <code>scripts/glossary.sh</code>). Page data built by <code>scripts/explainer/build-data.mjs</code>; see <code>scripts/explainer/README.md</code>.</p>
+  </div>
+</section>
+</div>
+<div class="tip" id="tip" role="tooltip"></div>
+
+<script type="application/json" id="fbdata">__DATA__</script>
+<script>
+"use strict";
+const D = JSON.parse(document.getElementById('fbdata').textContent);
+const PADIMG = "__PADIMG__";
+
+// ---------- decoding ----------
+function bytes(b64) { const s = atob(b64); const u = new Uint8Array(s.length); for (let i = 0; i < s.length; i++) u[i] = s.charCodeAt(i); return u; }
+function i16(b64) { const u = bytes(b64); return new Int16Array(u.buffer, 0, u.length >> 1); }
+function i8(b64) { const u = bytes(b64); return new Int8Array(u.buffer); }
+const SEP = -32768;
+function polylines(arr) { const out = []; let cur = []; for (let i = 0; i < arr.length; i += 2) { if (arr[i] === SEP) { if (cur.length) out.push(cur); cur = []; } else cur.push(arr[i], arr[i + 1]); } if (cur.length) out.push(cur); return out; }
+const fmt = (n) => Math.round(n).toLocaleString('en-US');
+const css = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+function isDark() { const t = document.documentElement.getAttribute('data-theme'); if (t) return t === 'dark'; return matchMedia('(prefers-color-scheme: dark)').matches; }
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+// ---------- data prep ----------
+const R = D.region, C = D.city, U = D.dump;
+const cellMap = new Map(); for (const c of R.cells) cellMap.set(c[0] + ',' + c[1], c);
+const siteMap = new Map(); for (const s of R.sites) siteMap.set(s[0] + ',' + s[1], s);
+const REASONS = ['settled', 'water', 'peak', 'unsuitable', 'roll'];
+const TIERS = ['hamlet', 'village', 'town', 'city', 'metropolis'];
+const groups = {}; for (const [k, g] of Object.entries(D.reach.groups)) groups[k] = { ...g, xy: i16(g.c) };
+const edges = R.edges.map((e) => ({ ...e, xy: i16(e.p) }));
+const cityStreets = {}; for (const [k, v] of Object.entries(C.streets)) cityStreets[k] = polylines(i16(v));
+const lots = i16(C.lots), lotTypes = bytes(C.lotTypes);
+const quayRuns = polylines(i16(U.quayRuns));
+const junctionChunks = i16(U.junctionChunks), wholeQuayChunks = i16(U.wholeQuayChunks);
+const demoTiles = Object.entries(U.demo).map(([k, v]) => { const [ix, iz] = k.split(',').map(Number); return { ix, iz, runs: v.runs, xy: i16(v.c) }; });
+const tileCounts = U.tiles.map((t) => t[2]).filter((n) => n >= 0).sort((a, b) => a - b);
+const lazyMedian = tileCounts[tileCounts.length >> 1];
+const MX = 2432, MZ = -5696;
+const nRoll = R.cells.filter((c) => c[5] >= 650).length, nCells = R.cells.length;
+const reasonCount = REASONS.map((_, i) => R.cells.filter((c) => c[4] === i).length);
+const claimed = R.cells.filter((c) => c[10] !== null);
+const metroMembers = claimed.filter((c) => c[10] === 2 && c[11] === -6).length + 1;
+
+// ---------- terrain images ----------
+function lerpC(a, b, t) { return [0, 1, 2].map((i) => Math.round(a[i] + (b[i] - a[i]) * t)); }
+function rampAt(stops, t) { t = Math.max(0, Math.min(1, t)); for (let i = 1; i < stops.length; i++) if (t <= stops[i][0]) { const [t0, c0] = stops[i - 1], [t1, c1] = stops[i]; return lerpC(c0, c1, (t - t0) / (t1 - t0)); } return stops[stops.length - 1][1]; }
+const LAND = { light: [[0, [214, 222, 200]], [0.25, [200, 205, 172]], [0.5, [190, 178, 150]], [0.75, [168, 160, 150]], [1, [236, 234, 230]]],
+  dark: [[0, [40, 52, 42]], [0.25, [52, 58, 44]], [0.5, [66, 60, 48]], [0.75, [78, 74, 70]], [1, [120, 118, 114]]] };
+const WATER = { light: [[0, [178, 205, 226]], [1, [120, 160, 196]]], dark: [[0, [30, 56, 78]], [1, [18, 38, 58]]] };
+function terrainCanvas(t, dark, lo, hi) {
+  const u = bytes(t.b), cv = document.createElement('canvas'); cv.width = t.nx; cv.height = t.nz;
+  const g = cv.getContext('2d'), im = g.createImageData(t.nx, t.nz); const L = dark ? LAND.dark : LAND.light, W = dark ? WATER.dark : WATER.light;
+  for (let k = 0; k < u.length; k++) { const v = u[k]; let c; if (v < 64) c = rampAt(W, v / 30); else { const y = v - 64 + 40; c = rampAt(L, (y - lo) / (hi - lo)); }
+    im.data[k * 4] = c[0]; im.data[k * 4 + 1] = c[1]; im.data[k * 4 + 2] = c[2]; im.data[k * 4 + 3] = 255; }
+  g.putImageData(im, 0, 0); return cv;
+}
+// Voronoi owner of each region-terrain pixel (cells are owned by the nearest jittered site)
+const RT = R.terrain;
+const owner = new Int32Array(RT.nx * RT.nz);
+(function () {
+  const S = R.cellSize; const keys = []; const idx = new Map();
+  for (const s of R.sites) { idx.set(s[0] + ',' + s[1], keys.length); keys.push(s); }
+  for (let j = 0; j < RT.nz; j++) for (let i = 0; i < RT.nx; i++) {
+    const x = RT.x0 + i * RT.step + RT.step / 2, z = RT.z0 + j * RT.step + RT.step / 2; const gx = Math.floor(x / S), gz = Math.floor(z / S);
+    let best = -1, bd = Infinity; for (let dz = -1; dz <= 1; dz++) for (let dx = -1; dx <= 1; dx++) { const k = idx.get((gx + dx) + ',' + (gz + dz)); if (k === undefined) continue; const s = keys[k]; const d = (s[2] - x) ** 2 + (s[3] - z) ** 2; if (d < bd) { bd = d; best = k; } }
+    owner[j * RT.nx + i] = best;
+  }
+  R._siteKeys = keys;
+})();
+function cellOfOwner(k) { const s = R._siteKeys[k]; return s ? cellMap.get(s[0] + ',' + s[1]) : undefined; }
+function overlayCanvas(colorOf, borders, borderRGB) {
+  const cv = document.createElement('canvas'); cv.width = RT.nx; cv.height = RT.nz; const g = cv.getContext('2d'); const im = g.createImageData(RT.nx, RT.nz);
+  for (let j = 0; j < RT.nz; j++) for (let i = 0; i < RT.nx; i++) {
+    const k = j * RT.nx + i, o = owner[k]; let c = colorOf(cellOfOwner(o), o);
+    if (borders) { const r = i + 1 < RT.nx ? owner[k + 1] : o, d = j + 1 < RT.nz ? owner[k + RT.nx] : o; if (r !== o || d !== o) c = borderRGB; }
+    if (c) { im.data[k * 4] = c[0]; im.data[k * 4 + 1] = c[1]; im.data[k * 4 + 2] = c[2]; im.data[k * 4 + 3] = c[3] ?? 255; }
+  }
+  g.putImageData(im, 0, 0); return cv;
+}
+function hexRGB(h) { h = h.replace('#', ''); return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)]; }
+
+let IMG = {};
+function buildImages() {
+  const dark = isDark();
+  const ink = hexRGB(css('--ink'));
+  IMG.region = terrainCanvas(R.terrain, dark, 50, 190);
+  IMG.city = terrainCanvas(C.terrain, dark, 55, 150);
+  IMG.borders = overlayCanvas(() => null, true, [...ink, 90]);
+  const REASON_RGB = dark ? [[230, 230, 225, 0], [70, 130, 190, 150], [230, 230, 235, 170], [150, 110, 70, 150], [10, 12, 11, 150]] : [[0, 0, 0, 0], [80, 140, 200, 120], [255, 255, 255, 190], [150, 105, 60, 110], [40, 44, 42, 120]];
+  IMG.reasons = overlayCanvas((c) => { if (!c) return null; if (c[4] === 0) return null; return REASON_RGB[c[4]] || null; }, false);
+  IMG.rollDead = overlayCanvas((c) => (c && c[5] >= 650 ? (dark ? [5, 6, 6, 170] : [35, 38, 36, 140]) : null), false);
+  IMG.claims = overlayCanvas((c, o) => { if (!c) return null; const own = c[10] !== null ? [c[10], c[11]] : (c[4] === 0 && c[6] >= 3 ? [c[0], c[1]] : null); if (!own) return null; return own[0] === 2 && own[1] === -6 ? [...hexRGB(css('--s2')), 120] : [...hexRGB(css('--s7')), 90]; }, false);
+}
+
+// ---------- the timeline canvas ----------
+const cv = document.getElementById('tl'), g = cv.getContext('2d');
+let W = 960, H = 780, DPR = 1;
+function resize() { const r = cv.getBoundingClientRect(); DPR = Math.min(2, window.devicePixelRatio || 1); W = Math.max(300, Math.round(r.width)); H = Math.round(W * 3.25 / 4); cv.width = W * DPR; cv.height = H * DPR; }
+let cam = { x: MX, z: MZ, span: 12000 };
+function S() { return W / cam.span; }
+function sx(x) { return (x - cam.x) * S() + W / 2; }
+function sz(z) { return (z - cam.z) * S() + H / 2; }
+function drawImg(img, x0, z0, step, alpha) { g.save(); g.globalAlpha = alpha; g.imageSmoothingEnabled = true; g.drawImage(img, sx(x0), sz(z0), img.width * step * S(), img.height * step * S()); g.restore(); }
+function poly(pts, close) { g.beginPath(); for (let i = 0; i < pts.length; i += 2) { const X = sx(pts[i]), Y = sz(pts[i + 1]); i ? g.lineTo(X, Y) : g.moveTo(X, Y); } if (close) g.closePath(); }
+function dots(xy, n, color, size, isChunk, alpha) {
+  g.save(); g.fillStyle = color; g.globalAlpha = alpha ?? 1; const s = S();
+  const px = isChunk ? Math.max(1, 16 * s) : Math.max(1.2, Math.min(3, 16 * s));
+  for (let i = 0; i < n; i++) { const X = sx(xy[2 * i] * 16) , Y = sz(xy[2 * i + 1] * 16); if (X < -4 || Y < -4 || X > W + 4 || Y > H + 4) continue; if (isChunk) g.fillRect(X, Y, px + 0.4, px + 0.4); else g.fillRect(X + 8 * s - px / 2, Y + 8 * s - px / 2, px, px); }
+  g.restore();
+}
+const clamp01 = (t) => Math.max(0, Math.min(1, t));
+const ease = (t) => t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+const seg = (t, a, b) => clamp01((t - a) / (b - a));
+function label(text, x, z, opts = {}) { g.save(); g.font = `${opts.weight || 500} ${opts.size || 12}px "IBM Plex Sans", system-ui, sans-serif`; g.textAlign = opts.align || 'left'; g.textBaseline = 'middle';
+  const X = typeof x === 'number' && opts.screen ? x : sx(x), Y = opts.screen ? z : sz(z); const w = g.measureText(text).width;
+  if (opts.box !== false) { g.fillStyle = css('--surface'); g.globalAlpha = 0.85 * (opts.alpha ?? 1); const ox = g.textAlign === 'center' ? -w / 2 : g.textAlign === 'right' ? -w : 0; g.fillRect(X + ox - 4, Y - 9, w + 8, 18); }
+  g.globalAlpha = opts.alpha ?? 1; g.fillStyle = opts.color || css('--ink'); g.fillText(text, X, Y); g.restore(); }
+
+function base(kind, alpha = 1) {
+  g.fillStyle = css('--sunk'); g.fillRect(0, 0, W, H);
+  if (kind === 'region' || kind === 'both') drawImg(IMG.region, RT.x0, RT.z0, RT.step, alpha);
+  if (kind === 'city' || kind === 'both') drawImg(IMG.city, C.terrain.x0, C.terrain.z0, C.terrain.step, alpha);
+  if (kind === 'region') { g.save(); g.strokeStyle = css('--muted'); g.setLineDash([4, 4]); g.lineWidth = 1; g.strokeRect(sx(RT.x0), sz(RT.z0), RT.nx * RT.step * S(), RT.nz * RT.step * S()); g.restore(); }
+}
+function fog(alpha) { if (alpha <= 0) return; g.save(); g.globalAlpha = alpha; g.fillStyle = css('--sunk'); g.fillRect(0, 0, W, H); g.restore(); }
+function regionCellsLayer(a) { if (a > 0) drawImg(IMG.borders, RT.x0, RT.z0, RT.step, a); }
+function sitesLayer(a, n) { g.save(); g.globalAlpha = a; g.fillStyle = css('--ink'); const s = Math.max(1.5, Math.min(3, 2 + S() * 300)); let k = 0;
+  for (const c of R.cells) { if (n !== undefined && k++ > n) break; const X = sx(c[2]), Y = sz(c[3]); if (X < -5 || Y < -5 || X > W + 5 || Y > H + 5) continue; g.fillRect(X - s / 2, Y - s / 2, s, s); } g.restore(); }
+function settlementsLayer(a, withLabels) { g.save(); g.globalAlpha = a;
+  for (const c of R.cells) { if (c[4] !== 0 || c[10] !== null) continue; const X = sx(c[7]), Y = sz(c[8]), r = Math.max(2, c[9] * S()); const me = c[0] === 2 && c[1] === -6;
+    g.beginPath(); g.arc(X, Y, r, 0, Math.PI * 2); g.fillStyle = me ? css('--accent') : css('--ink'); g.globalAlpha = a * (me ? 0.3 : c[6] >= 3 ? 0.22 : 0.16); g.fill(); g.globalAlpha = a; g.lineWidth = me ? 2.2 : 1.1; g.strokeStyle = me ? css('--accent') : css('--ink2'); g.stroke(); }
+  g.restore();
+  if (withLabels) label('metropolis s2_m6 (r 1,430)', MX, MZ - 1430 - 18 / S(), { align: 'center', alpha: a });
+}
+function routesLayer(a, upTo, color) {
+  g.save(); g.globalAlpha = a; g.lineCap = 'round'; g.lineJoin = 'round';
+  for (const e of edges) { const xy = e.xy, n = Math.max(2, Math.floor((xy.length / 2) * clamp01(upTo))); g.beginPath(); for (let i = 0; i < n; i++) { const X = sx(xy[2 * i]), Y = sz(xy[2 * i + 1]); i ? g.lineTo(X, Y) : g.moveTo(X, Y); }
+    g.strokeStyle = css(color || '--s2'); g.lineWidth = color ? 1.2 : Math.max(1.6, Math.min(4, 9 * S() * 20)); g.stroke(); }
+  for (const m of R.meet) { g.beginPath(); g.arc(sx(m[0]), sz(m[1]), 3.5, 0, Math.PI * 2); g.fillStyle = css(color || '--s2'); g.fill(); }
+  g.restore();
+}
+function droppedLayer(a) { g.save(); g.globalAlpha = a * 0.8; g.setLineDash([3, 4]); g.lineWidth = 1; g.strokeStyle = css('--s8');
+  for (const d of R.dropped) { if (d[0] === null || d[2] === null) continue; g.beginPath(); g.moveTo(sx(d[0]), sz(d[1])); g.lineTo(sx(d[2]), sz(d[3])); g.stroke(); } g.restore(); }
+function candidateLayer(a) { // every node pair the graph considered: routed edges, meeting points and dropped pairs, as straight lines between centres
+  const node = new Map(); for (const n of R.nodes) node.set(n[5] + ',' + n[6], n);
+  g.save(); g.globalAlpha = a; g.lineWidth = 1; g.strokeStyle = css('--ink2'); g.setLineDash([2, 3]);
+  const pairs = [...R.edges.map((e) => [e.a, e.b]), ...R.dropped.map((d) => [d[5], d[6]])];
+  for (const [p, q] of pairs) { const A = node.get(p[0] + ',' + p[1]), B = node.get(q[0] + ',' + q[1]); if (!A || !B) continue; g.beginPath(); g.moveTo(sx(A[0]), sz(A[1])); g.lineTo(sx(B[0]), sz(B[1])); g.stroke(); }
+  g.restore();
+}
+function cityCoarse(a, mode) { // the skeleton's 32-block screen: urban mask or quarters
+  if (a <= 0) return; const co = C.coarse; const key = 'coarse_' + mode + (isDark() ? 'd' : 'l');
+  if (!IMG[key]) { const m = bytes(co.mask), q = i8(co.quarter), cvs = document.createElement('canvas'); cvs.width = co.nx; cvs.height = co.nz; const gg = cvs.getContext('2d'), im = gg.createImageData(co.nx, co.nz);
+    const QC = ['--s8', '--s7', '--s4', '--s3', '--s2', '--s1', '--s6', '--muted'].map((v) => hexRGB(css(v)));
+    for (let k = 0; k < m.length; k++) { let c = null; if (mode === 'mask') { if (m[k] === 1) c = [...hexRGB(css('--ink')), 70]; else if (m[k] === 3) c = [...hexRGB(css('--s8')), 60]; else if (m[k] === 4) c = [...hexRGB(css('--s6')), 70]; }
+      else if (q[k] >= 0 && m[k] !== 0 && m[k] !== 2) c = [...QC[q[k]], 110];
+      if (c) { im.data[k * 4] = c[0]; im.data[k * 4 + 1] = c[1]; im.data[k * 4 + 2] = c[2]; im.data[k * 4 + 3] = c[3]; } }
+    gg.putImageData(im, 0, 0); IMG[key] = cvs; }
+  g.save(); g.imageSmoothingEnabled = false; g.globalAlpha = a; g.drawImage(IMG[key], sx(co.x0 - co.step / 2), sz(co.z0 - co.step / 2), co.nx * co.step * S(), co.nz * co.step * S()); g.restore();
+}
+function cityCells(a) { g.save(); g.globalAlpha = a; g.strokeStyle = css('--ink'); g.lineWidth = 1.2; g.setLineDash([6, 4]); for (const c of C.cells) { poly(c.poly.flat(), true); g.stroke(); } g.restore(); }
+function cityRoads(a, upTo = 1) { g.save(); g.globalAlpha = a; g.lineCap = 'round'; g.lineJoin = 'round';
+  for (const r of C.roads) { const p = r.p, n = Math.max(2, Math.ceil(p.length / 2 * upTo)); g.beginPath(); for (let i = 0; i < n; i++) { const X = sx(p[2 * i]), Y = sz(p[2 * i + 1]); i ? g.lineTo(X, Y) : g.moveTo(X, Y); }
+    g.strokeStyle = r.kind === 'main' ? css('--s8') : css('--ink2'); g.lineWidth = Math.max(1.5, r.w * S()); g.stroke(); }
+  g.restore(); }
+function cityGates(a) { g.save(); g.globalAlpha = a; for (const gt of C.gates) { g.beginPath(); g.arc(sx(gt[0]), sz(gt[1]), 4, 0, Math.PI * 2); g.fillStyle = gt[2] === 'exit' ? css('--s8') : css('--surface'); g.fill(); g.strokeStyle = css('--ink'); g.lineWidth = 1.2; g.stroke(); } g.restore(); }
+function cityTiles(a) { g.save(); g.globalAlpha = a; g.strokeStyle = css('--ink2'); g.lineWidth = 0.7; for (const d of C.districts) g.strokeRect(sx(d[2]), sz(d[3]), d[4] * S(), d[5] * S()); g.restore(); }
+const STREET_STYLE = { main: ['--s8', 1], arterial: ['--ink', 1], street: ['--ink2', 1], lane: ['--muted', 1], quay: ['--s5', 1] };
+function cityStreetsLayer(a, kinds, widthMul = 1, upTo = 1) { g.save(); g.globalAlpha = a; g.lineCap = 'round'; g.lineJoin = 'round';
+  for (const k of kinds) { const lines = cityStreets[k] || []; const n = Math.ceil(lines.length * upTo); g.strokeStyle = css(STREET_STYLE[k][0]); g.lineWidth = Math.max(k === 'arterial' || k === 'main' ? 1.4 : 0.8, (k === 'main' ? 9 : k === 'arterial' ? 11 : k === 'street' ? 5 : 3) * S() * widthMul);
+    for (let i = 0; i < n; i++) { poly(lines[i], false); g.stroke(); } }
+  g.restore(); }
+function junctionPins(a, n) { g.save(); g.globalAlpha = a; const J = U.junctions; const m = Math.min(J.length, n ?? J.length);
+  for (let i = 0; i < m; i++) { const j = J[i]; const X = sx(j[0]), Y = sz(j[1]); const d = j[2] - j[3]; g.beginPath(); g.arc(X, Y, j[5] > 100 ? 5 : 2.6, 0, Math.PI * 2); g.fillStyle = d > 2 ? css('--s1') : d < -2 ? css('--s8') : css('--ink'); g.fill(); if (j[5] > 100) { g.strokeStyle = css('--surface'); g.lineWidth = 1.5; g.stroke(); } }
+  g.restore(); }
+function quayRunsLayer(a, upTo = 1) { g.save(); g.globalAlpha = a; g.strokeStyle = css('--s5'); g.lineWidth = Math.max(1.6, 5 * S()); g.lineCap = 'round'; const n = Math.ceil(quayRuns.length * upTo); for (let i = 0; i < n; i++) { poly(quayRuns[i], false); g.stroke(); } g.restore(); }
+function lotsLayer(a, upTo = 1) { g.save(); g.globalAlpha = a; const TC = ['--s3', '--s2', '--s1', '--s7', '--s7', '--s4', '--s4', '--s1'].map(css); const n = Math.floor(lots.length / 4 * upTo);
+  for (let i = 0; i < n; i++) { const t = lotTypes[i]; g.fillStyle = t === 255 ? css('--muted') : TC[t]; g.globalAlpha = a * (t === 255 ? 0.35 : 0.8); g.fillRect(sx(lots[4 * i]), sz(lots[4 * i + 1]), lots[4 * i + 2] * S(), lots[4 * i + 3] * S()); }
+  g.restore(); }
+function tileOutline(ix, iz, a, color) { const d = C.districts.find((q) => q[0] === ix && q[1] === iz); const x = d ? d[2] : ix * 160, z = d ? d[3] : iz * 160, w = d ? d[4] : 160, h = d ? d[5] : 160; g.save(); g.globalAlpha = a; g.strokeStyle = color || css('--ink'); g.lineWidth = 2.5; g.strokeRect(sx(x), sz(z), w * S(), h * S()); g.restore(); }
+
+// ---------- in-game schematic (steps 17 to 19) ----------
+function laneChart(t, mode) {
+  g.fillStyle = css('--surface'); g.fillRect(0, 0, W, H);
+  const pad = Math.max(12, W * 0.03), fs = Math.max(11, Math.min(14, W / 50)); g.textBaseline = 'middle';
+  const font = (w, s) => `${w} ${s}px "IBM Plex Sans", system-ui, sans-serif`;
+  if (mode === 'pipeline') {
+    const stages = [['structure_starts', 'Is this chunk a tile’s start chunk? If so: tile lookup (first time: settlement network + junction field + quays). Pieces stay lazy.', '--s2'], ['structure_references', 'Each chunk records starts within ±8 chunks that overlap it', '--muted'], ['biomes', 'vanilla', '--muted'], ['noise / terrain', 'vanilla noise; beardifier grades our building pieces', '--muted'], ['features', 'Our pieces write their cells in this chunk only (TilePiece), road columns (RoadFeature), then the clean-up passes', '--s3'], ['light, spawn, FULL', 'vanilla', '--muted']];
+    const top = pad + 26, h = (H - top - pad * 2 - 90) / stages.length; const p = clamp01(t * 1.2);
+    g.font = font(600, fs + 2); g.fillStyle = css('--ink'); g.fillText('One chunk’s generation steps, and where our code hooks in', pad, pad + 8);
+    stages.forEach((s, i) => { const y = top + i * h, on = p * stages.length > i; g.globalAlpha = on ? 1 : 0.3; g.fillStyle = css(s[2]); g.fillRect(pad, y + 4, 8, h - 10);
+      g.fillStyle = css('--ink'); g.font = font(600, fs + 1); g.fillText(s[0], pad + 18, y + h * 0.32); g.fillStyle = css('--ink2'); g.font = font(400, fs); wrapText(s[1], pad + 18, y + h * 0.64, W - pad * 2 - 20, fs + 3); g.globalAlpha = 1; });
+    g.font = font(400, fs); g.fillStyle = css('--ink2');
+    wrapText('Starts, references and features run on one serial lane per dimension; noise runs in parallel. A district start is one per 160-block tile; each building is one rigid piece, each chunk of street one ground piece. A piece saves only its reference (about 30 bytes) and asks the planner for its cells when the chunk is written.', pad, H - pad - 60, W - pad * 2, fs + 4);
+    return;
+  }
+  if (mode === 'teleport') {
+    const rows = [['Vanilla', [[0, 3.3, '--van', 'hold until 3 x 3 FULL'], [3.3, 4.05, '--van', 'view ready']], 4.05], ['With the mod', [[0, 30, '--s4', 'TeleportHold: "Generating terrain…" (gives up at 30 s)'], [30, 69.4, '--mod', 'player lands; chunks keep arriving']], 69.4]];
+    const top = pad + 30, x0 = pad + 110, x1 = W - pad, maxT = 75, X = (s) => x0 + (x1 - x0) * s / maxT, now = t * maxT;
+    g.font = font(600, fs + 2); g.fillStyle = css('--ink'); g.fillText('Cold /tp into the metropolis centre: teleport → 9 x 9 view FULL', pad, pad + 8);
+    g.font = font(400, fs - 1); g.fillStyle = css('--muted'); for (let s = 0; s <= 70; s += 10) { g.fillText(s + ' s', X(s) - 8, top + 4); g.fillRect(X(s), top + 14, 1, 150); }
+    rows.forEach((r, i) => { const y = top + 30 + i * 62; g.font = font(600, fs); g.fillStyle = css('--ink'); g.fillText(r[0], pad, y + 14);
+      for (const sgm of r[1]) { const a = sgm[0], b = Math.min(sgm[1], now); if (b <= a) continue; g.fillStyle = css(sgm[2]); g.fillRect(X(a), y, X(b) - X(a), 28); if (b === sgm[1] && X(b) - X(a) > 120) { g.fillStyle = '#fff'; g.font = font(500, fs - 1); g.save(); g.beginPath(); g.rect(X(a), y, X(b) - X(a), 28); g.clip(); g.fillStyle = css('--surface'); g.fillText(sgm[3], X(a) + 6, y + 14); g.restore(); } }
+      if (now >= r[2]) { g.font = font(600, fs); g.fillStyle = css('--ink'); const lab = i === 0 ? '4.5 / 3.6 s' : '69.9 / 68.9 s'; const lw = g.measureText(lab).width; const lx = Math.min(X(r[2]) + 6, W - pad - lw); g.fillText(lab, lx, i === 0 ? y + 14 : y + 44); } });
+    const ly = top + 170; const lanes = [['Server thread', [[0, 30, 'polls the hold once a tick'], [30, 69.4, 'vanilla asks for chunks near the player: one tick lasts 8.5 to 9.5 s']], '--ink2'], ['fractalbuildings-worker', [[0, 32, 'warmPoint: WorldPlanner.warm (region, links, skeleton, junction field, whole quay trace)']], '--s1'], ['fractalbuildings-reads', [[0, 32, 'PARREADS: fills chunk and column memos for the warm']], '--s1'], ['Vanilla worldgen workers', [[0, 40, 'the tile’s structure start waits for (or computes) the settlement-wide work'], [40, 69.4, 'noise, features, light for the other chunks']], '--s2']];
+    g.font = font(600, fs); g.fillStyle = css('--ink'); g.fillText('Who is busy (schematic order; only the two totals above and the 30 s limit are measured)', pad, ly);
+    lanes.forEach((l, i) => { const y = ly + 22 + i * 44; g.font = font(500, fs - 1); g.fillStyle = css('--ink2'); wrapText(l[0], pad, y + 10, 104, fs + 1);
+      for (const sgm of l[1]) { const a = sgm[0], b = Math.min(sgm[1], now); if (b <= a) continue; g.fillStyle = css(l[2]); g.globalAlpha = 0.28; g.fillRect(X(a), y, X(b) - X(a), 22); g.globalAlpha = 1; g.strokeStyle = css(l[2]); g.strokeRect(X(a) + 0.5, y + 0.5, X(b) - X(a) - 1, 21);
+        if (b === sgm[1]) { g.save(); g.beginPath(); g.rect(X(a), y, X(b) - X(a), 22); g.clip(); g.fillStyle = css('--ink'); g.font = font(400, fs - 2); g.fillText(sgm[2], X(a) + 5, y + 11); g.restore(); } } });
+    g.font = font(400, fs - 1); g.fillStyle = css('--muted'); wrapText('Measured: COLDARRIVAL/PERFBASE rows on quiet beebox, mod 69.9 / 68.9 s, vanilla 4.5 / 3.6 s; hold timed out at 30.0 s in every mod run. The lane boundaries are an illustration.', pad, H - pad - 14, W - pad * 2, fs + 2);
+    return;
+  }
+  if (mode === 'portal') {
+    const rows = [['Cold wild terrain (control)', 12.7, '--van'], ['Cold town', 36.6, '--s4'], ['Cold metropolis core', 65.3, '--mod'], ['Area already loaded', 0.004, '--van']];
+    const top = pad + 40, x0 = pad + 170, x1 = W - pad - 50, X = (s) => x0 + (x1 - x0) * s / 70, now = t * 70;
+    g.font = font(600, fs + 2); g.fillStyle = css('--ink'); g.fillText('First nether-portal trip: server thread frozen inside getPortalDestination', pad, pad + 8);
+    rows.forEach((r, i) => { const y = top + i * 46; g.font = font(500, fs); g.fillStyle = css('--ink'); g.fillText(r[0], pad, y + 13); const b = Math.min(r[1], now); g.fillStyle = css(r[2]); g.fillRect(X(0), y, Math.max(1.5, X(b) - X(0)), 26); if (now >= r[1]) { g.fillStyle = css('--ink'); g.fillText(r[1] < 1 ? '4 ms' : r[1].toFixed(1) + ' s', X(r[1]) + 6, y + 13); } });
+    g.font = font(400, fs); g.fillStyle = css('--ink2');
+    wrapText('Vanilla’s exit search loads a 25 x 25 chunk square (625 chunks) on the server thread before the teleport, so TPHOLD’s hook (at the start of ServerPlayer.teleport) is too late. Wild terrain alone takes 12.7 s; the extra 24 s (town) and 52 s (metropolis) are our planning inside those chunks’ structure starts. A default dedicated server’s watchdog kills the server at 60 s. PORTALCOLD (option c, chosen by John): hook the portal search itself and load the exit area asynchronously.', pad, top + 4 * 46 + 30, W - pad * 2, fs + 4);
+    g.font = font(400, fs - 1); g.fillStyle = css('--muted'); wrapText('PORTALCOLD-M on beebox, loadavg 4 to 6, repeats within 5 %; taken on 2026-10-30, before quiet-check existed, so not certified quiet. docs/research/spikes/portalcold.md.', pad, H - pad - 14, W - pad * 2, fs + 2);
+  }
+}
+function wrapText(text, x, y, maxW, lh) { const words = text.split(' '); let line = '', yy = y; for (const w of words) { const t = line ? line + ' ' + w : w; if (g.measureText(t).width > maxW && line) { g.fillText(line, x, yy); line = w; yy += lh; } else line = t; } if (line) g.fillText(line, x, yy); return yy; }
+
+// ---------- steps ----------
+const CITY_CAM = { x: 2560, z: -5640, span: 3500 };
+const REGION_CAM = { x: MX, z: MZ - 300, span: 15000 };
+const g_ = (k) => groups[k];
+function readDots(k, t, alphaMul = 1, color) { const G = g_(k); dots(G.xy, Math.round(G.n * t), color || css(PCOL[k]), 0, G.kind === 'exact chunk', alphaMul); }
+const PCOL = { regionNear: '--s1', regionGraph: '--s1', routeLattice: '--s2', stations: '--s2', skeleton: '--s3', junctionCols: '--s4', junction: '--s4', quays: '--s5', quayCols: '--s5', quayRoadCols: '--s5', tile: '--s6' };
+const G = (k) => `<span class="code">${fmt(groups[k].n)}</span>`;
+const STEPS = [
+  { grp: 'World', title: 'A seed and nothing else', cam: REGION_CAM, dur: 3, reads: [],
+    draw(t) { base('region'); fog(1 - 0.75 * ease(t)); label('seed 987654321', W / 2, H / 2, { screen: true, align: 'center', size: 15, weight: 600, alpha: 1 - t * 0.6 }); },
+    text: `<p>At first the world is only a seed. Minecraft generates chunks on demand, in any order, on several threads. Every answer the planner gives has to be a pure function of (seed, position, config) so that any chunk, generated at any time, gets the same blocks.</p><p>The terrain shown faintly here is the planner's view once it has read it. Nothing is read yet.</p>`,
+    facts: [['Code', 'WorldPlanner (one per world, caches only memoise)'], ['Thread', 'none yet'], ['Reads', 'none']], legend: [] },
+  { grp: 'World', title: 'Region cells, 1,024 blocks', cam: REGION_CAM, dur: 4, reads: [],
+    draw(t) { base('region', 0.55); regionCellsLayer(ease(seg(t, 0, 0.7))); sitesLayer(ease(seg(t, 0.3, 1))); },
+    text: `<p>The world is cut into a 1,024-block grid. Each grid square gets a <em>site</em> moved off-centre by a hash of (seed, cell); a block column belongs to the nearest site, so the cells are Voronoi polygons. No terrain is involved.</p>`,
+    facts: [['Code', 'region/RegionField (cell 1,024, jitter 0.7)'], ['Thread', 'whichever asks; pure'], ['Reads', 'none']], legend: [['line', '--ink', 'Cell border'], ['dot', '--ink', 'Site']] },
+  { grp: 'World', title: 'The roll', cam: REGION_CAM, dur: 4, reads: [],
+    draw(t) { base('region', 0.55); regionCellsLayer(0.6); sitesLayer(0.5); drawImg(IMG.rollDead, RT.x0, RT.z0, RT.step, ease(seg(t, 0.15, 0.8))); },
+    text: () => `<p>Each cell draws a roll from the seed, before any terrain. A cell settles only if its roll is below 0.65 times its biome score (at most 0.65). So a roll of 0.65 or more can never settle, whatever the ground.</p><p><b>SKIPROLL</b> (skip the terrain reads for cells whose roll can never settle) returns at once for those cells: ${fmt(nRoll)} of the ${fmt(nCells)} cells on this map (dark), about a third. It changed no settlement or road; it cut the region row by about 12 %.</p>`,
+    facts: [['Code', 'RegionPlanner.decide, region/roll'], ['Thread', 'warmer or chunk worker'], ['Reads', 'none for dark cells']], legend: [['sw', '--ink2', 'Roll ≥ 0.65: skipped since SKIPROLL']] },
+  { grp: 'World', title: 'Terrain samples for the rest', cam: { x: MX, z: MZ, span: 9000 }, dur: 6, reads: ['regionNear'],
+    draw(t) { base('region', 0.45); regionCellsLayer(0.4); drawImg(IMG.rollDead, RT.x0, RT.z0, RT.step, 0.3); readDots('regionNear', ease(t)); },
+    text: () => `<p>Cells that might settle try 8 hashed candidate centres. Each candidate samples a disk of up to about 80 points on the 64-block lattice: biome, water depth, height. From those come the water share, the peak share (mountain biome or ground at y 140 and up) and a biome score; towns and larger also measure the distance to water.</p><p>These are <b>column reads</b>, one block column each, at the exact height the reviewed cities used. A coarse estimate is 12 to 16 blocks off on average and 50 to 150 under terrain mods, which would change which settlements exist.</p><p>Shown: the ${G('regionNear')} columns read for the 25 cells around the metropolis.</p>`,
+    facts: [['Code', 'RegionPlanner.decide over RegionProbe (64-block lattice)'], ['Read kind', 'column (SparseColumns → getBaseColumn)'], ['Thread', 'warmer: reads pool helps (PARREADS)']], legend: [['dot', '--s1', 'Column read (region decision)']] },
+  { grp: 'World', title: 'Settle or not', cam: REGION_CAM, dur: 4, reads: [],
+    draw(t) { base('region', 0.75); drawImg(IMG.reasons, RT.x0, RT.z0, RT.step, ease(seg(t, 0, 0.6))); regionCellsLayer(0.45); settlementsLayer(ease(seg(t, 0.35, 1))); },
+    text: () => `<p>A cell settles if water and peaks are under their caps, the biome score is at least 0.35 and the roll is below the chance. The tier and drawn radius come from the seed. On this map: ${fmt(reasonCount[0])} settled, ${fmt(reasonCount[1])} too wet, ${fmt(reasonCount[2])} too high, ${fmt(reasonCount[4])} failed the roll (${fmt(nRoll)} of them skipped).</p>`,
+    facts: [['Code', 'RegionPlanner, CellDecision, Tiers'], ['Read kind', 'none new'], ['Output', 'one decision per cell, cached in FieldRegionView']], legend: [['sw', '--s1', 'Too wet'], ['sw', '--muted', 'Failed the roll'], ['sw', '--surface', 'Too high'], ['dot', '--s2', 'City or metropolis'], ['dot', '--ink2', 'Smaller settlement']] },
+  { grp: 'World', title: 'Join rule: big cities claim cells', cam: { x: MX, z: MZ, span: 8000 }, dur: 4, reads: [],
+    draw(t) { base('region', 0.75); drawImg(IMG.claims, RT.x0, RT.z0, RT.step, ease(seg(t, 0.1, 0.7))); regionCellsLayer(0.55); settlementsLayer(1, true); },
+    text: () => `<p>A city or metropolis can be bigger than its cell. It <em>claims</em> every neighbouring cell whose site lies inside its radius; when claims overlap, a seeded priority picks the winner. A claimed cell is a <em>member</em>: part of its owner, not a settlement of its own. The metropolis here owns ${metroMembers} cells (orange). ${claimed.length} cells on this map are claimed.</p>`,
+    facts: [['Code', 'region/FieldRegionView (ADR 0003 R2)'], ['Read kind', 'none new (decisions only)'], ['Why it matters', 'asking about one cell means deciding its neighbours too']], legend: [['sw', '--s2', 'Metropolis s2_m6 and its members'], ['sw', '--s7', 'Other joined cities']] },
+  { grp: 'Roads', title: 'Who links to whom, and how far that reaches', cam: { x: 3300, z: -7600, span: 43000 }, dur: 7, reads: ['regionGraph'],
+    draw(t) { base('region', 0.6); regionCellsLayer(0.25); candidateLayer(ease(seg(t, 0, 0.3)) * 0.8); readDots('regionGraph', ease(seg(t, 0.15, 1))); settlementsLayer(0.9); },
+    text: () => `<p>Settlements become nodes of a road graph. Two are linked when the gap between their rims is at most 1,536 blocks and no <em>witness</em> sits between them: a third settlement closer to both, whose own two links can be routed. Touching settlements share a meeting point instead.</p><p>That rule chains outwards. To know which roads cross the 25 cells around one point, the warm needs every settlement within about 3.9 km of each, and their neighbours and witnesses in turn. One cold warm at the metropolis decided <b>444 cells, out to 17 km</b>, and found 106 settlements, to build 5 routes that touch the city. Shown: the ${G('regionGraph')} region columns read only for the graph.</p>`,
+    facts: [['Code', 'road/RoadNet (ADR 0004 N1, RC)'], ['Read kind', 'column (region lattice)'], ['Reach', 'rings 0-17: 1, 8, 16, 24, 32, 40, 48, 56, 54, 50, 35, 17, 23, 21, 9, 5, 2, 3 cells']], legend: [['dot', '--s1', 'Column read for the road graph'], ['line', '--ink2', 'Pair the graph considered']] },
+  { grp: 'Roads', title: 'Route search on the 64-block lattice', cam: { x: 600, z: -3200, span: 24000 }, dur: 6, reads: ['routeLattice'],
+    draw(t) { base('region', 0.55); readDots('routeLattice', ease(seg(t, 0, 0.6))); routesLayer(ease(seg(t, 0.4, 1)), ease(seg(t, 0.4, 1))); settlementsLayer(0.8); },
+    text: () => `<p>Each link gets a port 64 blocks outside each rim (slid along the rim to avoid water and peaks). A* runs from port to port over the 64-block lattice, with wet nodes and other settlements forbidden; the path is string-pulled and shaped into a curve. The lattice nodes are column reads: ${G('routeLattice')} for this warm.</p><p class="note">Correction to the brief: the route lattice is 64 blocks (<code>RoadNet.LATTICE = RegionProbe.STRIDE</code>); 32 blocks is the settlement skeleton's lattice.</p>`,
+    facts: [['Code', 'RoadNet.route, LatticePath, Curve'], ['Read kind', 'column (lattice nodes)'], ['Thread', 'warmer, per cell in parallel (PARREADS)']], legend: [['dot', '--s2', 'Column read (lattice node)'], ['line', '--s2', 'Routed link (whole map)']] },
+  { grp: 'Roads', title: 'Stations every 8 blocks, and the dry rule', cam: { x: 600, z: -3200, span: 24000 }, dur: 6, reads: ['stations'],
+    draw(t) { base('region', 0.55); readDots('stations', ease(seg(t, 0, 0.75))); routesLayer(0.9, 1, '--ink'); droppedLayer(ease(seg(t, 0.6, 1))); settlementsLayer(0.8); },
+    text: () => `<p>The curve is read at an exact height every 8 blocks: about 450 stations per route, 2 per chunk on a straight road, so single columns (0.9 ms) beat a chunk fill (1.9 ms) here. The deck height comes from the ground; every wet station counts for the dry rule. A curve that is too wet reroutes around the bad lattice cell, at most 3 times, and is otherwise dropped.</p><p>This warm read ${G('stations')} station columns (orange dots, live world). They include the stations of every route it tried: 79 routes built for this warm, 31 kept, so dots also trace reroutes and dropped attempts. The thin solid lines are the links the CLI keeps on the recorded map. Over the whole map, 73 links are routed, 13 are meeting points and 117 candidate pairs were dropped (dashed red): 37 found no path, 33 no dry reroute, 25 no port, 22 too wet.</p><p>Afterwards each settlement draws an approach from an exit gate to each port. A dropped link leaves no road ending at a port in the open (<b>DEADPORT</b>, roads that end at a port no approach joins), and a main road to a gate with nothing beyond is cut back to its last lot plus 8 columns (<b>MAINSTUB</b>, <code>ExitTrim</code>).</p>`,
+    facts: [['Code', 'road/Profile, Curve.STATION = 8; LinkExits, ExitTrim'], ['Read kind', 'column (road station)'], ['Thread', 'warmer; later RoadFeature writes each chunk’s columns']], legend: [['dot', '--s2', 'Station read (incl. tried routes)'], ['line', '--ink', 'Kept link'], ['line', '--s8', 'Dropped pair']] },
+  { grp: 'City', title: 'The skeleton on a 32-block lattice', cam: CITY_CAM, dur: 6, reads: ['skeleton'],
+    draw(t) { base('city', 0.85); cityCoarse(ease(seg(t, 0, 0.4)), 'quarter'); cityCells(ease(seg(t, 0, 0.3))); readDots('skeleton', ease(seg(t, 0, 0.5)), 0.6); cityRoads(ease(seg(t, 0.45, 1)), ease(seg(t, 0.45, 1))); cityGates(ease(seg(t, 0.7, 1))); },
+    text: () => `<p>Zoom into the metropolis. For each of its ${C.cells.length} member cells the skeleton screens a 32-block lattice: urban or not (inside a deformed disk, dry, not a peak, not steep), a density that falls from the centre, and a <em>quarter</em> per column (downtown, old town, market, residential, workshop, waterfront, park, outskirts). Main roads run on the 32-block grid from the hub to hashed gates; neighbouring cells derive the same gate from a hash of the cell pair, so they agree without reading each other.</p><p>Reads are coarse columns: ${G('skeleton')} for the four settlements this warm planned, behind 1.03 million probe calls (most are memo hits).</p>`,
+    facts: [['Code', 'Skeletons, CellSkeleton, DensityField, QuarterField, CoarseTerrain'], ['Read kind', 'column (coarse probe, 32 blocks)'], ['Thread', 'warmer, member cells side by side']], legend: [['sw', '--s8', 'Downtown'], ['sw', '--s7', 'Old town'], ['sw', '--s4', 'Market'], ['sw', '--s3', 'Residential'], ['sw', '--s1', 'Waterfront'], ['line', '--s8', 'Main road'], ['dot', '--s8', 'Exit gate']] },
+  { grp: 'City', title: 'District tiles and the street lattice', cam: CITY_CAM, dur: 5, reads: [],
+    draw(t) { base('city', 0.7); cityCoarse(0.35, 'quarter'); cityTiles(ease(seg(t, 0, 0.4))); cityStreetsLayer(ease(seg(t, 0.25, 1)), ['street', 'arterial', 'main'], 1, ease(seg(t, 0.25, 1))); },
+    text: () => `<p>The city is cut into district tiles of 10 chunks (160 blocks, lines jittered by up to a chunk). ${fmt(C.districts.length)} tiles are planned here. Each tile is one structure start in its centre chunk. Arterials and plain streets run on tile borders; whether a border segment has a street is a pointwise rule (urban ends, no wide water, gentle), so two tiles agree on their shared border without talking. Only segments chained to the hub are drawn.</p>`,
+    facts: [['Code', 'DistrictGrid (PERIOD 10 chunks), Arterials, StreetRules, RoadNetwork'], ['Read kind', 'coarse only'], ['Thread', 'warmer (network), structure start (tile lookup)']], legend: [['line', '--ink', 'Arterial'], ['line', '--ink2', 'Street'], ['line', '--s8', 'Main road']] },
+  { grp: 'City', title: 'Junction field: one level per junction', cam: CITY_CAM, dur: 7, reads: ['junctionCols', 'junction'],
+    draw(t) { base('city', 0.6); cityStreetsLayer(0.45, ['street', 'arterial', 'main']); readDots('junction', ease(seg(t, 0, 0.6)), 0.55); junctionPins(ease(seg(t, 0.45, 1))); },
+    text: () => `<p>Before JUNCTION (street heights where streets meet), each street was graded over the ground on its own, and two streets could meet 2 to 20 blocks apart. The junction field finds every place whole streets overlap, gives each junction one level (the median ground, adjusted so every street between two junctions can make the rise at 1 in 3) and pins them for the whole settlement, so every tile reads the same pins. ${fmt(U.junctions.length)} junctions here.</p><p>It reads the water at every centre column of every street, the ground at junctions and the grading samples: 153k exact reads, landing in ${G('junction')} <b>chunk fills</b> (14 to 17 or more columns per chunk). Because the level is passed along the street graph, a tile can't compute it from its neighbourhood alone without risking steps at tile borders.</p><p><b>The flat pad problem</b> (road-refine spike): where two main roads share about 400 blocks of the same columns, the field holds that whole stretch at one level, 108 against ground up to 133, which makes a 25-block cut. Profile below (metropolis s4_m2 of John's playtest world, not this city).</p><img class="figimg" alt="Side profile of road r3_m2_2: a 420-block shared pad held flat at 108 while the ground rises to 133" src="${PADIMG}">`,
+    facts: [['Code', 'settlement/JunctionField.build'], ['Read kind', 'chunk fill (ColumnMemo, ChunkFill.WINDOWED)'], ['Thread', 'warmer, beside the road links; else the first structure start']], legend: [['sw', '--s4', 'Chunk filled (live count, 4 settlements)'], ['dot', '--s1', 'Pin above ground'], ['dot', '--s8', 'Pin below ground (cut)'], ['dot', '--ink', 'Pin at ground']] },
+  { grp: 'City', title: 'Quay trace: the whole waterfront', cam: CITY_CAM, dur: 7, reads: ['quays', 'quayCols', 'quayRoadCols'],
+    draw(t) { base('city', 0.6); cityStreetsLayer(0.3, ['street', 'arterial', 'main']); readDots('quays', ease(seg(t, 0, 0.7)), 0.55); quayRunsLayer(ease(seg(t, 0.55, 1)), ease(seg(t, 0.55, 1))); },
+    text: () => `<p>Waterfront quarters get quays: promenade lines along the water (METROFILL R1, dense city cores). The trace contours the field "water within reach" by marching squares on the 8-block street lattice over every waterfront tile of the settlement, then grades each run in a fixed order against the earlier ones, so neighbouring tiles cut a quay the same way.</p><p>The contour asks for water at every lattice node of every waterfront tile. That area scan is the cost: 598k exact reads filling ${G('quays')} chunks, about 65 % of the city's chunks. It is the biggest single piece of planning: about 20 s on quiet beebox even with PARREADS, and the thing the cold chunk waits for.</p>`,
+    facts: [['Code', 'Districts.warmQuays, Quays.contour, QuayTrace.all'], ['Read kind', 'chunk fill'], ['Thread', 'warmer (whole trace) or the first waterfront structure start']], legend: [['sw', '--s5', 'Chunk filled (live)'], ['line', '--s5', 'Quay run']] },
+  { grp: 'City', title: 'QUAYLAZY: only the quays a tile needs', cam: CITY_CAM, dur: 8, reads: [],
+    draw(t) { base('city', 0.6); dots(wholeQuayChunks, wholeQuayChunks.length / 2, css('--muted'), 0, true, 0.25); quayRunsLayer(0.5); const k = Math.min(demoTiles.length - 1, Math.floor(t * demoTiles.length * 0.999)); const d = demoTiles[k]; if (d) { const lt = (t * demoTiles.length) % 1; dots(d.xy, Math.floor(d.xy.length / 2 * ease(clamp01(lt * 1.6))), css('--s7'), 0, true, 0.85); tileOutline(d.ix, d.iz, 1); label(`tile ${d.ix},${d.iz}: ${fmt(d.xy.length / 2)} chunks`, d.ix * 160 + 80, d.iz * 160 - 40, { align: 'center' }); } },
+    text: () => `<p>QUAYLAZY (a lazy quay trace that runs in parallel) lets a tile ask only for the quays near it: find the contour points in its own window, walk each chain they belong to (a band about 2 chunks wide, never the area inside a lake), add the chains whose runs come within 4 blocks of them (a <em>cluster</em>), and grade the cluster in the same global order. The result is byte-identical to the whole trace; tests compare them on every waterfront tile.</p><p>Measured as chunk counts on recorded terrain (counts, not times): the whole trace of this city fills ${fmt(U.wholeQuayChunkCount)} chunks; a single waterfront tile from a fresh start needs a median of ${fmt(lazyMedian)} (${(100 * lazyMedian / U.wholeQuayChunkCount).toFixed(0)} %), from ${fmt(tileCounts[0])} to ${fmt(tileCounts[tileCounts.length - 1])} over ${tileCounts.length} tiles. On metropolis s4_m2 the test saw a median of 643 of 14,459 (4 %). Steps 1 to 4 are merged (step 4: chain walks and cluster grading run on the reads pool); the game's warmer still runs the whole trace until step 5, and no timing exists yet.</p>`,
+    facts: [['Code', 'QuayTrace.near, Quays.chainThrough, Districts.quayWholes'], ['Read kind', 'chunk fill, far fewer'], ['Data', 'ExplainerDumpTest on gate-metropolis-temperate (step-16 recorded terrain)']], legend: [['sw', '--muted', 'Whole trace (recorded)'], ['sw', '--s7', 'One tile’s lazy reads'], ['line', '--s5', 'Quay run']] },
+  { grp: 'City', title: 'Lots and buildings', cam: { x: 2410, z: -5700, span: 900 }, dur: 7, reads: ['tile'],
+    draw(t) { base('city', 0.55); cityStreetsLayer(0.9, ['lane', 'street', 'arterial', 'main', 'quay'], 1); lotsLayer(ease(seg(t, 0.1, 0.8)), ease(seg(t, 0.1, 0.8))); readDots('tile', ease(seg(t, 0.6, 1)), 0.25); tileOutline(U.centreTile.ix, U.centreTile.iz, ease(seg(t, 0.6, 1))); },
+    text: () => `<p>District detail plans one tile: the streets that cross it (clipped to the tile plus a margin, so both tiles at a border list the same street), hashed ports where lanes cross into the neighbour, frontage lanes, then lots packed along straight street runs and whole blocks in dense grid areas. A brief fills each lot: style from the biome field, storeys from density and quarter, the front height from the graded street. ${fmt(C.lotCount)} lots in this city.</p><p>Buildings come from the generator per lot (massing, storeys, facades, roofs, interiors), standing on exact heights, with an entrance flight down or up to the street. The centre tile's own plan filled ${G('tile')} new chunks: almost all of its 91k exact reads hit chunks the junction field and quays had already filled.</p>`,
+    facts: [['Code', 'Districts.plan, Briefs.fill, GeneratorV1, Pieces, PieceRaster'], ['Read kind', 'chunk fill (mostly memo hits by now)'], ['Thread', 'structure start’s lazy piece builder, or the warmer’s tile prefetch']], legend: [['sw', '--s3', 'House'], ['sw', '--s1', 'Shop'], ['sw', '--s2', 'Workshop'], ['sw', '--s7', 'Tower / high-rise'], ['sw', '--s4', 'Hall / temple'], ['sw', '--muted', 'Empty (steep, bank, no fit)'], ['sw', '--s6', 'Chunk filled by the centre tile']] },
+  { grp: 'Game', title: 'A chunk is generated', cam: CITY_CAM, dur: 6, reads: [], lanes: 'pipeline',
+    draw(t) { laneChart(t, 'pipeline'); },
+    text: `<p>In the game none of this runs as one batch. Chunks ask. A chunk whose position is a tile's centre chunk gets a district structure start (<code>DistrictPlacement</code>, pure geometry). The start looks up its tile; the first lookup in a settlement builds the network and junction field, and the pieces (one per building, one per chunk of street) are built lazily. In the features step each piece writes only the cells inside the chunk being generated, and <code>RoadFeature</code> writes intercity road columns.</p><p>The warmer runs the same planning earlier, on our own threads, once a second around each player and 5 s ahead along their velocity, so in normal travel the starts find the caches full.</p>`,
+    facts: [['Code', 'DistrictPlacement, DistrictStructure, GroundStructure, TilePiece, RoadFeature, RegionWarmer'], ['Thread', 'vanilla worldgen workers; warmer on fractalbuildings-worker'], ['Reads', 'whatever the caches lack']], legend: [['sw', '--s2', 'Our structure start'], ['sw', '--s3', 'Our feature writes']] },
+  { grp: 'Game', title: 'Arriving cold: the teleport hold', cam: CITY_CAM, dur: 8, reads: [], lanes: 'teleport',
+    draw(t) { laneChart(t, 'teleport'); },
+    text: `<p>A far <code>/tp</code> into an unvisited metropolis has no warm lead. TPHOLD (hold far teleports until the destination is generated) keeps the player in place with "Generating terrain…", warms the destination point on our worker, and asks for the 3 x 3 chunks around it. It releases when they are FULL, or after 30 s.</p><p>On quiet beebox the hold always times out: the player lands at 30 s and the 9 x 9 view is FULL only at about 69 s, against about 4 s in vanilla. While the player waits for those chunks, one server tick lasts 8.5 to 9.5 s. TPHOLD15 (a 15 s cap, plus "hold only for what the tile needs") is built and waiting for John's call.</p>`,
+    facts: [['Code', 'mixin/ServerPlayerTeleportMixin, teleport/TeleportHold, RegionWarmer.warmPoint'], ['Thread', 'server thread polls; warm on fractalbuildings-worker'], ['Measured', 'COLDARRIVAL + PERFBASE, quiet beebox']], legend: [['sw', '--s4', 'Hold'], ['sw', '--mod', 'Landed, chunks still arriving'], ['sw', '--van', 'Vanilla']] },
+  { grp: 'Game', title: 'Arriving through a nether portal', cam: CITY_CAM, dur: 6, reads: [], lanes: 'portal',
+    draw(t) { laneChart(t, 'portal'); },
+    text: `<p>A portal trip stalls earlier than a teleport: vanilla searches for an exit portal over a wide radius on the server thread, which generates 625 chunks before the teleport even starts. Into a cold metropolis that took 65 s, with nothing shown to the player and every player frozen. PORTALCOLD (first nether-portal trip into an unvisited city freezes the server) is in progress with John's option (c): hold the portal transition itself and load the exit area asynchronously.</p>`,
+    facts: [['Code', 'vanilla NetherPortalBlock.getPortalDestination, PortalForcer'], ['Thread', 'server thread (parked on workers 98 % of the time)'], ['Measured', 'PORTALCOLD-M, beebox, before the quiet rule']], legend: [['sw', '--van', 'Control'], ['sw', '--mod', 'Metropolis']] },
+];
+
+// cumulative read counts (live units, as the timeline plays)
+const UNIT_MS = { chunk: [1.9, 2.8], col: [0.27, 0.55] };
+function countsAt(stepIdx, t) { let col = 0, ch = 0; STEPS.forEach((s, i) => { const f = i < stepIdx ? 1 : i === stepIdx ? t : 0; for (const k of s.reads) { const G = groups[k]; const n = Math.round(G.n * f); if (G.kind === 'exact chunk') ch += n; else col += n; } }); return { col, ch }; }
+
+// ---------- player ----------
+const total = STEPS.reduce((s, x) => s + x.dur, 0);
+const starts = []; { let a = 0; for (const s of STEPS) { starts.push(a); a += s.dur; } }
+let T = starts[8] + STEPS[8].dur - 0.0001; let playing = false, speed = 1, last = 0, curStep = -1;
+const panel = document.getElementById('panel'), scrub = document.getElementById('scrub'), btnPlay = document.getElementById('btnPlay');
+const chipsEl = document.getElementById('chips');
+STEPS.forEach((s, i) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'chip'; b.innerHTML = `<span class="grp">${s.grp} ·</span> ${i + 1}. ${s.title.split(':')[0]}`; b.onclick = () => { T = playing ? starts[i] : starts[i] + s.dur - 0.0001; frame(); }; chipsEl.appendChild(b); });
+function stepAt(T) { let i = 0; while (i + 1 < STEPS.length && T >= starts[i + 1]) i++; return i; }
+function legendHTML(items) { return items.map(([k, v, txt]) => `<span><i class="sw ${k === 'dot' ? 'dot' : k === 'line' ? 'line' : ''}" style="background:var(${v})${v === '--surface' ? ';border:1px solid var(--ink2)' : ''}"></i>${txt}</span>`).join(''); }
+function renderPanel(i) {
+  const s = STEPS[i]; const txt = typeof s.text === 'function' ? s.text() : s.text;
+  const reads = s.reads.length ? s.reads.map((k) => `${fmt(groups[k].n)} ${groups[k].kind === 'exact chunk' ? 'chunk fills' : 'column reads'} <span class="note">(${groups[k].purpose})</span>`).join('<br>') : 'none new';
+  panel.innerHTML = `<div class="stepno">STEP ${i + 1} OF ${STEPS.length} &middot; ${s.grp.toUpperCase()}</div><h3>${s.title}</h3>${txt}
+    <dl class="facts">${s.facts.map(([a, b]) => `<dt>${a}</dt><dd>${b}</dd>`).join('')}<dt>New reads</dt><dd>${reads}</dd></dl>`;
+  document.getElementById('below').innerHTML = `<div class="legend">${legendHTML(s.legend)}</div>
+    <div class="meter" aria-label="Running totals for one cold plan"><div><b id="mCol">0</b><small>column reads so far</small></div><div><b id="mCh">0</b><small>chunk fills so far</small></div><div><b id="mMs">0 s</b><small>noise time on one thread (model)</small></div></div>`;
+  document.querySelectorAll('.chip').forEach((c, k) => c.setAttribute('aria-current', k === i ? 'step' : 'false'));
+  document.getElementById('tlSrc').innerHTML = SRC[i] || '';
+}
+const SRC = STEPS.map((s) => {
+  const parts = ['Geometry: <code>fractal-cli roads</code> on <code>fixtures/terrain/world-987654321-s64.json.gz</code> and <code>fractal-cli city --site 2432,-5696,metropolis,1430 --districts</code> on <code>gate-metropolis-temperate.json.gz</code> (recorded vanilla terrain).'];
+  if (s.reads.length) parts.push('Reads: <code>PerfReachTest</code> at 7ba928e4, live vanilla noise (before SKIPROLL; positions at chunk resolution).');
+  if (s.title.startsWith('QUAYLAZY') || s.title.startsWith('Junction')) parts.push('Pins and lazy chunk sets: throwaway <code>ExplainerDumpTest</code> on recorded terrain (copy in <code>scripts/explainer/</code>); log <code>docs/log/2026-10-31-p6-quaylazy-3b.md</code>; plan <code>docs/plans/quaylazy.md</code>; road-refine <code>docs/research/spikes/road-refine.md</code>.');
+  if (s.lanes) parts.push('<span class="tag schem">schematic</span> drawing; numbers from <code>docs/review/regionperf-decision.md</code> section 7 (PERFBASE branch) and <code>docs/research/spikes/portalcold.md</code>.');
+  parts.push('Running totals under the map: the live counts of every step so far, times 0.27 to 0.55 ms per column and 1.9 to 2.8 ms per chunk (a <span class="tag guess">model</span>, not a timing).');
+  return '<span class="tag real">real data</span> ' + parts.join(' ');
+});
+function camLerp(a, b, t) { const e = ease(t); return { x: a.x + (b.x - a.x) * e, z: a.z + (b.z - a.z) * e, span: Math.exp(Math.log(a.span) + (Math.log(b.span) - Math.log(a.span)) * e) }; }
+function frame() {
+  const i = stepAt(T), s = STEPS[i]; const t = clamp01((T - starts[i]) / s.dur);
+  if (i !== curStep) { renderPanel(i); curStep = i; }
+  const prev = i > 0 ? STEPS[i - 1].cam : s.cam; cam = camLerp(prev, s.cam, clamp01(t / 0.22));
+  g.setTransform(DPR, 0, 0, DPR, 0, 0); s.draw(t);
+  const c = countsAt(i, t); const lo = (c.col * UNIT_MS.col[0] + c.ch * UNIT_MS.chunk[0]) / 1000, hi = (c.col * UNIT_MS.col[1] + c.ch * UNIT_MS.chunk[1]) / 1000;
+  const mc = document.getElementById('mCol'); if (mc) { mc.textContent = fmt(c.col); document.getElementById('mCh').textContent = fmt(c.ch); document.getElementById('mMs').textContent = `${lo.toFixed(0)}–${hi.toFixed(0)} s`; }
+  scrub.value = Math.round(T / total * 10000);
+  const km = cam.span / 1000; document.getElementById('tlScale').textContent = s.lanes ? 'schematic' : `view ${km >= 10 ? km.toFixed(0) : km.toFixed(1)} km across`;
+  document.getElementById('tlCoord').textContent = s.lanes ? 'in game' : `centre x ${fmt(cam.x)}, z ${fmt(cam.z)}`;
+}
+function loop(ts) { if (!playing) return; const dt = last ? Math.min(0.1, (ts - last) / 1000) : 0; last = ts; T += dt * speed; if (T >= total) { T = total - 0.0001; setPlaying(false); } frame(); if (playing) requestAnimationFrame(loop); }
+function setPlaying(p) { playing = p; btnPlay.textContent = p ? 'Pause' : 'Play'; last = 0; if (p) requestAnimationFrame(loop); }
+btnPlay.onclick = () => { if (!playing && T >= total - 0.01) T = 0; setPlaying(!playing); };
+document.getElementById('btnRestart').onclick = () => { T = 0; setPlaying(true); frame(); };
+document.getElementById('btnNext').onclick = () => { const i = Math.min(STEPS.length - 1, stepAt(T) + (T - starts[stepAt(T)] >= STEPS[stepAt(T)].dur - 0.01 ? 1 : 0)); T = playing ? starts[i] : starts[i] + STEPS[i].dur - 0.0001; if (stepAt(T) === stepAt(T) && !playing && i === stepAt(T)) {} frame(); };
+document.getElementById('btnPrev').onclick = () => { const i = Math.max(0, stepAt(T) - 1); T = playing ? starts[i] : starts[i] + STEPS[i].dur - 0.0001; frame(); };
+scrub.oninput = () => { T = Math.min(total - 0.0001, scrub.value / 10000 * total); frame(); };
+document.getElementById('speed').onchange = (e) => { speed = +e.target.value; };
+cv.addEventListener('keydown', (e) => { if (e.key === ' ') { e.preventDefault(); btnPlay.click(); } });
+
+// ---------- charts (SVG) ----------
+const NS = 'http://www.w3.org/2000/svg';
+function el(tag, attrs, parent) { const e = document.createElementNS(NS, tag); for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v); if (parent) parent.appendChild(e); return e; }
+const tip = document.getElementById('tip');
+function hover(node, html) { node.addEventListener('pointerenter', () => { tip.innerHTML = html; tip.style.display = 'block'; }); node.addEventListener('pointermove', (e) => { tip.style.left = Math.min(window.innerWidth - 290, e.clientX + 12) + 'px'; tip.style.top = (e.clientY + 14) + 'px'; }); node.addEventListener('pointerleave', () => { tip.style.display = 'none'; }); }
+const VS = [
+  ['Cold arrival: /tp to the metropolis centre until the 9 x 9 view is FULL', 's', [69.9, 68.9], [4.5, 3.6]],
+  ['Cold 9 x 9 chunk block at the metropolis, whole block', 's', [49.7, 49.6], [2.35, 2.35]],
+  ['Slowest chunk of that block', 's', [38.9, 38.7], [0.20, 0.18]],
+  ['Longest server tick during the arrival', 's', [9.5, 8.5], [0.096, 0.078]],
+  ['Settlement /locate, fresh area (vs vanilla village /locate)', 's', [4.91, 4.89], [0.23, 0.30]],
+  ['Village /locate, fresh area (ours goes through the veto)', 's', [3.92, 3.93], [0.23, 0.30]],
+  ['Worst server tick, elytra flight to a city', 'ms', [914, 901], [135, 170]],
+  ['Mean chunk, next block after the warmer ran', 'ms', [63.6, 62.1], [23.7, 23.6]],
+  ['Median chunk of the cold block', 'ms', [39, 40], [24, 25]],
+  ['p95 server tick, same flight', 'ms', [10.6, 11.1], [9.7, 9.6]],
+  ['Heap after GC', 'MB', [482, 480], [290, 290]],
+];
+function wrapLines(text, maxW, size) { const cw = size * 0.56; const out = []; let line = ''; for (const w of text.split(' ')) { const t = line ? line + ' ' + w : w; if (t.length * cw > maxW && line) { out.push(line); line = w; } else line = t; } if (line) out.push(line); return out; }
+function drawVs() {
+  const box = document.getElementById('vsChart'); box.innerHTML = ''; const w = Math.max(300, box.clientWidth || 700);
+  const rows = VS.map((r) => wrapLines(r[0], w - 4, 12.5)); const h = rows.reduce((s, l) => s + l.length * 16 + 40, 4);
+  const svg = el('svg', { viewBox: `0 0 ${w} ${h}`, role: 'img', 'aria-label': 'Mod against vanilla, one bar pair per measurement' }, box);
+  let y = 2;
+  VS.forEach((r, i) => { const lines = rows[i]; const m = (r[2][0] + r[2][1]) / 2, v = (r[3][0] + r[3][1]) / 2; const x0 = 0, x1 = w - 130, sc = (x1 - x0) / m;
+    const t = el('text', { x: 0, y: y + 11, 'font-size': 12.5, fill: css('--ink') }, svg); lines.forEach((l, k) => { const sp = el('tspan', { x: 0, dy: k ? 16 : 0 }, t); sp.textContent = l; });
+    const by = y + lines.length * 16 + 2;
+    el('rect', { x: x0, y: by, width: Math.max(2, m * sc), height: 12, rx: 2, fill: css('--mod') }, svg);
+    el('rect', { x: x0, y: by + 15, width: Math.max(2, v * sc), height: 12, rx: 2, fill: css('--van') }, svg);
+    const fmtv = (a) => r[1] === 's' && a < 1 ? (a * 1000).toFixed(0) + ' ms' : a + ' ' + r[1];
+    const tm = el('text', { x: x0 + Math.max(2, m * sc) + 6, y: by + 10, 'font-size': 11, fill: css('--ink'), 'font-family': 'IBM Plex Mono, monospace' }, svg); tm.textContent = r[2].map(fmtv).join(' / ');
+    const ratio = m / v; const tv = el('text', { x: x0 + Math.max(2, v * sc) + 6, y: by + 25, 'font-size': 11, fill: css('--ink2'), 'font-family': 'IBM Plex Mono, monospace' }, svg); tv.textContent = `${r[3].map(fmtv).join(' / ')} \u00b7 ${ratio >= 10 ? ratio.toFixed(0) : ratio.toFixed(1)}x`;
+    const rh = lines.length * 16 + 40; const hit = el('rect', { x: 0, y: y, width: w, height: rh, fill: 'transparent' }, svg); hover(hit, `<b>${r[0]}</b><br>Mod: ${r[2].map(fmtv).join(' / ')}<br>Vanilla: ${r[3].map(fmtv).join(' / ')}<br>Ratio of means: ${ratio.toFixed(1)}x`);
+    y += rh;
+  });
+  document.getElementById('vsTable').innerHTML = `<table><thead><tr><th>Measurement</th><th class="num">Mod r1 / r2</th><th class="num">Vanilla r1 / r2</th><th class="num">Ratio</th></tr></thead><tbody>${VS.map((r) => `<tr><td>${r[0]}</td><td class="num">${r[2].join(' / ')} ${r[1]}</td><td class="num">${r[3].join(' / ')} ${r[1]}</td><td class="num">${((r[2][0] + r[2][1]) / (r[3][0] + r[3][1])).toFixed(1)}x</td></tr>`).join('')}</tbody></table>`;
+}
+const PLANNER = [['Before PARREADS', 36.4, 69.5, '103 s measured'], ['After PARREADS', 11.6, 19.9, '31 s measured'], ['After SKIPROLL', 10.4, 19.7, 'not measured']];
+function drawPlanner() {
+  const box = document.getElementById('plannerChart'); box.innerHTML = ''; const w = Math.max(300, box.clientWidth || 500); const rowH = 56, h = PLANNER.length * rowH + 26; const x0 = 0, x1 = w - 8, sc = (x1 - x0) / 140;
+  const svg = el('svg', { viewBox: `0 0 ${w} ${h}`, role: 'img', 'aria-label': 'Planner time before and after PARREADS and SKIPROLL' }, box);
+  for (let s = 0; s <= 125; s += 25) { el('line', { x1: x0 + s * sc, x2: x0 + s * sc, y1: 0, y2: h - 20, stroke: css('--rule') }, svg); const t = el('text', { x: x0 + s * sc + (s === 0 ? 2 : 0), y: h - 5, 'font-size': 11, fill: css('--muted'), 'text-anchor': s === 0 ? 'start' : 'middle' }, svg); t.textContent = s + ' s'; }
+  PLANNER.forEach((r, i) => { const y = i * rowH + 4; const t = el('text', { x: 0, y: y + 12, 'font-size': 12.5, fill: css('--ink') }, svg); t.textContent = r[0]; const t2 = el('tspan', { fill: css('--muted'), 'font-size': 11 }, t); t2.textContent = '  warmer path ' + r[3];
+    const a = el('rect', { x: x0, y: y + 20, width: r[1] * sc - 1, height: 20, rx: 2, fill: css('--s1') }, svg); const b = el('rect', { x: x0 + r[1] * sc + 1, y: y + 20, width: r[2] * sc - 1, height: 20, rx: 2, fill: css('--s5') }, svg);
+    const lt = el('text', { x: x0 + (r[1] + r[2]) * sc + 6, y: y + 34, 'font-size': 11.5, fill: css('--ink'), 'font-family': 'IBM Plex Mono, monospace' }, svg); lt.textContent = `${r[1]} + ${r[2]} s`;
+    hover(a, `<b>${r[0]}</b><br>Region layer + roads: ${r[1]} s`); hover(b, `<b>${r[0]}</b><br>Quay trace: ${r[2]} s`); });
+}
+const UNITS = [ // part, units label, noise computed, probe calls, CPU est (s), colour
+  ['Quays (metropolis + town s3_m8)', '19,854 chunks + 435 columns', '598k exact, 975k coarse', 55.6, '--s5'],
+  ['Junction fields (4 settlements)', '4,924 chunks + 156 columns', '153k exact, 287k coarse', 13.8, '--s4'],
+  ['Region decisions for the road graph (419 cells)', '44,666 columns', '353,579', 12.1, '--s1'],
+  ['Road stations', '14,587 columns', '30,768', 3.9, '--s2'],
+  ['Streets and skeletons (coarse lattice)', '8,825 columns', '1.03M', 2.4, '--s3'],
+  ['Region decisions, 25 cells around the point', '8,453 columns', '67,200', 2.3, '--s1'],
+  ['Route lattice nodes', '6,243 columns', '32,466', 1.7, '--s2'],
+  ['Centre tile plan', '54 chunks', '91k', 0.2, '--s6'],
+];
+function drawUnits() {
+  const box = document.getElementById('unitsChart'); box.innerHTML = ''; const w = Math.max(300, box.clientWidth || 500); const h = UNITS.length * 34 + 28; const x0 = 0, x1 = w - 70, sc = (x1 - x0) / 56;
+  const svg = el('svg', { viewBox: `0 0 ${w} ${h}`, role: 'img', 'aria-label': 'Estimated noise time per planning part' }, box);
+  UNITS.forEach((r, i) => { const y = i * 34; const t = el('text', { x: 0, y: y + 11, 'font-size': 12, fill: css('--ink') }, svg); t.textContent = r[0];
+    const b = el('rect', { x: x0, y: y + 16, width: Math.max(2, r[3] * sc), height: 11, rx: 2, fill: css(r[4]) }, svg); const v = el('text', { x: x0 + Math.max(2, r[3] * sc) + 6, y: y + 26, 'font-size': 11.5, fill: css('--ink2'), 'font-family': 'IBM Plex Mono, monospace' }, svg); v.textContent = '≈' + r[3] + ' s';
+    const hit = el('rect', { x: 0, y: y, width: w, height: 34, fill: 'transparent' }, svg); hover(hit, `<b>${r[0]}</b><br>Noise computed: ${r[1]}<br>Probe calls: ${r[2]}<br>Model: ≈${r[3]} CPU-s on one thread`); });
+  const tt = el('text', { x: 0, y: h - 4, 'font-size': 11, fill: css('--muted') }, svg); tt.textContent = 'Total ≈ 92 CPU-s on one thread (model).';
+  document.getElementById('unitsTable').innerHTML = `<table><thead><tr><th>Part</th><th>Noise computed</th><th>Probe calls</th><th class="num">Model s</th></tr></thead><tbody>${UNITS.map((r) => `<tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td><td class="num">${r[3]}</td></tr>`).join('')}</tbody></table>`;
+}
+
+// ---------- toy ----------
+const toy = document.getElementById('toy'), tg = toy.getContext('2d');
+const TOYN = 256;
+function toyNeeded(scene) {
+  const need = new Set(); const add = (x, z) => { if (x >= 0 && z >= 0 && x < TOYN && z < TOYN) need.add(z * TOYN + x); };
+  if (scene === 'streets') { for (let k = 24; k < TOYN; k += 48) for (let i = 0; i < TOYN; i++) { add(k, i); add(i, k + 8 * ((k / 48) % 2)); } for (let i = 0; i < TOYN; i++) add(i, Math.round(i * 0.55 + 30)); }
+  else if (scene === 'route') { const order = []; let px = null, pz = null, acc = 8; for (let s = 0; s <= 1; s += 0.0002) { const x = 10 + s * 236, z = 128 + 70 * Math.sin(s * 5.2) - 40 * s; if (px !== null) acc += Math.hypot(x - px, z - pz); px = x; pz = z; if (acc >= 8) { acc -= 8; const k = Math.round(z) * TOYN + Math.round(x); if (!need.has(k)) { add(Math.round(x), Math.round(z)); order.push(k); } } } need.order = order; }
+  else if (scene === 'lattice') { for (let z = 0; z < TOYN; z += 64) for (let x = 0; x < TOYN; x += 64) add(x + 32, z + 32); }
+  else if (scene === 'area') { for (let z = 0; z < TOYN; z += 3) for (let x = 0; x < TOYN; x += 3) { const d = Math.hypot(x - 170, z - 120); if (d < 120 && d > 30) add(x, z); } }
+  return need;
+}
+function toyRun() {
+  const scene = document.querySelector('input[name=toyScene]:checked').value, sample = document.querySelector('input[name=toySample]:checked').value;
+  const need = toyNeeded(scene); const read = new Set(); const interp = new Set();
+  const keep = (x, z) => sample === 'all' ? true : sample === 'checker' ? ((x + z) & 1) === 0 : ((x + z) % 3) === 0;
+  const step = scene === 'lattice' ? 64 : scene === 'area' ? 3 : 1; // lattice spacing of the sampled grid
+  if (need.order) { need.order.forEach((k, n) => { const kept = sample === 'all' || (sample === 'checker' ? n % 2 === 0 : n % 3 === 0); (kept ? read : interp).add(k); }); }
+  else for (const k of need) { const x = k % TOYN, z = (k / TOYN) | 0; const i = Math.round(x / step), j = Math.round(z / step);
+    if (keep(i, j)) { read.add(k); continue; } interp.add(k);
+    for (const [dx, dz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const ii = i + dx, jj = j + dz; if (!keep(ii, jj)) continue; const xx = x + dx * step, zz = z + dz * step; if (xx >= 0 && zz >= 0 && xx < TOYN && zz < TOYN) read.add(zz * TOYN + xx); } }
+  const per = new Map(); for (const k of read) { const c = ((k / TOYN) >> 4) * 16 + ((k % TOYN) >> 4); per.set(c, (per.get(c) || 0) + 1); }
+  const colMs = read.size * 0.45, chunkMs = per.size * 1.9; let best = 0; for (const n of per.values()) best += Math.min(n * 0.45, 1.9);
+  // draw
+  const w = toy.width, sc = w / TOYN; tg.fillStyle = css('--sunk'); tg.fillRect(0, 0, w, w);
+  tg.fillStyle = css('--s4'); tg.globalAlpha = 0.55; for (const c of per.keys()) tg.fillRect((c % 16) * 16 * sc, ((c / 16) | 0) * 16 * sc, 16 * sc, 16 * sc); tg.globalAlpha = 1;
+  tg.strokeStyle = css('--ink2'); tg.globalAlpha = 0.35; tg.lineWidth = 1; for (let k = 0; k <= TOYN; k += 16) { tg.beginPath(); tg.moveTo(k * sc, 0); tg.lineTo(k * sc, w); tg.moveTo(0, k * sc); tg.lineTo(w, k * sc); tg.stroke(); } tg.globalAlpha = 1;
+  const ds = Math.max(1.6, sc * (step >= 4 ? 2.2 : 1));
+  tg.fillStyle = css('--muted'); for (const k of interp) tg.fillRect((k % TOYN) * sc, ((k / TOYN) | 0) * sc, ds, ds);
+  tg.fillStyle = css('--s1'); for (const k of read) tg.fillRect((k % TOYN) * sc, ((k / TOYN) | 0) * sc, ds, ds);
+  const res = document.getElementById('toyResult'); const mx = Math.max(colMs, chunkMs, best);
+  res.innerHTML = `<div><b>${fmt(need.size)}</b><small>columns needed</small></div><div><b>${fmt(read.size)}</b><small>columns actually read</small></div><div><b>${fmt(per.size)}</b><small>chunks touched (of 256)</small></div><div><b>${(read.size / Math.max(1, per.size)).toFixed(1)}</b><small>reads per touched chunk</small></div>
+    <div><b>${fmt(colMs)} ms</b><small>as single columns</small><i class="costbar" style="display:block;width:${colMs / mx * 100}%"></i></div><div><b>${fmt(chunkMs)} ms</b><small>as chunk fills</small><i class="costbar" style="display:block;width:${chunkMs / mx * 100}%"></i></div>`;
+  const notes = { streets: 'Streets touch almost every chunk with 5 or more reads each, so chunk fills win, and a checkerboard adds off-street reads in the same or new chunks.', route: 'A road reads about 2 stations per chunk: single columns win (this is why stations use them). Thinning saves reads here, but at every 2nd station SPARSEREADS lost a quarter of the river crossings (the road would run through the water), for about 2 s of the 36 s row.', lattice: 'One read per 64 blocks: single columns always win. Thinning saves reads, but changes which settlements exist (17 to 33 % in SPARSEREADS).', area: 'The live quay trace made 598k reads in 19,854 chunks, about 30 per chunk (here about 28). Every chunk is touched many times, so thinning skips no chunk at all; only reading a smaller area helps (QUAYLAZY).' };
+  document.getElementById('toyNote').textContent = notes[scene] + ` Cheapest choice per chunk: ${fmt(best)} ms.`;
+}
+document.querySelectorAll('input[name=toyScene], input[name=toySample]').forEach((r) => r.addEventListener('change', toyRun));
+
+// ---------- cards, decisions, glossary ----------
+const NO = [
+  ['SPARSEREADS', 'Read a checkerboard or one column in three, interpolate the rest', 'Shape survives (heights within 0.1 to 0.2 blocks), but region and road decisions are thresholds: 17 to 33 % of settlements changed and 15 to 30 of 73 links moved. The chunk-fill consumers skip no chunk; the junction field read 50 % more. Best case under 10 % of the row.', 'docs/review/sparse-reads.md'],
+  ['A1F', 'Fill 4 x 4-column sub-blocks instead of whole chunks', 'A district read touches 13 of the 16 sub-blocks of a chunk, so it paid 13 setups where one served: 5.0 s against 3.1 s per cold district (load 7, ratio only).', 'docs/log/2026-10-22-p6-a1f-probes.md'],
+  ['Option F', 'Build the junction field from sample columns, or per tile neighbourhood', 'Sample columns: 14+ columns at ~0.45 ms is ~6 ms against 1.9 ms for the chunk, so slower. Per neighbourhood: a junction’s level depends on others along the street graph, so tiles that see different junctions pin a street at different heights, a step at the border.', 'docs/review/regionperf-decision.md §4'],
+  ['W2 coarse screen', 'Decide regions from vanilla’s cheap preliminary surface', 'About 10x cheaper per cell, but 12 to 16 blocks off on average and 50 to 150 under Terralith/Tectonic: settlements would no longer match what was reviewed. Rejected, never built into the game.', 'docs/plans/phase6.md, decision 1'],
+  ['Biome memo', 'Memoise biome lookups on the lattices', 'Climate search was under 4 % of the region warm; dropped (a flight profile shows more, still open as a small candidate).', 'docs/PERFORMANCE.md (regionperf)'],
+  ['Option d', 'A coarser water test for the quay contour', 'Would trade quay accuracy for at most the quay share; the lazy trace (QUAYLAZY) removes most of that share without changing a single quay, so it was dropped.', 'docs/review/profile-metropolis.md, "Dropped"; regionperf \u00a76'],
+];
+const YES = [
+  ['A1', 'Windowed chunk fill', '1.9 ms', 'for 256 columns, against 141.6 ms as 256 single getBaseColumn calls (load 20, so ratio only). Made exact heights affordable at all.', 'docs/log/2026-10-22-p6-a1-probes.md'],
+  ['PARREADS', 'Parallel terrain reads', '~3x', 'Quiet beebox: region row 36.4 → 11.6 s, quays 69.5 → 19.9 s, warmer path 103 → 31 s, same output (digests equal). Same work, more threads.', 'docs/PERFORMANCE.md "Parallel terrain reads"'],
+  ['SKIPROLL', 'Skip reads for cells that can never settle', '−12 %', 'Region row 11.7 → 10.35 s (one quiet pair; HEAVY10 confirmed 10.34 / 10.47 s), columns 68,343 → 51,054. Identical settlements and roads.', 'docs/log/2026-10-31-p6-skiproll.md'],
+  ['QUAYLAZY', 'Lazy quay trace per tile', '4–10 %', 'of the whole trace’s chunks for a median tile (s4_m2: 643 of 14,459; s2_m6 here: ' + fmt(lazyMedian) + ' of ' + fmt(U.wholeQuayChunkCount) + ', recorded terrain). Output byte-identical. Not timed yet: the warmer switches in step 5.', 'docs/plans/quaylazy.md'],
+  ['DISTPERF', 'Memo per district, faster route search', '154k → 67k', 'probe calls per district plan, after DS35DOORS (more entrances) had made it re-place buildings many times; output unchanged.', 'docs/log/2026-10-29-p6-distperf.md'],
+  ['REGIONPERF fixes', 'Stations through single columns, bigger chunk memo', '−20 %', 'The perf test had read stations through chunk fills (each a 16 x 16 fill), which the game never did; memo raised to 8,192 chunks. 45.2 → 36.4 s on beebox (before the quiet rule).', 'docs/PERFORMANCE.md "Region layer row"'],
+];
+function cards() {
+  document.getElementById('noCards').innerHTML = NO.map((c) => `<div class="card"><span class="verdict no">Didn't help</span><h3>${c[1]}</h3><p class="status">${c[0]}</p><p>${c[2]}</p><p class="src"><code>${c[3]}</code></p></div>`).join('');
+  document.getElementById('yesCards').innerHTML = YES.map((c) => `<div class="card"><span class="verdict yes">Worked</span><h3>${c[1]}</h3><p class="status">${c[0]}</p><div class="big">${c[2]}</div><p>${c[3]}</p><p class="src"><code>${c[4]}</code></p></div>`).join('');
+}
+const DEC = [
+  ['TPHOLD15 and the cold-arrival wait', 'Built, held for John', 'A 15 s cap lands the player in non-FULL chunks; vanilla then loads them synchronously and the whole server freezes about 40 to 45 s. "Hold only for what the tile needs" is built but off, because the warm never finishes inside 15 s today. The choice: 15 s plus a freeze, or a longer hold until QUAYLAZY shortens the work.', 'docs/review/regionperf-decision.md §8; docs/runs/2026-10-22-phase6.md (TPHOLD15)'],
+  ['QUAYLAZY steps 5 and 6', 'Steps 1 to 4 merged', 'Step 5 makes the warmer and the teleport hold use the lazy trace (the destination tile’s quays only); step 6 measures it on quiet beebox. Estimate in the plan: worst cold chunk to about 15 to 30 s, still far from vanilla, because the junction field and region layer remain.', 'docs/plans/quaylazy.md'],
+  ['PORTALCOLD', 'In progress (option c)', 'Hold the portal trip at the portal search, load the exit area asynchronously. Without it a cold metropolis portal trip freezes the server 65 s, past a default server’s 60 s watchdog.', 'docs/research/spikes/portalcold.md; ROADMAP 6.30'],
+  ['REGIONPERF budget', 'Open', 'The region row is 10.3 to 10.5 s on beebox against a 10 s ceiling set from local runs. Raise it, set ceilings per host, or cut more (the road graph’s far reach is the biggest remaining column cost).', 'docs/review/regionperf-decision.md §7–8'],
+  ['QUAYOUT', 'Open', 'Take the quay trace out of structure starts, so a late warmer can’t make a start (and the server waiting on it) block on it. Needs a design that keeps output independent of timing.', 'docs/PERFORMANCE.md; profile-metropolis candidate 1'],
+  ['Next costs after quays', 'Not scheduled', 'Save warmed decisions, junction fields and quays with the world (no second payment after a restart); a lazy junction field (hard: levels propagate along streets); warm earlier for elytra speed.', 'docs/review/regionperf-decision.md §4 (C, H); profile-metropolis candidates 7 and 8'],
+  ['Flat junction pad', 'Question for John', 'Fix the long flat pad on overlapping main roads as a Phase 6 bug or a 7.19 line? Then a main-road refine pass (cuts deeper than 8 blocks fell 31 % in the spike).', 'docs/QUESTIONS.md; docs/research/spikes/road-refine.md'],
+];
+function decisions() { document.getElementById('decList').innerHTML = DEC.map((d) => `<div class="decision"><div><h3>${d[0]}</h3><div class="status">${d[1]}</div></div><div><p>${d[2]}</p><p class="src"><code>${d[3]}</code></p></div></div>`).join(''); }
+const GLOSS = [
+  ['A1', 'Phase 6 step: live probes and their cost (the windowed chunk fill)', 'done'], ['A1F', 'Phase 6 step: probe follow-ups (sub-block fills tried and dropped)', 'done'],
+  ['ADR 0004', 'Roads between settlements (with John’s water rule)', 'accepted'], ['COLDARRIVAL', 'Cold-arrival perf row: teleport into the metropolis until the view is FULL', 'done'],
+  ['COLDCHUNK', 'What the 70 to 120 s cold chunk is doing (the quay trace)', 'done'], ['DEADPORT', '6.22: roads that end at a port no approach joins', 'done'],
+  ['DISTPERF', '6.27: district cold plan time regression', 'done'], ['HEAVY10', 'The 10th batched heavy run (client tests, order test, perf, server-only)', 'done'],
+  ['JUNCTION', 'Street heights where streets meet (the junction field)', 'done'], ['MAINSTUB', '6.25: main roads that end at a gate with nothing beyond', 'done'],
+  ['METROFILL', '7.20: dense city cores are filled (R1 added the settlement-wide quays)', 'open'], ['PARREADS', 'Parallel terrain reads for cold settlement planning', 'done'],
+  ['PERFBASE', 'The perf base world becomes true vanilla', 'being verified'], ['PORTALCOLD', '6.30: first nether-portal trip into an unvisited city freezes the server', 'open'],
+  ['PROFILE', 'Profile of the metropolis worst case against the base world', 'done'], ['QUAYLAZY', 'A lazy quay trace that runs in parallel', 'steps 1 to 4 merged'],
+  ['QUAYOUT', 'Take the quay trace out of structure starts', 'open'], ['QUIETPERF', 'Quiet-machine rule: a timing from a busy host is not a measurement', 'rule'],
+  ['REGIONPERF', 'Why the region-layer perf row is slow, and the options', 'decision open'], ['SKIPROLL', 'Skip the terrain reads for region cells whose roll can never settle', 'done'],
+  ['SPARSEREADS', 'Read fewer exact terrain columns (checkerboard / 1 in 3)', 'done (nixed)'], ['TPHOLD', '6.7: hold far teleports until the destination is generated', 'done'],
+  ['TPHOLD15', 'Teleport hold capped at 15 s, optionally released when the tile is planned', 'held for John'], ['beebox', 'The worker box: a second machine for heavy jobs and measurements', '-'],
+];
+function glossary() { document.querySelector('#glossTable tbody').innerHTML = GLOSS.map((r) => `<tr><td class="code">${r[0]}</td><td>${r[1]}</td><td class="status">${r[2]}</td></tr>`).join(''); }
+
+// ---------- boot ----------
+function redrawAll() { buildImages(); for (const k of Object.keys(IMG)) if (k.startsWith('coarse_')) delete IMG[k]; resize(); frame(); drawVs(); drawPlanner(); drawUnits(); toyRun(); }
+cards(); decisions(); glossary();
+redrawAll();
+let rT; window.addEventListener('resize', () => { clearTimeout(rT); rT = setTimeout(() => { resize(); frame(); drawVs(); drawPlanner(); drawUnits(); }, 120); });
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', redrawAll);
+new MutationObserver(redrawAll).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { frame(); drawVs(); drawPlanner(); drawUnits(); });
+</script>

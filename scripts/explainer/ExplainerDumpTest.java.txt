@@ -1,0 +1,119 @@
+package dev.fractalbuildings.core.world;
+
+import dev.fractalbuildings.core.probe.TerrainProbe;
+import dev.fractalbuildings.core.settlement.DistrictGrid;
+import dev.fractalbuildings.core.settlement.Districts;
+import dev.fractalbuildings.core.settlement.JunctionField;
+import dev.fractalbuildings.core.settlement.SettlementSite;
+import dev.fractalbuildings.core.settlement.SkeletonSource;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
+import java.util.TreeSet;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
+
+/**
+ * THROWAWAY (explainer page data, never merged): dumps the junction field, the whole quay trace and each waterfront tile's lazy quay reads
+ * of metropolis s2_m6 (gate-metropolis-temperate window, recorded terrain) as chunk sets. Counts only, no timings.
+ * Run: ./gradlew :planner-core:test --tests '*ExplainerDumpTest*' -Dfb.explainer.out=FILE
+ */
+@EnabledIfSystemProperty(named = "fb.explainer.out", matches = ".+")
+class ExplainerDumpTest {
+	static final class Counting implements TerrainProbe {
+		final TerrainProbe in;
+		final Set<Long> chunks = java.util.concurrent.ConcurrentHashMap.newKeySet();
+		Counting(TerrainProbe in) { this.in = in; }
+		private void at(int x, int z) { chunks.add(((long) (z >> 4) << 32) ^ ((x >> 4) & 0xffffffffL)); }
+		@Override public int floorY(int x, int z) { at(x, z); return in.floorY(x, z); }
+		@Override public int waterDepth(int x, int z) { at(x, z); return in.waterDepth(x, z); }
+		@Override public int surfaceY(int x, int z) { at(x, z); return in.surfaceY(x, z); }
+	}
+
+	static String chunks(Set<Long> s) {
+		TreeSet<Long> t = new TreeSet<>(s);
+		StringBuilder sb = new StringBuilder("[");
+		boolean first = true;
+		for (long k : t) {
+			int cz = (int) (k >> 32), cx = (int) k;
+			sb.append(first ? "" : ",").append(cx).append(',').append(cz);
+			first = false;
+		}
+		return sb.append(']').toString();
+	}
+
+	static String q(String s) { return '"' + s.replace("\"", "'") + '"'; }
+
+	@Test
+	void dump() throws IOException {
+		GateWorld g = GateWorld.load("gate-metropolis-temperate");
+		WorldPlanner w = g.planner(WorldPlanner.Caches.DEFAULT, null);
+		SettlementSite site = g.site();
+		TerrainProbe exact = w.probes().exact();
+		StringBuilder out = new StringBuilder("{");
+		out.append("\"site\":").append(q(site.id())).append(',');
+
+		// 1. junction field on a fresh source
+		SkeletonSource.Direct src = w.newSource(site);
+		Counting cj = new Counting(exact);
+		long t0 = System.nanoTime();
+		JunctionField jf = src.junctions(cj);
+		out.append("\"junctionChunks\":").append(chunks(cj.chunks)).append(',');
+		out.append("\"junctions\":[");
+		boolean first = true;
+		for (JunctionField.Junction j : jf.junctions()) {
+			out.append(first ? "" : ",").append("{\"level\":").append(j.level()).append(",\"ground\":").append(j.ground()).append(",\"pads\":[");
+			for (int i = 0; i < j.pads().size(); i++) out.append(i == 0 ? "" : ",").append(q(j.pads().get(i)));
+			out.append("]}");
+			first = false;
+		}
+		out.append("],");
+		System.out.println("explainer: junction field " + cj.chunks.size() + " chunks, " + jf.junctions().size() + " junctions, " + (System.nanoTime() - t0) / 1_000_000 + " ms");
+
+		// 2. whole quay trace, reference path (pre-QUAYLAZY), junction field not counted
+		SkeletonSource.Direct ref = w.newSource(site).withQuayReference(true);
+		Counting cq = new Counting(exact);
+		ref.junctions(cq);
+		cq.chunks.clear();
+		List<String> runs = Districts.allQuayRuns(ref, cq);
+		out.append("\"wholeQuayChunks\":").append(chunks(cq.chunks)).append(',');
+		out.append("\"quayRuns\":[");
+		for (int i = 0; i < runs.size(); i++) out.append(i == 0 ? "" : ",").append(q(runs.get(i)));
+		out.append("],");
+		System.out.println("explainer: whole quay trace " + cq.chunks.size() + " chunks, " + runs.size() + " runs");
+
+		// 3. each waterfront tile's lazy quays on a fresh source (junction field not counted)
+		List<DistrictGrid.TileId> tiles = Districts.waterfrontTiles(src, exact);
+		out.append("\"tiles\":[");
+		int step = Math.max(1, Integer.getInteger("fb.explainer.tileStep", 1));
+		List<Integer> sizes = new ArrayList<>();
+		for (int i = 0; i < tiles.size(); i++) {
+			DistrictGrid.TileId t = tiles.get(i);
+			out.append(i == 0 ? "" : ",").append("{\"ix\":").append(t.ix()).append(",\"iz\":").append(t.iz());
+			if (i % step == 0) {
+				SkeletonSource.Direct f = w.newSource(site);
+				Counting c = new Counting(exact);
+				f.junctions(c);
+				c.chunks.clear();
+				List<String> mine = Districts.quayRuns(f, t.ix(), t.iz(), c);
+				out.append(",\"runs\":").append(mine.size()).append(",\"chunks\":").append(chunks(c.chunks));
+				sizes.add(c.chunks.size());
+			}
+			out.append('}');
+		}
+		out.append("],");
+		System.out.println("explainer: " + tiles.size() + " waterfront tiles, lazy chunk counts " + sizes);
+
+		// 4. the centre tile's own plan (after the shared work), exact reads
+		DistrictGrid.Tile ct = w.tileAt(site.centre().x(), site.centre().z());
+		Counting cp = new Counting(exact);
+		src.junctions(exact);
+		Districts.plan(src, ct.ix(), ct.iz(), cp);
+		out.append("\"centreTile\":{\"ix\":").append(ct.ix()).append(",\"iz\":").append(ct.iz()).append(",\"chunks\":").append(chunks(cp.chunks)).append('}');
+		out.append('}');
+		Files.writeString(Path.of(System.getProperty("fb.explainer.out")), out);
+	}
+}
