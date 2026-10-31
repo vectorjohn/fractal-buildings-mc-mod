@@ -70,6 +70,9 @@ public interface SkeletonSource {
 	 */
 	default <T> T shared(String key, dev.fractalbuildings.core.probe.TerrainProbe exact, java.util.function.Supplier<T> build) { return build.get(); }
 
+	/** QUAYLAZY: whether the settlement's quay runs come from the reference whole trace ({@code Districts.Build.settlementQuaysReference}), kept as the oracle of the lazy trace's tests. Never changes an answer. */
+	default boolean quayReference() { return false; }
+
 	/** Builds skeletons directly from a coarse probe, once per cell. */
 	final class Direct implements SkeletonSource {
 		private final long seed;
@@ -132,6 +135,13 @@ public interface SkeletonSource {
 		public Direct withReads(dev.fractalbuildings.core.probe.ParallelReads r) { reads = r == null ? dev.fractalbuildings.core.probe.ParallelReads.NONE : r; return this; }
 
 		@Override public dev.fractalbuildings.core.probe.ParallelReads reads() { return reads; }
+
+		private volatile boolean quayReference;
+
+		/** Selects the reference whole quay trace over the default one (tests: the two must agree byte for byte). */
+		public Direct withQuayReference(boolean on) { quayReference = on; return this; }
+
+		@Override public boolean quayReference() { return quayReference; }
 
 		private volatile java.util.function.Supplier<java.util.List<ApproachLine>> approachSource = java.util.List::of;
 		private volatile java.util.List<ApproachLine> approachMemo;
