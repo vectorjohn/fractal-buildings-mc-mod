@@ -46,6 +46,9 @@ templates, `#query` fenced blocks, Space Script) is gone in 2.x.
 - **Wiki links belong in frontmatter only**, for relations SilverBullet should
   index (e.g. an ADR's `dependsOn`). Write the full path from the repo root
   without `.md`: `"[[docs/adr/0001-worldgen-integration]]"`, quoted.
+  Exception: links inside **tables** open in a new tab as markdown links, so the
+  generated [GLOSSARY](GLOSSARY.md) uses wiki links in its table (see "Links:
+  what opens where" below; the convention for other docs is John's choice).
 - **Tasks:** `- [ ]` and `- [x]` only (ROADMAP items, REVIEW entries). They are
   indexed and clickable in SilverBullet. No custom states like `[IN PROGRESS]`:
   GitHub doesn't render them.
@@ -60,6 +63,60 @@ templates, `#query` fenced blocks, Space Script) is gone in 2.x.
   diagrams.
 - **HTML comments** (`<!-- -->`) render greyed out in 2.11 rather than hidden.
   Fine for template instructions; delete them from finished docs.
+
+## Links: what opens where (2.11)
+
+Tested 2026-10-31 by clicking each form in headless Chromium against a scratch
+2.11.0 server, and read in the client source it serves (`.client/client.js`,
+`Library/Std/Plugs/editor.plug.js`).
+
+| Where the link is | markdown `[text](file.md)` | wiki `[[docs/file]]` |
+|---|---|---|
+| Body text (paragraphs, lists, headings) | same tab | same tab |
+| Inside a table | **new tab** | same tab |
+| Other rendered widgets (inline HTML blocks, query or Lua output, transclusions) | **new tab** | same tab |
+| GitHub, EPUB | link | literal text, not a link |
+
+- **Why new tabs:** SilverBullet edits body text in place, and its click handler
+  navigates a local markdown link inside the app. A table (and the other widgets)
+  is instead rendered to HTML when the cursor is outside it, and that renderer
+  writes every markdown link as `<a href=... target="_blank">`; only elements
+  with a `data-ref` attribute (wiki links, hashtags) get the in-app click
+  handler. No markdown-link spelling avoids it: `file.md`, `/docs/file.md` and
+  `file` without `.md` all open a new tab inside a table. It is not a setting.
+- **The correct wiki-link form is space-absolute, without `.md`:**
+  `[[docs/log/2026-10-22-p6-a1-probes|log]]`. The path is from the repo root (the
+  space root). With `.md` (`[[docs/x.md|t]]`) it also works, but the form without
+  is SilverBullet's own (its "full-path" link format, page names). A leading `/`
+  is stripped; `../` segments make the link invalid.
+- **Relative or partial paths only work in body text.** There SilverBullet
+  matches `[[log/x]]` or `[[B]]` as a path suffix against the whole space (a
+  picker when several pages match, so `[[README]]` is ambiguous). Inside a table
+  the same link goes to that path from the root: `[[log/2026-10-22-p6-a1-probes.md|log]]`
+  written in `docs/GLOSSARY.md` opens the non-existent page `log/2026-10-22-p6-a1-probes`.
+  Always write the full path.
+- **The alias pipe stays raw in tables.** GitHub needs `\|` inside a table cell,
+  but SilverBullet then reads `docs/x\` as the page. Write `[[docs/x|text]]`
+  unescaped; on GitHub the cell is cut at the pipe (and wasn't a link anyway).
+  Without an alias (`[[docs/sub/C]]`) SilverBullet shows the last path segment.
+- **A form that works everywhere, but ugly:** an inline HTML anchor,
+  `<a href="log/x.md" data-ref="docs/log/x">log</a>`. SilverBullet keeps it in
+  the tab (the `data-ref` hooks the in-app handler; without it the page reloads
+  in the same tab), in a table and in body text. Not checked on GitHub (it should
+  follow the relative `href`) or in the EPUB (pandoc doesn't rewrite raw HTML,
+  so it likely points at the `.md`). Only worth it for generated files.
+
+**Choice for John** (CLAUDE.md "Reading docs" still says relative markdown links
+everywhere, for GitHub and the EPUB):
+
+1. *Recommended:* markdown links in body text (same tab already, and they work
+   on GitHub and in the EPUB), wiki links only inside tables. Few hand-written
+   docs have links in tables (ROADMAP has one row; QUESTIONS, REVIEW, NOTES
+   none), so this mostly means the generated GLOSSARY, done.
+2. Wiki links in John-facing pages (QUESTIONS, REVIEW, GLOSSARY, `review/`):
+   consistent clicking there; those pages stop linking on GitHub.
+3. Wiki links everywhere: simplest rule for SilverBullet; GitHub and the EPUB
+   lose every internal link (the EPUB script would need a filter to rewrite them).
 
 ## Frontmatter
 
