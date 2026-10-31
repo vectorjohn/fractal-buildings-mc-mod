@@ -44,7 +44,7 @@ that works in all three. Full conventions: `docs/SILVERBULLET.md`.
 
 - `#` headings only; keep the `# Title` line at the top of each file.
 - Link docs with relative markdown links (`[x](pcg/split-grammars.md)`), not
-  `[[wiki links]]`, and not to `#anchors`. Tasks are `- [ ]` / `- [x]`.
+  `[[wiki links]]`, and not to `#anchors`; the one exception is a link inside a table cell, which is a wiki link from the repo root (`[[docs/log/x|text]]`), since SilverBullet opens table markdown links in a new tab (John 2026-10-31; `docs/SILVERBULLET.md`). Tasks are `- [ ]` / `- [x]`.
 - Research notes and ADRs start with YAML frontmatter (`tags: research` /
   `tags: adr`, plus the keys in their `TEMPLATE.md`); other docs don't need it.
 - Backtick a `#word` you don't mean as a tag. Docs are 2.x: no v1 syntax.

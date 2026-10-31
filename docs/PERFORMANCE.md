@@ -95,9 +95,13 @@ How to use it:
 - **Budget**: median 300 ms (missed 1.4x), p95 1,000 ms (met).
 - **Decision**: open. A6 not needed for now (A1, then B8: only teleports see
   the miss; run ledger 2026-10-23).
-- **Improve**: A6 (read heights on a 4-block lattice, exact only under
-  buildings: ~430 to ~150 chunks per district); sub-block fills were tried and
-  were slower (A1F).
+- **Improve**: A6 (plan phase 6: confine a district's reads to its own ~150
+  chunks instead of the ~430 its grading and lot probes spread over). The cost
+  is per chunk filled (1.9 ms for all 256 columns), not per column, so reading
+  fewer columns inside a chunk saves nothing: a 4-block lattice still touches
+  every chunk, and a checkerboard was measured to save no chunks (SPARSEREADS,
+  [review/sparse-reads.md](review/sparse-reads.md)). Sub-block fills were tried
+  and were slower (A1F).
 
 ### JUNCTION front-loads probes on a metropolis's first tile
 
