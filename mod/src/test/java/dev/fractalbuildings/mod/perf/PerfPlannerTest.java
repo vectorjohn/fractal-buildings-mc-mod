@@ -187,17 +187,24 @@ class PerfPlannerTest {
 		out.put("district.cold.neighbour.ms", ms(t0));
 		// the median of several cold district plans (fresh tile each, skeleton warm): the budget is a median
 		List<Double> plans = new ArrayList<>();
+		String slowest = "none"; double slowestMs = -1; // QUAYFAST 0: the tile that sets the p95 (the max of the seven), and one row per sample
 		long cpu0 = processCpuNanos(); // load-independent: process CPU (all threads, the parallel reads included) over the seven plans
 		for (int d = -3; d <= 3; d++) {
 			int ix = tile.ix() + d, iz = tile.iz() + 1;
 			t0 = System.nanoTime();
-			if (cold.tile(ix, iz).isPresent()) { cold.buildings(ix, iz); cold.ground(ix, iz); plans.add(ms(t0)); }
+			if (cold.tile(ix, iz).isPresent()) { cold.buildings(ix, iz); cold.ground(ix, iz);
+				double sampleMs = ms(t0);
+				plans.add(sampleMs);
+				out.put("district.cold.sample." + ix + "_" + iz + ".ms", sampleMs);
+				if (sampleMs > slowestMs) { slowestMs = sampleMs; slowest = ix + "," + iz; }
+			}
 		}
 		out.put("district.cold.cpu.ms", (processCpuNanos() - cpu0) / 1e6);
 		plans.sort(Double::compare);
 		out.put("district.cold.median.ms", plans.isEmpty() ? 0 : plans.get(plans.size() / 2));
 		out.put("district.cold.p95.ms", plans.isEmpty() ? 0 : plans.get(Math.min(plans.size() - 1, (int) Math.ceil(plans.size() * 0.95) - 1)));
 		out.put("district.cold.samples", plans.size());
+		System.out.println("district.cold.p95.tile " + slowest + " (" + (long) slowestMs + " ms)");
 
 		// --- the same on workers, then what the lane pays ------------------------------------------------------------------------------------
 		ThreadPoolExecutor pool = Workers.create(Workers.defaultSize());

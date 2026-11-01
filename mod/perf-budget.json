@@ -16,6 +16,48 @@
       "ci": 3000
     },
     {
+      "key": "district.cold.sample.12_-35.ms",
+      "label": "Cold district plan, sample tile 12,-35 (QUAYFAST, report-only)",
+      "unit": "ms",
+      "budget": null
+    },
+    {
+      "key": "district.cold.sample.13_-35.ms",
+      "label": "Cold district plan, sample tile 13,-35 (QUAYFAST, report-only)",
+      "unit": "ms",
+      "budget": null
+    },
+    {
+      "key": "district.cold.sample.14_-35.ms",
+      "label": "Cold district plan, sample tile 14,-35 (QUAYFAST, report-only)",
+      "unit": "ms",
+      "budget": null
+    },
+    {
+      "key": "district.cold.sample.15_-35.ms",
+      "label": "Cold district plan, sample tile 15,-35 (QUAYFAST, report-only)",
+      "unit": "ms",
+      "budget": null
+    },
+    {
+      "key": "district.cold.sample.16_-35.ms",
+      "label": "Cold district plan, sample tile 16,-35 (QUAYFAST, report-only)",
+      "unit": "ms",
+      "budget": null
+    },
+    {
+      "key": "district.cold.sample.17_-35.ms",
+      "label": "Cold district plan, sample tile 17,-35 (QUAYFAST, report-only)",
+      "unit": "ms",
+      "budget": null
+    },
+    {
+      "key": "district.cold.sample.18_-35.ms",
+      "label": "Cold district plan, sample tile 18,-35 (QUAYFAST, report-only)",
+      "unit": "ms",
+      "budget": null
+    },
+    {
       "key": "district.cold.plan.ms",
       "label": "First tile of a metropolis, cold (skeleton warm)",
       "unit": "ms",
