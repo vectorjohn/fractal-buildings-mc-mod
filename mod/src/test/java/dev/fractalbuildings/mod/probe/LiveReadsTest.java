@@ -62,6 +62,6 @@ class LiveReadsTest {
 	void readThreadsDefaultIsBounded() {
 		int n = Workers.readThreads();
 		assertTrue(n >= 0 && n <= 32, "readThreads " + n);
-		if (System.getProperty("fractalbuildings.readThreads") == null) assertTrue(n >= 1 && n <= 6);
+		if (System.getProperty("fractalbuildings.readThreads") == null) assertTrue(n >= 1 && n <= 11);
 	}
 }

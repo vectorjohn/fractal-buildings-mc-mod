@@ -30,13 +30,13 @@ public final class Workers {
 	public static int defaultSize() { return Math.max(1, Math.min(4, Runtime.getRuntime().availableProcessors() / 4)); }
 
 	/**
-	 * Reads helpers: a third of the cpus, 1 to 6 (property {@code fractalbuildings.readThreads} overrides). They only run while a cold planner
+	 * Reads helpers: all cpus but one, 1 to 11 (property {@code fractalbuildings.readThreads} overrides). They only run while a cold planner
 	 * reads terrain the chunk threads are waiting for (a settlement's first tile), so they take cores from little else; PARREADS.
 	 */
 	public static int readThreads() {
 		Integer p = Integer.getInteger("fractalbuildings.readThreads");
 		if (p != null) return Math.max(0, Math.min(32, p));
-		return Math.max(1, Math.min(6, Runtime.getRuntime().availableProcessors() / 3));
+		return Math.max(1, Math.min(11, Runtime.getRuntime().availableProcessors() - 1));
 	}
 
 	/** The fanout of parallel terrain reads (serial while no server runs, or with {@code readThreads} 0). */
