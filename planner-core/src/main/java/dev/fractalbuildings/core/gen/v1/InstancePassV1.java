@@ -559,6 +559,7 @@ public final class InstancePassV1 {
 				treads.add(new int[] {cx, cz, oy, RAIL_DROP_LANDING});
 			}
 		}
+		if (WIDE_MAIN_STEP) for (Opening o : doors) widenMainStep(shell, o, oy, base, x0, x1, z0, z1, nx, ground, outG, blocked, flightTop, treads, grid, fp, site); // 6.33 MAINSTEP
 		boolean[] doorFront = new boolean[nx * nz]; // every cell in front of a door leaf (a wide door has several): a rail there would wall the door
 		for (Opening o : doors) {
 			Facing f = outward(o);
@@ -574,6 +575,76 @@ public final class InstancePassV1 {
 		if (HEADROOM_ENABLED) headroom(treads, walk, doors, x0, x1, z0, z1, nx, ground, oy, base, grid, site);
 		rails(treads, lot, p, x0, x1, z0, z1, nx, ground, blocked, doorFront, extDoors, grid, base, site);
 		return guarded;
+	}
+
+	/** 6.33 MAINSTEP: false gives the plain door-wide step at every door (the before of the gallery). */
+	public static volatile boolean WIDE_MAIN_STEP = !Boolean.getBoolean("fb.nomainstep");
+
+	/**
+	 * 6.33 MAINSTEP: the front (north) entrance of a ground-floor door that has a step in front of it gets that step one block wider on each
+	 * side (door width + 2, centred). Both side cells or neither: a cell must lie in the lot, be free of footprint, flights, landings and other
+	 * doors' fronts, have {@link #HEADROOM} cells of air (a wall, an eave or a porch post stops it), and stand on ground at most one block under the
+	 * tread with no drop outside the lot to rail; otherwise the door keeps its door-wide step. The new cells are treads (rails and headroom follow).
+	 */
+	private static void widenMainStep(BuildingIr shell, Opening o, int oy, int base, int x0, int x1, int z0, int z1, int nx, int[] ground, int[] outG, boolean[] blocked, int[] flightTop,
+			List<int[]> treads, VoxelGrid grid, boolean[][] fp, List<Box> site) {
+		if (secondary(shell, o) || outward(o) != Facing.NORTH || o.box().y() != oy - base + 1) return;
+		Facing out = outward(o), lat = out.rotate(1);
+		Box3 ob = o.box();
+		java.util.Set<Integer> front = new java.util.TreeSet<>();
+		int level = Integer.MIN_VALUE;
+		for (int x = ob.x(); x < ob.maxX(); x++)
+			for (int z = ob.z(); z < ob.maxZ(); z++) {
+				int fx = x + out.dx, fz = z + out.dz;
+				if (fx < x0 || fx > x1 || fz < z0 || fz > z1) return;
+				int h = Integer.MIN_VALUE;
+				for (int[] t : treads) if (t[0] == fx && t[1] == fz) h = Math.max(h, t[2]);
+				if (h == Integer.MIN_VALUE || level != Integer.MIN_VALUE && h != level) return; // no step under this leaf, or steps at two heights
+				level = h;
+				front.add((fz - z0) * nx + (fx - x0));
+			}
+		if (level == Integer.MIN_VALUE) return;
+		int need = HEADROOM; // a side cell has the headroom of the centre step (the building's own eave or jetty may leave 3), never less than 2 (a walker is 1.8 tall)
+		for (int fi : front) need = Math.min(need, clear(grid, x0 + fi % nx, z0 + fi / nx, level, base));
+		need = Math.max(need, 2);
+		List<int[]> add = new ArrayList<>();
+		for (int fi : front)
+			for (int sgn = -1; sgn <= 1; sgn += 2) {
+				int cx = x0 + fi % nx + sgn * lat.dx, cz = z0 + fi / nx + sgn * lat.dz;
+				if (cx < x0 || cx > x1 || cz < z0 || cz > z1) return;
+				int ci = (cz - z0) * nx + (cx - x0);
+				if (front.contains(ci)) continue;
+				boolean under = cx >= 0 && cz >= 0 && cx < fp.length && cz < fp[0].length && fp[cx][cz]; // a column of the footprint: an upper floor (a jetty) may stand over the tread, the air test below decides
+				if (blocked[ci] && !under || flightTop[ci] != Integer.MIN_VALUE) return;
+				if (ground[ci] != level || level - outG[ci] >= RAIL_DROP_LANDING) return; // on the ground itself: no foundation, so no drop to rail (a cell a block up counts as a landing and gets fenced off from the street)
+				if (!sideAirOk(grid, cx, cz, level, base, need)) return;
+				for (Facing nf : Facing.values()) { // no neighbour a block lower that would get a rail beside the new step
+					int mx = cx + nf.dx, mz = cz + nf.dz;
+					if (mx < x0 || mx > x1 || mz < z0 || mz > z1) continue;
+					int mi = (mz - z0) * nx + (mx - x0);
+					if (front.contains(mi) || blocked[mi] || mx >= 0 && mz >= 0 && mx < fp.length && mz < fp[0].length && fp[mx][mz]) continue;
+					if (ground[mi] < level) return;
+				}
+				add.add(new int[] {cx, cz, ci});
+			}
+		if (add.size() != 2) return;
+		for (int[] c : add) {
+			blocked[c[2]] = true;
+			flightTop[c[2]] = level;
+			if (level > ground[c[2]]) site.add(new Box(Box3.of(c[0], ground[c[2]] - base, c[1], 1, level - ground[c[2]], 1), Role.FOUNDATION, Layer.FOUNDATION, Box.NO_STOREY));
+			site.add(new Box(Box3.of(c[0], level - base, c[1], 1, 1, 1), Role.STAIR, Layer.FOUNDATION, Box.NO_STOREY));
+			treads.add(new int[] {c[0], c[1], level, RAIL_DROP_LANDING});
+		}
+	}
+
+	/** MAINSTEP: a side cell takes a step block only where its own cell is free and {@code need} blocks above it are. */
+	static boolean sideAirOk(VoxelGrid grid, int x, int z, int level, int base, int need) { return grid.get(x, level - base, z) == Role.AIR && clear(grid, x, z, level, base) >= need; }
+
+	/** Free blocks (at most {@link #HEADROOM}) of the shell over a tread at {@code level} in this column. */
+	static int clear(VoxelGrid grid, int x, int z, int level, int base) {
+		int n = 0;
+		while (n < HEADROOM && grid.get(x, level + 1 + n - base, z) == Role.AIR) n++;
+		return n;
 	}
 
 	/** Blocks of claimed air over every step, landing and door approach: 4 like a street (DS-54 "door steps keep street headroom", DOORAIR 6.32; STEPBURY 6.13 had 3): the world's terrain, a beard or a tree must not close a flight). */

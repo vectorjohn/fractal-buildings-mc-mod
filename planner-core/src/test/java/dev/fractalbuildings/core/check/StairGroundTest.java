@@ -60,6 +60,8 @@ class StairGroundTest {
 	@Test
 	void aFlightCutShortFails() {
 		int failed = 0, tried = 0;
+		InstancePassV1.WIDE_MAIN_STEP = false; // MAINSTEP: a 3-wide front step has side cells a walker may leave by when the terrain beside the flight is higher; this test cuts the plain flight
+		try {
 		for (long seed = 1; seed <= 18; seed++) {
 			GenRequest rq = request(FLIGHT_TYPES[(int) (seed % FLIGHT_TYPES.length)], seed, "plane:70:1:1:12");
 			SceneDoc s;
@@ -77,6 +79,7 @@ class StairGroundTest {
 		}
 		assertTrue(tried >= 3, "tried " + tried);
 		assertEquals(tried, failed, "every building with its lowest step removed must fail steps-reach-ground");
+		} finally { InstancePassV1.WIDE_MAIN_STEP = true; }
 	}
 
 	/** Control: no steps at all in front of a door two blocks above the ground fails. */
@@ -88,7 +91,7 @@ class StairGroundTest {
 		for (long seed = 1; seed <= 12 && b == null; seed++) {
 			rq = request(FLIGHT_TYPES[(int) (seed % FLIGHT_TYPES.length)], seed, "plane:70:1:0:6");
 			try { s = new GeneratorV1().generate(rq); } catch (IllegalArgumentException e) { continue; }
-			if (s.buildings().get(0).siteBoxes().stream().filter(x -> x.role() == Role.STAIR).count() >= 2) b = s.buildings().get(0); // PORCHSTEP: a one-step flight (a door a block over the ground) leaves a drop a walker may take
+			if (s.buildings().get(0).siteBoxes().stream().filter(x -> x.role() == Role.STAIR).mapToInt(x -> x.box().y()).distinct().count() >= 2) b = s.buildings().get(0); // PORCHSTEP: a one-step flight (a door a block over the ground) leaves a drop a walker may take
 		}
 		assertTrue(b != null, "no building with a flight");
 		boolean[][] fp = InstancePassV1.footprint(b.shell());
