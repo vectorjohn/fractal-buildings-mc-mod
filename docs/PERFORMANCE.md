@@ -102,6 +102,7 @@ How to use it:
   every chunk, and a checkerboard was measured to save no chunks (SPARSEREADS,
   [review/sparse-reads.md](review/sparse-reads.md)). Sub-block fills were tried
   and were slower (A1F).
+- **2026-11-01 CASCADE 2fix (HEAVY12 FAIL)**: on a quiet beebox the p95 is 5,660 ms (ci 3,000) since CASCADE step 2 (bfa3f27d), 1,169 ms before. No work was added: the slowest sample, 16,-35, now pays a lazy quay chain trace (2,683 of its 2,779 chunk fills) that the old whole-road exit cut used to prepay in the unbudgeted neighbour row (`district.cold.neighbour.ms` 8,912 -> 1,615 ms on the same quiet runs; counts: neighbour plus samples 4,281 fills before, 4,145 after, `ColdRowCountTest`). So the real cold cost of a waterfront tile whose chain nobody traced is about 5.7 s, and the earlier 1.1 s was an artifact of row order. [log](log/2026-11-01-p6-cascade-2fix.md). Fix forward (995ae8c2): the chain walk remembers 4 prefetch boxes instead of 1 (its breadth-first ends alternated, so nearly every read paid a parallel round: 3,760 -> 505 rounds); quiet beebox p95 3,946 / 3,586 ms over 2 runs (load 1.31 / 0.01), still above ci 3,000. **Improve**: the rest is the chain trace itself (about 6,700 chunk fills on the pool, 2,779 serial): prefetch the contour corridor only, or overlap the next box with the walk (QUAYLAZY follow-up); otherwise the row needs a decision.
 
 ### JUNCTION front-loads probes on a metropolis's first tile
 

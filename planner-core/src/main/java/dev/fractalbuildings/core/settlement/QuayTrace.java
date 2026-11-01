@@ -75,6 +75,8 @@ final class QuayTrace {
 
 	/** How far ahead of a chain walk the exact terrain is prefetched when the walk leaves the box prefetched so far, blocks (a box of about 5 x 5 chunks). */
 	static final int WALK_AHEAD = 32; // the default of QuayTuning.walkAhead
+	/** How many prefetched boxes a walk remembers (the default of QuayTuning.walkBoxes): {@link Quays#chainThrough} walks breadth-first, so its two ends alternate, and with one box every read at the far end missed it and paid a parallel round (CASCADE 2fix: 3,760 rounds for one chain of perf tile 16,-35, 505 with 4). */
+	static final int WALK_BOXES = 4;
 
 	/** The traced area: the waterfront tile keys (kept for the caller) and the contour's cell window, inclusive. */
 	record Area(TreeSet<Long> wf, int i0, int j0, int i1, int j1) {}
@@ -268,17 +270,23 @@ final class QuayTrace {
 
 	/**
 	 * The node memo over one bank. {@code fetched} is the node box {@code [minX, minZ, maxX, maxZ]} whose terrain the caller has prefetched; a read
-	 * that misses the memo outside it prefetches {@link #WALK_AHEAD} blocks round the node first (a live probe fills a whole chunk per first read,
+	 * that misses the memo outside it and the last {@link #WALK_BOXES} boxes prefetched prefetches {@link #WALK_AHEAD} blocks round the node first (a live probe fills a whole chunk per first read,
 	 * so a walk reading one node at a time would fill chunks one by one). Only a hint: the answers are the same.
 	 */
 	private Quays.Near memoised(Bank bank, int[] fetched) {
+		java.util.ArrayDeque<int[]> boxes = new java.util.ArrayDeque<>();
+		boxes.add(fetched);
 		return (x, z) -> {
 			long k = key(x, z);
 			Boolean v = nodes.get(k);
 			if (v == null) {
-				if (x < fetched[0] || z < fetched[1] || x > fetched[2] || z > fetched[3]) {
+				boolean in = false;
+				for (int[] f : boxes) in |= x >= f[0] && z >= f[1] && x <= f[2] && z <= f[3];
+				if (!in) {
 					int a = QuayTuning.walkAhead;
-					fetched[0] = x - a; fetched[1] = z - a; fetched[2] = x + a; fetched[3] = z + a;
+					if (boxes.size() >= Math.max(1, QuayTuning.walkBoxes)) boxes.poll();
+					boxes.add(new int[] {x - a, z - a, x + a, z + a});
+					QuayTuning.walkPrefetches.incrementAndGet();
 					bank.prefetch(List.of(new int[] {x - a - QUAY_READ, z - a - QUAY_READ, x + a + QUAY_READ, z + a + QUAY_READ}));
 				}
 				v = bank.near(x, z);

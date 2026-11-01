@@ -135,7 +135,7 @@ class PerfPlannerTest {
 			out.put("region.cold.quays.tile.forks", dev.fractalbuildings.core.settlement.QuayTuning.forks.get());
 			out.put("region.cold.quays.tile.forkMs", dev.fractalbuildings.core.settlement.QuayTuning.forkNanos.get() / 1e6);
 			// QUAYLAZY step 6 ablations (report-only, `ablate.*`): the same tile on a fresh planner per variant, region warmed first as above
-			for (String v : new String[] {"pool", "serial", "walk0", "walk64", "nobox"}) {
+			for (String v : new String[] {"pool", "serial", "walk0", "walk64", "nobox", "box1"}) {
 				dev.fractalbuildings.core.settlement.QuayTuning.reset();
 				var savedPool = readsPool;
 				switch (v) {
@@ -143,6 +143,7 @@ class PerfPlannerTest {
 					case "walk0" -> dev.fractalbuildings.core.settlement.QuayTuning.walkAhead = 0;
 					case "walk64" -> dev.fractalbuildings.core.settlement.QuayTuning.walkAhead = 64;
 					case "nobox" -> dev.fractalbuildings.core.settlement.QuayTuning.scanBox = false;
+					case "box1" -> dev.fractalbuildings.core.settlement.QuayTuning.walkBoxes = 1; // CASCADE 2fix: the single walk-ahead box before it
 					default -> { }
 				}
 				try {
