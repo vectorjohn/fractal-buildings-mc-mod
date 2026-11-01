@@ -44,8 +44,8 @@ public final class TeleportHold {
 	static final int RADIUS = 1;
 	/** Jumps shorter than this are never held, whatever the view distance. */
 	static final int MIN_DISTANCE = 64;
-	/** The default of {@link #timeoutMillis}: 90 s (TPHOLD15 r2, John 2026-10-31: until QUAYLAZY lands and is measured; the hold still ends as soon as the 3 x 3 is FULL, so the cap only matters on cold metropolis arrivals, about 70 s). */
-	public static final long DEFAULT_TIMEOUT_MILLIS = 90_000;
+	/** The default of {@link #timeoutMillis}: 60 s (John 2026-11-01: "For the tp hold, 60s is fine"; was 90 s in TPHOLD15 r2; the hold still ends as soon as the 3 x 3 is FULL, so the cap only matters on cold metropolis arrivals, about 33 to 48 s on a quiet beebox after CASCADE). */
+	public static final long DEFAULT_TIMEOUT_MILLIS = 60_000;
 	/** Longest wait, milliseconds of wall clock (a lagging server still counts real time), before the teleport happens anyway. */
 	public static volatile long timeoutMillis = DEFAULT_TIMEOUT_MILLIS;
 	/** Jumps shorter than this many blocks are never held; null means the server's view distance. */

@@ -41,6 +41,14 @@ public class TeleportHoldGameTest {
 		TeleportHold.timeoutMillis = TeleportHold.DEFAULT_TIMEOUT_MILLIS;
 	}
 
+	/** John 2026-11-01: the cap is 60 s and release-on-plan is off unless its property is set. */
+	@GameTest
+	public void defaultsArePinned(GameTestHelper helper) {
+		check(TeleportHold.DEFAULT_TIMEOUT_MILLIS == 60_000L, "default cap " + TeleportHold.DEFAULT_TIMEOUT_MILLIS);
+		check(System.getProperty("fractalbuildings.teleportHoldReleaseOnPlan") != null || !TeleportHold.releaseOnPlan, "releaseOnPlan must default to off");
+		helper.succeed();
+	}
+
 	@GameTest(maxTicks = TestArea.TICKS)
 	public void longJumpWaitsForFullChunks(GameTestHelper helper) {
 		ServerLevel level = helper.getLevel();

@@ -23,7 +23,7 @@ public class PerfServerHarnessSmokeTest {
 		check(level.getServer().getPlayerList().getPlayers().contains(p), "the mock player must be in the player list");
 		check(p.gameMode() == GameType.SPECTATOR, "spectator");
 		int[] n = {0};
-		// the first hop teleports 3000 blocks, which TeleportHold holds until the 3x3 chunks at the target are FULL (up to its 90 s cap): at host
+		// the first hop teleports 3000 blocks, which TeleportHold holds until the 3x3 chunks at the target are FULL (up to its 60 s cap): at host
 		// load 30 that plus the 60 hops passed the old 120 s budget ("not ready after 132947 ms on tick 13"), so the budget is the suite-wide wall budget
 		TestArea.waitThen(helper, TestArea.WAIT_MILLIS, () -> {
 			// the harness's loop: one short hop per tick along a line, from where the player already is
