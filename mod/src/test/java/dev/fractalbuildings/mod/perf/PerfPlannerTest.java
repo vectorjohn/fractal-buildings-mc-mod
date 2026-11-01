@@ -223,6 +223,11 @@ class PerfPlannerTest {
 			Workers.shutdown(pool);
 		}
 
+		// --- CASCADE step 1: counts (deterministic, any host) of what the slowest cold chunk's neighbours cost; the full table is PerfCascadeTest ---
+		CascadeCount.Result cascade = CascadeCount.run();
+		out.put("cascade.neighbours.chunkFills", cascade.step("2 neighbours ground").counts().get("chunkFills"));
+		out.put("cascade.neighbours.rawPlans", cascade.step("2 neighbours ground").counts().get("rawPlans"));
+
 		// --- Q4: players in different settlements, with the default (heap-scaled) caches ------------------------------------------------------
 		for (int players : new int[] {3, 8}) multi(out, gen, rs, players, 8);
 

@@ -53,12 +53,14 @@ class PerfReachTest {
 	/** Purpose of a read from its stack: the first frame from the top that names a known part. */
 	static String purpose() {
 		return StackWalker.getInstance().walk(s -> {
-			// every frame of the planner core on the stack; the most specific part wins (quays > junction field > roads > region > streets > tile)
-			boolean quays = false, junction = false, road = false, region = false, regionForRoads = false, regionAround = false, streets = false, tile = false;
+			// every frame of the planner core on the stack; the most specific part wins (link rule > exit cut > quays > junction field > roads > region > streets > tile)
+			boolean linkRule = false, exitCut = false, quays = false, junction = false, road = false, region = false, regionForRoads = false, regionAround = false, streets = false, tile = false;
 			for (var it = s.iterator(); it.hasNext();) {
 				var f = it.next();
 				String c = f.getClassName(), m = f.getMethodName();
 				if (!c.startsWith("dev.fractalbuildings.core.")) continue;
+				if (c.endsWith(".ExitTrim") && m.equals("gateServed")) linkRule = true;
+				else if (c.endsWith(".ExitTrim") && (m.equals("fullCut") || m.equals("cutWithin"))) exitCut = true;
 				if (c.endsWith(".Quays") || c.endsWith(".QuayTrace") || m.toLowerCase(Locale.ROOT).contains("quay")) quays = true;
 				else if (c.endsWith(".JunctionField")) junction = true;
 				else if (c.endsWith(".RegionPlanner") || c.endsWith(".FieldRegionView") || c.endsWith(".RegionField")) region = true;
@@ -67,6 +69,8 @@ class PerfReachTest {
 				else if (c.contains("Street") || c.contains("Skeleton") || c.contains("Network")) streets = true;
 				else if (c.contains(".settlement.")) tile = true;
 			}
+			if (linkRule) return "link rule (ExitTrim.gateServed)";
+			if (exitCut) return "exit cut (ExitTrim.fullCut)";
 			if (quays) return "quays";
 			if (junction) return "junction field";
 			if (region) return regionForRoads ? "region decisions (for the road graph)" : regionAround ? "region decisions (cells around the point)" : "region decisions (other)";
@@ -221,7 +225,14 @@ class PerfReachTest {
 		Map<K, Object> map = get(inner, "map");
 		Map<K, V> out = new LinkedHashMap<>();
 		synchronized (map) {
-			for (var e : map.entrySet()) out.put(e.getKey(), (V) get(e.getValue(), "value"));
+			for (var e : map.entrySet()) {
+				try {
+					out.put(e.getKey(), (V) get(e.getValue(), "value"));
+				} catch (NoSuchFieldException ex) { // a FlightCache entry: a future
+					V v = ((java.util.concurrent.CompletableFuture<V>) get(e.getValue(), "future")).getNow(null);
+					if (v != null) out.put(e.getKey(), v);
+				}
+			}
 		}
 		return out;
 	}

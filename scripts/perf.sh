@@ -106,7 +106,7 @@ P
 			if [ "$v" = base ]; then
 				timeout "${FB_PERF_TIMEOUT:-3600}" "$ROOT/scripts/dev" --fresh ./gradlew --console=plain --no-daemon -p tools/vanilla-server runPerfBase -Pfb.perfMode=$mode -Pfb.perfOut="$LOGDIR" 9>&- > "$LOGDIR/$OUTN-$v.log" 2>&1
 			else
-				timeout "${FB_PERF_TIMEOUT:-3600}" "$ROOT/scripts/dev" --fresh ./gradlew --console=plain --no-daemon :mod:runPerfServer -Pfb.perfVariant=$v -Pfb.perfMode=$mode -Pfb.perfOut="$LOGDIR" ${FB_PERF_QUAYTRACE:+-Pfb.quayTrace=$FB_PERF_QUAYTRACE} 9>&- > "$LOGDIR/$OUTN-$v.log" 2>&1
+				timeout "${FB_PERF_TIMEOUT:-3600}" "$ROOT/scripts/dev" --fresh ./gradlew --console=plain --no-daemon :mod:runPerfServer -Pfb.perfVariant=$v -Pfb.perfMode=$mode -Pfb.perfOut="$LOGDIR" ${FB_PERF_QUAYTRACE:+-Pfb.quayTrace=$FB_PERF_QUAYTRACE} ${FB_PERF_SAMPLE:+-Pfb.perfSample=$FB_PERF_SAMPLE} 9>&- > "$LOGDIR/$OUTN-$v.log" 2>&1
 			fi
 			rc=$?
 			set -e

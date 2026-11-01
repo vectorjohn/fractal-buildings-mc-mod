@@ -73,6 +73,18 @@
       "ci": 5212
     },
     {
+      "key": "cascade.neighbours.chunkFills",
+      "label": "CASCADE (report-only until step 7; intended ci = 1.2 x the baseline 18,243): chunks of exact terrain generated to plan the metropolis tile of chunk (148,-360) and ground its 8 neighbours, fresh planner, no eviction, one thread (deterministic count)",
+      "unit": "count",
+      "budget": null
+    },
+    {
+      "key": "cascade.neighbours.rawPlans",
+      "label": "Same: raw tile plans computed, all settlements (baseline 52; intended ci = 1.2 x that)",
+      "unit": "count",
+      "budget": null
+    },
+    {
       "expr": "inlineShare",
       "label": "Building lookups inline during an elytra flight",
       "unit": "%",

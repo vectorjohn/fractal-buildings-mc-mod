@@ -84,32 +84,78 @@ class PerfCore {
 		for (int dz = -r; dz <= r; dz++) for (int dx = -r; dx <= r; dx++) {
 			long t0 = System.nanoTime();
 			final int fi = t.size();
-			Thread wd = new Thread(() -> { // COLDCHUNK diagnostic: dump busy worker stacks while one chunk takes > 4 s
-				try {
-					Thread.sleep(4000);
-					for (int k = 0; k < 60; k++) {
-						StringBuilder sb = new StringBuilder("[COLDCHUNK-STACK] chunk#" + fi + " t+" + (4 + k * 5) + "s\n");
-						for (var e : Thread.getAllStackTraces().entrySet()) {
-							String n = e.getKey().getName();
-							StackTraceElement[] st = e.getValue();
-							if (!(n.contains("Worker") || n.contains("Server thread") || n.contains("fb-"))) continue;
-							if (st.length == 0 || (!n.contains("Server thread") && st[0].getMethodName().startsWith("park"))) continue;
-							sb.append("  ").append(n).append('\n');
-							for (int i = 0; i < Math.min(st.length, 25); i++) sb.append("    ").append(st[i]).append('\n');
-						}
-						System.out.println(sb);
-						Thread.sleep(5000);
-					}
-				} catch (InterruptedException ignored) { }
-			}, "coldchunk-watchdog");
-			wd.setDaemon(true);
-			wd.start();
+			Thread wd = sampler("chunk#" + fi);
 			level.getChunk(ccx + dx, ccz + dz, ChunkStatus.FULL, true);
 			wd.interrupt();
 			t.add((System.nanoTime() - t0) / 1e6);
 			if (t.get(fi) > 1000) System.out.println("[COLDCHUNK] chunk#" + fi + " (" + (ccx + dx) + "," + (ccz + dz) + ") took " + t.get(fi) + " ms");
 		}
 		return t.stream().mapToDouble(Double::doubleValue).toArray();
+	}
+
+	/** FB_PERF_SAMPLE=1 (scripts/perf.sh forwards it as -Pfb.perfSample): the wall-clock sampler is on. Diagnostic only; test code, so the wall clock is fine. */
+	static final boolean SAMPLE = System.getProperty("fractalbuildings.perfSample") != null || System.getenv("FB_PERF_SAMPLE") != null;
+
+	/**
+	 * CASCADE step 1: every 500 ms, every thread with a planner frame (or a busy pool thread), RUN or WAIT, by part, until interrupted. Prints
+	 * {@code [JFPROF] <label> t=<s> <thread> RUN|WAIT <part> @ <top frame>}; {@code LINKRULE>} / {@code EXITCUT>} mark {@code ExitTrim.gateServed} /
+	 * {@code fullCut} on the stack. Off unless {@link #SAMPLE}: then it returns an unstarted thread, so callers can interrupt it unconditionally.
+	 */
+	static Thread sampler(String label) {
+		if (!SAMPLE) return new Thread(() -> { }, "jfprof-sampler-off");
+		Thread wd = new Thread(() -> {
+			try {
+				long s0 = System.nanoTime();
+				while (true) {
+					Thread.sleep(500);
+					StringBuilder sb = new StringBuilder();
+					double ts = (System.nanoTime() - s0) / 1e9;
+					for (var e : Thread.getAllStackTraces().entrySet()) {
+						String n = e.getKey().getName();
+						StackTraceElement[] st = e.getValue();
+						if (st.length == 0) continue;
+						String top0 = st[0].getMethodName();
+						boolean wait = top0.startsWith("park") || top0.equals("wait") || top0.equals("wait0") || top0.startsWith("sleep");
+						String pt = jfPart(st);
+						if (pt == null) {
+							if (n.startsWith("fractalbuildings") && !wait) pt = "pool, no planner frame";
+							else continue;
+						}
+						StackTraceElement top = null;
+						for (StackTraceElement f : st) if (f.getClassName().startsWith("dev.fractalbuildings.")) { top = f; break; }
+						sb.append("[JFPROF] ").append(label).append(String.format(Locale.ROOT, " t=%.1f ", ts)).append(n).append(wait ? " WAIT " : " RUN ").append(pt)
+							.append(" @ ").append(top == null ? "-" : top.getClassName().substring(top.getClassName().lastIndexOf('.') + 1) + "." + top.getMethodName() + ":" + top.getLineNumber()).append('\n');
+					}
+					if (sb.length() > 0) System.out.print(sb);
+				}
+			} catch (InterruptedException ignored) { }
+		}, "jfprof-sampler");
+		wd.setDaemon(true);
+		wd.start();
+		return wd;
+	}
+
+	/** The part of our planning a stack is in (JfrAttrib.part precedence), plus the outermost WorldPlanner entry. */
+	static String jfPart(StackTraceElement[] st) {
+		boolean any = false, quays = false, junction = false, road = false, region = false, regionForRoads = false, streets = false, tile = false;
+		String entry = "";
+		String cas = "";
+		for (StackTraceElement f : st) {
+			String c = f.getClassName(), m = f.getMethodName();
+			if (!c.startsWith("dev.fractalbuildings.core.")) continue;
+			any = true;
+			if (c.endsWith(".WorldPlanner") && !m.startsWith("lambda")) entry = m;
+			if (c.endsWith(".ExitTrim") && m.equals("gateServed")) cas = "LINKRULE> "; else if (c.endsWith(".ExitTrim") && (m.equals("fullCut") || m.equals("cutWithin")) && cas.isEmpty()) cas = "EXITCUT> ";
+			if (c.endsWith(".Quays") || c.endsWith(".QuayTrace") || m.toLowerCase(Locale.ROOT).contains("quay")) quays = true;
+			else if (c.endsWith(".JunctionField")) junction = true;
+			else if (c.endsWith(".RegionPlanner") || c.endsWith(".FieldRegionView") || c.endsWith(".RegionField")) region = true;
+			else if (c.contains(".core.road.")) { if (region) regionForRoads = true; else road = true; }
+			else if (c.contains("Street") || c.contains("Skeleton") || c.contains("Network")) streets = true;
+			else if (c.contains(".core.settlement.") || c.contains(".core.gen.") || c.contains(".core.raster.")) tile = true;
+		}
+		if (!any) return null;
+		String p = quays ? "quays" : junction ? "junction field" : region ? (regionForRoads ? "region for road graph" : "region (sites)") : road ? "intercity roads" : streets ? "streets and skeleton" : tile ? "tile and buildings" : "other ours";
+		return cas + p + " [WP." + entry + "]";
 	}
 
 	void stats(String k, double[] ms) {

@@ -248,5 +248,7 @@ loom.runs {
 		property 'fb.perf.out', (findProperty('fb.perfOut') ?: layout.buildDirectory.dir('perf').get().asFile.path).toString()
 		// QUAYLAZY step 6: -Pfb.quayTrace=whole runs the world with the warmer's old whole-city quay trace (same code, A/B)
 		if (findProperty('fb.quayTrace')) property 'fractalbuildings.quayTrace', findProperty('fb.quayTrace').toString()
+		// CASCADE step 1: -Pfb.perfSample=1 turns on the wall-clock sampler ([JFPROF] lines; scripts/perf.sh forwards FB_PERF_SAMPLE)
+		if (findProperty('fb.perfSample')) property 'fractalbuildings.perfSample', findProperty('fb.perfSample').toString()
 	}
 }

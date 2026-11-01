@@ -61,13 +61,15 @@ public class JfrAttrib {
 		return "other";
 	}
 
-	/** Which part of our planning a stack belongs to (the same precedence as PerfReachTest.purpose): null when no frame of ours. */
+	/** Which part of our planning a stack belongs to (the same precedence as PerfReachTest.purpose: link rule, exit cut, then the rest): null when no frame of ours. */
 	static String part(List<RecordedFrame> fr) {
-		boolean any = false, quays = false, junction = false, road = false, region = false, regionForRoads = false, streets = false, tile = false, probe = false, place = false;
+		boolean any = false, linkRule = false, exitCut = false, quays = false, junction = false, road = false, region = false, regionForRoads = false, streets = false, tile = false, probe = false, place = false;
 		for (RecordedFrame f : fr) {
 			if (!ours(f) || f.getMethod() == null) continue;
 			any = true;
 			String c = f.getMethod().getType().getName(), m = f.getMethod().getName();
+			if (c.endsWith(".ExitTrim") && m.equals("gateServed")) linkRule = true;
+			else if (c.endsWith(".ExitTrim") && (m.equals("fullCut") || m.equals("cutWithin"))) exitCut = true;
 			if (c.endsWith(".Quays") || c.endsWith(".QuayTrace") || m.toLowerCase(Locale.ROOT).contains("quay")) quays = true;
 			else if (c.endsWith(".JunctionField")) junction = true;
 			else if (c.endsWith(".RegionPlanner") || c.endsWith(".FieldRegionView") || c.endsWith(".RegionField")) region = true;
@@ -78,6 +80,8 @@ public class JfrAttrib {
 			else if (c.contains(".mod.probe.")) probe = true;
 		}
 		if (!any) return null;
+		if (linkRule) return "link rule (ExitTrim.gateServed)";
+		if (exitCut) return "exit cut (ExitTrim.fullCut)";
 		if (quays) return "quays";
 		if (junction) return "junction field";
 		if (region) return regionForRoads ? "region decisions for the road graph" : "region decisions (sites)";

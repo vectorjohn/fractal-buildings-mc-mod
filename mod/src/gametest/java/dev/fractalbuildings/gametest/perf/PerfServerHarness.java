@@ -128,6 +128,8 @@ public final class PerfServerHarness {
 	 * metropolis centre of the cold-chunk rows; the clock stops when the teleport has happened and every chunk within the player's view radius
 	 * (VIEW = the server's view-distance, set by scripts/perf.sh) is FULL. "Sent" is not observable: the mock connection never acks batches.
 	 */
+	private Thread arrSampler;
+
 	private void arrivalTick(MinecraftServer server) {
 		if (finished) return;
 		var level = server.overworld();
@@ -137,6 +139,7 @@ public final class PerfServerHarness {
 			dev.fractalbuildings.mod.teleport.TeleportHold.testReleased = (pl, full, timedOut) -> { holdChunksFull = full; holdTimedOut = timedOut; };
 			s.put(p + "arrival.load.start", load());
 			arrStart = System.nanoTime();
+			arrSampler = PerfCore.sampler("arrival");
 			player.teleportTo(level, METRO_X + 0.5, 160, METRO_Z + 0.5, java.util.Set.<net.minecraft.world.entity.Relative>of(), 0f, 0f, true);
 			s.put(p + "arrival.teleport.call.ms", (System.nanoTime() - arrStart) / 1e6);
 			return;
@@ -155,6 +158,7 @@ public final class PerfServerHarness {
 		if (arrTicks++ % 100 == 0) dev.fractalbuildings.mod.FractalBuildingsMod.LOGGER.info("[PERF-DIAG] arrival {} s holding={} there={} chunks FULL {}/{}", secs, holding, there, ready, want);
 		if (!all && secs <= ARRIVAL_MAX_S) return;
 		finished = true;
+		if (arrSampler != null) arrSampler.interrupt();
 		try {
 			double ms = (System.nanoTime() - arrStart) / 1e6;
 			s.put(p + "arrival.cold.metro.ms", all ? ms : -1);
