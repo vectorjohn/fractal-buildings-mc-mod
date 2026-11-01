@@ -85,7 +85,7 @@ public final class PerfServerHarness {
 	private boolean settled() {
 		var pool = dev.fractalbuildings.mod.worldgen.Workers.pool();
 		long act = LaneStats.activity();
-		boolean poolIdle = pool == null || (pool.getActiveCount() + pool.getQueue().size() <= LaneStats.warmsRunning() && LaneStats.lastWarmMs() < WARM_IDLE_MS);
+		boolean poolIdle = pool == null || (LaneStats.neighboursRunning() == 0 && pool.getActiveCount() + pool.getQueue().size() <= LaneStats.warmsRunning() && LaneStats.lastWarmMs() < WARM_IDLE_MS);
 		boolean idle = act == lastActivity && LaneStats.startsInProgress() == 0 && poolIdle;
 		lastActivity = act;
 		quiet = idle ? quiet + 1 : 0;

@@ -144,6 +144,38 @@ public class WarmingGameTest {
 		helper.succeed();
 	}
 
+
+	/** A player standing still queues the neighbour plans of the tile once; later warms of the same tile queue nothing more (only their own warm task). */
+	@GameTest
+	public void warmerQueuesNeighbourPlansOnlyWhenTheTileChanges(GameTestHelper helper) throws Exception {
+		ThreadPoolExecutor pool = Workers.create(4);
+		try {
+			WorldPlanner probe = planner(null);
+			WorldgenGameTest.Target t = WorldgenGameTest.flatTarget(probe);
+			int cx = (t.tile().minX() + t.tile().maxX()) / 2, cz = (t.tile().minZ() + t.tile().maxZ()) / 2;
+			WorldPlanner w = planner(pool);
+			java.util.concurrent.atomic.AtomicInteger tasks = new java.util.concurrent.atomic.AtomicInteger();
+			java.util.concurrent.Executor counting = r -> { tasks.incrementAndGet(); pool.execute(r); };
+			UUID player = UUID.randomUUID();
+			int calls = 0;
+			for (int i = 0; i < 4; i++) { // the first calls queue the neighbours of the player's tile (own point, then the point ahead; here the same tile)
+				check(RegionWarmer.warmPlayer(w, player, cx, cz, counting), "warm refused");
+				calls++;
+				check(Workers.awaitIdle(pool, 120_000), "workers busy");
+			}
+			check(LaneStats.neighboursRunning() == 0, "a neighbour task is still counted after the pool went idle");
+			int settled = tasks.get();
+			check(settled <= calls + 2, "standing still queued " + (settled - calls) + " neighbour tasks (at most 2: own point and ahead)");
+			for (int i = 0; i < 5; i++) {
+				check(RegionWarmer.warmPlayer(w, player, cx, cz, counting), "warm refused");
+				check(Workers.awaitIdle(pool, 120_000), "workers busy");
+			}
+			check(tasks.get() == settled + 5, "five warms of an unchanged tile queued " + (tasks.get() - settled - 5) + " extra tasks");
+		} finally {
+			Workers.shutdown(pool);
+		}
+		helper.succeed();
+	}
 	@GameTest
 	public void shuttingTheWorkersDownLeavesNoThreads(GameTestHelper helper) throws Exception {
 		// only this pool's own threads: other game tests run their pools in the same JVM at the same time (flake 00d70622, which counted

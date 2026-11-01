@@ -45,6 +45,10 @@ public final class RegionWarmer {
 		boolean seen;
 		volatile boolean busy;
 		long lastTile = Long.MIN_VALUE, lastAhead = Long.MIN_VALUE;
+		/** The tile whose neighbours were last queued, for the player's own point and the point ahead; a neighbour task is queued only when it changes. */
+		long lastNeighbours = Long.MIN_VALUE, lastNeighboursAhead = Long.MIN_VALUE;
+		/** A neighbour-plan task of this player is queued or running: at most one at a time. */
+		final java.util.concurrent.atomic.AtomicBoolean neighboursBusy = new java.util.concurrent.atomic.AtomicBoolean();
 	}
 
 	private RegionWarmer() {}
@@ -130,7 +134,7 @@ public final class RegionWarmer {
 		DistrictGrid.Tile t = planner.grid().tileAt(x, z);
 		if (planner.tile(t.ix(), t.iz()).isPresent()) planner.plan(t.ix(), t.iz()); // the destination tile's plan, so a hold on warmPoint ends with its quays done
 		long key = ((long) t.ix() << 32) ^ (t.iz() & 0xffffffffL);
-		if (!held) planNeighbours(planner, t.ix(), t.iz(), workers);
+		if (!held) planNeighbours(planner, s, key, ahead, t.ix(), t.iz(), workers);
 		if ((ahead ? s.lastAhead : s.lastTile) == key) return;
 		if (ahead) s.lastAhead = key; else s.lastTile = key;
 		if (planner.tile(t.ix(), t.iz()).isPresent()) {
@@ -139,10 +143,17 @@ public final class RegionWarmer {
 		}
 	}
 
-	/** Queues the plans of the 8 tiles around (ix, iz), which exist, as one task of the workers; skipped when the pool refuses or is stopping. */
-	private static void planNeighbours(WorldPlanner planner, int ix, int iz, Executor workers) {
-		if (workers == null || !planner.tile(ix, iz).isPresent()) return;
-		LaneStats.warmBegin(); // the perf settle counts it as the warmer's work
+	/**
+	 * Queues the plans of the 8 tiles around (ix, iz), which exist, as one task of the workers; only when the player's tile changed since
+	 * the last queued task (for this point: own or ahead) and none of this player's is still queued or running, so a player standing still,
+	 * or flying fast over unplanned ground, cannot fill the pool's queue. A tile skipped while one runs is retried at the next warm.
+	 * Skipped when the pool refuses or is stopping. Timing only: the plans are pure.
+	 */
+	private static void planNeighbours(WorldPlanner planner, State s, long key, boolean ahead, int ix, int iz, Executor workers) {
+		if (workers == null || (ahead ? s.lastNeighboursAhead : s.lastNeighbours) == key || !planner.tile(ix, iz).isPresent()) return;
+		if (!s.neighboursBusy.compareAndSet(false, true)) return;
+		if (ahead) s.lastNeighboursAhead = key; else s.lastNeighbours = key;
+		LaneStats.neighbourBegin(); // the perf settle counts it as the warmer's work, and waits for it
 		try {
 			workers.execute(() -> {
 				long t0 = System.nanoTime();
@@ -156,11 +167,14 @@ public final class RegionWarmer {
 				} catch (RuntimeException e) {
 					FractalBuildingsMod.LOGGER.debug("Planning the neighbours of tile {},{} failed; the chunks will compute what they need", ix, iz, e);
 				} finally {
-					LaneStats.warm(System.nanoTime() - t0);
+					LaneStats.neighbourEnd(System.nanoTime() - t0);
+					s.neighboursBusy.set(false);
 				}
 			});
 		} catch (RuntimeException refused) {
-			LaneStats.warmAbort();
+			LaneStats.neighbourAbort();
+			s.neighboursBusy.set(false);
+			if (ahead) s.lastNeighboursAhead = Long.MIN_VALUE; else s.lastNeighbours = Long.MIN_VALUE;
 			LaneStats.refused();
 		}
 	}

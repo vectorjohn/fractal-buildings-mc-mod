@@ -115,6 +115,18 @@ public final class LaneStats {
 
 	static void warmAbort() { WARM_NOW.decrementAndGet(); }
 
+	private static final java.util.concurrent.atomic.AtomicInteger NEIGHBOURS_NOW = new java.util.concurrent.atomic.AtomicInteger();
+
+	/** A neighbour-plan task was queued: it counts as a warm too ({@link #warmsRunning}) and as a neighbour task ({@link #neighboursRunning}). */
+	static void neighbourBegin() { warmBegin(); NEIGHBOURS_NOW.incrementAndGet(); }
+
+	static void neighbourEnd(long nanos) { warm(nanos); NEIGHBOURS_NOW.decrementAndGet(); }
+
+	static void neighbourAbort() { warmAbort(); NEIGHBOURS_NOW.decrementAndGet(); }
+
+	/** Neighbour-plan tasks queued or running now: unlike the player's own warm they are real planning work, so the perf settle waits for them. */
+	public static int neighboursRunning() { return NEIGHBOURS_NOW.get(); }
+
 	static void warm(long nanos) {
 		WARM_NOW.decrementAndGet();
 		lastWarmNs = nanos;
