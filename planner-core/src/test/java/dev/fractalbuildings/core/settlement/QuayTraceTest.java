@@ -138,14 +138,14 @@ class QuayTraceTest {
 				QuayTrace t = new QuayTrace(window()); // a fresh trace per tile: the worst case for independence
 				List<QuayWhole> got = t.near(bank, box[0], box[1], box[2], box[3], M);
 				assertSame(filter(ref, box, M), got, "seed " + seed + " tile " + Arrays.toString(box));
-				multi = Math.max(multi, t.maxClusterChains());
+				multi = Math.max(multi, t.maxClusterRuns());
 				if (!got.isEmpty()) nonEmpty++;
 				parts += got.size();
 			}
 		}
 		assertTrue(nonEmpty > 500, "the fixtures must put quays in tiles: " + nonEmpty);
-		assertTrue(multi >= 2, "no cluster of several chains came up, so the closure is untested: " + multi);
-		System.out.println("QuayTraceTest: " + nonEmpty + " non-empty tile answers, " + parts + " parts, largest cluster " + multi + " chains");
+		assertTrue(multi >= 2, "no cluster of several runs came up, so the closure is untested: " + multi);
+		System.out.println("QuayTraceTest: " + nonEmpty + " non-empty tile answers, " + parts + " parts, largest cluster " + multi + " runs");
 	}
 
 	@Test
@@ -182,7 +182,50 @@ class QuayTraceTest {
 			QuayTrace u = new QuayTrace(window());
 			u.all(bank);
 			for (int[] box : tiles()) assertSame(filter(ref, box, M), u.near(bank, box[0], box[1], box[2], box[3], M), "tile after all, seed " + seed);
+			assertSame(ref, u.all(bank), "all again, seed " + seed); // QUAYFAST: a second whole trace on a traced memo
 		}
+	}
+
+	/** QUAYFAST: every column a quay, so every closed ring is one run that starts where the ring does (the walk's whole-ring fallback). */
+	record AllQuay(Fake fake) implements QuayTrace.Bank {
+		public boolean near(int x, int z) { return fake.near(x, z); }
+
+		public boolean ok(int[] c) { return true; }
+
+		public void prefetch(List<int[]> boxes) {}
+
+		public List<QuayWhole> grade(List<List<int[]>> runs) { return fake.grade(runs); }
+	}
+
+	@Test
+	void anAllQuayRingGivesTheGlobalAnswer() {
+		int rings = 0;
+		for (long seed = 0; seed < 40; seed++) {
+			Fake fake = new Fake(seed, field(seed));
+			AllQuay bank = new AllQuay(fake);
+			List<List<int[]>> runs = new ArrayList<>();
+			for (List<Pt> chain : Quays.contour(fake.near(), I0 * 8, J0 * 8, I1 * 8, J1 * 8)) {
+				List<List<int[]>> rs = QuayTrace.runsOf(chain, bank::ok);
+				if (!rs.isEmpty() && chain.get(0).equals(chain.get(chain.size() - 1))) rings++;
+				runs.addAll(rs);
+			}
+			List<QuayWhole> ref = fake.grade(runs);
+			for (int[] box : tiles()) assertSame(filter(ref, box, M), new QuayTrace(window()).near(bank, box[0], box[1], box[2], box[3], M), "seed " + seed + " tile " + Arrays.toString(box));
+			assertSame(ref, new QuayTrace(window()).all(bank), "seed " + seed + " whole");
+		}
+		assertTrue(rings > 20, "the fields must hold all-quay rings of a whole run's length: " + rings);
+	}
+
+	/** QUAYFAST: clusters are of runs, not chains, so two runs of one chain far apart are graded apart; some field must show it, or the refinement is untested. */
+	@Test
+	void runClustersAreFinerThanChainClusters() {
+		int split = 0;
+		for (long seed = 0; seed < 100; seed++) {
+			QuayTrace t = new QuayTrace(window());
+			t.all(new Fake(seed, field(seed)));
+			if (t.splitsAChain()) split++;
+		}
+		assertTrue(split > 10, "fields where one chain's runs fall in different clusters: " + split);
 	}
 
 	@Test

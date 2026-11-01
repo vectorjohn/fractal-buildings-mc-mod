@@ -104,7 +104,7 @@ Item codes (PARREADS, MAINSTUB, TPHOLD, ...) and run terms, one row each. **Gene
 | LEAFORDER | 6.28 | end state of crowns over streets varies between runs | done | [[docs/ROADMAP|ROADMAP 6.28]] |
 | LINKBRAID | 7.25 | roads between settlements that share a valley share a road | open | [[docs/ROADMAP|ROADMAP 7.25]] |
 | LOTRAIL |  | railed flights inside the lot, landings as wide as the door | done | [[docs/log/2026-10-25-p6-lotrail|log]] |
-| MAINSTEP | 6.33 | a 3-wide step at the main door | open | [[docs/ROADMAP|ROADMAP 6.33]] |
+| MAINSTEP | 6.33 | a 3-wide step at the main door | done | [[docs/ROADMAP|ROADMAP 6.33]] |
 | MAINSTUB | 6.25 | main roads that end at a gate with nothing beyond | done | [[docs/ROADMAP|ROADMAP 6.25]] |
 | MAINSTUB-CORE |  | 6.25 MAINSTUB follow-up: the city core tile on the whole-settlement path | done | [[docs/log/2026-10-29-p6-mainstub-core|2026-10-29-p6-mainstub-core]] |
 | MC1 |  | Phase 5 step: join rule (region half of 5.8) | done | [[docs/log/2026-10-21-p5-mc1-join|log]] |
@@ -215,6 +215,7 @@ Item codes (PARREADS, MAINSTUB, TPHOLD, ...) and run terms, one row each. **Gene
 | TOMAINn |  | the n-th merge of the run branch into main (TOMAIN3, ...) | - | [[docs/runs/2026-10-22-phase6|2026-10-22-phase6]] |
 | TPHOLD | 6.7 | hold far teleports until the destination is generated | done | [[docs/log/2026-10-23-p6-tphold|log]] |
 | TPHOLD15 |  | shorter teleport hold, and what happens after it gives up | done | [[docs/log/2026-10-31-p6-tphold15|log]] |
+| TPHOLD60 |  | TeleportHold cap 60 s | done | [[docs/log/2026-11-01-p6-tphold60|log]] |
 | TPORTS |  | test tooling: one viewer-screenshot port per run | done | [[docs/runs/2026-10-22-phase6|2026-10-22-phase6]] |
 | TR |  | Phase 5 step: terrain response (5.3) | done | [[docs/log/2026-10-21-p5-tr-terrain|log]] |
 | TREEIN | 6.14 | vanilla trees grow into buildings | done | [[docs/ROADMAP|ROADMAP 6.14]] |

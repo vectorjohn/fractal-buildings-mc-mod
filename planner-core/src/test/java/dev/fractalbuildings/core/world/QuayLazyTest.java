@@ -313,6 +313,24 @@ class QuayLazyTest {
 		assertTrue(median * 4 <= whole, "a tile's lazy quays read " + median + " chunks, more than a quarter of the whole trace's " + whole);
 	}
 
+	/** Summed chunks of the 9 sampled s4_m2 tiles' lazy quays when QUAYFAST step 3 landed (run by run; 5,958 when each run is cut from its whole chain). */
+	static final int RUN_TRACE_CHUNKS = 3493;
+
+	/**
+	 * QUAYFAST: a tile walks only the runs it touches (and the runs they meet), never a whole contour chain. The 9 sampled s4_m2 tiles of
+	 * {@link #aTileReadsAFractionOfTheWholeTrace}, each from a fresh source, read at most 110 % of the chunks they read when step 3 landed;
+	 * cutting each run from its whole chain again reads 5,958.
+	 */
+	@Test
+	void aTileReadsOnlyItsRuns() {
+		QuaySites.Open o = QuaySites.of("pt1573-s4_m2").open();
+		List<DistrictGrid.TileId> tiles = o.waterfront();
+		int n = 9, sum = 0;
+		for (int k = 0; k < n; k++) sum += chunks(o.fresh(), o, tiles.get((int) ((long) k * (tiles.size() - 1) / (n - 1))));
+		System.out.println("QuayLazyTest run cost: 9 tiles " + sum + " chunks (recorded " + RUN_TRACE_CHUNKS + ")");
+		assertTrue(sum * 10 <= RUN_TRACE_CHUNKS * 11, "the 9 sampled tiles' lazy quays read " + sum + " chunks, over 110 % of the " + RUN_TRACE_CHUNKS + " recorded: a tile walks more than its runs");
+	}
+
 	/** QUAYLAZY step 5: warmQuaysTile (what the mod's warm and the perf row call) is the tile's own lazy request: the quays that tile then lists equal the reference's. */
 	@Test
 	void warmQuaysTileChangesNothing() {
