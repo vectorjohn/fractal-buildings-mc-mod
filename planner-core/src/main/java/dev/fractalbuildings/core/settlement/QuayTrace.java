@@ -54,6 +54,12 @@ final class QuayTrace {
 		boolean ok(int[] col);
 
 		/**
+		 * A cheap screen for {@link #ok}: true whenever {@code ok(new int[] {x, z})} is true, so false means no quay can stand on the column.
+		 * Reads no exact terrain (density and quarter fields only). Lets a scan skip columns the full check would reject.
+		 */
+		default boolean maybeOk(int x, int z) { return true; }
+
+		/**
 		 * Grades one cluster's runs: orients and sorts them canonically, grades each against the earlier parts, sets {@code order}
 		 * ({@link #orderKey}). It must not call back into this trace: a cluster is graded on the thread that asks first, and a request
 		 * from inside that grading for the same cluster would wait on itself (the trace throws instead).

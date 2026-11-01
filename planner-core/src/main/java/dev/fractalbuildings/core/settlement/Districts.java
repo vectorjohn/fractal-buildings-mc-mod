@@ -173,6 +173,25 @@ public final class Districts {
 		return out;
 	}
 
+	/** The quay column test and its cheap screen, as one build of the first owned waterfront tile has them (QUAYFAST screen test); null when the settlement has none. */
+	public interface QuayColumns {
+		boolean ok(int x, int z);
+
+		boolean maybeOk(int x, int z);
+	}
+
+	/** For tests: {@link QuayColumns} of the settlement's quay bank. */
+	public static QuayColumns quayColumns(SkeletonSource src, TerrainProbe exact) {
+		Build b = firstWaterfront(src, exact);
+		if (b == null) return null;
+		QuayTrace.Bank bank = b.bank(b.quayTrace().area(), false);
+		return new QuayColumns() {
+			@Override public boolean ok(int x, int z) { return bank.ok(new int[] {x, z}); }
+
+			@Override public boolean maybeOk(int x, int z) { return bank.maybeOk(x, z); }
+		};
+	}
+
 	/** The order keys of the lazy trace's parts ({@link QuayTrace#orderKey}), in the order {@link #allQuayRuns} lists them. For tests. */
 	public static List<long[]> allQuayOrder(SkeletonSource src, TerrainProbe exact) {
 		Build b = firstWaterfront(src, exact);
@@ -2243,6 +2262,13 @@ public final class Districts {
 				@Override public boolean ok(int[] c) {
 					DistrictGrid.TileId t = grid.tileOf(c[0], c[1]);
 					return wf.contains(key(t.ix(), t.iz())) && quayOk(c);
+				}
+
+				@Override public boolean maybeOk(int x, int z) {
+					DistrictGrid.TileId t = grid.tileOf(x, z);
+					if (!wf.contains(key(t.ix(), t.iz())) || !den.urban(x, z)) return false;
+					int dens = den.at(x, z);
+					return dens >= QuarterField.OUTSKIRTS_DENSITY && qf.at(x, z, dens) == QuarterKind.WATERFRONT; // quayOk's fields, none of its exact reads
 				}
 
 				@Override public List<QuayWhole> grade(List<List<int[]>> runs) { return gradeRuns(runs); }
