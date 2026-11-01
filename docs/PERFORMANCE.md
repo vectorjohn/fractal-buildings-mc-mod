@@ -271,6 +271,8 @@ How to use it:
 - **Budget**: none of its own; the cold-tile budget above.
 - **Decision**: open.
 - **Improve**: trace lazily from the asking tile: follow only the contour chains that reach it, plus the earlier runs (canonical order) that overlap them.
+- **QUAYLAZY (2026-11-01, done, steps 1 to 6)**: the lazy trace is in. A tile traces only the quays that reach it, and the mod's region warmer plans the destination tile instead of tracing the whole waterfront (`-Dfractalbuildings.quayTrace=whole` restores the old warm). Output is byte-identical. Quiet beebox, same code with and without the whole trace: one waterfront tile of the metropolis 2.2 s and 2,606 chunk fills (new rows `region.cold.quays.tile.ms` budget 3 s / ceiling 6 s, `.chunkFills` budget 2,700 / ceiling 5,212) against 20 s for the whole trace; the warmer on a worker 29 s to 10 s; cold arrival 72 s to 53 s; TeleportHold 66 s to 47 s. **The slowest cold chunk did not change (34.7 s both ways)**: it is the junction field and region layer a structure start waits for, not the quays. The worst elytra-flight tick is bimodal (5.0, 5.0, 0.3, 0.8 s over four runs; budget 3 s). Table, ablations (reads pool, walk-ahead, scan box, fork cost) and the hold-cap numbers: [regionperf-decision.md](review/regionperf-decision.md) "After QUAYLAZY".
+- **Open, needs John**: a cold metropolis arrival is still 12x vanilla (53 s against 4.4 s) and holds 47 s; the remaining cost is settlement-wide (junction field, region layer 10 s), so the next lever is a lazy junction field. The hold cap cannot go to 15 s until the slowest cold chunk is under about 12 s.
 
 ### Idea: deferred interior decoration pass (John 2026-10-26)
 

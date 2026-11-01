@@ -74,7 +74,7 @@ final class QuayTrace {
 	}
 
 	/** How far ahead of a chain walk the exact terrain is prefetched when the walk leaves the box prefetched so far, blocks (a box of about 5 x 5 chunks). */
-	static final int WALK_AHEAD = 32;
+	static final int WALK_AHEAD = 32; // the default of QuayTuning.walkAhead
 
 	/** The traced area: the waterfront tile keys (kept for the caller) and the contour's cell window, inclusive. */
 	record Area(TreeSet<Long> wf, int i0, int j0, int i1, int j1) {}
@@ -118,7 +118,7 @@ final class QuayTrace {
 		if (ci0 > ci1 || cj0 > cj1) return List.of();
 		// PARREADS: the seed scan reads every node of these cells, each within QUAY_READ; one call, so a live probe fills the chunks in parallel
 		int[] scan = {ci0 * Quays.STEP, cj0 * Quays.STEP, (ci1 + 1) * Quays.STEP, (cj1 + 1) * Quays.STEP}; // the nodes the seed scan reads
-		bank.prefetch(List.of(new int[] {scan[0] - QUAY_READ, scan[1] - QUAY_READ, scan[2] + QUAY_READ, scan[3] + QUAY_READ}));
+		if (QuayTuning.scanBox) bank.prefetch(List.of(new int[] {scan[0] - QUAY_READ, scan[1] - QUAY_READ, scan[2] + QUAY_READ, scan[3] + QUAY_READ}));
 		Forks forks = new Forks(bank);
 		// the seed scan reads every node of the box, serially (one memo pass, the box is prefetched); then one walk per group of joined segments,
 		// and each walk's cluster, run on the fanout: each piece writes only its own slot and the id-keyed memos
@@ -159,7 +159,15 @@ final class QuayTrace {
 
 		Bank get() {
 			Thread t = Thread.currentThread();
-			return t == owner ? root : others.computeIfAbsent(t, k -> root.fork());
+			if (t == owner) return root;
+			return others.computeIfAbsent(t, k -> {
+				java.util.function.LongSupplier clk = QuayTuning.clock;
+				long t0 = clk == null ? 0 : clk.getAsLong();
+				Bank b = root.fork();
+				if (clk != null) QuayTuning.forkNanos.addAndGet(clk.getAsLong() - t0);
+				QuayTuning.forks.incrementAndGet();
+				return b;
+			});
 		}
 	}
 
@@ -269,7 +277,7 @@ final class QuayTrace {
 			Boolean v = nodes.get(k);
 			if (v == null) {
 				if (x < fetched[0] || z < fetched[1] || x > fetched[2] || z > fetched[3]) {
-					int a = WALK_AHEAD;
+					int a = QuayTuning.walkAhead;
 					fetched[0] = x - a; fetched[1] = z - a; fetched[2] = x + a; fetched[3] = z + a;
 					bank.prefetch(List.of(new int[] {x - a - QUAY_READ, z - a - QUAY_READ, x + a + QUAY_READ, z + a + QUAY_READ}));
 				}

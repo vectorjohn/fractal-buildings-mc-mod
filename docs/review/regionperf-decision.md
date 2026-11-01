@@ -209,6 +209,42 @@ What changed against the old table: vanilla's `/locate` is 0.25 s, not 5.26 s, s
   - @John 2026-10-30: NO.gif. What are these numbers compared to?
     - @assistant 2026-10-31: Mostly to nothing but their budgets, and none of them were valid measurements. What each row of the old table was: (1) "Worst cold chunk" was the wall time of one `getChunk(FULL)` call on a dedicated server, the slowest of a 9 x 9 block at the metropolis. There was no teleport and no client, so it was never "the wait a player teleporting in sees". It has a vanilla baseline (`base.cold.chunk.max`, the same block with settlements off), which the table left out. (2) The region layer, the quays, the first tile and the district plan are planner calls in a JUnit test. Vanilla does no such work, so there is no baseline, only the budget. (3) The `/locate` rows run only in the mod world, so there is no vanilla baseline. (4) The flight tick has a vanilla baseline (`base.flight.tick.max`), also left out. (5) Heap was already mod minus vanilla. Hosts and load: "Local, quiet" wasn't quiet (15-min load 21 at the start, the world half at load 6, other work unchecked). beebox wasn't checked for other jobs. The teleport-hold line came from a client test at load 45. Under the rule now in CLAUDE.md ("Parallel work": no other job or agent work on the host; measure on beebox), none of it counts. The table above replaces it: beebox only, quiet, mod against vanilla, run twice.
 
+### After QUAYLAZY (2026-11-01, quiet beebox)
+
+QUAYLAZY (lazy quay trace: a tile traces only the quays that reach it, and the region warmer plans the destination tile instead of tracing the whole waterfront, see [the plan](../plans/quaylazy.md)) is merged. Measured on beebox (12 CPUs, dedicated server, no renderer), each run sent when `ssh beebox job status` showed nothing running or queued, `scripts/quiet-check.sh` before and after (no other job, other processes 0.02 to 0.04 cores), every run ending `perf: quiet host`. The load is the 1-min loadavg sampled just before the planner step / the mod world: 2.3 to 3.8 / 1.6 to 2.3 (it is the run's own build and threads). One run (`p6-quaylazy-6-bee-r1`) was **not valid**: another agent's beebox job started during it, so it is not used. Evidence (forensic source, not tracked): `.claude/reports/p6-quaylazy-6-bee-{before,r2,r3,r4,r5,whole}-evidence/`.
+
+Four runs of the final code (r2, r3, r4 at commits 0ff88517 / 50bb3417, r5 at a5b91c8c; the later commits only change the measuring code), one run of the same code with the warmer's old whole-city trace switched back on (`FB_PERF_QUAYTRACE=whole`, world half only: the same server, same commit, so this is the clean before / after), and one run of the older commit 98259161 (before QUAYLAZY 3b to 5, **and before SKIPROLL (region cells that never settle skip terrain reads) and PERFBASE (a real vanilla server as the base world)**: its numbers include SKIPROLL's savings and its "vanilla" column is the old frequency-0 mod, so only its planner rows and mod rows are quoted).
+
+| What is timed | Whole trace (same code, `quayTrace=whole`) | Lazy, runs r2 / r3 / r4 / r5 | Vanilla |
+|---|---|---|---|
+| Quay trace of the whole metropolis (`region.cold.quays`, JUnit, kept as the oracle) | 20.4 / 19.8 / 19.7 / 20.3 s | same code, same numbers | none |
+| **Lazy quays of one tile** (`region.cold.quays.tile`, new; the owned waterfront tile nearest the centre, tile 15,-37) | none | **2.25 / 2.17 / 2.15 / 2.21 s**, 2,606 / 2,606 / 2,611 / 2,606 chunk fills | none |
+| Region warm + the point's tile plan, on a worker, as the warmer now runs it (`region.warmed.worker`; before, the same row ran the warm with the whole trace) | 29.0 to 29.7 s (old form) | 10.07 / 10.04 s (r4, r5) | none |
+| Slowest chunk of the cold 9 x 9 block (`cold.chunk.max`) | 34.7 s | 34.9 / 34.9 / 34.6 / 34.7 s | 0.18 to 0.32 s |
+| Mean chunk of that block | 571 ms | 572 / 570 / 574 / 573 ms | 29 to 32 ms |
+| Cold arrival, 9 x 9 view FULL (`arrival.cold.metro`) | 72.0 s | 52.7 / 52.3 / 52.0 / 54.0 s | 4.4 s |
+| TeleportHold (cap 90 s): how long it held | 66.5 s | 46.9 / 46.5 / 46.3 / 48.1 s, released with the chunks FULL, never timed out | 3.1 s |
+| Longest server tick during that arrival | 0.66 s | 0.65 / 0.47 / 0.61 / 0.60 s | 0.05 to 0.50 s |
+| Worst server tick, flight to the gate city | 0.90 s | **5.01 / 4.98 / 0.30 / 0.80 s** (bimodal, see below) | 0.13 to 0.16 s |
+| `/locate` settlement, fresh area | 4.88 s | 4.96 / 4.92 / 4.87 s | 0.22 to 0.28 s |
+| Region warm (`region.cold.warm`, JUnit) | | 10.4 / 10.3 / 10.5 s (ceiling 10 s: still FAIL, unchanged by this work) | none |
+
+Before the series (98259161, a quiet run of the same protocol, includes the pre-SKIPROLL region work): whole quays 20.8 s, warmed worker 32.1 s, slowest chunk 54.1 s, cold arrival 71.0 s with the **30 s hold timing out**, longest tick during arrival 10.6 s, region warm 11.6 s. The PERFBASE-era pair (after SKIPROLL, before QUAYLAZY 3b: slowest chunk 38.9 s, arrival 69 to 70 s, longest tick 8.5 to 9.5 s) is the closer "before" for the chunk rows.
+
+What it says:
+
+- **The lazy trace works for what it targets.** One waterfront tile costs 2.2 s and 2,606 chunks against about 20 s for the whole trace; the warmer's job fell from 29 to 10 s; the cold arrival fell about 18 s (72 to 53 s, same code) and the hold from 66 to 47 s.
+- **The slowest cold chunk did not move** (34.7 s with the whole trace, 34.7 s lazy). It is not the quays. It is the settlement-wide work a structure start waits for on the chunk thread (the junction field and region layer, section 6), which neither trace choice changes. The plan's guess (53 s down to 15 to 30 s) assumed quays were most of it: from the PERFBASE-era 38.9 s they are about 4 s.
+- **The cold arrival is still 12x vanilla and the hold is 47 s**, so the TeleportHold cap cannot go to 15 s yet (end of this section).
+- **Worst flight tick** is bimodal: two runs at 5.0 s (budget 3 s, ceiling 6 s), two at 0.3 and 0.8 s; the whole-trace run 0.9 s; the older commit 2.2 s. One tick of a chunk that waits for a cold tile on the main thread, depending on whether the warmer got there first. The 5 s mode is the plan's risk R6 (a flight pays per tile instead of once ahead). Not proven a regression (the old code also had 2.2 s), not fixed here.
+- **Ablations** of one tile, same planner, fresh each, runs r2 / r3 / r4 / r5 agree within 5 %: with the reads pool 2.21 to 2.27 s and 2,603 to 2,606 chunk fills; serial (no pool) 3.56 to 3.69 s and 1,492 fills (the pool is 1.6x faster and reads 1.7x more chunks); walk-ahead 0: 1.86 to 1.93 s and 1,788 fills; walk-ahead 32 (shipped): 2.2 s and 2,606; walk-ahead 64: 2.57 to 2.69 s and 3,347; without the one-call scan-box prefetch: 2.31 to 2.41 s and 2,570 to 2,580 fills (the box over-reads little). **Walk-ahead 0 was fastest here** (15 % under shipped, 31 % fewer fills): the walk-ahead hint seems not to pay on this tile; one tile on one seed, so it is a finding, not a change. Building a fork's bank costs 3 to 18 ms in total for 38 to 44 forks of one tile (negligible).
+- The hunt for a wrongly aimed warm: only `region.cold.quays.tile.chunkFills` (budget 2,700, ceiling 5,212) can catch a warm of the wrong tile, and only in the planner row; the world rows (arrival, hold) would show a wrong tile as the old numbers.
+
+### What this means for the hold cap (TeleportHold, TPHOLD15)
+
+A cold metropolis arrival now holds 46 to 48 s on a quiet beebox (the hold ends when the warmer finishes and the chunks of the 9 x 9 view are FULL; whole trace: 66 s). A cap of 15 s would release the player about 30 s before the destination exists and freeze the server tick for the rest (the slowest chunk is 34.7 s); 90 s holds with margin, 60 s would too. See the proposal in the p6-quaylazy-6 report: keep 90 s (or 60 s) until the settlement-wide junction field is lazy; 15 s needs the slowest cold chunk under about 12 s.
+
+
 ## 8. Options for the cold-arrival wait (for John)
 
 The numbers are from section 7 (beebox, quiet). "Wait" means the cold 9 x 9 block at the metropolis: about 60 s with the mod against 2.6 s in vanilla. Its slowest chunk is about 53 s against 0.33 s.

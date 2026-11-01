@@ -125,12 +125,45 @@ class PerfPlannerTest {
 		int[] best = whole.nearestQuayTile(sx, sz, 6);
 		out.put("region.cold.quays.tile", best == null ? "none" : best[0] + "," + best[1]);
 		if (best != null) {
+			dev.fractalbuildings.core.settlement.QuayTuning.clock = System::nanoTime; // times the bank forks (the core has no clock)
 			DistrictGrid.Tile bt = cold.grid().tile(best[0], best[1]);
 			long fills0 = lp.chunkFills();
 			t0 = System.nanoTime();
 			cold.warmQuaysAt((bt.minX() + bt.maxX()) / 2, (bt.minZ() + bt.maxZ()) / 2);
 			out.put("region.cold.quays.tile.ms", ms(t0));
 			out.put("region.cold.quays.tile.chunkFills", lp.chunkFills() - fills0);
+			out.put("region.cold.quays.tile.forks", dev.fractalbuildings.core.settlement.QuayTuning.forks.get());
+			out.put("region.cold.quays.tile.forkMs", dev.fractalbuildings.core.settlement.QuayTuning.forkNanos.get() / 1e6);
+			// QUAYLAZY step 6 ablations (report-only, `ablate.*`): the same tile on a fresh planner per variant, region warmed first as above
+			for (String v : new String[] {"pool", "serial", "walk0", "walk64", "nobox"}) {
+				dev.fractalbuildings.core.settlement.QuayTuning.reset();
+				var savedPool = readsPool;
+				switch (v) {
+					case "serial" -> readsPool = null;
+					case "walk0" -> dev.fractalbuildings.core.settlement.QuayTuning.walkAhead = 0;
+					case "walk64" -> dev.fractalbuildings.core.settlement.QuayTuning.walkAhead = 64;
+					case "nobox" -> dev.fractalbuildings.core.settlement.QuayTuning.scanBox = false;
+					default -> { }
+				}
+				try {
+					WorldPlanner pv = planner(gen, rs, null, new Counting[1], WorldPlanner.Caches.DEFAULT);
+					pv.warm(sx, sz, 2 * cellSize);
+					DistrictGrid.Tile vt = pv.grid().tile(best[0], best[1]);
+					long f0 = lastProbes.chunkFills();
+					dev.fractalbuildings.core.settlement.QuayTuning.forks.set(0);
+					dev.fractalbuildings.core.settlement.QuayTuning.forkNanos.set(0);
+					long tv = System.nanoTime();
+					pv.warmQuaysAt((vt.minX() + vt.maxX()) / 2, (vt.minZ() + vt.maxZ()) / 2);
+					out.put("ablate." + v + ".tile.ms", ms(tv));
+					out.put("ablate." + v + ".tile.chunkFills", lastProbes.chunkFills() - f0);
+					out.put("ablate." + v + ".tile.forks", dev.fractalbuildings.core.settlement.QuayTuning.forks.get());
+					out.put("ablate." + v + ".tile.forkMs", dev.fractalbuildings.core.settlement.QuayTuning.forkNanos.get() / 1e6);
+				} finally {
+					readsPool = savedPool;
+					dev.fractalbuildings.core.settlement.QuayTuning.reset();
+				}
+			}
+			dev.fractalbuildings.core.settlement.QuayTuning.clock = null;
 		}
 		DistrictGrid.Tile tile = cold.grid().tileAt(sx, sz);
 		long probes0 = cnt[0].calls.get();
@@ -170,7 +203,11 @@ class PerfPlannerTest {
 		try {
 			WorldPlanner w = planner(gen, rs, pool, null, WorldPlanner.Caches.DEFAULT);
 			t0 = System.nanoTime();
-			pool.execute(() -> w.warm(sx, sz, 2 * w.config().cellSize(), true)); // as RegionWarmer.warmAt
+			pool.execute(() -> { // as RegionWarmer.warmAt since QUAYLAZY 5: no whole-city quay trace, then the point's own tile plan (its lazy quays)
+				w.warm(sx, sz, 2 * w.config().cellSize(), false);
+				DistrictGrid.Tile wt = w.grid().tileAt(sx, sz);
+				if (w.tile(wt.ix(), wt.iz()).isPresent()) w.plan(wt.ix(), wt.iz());
+			});
 			Workers.awaitIdle(pool, 600_000);
 			out.put("region.warmed.worker.ms", ms(t0));
 			t0 = System.nanoTime();

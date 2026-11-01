@@ -60,15 +60,17 @@
     },
     {
       "key": "region.cold.quays.tile.ms",
-      "label": "QUAYLAZY: lazy quays of the owned waterfront tile nearest the metropolis centre, cold planner after the region warm (report-only until step 6 sets a budget from a quiet beebox run)",
+      "label": "QUAYLAZY: lazy quays of the owned waterfront tile nearest the metropolis centre, cold planner after the region warm (quiet beebox 2026-11-01: 2.25 / 2.17 s; the whole trace is 20 s)",
       "unit": "ms",
-      "budget": null
+      "budget": 3000,
+      "ci": 6000
     },
     {
       "key": "region.cold.quays.tile.chunkFills",
-      "label": "Same: chunks of exact terrain generated (deterministic; report-only until step 6 sets ci = 2 x the first value)",
+      "label": "Same: chunks of exact terrain generated (2,603 to 2,611 over 5 quiet runs, a few duplicate walks under pool races; ci = 2 x the first value 2,606; the only row that fails a warm aimed at the wrong tile or a box that over-reads)",
       "unit": "count",
-      "budget": null
+      "budget": 2700,
+      "ci": 5212
     },
     {
       "expr": "inlineShare",

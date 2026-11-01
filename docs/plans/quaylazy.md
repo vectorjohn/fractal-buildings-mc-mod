@@ -340,7 +340,7 @@ Files: `mod/.../worldgen/RegionWarmer.java`, `planner-core/.../world/WorldPlanne
 - Tests: `:mod:test`, server game tests (`WarmingGameTest`, `TeleportHoldGameTest`), and the client quick layer
   (TeleportHold) through `scripts/test-scope.sh`.
 
-## Step 6: verification and measurement (assistant or coder; after 4 and 5)
+## Step 6: verification and measurement (assistant or coder; after 4 and 5) - MEASURED (claude/p6-quaylazy-6, log 2026-11-01-p6-quaylazy-6; the planner-heavy and full layers are the verifier's)
 
 - Correctness, on the final merged commit:
   - `scripts/test-all.sh --full` (which includes the order test, 17/17, and the determinism layer) through
