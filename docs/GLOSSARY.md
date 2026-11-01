@@ -29,6 +29,7 @@ Item codes (PARREADS, MAINSTUB, TPHOLD, ...) and run terms, one row each. **Gene
 | BLK16 |  | fix: the entrance-reachable check failed at the steepest allowed grade (Phase 5) | done | [[docs/runs/2026-10-21-phase5|2026-10-21-phase5]] |
 | BRIDGEENDS |  | bridge ends and high road embankments faced in foundation stone (abutments) | done | [[docs/REVIEW|REVIEW]] |
 | CACHE |  | retention for in-flight and recently used tiles | done | [[docs/log/2026-10-22-p6-cache|log]] |
+| CASCADE |  | the exit trim and link rule (MAINSTUB) made cheaper, parallel and warmed early, byte-identical; proposed... | open | [[docs/plans/jflazy|jflazy]] |
 | CIRC |  | 5.11 interior circulation (hub door graph, fewer walk-through rooms) | done | [[docs/archive/roadmap-phase-5|roadmap-phase-5]] |
 | CIRC2 |  | squarer rooms, bedrooms first | done | [[docs/log/2026-10-21-p5-circ2|log]] |
 | CITYQ |  | sparse and "ocean" cities in the B9 fly-through | done | [[docs/log/2026-10-23-p6-cityq|log]] |
@@ -95,6 +96,7 @@ Item codes (PARREADS, MAINSTUB, TPHOLD, ...) and run terms, one row each. **Gene
 | INN | 7.22 | an inn building type for roadside hamlets | open | [[docs/ROADMAP|ROADMAP 7.22]] |
 | IRR1 |  | old-town subdivision and diagonal-avenue frontage (5.13) | done | [[docs/log/2026-10-21-p5-irr1-oldtown|log]] |
 | ITEOF |  | planner-core test failures (end of file) caused by two Gradle runs in the same checkout | done | [[docs/NOTES|NOTES]] |
+| JFLAZY |  | the junction field on cold arrival, and the cascade a cold chunk really waits for | - | [[docs/plans/jflazy|plan]] |
 | JT |  | Phase 5 step: jetties over streets | done | [[docs/log/2026-10-21-p5-jt-jetties|log]] |
 | JUNCTION |  | street heights where streets meet (round 1: rule and diagnosis; round 2: the planner fix) | done | [[docs/log/2026-10-23-p6-junction|log]] |
 | LAMPS |  | every high-rise room gets a standing lantern and a hung one (`HighriseRooms.hooks` adds `light` and always... | polish | [[docs/ROADMAP|ROADMAP polish]] |

@@ -82,3 +82,4 @@ run ledger	the coordinator's record of a run: what's in flight, who's on it, out
 suite slot	one of the few slots that limit how many full fast test suites run at once	../CLAUDE.md
 to-main	merging the run branch into main, after a full test run	runs/2026-10-22-phase6.md
 warmer	RegionWarmer: plans settlements and roads on background threads ahead of the player, so chunks don't wait	NOTES.md
+CASCADE	the exit trim and link rule (MAINSTUB) made cheaper, parallel and warmed early, byte-identical; proposed by the JFLAZY plan instead of a lazy junction field	plans/jflazy.md	open
