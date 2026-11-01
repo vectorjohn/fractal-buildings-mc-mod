@@ -48,7 +48,7 @@
 # (test-all.sh exports CI=1) Loom runs the client in a nested xvfb-run of its own that has the same leak (HEAVY8).
 #
 # Layers (TESTLAYERS): FB_LAYER=quick (default here) runs Hello, District (B1), Gameplay (B5), Terrain (B3), TeleportHold; FB_LAYER=full adds
-# Roads, Foliage and the compat world (about twice the time). FB_ONLY=<TestClass> (e.g. RoadsClientGameTest) runs that one client test only, whatever
+# Roads, Foliage, PortalHold (6.30) and the compat world (about twice the time). FB_ONLY=<TestClass> (e.g. RoadsClientGameTest) runs that one client test only, whatever
 # the layer. Fly-through and perf stay opt-in (FB_FLY, FB_PERF). The district-order test (B2) is not a client test: scripts/order-test.sh.
 #
 # Test hooks (for checking the watchdog without a game; see docs/NOTES.md):

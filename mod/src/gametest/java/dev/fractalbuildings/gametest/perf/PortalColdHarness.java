@@ -50,12 +50,22 @@ public final class PortalColdHarness {
 	private ServerLevel nether;
 	private BlockPos portalPos;
 	private int phase, wait, ticks;
-	private long tickStart, t0, trigTickNo, serverTick;
+	private volatile long tickStart;
+	private long t0, trigTickNo, serverTick;
+	private volatile Thread serverThread;
+	private volatile boolean inTick, dumped;
 	private final List<Double> tickMs = new ArrayList<>();
 	private double maxTickBefore;
 
+	/** Case suffix -held: the trip goes through PortalHold first (6.30 option c), as the mixin does for a ticked entity. */
+	private final boolean held = kase.endsWith("-held");
+	/** Hold phase: first gate call (wall), ticks, the longest tick (incl. our gate call), the gate call times. */
+	private long holdT0;
+	private int holdTicks;
+	private double holdMaxTick, holdMaxGate, firstGateMs;
+
 	private PortalColdHarness() {
-		switch (kase) {
+		switch (kase.replace("-held", "")) {
 			case "town" -> { ex = 1280; ez = -9600; }
 			case "metro" -> { ex = 2432; ez = -5696; }
 			case "wild" -> { ex = 6000; ez = 6000; }
@@ -68,8 +78,27 @@ public final class PortalColdHarness {
 		PortalColdHarness h = new PortalColdHarness();
 		LaneStats.enable(true);
 		ServerLifecycleEvents.SERVER_STARTED.register(h::started);
-		ServerTickEvents.START_SERVER_TICK.register(sv -> h.tickStart = System.nanoTime());
-		ServerTickEvents.END_SERVER_TICK.register(h::tickEnd);
+		ServerTickEvents.START_SERVER_TICK.register(sv -> { h.tickStart = System.nanoTime(); h.serverThread = Thread.currentThread(); h.inTick = true; h.dumped = false; });
+		ServerTickEvents.END_SERVER_TICK.register(sv -> { h.inTick = false; h.tickEnd(sv); });
+		Thread watch = new Thread(h::watchLongTicks, "portalcold-longtick");
+		watch.setDaemon(true);
+		watch.start();
+	}
+
+	/** Logs the server thread's stack once per tick that runs over 1.5 s (what a long tick waits on), after the spawn area is up. */
+	private void watchLongTicks() {
+		try {
+			while (true) {
+				Thread.sleep(100);
+				Thread st = serverThread;
+				if (st == null || !inTick || dumped || player == null || System.nanoTime() - tickStart < 1_500_000_000L) continue;
+				dumped = true;
+				StringBuilder b = new StringBuilder();
+				StackTraceElement[] tr = st.getStackTrace();
+				for (int i = 0; i < Math.min(60, tr.length); i++) b.append("\n    at ").append(tr[i]);
+				FractalBuildingsMod.LOGGER.info("[PORTAL] long tick (phase {}, {} ms so far), server thread:{}", phase, (System.nanoTime() - tickStart) / 1_000_000, b);
+			}
+		} catch (InterruptedException ignored) { }
 	}
 
 	private void put(String k, Object v) {
@@ -95,6 +124,31 @@ public final class PortalColdHarness {
 		try { return Files.readString(Path.of("/etc/hostname")).strip(); } catch (IOException e) { return "?"; }
 	}
 
+	/** One tick of the held trip: asks PortalHold (inside the portal, allowed, vanilla says go) until it lets the trip go. */
+	private boolean holdDone(double tickMs) {
+		if (holdT0 == 0) { holdT0 = System.nanoTime(); LaneStats.reset(); put("load.trigger", load()); put("overworld.loadedChunks.before", player.level().getServer().overworld().getChunkSource().getLoadedChunksCount()); }
+		long g0 = System.nanoTime();
+		boolean go = dev.fractalbuildings.mod.teleport.PortalHold.gate(nether, player, true, portalPos, true, true, true);
+		double gms = (System.nanoTime() - g0) / 1e6;
+		if (holdTicks == 0) firstGateMs = gms;
+		holdTicks++;
+		holdMaxGate = Math.max(holdMaxGate, gms);
+		if (holdTicks > 1) holdMaxTick = Math.max(holdMaxTick, tickMs + gms); // tickMs ends before this listener: add our own call
+		else holdMaxTick = Math.max(holdMaxTick, gms);
+		if (!go) {
+			if (holdTicks % 200 == 0) FractalBuildingsMod.LOGGER.info("[PORTAL] held {} ticks, {} ms, overworld chunks {}", holdTicks, (System.nanoTime() - holdT0) / 1_000_000, player.level().getServer().overworld().getChunkSource().getLoadedChunksCount());
+			return false;
+		}
+		put("hold.ms", String.format(Locale.ROOT, "%.0f", (System.nanoTime() - holdT0) / 1e6));
+		put("hold.ticks", holdTicks);
+		put("hold.maxTick.ms", String.format(Locale.ROOT, "%.0f", holdMaxTick));
+		put("hold.firstGate.ms", String.format(Locale.ROOT, "%.0f", firstGateMs));
+		put("hold.maxGate.ms", String.format(Locale.ROOT, "%.0f", holdMaxGate));
+		put("hold.stats", dev.fractalbuildings.mod.teleport.PortalHold.lastStats);
+		put("overworld.loadedChunks.atRelease", player.level().getServer().overworld().getChunkSource().getLoadedChunksCount());
+		return true;
+	}
+
 	private void tickEnd(MinecraftServer server) {
 		double ms = (System.nanoTime() - tickStart) / 1e6;
 		serverTick++;
@@ -115,13 +169,13 @@ public final class PortalColdHarness {
 			case 1 -> { // let the nether view load and the load average settle
 				if (player.level() != nether) { if (++wait > 400) throw new IllegalStateException("player never reached the nether"); return; }
 				if (++wait < 140) return;
-				LaneStats.reset();
-				put("load.trigger", load());
+				if (held && !holdDone(ms)) return;
+				if (!held) { LaneStats.reset(); put("load.trigger", load()); }
 				// Vanilla's tick path (Entity.handlePortal) never fires for a mock player whose connection is not ticked, so the two calls it makes are made here,
 				// timed apart: the exit search/creation (PortalForcer: getHeight, getBlockState around the exit: forces full chunk generation) and the dimension change itself.
 				BlockState ps = nether.getBlockState(portalPos);
 				if (!ps.is(Blocks.NETHER_PORTAL)) throw new IllegalStateException("portal block missing: " + ps);
-				put("overworld.loadedChunks.before", overworld.getChunkSource().getLoadedChunksCount());
+				if (!held) put("overworld.loadedChunks.before", overworld.getChunkSource().getLoadedChunksCount());
 				final Thread serverThread = Thread.currentThread();
 				final java.util.concurrent.ConcurrentHashMap<String, Integer> hist = new java.util.concurrent.ConcurrentHashMap<>();
 				final boolean[] stop = {false};

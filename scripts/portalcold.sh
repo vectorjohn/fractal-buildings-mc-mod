@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # PORTALCOLD (6.30): first nether-portal trip into a cold settlement; one fresh dedicated server per case (town, metro, wild control).
-# Usage: scripts/portalcold.sh [case ...]   (default: wild town metro). Heavy-ish (timings): takes the heavy lock; run through
+# Usage: scripts/portalcold.sh [case ...]   (default: wild town metro; a -held suffix (metro-held) sends the trip through PortalHold, 6.30 option c). Heavy-ish (timings): takes the heavy lock; run through
 # scripts/evidence.sh p6-portalcold-m scripts/portalcold.sh. Output: mod/build/portalcold/portal-<case>.json and .txt (block dump).
-# Writes eula.txt (standing approval, local 127.0.0.1 online-mode=false test server).
+# FB_HEAVY_LOCK=<file> uses another lock (a functional run whose timings are not reported). Writes eula.txt (standing approval, local 127.0.0.1 online-mode=false test server).
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 if [ -e "$ROOT/.git" ]; then MAIN_ROOT="$(cd "$(git -C "$ROOT" rev-parse --git-common-dir)/.." && pwd)"; else MAIN_ROOT="$ROOT"; fi
@@ -34,7 +34,7 @@ allow-nether=true
 P
 	echo "portalcold: case $c (waiting for heavy lock)" >&2
 	set +e
-	flock "$MAIN_ROOT/.claude/heavy.lock" timeout 1500 "$ROOT/scripts/dev" --fresh ./gradlew --console=plain --no-daemon :mod:runPortalColdServer -Pfb.portalCase="$c" -Pfb.portalOut="$OUT" > "$OUT/server-$c.log" 2>&1
+	flock "${FB_HEAVY_LOCK:-$MAIN_ROOT/.claude/heavy.lock}" timeout 1500 "$ROOT/scripts/dev" --fresh ./gradlew --console=plain --no-daemon :mod:runPortalColdServer -Pfb.portalCase="$c" -Pfb.portalOut="$OUT" > "$OUT/server-$c.log" 2>&1
 	r=$?
 	set -e
 	grep -E "\[PORTAL\]" "$OUT/server-$c.log" | sed 's/.*\[PORTAL\] /  /' || true

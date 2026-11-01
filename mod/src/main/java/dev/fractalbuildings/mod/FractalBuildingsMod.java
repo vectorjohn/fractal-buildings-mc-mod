@@ -18,6 +18,7 @@ public class FractalBuildingsMod implements ModInitializer {
 		dev.fractalbuildings.mod.gameplay.Gameplay.register();
 		dev.fractalbuildings.mod.worldgen.RegionWarmer.register();
 		dev.fractalbuildings.mod.teleport.TeleportHold.register();
+		dev.fractalbuildings.mod.teleport.PortalHold.register();
 		dev.fractalbuildings.mod.roads.RoadFeature.register();
 		// Test hook: -Dfb.testHook=<class> (a static install()) lets a dev run load a harness from the gametest source set (scripts/perf.sh); unset in play.
 		String hook = System.getProperty("fb.testHook");

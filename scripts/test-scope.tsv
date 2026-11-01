@@ -141,6 +141,7 @@ path	@mod/compat/*	veto	fast,client-full,compat?,perf?	vanilla structure veto an
 path	@mod/mixin/ChunkGeneratorMixin.java	veto	fast,client-full,compat?	veto at start generation
 path	@mod/mixin/StructureCheckMixin.java	veto	fast,client-full,compat?	veto at /locate
 path	@mod/mixin/ServerPlayerTeleportMixin.java	teleport	fast,client-quick,server-only?	teleport hold
+path	@mod/mixin/EntityPortalHoldMixin.java	teleport	fast,client-full,server-only?	portal hold (PORTALCOLD 6.30): wraps Entity.handlePortal for every entity; PortalHoldGameTest (fast), PortalHoldClientGameTest (full)
 path	@mod/mixin/LakeFeatureMixin.java	worldgen	fast,order,client-full	lake veto (ORDERFAIL): no vanilla lake where our pieces are; the order test and mutant-lakes check it
 path	@mod/mixin/BlockBlobFeatureMixin.java	worldgen	fast,order,client-full	boulder veto (ROCKVETO): no vanilla forest_rock where our pieces are; RockVetoGameTest and the ordersim RockVetoSimTest check it
 path	@mod/mixin/TreeFeatureMixin.java	worldgen	fast,order,client-full,perf	tree room check counts our claim region as free (LEAFORDER, TreeClip): every tree near a settlement or road runs it (perf), the ordersim TreeClipOrderSimTest and FoliageClientGameTest check it

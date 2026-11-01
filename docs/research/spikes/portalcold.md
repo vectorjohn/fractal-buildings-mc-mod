@@ -48,3 +48,20 @@ Where the time is, from 250 ms samples of the server thread during the call: 98-
 ## Re-running
 
 `scripts/portalcold.sh [wild wild2 town metro]` (fresh world per case; takes the heavy lock; on beebox `scripts/evidence.sh p6-portalcold-m scripts/remote.sh --fetch mod/build/portalcold -- scripts/portalcold.sh`). Harness `mod/src/gametest/java/dev/fractalbuildings/gametest/perf/PortalColdHarness.java` (run `:mod:runPortalColdServer`, not part of `check`, so the default fast suites do not run it). To make it a regression test for a fix, assert `getPortalDestination.ms` and the longest tick.
+
+## Result: option c built (6.30, 2026-10-31)
+
+John chose (c) and asked for the minimum wait ("I want to wait the minimum, even if that means the player sees loading chunks. I just want to avoid the possible server crash."). `PortalHold` (log [2026-10-31-p6-portalcold](../../log/2026-10-31-p6-portalcold.md)) holds any entity in a nether portal, not on `ServerPlayer.teleport` but on vanilla's "time to go" test in `Entity.handlePortal`, and asynchronously requests only what vanilla's `getPortalDestination` would load on the server thread:
+
+- Not 625 FULL chunks. Vanilla needs the POI chunks (17 x 17 in the overworld) at EMPTY only (no generation), and then either the found portal's chunks at FULL or the 3 x 3 (sometimes 3 x 4) chunks `createPortal` reads. Those are FULL in vanilla, which drags in the 25 x 25 dependency square; the hold takes them, plus one ring, to INITIALIZE_LIGHT and lets vanilla's call do the last three steps (40-76 ms).
+- The exit is vanilla's: `Level.getHeight` treats a chunk without a FULL-level ticket as empty, and `createPortal` depends on that for the first column of each cold chunk; holding the chunks at ticket level 34 keeps that answer. Exit portals were identical with and without the hold in all three cases.
+
+Beebox, quiet (loadavg 2-7), current tree (the unheld stall is shorter than above: 46 s, not 65 s, for the metropolis):
+
+| case | unheld (one tick) | held wait | longest tick while held | release | exit |
+|---|---|---|---|---|---|
+| metropolis core | 46.2 s | 46.0-46.3 s (3 runs) | 19-30 ms | 72-81 ms | same |
+| town | 39.9 s | 41.0 s | 32 ms | 63 ms | same |
+| wild | 12.0 s | 12.4 s | 21 ms | 44 ms | same |
+
+Raw rows: [portalcold/held-runs-2026-10-31.txt](portalcold/held-runs-2026-10-31.txt). The wait is as long as the stall was (the same generation), but the server keeps ticking and the player stands in the portal with "Generating terrain…" on the action bar. A second freeze showed only with a real player (`PortalHoldClientGameTest`): right after arrival, vanilla reads the block the player stood on in the nether at the same coordinates in the overworld (`mainSupportingBlockPos` survives the dimension change), generating that cold chunk on the server thread (8-15 s). `PortalHold.afterTrip` clears the field after a portal trip; the client test's longest tick went from 15.2 s to 110 ms. Open: one 6.35 s tick about 8 s after arrival in 1 of 6 held harness runs, cause not found (`docs/NOTES.md`).

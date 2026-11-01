@@ -12,7 +12,8 @@
 		"TreeFeatureMixin",
 		"LakeFeatureMixin",
 		"StructureCheckMixin",
-		"ServerPlayerTeleportMixin"
+		"ServerPlayerTeleportMixin",
+		"EntityPortalHoldMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1

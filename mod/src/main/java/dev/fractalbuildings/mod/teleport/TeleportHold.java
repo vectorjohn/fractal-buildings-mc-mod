@@ -144,7 +144,7 @@ public final class TeleportHold {
 		return true;
 	}
 
-	private static Component message() { return Component.literal("Generating terrain…"); }
+	static Component message() { return Component.literal("Generating terrain…"); }
 
 	private static void tick() {
 		if (HOLDS.isEmpty()) return;

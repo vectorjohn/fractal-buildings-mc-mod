@@ -6,14 +6,14 @@ import java.util.Set;
 /**
  * TESTLAYERS: {@code FB_LAYER=quick|full} picks how much of the client suite runs (unset means full when Gradle is run directly;
  * {@code scripts/client-test.sh} and {@code scripts/test-all.sh} default it to quick). Quick: Hello, District (B1), Gameplay (B5), Terrain (B3),
- * TeleportHold. Full adds Roads, Foliage and the compat world ({@link #FULL_ONLY}). The fly-through and perf tests stay opt-in
+ * TeleportHold. Full adds Roads, Foliage, PortalHold (6.30) and the compat world ({@link #FULL_ONLY}). The fly-through and perf tests stay opt-in
  * ({@code FB_FLY}, {@code FB_PERF}) in both layers. The district-order test (B2) is no client test any more: {@code scripts/order-test.sh}.
  */
 public final class ClientLayers {
 	private ClientLayers() {}
 
 	/** The client tests the quick layer leaves out. */
-	public static final Set<String> FULL_ONLY = Set.of("RoadsClientGameTest", "FoliageClientGameTest", "CompatClientGameTest");
+	public static final Set<String> FULL_ONLY = Set.of("RoadsClientGameTest", "FoliageClientGameTest", "CompatClientGameTest", "PortalHoldClientGameTest");
 
 	/** The layer in force: {@code quick} or {@code full}. */
 	public static String layer() {
