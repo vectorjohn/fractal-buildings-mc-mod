@@ -110,6 +110,14 @@ public class WorldPlanner {
 	private final BoundedCache<RoadNet.EdgeKey, LinkState> linkStates;
 	/** Which links each settlement serves ({@link #served}): a few keys per settlement. */
 	private final BoundedCache<dev.fractalbuildings.core.region.CellKey, Served> servedLinks;
+	/** Each skeleton approach of a settlement as drawn, by site id and index into {@link #approachNodes} ({@link #drawOne}); an empty value is an approach that breaks the water rule. */
+	private final BoundedCache<String, Optional<Approach>> drawnMain;
+	/**
+	 * CASCADE step 3 (A2): answer {@link #exitServedAt} and {@link #served} from one drawn approach where that one proves the answer
+	 * (true), else by the full rule. Exact by construction (see those methods); {@code -Dfb.linkrule.reference=true} or {@link #fullLinkRule}
+	 * keeps the full rule as the oracle.
+	 */
+	private volatile boolean shortCut = !Boolean.getBoolean("fb.linkrule.reference");
 	/**
 	 * Floor of the link-state and served-link memos whatever {@link Caches} says: their entries are a few keys each, and a miss replans a
 	 * settlement's approaches (skeletons and district tiles), so with every cache at 1 each road chunk would replan both ends of its links.
@@ -180,6 +188,7 @@ public class WorldPlanner {
 		this.rawApproaches = roads == null ? null : new BoundedCache<>(caps.sources());
 		this.linkStates = roads == null ? null : new BoundedCache<>(Math.max(LINK_MEMO_FLOOR, caps.region()));
 		this.servedLinks = roads == null ? null : new BoundedCache<>(Math.max(LINK_MEMO_FLOOR, caps.sources()));
+		this.drawnMain = roads == null ? null : new BoundedCache<>(caps.sources() * 8);
 		this.view = fixed != null ? new FixedSiteView(fixed, field) : new FieldSiteView(fieldView, field, roads);
 		this.styles = new StyleField(probes.biome(), seed);
 		this.sources = new BoundedCache<>(caps.sources(), caps.graceNanos(), caps.hardFactor(), System::nanoTime); // det-ok: retention only, never an answer
@@ -208,6 +217,7 @@ public class WorldPlanner {
 		this.rawApproaches = null;
 		this.linkStates = null;
 		this.servedLinks = null;
+		this.drawnMain = null;
 		this.view = null;
 		this.styles = null;
 		this.sources = null;
@@ -865,8 +875,50 @@ public class WorldPlanner {
 
 	/** Does the settlement {@code owner} have an approach to its port of the link to {@code other}? A settlement this planner cannot plan counts as serving it (no change). */
 	private boolean served(dev.fractalbuildings.core.region.CellKey owner, dev.fractalbuildings.core.region.CellKey other) {
+		if (shortCut && servedLinks.peek(owner) == null && servedByMain(owner, other)) return true;
 		Served sv = servedLinks.get(owner, this::computeServed);
 		return sv.unknown() || sv.others().contains(other);
+	}
+
+	/**
+	 * Short cut of {@link #served} (CASCADE A2): true when a skeleton approach of {@code owner} to {@code other}'s port is drawn. That approach
+	 * is in {@code approachRoads}, so the full rule's set contains {@code other} too: the answer is the same. False means "not proved", never
+	 * "not served": the caller runs the full rule. Draws one approach instead of all, on the planner the full rule uses.
+	 */
+	private boolean servedByMain(dev.fractalbuildings.core.region.CellKey owner, dev.fractalbuildings.core.region.CellKey other) {
+		WorldPlanner lp = linkPlanner();
+		var s = lp.roads.settlement(owner);
+		if (s.isEmpty()) return false;
+		Optional<SettlementSite> site = lp.siteOf(new Cell(owner.cx(), owner.cz()));
+		if (site.isEmpty()) return false;
+		try {
+			List<ApproachNodes> ans = lp.approachNodes(site.get());
+			for (int i = 0; i < ans.size(); i++) {
+				var port = ans.get(i).port();
+				if (port == null || !other.equals(port.other())) continue;
+				if (lp.drawOne(site.get(), s.get(), i) != null) return true;
+			}
+		} catch (IllegalArgumentException e) {
+			return false; // a recorded window without the whole settlement: the full rule decides (computeServed's catch)
+		}
+		return false;
+	}
+
+	/** One skeleton approach as {@link #approachRoads} draws it (the {@code i}th of {@link #approachNodes}), memoised, or null. */
+	private Approach drawOne(SettlementSite site, RoadNet.Settlement owner, int i) {
+		return drawnMain.getOnce(site.id() + "#" + i, k -> Optional.ofNullable(
+			drawApproach(site, owner, approachNodes(site).get(i), owner.tier().atLeast(dev.fractalbuildings.core.settlement.Tier.TOWN)))).orElse(null);
+	}
+
+	/** Test and count harness: skeleton approaches drawn so far (memo size). */
+	int drawnMainCount() { return drawnMain == null ? 0 : drawnMain.size(); }
+
+	/** Test oracle: this planner (and the one it plans links with) answers the link rule in full, no short cuts. */
+	WorldPlanner fullLinkRule() {
+		shortCut = false;
+		WorldPlanner lp = linkPlanner();
+		if (lp != this) lp.shortCut = false;
+		return this;
 	}
 
 	/** The far ends of the links a settlement's approaches reach ({@code unknown}: it cannot be planned here, so it serves them all). */
@@ -940,9 +992,20 @@ public class WorldPlanner {
 	}
 
 	/** Does a drawn approach of the settlement leave from the exit gate at (x, z)? (6.25 MAINSTUB; a site the graph does not know serves none.) */
-	private boolean exitServedAt(SettlementSite site, int x, int z) {
+	boolean exitServedAt(SettlementSite site, int x, int z) {
 		RoadNet.Settlement owner = graphNode(site);
 		if (owner == null) return false;
+		if (shortCut) {
+			// a drawn skeleton approach from this gate whose link is not dropped is in drawnApproaches: true is proved. Otherwise (none
+			// drawn, or its link dropped, which an alternate from the same gate may still overrule) the full rule below.
+			List<ApproachNodes> ans = approachNodes(site);
+			for (int i = 0; i < ans.size(); i++) {
+				var p = ans.get(i).road().points().get(0);
+				if (Math.abs(p.x() - x) > 2 || Math.abs(p.z() - z) > 2) continue;
+				Approach a = drawOne(site, owner, i);
+				if (a != null && (a.port() == null || linkState(edge(owner.owner(), a.port().other())) != LinkState.DROPPED)) return true;
+			}
+		}
 		for (Approach a : drawnApproaches(site, owner)) {
 			var p = a.road().points().get(0);
 			if (Math.abs(p.x() - x) <= 2 && Math.abs(p.z() - z) <= 2) return true;
@@ -969,8 +1032,9 @@ public class WorldPlanner {
 		return rawApproaches.getOnce(site.id(), id -> {
 			List<Approach> out = new ArrayList<>();
 			boolean air = owner.tier().atLeast(dev.fractalbuildings.core.settlement.Tier.TOWN);
-			for (ApproachNodes an : approachNodes(site)) {
-				Approach a = drawApproach(site, owner, an, air);
+			List<ApproachNodes> nodes = approachNodes(site);
+			for (int i = 0; i < nodes.size(); i++) {
+				Approach a = drawOne(site, owner, i);
 				if (a != null) out.add(a);
 			}
 			List<int[]> used = new ArrayList<>();
