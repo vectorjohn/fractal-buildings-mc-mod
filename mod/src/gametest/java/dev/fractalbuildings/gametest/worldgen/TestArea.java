@@ -40,7 +40,7 @@ public final class TestArea {
 	/** The {@code maxTicks} of a test that uses {@link #run}: never the limit (see {@link #WAIT_MILLIS}). */
 	public static final int TICKS = 100_000_000;
 	/** How long a test waits for its chunks before it fails. */
-	static final long WAIT_MILLIS = 600_000;
+	public static final long WAIT_MILLIS = 600_000;
 
 	/** Ticket radius: 33 - 2 = level 31, ENTITY_TICKING for the chunk itself. The type is DRAGON: it loads and simulates, never expires and is
 	 * not saved (FORCED would be written to the chunk-ticket data); only the End fight uses it otherwise. */

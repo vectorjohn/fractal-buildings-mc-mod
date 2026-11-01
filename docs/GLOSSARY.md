@@ -110,6 +110,7 @@ Item codes (PARREADS, MAINSTUB, TPHOLD, ...) and run terms, one row each. **Gene
 | MINLOT |  | lots on slopes leave room for a setback | done | [[docs/log/2026-10-26-p6-minlot|log]] |
 | OPENPLAN |  | open plan between public rooms | done | [[docs/log/2026-10-21-p5-openplan|log]] |
 | ORDERFAIL |  | order test failed at s1_m10 (lava lakes in dug-in buildings) | done | [[docs/log/2026-10-27-orderfail|log]] |
+| ORDERHANG |  | order-test shutdown hang | done | [[docs/log/2026-10-31-p6-orderhang|log]] |
 | ORDERMEM |  | the order test picks how many worlds to run at once from free memory | done | [[CLAUDE|CLAUDE]] |
 | ORDERSIM |  | engine-free chunk-order tests | done | [[docs/ROADMAP|ROADMAP]], [[docs/plans/ordersim|plan]] |
 | PARREADS |  | parallel terrain reads for cold settlement planning | done | [[docs/ROADMAP|ROADMAP]] |
@@ -124,7 +125,7 @@ Item codes (PARREADS, MAINSTUB, TPHOLD, ...) and run terms, one row each. **Gene
 | PLAYTEST1028-QS |  | the architect's answers to the questions from John's 2026-10-28 playtest | done | [[docs/review/playtest1028-qs/architect|architect]] |
 | PLAZAS |  | squares, markets, greens and parks are levelled and paved with one bare `PAVING` surface and nothing else... | polish | [[docs/ROADMAP|ROADMAP polish]] |
 | PORCHSTEP | 6.19 | no step up to raised doors | done | [[docs/ROADMAP|ROADMAP 6.19]] |
-| PORTALCOLD | 6.30 | first nether-portal trip into an unvisited city freezes the server before the loading screen | open | [[docs/ROADMAP|ROADMAP 6.30]] |
+| PORTALCOLD | 6.30 | first nether-portal trip into an unvisited city freezes the server before the loading screen | done | [[docs/ROADMAP|ROADMAP 6.30]] |
 | PORTALCOLD-M | 6.30 | measure the first portal trip into a cold settlement | done | [[docs/log/2026-10-30-p6-portalcold-m|log]] |
 | post-merge |  | the test run on the merged commit, started by `scripts/squash-merge.sh` in a separate worktree | - | [[CLAUDE|CLAUDE]] |
 | POSTMERGEDETACH |  | post-merge tests run detached from `scripts/squash-merge.sh` so a tool time limit can't kill them | done | [[CLAUDE|CLAUDE]] |
@@ -186,7 +187,7 @@ Item codes (PARREADS, MAINSTUB, TPHOLD, ...) and run terms, one row each. **Gene
 | STAIRFILL |  | no stair blocks under a step | done | [[docs/log/2026-10-26-p7-stairfill|log]] |
 | STAIRFOOT | 6.21 | inner stair foot at a drop | done | [[docs/ROADMAP|ROADMAP 6.21]] |
 | STAIRGROUND |  | front steps that end above the ground | done | [[docs/log/2026-10-22-p5-stairground|log]] |
-| STAIRJOG | 6.31 | a high-rise entrance flight that jogs with no room to turn | open | [[docs/ROADMAP|ROADMAP 6.31]] |
+| STAIRJOG | 6.31 | a high-rise entrance flight that jogs with no room to turn | done | [[docs/ROADMAP|ROADMAP 6.31]] |
 | STAIRS | 6.11 | interior flights one step short | done | [[docs/ROADMAP|ROADMAP 6.11]] |
 | STEPBURY | 6.13 | steps and door approaches buried or blocked by the world | done | [[docs/ROADMAP|ROADMAP 6.13]] |
 | STEPTOP | 6.12 | exterior flights end in a one-block jump | done | [[docs/ROADMAP|ROADMAP 6.12]] |
