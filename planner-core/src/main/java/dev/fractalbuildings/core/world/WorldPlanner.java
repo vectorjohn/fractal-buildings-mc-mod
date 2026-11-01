@@ -130,6 +130,10 @@ public class WorldPlanner {
 	private final BoundedCache<String, java.util.TreeMap<String, ExitTrim.Cut>> exitCuts;
 	/** The cut of one exit road as the plans say, whatever its gate's link state ({@code site id/road id}). */
 	private final BoundedCache<String, java.util.Optional<ExitTrim.Cut>> fullCuts;
+	/** (settlement, road, last column in tile) -> whether the bounded walk proved the cut lies at or beyond it (CASCADE A1). */
+	private final BoundedCache<String, Boolean> walkBeyond;
+	/** {@code -Dfb.exitcut.reference=true}: the old path (the whole road cut for every tile), the oracle of ExitCutWalkTest. */
+	static final boolean EXIT_CUT_REFERENCE = Boolean.getBoolean("fb.exitcut.reference");
 	private final FlightCache<Long, List<BuildingPiece>> buildings;
 	private final FlightCache<Long, List<GroundPiece>> grounds;
 
@@ -184,6 +188,7 @@ public class WorldPlanner {
 		this.rawPlans = new FlightCache<>(caps.plans(), caps.graceNanos(), caps.hardFactor(), System::nanoTime); // det-ok: retention only, never an answer
 		this.exitCuts = new BoundedCache<>(Math.max(LINK_MEMO_FLOOR, caps.sources()));
 		this.fullCuts = new BoundedCache<>(Math.max(LINK_MEMO_FLOOR, caps.sources()));
+		this.walkBeyond = new BoundedCache<>(Math.max(LINK_MEMO_FLOOR, caps.sources()));
 		this.buildings = new FlightCache<>(caps.buildings(), caps.graceNanos(), caps.hardFactor(), System::nanoTime); // det-ok: retention only, never an answer
 		this.grounds = new FlightCache<>(caps.ground(), caps.graceNanos(), caps.hardFactor(), System::nanoTime); // det-ok: retention only, never an answer
 	}
@@ -211,6 +216,7 @@ public class WorldPlanner {
 		this.rawPlans = null;
 		this.exitCuts = null;
 		this.fullCuts = null;
+		this.walkBeyond = null;
 		this.buildings = null;
 		this.grounds = null;
 	}
@@ -322,6 +328,7 @@ public class WorldPlanner {
 				if (!ExitTrim.isExitRoad(src, id)) continue;
 				int m = ExitTrim.maxIndexIn(src, id, rect);
 				if (m < 0 || ExitTrim.cutBeyond(src, id, m, raw.plan(), rect)) continue;
+				if (!EXIT_CUT_REFERENCE && walkBeyond.getOnce(site.id() + "/" + id + "/" + m, k -> ExitTrim.cutBeyondWalk(src, id, m, lookup))) continue;
 				ExitTrim.Cut c = fullCuts.getOnce(site.id() + "/" + id, k -> java.util.Optional.ofNullable(ExitTrim.fullCut(src, id, lookup))).orElse(null);
 				if (c == null || c.index() >= m || ExitTrim.gateServed(src, id)) continue;
 				cuts.put(id, c);

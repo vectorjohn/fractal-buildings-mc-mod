@@ -209,6 +209,57 @@ public final class ExitTrim {
 		return last + (lastKind == 2 ? KEEP : r.width() / 2 + 1) >= m;
 	}
 
+	/**
+	 * CASCADE A1: a bounded proof that the cut of the road lies at or beyond column {@code m} (or there is none), so a tile whose last column
+	 * of the road is {@code m} is untouched. False means "not proved" (ask {@link #fullCut}); it never means the cut is inside the tile.
+	 * It walks the same scan as {@link #cut} outward from the hub, over the columns' frontage only. It proves that no stop event (a bridge
+	 * start after frontage, a lot-free run over {@link #GAP}) happens through column {@code j}, the first column at or past {@code m} with
+	 * frontage. Then the stop, if any, is at or after {@code j} (a gap stop is the column before its event), and every later stage of
+	 * {@code cut} keeps the result at or past {@code j}: the road's last frontage {@code lastAll} is at least {@code j}, so
+	 * {@code keep = min(n - 1, lastAll + at least 1) >= min(n - 1, j)}; a bridge start only lowers {@code keep} to a column past {@code lastAll},
+	 * the stop-bridge rule to {@code stop >= j}; the core rules only raise it; {@code keep >= n - 1} is no cut at all.
+	 * The walk ends at the first frontage at or past {@code m}, or at the first stop event (not proved), so it is at most {@link #GAP} + 1
+	 * columns past {@code m}: tiles around the hub no longer read the raw plans out to the rim.
+	 */
+	public static boolean cutBeyondWalk(SkeletonSource src, String roadId, int m, Plans plans) {
+		Candidate c = candidateOf(src, roadId);
+		if (c == null) return false;
+		Road r = c.road();
+		List<int[]> cols = StreetCols.columns(r.points());
+		int n = cols.size();
+		if (m < 1 || m > n - 1) return false;
+		DistrictGrid grid = src.grid();
+		int reach = r.width() / 2 + LOT_REACH;
+		int wall = wallColumn(cols, c.walls());
+		int[] pointCol = pointColumns(r.points());
+		boolean[] enter = new boolean[n];
+		for (int[] b : r.bridges()) enter[pointCol[b[0]]] = true;
+		boolean[] deck = deckColumns(r, n);
+		boolean stops = src.site().radius() >= 250;
+		Plans cached = memo(plans);
+		int last = 0;
+		for (int i = 1; i < n; i++) {
+			int kind = 0;
+			if (!deck[i]) {
+				if (i == wall) kind = 2;
+				if (kind == 0) {
+					int x = cols.get(i)[0], z = cols.get(i)[1];
+					DistrictGrid.Tile t0 = grid.tileAt(x - reach - 1, z - reach - 1), t1 = grid.tileAt(x + reach + 1, z + reach + 1);
+					for (int iz = t0.iz(); iz <= t1.iz() && kind == 0; iz++) {
+						for (int ix = t0.ix(); ix <= t1.ix() && kind == 0; ix++) {
+							DistrictPlan p = cached.raw(ix, iz);
+							if (p != null) kind = beside(p, r.id(), r.width(), x, z, null);
+						}
+					}
+				}
+			}
+			boolean bridge = stops && enter[i] && last > 0, gap = stops && kind == 0 && i - last > GAP && last > 0;
+			if (bridge || gap) return false; // a stop is possible here: only the whole road can say (a quarter or junction beyond may veto it)
+			if (kind > 0) { last = i; if (i >= m) return true; }
+		}
+		return false; // no frontage at or past m: the cut (if any) is for the whole road to find
+	}
+
 	private static Plans memo(Plans plans) {
 		Map<Long, DistrictPlan> memo = new TreeMap<>();
 		return (ix, iz) -> {

@@ -29,7 +29,7 @@ Item codes (PARREADS, MAINSTUB, TPHOLD, ...) and run terms, one row each. **Gene
 | BLK16 |  | fix: the entrance-reachable check failed at the steepest allowed grade (Phase 5) | done | [[docs/runs/2026-10-21-phase5|2026-10-21-phase5]] |
 | BRIDGEENDS |  | bridge ends and high road embankments faced in foundation stone (abutments) | done | [[docs/REVIEW|REVIEW]] |
 | CACHE |  | retention for in-flight and recently used tiles | done | [[docs/log/2026-10-22-p6-cache|log]] |
-| CASCADE |  | the exit trim and link rule (MAINSTUB) made cheaper, parallel and warmed early, byte-identical; proposed... | open | [[docs/log/2026-11-01-p6-cascade-1|log]], [[docs/plans/jflazy|jflazy]] |
+| CASCADE |  | the exit trim and link rule (MAINSTUB) made cheaper, parallel and warmed early, byte-identical; proposed... | open | [[docs/log/2026-11-01-p6-cascade-6|log]], [[docs/plans/jflazy|jflazy]] |
 | CIRC |  | 5.11 interior circulation (hub door graph, fewer walk-through rooms) | done | [[docs/archive/roadmap-phase-5|roadmap-phase-5]] |
 | CIRC2 |  | squarer rooms, bedrooms first | done | [[docs/log/2026-10-21-p5-circ2|log]] |
 | CITYQ |  | sparse and "ocean" cities in the B9 fly-through | done | [[docs/log/2026-10-23-p6-cityq|log]] |
@@ -143,6 +143,7 @@ Item codes (PARREADS, MAINSTUB, TPHOLD, ...) and run terms, one row each. **Gene
 | R1 |  | Phase 5 step: region field, tiers, `region` command | done | [[docs/log/2026-10-21-p5-r1-region|log]] |
 | R2 |  | Phase 5 step: water bias (5.10) | done | [[docs/log/2026-10-21-p5-r2-water|log]] |
 | RAILFIX |  | railings that hold (6.9 defect) | done | [[docs/log/2026-10-25-p6-railfix|log]] |
+| READSDEFAULT |  | reads pool default | done | [[docs/log/2026-11-01-p6-readsdefault|log]] |
 | REARCORE |  | high-rise follow-up left from the 7.13 tower steps (rear stair core); see the run ledger | open | [[docs/runs/2026-10-22-phase6|2026-10-22-phase6]] |
 | REGIONPERF |  | why the region-layer perf row is 45 s, not 4.7 s | done | [[docs/log/2026-10-27-p6-regionperf|log]] |
 | RELEASEPLAN |  | the 0.1.0 release plan and its open questions | done | [[docs/review/release-plan|release-plan]] |
