@@ -313,6 +313,25 @@ class QuayLazyTest {
 		assertTrue(median * 4 <= whole, "a tile's lazy quays read " + median + " chunks, more than a quarter of the whole trace's " + whole);
 	}
 
+	/** QUAYLAZY step 5: warmQuaysTile (what the mod's warm and the perf row call) is the tile's own lazy request: the quays that tile then lists equal the reference's. */
+	@Test
+	void warmQuaysTileChangesNothing() {
+		QuaySites.Open o = QuaySites.of("pt1573-s4_m2").open();
+		List<DistrictGrid.TileId> tiles = o.waterfront();
+		for (int k : new int[] {0, tiles.size() / 2, tiles.size() - 1}) {
+			DistrictGrid.TileId t = tiles.get(k);
+			SkeletonSource.Direct src = o.fresh();
+			Counting c = new Counting(o.exact());
+			src.junctions(c);
+			c.chunks.clear();
+			Districts.warmQuaysTile(src, t.ix(), t.iz(), c);
+			assertTrue(c.chunks.size() > 0, "the warm of a waterfront tile reads terrain");
+			c.chunks.clear();
+			List<String> lazy = Districts.quayRuns(src, t.ix(), t.iz(), c);
+			assertEquals(Districts.quayRuns(o.reference(), t.ix(), t.iz(), o.exact()), lazy, "tile " + id(t));
+		}
+	}
+
 	// ---- QUAYLAZY step 4: parallel walks and cluster grading on the reads pool
 
 	/** A pool whose tasks start after a random delay, so helpers finish pieces in any order. */

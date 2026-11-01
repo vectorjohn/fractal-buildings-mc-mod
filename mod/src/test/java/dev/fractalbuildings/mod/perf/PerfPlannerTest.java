@@ -111,10 +111,27 @@ class PerfPlannerTest {
 		out.put("region.cold.warm.chunkFills", lp.chunkFills());
 		out.put("region.cold.warm.sparseColumns", lp.sparseColumns());
 		out.put("region.cold.warm.roadColumns", lp.roadColumns());
+		// the whole trace on a separate fresh planner (its own memo and chunk cache), timed first; it also tells which tile is T
+		int cellSize = cold.config().cellSize();
+		Counting[] cntWhole = new Counting[1];
+		WorldPlanner whole = planner(gen, rs, null, cntWhole, WorldPlanner.Caches.DEFAULT);
+		whole.warm(sx, sz, 2 * cellSize);
+		long wp0 = cntWhole[0].calls.get();
 		t0 = System.nanoTime();
-		cold.warmQuays(sx, sz, 2 * cold.config().cellSize());
+		whole.warmQuays(sx, sz, 2 * cellSize);
 		out.put("region.cold.quays.ms", ms(t0));
-		out.put("region.cold.quays.probes", cnt[0].calls.get() - qp0);
+		out.put("region.cold.quays.probes", cntWhole[0].calls.get() - wp0);
+		// QUAYLAZY: the lazy quays of T, the owned waterfront tile nearest the centre (ties by tile key), as the mod's warm now pays them, on the cold planner
+		int[] best = whole.nearestQuayTile(sx, sz, 6);
+		out.put("region.cold.quays.tile", best == null ? "none" : best[0] + "," + best[1]);
+		if (best != null) {
+			DistrictGrid.Tile bt = cold.grid().tile(best[0], best[1]);
+			long fills0 = lp.chunkFills();
+			t0 = System.nanoTime();
+			cold.warmQuaysAt((bt.minX() + bt.maxX()) / 2, (bt.minZ() + bt.maxZ()) / 2);
+			out.put("region.cold.quays.tile.ms", ms(t0));
+			out.put("region.cold.quays.tile.chunkFills", lp.chunkFills() - fills0);
+		}
 		DistrictGrid.Tile tile = cold.grid().tileAt(sx, sz);
 		long probes0 = cnt[0].calls.get();
 		t0 = System.nanoTime();

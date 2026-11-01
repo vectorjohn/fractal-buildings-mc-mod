@@ -59,6 +59,18 @@
       "ci": 18500
     },
     {
+      "key": "region.cold.quays.tile.ms",
+      "label": "QUAYLAZY: lazy quays of the owned waterfront tile nearest the metropolis centre, cold planner after the region warm (report-only until step 6 sets a budget from a quiet beebox run)",
+      "unit": "ms",
+      "budget": null
+    },
+    {
+      "key": "region.cold.quays.tile.chunkFills",
+      "label": "Same: chunks of exact terrain generated (deterministic; report-only until step 6 sets ci = 2 x the first value)",
+      "unit": "count",
+      "budget": null
+    },
+    {
       "expr": "inlineShare",
       "label": "Building lookups inline during an elytra flight",
       "unit": "%",

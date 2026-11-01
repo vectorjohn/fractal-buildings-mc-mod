@@ -305,7 +305,7 @@ Files: `QuayTrace.java`, `Districts.java` (bank per piece), tests.
     each. This fails with a HashMap in shared state or a broken cluster future.
   - The existing `ParallelReadsPlannerTest` stays green.
 
-## Step 5: mod wiring, perf rows, attribution (S; after 3b and TPHOLD15's merge, parallel with 4)
+## Step 5: mod wiring, perf rows, attribution (S; after 3b and TPHOLD15's merge, parallel with 4) - DONE (claude/p6-quaylazy-5, see log 2026-10-31-p6-quaylazy-5)
 
 Files: `mod/.../worldgen/RegionWarmer.java`, `planner-core/.../world/WorldPlanner.java`,
 `mod/src/test/.../perf/PerfPlannerTest.java`, `mod/perf-budget.json`, `scripts/JfrAttrib.java`,

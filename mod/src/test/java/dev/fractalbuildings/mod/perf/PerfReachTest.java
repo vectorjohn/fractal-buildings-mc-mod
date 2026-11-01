@@ -59,7 +59,7 @@ class PerfReachTest {
 				var f = it.next();
 				String c = f.getClassName(), m = f.getMethodName();
 				if (!c.startsWith("dev.fractalbuildings.core.")) continue;
-				if (c.endsWith(".Quays") || m.toLowerCase(Locale.ROOT).contains("quay")) quays = true;
+				if (c.endsWith(".Quays") || c.endsWith(".QuayTrace") || m.toLowerCase(Locale.ROOT).contains("quay")) quays = true;
 				else if (c.endsWith(".JunctionField")) junction = true;
 				else if (c.endsWith(".RegionPlanner") || c.endsWith(".FieldRegionView") || c.endsWith(".RegionField")) region = true;
 				else if (c.contains(".road.")) { if (region) regionForRoads = true; else road = true; }

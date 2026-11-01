@@ -68,7 +68,7 @@ public class JfrAttrib {
 			if (!ours(f) || f.getMethod() == null) continue;
 			any = true;
 			String c = f.getMethod().getType().getName(), m = f.getMethod().getName();
-			if (c.endsWith(".Quays") || m.toLowerCase(Locale.ROOT).contains("quay")) quays = true;
+			if (c.endsWith(".Quays") || c.endsWith(".QuayTrace") || m.toLowerCase(Locale.ROOT).contains("quay")) quays = true;
 			else if (c.endsWith(".JunctionField")) junction = true;
 			else if (c.endsWith(".RegionPlanner") || c.endsWith(".FieldRegionView") || c.endsWith(".RegionField")) region = true;
 			else if (c.contains(".core.road.")) { if (region) regionForRoads = true; else road = true; }

@@ -434,6 +434,7 @@ public class WorldPlanner {
 
 	/**
 	 * METROFILL R1: the quay runs of every settlement warm() would find, traced once (a settlement-wide value) ahead of its first waterfront tile.
+	 * The whole trace: the mod no longer calls it (QUAYLAZY: {@link #warmQuaysAt} and the tile's own plan trace what a player reaches); tests, the CLI and perf rows do.
 	 * Split from {@link #warm} (PERF row "Region layer + road network", regionperf): on a metropolis it is about 3x the exact probes of the rest of the region
 	 * layer, and the first waterfront tile pays it anyway. Never changes any answer.
 	 */
@@ -446,6 +447,36 @@ public class WorldPlanner {
 			}
 		}
 		for (SettlementSite site : found.values()) dev.fractalbuildings.core.settlement.Districts.warmQuays(source(site), probes.exact());
+	}
+
+	/**
+	 * The planned tile within {@code tiles} tiles of the one at the point that has quay runs and lies nearest to it (ties: smaller tile key), as
+	 * {@code {ix, iz}}, or null. Traces the quays it looks at (the lazy trace). For the perf rows and tests.
+	 */
+	public int[] nearestQuayTile(int blockX, int blockZ, int tiles) {
+		DistrictGrid.Tile c = grid.tileAt(blockX, blockZ);
+		int[] best = null;
+		long bestD = Long.MAX_VALUE;
+		for (int dz = -tiles; dz <= tiles; dz++) {
+			for (int dx = -tiles; dx <= tiles; dx++) {
+				long d = (long) dx * dx + (long) dz * dz;
+				if (d > bestD) continue;
+				int ix = c.ix() + dx, iz = c.iz() + dz;
+				Optional<TileInfo> info = tile(ix, iz);
+				if (info.isEmpty() || dev.fractalbuildings.core.settlement.Districts.quayRuns(source(info.get().site()), ix, iz, probes.exact()).isEmpty()) continue;
+				if (d < bestD || best == null || key(ix, iz) < key(best[0], best[1])) { bestD = d; best = new int[] {ix, iz}; }
+			}
+		}
+		return best;
+	}
+
+	/**
+	 * QUAYLAZY: the lazy quays of the tile at the point, through its owning settlement (nothing when no settlement plans the tile): only the quay
+	 * clusters near that tile are traced and graded, not the whole city's. What {@link #plan} pays first for a waterfront tile. Never changes any answer.
+	 */
+	public void warmQuaysAt(int blockX, int blockZ) {
+		DistrictGrid.Tile t = grid.tileAt(blockX, blockZ);
+		tile(t.ix(), t.iz()).ifPresent(i -> dev.fractalbuildings.core.settlement.Districts.warmQuaysTile(source(i.site()), t.ix(), t.iz(), probes.exact()));
 	}
 
 	/**

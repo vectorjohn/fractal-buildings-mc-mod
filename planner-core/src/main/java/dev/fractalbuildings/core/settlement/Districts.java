@@ -137,6 +137,15 @@ public final class Districts {
 		else b.quayTrace().all(b.bank(b.quayTrace().area(), true));
 	}
 
+	/**
+	 * The lazy quay request of tile (ix, iz): traces and grades only the quay clusters within reach of the tile (QUAYLAZY), on the trace every
+	 * tile shares. What the tile's own plan does first; for warmers and perf rows. Never changes any answer.
+	 */
+	public static void warmQuaysTile(SkeletonSource src, int ix, int iz, TerrainProbe exact) {
+		if (!src.site().tier().atLeast(Tier.TOWN)) return;
+		new Build(src, ix, iz, exact).quayWholes();
+	}
+
 	/** A build of the first owned waterfront tile of a town or larger (tile order), or null. */
 	private static Build firstWaterfront(SkeletonSource src, TerrainProbe exact) {
 		if (!src.site().tier().atLeast(Tier.TOWN)) return null;

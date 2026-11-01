@@ -35,6 +35,9 @@ public final class RegionWarmer {
 	/** Longest lead, blocks. */
 	static final double MAX_LEAD = 600;
 
+	/** {@code -Dfractalbuildings.quayTrace=whole}: warm the whole city's quay trace again (METROFILL R1 behaviour); changes no output, only timing. */
+	static final boolean WHOLE_QUAYS = "whole".equals(System.getProperty("fractalbuildings.quayTrace"));
+
 	private static final Map<UUID, State> STATE = new ConcurrentHashMap<>();
 
 	private static final class State {
@@ -115,8 +118,11 @@ public final class RegionWarmer {
 	}
 
 	private static void warmAt(WorldPlanner planner, State s, int x, int z, int radius, boolean ahead) {
-		planner.warm(x, z, radius, true); // with the quays (METROFILL R1), beside the road links where the reads run in parallel (PARREADS)
+		// QUAYLAZY: no whole-city quay trace (20 s of worker time on a metropolis, for quays the player may never reach); the point's own
+		// tile is planned below, which traces only the quays near it, on the reads pool (warm still runs the road links beside the junction fields)
+		planner.warm(x, z, radius, WHOLE_QUAYS);
 		DistrictGrid.Tile t = planner.grid().tileAt(x, z);
+		if (planner.tile(t.ix(), t.iz()).isPresent()) planner.plan(t.ix(), t.iz()); // the destination tile's plan, so a hold on warmPoint ends with its quays done
 		long key = ((long) t.ix() << 32) ^ (t.iz() & 0xffffffffL);
 		if ((ahead ? s.lastAhead : s.lastTile) == key) return;
 		if (ahead) s.lastAhead = key; else s.lastTile = key;
