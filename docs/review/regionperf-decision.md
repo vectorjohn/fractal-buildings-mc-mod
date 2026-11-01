@@ -264,6 +264,36 @@ B1 is step 6 of the [JFLAZY plan](../plans/jflazy.md) (which became CASCADE: mak
 - These numbers predate CASCADE steps 1 and 5 (the warmer's order changed in step 5). CASCADE step 7 measures again.
 
 
+### After CASCADE (2026-11-01, quiet beebox)
+
+CASCADE ("the cascade a cold chunk waits for": CASCADE steps 2 to 5 made the exit-road trim and the link rule cheaper, ran what is left in parallel on the reads pool, and made the region warmer start that work first, all with byte-identical output; the [plan](../plans/jflazy.md)) is merged, and so is READSDEFAULT (reads pool default cpus - 1, up to 11). **Valid numbers only.** `scripts/perf.sh` (full run) twice on beebox (12 CPUs, dedicated server, no renderer) at commit 4de791c5 (= run branch 98f07884 plus the count budgets), each sent when `ssh beebox job status` showed nothing running or queued, `scripts/quiet-check.sh` QUIET before and after, both runs ending `perf: quiet host` (other processes 0.03 to 0.04 cores; 1-min loadavg just before the world half 2.75 / 3.17, at its end 5.98 / 6.77, all the run's own work). The mod world and the vanilla base world ran in the same run each time.
+
+| What is timed | Before CASCADE (c468dd41, 4 reads threads) | READSDEFAULT alone (c468dd41, 11 threads) | **After CASCADE, runs 1 / 2 (11 threads)** | Vanilla, same runs |
+|---|---|---|---|---|
+| Slowest chunk of the cold 9 x 9 block (`mod.cold.chunk.max`) | 34.9 s | 30.6 s | **24.5 / 24.7 s** | 0.20 / 0.18 s |
+| Mean chunk of that block | 576 ms | 515 ms | 414 / 417 ms | |
+| Cold arrival, 9 x 9 view FULL (`arrival.cold.metro`) | 52.5 s | 47.1 s | **39.2 / 39.0 s** | 3.5 / 4.5 s |
+| TeleportHold: how long it held (`arrival.hold`) | 46.9 s | 42.0 s | **33.2 / 32.8 s** | |
+| Longest server tick during that arrival (`arrival.maxTick`) | 0.59 s | 0.8 s | 0.75 / 0.80 s | 56 / 55 ms |
+| Worst server tick, flight to the gate city (`mod.flight.tick.max`) | 0.87 / 5.32 s | 0.28 / 0.39 s | **0.91 / 0.92 s** (at 1,978 blocks flown, as before) | 127 ms |
+| p95 server tick, same flight | 11.5 / 10.2 ms | 10.5 / 12.9 ms | 10.0 / 10.8 ms | 9.8 ms |
+| Region warm + roads, cold, JUnit (`region.cold.warm`) | | | 9.16 / 9.27 s (budget 6 s, ceiling 10 s: miss, not a failure) | none |
+| Region warm + the point's tile plan, as the warmer runs it (`region.warmed.worker`) | | | 8.55 / 8.61 s | none |
+| `/locate` settlement, fresh area | | | 3.36 / 3.35 s (budget 3 s: miss) | 0.31 s (village) |
+
+The "before" columns are the c468dd41 runs of the B1 table above (run 1 / run 2 averaged where one number is shown). The two new runs agree within 1 % on the chunk, arrival and hold rows.
+
+What it says:
+
+- **CASCADE took about 6 s off the slowest chunk (30.6 to 24.6 s, the 11-thread baseline) and 8 s off the cold arrival (47.1 to 39.1 s); against the original 4-thread numbers that is 10 s (-30 %) and 13 s (-25 %).** The plan guessed 13 to 24 s for the chunk and 25 to 40 s for the arrival: the arrival is inside its range, the chunk is at the top of it. It is still about 120x vanilla on the chunk and 9 to 11x on the arrival.
+- **What the slowest chunk still waits for** (one diagnostic run with the wall-clock sampler on, `FB_PERF_SAMPLE=1`, same commit and host; JFR also on, so 25.1 s instead of 24.6; chunk 0 of the block, tile 14,-36): the chunk thread spends about 2.5 s on the tile's streets and skeleton, 2.5 s on the junction field, 1.5 s on quays, about 3 s on buildings, and **about 14 s (of the 25) waiting for a neighbouring tile's plan** (8.5 to 22 s), which is the link rule: other settlements' tile plans and quays (`rawPlan`, 45 thread-seconds of sampled work, all 11 reads threads and 2 workers busy for the whole wait), and the link states (about 10 thread-seconds). **The exit-cut walk no longer shows up at all** (no sample on a `fullCut` or `cutWithin` frame in the whole run); step 2 removed it. The link rule was 24 s of the old 35 s chunk; it is now about 14 s of 25 s, and it is now spread over all the cores instead of one.
+- **What is left is the link rule's real work**: the neighbour tiles' plans, which need the far settlements' skeletons and quays. Two shortcuts that no longer apply (DQ1 and DQ2 of the plan: let the trim ignore the far settlement's side of a link, or decide "an approach exists" without street levels) would cut that, but they change output; not asked yet. By the plan's own rule they are asked only when step 7 lands above 15 s, and it does (24.6 s).
+- **The two-mode flight tick did not appear in three runs** (0.91, 0.92 and 1.09 s with the sampler on; always at 1,978 blocks flown, the same point as the 4 to 5 s mode of before). Before, the mode showed in 5 of the 10 earlier quiet runs (QUAYLAZY step 6 and the B1 table above). Three low runs are not proof it is gone (the chance of 3 of 3 by luck at a half-and-half rate is 1 in 8); keep watching.
+- **The warm settle and the reads pool**: the perf "settle" after the flight took 4.99 and 4.46 s, the same as in every earlier run (4.99 s in the B1 runs), so CASCADE 5b's wait for neighbour plans costs the measurement nothing. Tile plans on reads-pool threads did not visibly starve the terrain reads: the mean cold chunk fell 28 % (576 to 414 ms) and the median chunk is 60 ms; there was no sign of a slower ordinary chunk, but no run isolated it either.
+- **Planner rows (after CASCADE 2fix, 3ca5a468 merged; one `perf.sh --planner-only` on quiet beebox at 72917c94, `perf: quiet host`, load 0.27 before, 2.3 after): "Cold district plan, p95" is still 3.67 s (ceiling 3 s, FAIL; median 668 ms, budget 300 ms; before CASCADE step 2 about 1.15 s). Step 2 removed a `fullCut` whose quay-chain trace the sample tile 16,-35 reused; 2fix cut it from 5.7 s. Known issue, John decides between a QUAYLAZY follow-up and a different ceiling. The cascade count rows are unchanged by 2fix (16,460 and 38, ok), the region layer and the lazy-quay tile rows are ok. The world rows above were measured before 2fix; it only changes the walk-ahead boxes, but they were not re-run.**
+
+The hold cap (TeleportHold, TPHOLD15) and the district-plan ceiling: see the questions in [QUESTIONS.md](../QUESTIONS.md) (the TeleportHold cap line, recommending 60 s). The numbers: a cold metropolis arrival holds 32.8 to 33.2 s, the slowest chunk is 24.6 s. A 15 s cap releases the player about 18 s before the destination is ready.
+
 ## 8. Options for the cold-arrival wait (for John)
 
 The numbers are from section 7 (beebox, quiet). "Wait" means the cold 9 x 9 block at the metropolis: about 60 s with the mod against 2.6 s in vanilla. Its slowest chunk is about 53 s against 0.33 s.

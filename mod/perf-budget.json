@@ -74,15 +74,17 @@
     },
     {
       "key": "cascade.neighbours.chunkFills",
-      "label": "CASCADE (report-only until step 7; intended ci = 1.2 x the baseline 18,243): chunks of exact terrain generated to plan the metropolis tile of chunk (148,-360) and ground its 8 neighbours, fresh planner, no eviction, one thread (deterministic count)",
+      "label": "CASCADE: chunks of exact terrain generated to plan the metropolis tile of chunk (148,-360) and ground its 8 neighbours, fresh planner, no eviction, one thread (deterministic count; 16,460 at 98f07884 after steps 1-6, was 18,243 before; budget = that value, ci = 1.2 x it; always enforced)",
       "unit": "count",
-      "budget": null
+      "budget": 16460,
+      "ci": 19752
     },
     {
       "key": "cascade.neighbours.rawPlans",
-      "label": "Same: raw tile plans computed, all settlements (baseline 52; intended ci = 1.2 x that)",
+      "label": "Same: raw tile plans computed, all settlements (38 at 98f07884, was 52; budget = that value, ci = 1.2 x it rounded up)",
       "unit": "count",
-      "budget": null
+      "budget": 38,
+      "ci": 46
     },
     {
       "expr": "inlineShare",

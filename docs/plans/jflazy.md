@@ -323,6 +323,8 @@ Files: `mod/.../worldgen/RegionWarmer.java`, `planner-core/.../world/WorldPlanne
 
 ## Step 7: verification and measurement (assistant or coder; after 4, 5 and 6)
 
+**Done 2026-11-01** ([log](../log/2026-11-01-p6-cascade-7.md)): slowest cold chunk 24.5 s, arrival 39 s, hold 33 s (world rows, before CASCADE2FIX). Planner rows re-run after it: cold district plan p95 3.67 s, still over its 3 s ceiling (known issue; John decides).
+
 - **Correctness**, on the final merged commit:
   - `scripts/test-all.sh --full` (order test included) through `scripts/anywhere.sh`;
   - `--planner-heavy` for the heavy equality cases;
