@@ -119,3 +119,4 @@ the end of its track's list. Notes use [TEMPLATE.md](TEMPLATE.md).
 
 - [road-refine](spikes/road-refine.md): main-road deep cuts come mostly from flat junction pads on overlapping main roads; a 32-lattice refine pass cuts >8 columns by 31%; finer intercity lattice and D* Lite not worth it. Status: new
 - [late-stairs](worldgen/late-stairs.md): the playtest flight pit comes from vanilla beard_thin raising ground around buildings while the planner builds flights on bare noise ground; recommends a late planner pass reading beard-adjusted ground (7.26 BEARDFIT). Status: new
+- [roads-first](worldgen/roads-first.md): John's roads-first idea (local road lattice, settlements follow roads) is sound and gives one network per landmass by construction, but the current network is already local and unbounded; islands come from water (~25%, needs 7.3 bridges) and the link limit (~6%), and cold cost is city-internal; recommends a CLI prototype after 0.1.0. Status: new
