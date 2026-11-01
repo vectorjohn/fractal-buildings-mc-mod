@@ -69,8 +69,126 @@ final class Quays {
 	/** One point (the first end) per segment of the cells {@code [ci0, ci1] x [cj0, cj1]} (cell indices), in scan order. */
 	static List<Pt> seeds(Near near, int ci0, int cj0, int ci1, int cj1) {
 		List<Pt> out = new ArrayList<>();
-		for (int j = cj0; j <= cj1; j++) for (int i = ci0; i <= ci1; i++) for (Pt[] sg : segments(near, i, j)) out.add(sg[0]);
+		for (Pt[] sg : segmentsIn(near, ci0, cj0, ci1, cj1)) out.add(sg[0]);
 		return out;
+	}
+
+	/** Every segment of the cells {@code [ci0, ci1] x [cj0, cj1]} (cell indices), in scan order (j outer, i inner), as {@link #seeds} iterates them. */
+	static List<Pt[]> segmentsIn(Near near, int ci0, int cj0, int ci1, int cj1) {
+		List<Pt[]> out = new ArrayList<>();
+		for (int j = cj0; j <= cj1; j++) for (int i = ci0; i <= ci1; i++) out.addAll(segments(near, i, j));
+		return out;
+	}
+
+	/**
+	 * A run found by {@link #runThrough}: its columns in walk order (the direction of the seed segment), or, when {@code wholeRing},
+	 * no columns: the walk came round to where it started with every column passing, so the run depends on where the ring is cut and
+	 * the caller takes the exact path ({@link #chainThrough} and {@code QuayTrace.runsOf}).
+	 */
+	record RunWalk(List<int[]> cols, boolean wholeRing) {}
+
+	/** The two cells that share the edge whose midpoint is p. */
+	private static int[][] around(Pt p) {
+		int px = p.x(), pz = p.z();
+		return px % STEP == 0 ? new int[][] {{px / STEP, Math.floorDiv(pz, STEP)}, {px / STEP - 1, Math.floorDiv(pz, STEP)}}
+			: new int[][] {{Math.floorDiv(px, STEP), pz / STEP}, {Math.floorDiv(px, STEP), pz / STEP - 1}};
+	}
+
+	/** The cell across the edge of p from {@code from}, or null when it is outside the window. */
+	private static int[] across(Pt p, int[] from, int i0, int j0, int i1, int j1) {
+		for (int[] c : around(p)) {
+			if (c[0] == from[0] && c[1] == from[1]) continue;
+			return c[0] < i0 || c[0] > i1 || c[1] < j0 || c[1] > j1 ? null : c;
+		}
+		return null;
+	}
+
+	/** The cell of the segment a to b: the one cell that has both points on its edges. */
+	private static int[] cellOf(Pt a, Pt b) {
+		for (int[] c : around(a)) {
+			int x = c[0] * STEP, z = c[1] * STEP;
+			if (onEdge(a, x, z) && onEdge(b, x, z)) return c;
+		}
+		throw new IllegalArgumentException("no cell holds both " + a + " and " + b);
+	}
+
+	private static boolean onEdge(Pt p, int x, int z) {
+		boolean inX = p.x() >= x && p.x() <= x + STEP, inZ = p.z() >= z && p.z() <= z + STEP;
+		return inX && inZ && (p.x() == x || p.x() == x + STEP || p.z() == z || p.z() == z + STEP);
+	}
+
+	/** The end of the segment of {@code cell} that has {@code p} as an end, or null when none does. */
+	private static Pt otherEnd(Near near, int[] cell, Pt p) {
+		for (Pt[] sg : segments(near, cell[0], cell[1])) {
+			if (sg[0].equals(p)) return sg[1];
+			if (sg[1].equals(p)) return sg[0];
+		}
+		return null;
+	}
+
+	/**
+	 * The run that holds column {@code t} of the segment {@code a -> b} (QUAYFAST step 1): the maximal stretch of the contour's columns
+	 * around it that all pass {@code ok}, walked from the column in both directions over the cell window {@code [i0, i1] x [j0, j1]} and
+	 * stopping at the first column that fails or at the window edge, so it reads only the corners of the cells on the run plus the cell
+	 * where each end stops. Columns are {@link StreetCols#columns} of the contour's steps, which are exact under reversal (steps run along an
+	 * axis or at 45 degrees), so the list is the run {@code QuayTrace.runsOf} cuts, in the direction of {@code a -> b}. Column {@code t} must pass.
+	 */
+	static RunWalk runThrough(Near near, java.util.function.Predicate<int[]> ok, int i0, int j0, int i1, int j1, Pt a, Pt b, int t) {
+		List<int[]> seg = StreetCols.columns(List.of(a, b));
+		if (t < 0 || t >= seg.size() || !ok.test(seg.get(t))) throw new IllegalArgumentException("column " + t + " of " + a + " to " + b + " is not a quay column");
+		int[] start = cellOf(a, b);
+		// forward: the rest of a -> b, then the next steps
+		List<int[]> fwd = new ArrayList<>();
+		boolean open = true;
+		int segFail = seg.size(); // the first column of a -> b after t that fails, if the forward walk stops on it
+		for (int k = t + 1; k < seg.size() && open; k++) { if (ok.test(seg.get(k))) fwd.add(seg.get(k)); else { open = false; segFail = k; } }
+		int wrapStop = -1;
+		int[] cell = start;
+		Pt q = b;
+		while (open) {
+			if (q.equals(a)) { // all the way round: the rest of the run is the start of a -> b, up to the first failing column
+				int k = 1;
+				while (k < t && ok.test(seg.get(k))) { fwd.add(seg.get(k)); k++; }
+				if (k >= t) return new RunWalk(List.of(), true);
+				wrapStop = k;
+				break;
+			}
+			int[] next = across(q, cell, i0, j0, i1, j1);
+			if (next == null) break; // the window edge
+			Pt r = otherEnd(near, next, q);
+			if (r == null) break;
+			List<int[]> step = StreetCols.columns(List.of(q, r));
+			for (int k = 1; k < step.size() && open; k++) { if (ok.test(step.get(k))) fwd.add(step.get(k)); else open = false; }
+			cell = next;
+			q = r;
+		}
+		// backward: the start of a -> b, then the steps before it
+		List<int[]> back = new ArrayList<>();
+		open = true;
+		for (int k = t - 1; k > wrapStop && open; k--) { if (ok.test(seg.get(k))) back.add(seg.get(k)); else open = false; }
+		if (wrapStop >= 0) open = false; // the forward walk came round to here
+		cell = start;
+		q = a;
+		while (open) {
+			int[] next = across(q, cell, i0, j0, i1, j1);
+			if (next == null) break;
+			Pt r = otherEnd(near, next, q);
+			if (r == null) break;
+			List<int[]> step = StreetCols.columns(List.of(r, q)); // exact under reversal
+			for (int k = step.size() - 2; k >= 0 && open; k--) { if (ok.test(step.get(k))) back.add(step.get(k)); else open = false; }
+			if (r.equals(b)) { // round to the far end of a -> b: its columns after the forward walk's failing one are the rest
+				if (open && segFail == seg.size()) return new RunWalk(List.of(), true); // the forward walk failed elsewhere, so this cannot happen; a guard
+				for (int k = seg.size() - 2; k > segFail && open; k--) { if (ok.test(seg.get(k))) back.add(seg.get(k)); else open = false; }
+				break;
+			}
+			cell = next;
+			q = r;
+		}
+		List<int[]> cols = new ArrayList<>(back.size() + 1 + fwd.size());
+		for (int k = back.size() - 1; k >= 0; k--) cols.add(back.get(k));
+		cols.add(seg.get(t));
+		cols.addAll(fwd);
+		return new RunWalk(cols, false);
 	}
 
 	/**

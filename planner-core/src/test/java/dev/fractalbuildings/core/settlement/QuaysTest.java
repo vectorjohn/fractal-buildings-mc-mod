@@ -137,4 +137,116 @@ class QuaysTest {
 		assertEquals(2, chains.size());
 		for (List<Pt> chain : chains) assertEquals(chain, Quays.chainThrough(near, 0, 0, 0, 0, chain.get(0)));
 	}
+
+	// ---- QUAYFAST step 1: the run walker
+
+	private static java.util.function.Predicate<int[]> okOf(long seed, int modulus) {
+		return c -> QuayTraceTest.h(seed, Math.floorDiv(c[0], 8), Math.floorDiv(c[1], 8)) % modulus != 0;
+	}
+
+	private static long ck(int[] c) { return ((long) c[1] << 32) ^ (c[0] & 0xffffffffL); }
+
+	private static boolean sameCols(List<int[]> a, List<int[]> b) {
+		if (a.size() != b.size()) return false;
+		for (int k = 0; k < a.size(); k++) if (a.get(k)[0] != b.get(k)[0] || a.get(k)[1] != b.get(k)[1]) return false;
+		return true;
+	}
+
+	private static List<int[]> reversed(List<int[]> a) {
+		List<int[]> r = new ArrayList<>(a);
+		java.util.Collections.reverse(r);
+		return r;
+	}
+
+	/** Column key to {a, b, t}: a segment of the window that carries it. */
+	private static java.util.Map<Long, Object[]> columnIndex(Quays.Near near) {
+		java.util.Map<Long, Object[]> index = new java.util.TreeMap<>();
+		for (Pt[] sg : Quays.segmentsIn(near, 0, 0, W - 1, W - 1)) {
+			List<int[]> cols = StreetCols.columns(List.of(sg[0], sg[1]));
+			for (int t = 0; t < cols.size(); t++) index.putIfAbsent(ck(cols.get(t)), new Object[] {sg[0], sg[1], t});
+		}
+		return index;
+	}
+
+	@Test
+	void aRunWalkGivesTheChainsRun() {
+		int checked = 0, whole = 0;
+		for (int s = 0; s < 200; s++) {
+			double level = new double[] {0.3, 0.5, 0.6, 0.7}[s % 4];
+			Quays.Near near = noise(s, level, s % 3 == 0, 0, 0);
+			var ok = okOf(s, s % 5 == 0 ? 97 : 13);
+			var index = columnIndex(near);
+			for (List<Pt> chain : Quays.contour(near, 0, 0, (W - 1) * Quays.STEP, (W - 1) * Quays.STEP)) {
+				boolean ring = chain.get(0).equals(chain.get(chain.size() - 1));
+				List<int[]> cols = StreetCols.columns(chain);
+				if (ring) cols = QuayTrace.breakRing(cols, ok);
+				for (List<int[]> run : StreetCols.runs(cols, ok)) {
+					for (int k : new int[] {0, run.size() / 2, run.size() - 1}) {
+						Object[] at = index.get(ck(run.get(k)));
+						Quays.RunWalk w = Quays.runThrough(near, ok, 0, 0, W - 1, W - 1, (Pt) at[0], (Pt) at[1], (int) at[2]);
+						if (w.wholeRing()) {
+							assertTrue(ring, "seed " + s + ": an open chain reported a whole ring");
+							assertEquals(run.size(), cols.size(), "seed " + s + ": a whole-ring walk on a run that is not the whole ring");
+							whole++;
+							continue;
+						}
+						assertTrue(sameCols(w.cols(), run) || sameCols(w.cols(), reversed(run)), "seed " + s + " column " + k + " of a run of " + run.size() + ": got " + w.cols().size() + " columns");
+						checked++;
+					}
+				}
+			}
+		}
+		assertTrue(checked > 1500, "only " + checked + " walks checked");
+		System.out.println("aRunWalkGivesTheChainsRun: " + checked + " walks, " + whole + " whole-ring");
+	}
+
+	@Test
+	void anAllQuayRingIsReported() {
+		int rings = 0, opens = 0;
+		java.util.function.Predicate<int[]> all = c -> true;
+		for (int s = 0; s < 200; s++) {
+			double level = new double[] {0.3, 0.5, 0.6, 0.7}[s % 4];
+			Quays.Near near = noise(s, level, s % 3 == 0, 0, 0);
+			var index = columnIndex(near);
+			for (List<Pt> chain : Quays.contour(near, 0, 0, (W - 1) * Quays.STEP, (W - 1) * Quays.STEP)) {
+				boolean ring = chain.get(0).equals(chain.get(chain.size() - 1));
+				List<int[]> cols = StreetCols.columns(chain);
+				for (int k : new int[] {0, cols.size() / 2, cols.size() - 1}) {
+					Object[] at = index.get(ck(cols.get(k)));
+					Quays.RunWalk w = Quays.runThrough(near, all, 0, 0, W - 1, W - 1, (Pt) at[0], (Pt) at[1], (int) at[2]);
+					if (ring) { assertTrue(w.wholeRing(), "seed " + s + ": a ring that is all quay"); rings++; }
+					else {
+						assertFalse(w.wholeRing(), "seed " + s);
+						assertTrue(sameCols(w.cols(), cols) || sameCols(w.cols(), reversed(cols)), "seed " + s + ": the whole open chain");
+						opens++;
+					}
+				}
+			}
+		}
+		assertTrue(rings > 50 && opens > 50, rings + " ring and " + opens + " open checks");
+	}
+
+	@Test
+	void aRunWalkReadsOnlyItsCells() {
+		for (int s = 0; s < 100; s++) {
+			double level = new double[] {0.3, 0.5, 0.6, 0.7}[s % 4];
+			Quays.Near base = noise(s, level, s % 3 == 0, 0, 0);
+			var ok = okOf(s, 13);
+			var index = columnIndex(base);
+			for (List<Pt> chain : Quays.contour(base, 0, 0, (W - 1) * Quays.STEP, (W - 1) * Quays.STEP)) {
+				boolean ring = chain.get(0).equals(chain.get(chain.size() - 1));
+				List<int[]> cols = StreetCols.columns(chain);
+				if (ring) cols = QuayTrace.breakRing(cols, ok);
+				for (List<int[]> run : StreetCols.runs(cols, ok)) {
+					java.util.Set<Long> nodes = new java.util.HashSet<>();
+					Quays.Near counting = (x, z) -> { nodes.add(((long) z << 32) ^ (x & 0xffffffffL)); return base.at(x, z); };
+					Object[] at = index.get(ck(run.get(run.size() / 2)));
+					Quays.RunWalk w = Quays.runThrough(counting, ok, 0, 0, W - 1, W - 1, (Pt) at[0], (Pt) at[1], (int) at[2]);
+					if (w.wholeRing()) continue;
+					long cells = (run.size() + Quays.STEP - 1) / (Quays.STEP / 2) + 2; // a step crosses a cell and is at least 4 columns
+					assertTrue(nodes.size() <= 4 * cells + 16, "seed " + s + ": read " + nodes.size() + " nodes for a run of " + run.size() + " columns");
+				}
+			}
+		}
+	}
 }
