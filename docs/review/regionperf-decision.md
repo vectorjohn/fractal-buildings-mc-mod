@@ -244,6 +244,25 @@ What it says:
 
 A cold metropolis arrival now holds 46 to 48 s on a quiet beebox (the hold ends when the warmer finishes and the chunks of the 9 x 9 view are FULL; whole trace: 66 s). A cap of 15 s would release the player about 30 s before the destination exists and freeze the server tick for the rest (the slowest chunk is 34.7 s); 90 s holds with margin, 60 s would too. See the proposal in the p6-quaylazy-6 report: keep 90 s (or 60 s) until the settlement-wide junction field is lazy; 15 s needs the slowest cold chunk under about 12 s.
 
+### Reads pool size (B1, 2026-11-01, quiet beebox)
+
+B1 is step 6 of the [JFLAZY plan](../plans/jflazy.md) (which became CASCADE: making the exit-road trim and the link rule cheaper). It asks whether a bigger reads pool helps. The reads pool is PARREADS's helper threads (parallel terrain reads), which fill vanilla terrain chunks while a cold settlement is planned. Today it gets a third of the CPUs, capped at 6, which is 4 threads on beebox's 12 CPUs. **How it was measured:** `scripts/perf.sh --world-only` six times on beebox (dedicated server, no renderer), at commit c468dd41 (before CASCADE steps 1 and 5). The pool size was set with `-Dfractalbuildings.readThreads=N` (N = 4, 8, 11, two runs each, interleaved 4, 8, 11, 4, 8, 11), and `jcmd` read the property back on the running server each time. Each run was sent only when `ssh beebox job status` showed nothing running or queued. `scripts/quiet-check.sh --beebox` was QUIET before and after each run, and inside each run at the start and at world end (no other job, other processes 0.02 to 0.05 cores). Every run ended `perf: quiet host`. The loadavg sampled just before the mod world / the arrival pair was 1.4 / 3.1 and 5.9 / 3.0 (N = 4), 2.9 / 4.5 and 5.3 / 2.4 (N = 8), 5.6 / 5.6 and 3.5 / 3.0 (N = 11); it is the series' own back-to-back work, so it is recorded, not judged. Evidence (forensic source, not tracked): `.claude/reports/p6-cascade-6-n{4,8,11}-r{1,2}-evidence/`, the last directory of each.
+
+| What is timed (runs 1 / 2) | N = 4 (today) | N = 8 | N = 11 | Vanilla (same runs) |
+|---|---|---|---|---|
+| Slowest chunk of the cold 9 x 9 block (`mod.cold.chunk.max`) | 34.85 / 34.93 s | 30.81 / 30.88 s | 30.52 / 30.65 s | 0.17 to 0.21 s |
+| Mean chunk of that block | 576 / 576 ms | 519 / 516 ms | 513 / 517 ms | |
+| Cold arrival, 9 x 9 view FULL (`arrival.cold.metro`) | 52.30 / 52.76 s | 47.60 / 47.85 s | 47.67 / 46.45 s | 4.2 to 4.6 s |
+| TeleportHold, how long it held (`arrival.hold`) | 46.41 / 47.30 s | 42.26 / 42.75 s | 42.66 / 41.31 s | |
+| Longest server tick during that arrival (`arrival.maxTick`) | 0.58 / 0.60 s | 0.66 / 0.64 s | 0.86 / 0.76 s | |
+| Worst server tick, flight to the gate city (`mod.flight.tick.max`) | 0.87 / **5.32** s | **4.68 / 4.25** s | 0.28 / 0.39 s | |
+| p95 server tick, same flight | 11.5 / 10.2 ms | 10.6 / 10.6 ms | 10.5 / 12.9 ms | |
+
+- **A gain shows in both runs, at N = 8 and at N = 11.** The slowest cold chunk drops by about 4.0 s (12 %), and the arrival and the hold by about 4.5 to 5 s (9 to 10 %). N = 11 is within 0.3 s of N = 8 on the chunk and arrival rows: the pool saturates at about 8 threads here.
+- **The worst flight tick is the known two-mode row** (QUAYLAZY above: one chunk waits on the main thread for a tile the warmer has not reached). Its 4 to 5 s mode always came at the same point of the flight (1,978 blocks flown): once at N = 4, in both runs at N = 8, and in neither run at N = 11. Two runs per size can't show whether the pool size causes this. By the rule set for this step (a gain in both runs, and the flight tick no worse), N = 11 qualifies and N = 8 does not clearly.
+- **Cost:** the longest arrival tick rises from about 0.6 s to about 0.8 s at N = 11 (no budget on that row). Only a 12-CPU dedicated server was measured, with no client on the same machine.
+- These numbers predate CASCADE steps 1 and 5 (the warmer's order changed in step 5). CASCADE step 7 measures again.
+
 
 ## 8. Options for the cold-arrival wait (for John)
 

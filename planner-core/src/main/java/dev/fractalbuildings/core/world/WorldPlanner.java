@@ -490,8 +490,37 @@ public class WorldPlanner {
 	 * road links where the probes run in parallel (PARREADS: the warmer's whole job, so a waterfront city's trace is done as early as it can be,
 	 * on the warmer's pool, before a chunk's structure start has to run it on a worldgen thread the server may be waiting for).
 	 */
-	public void warm(int blockX, int blockZ, int radius, boolean quays) {
-		TreeMap<String, SettlementSite> found = new TreeMap<>();
+	public void warm(int blockX, int blockZ, int radius, boolean quays) { warm(blockX, blockZ, radius, quays, false); }
+
+	/**
+	 * The settlements in the order {@link #warm} visits them: by (distance of the rim from the point, id), the one the point is in or
+	 * nearest to first (CASCADE A4). Only the order of cache fills depends on it, never an answer.
+	 */
+	static List<SettlementSite> warmOrder(java.util.Collection<SettlementSite> sites, int blockX, int blockZ) {
+		List<SettlementSite> out = new ArrayList<>(sites);
+		out.sort(java.util.Comparator.<SettlementSite>comparingDouble(st -> StrictMath.hypot((double) st.centre().x() - blockX, (double) st.centre().z() - blockZ) - st.radius()).thenComparing(SettlementSite::id));
+		return out;
+	}
+
+	/** The settlements an intercity link of the site's graph node joins it to, in edge order (none without roads or when the graph does not know the site). */
+	public List<SettlementSite> linkNeighbours(SettlementSite site) {
+		if (roads == null) return List.of();
+		RoadNet.Settlement node = graphNode(site);
+		if (node == null) return List.of();
+		List<SettlementSite> out = new ArrayList<>();
+		for (RoadNet.EdgeKey e : roads.edgesOf(node)) {
+			dev.fractalbuildings.core.region.CellKey other = e.a().equals(node.owner()) ? e.b() : e.a();
+			siteOf(new Cell(other.cx(), other.cz())).ifPresent(out::add);
+		}
+		return out;
+	}
+
+	/**
+	 * {@link #warm(int, int, int, boolean)}; with {@code destinationOnly} (a teleport hold waits for this) only the settlement nearest the
+	 * point and the ones it links to are warmed, the rest is left to a later full warm. Changes no answer either way.
+	 */
+	public void warm(int blockX, int blockZ, int radius, boolean quays, boolean destinationOnly) {
+		TreeMap<String, SettlementSite> foundById = new TreeMap<>();
 		int s = config.cellSize();
 		if (fieldView != null) { // PARREADS: the cells' own resolutions in parallel where the probes can
 			List<dev.fractalbuildings.core.region.CellKey> own = new ArrayList<>();
@@ -502,27 +531,42 @@ public class WorldPlanner {
 		}
 		for (int cz = Math.floorDiv(blockZ - radius, s); cz <= Math.floorDiv(blockZ + radius, s); cz++) {
 			for (int cx = Math.floorDiv(blockX - radius, s); cx <= Math.floorDiv(blockX + radius, s); cx++) {
-				siteOf(new Cell(cx, cz)).ifPresent(site -> found.put(site.id(), site));
+				siteOf(new Cell(cx, cz)).ifPresent(site -> foundById.put(site.id(), site));
 			}
+		}
+		List<SettlementSite> found = warmOrder(foundById.values(), blockX, blockZ);
+		if (destinationOnly && !found.isEmpty()) { // the destination and what it links to
+			TreeMap<String, SettlementSite> keep = new TreeMap<>();
+			keep.put(found.get(0).id(), found.get(0));
+			for (SettlementSite n : linkNeighbours(found.get(0))) keep.put(n.id(), n);
+			found = warmOrder(keep.values(), blockX, blockZ);
 		}
 		List<dev.fractalbuildings.core.region.CellKey> cells = new ArrayList<>();
 		if (roads != null) {
-			for (int cz = Math.floorDiv(blockZ - radius, s); cz <= Math.floorDiv(blockZ + radius, s); cz++) {
-				for (int cx = Math.floorDiv(blockX - radius, s); cx <= Math.floorDiv(blockX + radius, s); cx++) cells.add(new dev.fractalbuildings.core.region.CellKey(cx, cz));
+			if (destinationOnly) { // the point's cell and the cells of the settlements kept
+				java.util.TreeSet<dev.fractalbuildings.core.region.CellKey> own = new java.util.TreeSet<>();
+				own.add(new dev.fractalbuildings.core.region.CellKey(Math.floorDiv(blockX, s), Math.floorDiv(blockZ, s)));
+				for (SettlementSite st : found) own.add(new dev.fractalbuildings.core.region.CellKey(st.claimant().cx(), st.claimant().cz()));
+				cells.addAll(own);
+			} else {
+				for (int cz = Math.floorDiv(blockZ - radius, s); cz <= Math.floorDiv(blockZ + radius, s); cz++) {
+					for (int cx = Math.floorDiv(blockX - radius, s); cx <= Math.floorDiv(blockX + radius, s); cx++) cells.add(new dev.fractalbuildings.core.region.CellKey(cx, cz));
+				}
 			}
 		}
+		final List<SettlementSite> order = found;
 		// PARREADS: the junction fields (chunk reads) and the road links (lattice and station reads) are independent: side by side where the
 		// probes can, each cell's links in parallel too; serially, in this order, otherwise
 		probes.reads().fanout().each(2, part -> {
 			if (part == 0) {
-				for (SettlementSite site : found.values()) {
+				for (SettlementSite site : order) {
 					SkeletonSource src = source(site);
 					List<Cell> member = new ArrayList<>(site.cells());
 					if (member.size() > 1) probes.reads().fanout().each(member.size(), i -> src.skeleton(member.get(i))); // the network's cell skeletons (coarse reads) side by side
 					src.network();
 					source(site).junctions(probes.exact()); // JUNCTION: the settlement's junction field reads its whole streets' terrain once, ahead of the first tile
 				}
-				if (quays) for (SettlementSite site : found.values()) dev.fractalbuildings.core.settlement.Districts.warmQuays(source(site), probes.exact());
+				if (quays) for (SettlementSite site : order) dev.fractalbuildings.core.settlement.Districts.warmQuays(source(site), probes.exact());
 			} else {
 				probes.reads().fanout().each(cells.size(), i -> roads.edgesNearCell(cells.get(i)));
 			}

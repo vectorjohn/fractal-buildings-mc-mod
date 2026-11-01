@@ -98,9 +98,9 @@ public final class RegionWarmer {
 				long t0 = System.nanoTime();
 				try {
 					int radius = 2 * planner.config().cellSize();
-					warmAt(planner, s, x, z, radius, false);
+					warmAt(planner, s, x, z, radius, false, workers, false);
 					if (Thread.currentThread().isInterrupted()) return; // the pool is stopping
-					warmAt(planner, s, ax, az, radius, true);
+					warmAt(planner, s, ax, az, radius, true, workers, false);
 				} catch (RuntimeException e) {
 					FractalBuildingsMod.LOGGER.debug("Warming around {},{} failed; the chunks will compute what they need", x, z, e);
 				} finally {
@@ -117,18 +117,51 @@ public final class RegionWarmer {
 		}
 	}
 
-	private static void warmAt(WorldPlanner planner, State s, int x, int z, int radius, boolean ahead) {
+	/**
+	 * One warm of a point. {@code held}: a teleport hold waits for it (CASCADE A4), so only the destination settlement and the ones it links
+	 * to are warmed, the tile's plan is made, and the neighbour tiles are left to the full warm that follows the release. Otherwise the
+	 * neighbours of the tile are planned on the workers once the tile's own plan is done (the chunks around it read their ground), in one
+	 * fire-and-forget task, so nothing here waits for them. Fills pure caches only.
+	 */
+	private static void warmAt(WorldPlanner planner, State s, int x, int z, int radius, boolean ahead, Executor workers, boolean held) {
 		// QUAYLAZY: no whole-city quay trace (20 s of worker time on a metropolis, for quays the player may never reach); the point's own
 		// tile is planned below, which traces only the quays near it, on the reads pool (warm still runs the road links beside the junction fields)
-		planner.warm(x, z, radius, WHOLE_QUAYS);
+		planner.warm(x, z, radius, WHOLE_QUAYS, held);
 		DistrictGrid.Tile t = planner.grid().tileAt(x, z);
 		if (planner.tile(t.ix(), t.iz()).isPresent()) planner.plan(t.ix(), t.iz()); // the destination tile's plan, so a hold on warmPoint ends with its quays done
 		long key = ((long) t.ix() << 32) ^ (t.iz() & 0xffffffffL);
+		if (!held) planNeighbours(planner, t.ix(), t.iz(), workers);
 		if ((ahead ? s.lastAhead : s.lastTile) == key) return;
 		if (ahead) s.lastAhead = key; else s.lastTile = key;
 		if (planner.tile(t.ix(), t.iz()).isPresent()) {
 			LaneStats.prefetch();
 			planner.prefetch(t.ix(), t.iz());
+		}
+	}
+
+	/** Queues the plans of the 8 tiles around (ix, iz), which exist, as one task of the workers; skipped when the pool refuses or is stopping. */
+	private static void planNeighbours(WorldPlanner planner, int ix, int iz, Executor workers) {
+		if (workers == null || !planner.tile(ix, iz).isPresent()) return;
+		LaneStats.warmBegin(); // the perf settle counts it as the warmer's work
+		try {
+			workers.execute(() -> {
+				long t0 = System.nanoTime();
+				try {
+					for (int dz = -1; dz <= 1; dz++) {
+						for (int dx = -1; dx <= 1; dx++) {
+							if ((dx != 0 || dz != 0) && planner.tile(ix + dx, iz + dz).isPresent()) planner.plan(ix + dx, iz + dz);
+							if (Thread.currentThread().isInterrupted()) return;
+						}
+					}
+				} catch (RuntimeException e) {
+					FractalBuildingsMod.LOGGER.debug("Planning the neighbours of tile {},{} failed; the chunks will compute what they need", ix, iz, e);
+				} finally {
+					LaneStats.warm(System.nanoTime() - t0);
+				}
+			});
+		} catch (RuntimeException refused) {
+			LaneStats.warmAbort();
+			LaneStats.refused();
 		}
 	}
 
@@ -150,7 +183,14 @@ public final class RegionWarmer {
 		try {
 			workers.execute(() -> {
 				try {
-					warmAt(planner, newState(), x, z, 2 * planner.config().cellSize(), false);
+					State st = newState();
+					int radius = 2 * planner.config().cellSize();
+					try {
+						warmAt(planner, st, x, z, radius, false, workers, true); // the hold waits for the destination and its links only
+					} finally {
+						done.complete(null);
+					}
+					if (!Thread.currentThread().isInterrupted()) warmAt(planner, st, x, z, radius, false, workers, false); // released: the rest of the region and the neighbour tiles
 				} catch (RuntimeException e) {
 					FractalBuildingsMod.LOGGER.debug("Warming point {},{} failed; the chunks will compute what they need", x, z, e);
 				} finally {
