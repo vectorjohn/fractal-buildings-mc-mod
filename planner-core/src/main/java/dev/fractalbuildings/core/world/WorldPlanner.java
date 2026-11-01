@@ -331,7 +331,11 @@ public class WorldPlanner {
 		SettlementSite site = raw.info().site();
 		SkeletonSource src = source(site);
 		Rect rect = raw.plan().district().rect();
-		ExitTrim.Plans lookup = (x, z) -> tile(x, z).filter(i -> i.site().id().equals(site.id())).isPresent() ? rawPlan(x, z).plan() : null;
+		ExitTrim.Plans lookup = new ExitTrim.Plans() {
+			@Override public DistrictPlan raw(int x, int z) { return tile(x, z).filter(i -> i.site().id().equals(site.id())).isPresent() ? rawPlan(x, z).plan() : null; }
+
+			@Override public void ahead(List<int[]> tiles) { prefetch(tiles.size(), i -> raw(tiles.get(i)[0], tiles.get(i)[1])); }
+		};
 		java.util.TreeMap<String, ExitTrim.Cut> cuts = new java.util.TreeMap<>();
 		if (!ExitTrim.inCore(src, rect)) { // the tile that holds the centre is never cut: the first tile of a settlement pays nothing here
 			for (String id : ExitTrim.exitRoadIds(src)) { // only the exit roads that cross this tile; the link rule and the neighbours' plans are paid when a cut can reach it
@@ -738,6 +742,8 @@ public class WorldPlanner {
 		List<dev.fractalbuildings.core.road.RoadPort> ports = roads.portsOf(owner);
 		boolean air = owner.tier().atLeast(dev.fractalbuildings.core.settlement.Tier.TOWN);
 		List<int[]> exits = new ArrayList<>();
+		List<Cell> member = site.cells();
+		prefetch(member.size(), i -> src.skeleton(member.get(i))); // the settlement's cell skeletons side by side
 		for (Cell cell : site.cells()) for (dev.fractalbuildings.core.settlement.Road r : src.skeleton(cell).approaches()) exits.add(new int[] {r.points().get(0).x(), r.points().get(0).z()});
 		for (Cell cell : site.cells()) {
 			for (dev.fractalbuildings.core.settlement.Road r : src.skeleton(cell).approaches()) {
@@ -861,6 +867,7 @@ public class WorldPlanner {
 	public LinkState linkState(RoadNet.EdgeKey e) {
 		if (roads == null) return LinkState.LIVE;
 		return linkStates.get(e, k -> {
+			prefetch(2, i -> { if (i == 0) served(k.a(), k.b()); else served(k.b(), k.a()); }); // the two ends are independent
 			boolean sa = served(k.a(), k.b()), sb = served(k.b(), k.a());
 			if (sa && sb) return LinkState.LIVE;
 			if (!sa && !sb) return LinkState.DROPPED;
@@ -908,6 +915,27 @@ public class WorldPlanner {
 	private Approach drawOne(SettlementSite site, RoadNet.Settlement owner, int i) {
 		return drawnMain.getOnce(site.id() + "#" + i, k -> Optional.ofNullable(
 			drawApproach(site, owner, approachNodes(site).get(i), owner.tier().atLeast(dev.fractalbuildings.core.settlement.Tier.TOWN)))).orElse(null);
+	}
+
+	/**
+	 * CASCADE step 4 (A3): runs independent pieces on the reads fanout as <b>prefetches</b>, joined before the caller's own serial code reads the
+	 * same memos in its own order. So the answer is the one the serial code gives however the pieces finish (the serial fanout, a pool of any
+	 * delay, or a saturated one); a piece's failure is dropped here and the serial code, which asks again, meets (and throws) it in its own order.
+	 * Executor: {@code probes.reads().fanout()}, the PARREADS caller-runs fanout over the mod's reads pool, not the worker pool the warmer and
+	 * the chunk jobs run on. The caller takes pieces from the same counter as its helpers and waits only for pieces another thread is running,
+	 * so a prefetch started on a pool thread, or with the pool saturated, still ends. Pieces call only {@link #drawOne}, {@link #rawPlan},
+	 * {@code skeleton}, {@link #served} and {@link #linkState} of other links: they read terrain, skeletons and the district plans, never a
+	 * memo that waits on the piece's own caller ({@code rawPlan} never reads the link rule).
+	 */
+	private void prefetch(int n, java.util.function.IntConsumer piece) {
+		if (n < 2 || probes.reads().fanout().threads() < 2) return; // serial reads (the CLI, tests): nothing to gain, and no eager work; one piece: the serial code does it next anyway
+		probes.reads().fanout().each(n, i -> {
+			try {
+				piece.accept(i);
+			} catch (RuntimeException e) {
+				// prefetch only
+			}
+		});
 	}
 
 	/** Test and count harness: skeleton approaches drawn so far (memo size). */
@@ -1016,7 +1044,9 @@ public class WorldPlanner {
 	/** The approaches the road layer draws: {@link #approachRoads} without those to a dropped link. */
 	List<Approach> drawnApproaches(SettlementSite site, RoadNet.Settlement owner) {
 		List<Approach> out = new ArrayList<>();
-		for (Approach a : approachRoads(site, owner)) {
+		List<Approach> all = approachRoads(site, owner);
+		prefetch(all.size(), i -> { if (all.get(i).port() != null) linkState(edge(owner.owner(), all.get(i).port().other())); }); // one memoised link each
+		for (Approach a : all) {
 			if (a.port() != null && linkState(edge(owner.owner(), a.port().other())) == LinkState.DROPPED) continue;
 			out.add(a);
 		}
@@ -1033,6 +1063,7 @@ public class WorldPlanner {
 			List<Approach> out = new ArrayList<>();
 			boolean air = owner.tier().atLeast(dev.fractalbuildings.core.settlement.Tier.TOWN);
 			List<ApproachNodes> nodes = approachNodes(site);
+			prefetch(nodes.size(), i -> drawOne(site, owner, i)); // the main approaches side by side (memoised by drawOne); merged below in index order
 			for (int i = 0; i < nodes.size(); i++) {
 				Approach a = drawOne(site, owner, i);
 				if (a != null) out.add(a);
@@ -1158,6 +1189,17 @@ public class WorldPlanner {
 		var r = an.road();
 		double[][] st = dev.fractalbuildings.core.road.Curve.stations(an.nodes());
 		if (st.length < 2) return null;
+		// the district tiles around the first stations, side by side, before the serial streetLevel loop reads them in station order
+		java.util.LinkedHashMap<Long, int[]> around = new java.util.LinkedHashMap<>();
+		for (int k = 0; k < st.length - 1 && k < 24; k++) {
+			var home = grid.tileOf((int) Math.round(st[k][0]), (int) Math.round(st[k][1]));
+			for (int dz = -1; dz <= 1; dz++) for (int dx = -1; dx <= 1; dx++) around.putIfAbsent(key(home.ix() + dx, home.iz() + dz), new int[] {home.ix() + dx, home.iz() + dz});
+		}
+		List<int[]> tilesAround = new ArrayList<>(around.values());
+		prefetch(tilesAround.size(), i -> {
+			int[] t = tilesAround.get(i);
+			if (tile(t[0], t[1]).filter(info -> info.site().id().equals(site.id())).isPresent()) rawPlan(t[0], t[1]);
+		});
 		java.util.TreeMap<Integer, Integer> pins = new java.util.TreeMap<>();
 		// the exit end meets the district street (ROADJOIN: surfaces within a step); the port end is the graph road's contract
 		int lastRun = -1;

@@ -114,6 +114,7 @@ Item codes (PARREADS, MAINSTUB, TPHOLD, ...) and run terms, one row each. **Gene
 | ORDERFAIL |  | order test failed at s1_m10 (lava lakes in dug-in buildings) | done | [[docs/log/2026-10-27-orderfail|log]] |
 | ORDERHANG |  | order-test shutdown hang | done | [[docs/log/2026-10-31-p6-orderhang|log]] |
 | ORDERMEM |  | the order test picks how many worlds to run at once from free memory | done | [[CLAUDE|CLAUDE]] |
+| ORDERPORT |  | order-test never loses a run to a port collision | done | [[docs/log/2026-11-01-orderport|log]] |
 | ORDERSIM |  | engine-free chunk-order tests | done | [[docs/ROADMAP|ROADMAP]], [[docs/plans/ordersim|plan]] |
 | PARREADS |  | parallel terrain reads for cold settlement planning | done | [[docs/ROADMAP|ROADMAP]] |
 | PARTITIONS |  | high-rise corridors in exposed brick on both sides; inner walls should be plaster (DS-49) | polish | [[docs/ROADMAP|ROADMAP polish]], [[docs/design/STANDARDS|STANDARDS]] |

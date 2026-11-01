@@ -26,7 +26,12 @@ public final class ExitTrim {
 	static final int JOIN_REACH = 2;
 
 	/** The raw district plan of a tile, or null when no settlement plans it. */
-	public interface Plans { DistrictPlan raw(int ix, int iz); }
+	public interface Plans {
+		DistrictPlan raw(int ix, int iz);
+
+		/** A hint that these tiles ({ix, iz}) are read next, in this order: an implementation may compute them side by side (CASCADE A3). Never changes an answer. */
+		default void ahead(List<int[]> tiles) { }
+	}
 
 	/** A road cut after column {@code index} of {@code cols} (the road's columns from the hub to the gate). */
 	public record Cut(String road, List<int[]> cols, int index, int firstPoint, java.util.Set<String> dropped) {
@@ -239,6 +244,7 @@ public final class ExitTrim {
 		Plans cached = memo(plans);
 		int last = 0;
 		for (int i = 1; i < n; i++) {
+			if ((i - 1) % WALK_WINDOW == 0) cached.ahead(tilesAhead(grid, cols, i, Math.min(n, i + WALK_WINDOW), reach));
 			int kind = 0;
 			if (!deck[i]) {
 				if (i == wall) kind = 2;
@@ -260,12 +266,30 @@ public final class ExitTrim {
 		return false; // no frontage at or past m: the cut (if any) is for the whole road to find
 	}
 
+	/** Columns of the walk whose tiles are hinted to {@link Plans#ahead} at once: a window past the walk's early stop costs at most this many columns' tiles. */
+	static final int WALK_WINDOW = 48;
+
+	/** The distinct tiles the columns [from, to) read, in first-read order (those {@link #cutBeyondWalk} asks of {@code Plans}). */
+	private static List<int[]> tilesAhead(DistrictGrid grid, List<int[]> cols, int from, int to, int reach) {
+		java.util.LinkedHashMap<Long, int[]> out = new java.util.LinkedHashMap<>();
+		for (int i = from; i < to; i++) {
+			int x = cols.get(i)[0], z = cols.get(i)[1];
+			DistrictGrid.Tile t0 = grid.tileAt(x - reach - 1, z - reach - 1), t1 = grid.tileAt(x + reach + 1, z + reach + 1);
+			for (int iz = t0.iz(); iz <= t1.iz(); iz++) for (int ix = t0.ix(); ix <= t1.ix(); ix++) out.putIfAbsent(((long) ix << 32) ^ (iz & 0xffffffffL), new int[] {ix, iz});
+		}
+		return new ArrayList<>(out.values());
+	}
+
 	private static Plans memo(Plans plans) {
 		Map<Long, DistrictPlan> memo = new TreeMap<>();
-		return (ix, iz) -> {
-			long k = ((long) ix << 32) ^ (iz & 0xffffffffL);
-			if (!memo.containsKey(k)) memo.put(k, plans.raw(ix, iz));
-			return memo.get(k);
+		return new Plans() {
+			@Override public DistrictPlan raw(int ix, int iz) {
+				long k = ((long) ix << 32) ^ (iz & 0xffffffffL);
+				if (!memo.containsKey(k)) memo.put(k, plans.raw(ix, iz));
+				return memo.get(k);
+			}
+
+			@Override public void ahead(List<int[]> tiles) { plans.ahead(tiles); }
 		};
 	}
 
