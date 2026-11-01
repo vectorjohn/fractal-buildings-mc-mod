@@ -202,6 +202,7 @@ Item codes (PARREADS, MAINSTUB, TPHOLD, ...) and run terms, one row each. **Gene
 | T1 |  | Phase 5 step: terrain dump tool and first dumps | done | [[docs/log/2026-10-21-p5-t1-dumps|log]] |
 | T2 |  | Phase 5 step: gate terrain | done | [[docs/log/2026-10-21-p5-t2-gate-terrain|log]] |
 | TA |  | Phase 5 step: terrain toolkit (Phase 5, 5.3 groundwork) | done | [[docs/log/2026-10-21-p5-ta-terrain|log]] |
+| TESTFIX2 |  | portal-hold flake and LinkShortCutTest time | done | [[docs/log/2026-11-01-p6-testfix2|log]] |
 | TESTISO |  | server game test isolation (absorbs DETFLAKE) | done | [[docs/log/2026-10-25-p6-testiso|log]] |
 | TESTLAYERS |  | client test layers, B2 off the client, worker shutdown | done | [[docs/log/2026-10-26-p6-testlayers|log]] |
 | TESTSPEED |  | planner-core suite time | done | [[docs/ROADMAP|ROADMAP]] |

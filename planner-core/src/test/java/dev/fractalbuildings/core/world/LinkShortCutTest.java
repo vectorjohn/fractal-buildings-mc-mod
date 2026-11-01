@@ -15,6 +15,7 @@ import java.util.Random;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.function.Supplier;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
@@ -63,17 +64,38 @@ class LinkShortCutTest {
 	}
 
 	@Test
+	@Tag("heavy")
 	void everyGateAnswerEqualsTheFullRule() {
-		int gates = 0, served = 0, notServed = 0;
-		for (World world : WORLDS) {
+		gateSweep(1);
+	}
+
+	/** The default suite: every {@link #GATE_STRIDE}th gate of the sweep above, a fixed sample (the full one is minutes). */
+	@Test
+	void sampledGateAnswersEqualTheFullRule() {
+		gateSweep(GATE_STRIDE);
+	}
+
+	/** The full sweeps run all three worlds; a sample only pt1573, the smallest (the others cost about 5 s per fresh planner, the sample must stay near 30 s). */
+	static List<World> sweepWorlds(int stride) {
+		return stride == 1 ? WORLDS : WORLDS.subList(0, 1);
+	}
+
+	static final int GATE_STRIDE = 40, LINK_STRIDE = 4, ORDER_STRIDE = 6;
+
+	void gateSweep(int stride) {
+		int gates = 0, served = 0, notServed = 0, index = 0;
+		for (World world : sweepWorlds(stride)) {
 			WorldPlanner ref = world.make().get().fullLinkRule();
 			for (var e : sites(ref).entrySet()) {
 				String id = e.getKey();
 				List<int[]> gs;
 				try { gs = gates(ref, e.getValue()); } catch (RuntimeException ex) { continue; }
+				List<int[]> pick = new ArrayList<>();
+				for (int[] g : gs) if (index++ % stride == 0) pick.add(g);
+				if (pick.isEmpty()) continue;
 				WorldPlanner fast = world.make().get(); // fresh per settlement: nothing memoised from any other
 				SettlementSite fsite = fast.siteOf(e.getValue().cells().get(0)).orElseThrow();
-				for (int[] g : gs) {
+				for (int[] g : pick) {
 					String want = attempt(() -> ref.exitServedAt(e.getValue(), g[0], g[1]));
 					String got = attempt(() -> fast.exitServedAt(fsite, g[0], g[1]));
 					// where the full rule throws (a recorded window that lacks part of the settlement, never a real world) the short cut may
@@ -90,12 +112,24 @@ class LinkShortCutTest {
 	}
 
 	@Test
+	@Tag("heavy")
 	void everyLinkStateEqualsTheFullRule() {
+		linkSweep(1);
+	}
+
+	@Test
+	void sampledLinkStatesEqualTheFullRule() {
+		linkSweep(LINK_STRIDE);
+	}
+
+	void linkSweep(int stride) {
 		int[] seen = new int[3];
-		for (World world : WORLDS) {
+		int index = 0;
+		for (World world : sweepWorlds(stride)) {
 			WorldPlanner ref = world.make().get().fullLinkRule();
 			List<RoadNet.EdgeKey> edges = ref.roads().allEdges();
 			for (RoadNet.EdgeKey k : edges) {
+				if (index++ % stride != 0) continue;
 				String want = attempt(() -> ref.linkState(k));
 				WorldPlanner fast = world.make().get(); // a fresh planner per link
 				String got = attempt(() -> fast.linkState(k));
@@ -109,25 +143,39 @@ class LinkShortCutTest {
 	}
 
 	@Test
+	@Tag("heavy")
 	void theAskingOrderDoesNotMatter() {
-		for (World world : WORLDS) {
+		orderSweep(1);
+	}
+
+	@Test
+	void theAskingOrderDoesNotMatterOnASample() {
+		orderSweep(ORDER_STRIDE);
+	}
+
+	void orderSweep(int stride) {
+		int gi = 0;
+		// the sample is one world (the smallest graph); the full sweep is all three
+		for (World world : sweepWorlds(stride)) {
 			WorldPlanner ref = world.make().get().fullLinkRule();
-			List<RoadNet.EdgeKey> edges = new ArrayList<>(ref.roads().allEdges());
+			List<RoadNet.EdgeKey> all = new ArrayList<>(ref.roads().allEdges()), edges = new ArrayList<>();
+			for (int i = 0; i < all.size(); i += stride) edges.add(all.get(i));
 			TreeMap<String, String> want = new TreeMap<>();
 			for (RoadNet.EdgeKey k : edges) want.put(k.toString(), attempt(() -> ref.linkState(k)));
-			for (long seed : new long[] {1, 2, 3}) {
+			for (long seed : stride == 1 ? new long[] {1, 2, 3} : new long[] {1}) {
 				WorldPlanner fast = world.make().get();
 				List<RoadNet.EdgeKey> order = new ArrayList<>(edges);
 				Collections.shuffle(order, new Random(seed));
 				for (RoadNet.EdgeKey k : order) assertEquals(want.get(k.toString()), attempt(() -> fast.linkState(k)), world.label() + " order " + seed + " " + k);
 				// the gates after the links, on the same planner: memoised links, same answers
+				if (stride != 1) continue; // the sample leaves the gates to its own sweep
 				TreeSet<String> ids = new TreeSet<>();
 				for (var e : sites(fast).entrySet()) {
 					if (!ids.add(e.getKey())) continue;
 					SettlementSite rs = ref.siteOf(e.getValue().cells().get(0)).orElseThrow();
 					List<int[]> gs;
 					try { gs = gates(ref, rs); } catch (RuntimeException ex) { continue; }
-					for (int[] g : gs) { String w2 = attempt(() -> ref.exitServedAt(rs, g[0], g[1])), got = attempt(() -> fast.exitServedAt(e.getValue(), g[0], g[1]));
+					for (int[] g : gs) { if (gi++ % stride != 0) continue; String w2 = attempt(() -> ref.exitServedAt(rs, g[0], g[1])), got = attempt(() -> fast.exitServedAt(e.getValue(), g[0], g[1]));
 						if (w2.startsWith("throws")) assertTrue(got.equals(w2) || got.equals("true"), world.label() + " " + e.getKey() + " gate " + g[0] + "," + g[1]);
 						else assertEquals(w2, got, world.label() + " " + e.getKey() + " gate " + g[0] + "," + g[1]); }
 				}

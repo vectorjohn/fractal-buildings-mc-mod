@@ -4,12 +4,18 @@ import static dev.fractalbuildings.gametest.worldgen.StartSupport.check;
 
 import dev.fractalbuildings.mod.teleport.PortalHold;
 import java.util.UUID;
+import java.util.function.BooleanSupplier;
+import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.concurrent.atomic.AtomicInteger;
 import net.fabricmc.fabric.api.gametest.v1.GameTest;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.TicketType;
+import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.EntityTypes;
@@ -26,14 +32,70 @@ import net.minecraft.world.level.block.NetherPortalBlock;
  */
 // gametest-order: 8
 public class PortalHoldGameTest {
-	/** A pig standing in a fresh x-axis portal built in the test area; checks that its nether exit area starts cold. */
+	/** A pig standing in a fresh x-axis portal built in the test's own area; checks that its nether exit area starts cold. */
 	private record Setup(ServerLevel level, ServerLevel nether, BlockPos base, Pig pig, int ex, int ez) {}
 
-	private static Setup setup(GameTestHelper helper) {
+	/**
+	 * Each test builds its portal 8192 * slot blocks (in x and z) from its test structure, so its nether exit area (the portal's
+	 * coordinates / 8) is one no other test touches. The test structures of a batch lie close together, so the exit areas of the two tests here
+	 * coincided and whichever ran second found the area warmed by the first (the "must start cold" flake). The slots must differ between the
+	 * tests of this class; the client test has its own world.
+	 */
+	private static final int SLOT_BLOCKS = 8192;
+
+	/**
+	 * Holds the chunk of the test's own area with a ticket, waits until it is loaded and ticking, builds the portal and the pig there, then
+	 * waits (one tick at a time, {@link TestArea#waitThen}) on {@code ready} of that setup and runs {@code verify}. The ticket, the portal and
+	 * the pig go at the end, whatever happens; {@code atEnd} runs then too.
+	 */
+	private static void inOwnArea(GameTestHelper helper, int slot, Runnable atEnd, Function<Setup, BooleanSupplier> ready, Consumer<Setup> verify) {
 		ServerLevel level = helper.getLevel();
+		BlockPos home = helper.absolutePos(new BlockPos(1, 1, 3));
+		int off = slot * SLOT_BLOCKS / 16;
+		ChunkPos chunk = new ChunkPos(Math.floorDiv(home.getX(), 16) + off, Math.floorDiv(home.getZ(), 16) + off);
+		level.getChunkSource().addTicketWithRadius(TicketType.DRAGON, chunk, 2);
+		Setup[] made = {null};
+		BooleanSupplier[] next = {null};
+		boolean[] done = {false};
+		Runnable cleanup = () -> {
+			if (done[0]) return;
+			done[0] = true;
+			atEnd.run();
+			level.getChunkSource().removeTicketWithRadius(TicketType.DRAGON, chunk, 2);
+			if (made[0] != null) { breakPortal(made[0]); made[0].pig.discard(); }
+		};
+		try {
+			TestArea.waitThen(helper, TestArea.WAIT_MILLIS, () -> {
+				try {
+					if (made[0] == null) {
+						if (!level.areEntitiesActuallyLoadedAndTicking(chunk)) return false;
+						made[0] = setup(level, chunk);
+						next[0] = ready.apply(made[0]);
+						return false; // the first tick of the wait is the next one
+					}
+					return next[0].getAsBoolean();
+				} catch (RuntimeException e) {
+					cleanup.run();
+					throw e;
+				}
+			}, () -> {
+				try {
+					verify.accept(made[0]);
+				} finally {
+					cleanup.run();
+				}
+			});
+		} catch (RuntimeException e) {
+			cleanup.run();
+			throw e;
+		}
+	}
+
+	private static Setup setup(ServerLevel level, ChunkPos chunk) {
 		ServerLevel nether = level.getServer().getLevel(Level.NETHER);
 		check(nether != null, "the test server has no nether");
-		BlockPos base = helper.absolutePos(new BlockPos(1, 1, 3));
+		int bx = chunk.getMinBlockX() + 4, bz = chunk.getMinBlockZ() + 4; // the frame (4 wide) and the pig 5 south stay inside this one chunk
+		BlockPos base = new BlockPos(bx, level.getHeight(Heightmap.Types.WORLD_SURFACE, bx, bz), bz);
 		int ex = Math.floorDiv(base.getX() + 2, 8), ez = Math.floorDiv(base.getZ(), 8); // the pig stands at x + 2.0, z + 0.5
 		int[] r = PortalHold.searchChunks(ex, ez, true);
 		boolean cold = false;
@@ -58,14 +120,13 @@ public class PortalHoldGameTest {
 
 	@GameTest(maxTicks = TestArea.TICKS)
 	public void coldExitHoldsThenGoes(GameTestHelper helper) {
-		Setup s = setup(helper);
-		UUID id = s.pig.getUUID();
 		AtomicInteger ticks = new AtomicInteger();
 		String[] at5 = {null};
-		TestArea.waitThen(helper, 600_000, () -> {
+		inOwnArea(helper, 1, () -> {}, s -> () -> {
 			if (ticks.incrementAndGet() == 5) at5[0] = "present=" + (!s.pig.isRemoved() && s.pig.level() == s.level) + " holdOpen=" + PortalHold.waitingFor(Level.NETHER, s.ex, s.ez);
 			return s.pig.isRemoved();
-		}, () -> {
+		}, s -> {
+			UUID id = s.pig.getUUID();
 			breakPortal(s);
 			check("present=true holdOpen=true".equals(at5[0]), "5 ticks in, the pig must still be in the overworld with a hold open: " + at5[0] + " (went after " + ticks.get() + " ticks)");
 			check(s.pig.getRemovalReason() == Entity.RemovalReason.CHANGED_DIMENSION, "the pig left by " + s.pig.getRemovalReason());
@@ -89,16 +150,9 @@ public class PortalHoldGameTest {
 		// the request opened for this pig gives up after 5 idle ticks instead of 100 (it keeps the value it opened with), and the wait is bounded
 		// by wall time, not ticks: in the 40-test batch the server once managed 53 ticks in 150 s (verifier, beebox job 316)
 		PortalHold.testIdleTicks = 5;
-		Setup s;
-		try {
-			s = setup(helper);
-		} catch (RuntimeException e) {
-			PortalHold.testIdleTicks = null;
-			throw e;
-		}
 		AtomicInteger ticks = new AtomicInteger();
 		String[] seen = {null};
-		TestArea.waitThen(helper, TestArea.WAIT_MILLIS, () -> {
+		inOwnArea(helper, 2, () -> PortalHold.testIdleTicks = null, s -> () -> {
 			int t = ticks.incrementAndGet();
 			if (t == 3) {
 				PortalHold.testIdleTicks = null; // the pig's request has opened by now with its 5; later requests are not affected
@@ -106,12 +160,10 @@ public class PortalHoldGameTest {
 				s.pig.snapTo(s.base.getX() + 2.0, s.base.getY() + 1, s.base.getZ() + 4.5, 0f, 0f); // out of the portal, 4 blocks south
 			}
 			return t > 3 && !PortalHold.waitingFor(Level.NETHER, s.ex, s.ez); // dropped (or never opened: the check below says which)
-		}, () -> {
-			breakPortal(s);
+		}, s -> {
 			check("holdOpen=true present=true".equals(seen[0]), "the pig must be held at first: " + seen[0]);
 			check(!s.pig.isRemoved() && s.pig.level() == s.level, "the pig that walked out must stay in the overworld, removed=" + s.pig.getRemovalReason());
 			check(!PortalHold.waitingFor(Level.NETHER, s.ex, s.ez), "the request must be dropped once nobody is inside");
-			s.pig.discard();
 		});
 	}
 }

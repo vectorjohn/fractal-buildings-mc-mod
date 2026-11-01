@@ -22,7 +22,7 @@ I suggest you give it.
   crossings (REVIEW "6.15 ROADJOIN: an approach road with no dry route"),
   the `dead-end-port` follow-up, and the step 5 in-game check. Blocks: a
   player who follows a road arrives at a step, a gap or a dead end.
-  Tag `#backlog-p6`.
+  Tag #backlog-p6.
 - [ ] **6.22 DEADPORT: road to nowhere over a big bridge** (2026-10-28,
   [20.02.18](phase6/playtest-2026-10-28/images/2026-10-28_20.02.18.jpg) at
   3542,116,-2186). Not started. This is the `dead-end-port` case of 6.15,
