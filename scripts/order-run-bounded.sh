@@ -6,6 +6,7 @@
 # Runs cmd in its own session (so its whole process group, Gradle client and server JVM, can be killed without touching anyone
 # else's). Waits for it to exit. Two limits:
 #   * no verdict yet after RUN_TIMEOUT_S: kill the group (exit 124, as `timeout` did);
+#   * ORDER_BIND_LOG=<server log> in the environment (ORDERPORT): no verdict yet and that log says "FAILED TO BIND TO PORT": kill the group at once, exit 75 (the caller retries on another port).
 #   * a verdict file (non-empty) exists but cmd is still alive GRACE_S later: the test result is in and only the shutdown hangs
 #     (2026-10-31: the server logged "Stopping server / Saving worlds" after its PASS, then the run sat until the 3000 s timeout).
 #     Print one `SHUTDOWN SLOW` line, save a jstack of each java process (<label>.hang-jstack.<pid>), kill the group, and exit 0: the verdict, not the exit status, is the result.
@@ -27,10 +28,17 @@ while kill -0 "$pid" 2>/dev/null; do
 		done
 		killgrp; exit 0
 	fi
+	if [ -z "$tv" ] && [ -n "${ORDER_BIND_LOG:-}" ] && grep -qs "FAILED TO BIND TO PORT" "$ORDER_BIND_LOG"; then
+		echo "order-test: bind failure in $ORDER_BIND_LOG; killing its process group $pid (exit 75)" >&2
+		killgrp; exit 75
+	fi
 	if [ -z "$tv" ] && [ $((SECONDS - t0)) -ge "$TMO" ]; then
 		echo "order-test: run timeout after $TMO s without a verdict; killing its process group $pid" >&2
 		killgrp; exit 124
 	fi
 	sleep 1
 done
-wait "$pid"
+wait "$pid"; rc=$?
+# the server may have died on the bind failure before the loop saw its log
+if [ ! -s "$VF" ] && [ -n "${ORDER_BIND_LOG:-}" ] && grep -qs "FAILED TO BIND TO PORT" "$ORDER_BIND_LOG"; then exit 75; fi
+exit $rc

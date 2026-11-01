@@ -34,7 +34,7 @@
 # Bounded shutdown (ORDERHANG): once a run's verdict file exists the run has FB_ORDER_GRACE seconds (default 120) to exit; after that
 # the script prints `SHUTDOWN SLOW`, saves a jstack of its java processes (build/order-test/<label>.hang-jstack.<pid>), kills that
 # run's own process group and counts the run by its verdict (not INCOMPLETE). FB_ORDER_TIMEOUT only limits runs with no verdict.
-# Self-test: scripts/order-run-bounded.test.sh.
+# Self-tests: scripts/order-run-bounded.test.sh, scripts/order-port.test.sh. ORDERPORT: each run takes a free port from FB_ORDER_PORT+idx up (no listener, claimed by mkdir); a "FAILED TO BIND TO PORT" in its server log kills the run at once (exit 75 of order-run-bounded.sh) and it retries on the next port, `PORT RETRY` line, up to 6 times.
 #
 # Works from any cwd and worktree; enters the dev shell itself. Env: FB_ORDER_TIMEOUT (seconds per run without a verdict, default 3000), FB_ORDER_GRACE (shutdown grace, default 120), FB_ORDER_PORT (first port, default 25610).
 set -euo pipefail
@@ -115,16 +115,24 @@ PORT0="${FB_ORDER_PORT:-25610}"
 # On TERM/INT/HUP stop every run this script started (gradle, its server JVM): otherwise a killed script leaves servers on their ports.
 kill_tree() { local c; for c in $(pgrep -P "$1" 2>/dev/null); do kill_tree "$c"; done; kill "$1" 2>/dev/null || true; }
 trap 'for c in $(pgrep -P $$ 2>/dev/null); do kill_tree "$c"; done; exit 143' TERM INT HUP
+# ORDERPORT: a run takes the first port from PORT0+idx that nothing listens on and no other run of this script claimed (mkdir is the atomic
+# claim); a bind failure anyway (a race with another process on this shared host) retries on the next port, with a `PORT RETRY` line.
+source "$ROOT/scripts/order-port.sh"
+mkdir -p "$OUT/ports"; rm -rf "$OUT/ports"/*
 run_label() {
 	local label="$1" idx="$2" dir="$BASE/$1"
 	rm -rf "$dir/world" "$dir/logs" "$OUT/$label".{verdict,report,run.json}
 	mkdir -p "$dir/config"
 	cp "$EULA" "$dir/eula.txt"
 	# seed 987654321 and the gate city's settlement: the same world the client test made; max-tick-time off (a run is one long server task)
+	local attempt PORT=$((PORT0 + idx)) t0=$SECONDS rc=0
+	for attempt in 1 2 3 4 5 6; do
+	PORT=$(pick_port "$PORT")
+	rm -rf "$dir/logs"
 	cat > "$dir/server.properties" <<P
 online-mode=false
 server-ip=127.0.0.1
-server-port=$((PORT0 + idx))
+server-port=$PORT
 level-seed=987654321
 level-name=world
 white-list=false
@@ -144,8 +152,14 @@ P
 	# gap 3: the config world is made while the file says cellSize 2048; every other run has no config file (the defaults)
 	rm -f "$dir/config/fractalbuildings.json"
 	[ "$label" = config ] && echo '{"cellSize": 2048}' > "$dir/config/fractalbuildings.json"
-	local t0=$SECONDS rc=0
-	"$ROOT/scripts/order-run-bounded.sh" "$OUT/$label.verdict" "${FB_ORDER_TIMEOUT:-3000}" "${FB_ORDER_GRACE:-120}" -- ./gradlew --console=plain --no-daemon :mod:runOrderServer -Pfb.orderRun="$label" -Pfb.orderOut="$OUT" -Pfb.orderRadius="$RADIUS" > "$OUT/$label.log" 2>&1 || rc=$?
+	rc=0
+	ORDER_BIND_LOG="$dir/logs/latest.log" "$ROOT/scripts/order-run-bounded.sh" "$OUT/$label.verdict" "${FB_ORDER_TIMEOUT:-3000}" "${FB_ORDER_GRACE:-120}" -- ./gradlew --console=plain --no-daemon :mod:runOrderServer -Pfb.orderRun="$label" -Pfb.orderOut="$OUT" -Pfb.orderRadius="$RADIUS" > "$OUT/$label.log" 2>&1 || rc=$?
+	if [ "$rc" = 75 ] && [ ! -s "$OUT/$label.verdict" ]; then
+		echo "order-test: PORT RETRY: $label: bind failure on port $PORT (attempt $attempt), trying the next port" >&2
+		PORT=$((PORT + 1)); continue
+	fi
+	break
+	done
 	cp "$dir/logs/latest.log" "$OUT/$label.server.log" 2>/dev/null || true
 	echo "order-test: $label finished in $((SECONDS - t0)) s (exit $rc): $(cat "$OUT/$label.verdict" 2>/dev/null | cut -c1-200 || true)" >&2
 }
