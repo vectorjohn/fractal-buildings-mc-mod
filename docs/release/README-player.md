@@ -67,8 +67,11 @@ never changes an existing world. `/fb config` shows the current world's values.
   nobody has visited yet can take up to about half a minute, with "Generating
   terrain…" on screen; the server keeps running normally meanwhile. If it takes
   more than a minute, the trip is cancelled and you can simply try again.
-- Very steep ground: some lanes route around a slope instead of using steps, and
-  gatehouses can stand high above the road.
+- Streets on very steep ground: a street may run on a raised bank or sit in a deep
+  cut with bare dirt walls, and a side lane that drops steeply has no steps (it
+  just ends or drops a block or more). A house beside such a street can have its
+  door well below or above the road, so you may have to walk round or dig to reach
+  it. A city gatehouse on a steep slope can stand high above the road it guards.
 - City walls are rare on real terrain.
 - *(C3: the remaining items from the release review.)*
 

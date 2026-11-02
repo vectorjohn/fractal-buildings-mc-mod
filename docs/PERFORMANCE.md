@@ -60,6 +60,12 @@ the numbers stay as they are (sources: `docs/plans/phase6.md` "Budgets",
 
 One line per row that is over its ceiling, or close enough to watch.
 Marked `knownOver` in `mod/perf-budget.json` only where it is over now.
+**A line stays on this list until its row is fixed** (back under its
+budget, not just its ceiling) (John, 2026-11-02, on the
+[polish triage](review/polish-triage.md): "perf items can be marked known
+but we don't want to forget about them"). A row that drops under its
+ceiling moves to *Watch* or *Fixed, no longer marked*, but keeps its line.
+Polish backlog lines about these rows point here.
 Values from the latest quiet run (the perf worker, 2026-11-02, commit
 05142f534b, load 1.4 to 6.6).
 

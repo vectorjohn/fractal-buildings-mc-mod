@@ -2,7 +2,9 @@
 
 Written 2026-11-01 by the assistant for John, from the "Polish backlog" section of the [ROADMAP](../ROADMAP.md) at commit a282a9b0 (181 lines). The Polish backlog is where verifiers and reviewers put known issues that don't break anything; nothing schedules from it. Each line got one of four buckets:
 
-- **P6**: a player would hit it in 0.1.0 (a visible bug, a freeze, a building you can't get into), or it could make the release test run lie. Proposed only; nothing was added to the Phase 6 checklist.
+Updated 2026-11-02 after your replies: the P6 proposals are approved and are now Phase 6 items 6.35-6.38; the perf lines are known perf bugs; the "Not sure" lines are answered in place.
+
+- **P6**: a player would hit it in 0.1.0 (a visible bug, a freeze, a building you can't get into), or it could make the release test run lie. Proposed on 2026-11-01; John approved them on 2026-11-02, and they are now Phase 6 items 6.35-6.38.
 - **P7**: it belongs to a planned Phase 7 item, named by its ROADMAP number.
 - **Keep**: low priority, no schedule (mostly test gaps, tooling and small looks issues).
 - **Drop**: already fixed or no longer true; removed from the ROADMAP, with the fix listed at the end of this page.
@@ -13,12 +15,12 @@ Checks were cheap (grep, git log, the docs); nothing was run, and I didn't look 
 
 | Bucket | Lines |
 |---|---|
-| P6 (proposed) | 9 lines, grouped into 5 items |
+| P6 (approved 2026-11-02) | 9 lines: 6 in 4 new Phase 6 items (6.35-6.38), 3 perf lines now known perf bugs |
 | P7 | 38 (7.10 roads in one material: 8; 7.5 furnishings: 7; 7.11 smooth roads: 5; 7.19 FALLSTREETS (streets on falling ground stay near the ground): 5; 7.24 HRENTRY (high-rise entrances): 3; 7.17 SHOPLOW (doors near the street), 7.20 METROFILL (filled city cores), 7.21 SQUARES (framed squares and markets): 2 each; 7.3 bridges, 7.16 slope in the region screen, 7.23 SHOPFLAT (shop room programme), 7.26 BEARDFIT (entrance flights fitted to the final ground): 1 each) |
 | Keep | 118 |
 | Drop | 16 |
 
-In the ROADMAP: the Drop lines are removed, P7 lines end in `(P7: 7.x)`, P6 lines end in "(proposed P6, see polish-triage)", and nothing else was reworded.
+In the ROADMAP: the Drop lines are removed, P7 lines end in `(P7: 7.x)`, P6 lines end in "(P6: 6.3x CODE, see polish-triage)" (they said "proposed P6" until John approved them on 2026-11-02), and nothing else was reworded.
 
 # Proposed P6 items
 
@@ -29,19 +31,25 @@ In the ROADMAP: the Drop lines are removed, P7 lines end in `(P7: 7.x)`, P6 line
 5. **Perf rows that fail their ceiling on the perf worker** (decision only): the region row (11.3-11.6 s against 10 s, failing on the vanilla base too) and the cold district plan p95 (3.67 s against 3 s). The release heavy run includes `perf.sh`, so these fail it until you pick a ceiling or a fix. This isn't new work: it's your two open lines in [QUESTIONS](../QUESTIONS.md) ("REGIONPERF budget" and "Cold district plan ceiling").
 
 - @John 2026-11-02: I approve all these. However, if (4.) causes us to drop buildings or something, then no, don’t deal with 4 and we can push it to P7. For 5 I think we have a new plan going forward, perf items can be marked known but we don’t want to forget about them.
+  - @assistant 2026-11-02: Done. Items 1-4 are now Phase 6 boxes in the ROADMAP: 6.35 GLASSSTUB (1), 6.36 RUNGUARD (2), 6.37 COLDTICK (3) and 6.38 DOORREACH (4); their backlog lines say which item they belong to. **Item 4 stays in P6: it would not drop buildings.** I measured it with a throwaway script (not committed) on the run branch: on four settlements (coast city, temperate city, river town, walled hill town; 1,816 buildings), every building but one has a ground-floor door with a walk to a street that doesn't cross another lot and never climbs more than 1 block per step. The one exception is a tower on the hill town that needs a 2-block step. So the check is cheap, should pass almost everywhere, and 6.38 is the check plus a small fix. What you probably saw in Phase 5 is different: about 30 % of buildings have no *paved* path from the door to the street (grass in between). That is a looks question, not a cut-off building; say if you want it as an item. **Item 5:** no new item. Your 2026-11-02 rule (ceilings are never raised; a row over its ceiling is a known bug) already covers it, and the cold district p95 has since been fixed by QUAYFAST 4b (the faster quay trace). The three perf lines in the backlog now point to the "Known perf bugs" list in [PERFORMANCE.md](../PERFORMANCE.md), which now says a line stays there until its row is fixed.
 
 # Not sure
 
 - **Thin deck into open water** (playtest 2026-10-28, 21.01.30): filed as P7 7.3 bridges, but nobody has diagnosed it. If it's a crossing deck that ends in the water (a road to nowhere), it's the 6.22 DEADPORT (road to nowhere over a bridge) kind and could be P6.
   - @John 2026-11-02: look into it. See if it’s DEADPORT.
+    - @assistant 2026-11-02: It isn't DEADPORT, and it isn't a quay. I re-planned the spot (4492,-950) with today's planner on the recorded terrain of that world. It is an ordinary city street of the metropolis, 5 blocks wide, laid flat across a lake 20-25 blocks deep with nothing under it, and there is no road between settlements within about 100 blocks. The district tile east of the street's centre isn't planned, so only the west 2 columns get built: that's the thin slab. The short piece where it turns in your shot is a 3-column stub. A floating street counts as breaking by our completion bar, so I'd make it a P6 bug: drop street runs over deep water (small). I left it in P7 7.3 and added a line to [QUESTIONS](../QUESTIONS.md) ("Thin deck") for you to decide. The diagnosis is on its ROADMAP polish line.
 - **PARREADS** (parallel terrain reads) line dropped: the unbound tags and the busy-host timings are fixed. Part (1), a structure start tracing quays on a worldgen thread, is much smaller since QUAYLAZY (lazy quay trace) but not zero. PERFORMANCE.md tracks what remains.
   - @John 2026-11-02: not sure. What is even the question here? I think this line can go away.
+    - @assistant 2026-11-02: There was no question; it was a note that I had dropped the PARREADS backlog line. You're right, it can go: nothing more to do here. What's left of it is tracked in PERFORMANCE.md.
 - **SWITCHBACK** (more generous exterior flights) dropped as done by 6.31 STAIRJOG (straight entrance flights). The architect's landing sizes and headroom weren't checked one by one; what's left is in the 6.31 line (P7 7.24).
   - @John 2026-11-02: if there is more work, it’s P7.
+    - @assistant 2026-11-02: There is a little: the leftover flight-runs fix, about 394 small lots that still jog, and the railing guard at turns. It's all on the 6.31 STAIRJOG backlog line, which is already tagged P7 7.24 (HRENTRY, high-rise entrances). No change needed.
 - **Plains palette** (your Phase 4 REVIEW request) dropped as done by PALETTE: plains walls are now birch planks with one stripped-birch accent. It's worth a look in game if you still see speckle.
   - @John 2026-11-02: drop this as done. I’ll re-raise if needed.
+    - @assistant 2026-11-02: Done. It was already removed from the ROADMAP and REVIEW, so nothing is left to remove.
 - **6.15 ROADJOIN** (roads between settlements meet the streets) is still open in Phase 6. Its three backlog lines (route preference and two lips on one seed) are filed as Keep, not as part of closing 6.15.
   - @John 2026-11-02: check if they’re done. If not, P7.
+    - @assistant 2026-11-02: Checked: none are done (`LinkExits` hasn't changed since ROADJOIN steps 1-4, 7ec724a9, and nothing since mentions the two lips). Now tagged P7 in the ROADMAP: the route preference goes to 7.25 (LINKBRAID, the nearest road-routing item), and the shore lip and the deck corner lip go to 7.3 (bridges).
 
 # All lines
 
@@ -119,12 +127,12 @@ Order as in the ROADMAP. "Fix" names the commit or item for drops.
 | 6.x TESTISO server test hygiene | Keep | test hygiene; a timed-out test can disturb the next, but does not hide a failure |  |
 | 6.x FOLIAGE city woodland | Keep | John's decision (keep trees) holds; thinning is optional |  |
 | 5.1 D1 hamlet streets straight (DS-21) | Keep | looks; no item; candidate for the P7 choice |  |
-| 5.3 TR doors with no path from the street | P6 | a building whose door no street or lane reaches; nothing checks it at settlement level; measure first |  |
+| 5.3 TR doors with no path from the street | P6 6.38 DOORREACH | a building whose door no street or lane reaches; nothing checks it at settlement level; measure first |  |
 | 6.x PLAZAS bare paved squares | P7 7.21 | 7.21 SQUARES (with 7.5 for benches and lamps) |  |
 | 7.20 diagonal avenues: keep or remove | P7 7.20 | John decides after 7.20 METROFILL |  |
 | 6.x LAMPS two lights per room | Keep | looks; small |  |
 | 6.x DOORGLASS shop door frame (DS-51) | Keep | looks; DS-51 is accepted but not built (main doors have jambs, secondary doors don't) |  |
-| 6.x GLASSSTUB lone glass pane on a wall top | P6 | a floating block, which the completion bar counts as breaking; not diagnosed |  |
+| 6.x GLASSSTUB lone glass pane on a wall top | P6 6.35 GLASSSTUB | a floating block, which the completion bar counts as breaking; not diagnosed |  |
 | 6.x WORKSHOP lean-to doors | Drop | done by DS35DOORS (more entrances): store with a yard door | [[docs/log/2026-10-28-ds35doors|DS35DOORS]] 1636aa9c |
 | 6.x DORMER roofs in stairs | Keep | looks; DS36ROOFS did the main roofs, not dormers |  |
 | 6.x SWITCHBACK generous flights | Drop | done by 6.31 STAIRJOG: straight runs first, runs of 2+, `flight-runs`/`flight-turns` checks; leftovers are in the 6.31 line | [[docs/log/2026-10-31-p6-stairjog|STAIRJOG]] 45a96b8c |
@@ -152,13 +160,13 @@ Order as in the ROADMAP. "Fix" names the commit or item for drops.
 | 6.16 DEADMAIN shore gates exempt | Keep | 3 seen; road ends at a cell border on a shore; looks |  |
 | 7.17 SHOPLOW frontY vs door rise | P7 7.17 | tighten in S9 |  |
 | 7.17 SHOPLOW stoop test checks little | P7 7.17 | test fixture for SHOPLOW |  |
-| 6.15 ROADJOIN route preference | Keep | looks; the road still meets the street |  |
-| 6.15 ROADJOIN shore lip | Keep | one 2-block lip on one seed; walkable round it |  |
-| 6.15 ROADJOIN deck corner lip | Keep | one side lip; within the exit bar |  |
+| 6.15 ROADJOIN route preference | P7 7.25 | not done (checked 2026-11-02); looks, the road still meets the street |  |
+| 6.15 ROADJOIN shore lip | P7 7.3 | not done (checked 2026-11-02); one 2-block lip on one seed; walkable round it |  |
+| 6.15 ROADJOIN deck corner lip | P7 7.3 | not done (checked 2026-11-02); one side lip; within the exit bar |  |
 | 6.15 ROADJOIN test label mismatch | Keep | still mismatched (prints `exitStep>1`, counts `> 2`) |  |
 | 6.15 ROADJOIN CLI lacks approach corridor | Keep | review tooling |  |
 | 6.15 ROADJOIN mid-street exit count | Keep | measurement |  |
-| TESTLAYERS `FB_ONLY` typo runs nothing | P6 | a misspelt test name skips every client test and exits 0: a green run that tested nothing |  |
+| TESTLAYERS `FB_ONLY` typo runs nothing | P6 6.36 RUNGUARD | a misspelt test name skips every client test and exits 0: a green run that tested nothing |  |
 | TESTLAYERS verifier to-main lacks `--full` | Drop | verifier.md now runs `test-all.sh --full --planner-heavy` on the worker | 481866c5 TESTSPEED |
 | TESTLAYERS CLAUDE.md order-test line | Drop | CLAUDE.md now says order-test writes `eula=true` itself | a69f6461 |
 | REGIONPERF warmQuays not asserted | Keep | test gap; QUAYLAZY reworked the warmer since |  |
@@ -192,7 +200,7 @@ Order as in the ROADMAP. "Fix" names the commit or item for drops.
 | Playtest 20.33.42 road could follow the river | Keep | looks |  |
 | Playtest 20.37.46 full step at a road crest | P7 7.11 | slabs on road rises |  |
 | Playtest 20.52.10 tree before a door | Keep | John: "I could live with it" |  |
-| Playtest 21.01.30 thin deck into open water | P7 7.3 | not diagnosed; real docks are 7.4, decks 7.3 (unsure, see summary) |  |
+| Playtest 21.01.30 thin deck into open water | P7 7.3 (P6? in QUESTIONS) | diagnosed 2026-11-02: a city street flat across a deep lake, half cut at an unplanned tile edge; not DEADPORT |  |
 | 6.20 DOORBANK podium before emptying a lot | P7 7.19 | the root fix is streets near the ground |  |
 | 6.20 DOORBANK podium faces, tower landmarks | P7 7.24 | 7.24 HRENTRY has podiums |  |
 | 6.20 DOORBANK rails and greens on emptied lots | P7 7.19 | with FALLSTREETS |  |
@@ -210,24 +218,24 @@ Order as in the ROADMAP. "Fix" names the commit or item for drops.
 | 6.29 ROADLEAFORDER camera | Keep | test coverage |  |
 | 6.27 DISTPERF re-measure | Drop | re-measured on the quiet perf worker; the open ceiling question is in QUESTIONS | 1ea75a7d CASCADE 7 |
 | 6.28 LEAFORDER stale wording | Keep | doc slip; still worded "counts ... as free" |  |
-| 6.25 MAINSTUB region row over ceiling on the perf worker | P6 | fails the release heavy run's perf step; decide with REGIONPERF (already in QUESTIONS) |  |
-| COLDARRIVAL 9-11 s server tick | P6 | a 9-11 s freeze on cold metropolis arrival, cause unknown |  |
+| 6.25 MAINSTUB region row over ceiling on the perf worker | Known perf bug | fails the release heavy run's perf step; decide with REGIONPERF (already in QUESTIONS) |  |
+| COLDARRIVAL 9-11 s server tick | P6 6.37 COLDTICK | a 9-11 s freeze on cold metropolis arrival, cause unknown |  |
 | 6.x TPHOLD15 test gaps | Keep | test gaps |  |
 | 6.30 PORTALCOLD test gaps | Keep | test gaps; the 6.35 s tick is carried by the next PORTALCOLD line |  |
 | 6.33 MAINSTEP side cells as landings | Keep | looks; fewer wide steps |  |
-| 6.x QUAYLAZY flight tick, region row | P6 | region row over its ceiling: same decision as REGIONPERF; flight tick under its ceiling |  |
+| 6.x QUAYLAZY flight tick, region row | Known perf bug | region row over its ceiling: same decision as REGIONPERF; flight tick under its ceiling |  |
 | 6.x CASCADE 5 test gaps | Keep | test gaps |  |
 | 6.x ORDERPORT fixed test ports | Keep | only collides when two such runs share a host |  |
 | 6.x CASCADE 5b counter leak | Keep | possible flake, not seen; watch |  |
 | 6.x CASCADE 3 test gaps | Keep | test gaps |  |
 | 6.x CASCADE 4 notes | Keep | speed only |  |
-| 6.x CASCADE2FIX cold district p95 over ceiling | P6 | fails the release heavy run's perf step; ceiling question already in QUESTIONS |  |
-| 6.x remote.sh drops env variables | P6 | `FB_LAYER=full` or `FB_ONLY` set before the worker call are lost: the run tests something else and can pass |  |
+| 6.x CASCADE2FIX cold district p95 over ceiling | Known perf bug (p95 fixed by QUAYFAST 4b) | fails the release heavy run's perf step; ceiling question already in QUESTIONS |  |
+| 6.x remote.sh drops env variables | P6 6.36 RUNGUARD | `FB_LAYER=full` or `FB_ONLY` set before the worker call are lost: the run tests something else and can pass |  |
 | 6.x evidence.sh inside anywhere.sh | Keep | agents only; the documented order works |  |
 | 6.x QUAYFAST 5+6 test gaps | Keep | test gaps; budget tidy-up |  |
 | 6.31 STAIRJOG fallback flights | P7 7.24 | mostly superseded by 7.24 HRENTRY |  |
 | 6.32 DOORAIR make the count an assertion | Keep | test hardening, small |  |
-| 6.30 PORTALCOLD 6.35 s tick, mobs, `execute in` | P6 | unexplained 6.35 s freeze after a portal arrival (1 in 6); diagnose with COLDARRIVAL |  |
+| 6.30 PORTALCOLD 6.35 s tick, mobs, `execute in` | P6 6.37 COLDTICK (part 1) | unexplained 6.35 s freeze after a portal arrival (1 in 6); diagnose with COLDARRIVAL |  |
 | PERFBASE labels and duplication | Keep | doc and code tidy-up |  |
 | Playtest 02.44.32 flight foot in the grass | P7 7.26 | 7.26 BEARDFIT is this exact note |  |
 

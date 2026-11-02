@@ -108,7 +108,8 @@ or is already in the Polish backlog.
   city can wait half a minute or more, or land before the city is there.
   For P6, decide the budget, re-measure quietly, and say it in the
   README. Making it faster is P7. Tag `#backlog-p6` (the decision only).
-  - @John 2026-11-02: not entirely sure what the question is here. 
+  - @John 2026-11-02: Sounds good.
+    - @assistant 2026-11-02: Noted, no change. This is the REGIONPERF item (performance on first arrival), which you settled earlier today: a cold metropolis arrival of about 35 s is fine for 0.1.0, and holds abort after 60 s. What is left is the README sentence on the wait and the TPABORT merge (holds that abort after 60 s with a "try again" message), both already listed above.
 - [ ] **Batched heavy run on the release candidate**: `test-all.sh --full`
   plus the order test and `perf.sh`. Waiting for the release candidate:
   the latest batch, HEAVY13, passed at 1ea75a7d (2026-11-01; perf rows over

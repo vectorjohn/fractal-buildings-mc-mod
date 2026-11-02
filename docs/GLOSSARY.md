@@ -35,6 +35,7 @@ Item codes (PARREADS, MAINSTUB, TPHOLD, ...) and run terms, one row each. **Gene
 | CITYQ |  | sparse and "ocean" cities in the B9 fly-through | done | [[docs/log/2026-10-23-p6-cityq|log]] |
 | COLDARRIVAL |  | cold-arrival perf row and vanilla /locate baseline | done | [[docs/log/2026-10-31-p6-coldarrival|log]] |
 | COLDCHUNK |  | what the 70-120 s cold chunk is doing | done | [[docs/log/2026-10-28-coldchunk|log]] |
+| COLDTICK | 6.37 | find the multi-second server ticks on cold arrival | open | [[docs/ROADMAP|ROADMAP 6.37]] |
 | D0 |  | Phase 5 step: city pipeline end to end, city-check, presets | done | [[docs/log/2026-10-21-p5-d0-pipeline|log]] |
 | D2 |  | Phase 5 step: town program, walls and gates | done | [[docs/log/2026-10-21-p5-d2-town|log]] |
 | D3 |  | Phase 5 step: city and metropolis programs, density and skyline (5.7; half of 5.13) | done | [[docs/log/2026-10-21-p5-d3-city|log]] |
@@ -42,6 +43,7 @@ Item codes (PARREADS, MAINSTUB, TPHOLD, ...) and run terms, one row each. **Gene
 | DB |  | Phase 5 step: briefs and district scenes (5.4 wiring, 5.7 mapping, 5.3 grading) | done | [[docs/log/2026-10-21-p5-db-briefs|log]] |
 | DEADMAIN | 6.16 | a city main road ends in a dead end | done | [[docs/ROADMAP|ROADMAP 6.16]] |
 | DEADPORT | 6.22 | the 6.15 `dead-end-port` follow-up | done | [[docs/ROADMAP|ROADMAP 6.22]] |
+| DECKDIAG |  | why approach roads lay long decks along water, and what P6 does about it | - | [[docs/plans/deckdiag|plan]] |
 | DEEPFLATS |  | high-rise flats that are too deep: back strip becomes wardrobes and closets (7.13 follow-up) | - | [[docs/runs/2026-10-22-phase6|2026-10-22-phase6]] |
 | DETFLAKE |  | intermittent chunk-order determinism failure in the server game tests; a test-isolation problem, fixed by... | done | [[docs/log/2026-10-25-p6-testiso|2026-10-25-p6-testiso]] |
 | DEVSHELL |  | the Nix flake moved to nix/ and `scripts/dev` caches the dev shell | done | [[CLAUDE|CLAUDE]] |
@@ -53,6 +55,7 @@ Item codes (PARREADS, MAINSTUB, TPHOLD, ...) and run terms, one row each. **Gene
 | DOORAIR | 6.32 | door steps claim street headroom | done | [[docs/ROADMAP|ROADMAP 6.32]] |
 | DOORBANK | 6.20 | doors below an embankment street | done | [[docs/ROADMAP|ROADMAP 6.20]] |
 | DOORGLASS |  | a shop-front door set between glass panes; panes don't attach to a door, so the glazing stops short of it.... | polish | [[docs/ROADMAP|ROADMAP polish]] |
+| DOORREACH | 6.38 | a `door-reaches-street` check | open | [[docs/ROADMAP|ROADMAP 6.38]] |
 | DORMER |  | dormer stairs: dormer roofs built as stair blocks (John's 2026-10-26 playtest) | polish | [[docs/ROADMAP|ROADMAP polish]] |
 | DS-n |  | a numbered design rule (DS-1, DS-45, ...) in the design standards | - | [[docs/design/STANDARDS|STANDARDS]] |
 | DS34LOOKS |  | remaining work on DS-34 (high-rises come in several looks) | open | [[docs/design/STANDARDS|STANDARDS]] |
@@ -78,7 +81,7 @@ Item codes (PARREADS, MAINSTUB, TPHOLD, ...) and run terms, one row each. **Gene
 | FRONTAGE |  | buildings face every street in dense cores (hand-over from METROFILL) | open | [[docs/plans/metrofill|metrofill]] |
 | GALLERYROOMS | 6.18b | wall-walk gallery rooms walkable | done | [[docs/ROADMAP|ROADMAP 6.18b]] |
 | gate |  | the review at the end of a phase: John looks and approves before the next phase starts | - | [[docs/ROADMAP|ROADMAP]] |
-| GLASSSTUB |  | a lone glass pane stands above the wall top near the desert high-rises at 1266,2411, with nothing to... | polish | [[docs/ROADMAP|ROADMAP polish]] |
+| GLASSSTUB | 6.35 | a lone glass pane above a wall top | open | [[docs/ROADMAP|ROADMAP 6.35]] |
 | GROUNDWALK |  | GroundWalkTest sees the new road roles | done | [[docs/log/2026-10-27-p7-groundwalk|log]] |
 | GUARDDOOR | 6.18c | curtain guard door clear of the stair cuts | done | [[docs/ROADMAP|ROADMAP 6.18c]] |
 | HAMLETEMPTY | 6.23 | a hamlet with no building | done | [[docs/ROADMAP|ROADMAP 6.23]] |
@@ -174,6 +177,7 @@ Item codes (PARREADS, MAINSTUB, TPHOLD, ...) and run terms, one row each. **Gene
 | ROOMWALK2 |  | shop counter walled in by a light | done | [[docs/log/2026-10-27-p6-roomwalk2|log]] |
 | run branch |  | the integration branch of a run (`claude/run-phase6`): items merge here, then it merges into main | - | [[CLAUDE|CLAUDE]] |
 | run ledger |  | the coordinator's record of a run: what's in flight, who's on it, outcomes | - | [[docs/runs/2026-10-22-phase6|2026-10-22-phase6]] |
+| RUNGUARD | 6.36 | test runs can't pass while testing the wrong thing | open | [[docs/ROADMAP|ROADMAP 6.36]] |
 | S1 |  | Phase 3 step: IR JSON writer, validator, schema (3.1) | done | [[docs/log/2026-10-16-p3-s1-ir-json|log]] |
 | S10 |  | Spike: roads between settlements | done | [[docs/ROADMAP|ROADMAP]] |
 | S10M |  | spike S10, mod half: per-chunk road feature, digest, cost | done | [[docs/runs/2026-10-21-phase5|2026-10-21-phase5]] |
