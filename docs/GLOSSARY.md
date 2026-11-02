@@ -70,6 +70,7 @@ Item codes (PARREADS, MAINSTUB, TPHOLD, ...) and run terms, one row each. **Gene
 | FACADE2 |  | house 2x2 fronts and sill +1 upper floors | done | [[docs/log/2026-10-26-p7-facade2|log]] |
 | FALLSTREETS | 7.19 | streets on falling ground stay near the ground | open | [[docs/ROADMAP|ROADMAP 7.19]] |
 | FBNOTE |  | in-game playtest note command | done | [[docs/ROADMAP|ROADMAP]] |
+| FBNOTEON | 6.39 | `/fbnote` on by default for bug reports | done | [[docs/ROADMAP|ROADMAP 6.39]] |
 | FBWATCH |  | debug switch that logs every worldgen block write inside watched boxes (who wrote what) | done | [[docs/NOTES|NOTES]] |
 | FLY2 |  | fly-through redesign (6.8) | done | [[docs/log/2026-10-26-p6-fly2|log]] |
 | FLYCAP |  | fly-through captures only stable frames | done | [[docs/log/2026-10-26-p6-flycap|log]] |

@@ -1,19 +1,23 @@
 # Playtest notes in game
 
-`/fbnote <comment>` (FBNOTE, 2026-10-28) is a debug command for play-testing: it takes a screenshot and writes a sidecar file with the
+`/fbnote <comment>` (FBNOTE, 2026-10-28; on by default since FBNOTEON, 2026-11-02) is a command for play-testing and bug reports: it takes a screenshot and writes a sidecar file with the
 comment and the data an agent needs to find the spot again, so you don't have to type coordinates or run `/seed`. A script then turns a
 folder of these into a markdown gallery in the format of the playtest REVIEW pages.
 
-# Turn it on
+# Switching it off
 
-It is off by default and the command does not exist when off. Any one of:
+It is on in every client that has the mod, release builds included; nothing in it needs development-only code (the one dev-only field is
+`mod.commit`, the git HEAD of a development checkout, which is `null` in a release). To remove the command, either:
 
-- a development run (`./gradlew :mod:runClient`, client game tests): always on;
-- the JVM property `-Dfractalbuildings.debugNotes=true` in the launcher's JVM arguments (`-Dfractalbuildings.debugNotes=false` forces it off, also in development);
-- `debugNotes=true` in `config/fractalbuildings-client.properties` (the game's config folder; create the file).
+- put `notes=false` in `config/fractalbuildings-client.properties` (the game's config folder; create the file), or
+- add `-Dfractalbuildings.notes=false` to the launcher's JVM arguments (it wins over the file; `-Dfractalbuildings.notes=true` forces it on).
 
-Restart the client after changing it. The log says `[FBNOTE] /fbnote enabled`. It is client-side only: a dedicated server needs nothing and
+The old spellings `debugNotes=` and `-Dfractalbuildings.debugNotes=` still work. Only the exact word `false` turns it off. Restart the
+client after changing it. The log says `[FBNOTE] /fbnote enabled`. It is client-side only: a dedicated server needs nothing and
 a vanilla client simply doesn't have the command.
+
+On a multiplayer server (no integrated server in the process) the note still has the screenshot, position, biome, dimension and targeted
+block; the `planner` part says `available: false` (settlement, lot, building and room are singleplayer-only) and the chat message says so too.
 
 # Take a note
 

@@ -23,7 +23,7 @@ import net.minecraft.world.level.chunk.status.ChunkStatus;
 /**
  * FBNOTE: {@code /fbnote test} typed in a singleplayer world (seed 987654321) standing in a room of a settlement building writes the
  * PNG and the sidecar JSON, and the planner fields (settlement, tier, lot, building, room) are filled in. The command is registered
- * here because the development environment turns the switch on; "absent when the flag is off" is {@code FbNoteCommandTest}.
+ * here because the switch is on by default (no flag is set; FBNOTEON); "absent when switched off" is {@code FbNoteCommandTest}.
  */
 public class FbNoteClientGameTest implements FabricClientGameTest {
 	@Override
@@ -70,7 +70,7 @@ public class FbNoteClientGameTest implements FabricClientGameTest {
 			context.waitTicks(20);
 
 			context.runOnClient(client -> {
-				if (ClientCommands.getActiveDispatcher() == null || ClientCommands.getActiveDispatcher().getRoot().getChild("fbnote") == null) throw new AssertionError("/fbnote is not registered although the development environment turns it on");
+				if (ClientCommands.getActiveDispatcher() == null || ClientCommands.getActiveDispatcher().getRoot().getChild("fbnote") == null) throw new AssertionError("/fbnote is not registered by default");
 			});
 			context.runOnClient(client -> client.player.connection.sendCommand("fbnote test, with \"quotes\" and 123"));
 			File[] found = new File[2];

@@ -32,14 +32,14 @@ class PlaytestNoteTest {
 	}
 
 	@Test
-	void debugSwitch() {
-		assertFalse(PlaytestNote.enabled(false, null, null), "off by default");
-		assertTrue(PlaytestNote.enabled(true, null, null), "on in the development environment");
-		assertTrue(PlaytestNote.enabled(false, "true", null));
-		assertTrue(PlaytestNote.enabled(false, null, " True "));
-		assertFalse(PlaytestNote.enabled(false, null, "yes"));
-		assertFalse(PlaytestNote.enabled(true, "false", "true"), "an explicit property wins, even in development");
-		assertTrue(PlaytestNote.enabled(false, "true", "false"));
+	void notesSwitch() {
+		assertTrue(PlaytestNote.enabled(null, null), "on by default");
+		assertTrue(PlaytestNote.enabled(" ", ""), "blank counts as unset");
+		assertFalse(PlaytestNote.enabled(null, " False "));
+		assertFalse(PlaytestNote.enabled("false", null));
+		assertTrue(PlaytestNote.enabled("true", "false"), "an explicit property wins over the config");
+		assertFalse(PlaytestNote.enabled("FALSE", "true"));
+		assertTrue(PlaytestNote.enabled(null, "yes"), "a typo does not turn the bug-report command off");
 	}
 
 	@SuppressWarnings("unchecked")

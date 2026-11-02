@@ -43,11 +43,13 @@ import net.minecraft.world.phys.HitResult;
  * FBNOTE: the client-side {@code /fbnote <comment>} playtest command (client entrypoint only; nothing here is loaded on a dedicated server).
  * It takes a screenshot through the vanilla path ({@link Screenshot#grab}) into {@code screenshots/} and writes {@code <same name>.json}
  * beside it ({@link PlaytestNote}): the comment, time, seed, dimension, position, biome, the targeted block and, when the integrated server
- * runs in this process, the planner's view of the position ({@link PlanLookup}, read on the server thread). Off unless
- * {@link #enabled()}: then the command is not registered. How-to: docs/PLAYTEST.md.
+ * runs in this process, the planner's view of the position ({@link PlanLookup}, read on the server thread). On by default (FBNOTEON), in a release client too; off only when
+ * {@link #enabled()} says so (then the command is not registered). Nothing here is dev-only except the git commit field. How-to: docs/PLAYTEST.md.
  */
 public final class FbNoteClient implements ClientModInitializer {
-	public static final String PROPERTY = "fractalbuildings.debugNotes";
+	public static final String PROPERTY = "fractalbuildings.notes";
+	/** The pre-FBNOTEON spelling of the property and of the config key {@code notes}; still read. */
+	public static final String OLD_PROPERTY = "fractalbuildings.debugNotes";
 	static final String CONFIG = "fractalbuildings-client.properties";
 	/** Client ticks between the command and the capture, so the chat screen has closed and a frame without it has been drawn. */
 	static final int DELAY_TICKS = 3;
@@ -63,7 +65,7 @@ public final class FbNoteClient implements ClientModInitializer {
 		FractalBuildingsMod.LOGGER.info("[FBNOTE] /fbnote enabled");
 	}
 
-	/** The switch ({@link PlaytestNote#enabled}): {@code -Dfractalbuildings.debugNotes}, the development environment, or {@code debugNotes=true} in {@code config/fractalbuildings-client.properties}. */
+	/** The switch ({@link PlaytestNote#enabled}): on unless {@code -Dfractalbuildings.notes=false} or {@code notes=false} in {@code config/fractalbuildings-client.properties} (old spelling {@code debugNotes}, also read). */
 	public static boolean enabled() {
 		String cfg = null;
 		Path p = FabricLoader.getInstance().getConfigDir().resolve(CONFIG);
@@ -71,12 +73,14 @@ public final class FbNoteClient implements ClientModInitializer {
 			try (InputStream in = Files.newInputStream(p)) {
 				Properties props = new Properties();
 				props.load(in);
-				cfg = props.getProperty("debugNotes");
+				cfg = props.getProperty("notes", props.getProperty("debugNotes"));
 			} catch (IOException e) {
 				FractalBuildingsMod.LOGGER.warn("Could not read {}: {}", p, e.toString());
 			}
 		}
-		return PlaytestNote.enabled(FabricLoader.getInstance().isDevelopmentEnvironment(), System.getProperty(PROPERTY), cfg);
+		String sys = System.getProperty(PROPERTY);
+		if (sys == null || sys.isBlank()) sys = System.getProperty(OLD_PROPERTY);
+		return PlaytestNote.enabled(sys, cfg);
 	}
 
 	/** Registers {@code /fbnote <text>} on the dispatcher when {@code on}; tests pass false to check that the command is absent. */
@@ -150,9 +154,11 @@ public final class FbNoteClient implements ClientModInitializer {
 		note.put("mod", mod);
 
 		File json = new File(shots, name + ".json");
+		final boolean singleplayer = server != null;
 		final String shotName = name;
 		Screenshot.grab(dir, shotName + ".png", client.gameRenderer.mainRenderTarget(), 1, msg -> client.execute(() -> {
-			if (client.player != null) client.player.sendSystemMessage(Component.literal("fbnote saved " + shotName + " (.png, .json)"));
+			if (client.player != null) client.player.sendSystemMessage(Component.literal("fbnote saved " + shotName + " (.png, .json)"
+					+ (singleplayer ? "" : "; planner details (settlement, building, room) are singleplayer-only, so the note has position, biome and block only")));
 		}));
 		if (server == null) {
 			Map<String, Object> pl = new LinkedHashMap<>();

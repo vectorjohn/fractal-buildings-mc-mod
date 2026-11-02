@@ -75,13 +75,26 @@ never changes an existing world. `/fb config` shows the current world's values.
 - City walls are rare on real terrain.
 - *(C3: the remaining items from the release review.)*
 
+## Reporting a bug
+
+In game, press `T` and type `/fbnote <what is wrong>`, for example `/fbnote stairs don't reach the top floor`. Stand where you can see the
+problem and look at it first: the note records your position and the block under the crosshair.
+
+- About a tenth of a second later the chat says `fbnote saved <name>`. Two files appear in the `screenshots/` folder of your game directory
+  (the `.minecraft` folder, or your launcher's instance folder): `<date_time>.png` (a normal screenshot) and `<date_time>.json` (your
+  comment, world seed, position, biome, the block you looked at, the mod version and, in singleplayer, which settlement, building and room
+  you were in).
+- Attach both files to the issue (see "Reporting problems"). On a multiplayer server the note has no seed and no settlement details, only
+  position, biome and block, so add the server address and the world seed if you know it.
+- The command needs the mod on your client. To turn it off, put `notes=false` in `config/fractalbuildings-client.properties`.
+
 ## Reporting problems
 
 Open an issue at *(C3: issue tracker link)* with:
 
 - the mod version, Minecraft and Fabric Loader versions, and your other mods;
 - the world seed and the coordinates (F3 screen) of the problem;
-- a screenshot, and `logs/latest.log` if the game crashed or warned.
+- the `/fbnote` files (screenshot and `.json`, see above), or at least a screenshot, and `logs/latest.log` if the game crashed or warned.
 
 ## Licence
 

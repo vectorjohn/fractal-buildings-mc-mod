@@ -20,14 +20,17 @@ public final class PlaytestNote {
 	static final long MAX_SAFE = 1L << 53;
 
 	/**
-	 * The debug switch: an explicit {@code -Dfractalbuildings.debugNotes=true|false} wins, else the development environment turns it on,
-	 * else the {@code debugNotes} key of {@code config/fractalbuildings-client.properties}. Anything but "true" counts as false.
+	 * The /fbnote switch (FBNOTEON: on by default, also in a release client). An explicit system property
+	 * ({@code -Dfractalbuildings.notes=} or the old {@code -Dfractalbuildings.debugNotes=}) wins, else the config value ({@code notes=} or the old
+	 * {@code debugNotes=} in {@code config/fractalbuildings-client.properties}), else on. Anything but "false" (blank counts as unset) is on, so a
+	 * typo cannot silently remove the bug-report command; callers pass the new key's value first and the old key's as the fallback.
 	 */
-	public static boolean enabled(boolean development, String systemProperty, String configValue) {
-		if (systemProperty != null && !systemProperty.isBlank()) return systemProperty.trim().equalsIgnoreCase("true");
-		if (development) return true;
-		return configValue != null && configValue.trim().equalsIgnoreCase("true");
+	public static boolean enabled(String systemProperty, String configValue) {
+		if (systemProperty != null && !systemProperty.isBlank()) return !systemProperty.trim().equalsIgnoreCase("false");
+		if (configValue != null && !configValue.isBlank()) return !configValue.trim().equalsIgnoreCase("false");
+		return true;
 	}
+
 
 	/** Pretty JSON (2-space indent) of nested maps, lists, strings, numbers, booleans and nulls; map keys stay in insertion order. */
 	public static String json(Map<String, Object> note) {
