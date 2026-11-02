@@ -13,14 +13,7 @@
       "label": "Cold district plan, p95",
       "unit": "ms",
       "budget": 1000,
-      "ci": 3000,
-      "knownOver": {
-        "issue": "PERFORMANCE.md Known perf bugs: cold district plan p95 (QUAYFAST 4b fixing)",
-        "since": "2026-11-02",
-        "accepted": "0.1.0",
-        "last": 5967,
-        "lastAt": "quiet perf worker 2026-11-02, 05142f534b"
-      }
+      "ci": 3000
     },
     {
       "key": "district.cold.sample.12_-35.ms",
