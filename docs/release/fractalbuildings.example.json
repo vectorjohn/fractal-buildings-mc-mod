@@ -1,0 +1,24 @@
+{
+  "// about": "Copy this file to config/fractalbuildings.json in your game folder and change the values. It only affects worlds created afterwards: each world keeps the values it was created with (/fb config shows them). Lines starting with // are notes; the mod ignores them, and you may delete them.",
+
+  "// frequency": "How often settlements appear. 1.0 is normal, 0.5 half as many, 2.0 twice as many, 0 none at all. Range 0 to 10.",
+  "frequency": 1.0,
+
+  "// maxRadius": "The largest settlement radius in blocks; only the biggest cities reach it. Range 256 to 16384. Over 4096, a city can take hours to generate.",
+  "maxRadius": 4096,
+
+  "// styles": "Which building styles are used. [] means all of them. Otherwise list the ones you want, e.g. [\"medieval\", \"desert\"]; buildings of other styles are built as plain. Styles: plain, medieval, desert, jungle, snowy, taiga, plains, tall, mass-timber, keep, and the variants mass-timber-spruce, mass-timber-oak, mass-timber-birch, mass-timber-pale-oak, mass-timber-jungle, mass-timber-cherry, keep-desert, keep-jungle, tall-brick, tall-stone, tall-terracotta, tall-concrete.",
+  "styles": [],
+
+  "// villagers": "true: settlements get villagers. false: they stay empty.",
+  "villagers": true,
+
+  "// vetoVanillaVillages": "true: vanilla villages don't generate inside or next to our settlements. false: they may overlap.",
+  "vetoVanillaVillages": true,
+
+  "// cellSize": "The size in blocks of the squares the world is divided into, each of which may hold one settlement. Larger means settlements further apart. Range 256 to 65536. Most players leave it at 1024 and use frequency instead.",
+  "cellSize": 1024,
+
+  "// intercityRoads": "true: roads link neighbouring settlements. false: no roads between settlements.",
+  "intercityRoads": true
+}

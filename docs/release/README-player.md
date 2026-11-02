@@ -5,10 +5,12 @@
 `docs/AGENTS.md`. Features listed here are what Phase 6 is building; C3 removes
 anything that didn't make the release.*
 
-Fractal Buildings is a Fabric mod for Minecraft: Java Edition that grows towns and
-cities in new worlds. Nothing is a stamped template: every settlement is planned
-from the world seed and the terrain under it, and every building is planned for
-its own lot.
+Fractal Buildings grows settlements from tiny hamlets to sprawling metropolises in your world. No two buildings or settlements are alike. Everything is planned from the world seed and the terrain under it, and every building is planned for its own lot.
+
+## Backstory
+
+This project stemmed from a first grader who really wants to play Minecraft to smash things. Usually my things. So I wanted to revisit an idea I’ve been kicking around for a decade to have “villages” in Minecraft be generated more organically and with more variety. And as a side effect, it gives my kid something to smash without messing up my builds. Pairs well with guns or explosive mods, and Mincraft Physics mod.
+The name comes from my early interest in fractal algorithms, and things like the [“fern” fractal](https://en.wikipedia.org/wiki/Barnsley_fern) that grows something organic from simple rules. 
 
 ## What it does
 
@@ -16,12 +18,12 @@ its own lot.
   and cities and metropolises spread over many chunks, with a downtown of tall
   buildings and an old town round the centre.
 - **Planned to fit the land**: streets follow the terrain and are graded where
-  they cross slopes; buildings sit on foundations with front steps down to the street.
-- **Buildings you can walk into**: houses, shops, workshops, civic buildings and
-  high-rises, with doors, floors, stairs and windows.
-- **Styles by biome**: materials and roof shapes change with the climate.
+  they cross slopes; Settlements are interconnected with roads, so if you happen upon a path in the wilderness you can follow it to a town.
+- **Various building types**: houses, shops, workshops, civic buildings and
+  high-rises.
+- **Styles by biome**: materials and roof shapes change with the climate. City in a forest? Mass timber highrises! Town in the desert? Flat roofs and sandstone.
 - **Gameplay**: beds, job-site blocks and loot; villagers live in hamlets and
-  villages. Monsters don't spawn inside buildings (the streets are as dangerous as
+  villages (sorry highrises but Minecraft doesn’t support 50,000 villagers very well). Monsters don't spawn inside buildings (the streets are as dangerous as
   the countryside).
 - `/locate structure fractalbuildings:village` (and `hamlet`, `town`, `city`,
   `metropolis`) finds the nearest settlement.
@@ -30,25 +32,27 @@ its own lot.
 
 ## Install
 
-1. Install [Fabric Loader](https://fabricmc.net/use/) 0.19.5 or later for
-   Minecraft 26.3.
-2. Put [Fabric API](https://modrinth.com/mod/fabric-api) and
-   `fractalbuildings-0.1.0+26.3.jar` in your `mods` folder.
-3. Create a **new world**. Settlements only appear in chunks generated with the mod
-   installed.
-
-Java 25 or later is needed (Minecraft 26.3 needs it too).
-
-**Servers:** install it on the server (or play singleplayer). Clients joining a
-server that runs the mod do not need it, because the mod adds no blocks, items or
-entities. It’s all worldgen.
+* Use your usual mod loader.
+* No dependencies.
+* **Allows server-only**: clients can be pure vanilla.
+* Create a **new world**. Settlements only appear in chunks generated with the mod installed, since it is part of worldgen.
 
 ## Config
 
-`config/fractalbuildings.json` sets the defaults for *new* worlds: how often
-settlements appear, the largest settlement size, and which styles are used. A
-world copies these values when it is created and keeps them, so editing the file
-never changes an existing world. `/fb config` shows the current world's values.
+To configure, copy [fractalbuildings.example.json](fractalbuildings.example.json)
+to `config/fractalbuildings.json` in your game folder (replacing the file the
+mod created there on first start) and change the values. Each setting has a
+one-line note above it: how often settlements appear, how big they get, which
+styles are used, villagers, roads between settlements.
+
+The file only affects worlds created after you edit it: a world keeps the values
+it was created with. `/fb config` shows the current world's values.
+
+The `/fbnote` switch (see "Reporting a bug") is in a separate client file:
+copy [fractalbuildings-client.example.properties](fractalbuildings-client.example.properties)
+to `config/fractalbuildings-client.properties`.
+
+*(C3: when this file moves to the root `README.md`, point both links at `docs/release/`, or link the files on the release page.)*
 
 ## Compatibility
 
@@ -86,7 +90,7 @@ problem and look at it first: the note records your position and the block under
   you were in).
 - Attach both files to the issue (see "Reporting problems"). On a multiplayer server the note has no seed and no settlement details, only
   position, biome and block, so add the server address and the world seed if you know it.
-- The command needs the mod on your client. To turn it off, put `notes=false` in `config/fractalbuildings-client.properties`.
+- The command needs the mod on your client. To turn it off, set `notes=false` in `config/fractalbuildings-client.properties` (see "Config").
 
 ## Reporting problems
 
