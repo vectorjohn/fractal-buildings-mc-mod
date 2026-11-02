@@ -336,6 +336,7 @@ public class FoliageClientGameTest implements FabricClientGameTest {
 			int x = PieceLedger.x(e.getKey()), z = PieceLedger.z(e.getKey());
 			if (Math.hypot(x - sx, z - sz) > sr) continue;
 			if (!level.getBlockState(pos.set(x, v[0] + 1, z)).isAir() || !level.getBlockState(pos.set(x, v[1], z)).isAir() || !level.getBlockState(pos.set(x, v[1] + 1, z)).isAir()) continue;
+			if (lotMayOwn(planner, x, v[1] + 1, z) || lotMayOwn(planner, x, v[0] + 1, z)) continue; // the building's own cells (lot column, or air-rights strip 3+ above the street): StreetAirFix leaves them by design
 			ChunkPos cp = ChunkPos.containing(new BlockPos(x, 0, z));
 			if ((snowN + trunkN) % 2 == 0 && snowN < 12) {
 				level.setBlock(pos.set(x, v[1] + 1, z), Blocks.SNOW.defaultBlockState(), 2);
@@ -359,9 +360,17 @@ public class FoliageClientGameTest implements FabricClientGameTest {
 		}
 		say("injected defects: snow " + snowFixed + "/" + snowN + " removed, trunks " + trunkFixed + "/" + trunkN + " removed, " + trunkRestored + " bases restored");
 		if (snowN == 0 || trunkN == 0) problem("no street column to inject the STREETSNOW/TRUNKDIRT control into (snow " + snowN + ", trunks " + trunkN + ")");
-		// a column under a building (its lot or air rights) is the building's: the pass leaves it, so 3 in 4 is the bar; a removed trunk must always get its base back
-		if (snowFixed * 4 < snowN * 3) problem("StreetAirFix left " + (snowN - snowFixed) + " of " + snowN + " injected snow layers over air");
+		// columns a building may own are skipped above (MAINSTEP shifted the sample onto 3 air-rights strip cells, 6/9): every injected snow layer must go, and a removed trunk must always get its base back
+		if (snowFixed < snowN) problem("StreetAirFix left " + (snowN - snowFixed) + " of " + snowN + " injected snow layers over air");
 		if (trunkFixed * 4 < trunkN * 3 || trunkBad > 0) problem("StreetAirFix: " + trunkFixed + "/" + trunkN + " injected trunks removed, " + trunkRestored + " bases restored, " + trunkBad + " removed without the base back");
+	}
+
+	/** Can a building own the cell (the in-lot rule, as StreetAirFix reads it)? Not a street cell to inject into: the pass leaves such cells alone. */
+	static boolean lotMayOwn(WorldPlanner planner, int x, int y, int z) {
+		var t = planner.grid().tileOf(x, z);
+		if (planner.tile(t.ix(), t.iz()).isEmpty()) return false;
+		for (var l : planner.plan(t.ix(), t.iz()).plan().lots()) if (new dev.fractalbuildings.core.ir.Lot(l.id(), l.x(), l.z(), l.w(), l.d(), l.front(), l.airRights(), l.frontY()).allows(x, y, z)) return true;
+		return false;
 	}
 
 	// ---- intercity roads
