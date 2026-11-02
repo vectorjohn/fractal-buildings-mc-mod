@@ -40,8 +40,8 @@ its own lot.
 Java 25 or later is needed (Minecraft 26.3 needs it too).
 
 **Servers:** install it on the server (or play singleplayer). Clients joining a
-server that runs the mod may not need it, because the mod adds no blocks, items or
-entities; this is untested.
+server that runs the mod do not need it, because the mod adds no blocks, items or
+entities. It’s all worldgen.
 
 ## Config
 
