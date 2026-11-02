@@ -1912,3 +1912,46 @@ copies are under `docs/review/` where they exist.
   pass); client foliage tests.
 - **Status:** proposed (clarifies DS-20). **Source:** architect,
   ROADLEAFORDER review 2026-10-29 (p6-roadleaforder-architect.md).
+
+## DS-19 amendment (proposed): one interim crossing deck at towns and up
+
+- **Exception** to DS-19, until ROADMAP 7.3 Bridges merges: the approach
+  to a town, city or metropolis may cross water by one level deck of 21
+  to 100 blocks when no other route works: no dry route and no crossing
+  of 20 or less from any of its exit gates. Only one such deck per
+  approach. The deck is a *crossing*: it leaves one bank and lands on the
+  other. It is surfaced in the approach's own road material (DS-30), with
+  its kerbs and rails, and never filled in as a causeway.
+- **Not covered:** hamlets and villages (they reroute or drop the link,
+  as DS-19 says); a road running *along* water, whatever its length or
+  tier (reroute or drop); a crossing over 100 blocks (drop); intercity
+  links away from the approach.
+- **Why:** John, release plan Q3, 2026-11-01: "allow the deck"; narrowed
+  2026-11-02: "towns and up. The scale's going to look bad with bridges
+  anyway, I don't think we would build a 100 block bridge to a hamlet
+  (unless it was a stop on the way somewhere else)." Hamlets on a through
+  road and docks at a terminal hamlet are Phase 7.
+- **Scope:** approaches (gate to port) of town tier and up.
+- **Enforcement:** code, partly exists. Checkable: (1) every water run on
+  a road is either 20 or less, or an approach deck of 21-100 serving a
+  town or larger; (2) at most one deck over 20 per approach; (3) the
+  deck is a crossing: apart from 6 blocks at each end, no more than a
+  quarter of its length lies within 3 blocks of a shore (agent's
+  numbers); (4) a deck over 20 is kept only after every other exit gate
+  and the dry reroute were tried; (5) the deck block is the road's
+  material, with no fill under it. `Profile.MAX_DECK_RUN = 100` exists;
+  the tier limit, the along-water drop and a test for (3) do not yet
+  (6.15 notes, gaps 1 and 2). Today's along-bank test calls the k2_1_0
+  crossing John approved (21.31.49) "along"; whatever test the code uses
+  must pass k2_1_0 and fail a deck that hugs a shore.
+- **Hard or chance:** hard limits, not chance-based: no seeded exceptions
+  beyond this. The 100 cap, the tier floor and the ban on runs along
+  water hold everywhere.
+- **Expires:** when 7.3 merges, this amendment becomes `dropped` and DS-19
+  plus the 7.3 bridge rule govern.
+- **Status:** proposed (records John's 2026-11-01/02 decision; waiting for
+  him to accept the wording). **Source:** architect, 2026-11-02
+  (ds19-interim-architect.md), from John's release plan Q3 answers of
+  2026-11-01 ("allow the deck") and 2026-11-02 ("towns and up"); ROADMAP
+  6.15 note "Long crossings decided"; architect option 2 (REVIEW
+  "ROADJOIN long crossings", archived).

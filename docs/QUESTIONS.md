@@ -8,7 +8,7 @@ Every decision waiting for you, one line each, newest first under each heading. 
 
 - [ ] **Server-only wording** (2026-11-02, from the release status audit): Phase 6 plan decision 8. The SRVONLY spike (server-only install test) found that a client with only Fabric Loader, and not our mod, joins a modded server fine; may the player README say "clients don't need the mod" (today it says "this is untested")? [release-plan.md](review/release-plan.md) "Phase 6 plan decisions 7 and 8", [server-only spike](research/spikes/server-only.md).
 - [ ] **Release basics** (2026-11-02, from the release status audit; files since 2026-10-22): read the LICENSE (MIT), the CHANGELOG draft, the [player README](release/README-player.md) and the placeholder icon before C3 (cutting the release) uses them. [REVIEW](REVIEW.md) "A5 release basics".
-- [ ] **Polish triage** (2026-11-01): confirm the 5 proposed P6 items (a floating glass pane, test runs that pass while testing the wrong thing, unexplained cold-arrival freezes, doors with no path from the street, perf ceilings already asked below). [polish-triage.md](review/polish-triage.md).
+- [ ] **Polish triage** (2026-11-01): confirm the 4 proposed P6 items (a floating glass pane, test runs that pass while testing the wrong thing, unexplained cold-arrival freezes, doors with no path from the street; the fifth, perf ceilings, is settled by your 2026-11-02 rule that ceilings are never raised). [polish-triage.md](review/polish-triage.md).
 - [ ] **Release scope** (2026-10-29): is the P6 checklist the whole release scope, with nothing added? See [release-plan.md](review/release-plan.md) section 3, Q1.
 - [ ] **P7 features** (2026-10-29): which 3-5 features make up P7? [release-plan.md](review/release-plan.md) Q6.
 - [ ] **Backlog section** (2026-10-29): may the other Phase 7 items move to a new "Backlog (unscheduled)" section, where `#backlog` notes also go? [release-plan.md](review/release-plan.md) Q7.
@@ -18,6 +18,7 @@ Every decision waiting for you, one line each, newest first under each heading. 
 
 # Rules (DS proposals)
 
+- [ ] **DS-19 interim deck** (2026-11-02): accept or reword the architect's wording of your "allow the deck, towns and up" answers (release plan Q3): one level crossing deck of 21-100 blocks on an approach to a town or larger, until 7.3 Bridges; hamlets, villages and runs along water stay forbidden. [STANDARDS.md](design/STANDARDS.md), "DS-19 amendment (proposed)".
 - [ ] **DS-55 to DS-73 and amendments** (2026-10-29; updated 2026-10-31): accept, edit or drop each proposal still open: DS-55 and DS-57 to DS-73, and the amendments to DS-6, DS-20 (cut trees go whole), DS-25, DS-35 (the main door is the marked one; doors on the axis), DS-36, DS-45 (secondary doors near the ground), DS-47, DS-52, DS-54 (joins are level) and DS-56 (exit roads with nothing beyond). Decided since and filed: DS-56 itself, the DS-54 narrowing, DS-75, DS-76, DS-77 and the DS-45 high-rise and DS-35 small-wing amendments. [STANDARDS.md](design/STANDARDS.md), "Proposed by agents".
 
 # Design

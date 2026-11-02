@@ -418,3 +418,23 @@ Where an answer became a rule, ROADMAP item or plan change, the agent's
   Where: [architect review](review/roadjoin/p6-roadjoin-s1-architect.md); [top view](review/roadjoin/approach-3201-1683.png) (from `.claude/reports/p6-roadjoin-s1-architect.md` and an agent scratchpad).
   Result: John: allow the deck ("allow the deck" in QUESTIONS.md, 2026-11-01; [release plan](review/release-plan.md) Q3).
   - @assistant 2026-11-02: settled as option 2; filed under 6.15 ROADJOIN in the ROADMAP, with what the code does today and the gaps left (town-tier limit, runs along water); archived from REVIEW.md.
+
+- [x] **REGIONPERF: the region layer is 36 s, budget 6 s (2026-10-27)**: decide the budget and the teleport-hold tradeoff (the 4 s you accepted is now about 36 s plus 69 s of quays on a waterfront metropolis, and TPHOLD gives up at 30 s).
+  Where: [review/regionperf-decision.md](review/regionperf-decision.md) (who pays it, why it is slow, what each piece buys, options, a recommendation); numbers in [PERFORMANCE.md](PERFORMANCE.md), "Region layer row".
+  - @assistant 2026-10-29: HEAVY6 numbers (after PARREADS) are in section 7 of [review/regionperf-decision.md](review/regionperf-decision.md): worst cold chunk 21.8 s local quiet / 37.8 s on the perf worker, `/locate` fresh 2.7 / 4.6 s, region layer 8.1 / 11.2 s (ceiling 10 s). Suggestion for release-plan question 4: a 60 s cold-arrival budget, `/locate` ceiling stays at 5 s.
+  Result: John 2026-11-02: a cold arrival in a metropolis of about 35 s is acceptable for 0.1.0. The teleport and portal hold waits as long as needed and aborts the trip after 60 s (ROADMAP TPABORT). Perf ceilings are never raised; a row over its ceiling is a bug, accepted for 0.1.0 and marked `knownOver` in `mod/perf-budget.json`.
+  - @assistant 2026-11-02: settled. Filed in [PERFORMANCE.md](PERFORMANCE.md) (the never-raise rule and `knownOver`), the ROADMAP TPABORT box and [release-plan](review/release-plan.md) question 4; the README tells players about the wait. Archived from REVIEW.md.
+
+- [x] **Door frame or glass blocks (playtest 2026-10-26)**: the architect chose a solid frame round every door in a glazed wall: a jamb on each side and a head in the trim or frame role, so the panes butt a solid block and connect. The glass-block option was the one you placed in [20.50.01](review/phase6/playtest-comments/2026-10-26_20.50.01.jpg). It reads thicker and brighter than the panes beside it, and the door would hang on glass. Say if you preferred that look.
+  Where: [architect report](review/reports/playtest1026-qs-architect.md), question 7; ROADMAP polish lines DOORGLASS and GLASSSTUB.
+  Result: solid frame (John 2026-10-27, approving the architect's call). DS-51 "Glass ends on something solid" accepted in STANDARDS ("Building and facade"); noted on the ROADMAP DOORGLASS and GLASSSTUB lines.
+  - @John 2026-10-27: I approve the architect call here. I was leaning that way.
+    - @assistant 2026-10-27: recorded. DS-51 is accepted and moved to "Building and facade" in STANDARDS, and DOORGLASS and GLASSSTUB now say the solid frame is decided (no glass blocks beside doors).
+  - @assistant 2026-11-02: settled and filed (DS-51, DOORGLASS, GLASSSTUB); archived from REVIEW.md.
+
+- [x] **Inn type or bigger hamlet house (playtest 2026-10-26)**: about half of the hamlets on a road between settlements (3+ lots, away from both ends) get one inn. Should that be a real `inn` building type (taproom with bar and fire, kitchen, 3-5 guest rooms upstairs, stable yard on the road), which both reviewers recommend? The cheaper option is the largest hamlet house with a taproom front room and more bedrooms. That reads as a house, with no bar and no stable yard. Filed as ROADMAP 7.22 INN, pending this answer.
+  Where: [architect report](review/reports/playtest1026-qs-architect.md), question 5 (siting); [interior report](review/reports/playtest1026-qs-interior.md), question 2 (rooms).
+  Result: a real `inn` building type (John 2026-10-27). Recorded on ROADMAP 7.22 INN, no longer pending.
+  - @John 2026-10-27: I think a real inn building type. 
+    - @assistant 2026-10-27: recorded on ROADMAP 7.22 INN: a real `inn` type (taproom with bar and fire, kitchen, 3-5 guest rooms upstairs, stable yard on the road) in about half of the road hamlets with 3+ lots, away from both ends. The bigger-hamlet-house option is dropped.
+  - @assistant 2026-11-02: settled and filed (7.22 INN); archived from REVIEW.md.

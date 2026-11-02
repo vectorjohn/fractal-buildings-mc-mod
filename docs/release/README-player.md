@@ -63,6 +63,10 @@ never changes an existing world. `/fb config` shows the current world's values.
 - **Updating the mod mid-world**: chunks generated after an update follow the new
   version's plans, so a settlement half-explored before the update can show a seam.
   The log warns when it sees pieces from another version.
+- **First trip into a big city**: teleporting or taking a portal into a large city
+  nobody has visited yet can take up to about half a minute, with "Generating
+  terrain…" on screen; the server keeps running normally meanwhile. If it takes
+  more than a minute, the trip is cancelled and you can simply try again.
 - Very steep ground: some lanes route around a slope instead of using steps, and
   gatehouses can stand high above the road.
 - City walls are rare on real terrain.

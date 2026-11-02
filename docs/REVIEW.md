@@ -425,15 +425,10 @@ in `.claude/reports/` (John, 2026-10-28; earlier report copies are in
   Where: `docs/review/phase6/palette/` (`house-<style>-before.png` / `-after.png` for medieval, plains, desert, jungle, snowy, taiga, and `shop-medieval`, `shop-plain`; in game: `docs/review/phase6/palette/street-after.png`, a plains street of seed 987654321 from the terrain client test; `street-bamboo-patches.png` is the intermediate run where bamboo walls showed as yellow patches; the yellow bands still visible in `street-after.png` were bamboo floor edges, since changed to birch/oak without a new game shot). Walls, roofs and foundations now use near-identical colours per style (texture variation only, e.g. sandstone + cut + smooth; stone bricks + a little cracked), with at most one rare accent (a moss block on jungle roofs). Timber framing unchanged. Log: [log/2026-10-23-p6-palette.md](log/2026-10-23-p6-palette.md).
   Look for: (1) do the walls now read as one material in game (not only in the viewer); (2) is anything now too plain or too dark (taiga roofs are all dark oak, snowy walls are all grey brick; plains walls are now birch only with a stripped-birch variant); (3) do you want the variation to be intentional patches or bands (per face, per storey) instead of per-block scatter? I left the selection per block, since calm colours make it read as texture.
 
-- [ ] **REGIONPERF: the region layer is 36 s, budget 6 s (2026-10-27)**: decide the budget and the teleport-hold tradeoff (the 4 s you accepted is now about 36 s plus 69 s of quays on a waterfront metropolis, and TPHOLD gives up at 30 s).
-  Where: [review/regionperf-decision.md](review/regionperf-decision.md) (who pays it, why it is slow, what each piece buys, options, a recommendation); numbers in [PERFORMANCE.md](PERFORMANCE.md), "Region layer row".
-  - @assistant 2026-10-29: HEAVY6 numbers (after PARREADS) are in section 7 of [review/regionperf-decision.md](review/regionperf-decision.md): worst cold chunk 21.8 s local quiet / 37.8 s on the perf worker, `/locate` fresh 2.7 / 4.6 s, region layer 8.1 / 11.2 s (ceiling 10 s). Suggestion for release-plan question 4: a 60 s cold-arrival budget, `/locate` ceiling stays at 5 s.
-  Result:
-
 - [ ] **Phase 6 gate: the playtest (C2 kit)**: three seeds, about an hour each, on the release candidate.
   Where: [review/phase6/gate-kit/README.md](review/phase6/gate-kit/README.md) (checklist, one page per seed with settlements near spawn, road links, a route and fly-through frames; [known issues](review/phase6/gate-kit/KNOWN-ISSUES.md)). The copy there now was made on the run branch before the release candidate; it is regenerated on the candidate with `scripts/playtest-kit.sh --fly`.
   Look for: per seed pass or fail, the worst three things (FBNOTE names or coordinates), and whether any blocks the release. Also say whether the two seeds you have played count, or all three must be fresh (`--seeds random,random,random`).
-  Result:
+  Result: seeds: John 2026-11-01 (release-plan Q5): his two played seeds count toward the three; the third, fresh seed is played on the release candidate. Per-seed pass or fail still to come.
 
 ## Furnishings (7.5)
 
@@ -487,18 +482,6 @@ The architect and interior designer answered the design questions from your play
 - [ ] **Tunnels ever? (playtest 2026-10-26)**: the architect recommends that roads never tunnel for now (proposed DS-50). 6.17 ROADCLEAR then clears thin overburden to an open cut, and where the cut would be too deep the road goes round the hill or the link is dropped. If you want tunnels later, they become their own item, with portals, a lining, headroom of 4 and lights every 8 blocks. Never an unlined bore like [21.37.41](review/phase6/playtest-comments/2026-10-26_21.37.41.jpg).
   Where: [architect report](review/reports/playtest1026-qs-architect.md), question 2; ROADMAP 6.17.
   Result:
-
-- [x] **Door frame or glass blocks (playtest 2026-10-26)**: the architect chose a solid frame round every door in a glazed wall: a jamb on each side and a head in the trim or frame role, so the panes butt a solid block and connect. The glass-block option was the one you placed in [20.50.01](review/phase6/playtest-comments/2026-10-26_20.50.01.jpg). It reads thicker and brighter than the panes beside it, and the door would hang on glass. Say if you preferred that look.
-  Where: [architect report](review/reports/playtest1026-qs-architect.md), question 7; ROADMAP polish lines DOORGLASS and GLASSSTUB.
-  Result: solid frame (John 2026-10-27, approving the architect's call). DS-51 "Glass ends on something solid" accepted in STANDARDS ("Building and facade"); noted on the ROADMAP DOORGLASS and GLASSSTUB lines.
-  - @John 2026-10-27: I approve the architect call here. I was leaning that way.
-    - @assistant 2026-10-27: recorded. DS-51 is accepted and moved to "Building and facade" in STANDARDS, and DOORGLASS and GLASSSTUB now say the solid frame is decided (no glass blocks beside doors).
-
-- [x] **Inn type or bigger hamlet house (playtest 2026-10-26)**: about half of the hamlets on a road between settlements (3+ lots, away from both ends) get one inn. Should that be a real `inn` building type (taproom with bar and fire, kitchen, 3-5 guest rooms upstairs, stable yard on the road), which both reviewers recommend? The cheaper option is the largest hamlet house with a taproom front room and more bedrooms. That reads as a house, with no bar and no stable yard. Filed as ROADMAP 7.22 INN, pending this answer.
-  Where: [architect report](review/reports/playtest1026-qs-architect.md), question 5 (siting); [interior report](review/reports/playtest1026-qs-interior.md), question 2 (rooms).
-  Result: a real `inn` building type (John 2026-10-27). Recorded on ROADMAP 7.22 INN, no longer pending.
-  - @John 2026-10-27: I think a real inn building type. 
-    - @assistant 2026-10-27: recorded on ROADMAP 7.22 INN: a real `inn` type (taproom with bar and fire, kitchen, 3-5 guest rooms upstairs, stable yard on the road) in about half of the road hamlets with 3+ lots, away from both ends. The bigger-hamlet-house option is dropped.
 
 - [ ] **Proposed rules from the playtest answers (2026-10-27)**: accept, edit or reject each one. The full text is in [STANDARDS.md](design/STANDARDS.md), "Proposed by agents".
   - P1, **DS-49 Partitions lighter than the shell** (architect): the core, party walls and chimneys are masonry. Other interior walls are pale plaster, or planks in wood styles. Desert, adobe and stone keep masonry inside. From your brick corridor, 19.59.37. [Report](review/reports/playtest1026-qs-architect.md) question 1.

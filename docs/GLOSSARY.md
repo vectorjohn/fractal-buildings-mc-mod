@@ -142,7 +142,7 @@ Item codes (PARREADS, MAINSTUB, TPHOLD, ...) and run terms, one row each. **Gene
 | PROFILE |  | profile of the metropolis worst case against plain vanilla on the same seed | done | [[docs/review/profile-metropolis|profile-metropolis]] |
 | PROPFIX |  | V1PropertyTest skips policy rejections | done | [[docs/log/2026-10-21-p5-propfix|log]] |
 | quay trace |  | tracing the quay lines along water for a waterfront settlement tile; slow, so the warmer does it ahead of... | - | [[docs/PERFORMANCE|PERFORMANCE]] |
-| QUAYFAST |  | , quays traced run by run (fewer chunks, the same quays) | - | [[docs/plans/quayfast|plan]] |
+| QUAYFAST |  | 4b: cold district plan fix | open | [[docs/ROADMAP|ROADMAP]], [[docs/plans/quayfast|plan]] |
 | QUAYLAZY |  | , a lazy quay trace that runs in parallel | - | [[docs/plans/quaylazy|plan]] |
 | QUAYOUT |  | take the quay trace out of structure starts so a late warmer can't freeze the server | open | [[docs/PERFORMANCE|PERFORMANCE]] |
 | QUIETHOLE |  | the quiet check judges the whole timed window (the worker's job history, lock and CPU sampler), not only... | done | [[scripts/quiet-check.sh|quiet-check.sh]] |
@@ -218,6 +218,7 @@ Item codes (PARREADS, MAINSTUB, TPHOLD, ...) and run terms, one row each. **Gene
 | to-main |  | merging the run branch into main, after a full test run | - | [[docs/runs/2026-10-22-phase6|2026-10-22-phase6]] |
 | TOKENSAVE |  | agent-definition change to save tokens: at most 3 coding items, verdict blocks, Sonnet verifiers for small... | done | [coordinator](../.claude/agents/coordinator.md) |
 | TOMAINn |  | the n-th merge of the run branch into main (TOMAIN3, ...) | - | [[docs/runs/2026-10-22-phase6|2026-10-22-phase6]] |
+| TPABORT |  | teleport and portal holds wait as long as needed, abort at 60 s | open | [[docs/ROADMAP|ROADMAP]] |
 | TPHOLD | 6.7 | hold far teleports until the destination is generated | done | [[docs/log/2026-10-23-p6-tphold|log]] |
 | TPHOLD15 |  | shorter teleport hold, and what happens after it gives up | done | [[docs/log/2026-10-31-p6-tphold15|log]] |
 | TPHOLD60 |  | TeleportHold cap 60 s | done | [[docs/log/2026-11-01-p6-tphold60|log]] |
