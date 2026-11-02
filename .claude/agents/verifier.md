@@ -323,7 +323,9 @@ fly-through frames, and read the perf table. A run that ends with `perf: NOT A M
 (busy host, `mod/build/perf/quiet.txt`; CLAUDE.md "Parallel work") gives no timing results:
 report its count rows and failures only, and say the timings were not measured. A `PERF SKIPPED (load)` row is not a pass:
 name it in the report; `PERF SKIPPED ROW FAR OVER CEILING` (perf.sh exit 5) is a
-FAIL like any other, not load noise. If something fails, rerun only
+FAIL like any other, not load noise. A `PERF KNOWN OVER` row (a bug John accepted for 0.1.0, `knownOver` in
+`mod/perf-budget.json`) is not a pass either: name it; never accept a change that raises a `ci` or `budget`, or adds
+`knownOver`, without John's acceptance. If something fails, rerun only
 that command once (a pass is a flake: see "Flakes"); if it fails again,
 bisect over the squash commits in `<range>` with that command
 (`--name heavy`), as in a train. **Don't revert**: report the culprit

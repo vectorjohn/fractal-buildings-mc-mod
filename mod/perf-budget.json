@@ -1,5 +1,5 @@
 {
-  "about": "B8 (ROADMAP 6.7). budget = the target from docs/plans/phase6.md 'Budgets'; ci = the ceiling scripts/perf.sh fails above (default 2 x budget; a few are set from a measured miss, see docs/log/2026-10-23-p6-b8-perf.md). Do not loosen a budget without the coordinator. Timing rows are not failed when the loadavg seen during the run reached 8 (PERF_LOAD_SKIP); a full run fails on any unmeasured row. A row with loadSkipGuard F (cold arrival, first tile, /locate fresh) still fails (exit 5, PERF SKIPPED ROW FAR OVER CEILING) when it is skipped for load but above F x ci: a load-skip hides noise, not a 10x regression (F set from the loaded runs of 2026-10-26..29; PERF_SKIP_FAR overrides every F).",
+  "about": "B8 (ROADMAP 6.7). budget = the target from docs/plans/phase6.md 'Budgets'; ci = the ceiling scripts/perf.sh fails above (default 2 x budget; a few are set from a measured miss, see docs/log/2026-10-23-p6-b8-perf.md). Do not loosen a budget without the coordinator. Timing rows are not failed when the loadavg seen during the run reached 8 (PERF_LOAD_SKIP); a full run fails on any unmeasured row. A row with loadSkipGuard F (cold arrival, first tile, /locate fresh) still fails (exit 5, PERF SKIPPED ROW FAR OVER CEILING) when it is skipped for load but above F x ci: a load-skip hides noise, not a 10x regression (F set from the loaded runs of 2026-10-26..29; PERF_SKIP_FAR overrides every F). knownOver (PERFKNOWN, John 2026-11-02): a ceiling is never raised to make a run pass; a row over its ci is a bug, and with John's acceptance (all of 0.1.0, by his rule of 2026-11-02) it carries knownOver {issue, since, accepted, last, lastAt, margin?}: printed PERF KNOWN OVER, not failed, not a pass; it fails again more than margin (default 25 %) above last. Remove the field once the row is back under its ci. Provenance of the numbers (mostly guesses): docs/PERFORMANCE.md.",
   "budgets": [
     {
       "key": "district.cold.median.ms",
@@ -13,7 +13,14 @@
       "label": "Cold district plan, p95",
       "unit": "ms",
       "budget": 1000,
-      "ci": 3000
+      "ci": 3000,
+      "knownOver": {
+        "issue": "PERFORMANCE.md Known perf bugs: cold district plan p95 (QUAYFAST 4b fixing)",
+        "since": "2026-11-02",
+        "accepted": "0.1.0",
+        "last": 5967,
+        "lastAt": "quiet perf worker 2026-11-02, 05142f534b"
+      }
     },
     {
       "key": "district.cold.sample.12_-35.ms",

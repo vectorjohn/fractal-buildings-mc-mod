@@ -124,6 +124,7 @@ Item codes (PARREADS, MAINSTUB, TPHOLD, ...) and run terms, one row each. **Gene
 | PDESIGN |  | process item: the design reviewer agents (architect, interior designer) and the design standards | done | [[docs/design/STANDARDS|STANDARDS]] |
 | perf worker |  | the worker with the `perf` role in the gitignored worker pool file `.claude/workers.conf`: the benchmark... | - | [[CLAUDE|CLAUDE]] |
 | PERFBASE |  | the perf base world is vanilla | done | [[docs/log/2026-10-31-p6-perfbase|log]] |
+| PERFKNOWN |  | known-over perf rows: a row over its ceiling is a bug John accepted for 0.1.0, printed PERF KNOWN OVER,... | done | [[docs/PERFORMANCE|PERFORMANCE]] |
 | PERFROUTE |  | scripts/anywhere.sh sends a timing run (perf.sh, profile.sh, test-all --perf) to the perf worker only when... | done | [[scripts/anywhere.sh|anywhere.sh]] |
 | PERFSRV |  | perf.sh world half off the renderer | done | [[docs/log/2026-10-26-p6-perfsrv|log]] |
 | PFLOOR |  | process item: `fractal-cli floorplan`, storeys as ASCII grids for text-reading reviewers | done | [[docs/log/2026-10-25-proc-floorplan|2026-10-25-proc-floorplan]] |

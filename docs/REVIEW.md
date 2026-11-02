@@ -379,6 +379,7 @@ in `.claude/reports/` (John, 2026-10-28; earlier report copies are in
   5. Config is fixed per world when the world is created; editing the file affects new worlds only.
   6. Updating the mod mid-world may leave a seam in a half-generated city. The README says so, and there is no old-generator support.
   7. Release: Modrinth first, `0.1.0+26.3`, alpha, MIT. **You publish**; the page name and whether the repo goes public are yours to decide.
+     - @assistant 2026-11-02: answered in QUESTIONS.md (John 2026-11-01): Modrinth (you may not be listed there because of AI) and CurseForge, name "Fractal Buildings", source public; history cleanup before `main` waits for your details. Recorded in [release-plan.md](review/release-plan.md) Q9 and the ROADMAP Phase 6 notes.
   8. Server-only install: probably works for vanilla clients, but untested (testing it needs a dedicated server and the EULA, which is yours to accept).
   9. Terralith and Tectonic: run their jars as black boxes in compatibility tests, as the S2 and S7 spikes did (their licence forbids using their work to test AI systems; we never read their code or data). If you object, they are listed as untested.
   10. Deferred past the first release: per-wing ground levels on slopes, density-function flattening, a published settlement density function, and 6.10 unless it is ready in time.
@@ -519,9 +520,6 @@ The architect and interior designer answered the design questions from your play
 
 ## ROADJOIN long crossings (6.15, 2026-10-27)
 
-- [ ] **6.15 ROADJOIN: an approach road with no dry route and no crossing of 20 or less (2026-10-27)**: 3 of 18 approaches (playtest metropolis k2_1_0 at 3200,1696, your 21.31.49 spot, ~65 blocks over the river; playtest k2_1_1; w12345 k2_1_2) need a deck longer than DS-19's 20. Option 1: drop that approach and its link side (keeps DS-19, but the road stops short of the town as in 21.19.18). Option 2 (architect recommends, after a real search for another exit): allow a long crossing deck at town-tier-and-up gates, in the road's own material, until 7.3 Bridges. Either way a run ALONG water (not across) is never built. Proposed rule: crossings >20 wait for 7.3; runs along water never built.
-  Where: [architect review](review/roadjoin/p6-roadjoin-s1-architect.md); [top view](review/roadjoin/approach-3201-1683.png) (from `.claude/reports/p6-roadjoin-s1-architect.md` and an agent scratchpad).
-  Result:
 - [ ] **7.20 METROFILL R1: quays end at the settlement's own waterfront tiles (2026-10-27)**: acceptable at settlement edges? (from the R1 merge commit 4516ce4b)
   Result:
 

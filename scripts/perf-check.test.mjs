@@ -60,4 +60,43 @@ const noArr = run({ 'other.ms': 5 }, ['--allow-absent-prefix', 'arrival.']);
 check('--allow-absent-prefix arrival.: missing arrival row passes', noArr.status === 0 && noArr.stdout.includes('1 allowed by --allow-absent-prefix arrival.'));
 const noOther = run({}, ['--allow-absent-prefix', 'arrival.']);
 check('--allow-absent-prefix arrival.: another missing row still fails', noOther.status === 1 && noOther.stdout.includes('rows are missing'));
+// PERFKNOWN (John 2026-11-02: never raise a ceiling; exceeding one is a bug, accepted for 0.1.0): knownOver rows
+const ko = { issue: 'PERFORMANCE.md known perf bugs: test row', since: '2026-11-02', accepted: '0.1.0', last: 5000 };
+budget.budgets = [{ key: 'k.ms', label: 'k', unit: 'ms', budget: 1000, ci: 3000, knownOver: ko }];
+function summary(world) { // run() but keep summary.md
+	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'perfcheck-'));
+	fs.writeFileSync(path.join(dir, 'b.json'), JSON.stringify(budget));
+	fs.writeFileSync(path.join(dir, 'world.json'), JSON.stringify(world));
+	const r = spawnSync('node', [path.join(import.meta.dirname, 'perf-check.mjs'), path.join(dir, 'b.json'), dir], { encoding: 'utf8' });
+	r.md = fs.readFileSync(path.join(dir, 'summary.md'), 'utf8');
+	fs.rmSync(dir, { recursive: true });
+	return r;
+}
+const kn = summary({ 'k.ms': 5900 });
+check('known over: exit 0 with the visible marker', kn.status === 0 && kn.stdout.includes('PERF KNOWN OVER (bug, accepted for 0.1.0: PERFORMANCE.md known perf bugs: test row) k.ms value=5900 ceiling=3000') && !kn.stdout.includes('PERF FAIL'));
+check('known over: not reported as a plain pass', kn.stdout.includes('1 KNOWN OVER their ceiling') && kn.stdout.includes('NOT a pass'));
+check('known over: summary.md shows it', kn.md.includes('| KNOWN OVER (bug, accepted for 0.1.0:') && kn.md.includes('- PERF KNOWN OVER (bug'));
+budget.budgets.push({ key: 'k2.ms', label: 'k2', unit: 'ms', budget: 1000, ci: 3000 });
+const unk2 = run({ 'k2.ms': 5900, 'k.ms': 5000 });
+check('unknown over (no knownOver) still fails beside a known one', unk2.status === 1 && unk2.stdout.includes('PERF FAIL: 1 above the CI ceiling') && unk2.stdout.includes('| FAIL |'));
+budget.budgets.pop();
+const wr = run({ 'k.ms': 6300 }); // 5000 x 1.25 = 6250
+check('known over but worse than last + 25 %: fails', wr.status === 1 && wr.stdout.includes('PERF KNOWN OVER WORSE k.ms value=6300 last=5000') && wr.stdout.includes('PERF FAIL'));
+const edge = run({ 'k.ms': 6250 });
+check('exactly last + 25 %: still known over', edge.status === 0 && edge.stdout.includes('PERF KNOWN OVER (bug'));
+budget.budgets[0].knownOver = { ...ko, margin: 0.1 };
+check('per-row margin 10 %: 5600 fails', run({ 'k.ms': 5600 }).status === 1);
+budget.budgets[0].knownOver = { ...ko, last: undefined };
+const nolast = run({ 'k.ms': 3500 });
+check('knownOver without a last value fails', nolast.status === 1 && nolast.stdout.includes('no positive'));
+budget.budgets[0].knownOver = ko;
+const back = run({ 'k.ms': 2500 });
+check('known over back under its ceiling: passes with the remove note', back.status === 0 && back.stdout.includes('PERF KNOWN OVER NOW UNDER CEILING k.ms') && back.stdout.includes('remove the knownOver field') && back.stdout.includes('(knownOver: remove?)'));
+budget.budgets[0].unit = 'ms';
+const loadedKn = run({ 'k.ms': 9000, 'planner.load.before': 20 });
+check('load skip still comes first for a known-over row (skip line, no known line)', loadedKn.status === 0 && loadedKn.stdout.includes('PERF SKIPPED (load) k.ms') && !loadedKn.stdout.includes('PERF KNOWN OVER ('));
+// the real budget file: knownOver rows are well formed, and no ci/budget was touched to make room (they sit below their last)
+const realB = JSON.parse(fs.readFileSync(path.join(import.meta.dirname, '..', 'mod', 'perf-budget.json'), 'utf8'));
+const kos = realB.budgets.filter((b) => b.knownOver);
+check('real budget: every knownOver has issue, since, accepted, a last above its ci', kos.length > 0 && kos.every((b) => b.knownOver.issue && b.knownOver.since && b.knownOver.accepted && b.knownOver.last > (b.ci ?? b.budget * 2) && !b.knownOver.issue.includes('|')));
 process.exit(bad ? 1 : 0);

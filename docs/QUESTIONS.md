@@ -6,19 +6,15 @@ Every decision waiting for you, one line each, newest first under each heading. 
 
 # Release (0.1.0)
 
+- [ ] **Server-only wording** (2026-11-02, from the release status audit): Phase 6 plan decision 8. The SRVONLY spike (server-only install test) found that a client with only Fabric Loader, and not our mod, joins a modded server fine; may the player README say "clients don't need the mod" (today it says "this is untested")? [release-plan.md](review/release-plan.md) "Phase 6 plan decisions 7 and 8", [server-only spike](research/spikes/server-only.md).
+- [ ] **Release basics** (2026-11-02, from the release status audit; files since 2026-10-22): read the LICENSE (MIT), the CHANGELOG draft, the [player README](release/README-player.md) and the placeholder icon before C3 (cutting the release) uses them. [REVIEW](REVIEW.md) "A5 release basics".
 - [ ] **Polish triage** (2026-11-01): confirm the 5 proposed P6 items (a floating glass pane, test runs that pass while testing the wrong thing, unexplained cold-arrival freezes, doors with no path from the street, perf ceilings already asked below). [polish-triage.md](review/polish-triage.md).
 - [ ] **Release scope** (2026-10-29): is the P6 checklist the whole release scope, with nothing added? See [release-plan.md](review/release-plan.md) section 3, Q1.
-- [ ] **PORCHSTEP, DOORBANK, STAIRFOOT** (2026-10-29): release blockers, or any of them to P7? (All three are merged now.) [release-plan.md](review/release-plan.md) Q2.
-- [ ] **Long crossings at approaches** (2026-10-29): for 6.15, drop the approach, or allow a long deck at town tier and up until 7.3? Architect: allow the deck. [release-plan.md](review/release-plan.md) Q3, [REVIEW 6.15 ROADJOIN](REVIEW.md), [architect](review/roadjoin/p6-roadjoin-s1-architect.md).
-- [ ] **Gate kit seeds** (2026-10-29): do your two played seeds count toward "three seeds", or do all three run fresh on the release candidate? Note: the fresh kit seed has no metropolis within 4 km. [release-plan.md](review/release-plan.md) Q5, [gate kit](review/phase6/gate-kit/README.md).
 - [ ] **P7 features** (2026-10-29): which 3-5 features make up P7? [release-plan.md](review/release-plan.md) Q6.
 - [ ] **Backlog section** (2026-10-29): may the other Phase 7 items move to a new "Backlog (unscheduled)" section, where `#backlog` notes also go? [release-plan.md](review/release-plan.md) Q7.
-- [ ] **Patch releases** (2026-10-29): at most weekly after a passing heavy run, cut from the run branch, you publish. Yes? [release-plan.md](review/release-plan.md) Q8.
-- [ ] **Publishing** (2026-10-29): which platform (default Modrinth), what project name, and does the source go public? [release-plan.md](review/release-plan.md) Q9; [REVIEW Phase 6 plan decisions](REVIEW.md) item 7.
 
 # Perf
 
-- [ ] **Metro flight warmer** (2026-10-29): the region warmer starts only ~2 km out on an elytra flight (worst tick 2.2 s local, 22.5 s on the perf worker); start it earlier, scaled by speed, now in P6 or in P7? [profile-metropolis.md](review/profile-metropolis.md), win candidate 8.
 
 # Rules (DS proposals)
 

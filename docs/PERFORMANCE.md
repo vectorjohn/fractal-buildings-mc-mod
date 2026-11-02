@@ -16,6 +16,57 @@ How to use it:
 - The automated check is `scripts/perf.sh` with budgets and CI ceilings in
   `mod/perf-budget.json` (6.7). The phase 6 measurement table is
   `docs/review/phase6/perf/perf.md` (arrives with B8's merge).
+- **Ceilings are never raised to make a run pass** (John, 2026-11-02). A row
+  over its ceiling is a bug. For 0.1.0 John accepts living with such bugs: the
+  row gets a `knownOver` field in `mod/perf-budget.json` and a line under
+  "Known perf bugs" below. `scripts/perf.sh` then prints
+  `PERF KNOWN OVER (bug, accepted for 0.1.0: ...)`, which is not a pass and
+  doesn't fail the run. The run fails again if the row gets more than 25 %
+  worse than the value recorded in the field.
+
+## Where the ceilings come from
+
+Most budgets and ceilings were set early (B8, the performance budget check,
+2026-10-23) before the code they judge was measured: the budgets come from
+the phase 6 plan's spike estimates, and most ceilings are 2x or 3x a budget
+or a single noisy run. Only the count rows added since (chunks of terrain
+generated, columns, raw plans) are set from a measured value, mostly at 1.2x
+to 1.3x it. Read a timing ceiling as a guess, not a target someone derived;
+the numbers stay as they are (sources: `docs/plans/phase6.md` "Budgets",
+[log/2026-10-23-p6-b8-perf.md](log/2026-10-23-p6-b8-perf.md), ASSUMPTIONS rows of 2026-10-23).
+
+| Row (what it measures) | Budget / ceiling | Basis |
+|---|---|---|
+| Cold district plan, median and p95 | 300 / 1,500 ms; 1,000 / 3,000 ms | guess: plan target from an early prototype (spike), ceiling about 3x one loaded run |
+| First tile of a metropolis, cold | 1,000 / 4,000 ms | guess: plan target, ceiling about 3x one loaded run |
+| Same, prefetched (what the lane pays) | 20 / 40 ms | guess: plan target, ceiling 2x |
+| Region layer + road network, cold | 6,000 / 10,000 ms | John's tolerance (2026-10-23, a ~4 s teleport hitch is fine), set on a number that later turned out to be 8x low (JUNCTION, street heights where streets meet) |
+| Region chunks of terrain generated / lattice columns / road-station columns | 5,000 / 6,200; 52,500 / 64,000; 15,000 / 18,500 | measured: about 1.25x the measured counts (4,924; 51,054; 14,587) |
+| Quays of the waterfront tile, time | 3,000 / 6,000 ms | partly measured: budget about 1.3x two quiet runs (2.25 / 2.17 s), ceiling 2x the budget |
+| Quays, chunks of terrain generated | 2,700 / 5,212 | measured, now stale: ceiling 2x the measured 2,606; the row measures 151 since QUAYFAST (quays traced run by run) |
+| Neighbour cascade, chunks generated and raw plans | 11,891 / 14,270; 38 / 46 | measured: budget = the measured count, ceiling 1.2x |
+| Building lookups inline during a flight | 5 / 10 % | guess: plan target |
+| Wall time per downtown chunk vs vanilla | 3x / 4.5x | John's tolerance, set after one measured 2.85x |
+| Block writes per downtown chunk | 5 / 10 ms | guess: plan estimate from a prototype (100 ns a block) |
+| Worst server tick during a flight | 3,000 / 6,000 ms | measured loosely: chosen to cover the bimodal 2.8 to 4.0 s seen in B8's runs |
+| p95 server tick during a flight | 50 / 100 ms | guess: no source recorded |
+| Region-file growth, downtown | +100 % / +200 % | John's tolerance, set to one measured +100 % |
+| Heap growth | 500 / 1,000 MB | guess: plan estimate from a prototype |
+| `/locate` settlement, fresh / from spawn | 3,000 / 5,000 ms; 2,000 / 4,000 ms | measured once: about 3x the 1.0 to 1.8 s seen at B8, before later planner changes |
+| `/locate` vanilla village (veto), fresh | 10,000 / 20,000 ms | guess: the plan's 10 s |
+| Tile recomputes, 3 and 8 players | 0 / 5 | target 0 (measured 0); ceiling a guess |
+
+## Known perf bugs (accepted for 0.1.0)
+
+One line per row that is over its ceiling, or close enough to watch.
+Marked `knownOver` in `mod/perf-budget.json` only where it is over now.
+Values from the latest quiet run (the perf worker, 2026-11-02, commit
+05142f534b, load 1.4 to 6.6).
+
+- **Marked.** Cold district plan, p95 (`district.cold.p95.ms`: the slowest of 7 city tiles planned from scratch): 5,967 ms against a 3,000 ms ceiling (budget 1,000). Cause: sample tile 18,-35 traces a river's quay chain from cold, a cost another row used to prepay (see "Cold district plan misses its budget"). QUAYFAST 4b (quays traced run by run, next step) is the fix in flight.
+- *Watch, not marked.* Region layer + road network, cold (`region.cold.warm.ms`: the regional plan and roads around a metropolis, first time): 9,242 ms against a 10,000 ms ceiling (budget 6,000); 11.3 s was seen on the perf worker in MAINSTUB round 2 (polish 6.25). Cause: noise generation for the intercity road graph's terrain reads (entry "Region layer row" below).
+- *Watch, not marked.* Worst server tick during an elytra flight into a city (`mod.flight.tick.max.ms`): 4,074 ms against a 6,000 ms ceiling (budget 3,000); bimodal since B8, either about 0.3 s or 2.8 to 4.5 s. Cause not known (polish line "QUAYFAST 5+6").
+- *Watch, not marked.* Cold district plan, median: 711 ms against 1,500 (budget 300). `/locate` settlement in a fresh area: 3,305 ms against 5,000 (budget 3,000).
 
 ## Accepted tradeoffs
 

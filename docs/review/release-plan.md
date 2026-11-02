@@ -12,29 +12,37 @@ for a player in a fresh world. "Nicer" is not enough.
 
 # 1. P6 release gate checklist
 
-Status values: done, in progress, not started, needs John. The tag is the one
-I suggest you give it.
+Status values: done, in progress, waiting, not started, needs John. The tag is the one
+I suggest you give it. Statuses audited 2026-11-02 against the ROADMAP, the
+work logs, git history and the run ledger; the summary is in
+[release-status.md](release-status.md).
 
 ## Bugs from the playtests
 
-- [ ] **6.15 ROADJOIN, roads between settlements meet the streets.** In
-  progress: steps 1-4 merged (7ec724a9). Still open: your call on long
-  crossings (REVIEW "6.15 ROADJOIN: an approach road with no dry route"),
-  the `dead-end-port` follow-up, and the step 5 in-game check. Blocks: a
+- [ ] **6.15 ROADJOIN, roads between settlements meet the streets.** Partly done; follow-ups in progress since 2026-11-02:
+  steps 1-4 merged (7ec724a9, 2026-10-27). Still open: the long-crossing
+  follow-up (decided 2026-11-01; LONGDECK, decks over 20 blocks for towns and
+  up only, has a commit on its branch, and DECKDIAG, why decks run along water,
+  is being diagnosed), the `dead-end-port` case (c), now part of DECKDIAG, and
+  the step 5 in-game check, which waits for both. Blocks: a
   player who follows a road arrives at a step, a gap or a dead end.
   Tag #backlog-p6.
-- [ ] **6.22 DEADPORT: road to nowhere over a big bridge** (2026-10-28,
+- [x] **6.22 DEADPORT: road to nowhere over a big bridge** (2026-10-28,
   [20.02.18](phase6/playtest-2026-10-28/images/2026-10-28_20.02.18.jpg) at
-  3542,116,-2186). Not started. This is the `dead-end-port` case of 6.15,
+  3542,116,-2186). Done: merged a59e65c7 (2026-10-29), steps (a) and (b);
+  case (c), the counted dead ends, moved to DECKDIAG under 6.15. This is the `dead-end-port` case of 6.15,
   seen in game after steps 1-4 merged. Blocks: a road leads the player into a
   ravine. Tag `#backlog-p6` (close it with 6.15). Three more roads to
   nowhere from 2026-10-28 (20.42.25, 20.43.12, tagged `#backlog`; 20.25.33,
   `#backlog-polish`) are listed under 6.22 to check for the same cause.
-- [ ] **6.19 PORCHSTEP: no step up to raised doors** (2026-10-27,
+  All three were fixed in the planner by 6.25 MAINSTUB (main roads that end at
+  a gate), 9a6c5d45; not checked in game.
+- [x] **6.19 PORCHSTEP: no step up to raised doors** (2026-10-27,
   [17.46.21](phase6/playtest-2026-10-28/images/2026-10-27_17.46.21.jpg) at
   361,66,335, and [18.39.40](phase6/playtest-2026-10-28/images/2026-10-27_18.39.40.jpg):
-  "generally missing stairs on porches now"). Not started; needs diagnosis
-  on the current head. It looks like a regression from the 6.12 STEPTOP or
+  "generally missing stairs on porches now"). Done: merged 46a0c194
+  (2026-10-29); not a blocker (Q2). Follow-ups also merged: 6.32 DOORAIR
+  22d78854, 6.33 MAINSTEP 38d9773e. It looks like a regression from the 6.12 STEPTOP or
   SHOPLOW S2 work: the door sill is one full block up, with no stair. Blocks:
   it's the same one-block jump at the front door that 6.12 treated as a bug,
   and it's on most houses. Tag `#backlog-p6`. Seen again on 2026-10-28
@@ -44,25 +52,26 @@ I suggest you give it.
   ([20.17.47](phase6/playtest-2026-10-28/images/2026-10-28_20.17.47.jpg) at
   3438,100,-1373, tagged `#backlog #walkability`) is filed with it as
   evidence (DS-4, likely the same cause).
-- [ ] **6.20 DOORBANK: doors below an embankment street** (2026-10-28,
+- [x] **6.20 DOORBANK: doors below an embankment street** (2026-10-28,
   [20.10.04](phase6/playtest-2026-10-28/images/2026-10-28_20.10.04.jpg) at
-  3858,93,-1557: "Do they take a ladder to get up to the road?"). Not
-  started. Blocks: the door can't be reached from the street. A minimal P6 fix
+  3858,93,-1557: "Do they take a ladder to get up to the road?"). Done
+  (the minimal P6 fix): merged 117aeb45 (2026-10-29); not a blocker (Q2). Blocks: the door can't be reached from the street. A minimal P6 fix
   is a check that no entrance faces a street wall, plus a fix that moves the
   door or leaves the lot empty (`empty:bank` exists). The real fix, streets
   near the ground, is 7.19 FALLSTREETS in P7. Tag `#backlog-p6`.
-- [ ] **6.21 STAIRFOOT: an inner stair whose foot is at a drop**
+- [x] **6.21 STAIRFOOT: an inner stair whose foot is at a drop**
   ([18.52.25](phase6/playtest-2026-10-28/images/2026-10-27_18.52.25.jpg) at
-  1049,133,915). Not started. Two steps up to a door start at the edge of the
+  1049,133,915). Done: merged 2c06e7af (2026-10-29); not a blocker (Q2). Two steps up to a door start at the edge of the
   stairwell hole, so the door can't be reached. Blocks: an unreachable door
   is broken, not a looks issue. It's probably small: the stair foot needs a
   standing cell, and `furnished-rooms-walkable` could check it. Tag
   `#backlog-p6`.
-- [ ] **6.31 STAIRJOG: a high-rise entrance flight that jogs with no room to turn** (2026-10-31,
+- [x] **6.31 STAIRJOG: a high-rise entrance flight that jogs with no room to turn** (2026-10-31,
   [03.10.40](phase6/playtest-2026-10-31/2026-10-31_03.10.40.jpg),
   [03.12.04](phase6/playtest-2026-10-31/2026-10-31_03.12.04.jpg),
   [03.14.45](phase6/playtest-2026-10-31/2026-10-31_03.14.45.jpg) at
-  4184,95,-1114). Not started. You tagged it `#backlog-p6`. Blocks: a main
+  4184,95,-1114). Done: merged 45a96b8c (2026-10-31); your in-game look at
+  that spot is still open. You tagged it `#backlog-p6`. Blocks: a main
   entrance whose flight is hard to walk. Cheap fix first: start the flight one
   cell further along so it runs straight. Added by the 2026-10-31 triage; the
   other 2026-10-31 notes went to the Backlog (unscheduled), the Polish backlog
@@ -75,14 +84,23 @@ I suggest you give it.
   [hype.md](phase6/hype.md); your rule proposal is DS-54 (proposed). The
   agents' answers are in place in the notes. Open for you: whether the two
   floating-foliage notes (20.16.21, 20.18.20, both break the accepted DS-20)
-  should be P6 bugs, and DS-54 (accept, narrow or drop).
+  should be P6 bugs, and DS-54 (accept, narrow or drop). Both decided
+  2026-10-31: the foliage notes are backlog, not P6 bugs (ROADMAP Backlog
+  (unscheduled)), and DS-54 was accepted, narrowed to routes.
 
 Everything else from the 2026-10-26 playtest is done (6.12-6.14, 6.16-6.18c)
 or is already in the Polish backlog.
 
 ## Release work
 
-- [ ] **Performance on first arrival** (REVIEW "REGIONPERF"). Needs John.
+- [ ] **Performance on first arrival** (REVIEW "REGIONPERF"). Decided by
+  John 2026-11-02 (run ledger): a cold metropolis arrival of about 35 s is
+  acceptable for 0.1.0; teleport and portal holds never release into unready
+  chunks and abort with a "try again" message after a 60 s safety limit
+  (TPABORT, in progress); ceilings are never raised, and rows over them are
+  bugs accepted for 0.1.0 (PERFKNOWN, merged 766bf8fe). Still open: the
+  README sentence on the wait, and TPABORT's merge. The text below is from
+  2026-10-29.
   After PARREADS, the worst cold chunk is about 37 s locally (it was
   70-120 s), with loads 5-46, so not on a quiet machine. The teleport hold
   gives up after 30 s, and `/locate` on a fresh world takes 5.1 s against a
@@ -91,24 +109,40 @@ or is already in the Polish backlog.
   For P6, decide the budget, re-measure quietly, and say it in the
   README. Making it faster is P7. Tag `#backlog-p6` (the decision only).
 - [ ] **Batched heavy run on the release candidate**: `test-all.sh --full`
-  plus the order test and `perf.sh`. In progress: HEAVY5 passed at 620ca7fd,
-  except perf (above); later merges, such as DS36ROOFS, DS35DOORS and
-  PARREADS, need a HEAVY6. Blocks: it's the evidence that the jar works.
+  plus the order test and `perf.sh`. Waiting for the release candidate:
+  the latest batch, HEAVY13, passed at 1ea75a7d (2026-11-01; perf rows over
+  their ceilings are the accepted known bugs). Code merged since (QUAYFAST
+  steps 0-6, TPHOLD60, MAINSTEP) and the P6 work still in flight need one
+  more batch on the candidate; none is running now. Blocks: it's the evidence that the jar works.
   Tag `#backlog-p6`.
 - [ ] **C2 review pack and playtest kit** ([plan](../plans/phase6.md),
-  step C2). Not started. It holds per-seed recipes, settlements near spawn,
+  step C2). Mostly done: the kit script and a first kit were merged
+  (76707ba8, 50873017, 2026-10-29) and the seeds updated to your two worlds
+  plus a fresh one (5bfb8a16); still open: regenerate it with
+  `scripts/playtest-kit.sh --fly` on the release candidate. It holds per-seed recipes, settlements near spawn,
   fly-through frames and known issues. Blocks: the gate playtest needs it.
   Tag `#backlog-p6`.
 - [ ] **The gate playtest itself**: three seeds, one hour each, on the
-  release candidate. Needs John. You've played two seeds on older builds.
+  release candidate. Waiting for the release candidate, then John. You've played two seeds on older builds.
+  *Decided (Q5, John 2026-11-01: "yes they count"):* those two played seeds
+  count toward the three; only the third, fresh seed of the
+  [gate kit](phase6/gate-kit/README.md) is played on the release candidate.
 - [ ] **Release basics** (REVIEW "A5 release basics"). Needs John to read the
   LICENSE, the CHANGELOG draft, the [player README](../release/README-player.md)
-  and the placeholder icon.
+  and the placeholder icon. The files were merged a94cda2f (2026-10-22) and
+  haven't changed since; the REVIEW item has no result yet.
 - [ ] **Phase 6 plan decisions 7 and 8** (REVIEW "Phase 6 plan: decisions
   for John"). Needs John: who publishes, where, under what name, and whether
   the source goes public; and the server-only install wording (the SRVONLY
   spike found that a client with only Fabric Loader, and not our mod, joins
   fine, so the README can say "clients don't need the mod").
+  Decision 7 is answered (Q9, "Publishing" below); decision 8 (the wording) is not.
+  The player README still says "this is untested".
+- **Publishing** (Q9, John 2026-11-01): Modrinth (John may not be listed
+  there because of AI) and CurseForge, under the name "Fractal Buildings";
+  the source goes public. Before it reaches `main`, John wants the history
+  cleaned up (docs-only bookkeeping commits squashed into their feature
+  commits); details to come from him, no action yet.
 - [ ] **C3 cut the release** (section 2, "Cutting a release"). Not started;
   it waits for everything above.
 
@@ -205,16 +239,28 @@ After 0.1.0, `#backlog-p7` is the current increment, and so on.
 1. Is the P6 checklist above the whole release scope, with nothing added?
 2. Are PORCHSTEP, DOORBANK and STAIRFOOT release blockers, or do any of them
    go to P7?
+   - **Decided.** @John 2026-11-01: "not blockers (and they're done anyway)"
+   - @assistant 2026-11-02: recorded: 6.19 PORCHSTEP (no step up to raised doors), 6.20 DOORBANK (doors below an embankment street) and 6.21 STAIRFOOT (inner stair foot at a drop) are not release blockers; all three are merged, so nothing moves.
 3. For 6.15's long crossings: drop the approach, or allow a long deck at
    town tier and up until 7.3?
+   - **Decided.** @John 2026-11-01: "allow the deck"
+   - @assistant 2026-11-02: recorded as the architect's option 2: an approach to a town or larger that must cross water by more than 20 blocks may keep one long crossing deck, in the road's own material, until 7.3 Bridges; a road running *along* water is still never built. Noted under 6.15 ROADJOIN (roads between settlements meeting the streets) in the ROADMAP and on its REVIEW item. DS-19 (no causeways or long bridges) still says 20 blocks at most; it needs this interim exception written in.
 4. REGIONPERF: what cold-arrival wait is acceptable for 0.1.0 (30 s, 60 s),
    and does the `/locate` ceiling go up to 6 s?
+   - **Decided.** John 2026-11-02 (recorded in the run ledger, "Rules and decisions"): a cold metropolis arrival of about 35 s is acceptable for 0.1.0; holds wait as long as needed and abort after a 60 s safety limit; no perf ceiling is ever raised (a row over its ceiling is a bug, accepted for 0.1.0).
+   - @assistant 2026-11-02: recorded here by the status audit; the REVIEW "REGIONPERF" item still has no result line.
 5. Do your two playtest seeds count toward "three seeds", or do all three
    run on the release candidate?
+   - **Decided.** @John 2026-11-01: "yes they count"
+   - @assistant 2026-11-02: recorded: two of the three gate seeds are your played worlds (1709797029209580947, played 2026-10-26, and 1573336981619055086, played 2026-10-28); the third, fresh seed is played on the release candidate. Noted in the checklist above and in the [gate kit](phase6/gate-kit/README.md).
 6. Which 3-5 features make up P7?
 7. Can the other Phase 7 items move to a new "Backlog (unscheduled)"
    section, where plain `#backlog` notes also go?
 8. Patch releases: at most weekly after a passing heavy run, cut from the
    run branch, with you publishing. Yes?
+   - **Decided.** @John 2026-11-01: "yes"
+   - @assistant 2026-11-02: recorded: patch releases at most weekly, each after a passing batched heavy run, cut from the run branch; you publish (section 2 as written).
 9. Publishing (decision 7): which platform, what project name, and does the
    source go public?
+   - **Decided.** @John 2026-11-01: "Modrinth (although I'll likely not be listed because of AI), and CurseForge. Name is "Fractal Buildings". Source will go public. I will want to clean up the commit history some. Mostly related to squashing the MANY noisy docs only commits. I think when it goes to `main` I'll want to see just the feature commits in the history, book keeping docs changes can be squashed into their related feature. But we can come back to that for more detail, no action yet."
+   - @assistant 2026-11-02: recorded under "Publishing" in section 1 and in the ROADMAP Phase 6 notes. Nothing is done to the history; it waits for your details.

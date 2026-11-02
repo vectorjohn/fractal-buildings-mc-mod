@@ -89,3 +89,4 @@ PERFROUTE	scripts/anywhere.sh sends a timing run (perf.sh, profile.sh, test-all 
 HEAVYSLOTS	per-worker `heavy_slots` in the worker pool file: scripts/anywhere.sh sends at most that many heavy jobs (client runs, full test-all, order test) to a worker at once; light and suite jobs fill its other slots	../scripts/anywhere.sh	done
 JOB LOST	`scripts/remote.sh` exit 75: a worker job was killed or vanished because the worker was preempted (suspended, memory shrunk, rebooted); not a test result and not a flake: rerun it	../CLAUDE.md	-
 WORKERHEALTH	workers may be preempted: fast health check before routing and sending, waiters ride out a suspended worker, JOB LOST (75) for a job lost to it; `preemptible` in the pool file	../scripts/remote.sh	done
+PERFKNOWN	known-over perf rows: a row over its ceiling is a bug John accepted for 0.1.0, printed PERF KNOWN OVER, never fixed by raising the ceiling	PERFORMANCE.md	done
