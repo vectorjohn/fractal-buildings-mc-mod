@@ -14,6 +14,8 @@ public final class QuayTuning {
 	public static volatile int walkAhead = 32;
 	/** Whether a lazy request prefetches its whole scan box (one parallel call) before the seed scan. */
 	public static volatile boolean scanBox = true;
+	/** Whether the seed and partner scans skip cells in which no column passes {@code Bank.maybeOk} (QUAYFAST step 4); off reads every cell: same answers. */
+	public static volatile boolean screenScan = true;
 	/** How many walk-ahead boxes a chain walk remembers (CASCADE 2fix); 1 is the single box before it, which the two ends of a breadth-first walk flip between. */
 	public static volatile int walkBoxes = 4;
 	/** Walk-ahead prefetches (a node read outside every remembered box), summed over threads: each is one parallel round the walk waits for. */
@@ -23,5 +25,5 @@ public final class QuayTuning {
 	/** Banks forked for fanned-out pieces, and the nanoseconds spent building them (summed over threads). */
 	public static final AtomicLong forks = new AtomicLong(), forkNanos = new AtomicLong();
 
-	public static void reset() { walkAhead = 32; walkBoxes = 4; scanBox = true; walkPrefetches.set(0); forks.set(0); forkNanos.set(0); }
+	public static void reset() { walkAhead = 32; walkBoxes = 4; scanBox = true; screenScan = true; walkPrefetches.set(0); forks.set(0); forkNanos.set(0); }
 }

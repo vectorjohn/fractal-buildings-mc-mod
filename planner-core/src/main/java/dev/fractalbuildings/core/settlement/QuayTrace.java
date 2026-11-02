@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
@@ -120,22 +121,40 @@ final class QuayTrace {
 		int ci0 = Math.max(area.i0(), Math.floorDiv(minX - r, Quays.STEP)), ci1 = Math.min(area.i1(), Math.floorDiv(maxX + r, Quays.STEP));
 		int cj0 = Math.max(area.j0(), Math.floorDiv(minZ - r, Quays.STEP)), cj1 = Math.min(area.j1(), Math.floorDiv(maxZ + r, Quays.STEP));
 		if (ci0 > ci1 || cj0 > cj1) return List.of();
-		// PARREADS: the scan reads every node of these cells, each within QUAY_READ; one call, so a live probe fills the chunks in parallel
-		int[] scan = {ci0 * Quays.STEP, cj0 * Quays.STEP, (ci1 + 1) * Quays.STEP, (cj1 + 1) * Quays.STEP}; // the nodes the scan reads
-		if (QuayTuning.scanBox) bank.prefetch(List.of(new int[] {scan[0] - QUAY_READ, scan[1] - QUAY_READ, scan[2] + QUAY_READ, scan[3] + QUAY_READ}));
-		Quays.Near near = memoised(bank, scan);
-		Predicate<int[]> ok = okOf(bank);
 		int x0 = minX - m, z0 = minZ - m, x1 = maxX + m, z1 = maxZ + m;
+		Predicate<int[]> ok = okOf(bank);
+		// QUAYFAST step 4: a scan cell is read only if some column of it inside the m box passes the cheap screen (an ok column has
+		// maybeOk, lies in its closed cell and inside the box, so its cell is kept: nothing else can start a wanted run here)
+		List<int[]> kept = new ArrayList<>(), fetched = new ArrayList<>();
+		Map<Long, Boolean> maybe = new TreeMap<>(); // local to this request (a trace-wide memo of every column would grow with the settlement)
+		for (int j = cj0; j <= cj1; j++) {
+			int runStart = Integer.MIN_VALUE;
+			for (int i = ci0; i <= ci1 + 1; i++) {
+				boolean keep = i <= ci1 && (!QuayTuning.screenScan || cellMaybe(maybe, bank, i, j, x0, z0, x1, z1));
+				if (keep) {
+					kept.add(new int[] {i, j});
+					if (runStart == Integer.MIN_VALUE) runStart = i;
+				} else if (runStart != Integer.MIN_VALUE) { // the nodes the scan reads of this row's run of kept cells
+					fetched.add(new int[] {runStart * Quays.STEP - QUAY_READ, j * Quays.STEP - QUAY_READ, i * Quays.STEP + QUAY_READ, (j + 1) * Quays.STEP + QUAY_READ});
+					runStart = Integer.MIN_VALUE;
+				}
+			}
+		}
+		// PARREADS: the scan reads every node of these cells, each within QUAY_READ; one call, so a live probe fills the chunks in parallel
+		if (QuayTuning.scanBox && !fetched.isEmpty()) bank.prefetch(fetched);
+		Quays.Near near = memoised(bank, fetched);
 		// every contour column within m of the window lies on a segment of a scan cell; each ok one is on at most one run. Walks are short
 		// (a run, not its chain), so they run here on the caller, serially; only the cluster gradings fan out
 		TreeSet<Long> wanted = new TreeSet<>();
-		for (Pt[] sg : segmentsIn(near, ci0, cj0, ci1, cj1)) {
-			List<int[]> cols = StreetCols.columns(List.of(sg[0], sg[1]));
-			for (int t = 0; t < cols.size(); t++) {
-				int[] c = cols.get(t);
-				if (c[0] < x0 || c[0] > x1 || c[1] < z0 || c[1] > z1) continue;
-				Run run = runAt(near, ok, sg, t);
-				if (run != null && run.kept()) wanted.add(clusterId(near, ok, run));
+		for (int[] cell : kept) {
+			for (Pt[] sg : segmentsIn(near, cell[0], cell[1], cell[0], cell[1])) {
+				List<int[]> cols = StreetCols.columns(List.of(sg[0], sg[1]));
+				for (int t = 0; t < cols.size(); t++) {
+					int[] c = cols.get(t);
+					if (c[0] < x0 || c[0] > x1 || c[1] < z0 || c[1] > z1) continue;
+					Run run = runAt(near, ok, sg, t);
+					if (run != null && run.kept()) wanted.add(clusterId(near, ok, QuayTuning.screenScan ? bank : null, run));
+				}
 			}
 		}
 		List<QuayWhole> out = new ArrayList<>();
@@ -162,7 +181,7 @@ final class QuayTrace {
 			}
 		}
 		TreeSet<Long> ids = new TreeSet<>();
-		for (long id : kept) ids.add(clusterId(near, ok, runs.get(id)));
+		for (long id : kept) ids.add(clusterId(near, ok, null, runs.get(id)));
 		List<QuayWhole> out = new ArrayList<>();
 		for (List<QuayWhole> parts : gradeAll(new Forks(bank), new ArrayList<>(ids))) out.addAll(parts);
 		sort(out);
@@ -271,14 +290,17 @@ final class QuayTrace {
 	 * that misses the memo outside it and the last {@link #WALK_BOXES} boxes prefetched prefetches {@link #WALK_AHEAD} blocks round the node first (a live probe fills a whole chunk per first read,
 	 * so a walk reading one node at a time would fill chunks one by one). Only a hint: the answers are the same. Serves one thread.
 	 */
-	private Quays.Near memoised(Bank bank, int[] fetched) {
+	private Quays.Near memoised(Bank bank, int[] fetched) { return memoised(bank, List.of(fetched.clone())); }
+
+	/** As above over several fetched boxes, which are never forgotten. */
+	private Quays.Near memoised(Bank bank, List<int[]> fetched) {
 		java.util.ArrayDeque<int[]> boxes = new java.util.ArrayDeque<>();
-		boxes.add(fetched.clone());
 		return (x, z) -> {
 			long k = key(x, z);
 			Boolean v = nodes.get(k);
 			if (v == null) {
 				boolean in = false;
+				for (int[] f : fetched) in |= x >= f[0] && z >= f[1] && x <= f[2] && z <= f[3];
 				for (int[] f : boxes) in |= x >= f[0] && z >= f[1] && x <= f[2] && z <= f[3];
 				if (!in) {
 					int a = QuayTuning.walkAhead;
@@ -292,6 +314,27 @@ final class QuayTrace {
 			}
 			return v;
 		};
+	}
+
+	/**
+	 * Whether some column of the closed cell (i, j) inside the box {@code [x0, x1] x [z0, z1]} passes {@link Bank#maybeOk}: false means no
+	 * ok column of the cell lies in the box (a segment's columns lie in its closed cell), so the cell cannot start a wanted run. Every column
+	 * of the cell is tested (a corner or centre test would miss a run that crosses the cell elsewhere); memoised per column.
+	 */
+	private static boolean cellMaybe(Map<Long, Boolean> memo, Bank bank, int i, int j, int x0, int z0, int x1, int z1) {
+		int xa = Math.max(x0, i * Quays.STEP), xb = Math.min(x1, (i + 1) * Quays.STEP), za = Math.max(z0, j * Quays.STEP), zb = Math.min(z1, (j + 1) * Quays.STEP);
+		for (int z = za; z <= zb; z++) for (int x = xa; x <= xb; x++) if (maybeOf(memo, bank, x, z)) return true;
+		return false;
+	}
+
+	private static boolean maybeOf(Map<Long, Boolean> memo, Bank bank, int x, int z) {
+		long k = key(x, z);
+		Boolean v = memo.get(k);
+		if (v == null) {
+			v = bank.maybeOk(x, z);
+			memo.put(k, v);
+		}
+		return v;
 	}
 
 	/** The quay test over one bank, memoised in the trace (pure: a race computes the same value twice). */
@@ -373,13 +416,14 @@ final class QuayTrace {
 
 	// ---- clusters
 
-	/** The kept runs other than {@code run} with a column within {@value #MEET_REACH} blocks (Chebyshev) of one of its columns, by id. */
-	private List<Long> partnersOf(Quays.Near near, Predicate<int[]> ok, Run run) {
+	/** The kept runs other than {@code run} with a column within {@value #MEET_REACH} blocks (Chebyshev) of one of its columns, by id; {@code screen} (or null) skips cells with no maybeOk column. */
+	private List<Long> partnersOf(Quays.Near near, Predicate<int[]> ok, Bank screen, Run run) {
 		List<Long> have = partners.get(run.id());
 		if (have != null) return have;
 		TreeSet<Long> mine = new TreeSet<>();
 		for (int[] c : run.cols()) mine.add(key(c));
 		TreeSet<Long> scanned = new TreeSet<>();
+		Map<Long, Boolean> maybe = new TreeMap<>(); // local to this call: a trace-wide memo of every column would be the size of the settlement
 		TreeMap<Long, Object[]> candidates = new TreeMap<>(); // column key -> {segment, index}, first seen
 		for (int[] col : run.cols()) {
 			int ci0 = Math.max(area.i0(), Math.floorDiv(col[0] - CLUSTER_REACH, Quays.STEP)), ci1 = Math.min(area.i1(), Math.floorDiv(col[0] + CLUSTER_REACH, Quays.STEP));
@@ -387,6 +431,7 @@ final class QuayTrace {
 			for (int j = cj0; j <= cj1; j++) {
 				for (int i = ci0; i <= ci1; i++) {
 					if (!scanned.add(key(i, j))) continue;
+					if (screen != null && !cellMaybe(maybe, screen, i, j, Integer.MIN_VALUE, Integer.MIN_VALUE, Integer.MAX_VALUE, Integer.MAX_VALUE)) continue; // no column of the cell can be ok: no run starts in it
 					for (Pt[] sg : segmentsIn(near, i, j, i, j)) {
 						List<int[]> cols = StreetCols.columns(List.of(sg[0], sg[1]));
 						for (int t = 0; t < cols.size(); t++) {
@@ -414,7 +459,7 @@ final class QuayTrace {
 	}
 
 	/** The smallest run id of the connected component of kept runs that meet. */
-	private long clusterId(Quays.Near near, Predicate<int[]> ok, Run start) {
+	private long clusterId(Quays.Near near, Predicate<int[]> ok, Bank screen, Run start) {
 		Long known = clusterOf.get(start.id());
 		if (known != null) return known;
 		TreeSet<Long> seen = new TreeSet<>();
@@ -422,7 +467,7 @@ final class QuayTrace {
 		seen.add(start.id());
 		while (!todo.isEmpty()) {
 			Run r = runs.get(todo.remove(todo.size() - 1));
-			for (long p : partnersOf(near, ok, r)) if (seen.add(p)) todo.add(p);
+			for (long p : partnersOf(near, ok, screen, r)) if (seen.add(p)) todo.add(p);
 		}
 		long id = seen.first();
 		clusterMembers.put(id, List.copyOf(seen)); // before any clusterOf entry: a thread that reads the id there goes on to read the members

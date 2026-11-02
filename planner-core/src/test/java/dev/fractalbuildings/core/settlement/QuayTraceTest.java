@@ -148,6 +148,48 @@ class QuayTraceTest {
 		System.out.println("QuayTraceTest: " + nonEmpty + " non-empty tile answers, " + parts + " parts, largest cluster " + multi + " runs");
 	}
 
+
+	/**
+	 * QUAYFAST step 4: a bank whose ok varies inside a cell (4 x 4 column blocks, half of them not ok), with the tightest legal screen
+	 * ({@code maybeOk == ok}) or none; counts the nodes read. A screen that tests less than a cell's every column drops a cell holding an ok
+	 * column and the answer differs.
+	 */
+	record Blocky(Fake f, boolean screen, java.util.concurrent.atomic.AtomicInteger reads) implements QuayTrace.Bank {
+		boolean pass(int x, int z) { return h(f.seed() + 7, Math.floorDiv(x, 4), Math.floorDiv(z, 4)) % 2 == 0; }
+
+		public boolean near(int x, int z) { reads.incrementAndGet(); return f.near().at(x, z); }
+
+		public boolean ok(int[] c) { return pass(c[0], c[1]); }
+
+		public boolean maybeOk(int x, int z) { return !screen || pass(x, z); }
+
+		public void prefetch(List<int[]> boxes) {}
+
+		public List<QuayWhole> grade(List<List<int[]>> runs) { return f.grade(runs); }
+	}
+
+	@Test
+	void aScreenedScanGivesTheGlobalAnswerAndReadsFewerNodes() {
+		long readsOn = 0, readsOff = 0;
+		for (long seed = 0; seed < 60; seed++) {
+			Fake fake = new Fake(seed, field(seed));
+			Blocky off = new Blocky(fake, false, new java.util.concurrent.atomic.AtomicInteger());
+			List<List<int[]>> runs = new ArrayList<>();
+			for (List<Pt> chain : Quays.contour(fake.near(), I0 * 8, J0 * 8, I1 * 8, J1 * 8)) runs.addAll(QuayTrace.runsOf(chain, off::ok));
+			List<QuayWhole> ref = fake.grade(runs);
+			Blocky on = new Blocky(fake, true, new java.util.concurrent.atomic.AtomicInteger());
+			for (int[] box : tiles()) {
+				on.reads().set(0); off.reads().set(0);
+				List<QuayWhole> a = new QuayTrace(window()).near(on, box[0], box[1], box[2], box[3], M);
+				List<QuayWhole> b = new QuayTrace(window()).near(off, box[0], box[1], box[2], box[3], M);
+				assertSame(filter(ref, box, M), a, "screened, seed " + seed + " tile " + Arrays.toString(box));
+				assertSame(filter(ref, box, M), b, "unscreened, seed " + seed + " tile " + Arrays.toString(box));
+				readsOn += on.reads().get(); readsOff += off.reads().get();
+			}
+		}
+		assertTrue(readsOn < readsOff, "the screen must skip cells: " + readsOn + " vs " + readsOff);
+		System.out.println("QuayTraceTest: screened scan reads " + readsOn + " nodes, unscreened " + readsOff);
+	}
 	@Test
 	void theVisitOrderDoesNotMatter() {
 		for (long seed = 0; seed < 30; seed++) {
