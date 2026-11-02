@@ -5,6 +5,7 @@
 #   --world-mod-only: diagnostic, only the mod world's server run (no planner run, no base world, no merge, no check); logs every start decision ([LANE-START])
 #   --world-only: both server runs (mod, base) and the merge, no planner run; the budget check allows absent rows (scripts/profile.sh uses it)
 #   FB_PERF_VARIANTS="base mod": the world runs in that order (default "mod base"; PROFILE: an order-effect check)
+#   FB_PERF_MODES=arrival (COLDTICK, diagnostic): only that pass (main, arrival or both); FB_PERF_ARRIVAL_RELEASE=plan (arrival pass) releases the teleport hold into chunks that are not FULL
 #
 # Takes the heavy lock itself (timings); don't wrap it in flock. Steps:
 #   1. mod:test PerfPlannerTest (no server): cold plan, region layer, multi-player cache pressure, veto query -> mod/build/perf/planner.json
@@ -91,6 +92,7 @@ if [ "$CHECK_ONLY" = 0 ]; then
 		qc world-start
 		VARIANTS="${FB_PERF_VARIANTS:-mod base}"; [ "$MOD_ONLY" = 1 ] && VARIANTS=mod && export FB_LANE_LOG=1 # per-start [LANE-START] lines, diagnostics only
 		MODES="main"; [ "${FB_PERF_ARRIVAL:-1}" = 1 ] && [ "$MOD_ONLY" = 0 ] && MODES="main arrival" # COLDARRIVAL: a second pair of fresh worlds, so the metropolis is cold
+		[ -n "${FB_PERF_MODES:-}" ] && MODES="$FB_PERF_MODES" # COLDTICK diagnostic: e.g. FB_PERF_MODES=arrival runs only the arrival pass (the summary then lacks rows: not a measured run)
 		for mode in $MODES; do
 		OUTN="world"; [ "$mode" = arrival ] && OUTN="world-arrival"
 		for v in $VARIANTS; do

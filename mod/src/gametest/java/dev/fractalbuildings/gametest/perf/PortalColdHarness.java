@@ -49,11 +49,10 @@ public final class PortalColdHarness {
 	private ServerPlayer player;
 	private ServerLevel nether;
 	private BlockPos portalPos;
-	private int phase, wait, ticks;
+	private volatile int phase;
+	private int wait, ticks;
 	private volatile long tickStart;
 	private long t0, trigTickNo, serverTick;
-	private volatile Thread serverThread;
-	private volatile boolean inTick, dumped;
 	private final List<Double> tickMs = new ArrayList<>();
 	private double maxTickBefore;
 
@@ -78,27 +77,10 @@ public final class PortalColdHarness {
 		PortalColdHarness h = new PortalColdHarness();
 		LaneStats.enable(true);
 		ServerLifecycleEvents.SERVER_STARTED.register(h::started);
-		ServerTickEvents.START_SERVER_TICK.register(sv -> { h.tickStart = System.nanoTime(); h.serverThread = Thread.currentThread(); h.inTick = true; h.dumped = false; });
-		ServerTickEvents.END_SERVER_TICK.register(sv -> { h.inTick = false; h.tickEnd(sv); });
-		Thread watch = new Thread(h::watchLongTicks, "portalcold-longtick");
-		watch.setDaemon(true);
-		watch.start();
-	}
-
-	/** Logs the server thread's stack once per tick that runs over 1.5 s (what a long tick waits on), after the spawn area is up. */
-	private void watchLongTicks() {
-		try {
-			while (true) {
-				Thread.sleep(100);
-				Thread st = serverThread;
-				if (st == null || !inTick || dumped || player == null || System.nanoTime() - tickStart < 1_500_000_000L) continue;
-				dumped = true;
-				StringBuilder b = new StringBuilder();
-				StackTraceElement[] tr = st.getStackTrace();
-				for (int i = 0; i < Math.min(60, tr.length); i++) b.append("\n    at ").append(tr[i]);
-				FractalBuildingsMod.LOGGER.info("[PORTAL] long tick (phase {}, {} ms so far), server thread:{}", phase, (System.nanoTime() - tickStart) / 1_000_000, b);
-			}
-		} catch (InterruptedException ignored) { }
+		ServerTickEvents.START_SERVER_TICK.register(sv -> h.tickStart = System.nanoTime());
+		ServerTickEvents.END_SERVER_TICK.register(h::tickEnd);
+		// the server thread's stack in any tick over 1.5 s once the spawn area is up, until the exit inspection (COLDTICK: repeated dumps, workers)
+		LongTickWatch.install("[PORTAL]", () -> "phase " + h.phase, () -> h.player != null && h.phase < 3);
 	}
 
 	private void put(String k, Object v) {

@@ -36,7 +36,7 @@ Item codes (PARREADS, MAINSTUB, TPHOLD, ...) and run terms, one row each. **Gene
 | CITYQ |  | sparse and "ocean" cities in the B9 fly-through | done | [[docs/log/2026-10-23-p6-cityq|log]] |
 | COLDARRIVAL |  | cold-arrival perf row and vanilla /locate baseline | done | [[docs/log/2026-10-31-p6-coldarrival|log]] |
 | COLDCHUNK |  | what the 70-120 s cold chunk is doing | done | [[docs/log/2026-10-28-coldchunk|log]] |
-| COLDTICK | 6.37 | find the multi-second server ticks on cold arrival | open | [[docs/ROADMAP|ROADMAP 6.37]] |
+| COLDTICK | 6.37 | find the multi-second server ticks on cold arrival | done | [[docs/ROADMAP|ROADMAP 6.37]] |
 | D0 |  | Phase 5 step: city pipeline end to end, city-check, presets | done | [[docs/log/2026-10-21-p5-d0-pipeline|log]] |
 | D2 |  | Phase 5 step: town program, walls and gates | done | [[docs/log/2026-10-21-p5-d2-town|log]] |
 | D3 |  | Phase 5 step: city and metropolis programs, density and skyline (5.7; half of 5.13) | done | [[docs/log/2026-10-21-p5-d3-city|log]] |

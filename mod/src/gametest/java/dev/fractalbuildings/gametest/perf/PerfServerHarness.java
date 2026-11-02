@@ -45,6 +45,13 @@ public final class PerfServerHarness {
 	private double arrMaxTick;
 	private long holdEngagedNs = -1, holdEndedNs = -1;
 	private boolean arrTeleported, holdTimedOut, holdChunksFull;
+	/** COLDTICK: what the long-tick dumps say the harness was doing. */
+	private volatile String watchPhase = "boot";
+	/**
+	 * COLDTICK diagnostic: FB_PERF_ARRIVAL_RELEASE=plan releases the arrival hold once the destination is planned (TeleportHold.releaseOnPlan),
+	 * into chunks that are not FULL: the pre-TPABORT condition of the 9-11 s COLDARRIVAL tick. Never in a measured run.
+	 */
+	private static final boolean RELEASE_ON_PLAN = "plan".equals(System.getenv("FB_PERF_ARRIVAL_RELEASE"));
 
 	/** Entry point of the mod's test hook, called while the mod initialises (before the world exists). */
 	public static void install() {
@@ -56,6 +63,8 @@ public final class PerfServerHarness {
 		ServerLifecycleEvents.SERVER_STARTED.register(h::started);
 		ServerTickEvents.START_SERVER_TICK.register(sv -> h.tickStart = System.nanoTime());
 		ServerTickEvents.END_SERVER_TICK.register(h::tickEnd);
+		// COLDTICK: the server thread's stack in any tick over 1.5 s ([PERF-DIAG] long tick lines)
+		LongTickWatch.install("[PERF-DIAG]", () -> h.watchPhase, () -> h.player != null && !h.finished);
 	}
 
 	private void started(MinecraftServer server) {
@@ -136,6 +145,7 @@ public final class PerfServerHarness {
 		if (arrTicks < ARRIVAL_SETTLE_TICKS) { arrTicks++; return; }
 		if (!arrTeleported) {
 			arrTeleported = true;
+			if (RELEASE_ON_PLAN) { dev.fractalbuildings.mod.teleport.TeleportHold.releaseOnPlan = true; dev.fractalbuildings.mod.FractalBuildingsMod.LOGGER.warn("[PERF-DIAG] FB_PERF_ARRIVAL_RELEASE=plan: the hold releases into chunks that are not FULL (diagnostic, not a measurement)"); }
 			dev.fractalbuildings.mod.teleport.TeleportHold.testReleased = (pl, full, timedOut) -> { holdChunksFull = full; holdTimedOut = timedOut; };
 			s.put(p + "arrival.load.start", load());
 			arrStart = System.nanoTime();
@@ -150,6 +160,7 @@ public final class PerfServerHarness {
 		if (holding && holdEngagedNs < 0) holdEngagedNs = System.nanoTime();
 		if (!holding && holdEngagedNs >= 0 && holdEndedNs < 0) holdEndedNs = System.nanoTime();
 		if (!holding) level.getChunkSource().move(player); // what the client's move packets do (MockPlayer.flyTo)
+		watchPhase = "arrival " + (System.nanoTime() - arrStart) / 1_000_000_000L + " s holding=" + holding;
 		boolean there = !holding && Math.abs(player.getX() - METRO_X) < 2 && Math.abs(player.getZ() - METRO_Z) < 2;
 		int cx = METRO_X >> 4, cz = METRO_Z >> 4, ready = 0, want = (2 * VIEW + 1) * (2 * VIEW + 1);
 		for (int dz = -VIEW; dz <= VIEW; dz++) for (int dx = -VIEW; dx <= VIEW; dx++) if (level.getChunkSource().getChunkNow(cx + dx, cz + dz) != null) ready++;
@@ -185,6 +196,7 @@ public final class PerfServerHarness {
 		if (ticks % 500 == 0 && ticks > 0 && grace == 0 && LaneStats.startsInProgress() > 0) dumpOurThreads("flight tick " + ticks);
 		double d = ticks * ELYTRA_PER_TICK;
 		if (d < FLIGHT_BLOCKS) {
+			watchPhase = "flight tick " + ticks + " player (" + (int) player.getX() + ", " + (int) player.getZ() + ")";
 			MockPlayer.flyTo(player, FLY_X, 160, FLY_Z - FLIGHT_BLOCKS + d);
 			ticks++;
 			return;
@@ -201,6 +213,7 @@ public final class PerfServerHarness {
 				if (LaneStats.startsInProgress() > 0) dumpOurThreads("landing");
 			}
 			prof.phase("settle");
+			watchPhase = "settle";
 			settleStart = System.nanoTime();
 		}
 		// PERFSRV r4: on a cold world the city's warm and starts outlast the flight, so counters read at the landing were all 0 and the
@@ -210,6 +223,7 @@ public final class PerfServerHarness {
 		try {
 			s.put(p + "flight.settle.s", (System.nanoTime() - settleStart) / 1e9);
 			if (mod) s.flightLaneRows();
+			watchPhase = "block rows";
 			s.blockRows(server, p, mod);
 			prof.phase(null);
 			s.write(Path.of(System.getProperty("fb.perf.out", "build/perf")).resolve("world-" + (mod ? "mod" : "base") + ".json"));

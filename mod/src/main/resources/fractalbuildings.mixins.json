@@ -13,7 +13,8 @@
 		"LakeFeatureMixin",
 		"StructureCheckMixin",
 		"ServerPlayerTeleportMixin",
-		"EntityPortalHoldMixin"
+		"EntityPortalHoldMixin",
+		"CustomSpawnerReadyMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1
