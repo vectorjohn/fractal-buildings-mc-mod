@@ -39,14 +39,15 @@ The name comes from my early interest in fractal algorithms, and things like the
 
 ## Config
 
-To configure, copy [fractalbuildings.example.json](fractalbuildings.example.json)
-to `config/fractalbuildings.json` in your game folder (replacing the file the
-mod created there on first start) and change the values. Each setting has a
-one-line note above it: how often settlements appear, how big they get, which
-styles are used, villagers, roads between settlements.
+`config/fractalbuildings.json` sets the defaults for *new* worlds: how often
+settlements appear, the largest settlement size, and which styles are used. A
+world copies these values when it is created and keeps them, so editing the file
+never changes an existing world. `/fb config` shows the current world's values.
 
-The file only affects worlds created after you edit it: a world keeps the values
-it was created with. `/fb config` shows the current world's values.
+To set it up, copy [the example](fractalbuildings.example.json) to
+`config/fractalbuildings.json` in your game folder before launching the game (or
+before creating the world it should apply to) and change the values; each
+setting has a one-line note.
 
 The `/fbnote` switch (see "Reporting a bug") is in a separate client file:
 copy [fractalbuildings-client.example.properties](fractalbuildings-client.example.properties)

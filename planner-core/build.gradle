@@ -73,6 +73,7 @@ tasks.named('compileJava') {
 tasks.named('test') {
 	inputs.file('../viewer/fixtures/sample-house.json')
 	inputs.files('../viewer/fixtures/sample-house-violations.json')
+	inputs.file('../docs/release/fractalbuildings.example.json') // FbSettingsExampleTest
 }
 
 // Forward -Dfb.* options to the test JVM (e.g. -Dfb.propertyScale=10, -Dfb.dumpFixtures=DIR).

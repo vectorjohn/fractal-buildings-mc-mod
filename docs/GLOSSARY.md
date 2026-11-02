@@ -30,7 +30,7 @@ Item codes (PARREADS, MAINSTUB, TPHOLD, ...) and run terms, one row each. **Gene
 | CACHE |  | retention for in-flight and recently used tiles | done | [[docs/log/2026-10-22-p6-cache|log]] |
 | CASCADE |  | the exit trim and link rule (MAINSTUB) made cheaper, parallel and warmed early, byte-identical; proposed... | open | [[docs/log/2026-11-01-p6-cascade-7|log]], [[docs/plans/jflazy|jflazy]] |
 | CASCADE2FIX |  | perf row "Cold district plan, p95" 3.6-3.9 s vs ci 3 s on the quiet perf worker (cold quay-chain trace of... | polish | [[docs/ROADMAP|ROADMAP polish]] |
-| CFGEXAMPLE | 6.41 | the config file the mod writes explains itself | open | [[docs/ROADMAP|ROADMAP 6.41]] |
+| CFGEXAMPLE | 6.41 | the config file the mod writes explains itself | done | [[docs/ROADMAP|ROADMAP 6.41]] |
 | CIRC |  | 5.11 interior circulation (hub door graph, fewer walk-through rooms) | done | [[docs/archive/roadmap-phase-5|roadmap-phase-5]] |
 | CIRC2 |  | squarer rooms, bedrooms first | done | [[docs/log/2026-10-21-p5-circ2|log]] |
 | CITYQ |  | sparse and "ocean" cities in the B9 fly-through | done | [[docs/log/2026-10-23-p6-cityq|log]] |
