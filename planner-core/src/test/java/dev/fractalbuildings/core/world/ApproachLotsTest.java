@@ -57,7 +57,7 @@ class ApproachLotsTest {
 		List<int[]> cells = new ArrayList<>();
 		for (int cz = -1; cz <= 5; cz++) for (int cx = -1; cx <= 4; cx++) cells.add(new int[] {cx, cz});
 		Result r = check("pt", JoinWorld.playtest(), cells);
-		assertTrue(r.approaches() >= 10, "corpus has approaches");
+		assertTrue(r.approaches() >= 9, "corpus has approaches"); // 11 before DECKDIAG/LONGDECK: village s4_1 lost its lake-shore approach (LONGDECK, F2) and with it its link to s1_2, so s1_2 draws no k2_1_1
 		assertEquals(0, r.lotsOnApproach(), "no lot on an approach");
 		assertEquals(0, r.gaps(), "no gap between an approach and its street (k4_4_0 15, k4_5_0 8 before)");
 	}

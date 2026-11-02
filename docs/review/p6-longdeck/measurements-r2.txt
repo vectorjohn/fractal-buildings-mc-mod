@@ -1,0 +1,11 @@
+k2_1_0 BEFORE (skeleton route): route 234 blocks, straight 215 (x1.09), crossings 1, longest 59, alongRuns 0
+k2_1_0 AFTER (kept route): route 503 blocks, straight 215 (x2.34), crossings 5, longest 13, alongRuns 0
+k2_1_0 BEFORE (skeleton route): route 234 blocks, straight 215 (x1.09), crossings 1, longest 59, alongRuns 0
+k2_1_0 AFTER (kept route): route 503 blocks, straight 215 (x2.34), crossings 5, longest 13, alongRuns 0
+s4_1 (step-4 crop): tier VILLAGE skeleton approaches 2 kept 2
+  kept k4_1_0
+  kept k4_1_1
+  skeleton k4_1_0 length 96 wet runs: longRuns(hamlet/village limit) 0 alongRuns 0
+  s4_1 skeleton k4_1_0 (fine, step 4): route 96 blocks, straight 96 (x1.00), crossings 0, longest 0, alongRuns 0
+  skeleton k4_1_1 length 78 wet runs: longRuns(hamlet/village limit) 0 alongRuns 0
+  s4_1 skeleton k4_1_1 (fine, step 4): route 78 blocks, straight 72 (x1.09), crossings 0, longest 0, alongRuns 0

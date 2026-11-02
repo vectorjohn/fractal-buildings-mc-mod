@@ -70,6 +70,69 @@ class ApproachWaterTest {
 		assertEquals(0, ok.longRuns(), "a 30-block crossing is a failure of the 20 rule, not a long run");
 	}
 
+	/** LONGDECK: a 40-block water approach gets no deck at hamlet or village tier (max run 20), but does at town tier and up (max run 100). */
+	@Test
+	void longApproachDeckIsForTownsAndUp() {
+		var t = new River(60, 40, 64, 60);
+		var hamlet = Profile.approach(line(160), t, new TreeMap<>(), 3, false, Profile.MAX_CROSSING);
+		assertEquals(1, hamlet.longRuns(), "a hamlet or village does not deck a 40-block run: the approach is dropped or rerouted");
+		var town = Profile.approach(line(160), t, new TreeMap<>(), 3, true, Profile.MAX_DECK_RUN);
+		assertEquals(0, town.longRuns());
+		assertEquals(1, town.crossings().size(), "a town decks it");
+		var shortRun = Profile.approach(line(160), new River(60, 20, 64, 60), new TreeMap<>(), 3, false, Profile.MAX_CROSSING);
+		assertEquals(0, shortRun.longRuns(), "20 blocks or less is unchanged for every tier");
+	}
+
+	/** DECKDIAG F1: water beside the road (3 blocks off the centre line, outside its footprint) does not make a station wet. */
+	record Beside() implements TerrainProbe {
+		@Override public int floorY(int x, int z) { return z >= 3 ? 60 : 64; }
+		@Override public int waterDepth(int x, int z) { return z >= 3 ? 4 : 0; }
+	}
+
+	@Test
+	void besideTheShoreIsNotWet() {
+		var r = Profile.approach(line(160), new Beside(), new TreeMap<>(), 3, true);
+		assertEquals(0, r.crossings().size(), "the footprint z -1..1 is dry");
+		assertEquals(0, r.wetFailures());
+	}
+
+	/** A 3-wide stream across the road between two stations. */
+	@Test
+	void streamBetweenStationsIsStillDecked() {
+		var r = Profile.approach(line(80), new River(12, 3, 64, 60), new TreeMap<>(), 3, false);
+		assertEquals(1, r.crossings().size());
+		var c = r.crossings().get(0);
+		assertTrue(r.span()[c.first()] && r.span()[c.last()]);
+		assertTrue(c.deck() >= 65, "above the water: " + c.deck());
+	}
+
+	/** DECKDIAG F2 clause (b): a river crossed square, then a strip of puddles (depth 1): the puddles do not count as deep stations, the river does. */
+	record Marsh() implements TerrainProbe {
+		@Override public int floorY(int x, int z) { return x >= 60 && x < 90 ? 60 : 64; }
+		@Override public int waterDepth(int x, int z) { return x >= 60 && x < 90 ? 4 : x >= 90 && x < 110 ? 1 : 0; }
+	}
+
+	@Test
+	void shallowMarshAfterARiverIsStillAcross() {
+		var r = Profile.approach(line(200), new Marsh(), new TreeMap<>(), 3, true);
+		assertEquals(0, r.alongRuns(), "30 of river then 20 of puddles: a crossing");
+	}
+
+	/** DECKDIAG F2 clause (c), the architect's angle clause: a road straight down the middle of a 20-wide river is along it. */
+	record Channel() implements TerrainProbe {
+		boolean in(int x, int z) { return x >= 40 && x < 100 && z >= -10 && z < 10; }
+		@Override public int floorY(int x, int z) { return in(x, z) ? 60 : 64; }
+		@Override public int waterDepth(int x, int z) { return in(x, z) ? 4 : 0; }
+	}
+
+	@Test
+	void deckDownTheMiddleOfARiverIsAlong() {
+		var r = Profile.approach(line(160), new Channel(), new TreeMap<>(), 3, true);
+		assertEquals(1, r.alongRuns(), "60 blocks down a 20-wide river: water 60 long, 20 across, over 1.5x");
+		var square = Profile.approach(line(160), new River(60, 30, 64, 60), new TreeMap<>(), 3, true);
+		assertEquals(0, square.alongRuns());
+	}
+
 	@Test
 	void infeasiblePinsKeepTheStreetAndClampThePort() {
 		// ground flat at 64; street pinned at 64 at the exit, the graph road's deck 40 higher at the end 15 stations away (28 is all 1 in 4 allows)

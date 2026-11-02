@@ -101,25 +101,79 @@ public final class Profile {
 	/** How far the water reaches sideways from a station, per side, before a dry column (capped). */
 	private static final int SIDE_CAP = 40, ALONG_NEAR = 8;
 
+	/** Water this deep or more is water for the along test; less (puddles, marsh fringe) is not ({@code CoarseProbe.water}'s own threshold). */
+	static final int ALONG_DEEP = 2;
+
+	/** Clause (c) of the along test (architect, DS-19 interim): the longest stretch of water down the centre line is at most this times the water's reach across the road. */
+	static final double ANGLE = 1.5;
+
+	/** What {@link #alongMeasure} read for one wet run (tests and reviewers read it; {@link #alongBank} is its verdict). */
+	public record Along(int span, int centreWater, int deep, int near, int longest, int reach) {
+		public boolean clauseA() { return centreWater * 2 >= span; }
+		public boolean clauseB() { return deep > 0 && near * 2 <= deep; }
+		public boolean clauseC() { return reach > 0 && longest <= ANGLE * reach; }
+	}
+
 	/**
-	 * Whether a long wet run lies along a bank rather than across the water (ROADJOIN, architect): at more than half of its wet stations
-	 * the water ends within {@link #ALONG_NEAR} blocks on one side of the road, i.e. the road wades beside the shore. A road across a river
-	 * has water far on both sides at every station. Exact reads (2 x up to 8 per station); the answer feeds counts only.
+	 * Whether a long wet run lies along the water rather than across it (DECKDIAG F2, John 2026-11-01 "a run along water is never built";
+	 * the architect's revised DS-19 test (3)). Water under {@link #ALONG_DEEP} deep does not count for the stations of (b) (a puddle or marsh fringe is no crossing); the centre line of (a) and (c) counts any water, as DECKDIAG measured it. The run is a crossing when all of:
+	 * (a) water lies under at least half of its centre line; (b) at the stations whose own column is deep water, the water reaches past
+	 * {@link #ALONG_NEAR} blocks on both sides at least half the time, and there is one such station; (c) the longest unbroken stretch of water
+	 * under the centre line is at most {@link #ANGLE} times the water's reach across the road (left plus right, each to {@link #SIDE_CAP}) at the
+	 * middle of that stretch: the road crosses at about 35 degrees or more instead of running down the water. {@code lo} and {@code hi} are the
+	 * run's first and last wet arc positions ({@code Curve.STATION * k + s}). Exact reads only.
 	 */
-	static boolean alongBank(double[][] st, int a, int b, TerrainProbe p) {
-		int n = st.length, near = 0, total = 0;
+	static boolean alongBank(double[][] st, int a, int b, int lo, int hi, TerrainProbe p) {
+		Along m = alongMeasure(st, a, b, lo, hi, p);
+		return !(m.clauseA() && m.clauseB() && m.clauseC());
+	}
+
+	public static Along alongMeasure(double[][] st, int a, int b, int lo, int hi, TerrainProbe p) {
+		int n = st.length, deep = 0, near = 0;
 		for (int k = a; k <= b; k++) {
-			double[] u = st[Math.max(0, k - 1)], v = st[Math.min(n - 1, k + 1)];
-			double tx = v[0] - u[0], tz = v[1] - u[1], tl = Math.sqrt(tx * tx + tz * tz);
-			if (tl == 0) continue;
-			double nx = -tz / tl, nz = tx / tl;
+			if (p.waterDepth(round(st[k][0]), round(st[k][1])) < ALONG_DEEP) continue;
+			double[] side = side(st, k);
+			if (side == null) continue;
 			int left = 0, right = 0;
-			while (left < SIDE_CAP && wetAt(p, st[k][0] + nx * (left + 1), st[k][1] + nz * (left + 1))) left++;
-			while (right < SIDE_CAP && wetAt(p, st[k][0] - nx * (right + 1), st[k][1] - nz * (right + 1))) right++;
-			total++;
+			while (left < SIDE_CAP && wetAt(p, st[k][0] + side[0] * (left + 1), st[k][1] + side[1] * (left + 1))) left++;
+			while (right < SIDE_CAP && wetAt(p, st[k][0] - side[0] * (right + 1), st[k][1] - side[1] * (right + 1))) right++;
+			deep++;
 			if (Math.min(left, right) <= ALONG_NEAR) near++;
 		}
-		return total > 0 && near * 2 > total;
+		// the centre line, one sample per block of arc from lo to hi
+		int span = hi - lo + 1, centre = 0, run = 0, longest = 0, longestEnd = -1;
+		for (int t = lo; t <= hi; t++) {
+			double fk = Math.max(0, Math.min(n - 1, t / Curve.STATION)), f = fk - Math.floor(fk);
+			int k0 = (int) Math.floor(fk), k1 = Math.min(n - 1, k0 + 1);
+			double x = st[k0][0] + (st[k1][0] - st[k0][0]) * f, z = st[k0][1] + (st[k1][1] - st[k0][1]) * f;
+			if (p.waterDepth(round(x), round(z)) >= 1) {
+				centre++;
+				if (++run > longest) { longest = run; longestEnd = t; }
+			} else run = 0;
+		}
+		int reach = 0;
+		if (longest > 0) {
+			// the water's reach across the road at the middle of the longest stretch
+			double fk = Math.max(0, Math.min(n - 1, (longestEnd - longest / 2) / Curve.STATION)), f = fk - Math.floor(fk);
+			int k0 = (int) Math.floor(fk), k1 = Math.min(n - 1, k0 + 1);
+			double x = st[k0][0] + (st[k1][0] - st[k0][0]) * f, z = st[k0][1] + (st[k1][1] - st[k0][1]) * f;
+			double[] side = side(st, Math.round((float) fk));
+			if (side != null) {
+				int left = 0, right = 0;
+				while (left < SIDE_CAP && wetAt(p, x + side[0] * (left + 1), z + side[1] * (left + 1))) left++;
+				while (right < SIDE_CAP && wetAt(p, x - side[0] * (right + 1), z - side[1] * (right + 1))) right++;
+				reach = left + right;
+			}
+		}
+		return new Along(span, centre, deep, near, longest, reach);
+	}
+
+	/** The unit left normal of the road at station k, or null when it has no direction. */
+	private static double[] side(double[][] st, int k) {
+		int n = st.length;
+		double[] u = st[Math.max(0, k - 1)], v = st[Math.min(n - 1, k + 1)];
+		double tx = v[0] - u[0], tz = v[1] - u[1], tl = Math.sqrt(tx * tx + tz * tz);
+		return tl == 0 ? null : new double[] {-tz / tl, tx / tl};
 	}
 
 	/** Limits the change between neighbouring stations to {@link #MAX_STEP}, leaving pinned stations as they are. */
@@ -184,6 +238,14 @@ public final class Profile {
 	 * height. {@code airUnder} (town tier and above, architect 2026-10-27) gives one air block under the deck whatever the span. The ramp up to a raised crossing is {@link #limit}ed at 1 in 4 on the dry stations beside it.
 	 */
 	public static ApproachResult approach(double[][] st, TerrainProbe exact, java.util.SortedMap<Integer, Integer> pins, int width, boolean airUnder) {
+		return approach(st, exact, pins, width, airUnder, MAX_DECK_RUN);
+	}
+
+	/**
+	 * As above with the longest wet run that may be decked ({@code maxRun}; a longer run counts in {@code longRuns} and the approach is dropped
+	 * or rerouted). LONGDECK (John 2026-11-02): towns and up deck up to {@link #MAX_DECK_RUN}; hamlets and villages only {@link #MAX_CROSSING}.
+	 */
+	public static ApproachResult approach(double[][] st, TerrainProbe exact, java.util.SortedMap<Integer, Integer> pins, int width, boolean airUnder, int maxRun) {
 		int n = st.length;
 		TerrainProbe p = exact;
 		boolean[] wet = new boolean[n];
@@ -192,8 +254,9 @@ public final class Profile {
 		int reach = (int) Curve.STATION;
 		for (int k = 0; k < n; k++) {
 			int x = round(st[k][0]), z = round(st[k][1]);
-			// a station is wet when water lies within one station (8 blocks) of it along the road, over its width (a stream between two stations, or beside the line, counts);
-			// the pinned deck then covers the water, and the ramp starts on dry stations beyond it
+			// a station is wet when water lies under the road's own footprint (every block of its width) within half a station along the road (DECKDIAG F1:
+			// the stations tile the road); a stream between two stations is still covered, by the stations either side of it. The pinned deck then covers
+			// the water, and the ramp starts on dry stations beyond it
 			double[] a = st[Math.max(0, k - 1)], b = st[Math.min(n - 1, k + 1)];
 			double tx = b[0] - a[0], tz = b[1] - a[1], tl = Math.sqrt(tx * tx + tz * tz);
 			if (tl == 0) { tx = 1; tz = 0; tl = 1; }
@@ -201,10 +264,10 @@ public final class Profile {
 			int water = Integer.MIN_VALUE;
 			firstArc[k] = Integer.MAX_VALUE;
 			lastArc[k] = Integer.MIN_VALUE;
-			for (int s = -reach; s <= reach; s++) {
+			for (int s = -reach / 2; s < reach / 2; s++) {
 				if (k == 0 && s < 0 || k == n - 1 && s > 0) continue;
-				for (int o = -1; o <= 1; o++) {
-					double cx = st[k][0] + tx / tl * s + nx * o * (hw + 1), cz = st[k][1] + tz / tl * s + nz * o * (hw + 1);
+				for (int o = -(int) Math.floor(hw); o <= (int) Math.floor(hw); o++) {
+					double cx = st[k][0] + tx / tl * s + nx * o, cz = st[k][1] + tz / tl * s + nz * o;
 					int px = round(cx), pz = round(cz);
 					int depth = p.waterDepth(px, pz);
 					if (depth < 1) continue;
@@ -240,14 +303,17 @@ public final class Profile {
 		for (int[] g : groups) {
 			int a = g[0], b = g[1];
 			int length = 0;
+			int runLo = 0, runHi = 0;
 			{
 				int lo = Integer.MAX_VALUE, hi = Integer.MIN_VALUE;
 				for (int k = a; k <= b; k++) { lo = Math.min(lo, firstArc[k]); hi = Math.max(hi, lastArc[k]); }
 				length = hi - lo + 1;
+				runLo = lo;
+				runHi = hi;
 			}
 			if (length > MAX_CROSSING) failures++;
-			if (length > MAX_DECK_RUN) longRuns++;
-			else if (length > MAX_CROSSING && alongBank(st, a, b, p)) alongRuns++;
+			if (length > maxRun) longRuns++;
+			else if (length > MAX_CROSSING && alongBank(st, a, b, runLo, runHi, p)) alongRuns++;
 			int flat = Integer.MIN_VALUE;
 			if (a > 0) flat = Math.max(flat, deck[a - 1]);
 			if (b + 1 < n) flat = Math.max(flat, deck[b + 1]);

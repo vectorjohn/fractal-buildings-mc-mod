@@ -779,9 +779,9 @@ public class WorldPlanner {
 			if (st.length < 2) break;
 			java.util.TreeMap<Integer, Integer> pins = new java.util.TreeMap<>();
 			if (pin.isPresent()) pins.put(st.length - 1, pin.getAsInt());
-			var prof = dev.fractalbuildings.core.road.Profile.approach(st, probes.roadExact(), pins, width, air);
-			long score = prof.longRuns() * 1000L + prof.wetFailures();
-			if (score < bestFail) { bestFail = score; bestNodes = nodes; bestLong = prof.longRuns(); }
+			var prof = dev.fractalbuildings.core.road.Profile.approach(st, probes.roadExact(), pins, width, air, air ? dev.fractalbuildings.core.road.Profile.MAX_DECK_RUN : dev.fractalbuildings.core.road.Profile.MAX_CROSSING); // LONGDECK: hamlets and villages deck no run over 20
+			long score = (prof.longRuns() + prof.alongRuns()) * 1000L + prof.wetFailures(); // DECKDIAG F2: a run along water over 20 is as bad as a long one
+			if (score < bestFail) { bestFail = score; bestNodes = nodes; bestLong = prof.longRuns() + prof.alongRuns(); }
 			if (prof.wetFailures() == 0 || attempt >= RoadNet.MAX_REROUTES) break;
 			// ADR 0004 N5: steer round the water the exact reads found, as a graph route does (the skeleton saw lattice nodes only)
 			dev.fractalbuildings.core.road.Profile.Crossing bad = null;
@@ -1226,7 +1226,7 @@ public class WorldPlanner {
 			}
 		}
 		if (pin.isPresent()) pins.put(st.length - 1, pin.getAsInt());
-		var prof = dev.fractalbuildings.core.road.Profile.approach(st, probes.roadExact(), pins, r.width(), air);
+		var prof = dev.fractalbuildings.core.road.Profile.approach(st, probes.roadExact(), pins, r.width(), air, air ? dev.fractalbuildings.core.road.Profile.MAX_DECK_RUN : dev.fractalbuildings.core.road.Profile.MAX_CROSSING); // LONGDECK: hamlets and villages deck no run over 20
 		var byChunk = RoadNet.raster(st, prof.deck(), prof.span(), r.width());
 		// ADR 0004 WR2/WR4: no road column on water outside a deck above it. An approach that still has one (a stream on a slope beside the
 		// gate: the street cannot rise to the water, the water cannot fall to the street) is not built, and its port is a dead end (deadEndPorts).

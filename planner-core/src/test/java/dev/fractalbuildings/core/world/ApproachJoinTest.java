@@ -73,7 +73,7 @@ class ApproachJoinTest {
 			n++;
 			assertTrue(r.join().exitTilePlanned(), "exit in a tile no one plans: " + r);
 		}
-		assertTrue(n >= 14, "corpus size " + n); // 16 before 6.22 DEADPORT; k3_7_1 and km11_m3_2 join links whose far end has no approach, now dropped
+		assertTrue(n >= 13, "corpus size " + n); // 16 before 6.22 DEADPORT; k3_7_1 and km11_m3_2 join links whose far end has no approach, now dropped; DECKDIAG/LONGDECK: village s4_1 (pt) lost its lake-shore approach, so its link to s1_2 is dropped and s1_2 draws no k2_1_1 (13 of 14)
 		var metropolis = JoinWorld.joins(JoinWorld.playtest(), 1, 2);
 		assertTrue(metropolis.stream().noneMatch(j -> j.exit().x() == 3264 && j.exit().z() == 1856), "the unplanned metropolis exit moved");
 	}

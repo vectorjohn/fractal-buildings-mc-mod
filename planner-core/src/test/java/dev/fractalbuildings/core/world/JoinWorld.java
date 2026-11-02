@@ -85,6 +85,11 @@ final class JoinWorld {
 		return new WorldPlanner(PT1573_SEED, WorldConfig.defaults(), probes(read(GateWorld.FIXTURES, "pt1573-metro-s8", "pt1573-world-s64")), null, WorldPlanner.Caches.DEFAULT);
 	}
 
+	/** DECKDIAG: the playtest world with three step-4 crops of long approach decks over it (sm11_m2 lake hamlet, sm4_m6 neck town, s8_10 bay town) and the ROADJOIN crop (k2_1_0). */
+	static WorldPlanner deckdiag() {
+		return new WorldPlanner(PT_SEED, WorldConfig.defaults(), probes(read(GateWorld.FIXTURES, "pt1709-lake-sm11_m2-s4", "pt1709-neck-sm4_m6-s4", "pt1709-bay-s8_10-s4", "pt1709-join-s2", "pt1709-world-s64")), null, WorldPlanner.Caches.DEFAULT);
+	}
+
 	static long key(int x, int z) { return ((long) z << 32) ^ (x & 0xffffffffL); }
 
 	/** Street ('S'), district deck ('B') and plaza ('P') surface tops of the district tiles of the given chunks and their neighbours: {kind, top block y}. */

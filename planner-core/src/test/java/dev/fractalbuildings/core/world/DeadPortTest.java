@@ -50,13 +50,15 @@ class DeadPortTest {
 		int[][] cases = {{10, 1, 10560, 1600}, {2, 1, 2496, 2176}, {4, 0, 4755, -96}};
 		for (int[] c : cases) {
 			SettlementSite s = site(w, c[0], c[1]);
-			assertEquals(List.of(), w.deadEndPorts(s), s.id() + " keeps a road ending at its port");
+			// DECKDIAG F2: s2_1's approach k2_1_1 to the meeting point 1624,1270 (link to s1_1) was a 32-block deck along the shore of an s64 lake; it is dropped now,
+			// and s1_1 serves that link, so it is a kept dead end (case c). The three corpus ports themselves stay dropped.
+			assertEquals(c[0] == 2 ? List.of(port(w, 2, 1, 1624, 1270)) : List.of(), w.deadEndPorts(s), s.id() + " keeps a road ending at its port");
 			RoadPort p = port(w, c[0], c[1], c[2], c[3]);
 			assertTrue(w.droppedPorts(s).contains(p), s.id() + " port " + p + " is dropped");
 			assertEquals(WorldPlanner.LinkState.DROPPED, w.linkState(edge(node(w, c[0], c[1]).owner(), p.other())));
 		}
-		// the whole ROADJOIN corpus: no dead end left
-		assertEquals("", ApproachJoinTest.deadEnds(), "dead-end-port on the corpus");
+		// the whole ROADJOIN corpus: no dead end left but the one DECKDIAG F2 makes (above)
+		assertEquals("w12345 2,1 port 1624,1270; ", ApproachJoinTest.deadEnds(), "dead-end-port on the corpus: only the F2 one above");
 	}
 
 	/** A dropped link draws nothing: not its road (the graph still routes it), and neither end's approach to it (s2_3 had one). */
@@ -84,20 +86,21 @@ class DeadPortTest {
 	}
 
 	/**
-	 * Step (a): w987654321 town s5_0's skeleton approach to its port 6080,832 (link to s6_1) has a deck on the water beside its gate; the
-	 * exit gate at 5824,736 reaches the port dry, so the link stays and the road meets the approach at the port.
+	 * Step (a): w987654321 metropolis s2_m2's skeleton approach to its port 1664,-2880 (link to s1_m4) has no dry run; the exit gate at
+	 * 2240,-2976 (road k2_m3) reaches the port dry, so the link stays and the road meets the approach at the port. (Until DECKDIAG F1 this was
+	 * town s5_0, port 6080,832, gate 5824,736: its own approach lost its phantom deck beside the gate and now serves the port itself, k5_0_0.)
 	 */
 	@Test
 	void anotherExitGateJoinsThePort() {
 		WorldPlanner w = w987654321(WorldPlanner.Caches.DEFAULT);
-		SettlementSite s = site(w, 5, 0);
-		RoadNet.Settlement n = node(w, 5, 0);
-		RoadPort p = port(w, 5, 0, 6080, 832);
+		SettlementSite s = site(w, 2, -2);
+		RoadNet.Settlement n = node(w, 2, -2);
+		RoadPort p = port(w, 2, -2, 1664, -2880);
 		WorldPlanner.Approach a = w.drawnApproaches(s, n).stream().filter(x -> p.equals(x.port())).findFirst().orElseThrow(() -> new AssertionError("no approach joins " + p));
-		assertEquals("k5_0_90", a.road().id(), "the approach from another exit gate (ALT_ID + port index)");
+		assertEquals("k2_m3_91", a.road().id(), "the approach from another exit gate (ALT_ID + port index)");
 		var exit = a.road().points().get(0);
-		assertEquals(5824, exit.x());
-		assertEquals(736, exit.z());
+		assertEquals(2240, exit.x());
+		assertEquals(-2976, exit.z());
 		boolean gate = false;
 		for (Cell c : s.cells()) for (var g : w.source(s).skeleton(c).gates()) gate |= g.kind() == GateKind.EXIT && g.x() == exit.x() && g.z() == exit.z() && g.road() != null;
 		assertTrue(gate, "it leaves from an exit gate with a road");
@@ -105,7 +108,7 @@ class DeadPortTest {
 		assertEquals(List.of(), w.deadEndPorts(s));
 		// it is a drawn approach like any other: one strip, from the gate's street to the port, level with the road there
 		WorldPlannerRoadsTest.checkJoinsItsRoad(w, a);
-		var j = JoinWorld.joins(w, 5, 0).stream().filter(x -> x.id().equals("k5_0_90")).findFirst().orElseThrow();
+		var j = JoinWorld.joins(w, 2, -2).stream().filter(x -> x.id().equals("k2_m3_91")).findFirst().orElseThrow();
 		assertEquals(0, j.wetLow(), "no column on water outside a deck above it: " + j);
 		assertTrue(j.contacts() > 0 && j.exitStep() <= 2, "meets its street at the gate: " + j);
 	}
