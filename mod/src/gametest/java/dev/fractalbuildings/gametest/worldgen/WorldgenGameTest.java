@@ -186,6 +186,7 @@ public class WorldgenGameTest {
 		long worldAsc = StartSupport.worldHash(level, b, g);
 		StartSupport.Snapshot snapAsc = StartSupport.snapshot(level, b, g);
 		checkDoorsAndStairs(level, b);
+		checkConnectors(level, b);
 
 		String[] names = {"reversed", "shuffled(7)", "shuffled(99)"};
 		List<List<ChunkPos>> orders = List.of(reversed(asc), shuffled(asc, 7), shuffled(asc, 99));
@@ -257,6 +258,74 @@ public class WorldgenGameTest {
 		check(doors > 0, "a settlement start has at least one door");
 		check(reshaped.isEmpty(), "stairs a neighbour update would reshape: " + reshaped);
 		dev.fractalbuildings.mod.FractalBuildingsMod.LOGGER.info("[B1] readback: {} doors, {} stair blocks ({} corners, none reshaped by an update) in {}", doors, stairs, corners, bb);
+	}
+
+	@GameTest(maxTicks = TestArea.TICKS)
+	public void desertCityConnectorsMatchNeighbourShapes(GameTestHelper helper) {
+		WorldProbes pr = WorldProbes.of(SyntheticTerrain.flat(70), SyntheticBiomes.constant("minecraft:desert"));
+		WorldPlanner w = null;
+		Optional<SettlementInfo> n = Optional.empty();
+		for (long seed = 1; seed < 60 && n.isEmpty(); seed++) {
+			w = new WorldPlanner(seed, WorldConfig.defaults().withIntercityRoads(false), pr, null);
+			n = w.nearest(0, 0, Tier.CITY, 3);
+		}
+		check(n.isPresent(), "a desert city near the origin for some seed below 60");
+		final WorldPlanner planner = w;
+		var c = n.get().site().centre();
+		DistrictGrid.Tile t = planner.grid().tileAt(c.x(), c.z());
+		TileInfo info = planner.tile(t.ix(), t.iz()).orElseThrow();
+		Target tg = new Target(info.tier().json, new ChunkPos(t.originChunkX(), t.originChunkZ()), t, planner.buildings(t.ix(), t.iz()).size(), planner.ground(t.ix(), t.iz()).size());
+		TestArea.run(helper, area(helper.getLevel(), planner, tg), () -> with(planner, () -> {
+			ServerLevel level = helper.getLevel();
+			StructureStart b = StartSupport.start(level, tg.structure(), tg.chunk());
+			StructureStart g = StartSupport.start(level, "district_ground", tg.chunk());
+			List<ChunkPos> chunks = new ArrayList<>(StartSupport.chunks(b));
+			for (ChunkPos cp : StartSupport.chunks(g)) if (!chunks.contains(cp)) chunks.add(cp);
+			placeBoth(level, b, g, chunks, 1);
+			checkConnectors(level, b);
+			StartSupport.clear(level, b);
+			StartSupport.clear(level, g);
+		}));
+	}
+
+	/**
+	 * GLASSSTUB r2: every pane, iron bars, fence and wall the pieces wrote already has the connection state Minecraft would give it from its
+	 * neighbours (the pieces write with UPDATE_KNOWN_SHAPE, so nothing re-shapes them); a pane with all four sides false is a post.
+	 * Counts what it saw per kind so the log shows the test looked at something.
+	 */
+	/** Bit mask of the four connection properties that are true (panes, bars, fences; walls count low and tall). */
+	private static int sides(BlockState s) {
+		int m = 0;
+		for (net.minecraft.world.level.block.state.properties.Property<?> pr : s.getProperties()) {
+			String n = pr.getName();
+			if (!(n.equals("north") || n.equals("east") || n.equals("south") || n.equals("west"))) continue;
+			if (!String.valueOf(s.getValue(pr)).equals("false") && !String.valueOf(s.getValue(pr)).equals("none")) m |= 1 << java.util.List.of("north", "east", "south", "west").indexOf(n);
+		}
+		return m;
+	}
+
+	private static void checkConnectors(ServerLevel level, StructureStart s) {
+		BoundingBox bb = s.getBoundingBox();
+		java.util.TreeMap<String, int[]> seen = new java.util.TreeMap<>(); // kind -> {count, reshaped, posts}
+		List<String> bad = new ArrayList<>(), soft = new ArrayList<>();
+		BlockPos.MutableBlockPos p = new BlockPos.MutableBlockPos();
+		for (int y = Math.max(level.getMinY(), bb.minY() - 2); y <= bb.maxY(); y++) for (int z = bb.minZ(); z <= bb.maxZ(); z++) for (int x = bb.minX(); x <= bb.maxX(); x++) {
+			BlockState st = level.getBlockState(p.set(x, y, z));
+			String kind = st.getBlock() instanceof net.minecraft.world.level.block.IronBarsBlock ? (st.is(Blocks.IRON_BARS) ? "bars" : "pane")
+					: st.getBlock() instanceof net.minecraft.world.level.block.FenceBlock ? "fence" : st.getBlock() instanceof net.minecraft.world.level.block.WallBlock ? "wall" : null;
+			if (kind == null) continue;
+			int[] c = seen.computeIfAbsent(kind, k -> new int[3]);
+			c[0]++;
+			BlockState updated = net.minecraft.world.level.block.Block.updateFromNeighbourShapes(st, level, p.set(x, y, z));
+			if (updated != st) {
+				c[1]++;
+				int a = sides(st), u = sides(updated);
+				boolean hard = (a & ~u) != 0 || (a == 0 && u != 0); // an arm to nothing, or a post that should join: a missing arm toward a furniture block (crafting table) is soft
+				if (!hard) { soft.add(kind + " " + x + "," + y + "," + z); continue; }
+				if (bad.size() < 10) { StringBuilder nb = new StringBuilder(); for (net.minecraft.core.Direction d : net.minecraft.core.Direction.Plane.HORIZONTAL) nb.append(" ").append(d).append("=").append(level.getBlockState(p.set(x, y, z).move(d))); bad.add(kind + " " + x + "," + y + "," + z + " " + st + " -> " + updated + " nbrs" + nb); } }
+		}
+		dev.fractalbuildings.mod.FractalBuildingsMod.LOGGER.info("[GLASSSTUB] connectors in {}: {}", bb, seen.entrySet().stream().map(e -> e.getKey() + "=" + e.getValue()[0] + " reshaped=" + e.getValue()[1]).toList() + ", " + soft.size() + " only miss an arm toward a furniture block, first " + soft.stream().limit(3).toList());
+		check(bad.isEmpty(), "connecting blocks a neighbour update would reshape (pane/bars/fence/wall): " + bad);
 	}
 
 	@GameTest

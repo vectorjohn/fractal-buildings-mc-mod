@@ -46,7 +46,12 @@ public final class Invariants {
 		TerrainProbe ground = terrain != null ? terrain : patchProbe(scene.terrain());
 		List<Violation> out = new ArrayList<>(dev.fractalbuildings.core.ir.IrValidator.validate(scene));
 		java.util.Map<Long, Integer> surface = scene.genVersion() >= 2 && !scene.ground().isEmpty() ? StairGround.surfaceLevels(scene) : java.util.Map.of();
-		for (PlacedBuilding b : scene.buildings()) new BuildingCheck(scene, b, ground, out, surface).run();
+		java.util.Map<String, List<PaneAttached.Fail>> panes = scene.genVersion() >= 2 ? PaneAttached.checkScene(scene) : java.util.Map.of();
+		for (PlacedBuilding b : scene.buildings()) {
+			BuildingCheck bc = new BuildingCheck(scene, b, ground, out, surface);
+			bc.panes = panes.getOrDefault(b.id(), List.of());
+			bc.run();
+		}
 		return out;
 	}
 
@@ -151,6 +156,17 @@ public final class Invariants {
 			stairFoot();
 			doorRise();
 			entranceCount();
+			paneAttached();
+		}
+
+		List<PaneAttached.Fail> panes = List.of(); // failing panes of the scene as the world gets them (PaneAttached.checkScene)
+
+		void paneAttached() {
+			List<PaneAttached.Fail> lone = panes;
+			if (lone.isEmpty()) return;
+			List<Box3> cells = new ArrayList<>();
+			for (PaneAttached.Fail f : lone) { if (cells.size() >= MAX_CELLS) break; cells.add(new Box3(f.x(), f.y(), f.z(), 1, 1, 1)); }
+			report(Invariant.PANE_ATTACHED, lone.size() + " glass pane(s) lone, at a corner or at a wall top (DS-51), first " + lone.get(0).why(), cells, lone.size());
 		}
 
 		List<Lot> lotsOf(PlacedBuilding pb) {

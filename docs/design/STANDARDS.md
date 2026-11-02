@@ -1450,8 +1450,7 @@ DS-25 with an exception for deliberate repeating patterns.
   19.45.26): panes stop short of shop doors, and a lone pane sticks out
   of a facade.
 - **Scope:** all styles.
-- **Enforcement:** code candidate `pane-attached` on the raster. None
-  today.
+- **Enforcement:** the `pane-attached` invariant (GLASSSTUB, 6.35): every glass pane has a pane or a full block beside it, is not at an outer corner and has a block above it; it reads the cells the world ends up with (`PaneAttached.checkScene`, over `PieceRaster`), so a pane stripped of its walls by another building's clear fails too. The door-jamb half of the rule (a solid jamb and head on every door of a glazed wall) has no check yet (DOORGLASS).
 - **Status:** accepted. **Source:** architect, playtest questions 2026-10-27
   ([playtest1026-qs-architect.md](../review/reports/playtest1026-qs-architect.md), P4);
   approved by John 2026-10-27 (REVIEW "Door frame or glass blocks": "I
