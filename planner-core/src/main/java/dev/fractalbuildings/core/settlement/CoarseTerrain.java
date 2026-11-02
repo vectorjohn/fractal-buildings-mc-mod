@@ -15,6 +15,14 @@ public final class CoarseTerrain {
 	/** The road router charges extra for columns steeper than this (24 per 32, 3 in 4: the comment said 1 in 2, the value was raised with {@link #STEEP_PER_32}). */
 	public static final int ROAD_STEEP_PER_32 = 24;
 
+	/** Test hook (QUAYFAST 4b): whether {@link #water} and {@link #peak} are remembered per lattice column; off reads the probe every time (same answers). */
+	public static volatile boolean memoise = true;
+	/** Test counter: water and peak queries that reached the probe (each may read a biome), summed over terrains and threads. */
+	public static final java.util.concurrent.atomic.AtomicLong PROBE_READS = new java.util.concurrent.atomic.AtomicLong();
+
+	/** Water and peak at a lattice column, by column key: the quay screen asks for the same columns over and over (waterWithin, buildable), and a biome read is vanilla noise. */
+	private final java.util.concurrent.ConcurrentHashMap<Long, Boolean> waterMemo = new java.util.concurrent.ConcurrentHashMap<>(), peakMemo = new java.util.concurrent.ConcurrentHashMap<>();
+
 	public final CoarseProbe probe;
 	public final int step;
 
@@ -30,7 +38,22 @@ public final class CoarseTerrain {
 
 	public int surfaceY(int x, int z) { int sx = snap(x), sz = snap(z); return probe.floorY(sx, sz) + probe.waterDepth(sx, sz); }
 
-	public boolean water(int x, int z) { return probe.water(snap(x), snap(z)); }
+	public boolean water(int x, int z) { return waterAt(snap(x), snap(z)); }
+
+	private static long latticeKey(int sx, int sz) { return ((long) sx << 32) ^ (sz & 0xffffffffL); }
+
+	/** Water at the lattice column (sx, sz). */
+	private boolean waterAt(int sx, int sz) {
+		if (!memoise) { PROBE_READS.incrementAndGet(); return probe.water(sx, sz); }
+		long k = latticeKey(sx, sz);
+		Boolean v = waterMemo.get(k);
+		if (v == null) {
+			PROBE_READS.incrementAndGet();
+			v = probe.water(sx, sz);
+			waterMemo.put(k, v);
+		}
+		return v;
+	}
 
 	/** The column and its eight lattice neighbours are all dry. */
 	public boolean dryAround(int x, int z) {
@@ -42,7 +65,15 @@ public final class CoarseTerrain {
 
 	public boolean peak(int x, int z) {
 		int sx = snap(x), sz = snap(z);
-		return probe.floorY(sx, sz) >= PEAK_Y || BiomeIds.isPeak(probe.biome(sx, sz));
+		if (!memoise) { PROBE_READS.incrementAndGet(); return probe.floorY(sx, sz) >= PEAK_Y || BiomeIds.isPeak(probe.biome(sx, sz)); }
+		long k = latticeKey(sx, sz);
+		Boolean v = peakMemo.get(k);
+		if (v == null) {
+			PROBE_READS.incrementAndGet();
+			v = probe.floorY(sx, sz) >= PEAK_Y || BiomeIds.isPeak(probe.biome(sx, sz));
+			peakMemo.put(k, v);
+		}
+		return v;
 	}
 
 	/** Some 4-neighbour's surface differs from this column's by more than 3 in 4 (over one lattice step). */
@@ -68,7 +99,7 @@ public final class CoarseTerrain {
 		for (int nz = z0; nz <= z1; nz += step) {
 			for (int nx = x0; nx <= x1; nx += step) {
 				long dx = nx - x, dz = nz - z;
-				if (dx * dx + dz * dz <= d2 && probe.water(nx, nz)) return true;
+				if (dx * dx + dz * dz <= d2 && waterAt(nx, nz)) return true;
 			}
 		}
 		return false;

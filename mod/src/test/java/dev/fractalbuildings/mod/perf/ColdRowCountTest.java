@@ -52,6 +52,7 @@ class ColdRowCountTest {
 	void counts() throws Exception {
 		NoiseBasedChunkGenerator gen = TerrainDumpTool.generator();
 		RandomState rs = TerrainDumpTool.randomState(PerfPlannerTest.SEED);
+		if (Boolean.getBoolean("fb.perf.coldrow.nomemo")) dev.fractalbuildings.core.settlement.CoarseTerrain.memoise = false; // QUAYFAST 4b: the before count
 		int threads = Integer.getInteger("fb.perf.coldrow.pool", 0);
 		ThreadPoolExecutor pool = threads > 1 ? Workers.create(threads, Workers.READS_PREFIX) : null;
 		try {
@@ -104,7 +105,9 @@ class ColdRowCountTest {
 		Map<Object, Object> cuts = PerfReachTest.entries(PerfReachTest.get(p, "fullCuts"));
 		Map<Object, Object> walk = PerfReachTest.entries(PerfReachTest.get(p, "walkBeyond"));
 		long fills = lp.chunkFills() - fills0, rounds = QuayTuning.walkPrefetches.get() - rounds0;
-		StringBuilder sb = new StringBuilder("[COLDROW] " + name + ": fills " + fills + ", walk rounds " + rounds + ", new raw plans");
+		long probeReads = dev.fractalbuildings.core.settlement.CoarseTerrain.PROBE_READS.getAndSet(0);
+		if (name.startsWith("sample") && dev.fractalbuildings.core.settlement.CoarseTerrain.memoise) assertTrue(probeReads <= 20_000, name + ": " + probeReads + " coarse water/peak probe reads (61 with the lattice memo, over a million without: QUAYFAST 4b, the quay screen asks for the same lattice columns over and over)");
+		StringBuilder sb = new StringBuilder("[COLDROW] " + name + ": fills " + fills + ", walk rounds " + rounds + ", coarse water/peak probe reads " + probeReads + ", new raw plans");
 		for (Object k : raw.keySet()) if (seenRaw.add(k)) { long l = (Long) k; sb.append(' ').append((int) (l >> 32)).append(',').append((int) l); }
 		for (Object k : cuts.keySet()) if (seenCuts.add(k)) sb.append(", fullCut ").append(k).append(" = ").append(((java.util.Optional<?>) cuts.get(k)).map(c -> "index " + ((ExitTrim.Cut) c).index()).orElse("none"));
 		for (Object k : walk.keySet()) if (seenWalk.add(k)) sb.append(", walk ").append(k).append(" = ").append(walk.get(k));
