@@ -52,6 +52,9 @@ public class PortalHoldClientGameTest implements FabricClientGameTest {
 			watch.setDaemon(true);
 			watch.start();
 		}
+		// This test is about a held trip that goes through, so it must not be hostage to the host: the cold metropolis exit took more than the 60 s
+		// default limit on a loaded Intel-iGPU host (the hold then cancels the trip, as designed; PortalHoldGameTest.stuckHoldAbortsTheTrip covers that)
+		PortalHold.maxHoldMillis = 600_000;
 		try (TestSingleplayerContext world = context.worldBuilder()
 				.setUseConsistentSettings(false)
 				.adjustSettings(c -> c.setSeed("987654321"))
@@ -113,6 +116,7 @@ public class PortalHoldClientGameTest implements FabricClientGameTest {
 			context.takeScreenshot("portal-hold-arrived");
 		} finally {
 			armed = false;
+			PortalHold.maxHoldMillis = PortalHold.DEFAULT_MAX_HOLD_MILLIS;
 		}
 	}
 

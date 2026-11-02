@@ -223,7 +223,7 @@ Item codes (PARREADS, MAINSTUB, TPHOLD, ...) and run terms, one row each. **Gene
 | to-main |  | merging the run branch into main, after a full test run | - | [[docs/runs/2026-10-22-phase6|2026-10-22-phase6]] |
 | TOKENSAVE |  | agent-definition change to save tokens: at most 3 coding items, verdict blocks, Sonnet verifiers for small... | done | [coordinator](../.claude/agents/coordinator.md) |
 | TOMAINn |  | the n-th merge of the run branch into main (TOMAIN3, ...) | - | [[docs/runs/2026-10-22-phase6|2026-10-22-phase6]] |
-| TPABORT |  | teleport and portal holds wait as long as needed, abort at 60 s | open | [[docs/ROADMAP|ROADMAP]] |
+| TPABORT |  | teleport and portal holds wait as long as needed, abort at 60 s | done | [[docs/ROADMAP|ROADMAP]] |
 | TPHOLD | 6.7 | hold far teleports until the destination is generated | done | [[docs/log/2026-10-23-p6-tphold|log]] |
 | TPHOLD15 |  | shorter teleport hold, and what happens after it gives up | done | [[docs/log/2026-10-31-p6-tphold15|log]] |
 | TPHOLD60 |  | TeleportHold cap 60 s | done | [[docs/log/2026-11-01-p6-tphold60|log]] |

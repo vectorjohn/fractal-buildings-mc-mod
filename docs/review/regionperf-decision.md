@@ -319,7 +319,7 @@ What it says:
 - The region row is unchanged (9.2 s) and `/locate` too: QUAYFAST does not touch them.
 
 For the district-ceiling question: the 3 s ceiling is missed by a factor of two by one tile, and the cause is known and local to the screen's biome reads; fixing that is a smaller job than moving the ceiling.
-The hold cap (TeleportHold, TPHOLD15) and the district-plan ceiling: see the questions in [QUESTIONS.md](../QUESTIONS.md) (the TeleportHold cap line; John decided 2026-11-01: 60 s, now the default). The numbers: a cold metropolis arrival holds 32.8 to 33.2 s, the slowest chunk is 24.6 s. A 15 s cap releases the player about 18 s before the destination is ready.
+The hold cap (TeleportHold, TPHOLD15) and the district-plan ceiling: see the questions in [QUESTIONS.md](../QUESTIONS.md) (the TeleportHold cap line; John decided 2026-11-01: 60 s, now the default). **Superseded 2026-11-02 (John, TPABORT): no cap on the wait.** The hold ends when the 3 x 3 is FULL and never teleports into chunks that are not ready; only a 60 s stuck-generation limit remains (John's choice, so a player never has to cancel a teleport), and at it the teleport is cancelled (the player stays where they were, with a "try again" message). The 15, 30, 60 and 90 s caps discussed above are history. The numbers: a cold metropolis arrival holds 32.8 to 33.2 s, the slowest chunk is 24.6 s. A 15 s cap releases the player about 18 s before the destination is ready.
 
 ## 8. Options for the cold-arrival wait (for John)
 

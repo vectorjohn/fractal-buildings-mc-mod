@@ -4,6 +4,7 @@ import static dev.fractalbuildings.gametest.worldgen.StartSupport.check;
 
 import dev.fractalbuildings.mod.teleport.PortalHold;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -164,6 +165,43 @@ public class PortalHoldGameTest {
 			check("holdOpen=true present=true".equals(seen[0]), "the pig must be held at first: " + seen[0]);
 			check(!s.pig.isRemoved() && s.pig.level() == s.level, "the pig that walked out must stay in the overworld, removed=" + s.pig.getRemovalReason());
 			check(!PortalHold.waitingFor(Level.NETHER, s.ex, s.ez), "the request must be dropped once nobody is inside");
+		});
+	}
+
+	/** John 2026-11-02: past the stuck-generation limit the trip is cancelled, never sent into chunks that are not ready. */
+	@GameTest
+	public void defaultLimitIsPinned(GameTestHelper helper) {
+		check(PortalHold.DEFAULT_MAX_HOLD_MILLIS == 60_000L, "default stuck-generation limit " + PortalHold.DEFAULT_MAX_HOLD_MILLIS);
+		helper.succeed();
+	}
+
+	@GameTest(maxTicks = TestArea.TICKS)
+	public void stuckHoldAbortsTheTrip(GameTestHelper helper) {
+		// limit 0 for this test's own exit only (the gametests of a batch run concurrently, so no global limit): the request is already past
+		// its limit at its first check, while the chunks are certainly not ready (the POI chunks are requested at that very call)
+		AtomicInteger ticks = new AtomicInteger(), aborted = new AtomicInteger(), abortedAt = new AtomicInteger(-1);
+		AtomicReference<UUID> pigId = new AtomicReference<>();
+		int[] exit = {Integer.MIN_VALUE, Integer.MIN_VALUE};
+		PortalHold.testLimit = p -> Math.abs(p.getX() - exit[0]) <= 16 && Math.abs(p.getZ() - exit[1]) <= 16 ? 0 : -1;
+		PortalHold.testAborted = e -> { if (e.getUUID().equals(pigId.get()) && aborted.incrementAndGet() == 1) abortedAt.set(ticks.get()); };
+		Runnable restore = () -> { PortalHold.testLimit = null; PortalHold.testAborted = null; };
+		String[] seen = {null};
+		inOwnArea(helper, 3, restore, s -> {
+			pigId.set(s.pig.getUUID());
+			exit[0] = s.ex;
+			exit[1] = s.ez;
+			return () -> {
+				int t = ticks.incrementAndGet();
+				if (abortedAt.get() < 0) return false;
+				if (t == abortedAt.get() + 1) seen[0] = "present=" + (!s.pig.isRemoved() && s.pig.level() == s.level) + " holdOpen=" + PortalHold.waitingFor(Level.NETHER, s.ex, s.ez);
+				return t >= abortedAt.get() + 40; // the pig keeps standing in the portal for 40 more ticks
+			};
+		}, s -> {
+			UUID id = s.pig.getUUID();
+			check("present=true holdOpen=false".equals(seen[0]), "right after the abort the pig must be in the overworld with no request open: " + seen[0]);
+			check(!s.pig.isRemoved() && s.pig.level() == s.level, "the pig must not have gone through: " + s.pig.getRemovalReason());
+			check(!PortalHold.waitingFor(Level.NETHER, s.ex, s.ez), "no new request may open while the pig stays in the portal");
+			check(s.nether.getEntity(id) == null, "the pig must not be in the nether");
 		});
 	}
 }

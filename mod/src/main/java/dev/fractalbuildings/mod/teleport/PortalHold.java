@@ -63,25 +63,29 @@ import net.minecraft.world.level.dimension.DimensionType;
  *
  * <p>Every entity is held, not only players (a mob or item would freeze the server the same way); players get the action-bar message.
  * Spectators are not held (vanilla never creates a portal for them). An entity that leaves the portal ends its wait; the request is dropped
- * after {@link #IDLE_TICKS} without anyone inside. After {@link #maxHoldMillis} the trip proceeds anyway (the rest then generates
- * synchronously, as without the hold). The end portal is not held (its exits are fixed: the End platform or the spawn point).
+ * after {@link #IDLE_TICKS} without anyone inside. After {@link #maxHoldMillis} (a stuck-generation limit, not a budget) the trip is
+ * CANCELLED, never sent into chunks that are not ready (John 2026-11-02): the entity stays on this side and a player is told to try again. The end portal is not held (its exits are fixed: the End platform or the spawn point).
  *
  * <p>Timing only: the destination is vanilla's, computed by vanilla from the entity's position when it finally goes. Server-only. Off with
  * {@code -Dfractalbuildings.portalHold=false}.
  */
 public final class PortalHold {
-	/** Keeps the requested chunks loaded while the hold waits; removed by hand, expires as a safety net after 150 s. */
+	/** Keeps the requested chunks loaded while the hold waits; removed by hand, expires as a safety net after 3 minutes (longer than the limit). */
 	public static final TicketType TICKET = Registry.register(BuiltInRegistries.TICKET_TYPE,
-		Identifier.fromNamespaceAndPath(FractalBuildingsMod.MOD_ID, "portal_hold"), new TicketType(20L * 150, TicketType.FLAG_LOADING));
+		Identifier.fromNamespaceAndPath(FractalBuildingsMod.MOD_ID, "portal_hold"), new TicketType(20L * 60 * 3, TicketType.FLAG_LOADING));
 
 	/**
-	 * The default of {@link #maxHoldMillis}: 120 s. Proceeding earlier does not save the wait, it moves the rest of it onto the server thread
-	 * (the freeze the hold exists to avoid; TPHOLD15 saw the same after its 15 s limit), and the player can walk out of the portal at any time.
-	 * So the cap is only a safety net against a request that never completes, above the 65 s worst case measured.
+	 * The default of {@link #maxHoldMillis}: 60 s, set by John 2026-11-02 so a player never has to cancel a teleport they want to abort. Not a budget ("We wait how long it takes"): the trip goes as soon as
+	 * its chunks are ready, and this catches a request that does not complete in time (the PORTALCOLD-M worst case was 65 s into a cold metropolis on the perf worker, so a slow machine can hit it: the player tries again, and the generated chunks are kept). Proceeding earlier would move
+	 * the rest of the wait onto the server thread (the freeze the hold exists to avoid), so at the limit the trip is cancelled instead.
 	 */
-	public static final long DEFAULT_MAX_HOLD_MILLIS = 120_000;
-	/** Longest wait, milliseconds of wall clock from the request, before the trip proceeds anyway. */
+	public static final long DEFAULT_MAX_HOLD_MILLIS = 60_000;
+	/** Stuck-generation limit, milliseconds of wall clock from the request, after which the trip is cancelled. */
 	public static volatile long maxHoldMillis = Long.getLong("fractalbuildings.portalHoldMaxMillis", DEFAULT_MAX_HOLD_MILLIS);
+	/** Test hook: sees every entity whose trip was cancelled at the limit. */
+	public static volatile java.util.function.Consumer<Entity> testAborted = null;
+	/** Test hook: the limit in milliseconds for a request at this exit, or a negative number for {@link #maxHoldMillis}; tests run concurrently, so a test limits only its own exit. */
+	public static volatile java.util.function.ToLongFunction<BlockPos> testLimit = null;
 	public static volatile boolean enabled = !"false".equals(System.getProperty("fractalbuildings.portalHold"));
 	/** A request nobody has touched for this many ticks (everyone walked out) is dropped with its tickets. */
 	static final int IDLE_TICKS = 100;
@@ -120,7 +124,7 @@ public final class PortalHold {
 		final BlockPos exit;
 		final boolean axisX;
 		final long started = System.nanoTime();
-		final long deadline = started + maxHoldMillis * 1_000_000L;
+		final long deadline;
 		final int startTick;
 		final int idleTicks = testIdleTicks != null ? testIdleTicks : IDLE_TICKS;
 		/** First the POI chunks at EMPTY, then (once searched) what the rest of vanilla's call reads. */
@@ -136,6 +140,9 @@ public final class PortalHold {
 			this.exit = exit;
 			this.axisX = axisX;
 			this.startTick = tick;
+			java.util.function.ToLongFunction<BlockPos> tl = testLimit;
+			long limit = tl != null ? tl.applyAsLong(exit) : -1;
+			this.deadline = started + (limit >= 0 ? limit : maxHoldMillis) * 1_000_000L;
 			this.lastTouch = tick;
 		}
 
@@ -150,6 +157,8 @@ public final class PortalHold {
 
 	private static final Map<Key, Area> AREAS = new LinkedHashMap<>();
 	private static final Map<UUID, Waiter> WAITERS = new LinkedHashMap<>();
+	/** Entities whose trip was cancelled at the limit, with the last tick they were inside; kept while they stay in the portal. */
+	private static final Map<UUID, Integer> CANCELLED = new LinkedHashMap<>();
 	/** Our tickets per (dimension, ticket level, chunk), counted: overlapping requests share one vanilla ticket (same type and level). */
 	private static final Map<ResourceKey<Level>, Map<Ref, int[]>> REFS = new HashMap<>();
 
@@ -157,7 +166,7 @@ public final class PortalHold {
 
 	public static void register() {
 		ServerTickEvents.END_SERVER_TICK.register(PortalHold::tick);
-		ServerLifecycleEvents.SERVER_STOPPED.register(server -> { AREAS.clear(); WAITERS.clear(); REFS.clear(); });
+		ServerLifecycleEvents.SERVER_STOPPED.register(server -> { AREAS.clear(); WAITERS.clear(); CANCELLED.clear(); REFS.clear(); });
 	}
 
 	/**
@@ -167,7 +176,12 @@ public final class PortalHold {
 	 * ready. Server thread only.
 	 */
 	public static boolean gate(ServerLevel from, Entity e, boolean netherPortal, BlockPos entry, boolean inside, boolean allowed, boolean go) {
+		if (!inside) CANCELLED.remove(e.getUUID());
 		if (!enabled || !inside || !allowed || !netherPortal || e.isSpectator()) return go;
+		if (!CANCELLED.isEmpty() && CANCELLED.containsKey(e.getUUID())) {
+			CANCELLED.put(e.getUUID(), from.getServer().getTickCount());
+			return false;
+		}
 		if (!go && !(e instanceof ServerPlayer)) return false;
 		MinecraftServer server = from.getServer();
 		ServerLevel to = server.getLevel(from.dimension() == Level.NETHER ? Level.OVERWORLD : Level.NETHER);
@@ -190,8 +204,8 @@ public final class PortalHold {
 		if (!go) return false;
 		progress(a);
 		boolean ready = ready(a);
-		boolean timedOut = !ready && System.nanoTime() - a.deadline >= 0;
-		if (!ready && !timedOut) {
+		if (!ready && System.nanoTime() - a.deadline >= 0) return abort(a, key, e);
+		if (!ready) {
 			if (e instanceof ServerPlayer p) {
 				Waiter w = WAITERS.computeIfAbsent(p.getUUID(), id -> new Waiter(p));
 				w.lastTouch = now;
@@ -204,13 +218,32 @@ public final class PortalHold {
 		}
 		long ms = (System.nanoTime() - a.started) / 1_000_000L;
 		Request q = a.current();
-		lastStats = String.format(java.util.Locale.ROOT, "poiChunks=%d poiMs=%.1f portals=%d chunks=%d status=%s waitMs=%d waitTicks=%d timedOut=%s",
-			a.requests.get(0).chunks.length, a.poiMillis, a.portals, a.searched ? q.chunks.length : 0, a.searched ? q.status.getName() : "-", ms, now - a.startTick, timedOut);
-		if (timedOut) FractalBuildingsMod.LOGGER.warn("Portal hold at {} timed out after {} ms; going anyway ({})", a.exit.toShortString(), ms, lastStats);
-		else FractalBuildingsMod.LOGGER.info("Portal hold for {} at {} ready ({})", e.getName().getString(), a.exit.toShortString(), lastStats);
+		lastStats = String.format(java.util.Locale.ROOT, "poiChunks=%d poiMs=%.1f portals=%d chunks=%d status=%s waitMs=%d waitTicks=%d timedOut=false",
+			a.requests.get(0).chunks.length, a.poiMillis, a.portals, a.searched ? q.chunks.length : 0, a.searched ? q.status.getName() : "-", ms, now - a.startTick);
+		FractalBuildingsMod.LOGGER.info("Portal hold for {} at {} ready ({})", e.getName().getString(), a.exit.toShortString(), lastStats);
 		a.released = true; // tickets go at the end of this tick; vanilla's call below makes the chunks it needs FULL with its own tickets
 		if (e instanceof ServerPlayer p && WAITERS.remove(p.getUUID()) != null) p.sendOverlayMessage(Component.empty());
 		return true;
+	}
+
+	/**
+	 * The stuck-generation limit passed: cancel the trip for this entity. It is marked in {@link #CANCELLED}, so while it stays inside the portal the
+	 * gate answers "do not go" without a new request (vanilla's own portal state is left alone: it reads it again right after the gate); the
+	 * request and its tickets go; once the entity has left the portal, a new entry opens a fresh request. A player is
+	 * told. Returns false (do not go).
+	 */
+	private static boolean abort(Area a, Key key, Entity e) {
+		FractalBuildingsMod.LOGGER.warn("Portal hold at {} still not ready after {} ms; trip of {} cancelled", a.exit.toShortString(), (System.nanoTime() - a.started) / 1_000_000L, e.getName().getString());
+		if (AREAS.get(key) == a) { AREAS.remove(key); drop(a); }
+		CANCELLED.put(e.getUUID(), e.level().getServer().getTickCount());
+		if (e instanceof ServerPlayer p) {
+			WAITERS.remove(p.getUUID());
+			p.sendOverlayMessage(Component.empty());
+			p.sendSystemMessage(TeleportHold.abortMessage());
+		}
+		java.util.function.Consumer<Entity> t = testAborted;
+		if (t != null) t.accept(e);
+		return false;
 	}
 
 	/**
@@ -324,6 +357,7 @@ public final class PortalHold {
 
 	private static void tick(MinecraftServer server) {
 		int now = server.getTickCount();
+		if (!CANCELLED.isEmpty()) CANCELLED.values().removeIf(t -> now - t > 40); // left without a tick inside (removed, or gone)
 		if (!WAITERS.isEmpty()) {
 			for (var it = WAITERS.values().iterator(); it.hasNext();) {
 				Waiter w = it.next();

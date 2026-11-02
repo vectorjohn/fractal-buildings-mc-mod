@@ -30,30 +30,37 @@ import net.minecraft.world.phys.Vec3;
  * on join, respawn and dimension change, but a same-dimension {@code /tp} only moves the player and the client sees void until chunks
  * arrive. {@code ServerPlayerTeleportMixin} hands such a teleport here: the player stays put, the {@link RegionWarmer} warms the
  * destination, a ticket loads the destination chunk and its neighbours to FULL, an action-bar message says so, and the teleport is
- * replayed when they are ready or after {@link #timeoutMillis}. Server-only (unmodded clients work), asynchronous (polled once a
+ * replayed when they are ready, and only then: if the destination is still not FULL after the stuck-generation limit
+ * ({@link #timeoutMillis}) the teleport is cancelled and the player stays where they were (John 2026-11-02: never release into chunks that
+ * are not ready, vanilla would generate them synchronously on the server thread and could crash it). Server-only (unmodded clients work), asynchronous (polled once a
  * tick, never blocks), and it only changes timing: the generated blocks are the same.
  *
  * <p>Off with {@code -Dfractalbuildings.teleportHold=false}.
  */
 public final class TeleportHold {
-	/** Loads the destination chunks and keeps them; removed by hand when the hold ends, expires after a minute as a safety net. */
+	/** Loads the destination chunks and keeps them; removed by hand when the hold ends, expires after 3 minutes as a safety net, longer than the limit. */
 	public static final TicketType TICKET = Registry.register(BuiltInRegistries.TICKET_TYPE,
-		Identifier.fromNamespaceAndPath(FractalBuildingsMod.MOD_ID, "teleport_hold"), new TicketType(20L * 60, TicketType.FLAG_LOADING));
+		Identifier.fromNamespaceAndPath(FractalBuildingsMod.MOD_ID, "teleport_hold"), new TicketType(20L * 60 * 3, TicketType.FLAG_LOADING));
 
 	/** Chunks around the destination chunk that must be FULL (1 = the 3 x 3 around it). */
 	static final int RADIUS = 1;
 	/** Jumps shorter than this are never held, whatever the view distance. */
 	static final int MIN_DISTANCE = 64;
-	/** The default of {@link #timeoutMillis}: 60 s (John 2026-11-01: "For the tp hold, 60s is fine"; was 90 s in TPHOLD15 r2; the hold still ends as soon as the 3 x 3 is FULL, so the cap only matters on cold metropolis arrivals, about 33 to 48 s on a quiet perf worker after CASCADE). */
+	/**
+	 * The default of {@link #timeoutMillis}: 60 s, set by John 2026-11-02 so a player never has to cancel a teleport they want to abort. Not a budget ("We wait how long it takes"): the hold ends as soon as the
+	 * 3 x 3 is FULL, and this limit only catches a generation that is stuck. At the limit the teleport is ABORTED, never replayed into chunks
+	 * that are not FULL.
+	 */
 	public static final long DEFAULT_TIMEOUT_MILLIS = 60_000;
-	/** Longest wait, milliseconds of wall clock (a lagging server still counts real time), before the teleport happens anyway. */
+	/** Stuck-generation limit, milliseconds of wall clock (a lagging server still counts real time), after which the teleport is cancelled. */
 	public static volatile long timeoutMillis = DEFAULT_TIMEOUT_MILLIS;
 	/** Jumps shorter than this many blocks are never held; null means the server's view distance. */
 	public static volatile Integer minDistanceOverride = null;
 	public static volatile boolean enabled = !"false".equals(System.getProperty("fractalbuildings.teleportHold"));
 	/**
 	 * TPHOLD15 option 3 (John: "hold for what the tile requires"): on a planner-backed level the hold ends once the destination tile is planned
-	 * and warmed (or at the limit), without waiting for the 3 x 3 chunks. OFF by default: the teleport then places the player in a chunk that is
+	 * and warmed, without waiting for the 3 x 3 chunks. OFF by default, and enabling it VIOLATES John's 2026-11-02 rule (never teleport into
+	 * chunks that are not FULL): the teleport then places the player in a chunk that is
 	 * not FULL yet, and vanilla loads it synchronously on the server thread, which freezes the whole server until it is generated (observed:
 	 * about 40 s on the perf worker after a 15 s limit, see docs/log/2026-10-31-p6-tphold15.md). Players never fall or take damage. On with
 	 * -Dfractalbuildings.teleportHoldReleaseOnPlan=true.
@@ -63,8 +70,10 @@ public final class TeleportHold {
 	public static volatile Supplier<CompletableFuture<?>> testLoad = null;
 	/** Test hook: replaces the destination warm future and marks the level as planner-backed. */
 	public static volatile Supplier<CompletableFuture<Void>> testWarm = null;
-	/** Test hook: sees (player, destination chunk all FULL?, timed out?) at the moment a held teleport is replayed. */
+	/** Test hook: sees (player, destination chunk all FULL?, timed out?) at the moment a held teleport is replayed; timed out is always false now (a timeout aborts). */
 	public static volatile Released testReleased = null;
+	/** Test hook: sees the player whose held teleport was aborted at the stuck-generation limit. */
+	public static volatile java.util.function.Consumer<ServerPlayer> testAborted = null;
 
 	@FunctionalInterface
 	public interface Released { void on(ServerPlayer player, boolean chunksFull, boolean timedOut); }
@@ -84,6 +93,7 @@ public final class TeleportHold {
 		final long deadline = System.nanoTime() + limitMillis * 1_000_000L;
 		final Supplier<CompletableFuture<?>> load0 = testLoad;
 		final Released released = testReleased;
+		final java.util.function.Consumer<ServerPlayer> aborted = testAborted;
 
 		Hold(ServerPlayer player, TeleportTransition transition) { this.player = player; this.transition = transition; }
 	}
@@ -146,6 +156,8 @@ public final class TeleportHold {
 
 	static Component message() { return Component.literal("Generating terrain…"); }
 
+	static Component abortMessage() { return Component.literal("Destination still generating; teleport cancelled, try again"); }
+
 	private static void tick() {
 		if (HOLDS.isEmpty()) return;
 		for (Hold h : new ArrayList<>(HOLDS.values())) {
@@ -165,12 +177,20 @@ public final class TeleportHold {
 				h.load = test != null ? test.get() : level.getChunkSource().addTicketAndLoadWithRadius(TICKET, h.pos, RADIUS);
 			}
 			boolean ready = (h.load != null && h.load.isDone()) || (h.planned && h.warm.isDone());
-			boolean timedOut = !ready && System.nanoTime() - h.deadline >= 0;
-			if (!ready && !timedOut) continue;
+			if (!ready) {
+				if (System.nanoTime() - h.deadline < 0) continue;
+				// stuck generation: cancel; the player was never moved while held, so they are still where they were
+				HOLDS.remove(p.getUUID());
+				FractalBuildingsMod.LOGGER.warn("Teleport hold for {} still not ready after {} ms; teleport cancelled", p.getName().getString(), (System.nanoTime() - h.deadline) / 1_000_000L + h.limitMillis);
+				p.sendOverlayMessage(Component.empty());
+				p.sendSystemMessage(abortMessage());
+				if (h.aborted != null) h.aborted.accept(p);
+				end(h);
+				continue;
+			}
 			HOLDS.remove(p.getUUID());
-			if (timedOut) FractalBuildingsMod.LOGGER.warn("Teleport hold for {} timed out after {} ms; teleporting anyway", p.getName().getString(), (System.nanoTime() - h.deadline) / 1_000_000L + h.limitMillis);
 			Released r = h.released;
-			if (r != null) r.on(p, loaded(level, h.pos), timedOut);
+			if (r != null) r.on(p, loaded(level, h.pos), false);
 			REPLAYING.set(true);
 			try {
 				p.teleport(h.transition);

@@ -71,9 +71,10 @@ public class TeleportHoldClientGameTest implements FabricClientGameTest {
 	}
 
 	/**
-	 * TPHOLD15: a survival player teleports into a cold metropolis core at surface + 2 while the hold gives up early (limit 3 s here, so
-	 * it always does; the real limit is 15 s). Over the next minutes the player must not take damage, fall below the terrain or into the void,
-	 * and must end up standing on the ground once chunks are FULL.
+	 * John 2026-11-02 (never release into chunks that are not ready): a survival player teleports into a cold metropolis core at surface + 2
+	 * while the stuck-generation limit is short (3 s here, so it always passes: the metropolis takes far longer; the real limit is 60 sutes).
+	 * The hold must ABORT: the player stays at the origin with full health for the next seconds, the destination is never entered and the
+	 * release hook never fires. (Before, the hold released the player into non-FULL chunks and the test checked they survived.)
 	 */
 	private static void coldMetropolisSurvival(ClientGameTestContext context) {
 		final int mx = 2432, mz = -5696; // the metropolis centre of seed 987654321 (PerfSupport.METRO_X/Z)
@@ -83,53 +84,56 @@ public class TeleportHoldClientGameTest implements FabricClientGameTest {
 				.create()) {
 			context.runOnClient(client -> client.options.renderDistance().set(6));
 			AtomicReference<int[]> surf = new AtomicReference<>();
+			AtomicReference<Vec3> start = new AtomicReference<>();
 			AtomicReference<String> released = new AtomicReference<>();
+			java.util.concurrent.atomic.AtomicInteger aborted = new java.util.concurrent.atomic.AtomicInteger();
 			world.getServer().runOnServer(server -> {
 				var level = server.overworld();
 				if (level.getChunkSource().getChunkNow(mx >> 4, mz >> 4) != null) throw new IllegalStateException("the metropolis is not cold");
 				int h = level.getChunkSource().getGenerator().getBaseHeight(mx, mz, net.minecraft.world.level.levelgen.Heightmap.Types.WORLD_SURFACE_WG,
 					level, level.getChunkSource().randomState());
 				surf.set(new int[] {h, level.getMinY()});
-				TeleportHold.timeoutMillis = Long.parseLong(System.getenv().getOrDefault("FB_TPHOLD_LIMIT_MS", "3000")); // FB_TPHOLD_LIMIT_MS=15000: the real limit
+				TeleportHold.timeoutMillis = Long.parseLong(System.getenv().getOrDefault("FB_TPHOLD_LIMIT_MS", "3000"));
 				TeleportHold.testReleased = (pl, full, to) -> released.set("chunksFull=" + full + " timedOut=" + to);
+				TeleportHold.testAborted = pl -> aborted.incrementAndGet();
+				start.set(server.getPlayerList().getPlayers().get(0).position());
 			});
 			int base = surf.get()[0], minY = surf.get()[1];
 			world.getServer().runCommand("gamemode survival @p");
 			world.getServer().runCommand("time set noon");
 			world.getServer().runCommand("tp @p " + mx + " " + (base + 2) + " " + mz);
-			world.getServer().runOnServer(server -> { TeleportHold.timeoutMillis = TeleportHold.DEFAULT_TIMEOUT_MILLIS; TeleportHold.testReleased = null; });
+			world.getServer().runOnServer(server -> { TeleportHold.timeoutMillis = TeleportHold.DEFAULT_TIMEOUT_MILLIS; TeleportHold.testReleased = null; TeleportHold.testAborted = null; });
 			long t0 = System.nanoTime();
-			double lowest = Double.MAX_VALUE, hpMin = 1e9;
-			boolean standing = false, everHeld = false, arrived = false;
-			int worstFull = 9, gapSamples = 0; // after the hold released: the lowest FULL count in the 3 x 3 under the player, and how many samples had < 9
+			double hpMin = 1e9;
+			boolean everHeld = false, entered = false;
+			long abortedAtMs = -1;
 			String last = "";
-			while ((System.nanoTime() - t0) / 1_000_000_000L < 150 && !standing) {
+			while (abortedAtMs < 0 || (System.nanoTime() - t0) / 1_000_000L < abortedAtMs + 12_000) { // the limit, then 12 s of watching the player
 				context.waitTicks(10);
 				AtomicReference<double[]> st = new AtomicReference<>();
 				world.getServer().runOnServer(server -> {
 					var p = server.getPlayerList().getPlayers().get(0);
-					var level = server.overworld();
-					int cx = p.blockPosition().getX() >> 4, cz = p.blockPosition().getZ() >> 4, full = 0;
-					for (int dz = -1; dz <= 1; dz++) for (int dx = -1; dx <= 1; dx++) if (level.getChunkSource().getChunkNow(cx + dx, cz + dz) != null) full++;
-					st.set(new double[] {p.getX(), p.getY(), p.getZ(), p.getHealth(), p.onGround() ? 1 : 0, full, TeleportHold.holding(p) ? 1 : 0});
+					st.set(new double[] {p.getX(), p.getY(), p.getZ(), p.getHealth(), TeleportHold.holding(p) ? 1 : 0});
 				});
 				double[] v = st.get();
-				lowest = Math.min(lowest, v[1]);
 				hpMin = Math.min(hpMin, v[3]);
-				everHeld |= v[6] > 0;
-				arrived |= v[6] == 0 && Math.abs(v[0] - mx) < 3 && Math.abs(v[2] - mz) < 3;
-				last = String.format("t=%ds y=%.2f hp=%.1f onGround=%s full=%d/9 held=%s", (System.nanoTime() - t0) / 1_000_000_000L, v[1], v[3], v[4] > 0, (int) v[5], v[6] > 0);
+				everHeld |= v[4] > 0;
+				entered |= Math.abs(v[0] - mx) < 64 && Math.abs(v[2] - mz) < 64;
+				if (abortedAtMs < 0 && v[4] == 0 && everHeld) abortedAtMs = (System.nanoTime() - t0) / 1_000_000L;
+				last = String.format("t=%ds pos=%.1f,%.1f,%.1f hp=%.1f held=%s", (System.nanoTime() - t0) / 1_000_000_000L, v[0], v[1], v[2], v[3], v[4] > 0);
 				if (v[1] < minY + 1) throw new IllegalStateException("the player fell into the void: " + last);
 				if (v[3] < 20) throw new IllegalStateException("the player took damage: " + last);
-				if (v[6] == 0 && v[5] < 9) { gapSamples++; worstFull = Math.min(worstFull, (int) v[5]); }
-				if (arrived && v[4] > 0 && v[5] == 9) standing = true;
+				if ((System.nanoTime() - t0) / 1_000_000_000L > 150) throw new IllegalStateException("the hold never ended: " + last);
 			}
-			FractalBuildingsMod.LOGGER.info("[TPHOLD15] surface {} (start y {}), lowest y {}, min health {}, held {}, final: {}", base, base + 2, lowest, hpMin, everHeld, last);
-			FractalBuildingsMod.LOGGER.info("[TPHOLD15] release: {}; after it {} samples (0.5 s) with the 3 x 3 under the player not FULL, worst {}/9", released.get(), gapSamples, worstFull);
-			if (released.get() == null || !released.get().contains("chunksFull=false")) throw new IllegalStateException("the player must land with the destination not FULL, was " + released.get());
-			if (!standing) throw new IllegalStateException("the player never ended up standing on loaded ground: " + last);
-			if (lowest < base - 3) throw new IllegalStateException("the player sank below the terrain (" + lowest + " < " + base + "): " + last);
-			context.takeScreenshot("teleport-hold-metropolis");
+			FractalBuildingsMod.LOGGER.info("[TPABORT] held {}, ended after about {} ms, aborts {}, release hook {}, min health {}, final: {}", everHeld, abortedAtMs, aborted.get(), released.get(), hpMin, last);
+			if (!everHeld) throw new IllegalStateException("the teleport was never held");
+			if (aborted.get() != 1) throw new IllegalStateException("the hold must abort exactly once, aborts " + aborted.get());
+			if (released.get() != null) throw new IllegalStateException("an aborted hold must never release the player: " + released.get());
+			if (entered) throw new IllegalStateException("the player must never enter the destination: " + last);
+			AtomicReference<Vec3> end = new AtomicReference<>();
+			world.getServer().runOnServer(server -> end.set(server.getPlayerList().getPlayers().get(0).position()));
+			if (end.get().distanceTo(start.get()) > 1) throw new IllegalStateException("the player must still be at the origin: " + end.get() + " vs " + start.get());
+			context.takeScreenshot("teleport-hold-aborted");
 		}
 	}
 }

@@ -37,14 +37,15 @@ public class TeleportHoldGameTest {
 
 	private static void reset() {
 		TeleportHold.testLoad = null;
+		TeleportHold.testAborted = null;
 		TeleportHold.testReleased = null;
 		TeleportHold.timeoutMillis = TeleportHold.DEFAULT_TIMEOUT_MILLIS;
 	}
 
-	/** John 2026-11-01: the cap is 60 s and release-on-plan is off unless its property is set. */
+	/** John 2026-11-02: the limit is a 60 s stuck-generation limit (John 2026-11-02) that aborts, and release-on-plan is off unless its property is set. */
 	@GameTest
 	public void defaultsArePinned(GameTestHelper helper) {
-		check(TeleportHold.DEFAULT_TIMEOUT_MILLIS == 60_000L, "default cap " + TeleportHold.DEFAULT_TIMEOUT_MILLIS);
+		check(TeleportHold.DEFAULT_TIMEOUT_MILLIS == 60_000L, "default stuck-generation limit " + TeleportHold.DEFAULT_TIMEOUT_MILLIS);
 		check(System.getProperty("fractalbuildings.teleportHoldReleaseOnPlan") != null || !TeleportHold.releaseOnPlan, "releaseOnPlan must default to off");
 		helper.succeed();
 	}
@@ -61,7 +62,7 @@ public class TeleportHoldGameTest {
 			seen.set("full=" + full + " timedOut=" + timedOut + " movedYet=" + (pl.position().distanceTo(start) > 1));
 		};
 		// the hold measures its deadline in wall time, and another test may block the server thread for longer than the hold limit (B7 Veto scans for
-		// ~50 s in one tick on a busy machine); this test is about waiting for FULL chunks, timeoutTeleportsAnyway covers the timeout
+		// ~50 s in one tick on a busy machine); this test is about waiting for FULL chunks, timeoutAbortsTeleport covers the limit
 		TeleportHold.timeoutMillis = 600_000;
 		teleportFull(p, to(level, tx, tz));
 		TeleportHold.timeoutMillis = TeleportHold.DEFAULT_TIMEOUT_MILLIS;
@@ -76,22 +77,28 @@ public class TeleportHoldGameTest {
 	}
 
 	@GameTest(maxTicks = TestArea.TICKS)
-	public void timeoutTeleportsAnyway(GameTestHelper helper) {
+	public void timeoutAbortsTeleport(GameTestHelper helper) {
 		ServerLevel level = helper.getLevel();
 		ServerPlayer p = helper.makeMockServerPlayerInLevel();
 		double tx = -42000.5, tz = 42000.5;
+		Vec3 start = p.position();
 		TeleportHold.timeoutMillis = 300;
 		TeleportHold.testLoad = () -> new CompletableFuture<>(); // never completes
-		AtomicInteger timedOut = new AtomicInteger();
-		TeleportHold.testReleased = (pl, full, to) -> { if (to) timedOut.incrementAndGet(); };
+		AtomicInteger aborted = new AtomicInteger(), released = new AtomicInteger();
+		TeleportHold.testAborted = pl -> aborted.incrementAndGet();
+		TeleportHold.testReleased = (pl, full, to) -> released.incrementAndGet();
 		teleportFull(p, to(level, tx, tz));
-		TeleportHold.timeoutMillis = TeleportHold.DEFAULT_TIMEOUT_MILLIS; // the hold captured its own deadline, load and callback; do not leak them into other tests
+		TeleportHold.timeoutMillis = TeleportHold.DEFAULT_TIMEOUT_MILLIS; // the hold captured its own deadline, load and callbacks; do not leak them into other tests
 		TeleportHold.testLoad = null;
+		TeleportHold.testAborted = null;
 		TeleportHold.testReleased = null;
 		check(TeleportHold.holding(p), "the teleport must be held");
-		waitThen(helper, () -> timedOut.get() > 0, () -> {
-			check(timedOut.get() == 1, "the timeout must fire once, was " + timedOut.get());
-			check(p.position().distanceTo(new Vec3(tx, 80, tz)) < 2, "the player must have been teleported anyway: " + p.position());
+		waitThen(helper, () -> aborted.get() > 0, () -> {
+			check(aborted.get() == 1, "the abort must fire once, was " + aborted.get());
+			check(released.get() == 0, "an aborted hold must never be released");
+			check(p.position().equals(start), "the player must stay where they were: " + p.position());
+			check(!TeleportHold.holding(p), "the hold must be gone");
+			check(level.getChunkSource().getChunkNow(((int) tx) >> 4, ((int) tz) >> 4) == null, "the destination must never have been entered");
 		});
 	}
 
