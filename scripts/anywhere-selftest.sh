@@ -253,7 +253,13 @@ export FB_WORKERS_CONF=$T/workers2.conf
 reset; load 15; touch "$T/down.perfw"   # perfw unreachable: only worker2 is in play
 gh() { FB_ANY_DEPTH='' "$A" --dry-run "$@" | grep -o 'go to [A-Za-z0-9_-]*'; }
 check "heavy slots: idle worker2 takes a heavy job" "$(gh -- scripts/client-test.sh)" "go to worker2"
-FB_ANY_DEPTH='' "$A" --kind heavy -- sleep 4 2> "$T/out.h1" & h1=$!; sleep 1.5
+# The fake jobs run until released (touch $T/release.X), not for a fixed time: on a loaded host a
+# `sleep 4` job had ended before the checks below ran (ANYFLAKE). waitn N: worker2 shows N jobs.
+gate() { echo "while [ ! -e $T/release.$1 ]; do sleep 0.1; done"; }
+waitn() { local i; for ((i = 0; i < 600; i++)); do
+	(( $(ls "$T/status.worker2.d" | wc -l) == $1 )) && return 0; sleep 0.1; done
+	echo "waitn $1: timed out" >&2; return 1; }
+FB_ANY_DEPTH='' "$A" --kind heavy -- sh -c "$(gate h1)" 2> "$T/out.h1" & h1=$!; waitn 1
 check "heavy slots: 1st heavy went to worker2" "$(route "$T/out.h1")" "worker2"
 rm -f "$T"/any/worker-status.*
 check "heavy slots: 2nd heavy waits (heavy 1/1)" "$(gh -- scripts/client-test.sh)" "go to nowhere"
@@ -264,11 +270,11 @@ check "heavy slots: a suite job fills the free slot" "$(gh --kind suite -- true)
 check "heavy slots: why says heavy 1/1" "$(FB_ANY_DEPTH='' "$A" --dry-run -- scripts/client-test.sh | grep -c 'worker2 1 running/queued of 2 slots, heavy 1/1')" "1"
 check "heavy slots: --status shows it" "$("$A" --status | grep -c '^worker2 \[heavy suite\]: 1 running/queued of 2 slots (incl. sends in flight), heavy 1/1')" "1"
 # a light job and the heavy one fill worker2; a later heavy waiter behind them waits, the light one went
-FB_ANY_DEPTH='' "$A" -- sleep 3 2> "$T/out.h2" & h2=$!; sleep 1.5
+FB_ANY_DEPTH='' "$A" -- sh -c "$(gate h2)" 2> "$T/out.h2" & h2=$!; waitn 2
 check "heavy slots: light job sent beside the heavy one" "$(route "$T/out.h2")" "worker2"
 rm -f "$T"/any/worker-status.*
 check "heavy slots: worker2 full (2/2): light waits" "$(gh -- true)" "go to nowhere"
-wait $h1 $h2; rm -f "$T"/any/worker-status.*
+touch "$T/release.h1" "$T/release.h2"; wait $h1 $h2; rm -f "$T"/any/worker-status.*
 check "heavy slots: heavy done: next heavy goes" "$(gh -- scripts/client-test.sh)" "go to worker2"
 check "heavy slots: claim removed after the job" "$(compgen -G "$T/any/claims/w2-example-heavy.*" | wc -l)" "0"
 # the heavy waiter died (SIGHUP) but its job still runs on worker2: still counted
