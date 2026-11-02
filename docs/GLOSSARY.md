@@ -87,6 +87,7 @@ Item codes (PARREADS, MAINSTUB, TPHOLD, ...) and run terms, one row each. **Gene
 | heavy lock |  | the machine-wide lock that lets only one Minecraft client test or timing run go at a time | - | [[CLAUDE|CLAUDE]] |
 | heavy run |  | a run of the heavy test layers (client tests, order test, perf); see HEAVY | - | [[CLAUDE|CLAUDE]] |
 | HEAVYn |  | the n-th batched heavy run (HEAVY1 ... HEAVY9); results in the run ledger, "Heavy runs" | - | [[docs/runs/2026-10-22-phase6|2026-10-22-phase6]] |
+| HEAVYSLOTS |  | per-worker `heavy_slots` in the worker pool file: scripts/anywhere.sh sends at most that many heavy jobs... | done | [[scripts/anywhere.sh|anywhere.sh]] |
 | HOUSEPROG |  | whole-house room program across wings (every house gets a kitchen and a living room) | done | [[docs/log/2026-10-21-p5-house-program|2026-10-21-p5-house-program]] |
 | HR-A2 | 7.7 | shared tall family | done | [[docs/log/2026-10-26-p7-hr-a2|log]] |
 | HR-A3 |  | mass-timber family (7.7) | done | [[docs/log/2026-10-25-p7-hr-a3|log]] |

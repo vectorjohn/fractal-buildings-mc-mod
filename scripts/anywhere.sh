@@ -26,6 +26,11 @@
 #   worker  `ssh HOST job status` shows fewer jobs running or queued than its slots (--depth N: at most
 #           N, for every worker), counting jobs other waiters sent there that aren't in its queue yet;
 #           `scripts/remote.sh --check` passes just before sending. Workers are tried in config order.
+#           HEAVY (kinds heavy and full, and order-test.sh, which is light here but runs many servers):
+#           at most the worker's heavy_slots of them at once (default: its slots), counted from this
+#           queue's own claims (claims/<host>-heavy.<pid>, kept while the waiter lives or, after it died,
+#           while its job named in the route file is running or queued); light and suite jobs still
+#           fill the remaining slots. Jobs sent to a worker another way are not counted as heavy.
 #   PERF (PERFROUTE, timing runs: perf.sh or profile.sh anywhere in CMD, so also under evidence.sh, or
 #           test-all.sh --perf): goes only to a worker with the perf role, and only when it is EMPTY
 #           (nothing running or queued, no send in flight); while it runs there it fills all of that
@@ -84,7 +89,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 . "$(dirname "${BASH_SOURCE[0]}")/lib/workers.sh"
 CLAUDE_DIR=$(suite_slot_dir)
 
-PREFER="" ONLY="" KIND="" PERF=0 DRY=0 STATUS=0 WAIT_MAX="" SET_LMAX="" SET_UNTIL=""
+PREFER="" ONLY="" KIND="" PERF=0 WHEAVY=0 DRY=0 STATUS=0 WAIT_MAX="" SET_LMAX="" SET_UNTIL=""
 LOAD_MAX=${FB_ANY_LOAD_MAX:-18} DEPTH=${FB_ANY_DEPTH:-} POLL=${FB_ANY_POLL:-20}
 ADHOC=${FB_REMOTE_HOST:-}
 REMOTE_ARGS=()
@@ -129,16 +134,16 @@ LMAX_FILE=$DIR/local-max
 # A worker is known here by its KEY (its ssh host made file-name safe): queue tickets, claims and
 # probe caches use it, so waiters running older copies of this script see the same names.
 WKEYS=()   # usable workers, config order
-declare -A KNAME=() KHOST=() KSLOTS=() KPERF=() KADHOC=()
+declare -A KNAME=() KHOST=() KSLOTS=() KHEAVY=() KPERF=() KADHOC=()
 workers_load || bad "the worker pool file is malformed (see above); $(workers_hint)"
 for w in $(workers_enabled); do
 	k=$(worker_key "$w"); WKEYS+=("$k")
-	KNAME[$k]=$w KHOST[$k]=${WK_HOST[$w]} KSLOTS[$k]=${WK_SLOTS[$w]} KPERF[$k]=0 KADHOC[$k]=0
+	KNAME[$k]=$w KHOST[$k]=${WK_HOST[$w]} KSLOTS[$k]=${WK_SLOTS[$w]} KHEAVY[$k]=${WK_HEAVY[$w]} KPERF[$k]=0 KADHOC[$k]=0
 	worker_has_role "$w" perf && KPERF[$k]=1
 done
 if [[ -n $ADHOC ]] && ! workers_resolve "$ADHOC" > /dev/null; then
 	# --host H / FB_REMOTE_HOST naming no configured worker: a plain ssh host, one slot, not perf
-	k=$(host_key "$ADHOC"); WKEYS+=("$k"); KNAME[$k]=$ADHOC KHOST[$k]=$ADHOC KSLOTS[$k]=1 KPERF[$k]=0 KADHOC[$k]=1
+	k=$(host_key "$ADHOC"); WKEYS+=("$k"); KNAME[$k]=$ADHOC KHOST[$k]=$ADHOC KSLOTS[$k]=1 KHEAVY[$k]=1 KPERF[$k]=0 KADHOC[$k]=1
 fi
 spec_keys() {   # SPEC (comma list of local | worker name | role | ssh host): prints the tokens, one per line
 	local s k w found
@@ -209,6 +214,7 @@ classify() {   # sets KIND (unless given) and LOCAL_ONLY_WHY
 	for w in "$@"; do
 		case "$w" in
 			*perf.sh|*profile.sh) guess=heavy; PERF=1 ;;   # timing runs (PERFROUTE)
+			*order-test.sh) WHEAVY=1 ;;   # light here (no heavy lock), heavy for a worker: many servers
 			*client-test.sh|*flythrough.sh|*server-only-test.sh|*compat-matrix.sh|*city-bench.sh|*runClientGameTest) guess=heavy ;;
 			*test-all.sh) has_testall=1 ;;
 			--no-client) no_client=1 ;;
@@ -235,6 +241,7 @@ classify() {   # sets KIND (unless given) and LOCAL_ONLY_WHY
 	return 0
 }
 needs_slot()  { [[ $1 == suite || $1 == full ]]; }
+worker_heavy() { if [[ $KIND == heavy || $KIND == full ]] || (( WHEAVY )); then echo 1; else echo 0; fi; }
 needs_heavy() { [[ $1 == heavy || $1 == full ]]; }
 
 # ---- probes ----------------------------------------------------------------------------------
@@ -340,6 +347,26 @@ perf_inflight() {   # KEY: 0 (and PERF_INFLIGHT says which) while a perf job sen
 	return 1
 }
 
+HEAVY_LIST=""
+heavy_used() {   # KEY: heavy jobs sent from this queue that run or wait on it (HEAVY_LIST names them)
+	local key=$1 f pid a name route n=0
+	HEAVY_LIST=""
+	for f in "$DIR/claims/$key"-heavy.*; do
+		[[ -e $f ]] || continue
+		pid=${f##*.}; a=$(( $(date +%s) - $(stat -c %Y "$f") ))
+		if (( a > 10800 )); then rm -f "$f"; continue; fi   # a worker job stops after 2 h
+		route=$(sed -n 's/^route=//p' "$f")
+		name=$(sed -n 's/^remote job \([^ ]*\).*/\1/p' "$route" 2>/dev/null | tail -n1)
+		if kill -0 "$pid" 2>/dev/null; then n=$((n + 1)); HEAVY_LIST+=" pid $pid"; continue; fi
+		# the waiter is gone (SIGHUP: remote.sh detached): still counted while its job runs or waits there
+		if [[ -n $name ]] && awk -v n="[$name]" '($2 == "running" || $2 == "queued") && index($0, n)' <<< "${WTEXT[$key]:-}" | grep -q .; then
+			n=$((n + 1)); HEAVY_LIST+=" $name"; continue
+		fi
+		(( ${WOK[$key]:-0} )) && rm -f "$f"
+	done
+	echo "$n"
+}
+
 # ---- the FIFO queue --------------------------------------------------------------------------
 TICKET=""
 take_ticket() {
@@ -356,7 +383,8 @@ take_ticket() {
 write_ticket() {
 	local f=$1 lo=0; shift
 	[[ -n $LOCAL_ONLY_WHY ]] && lo=1
-	printf '%s %s %s\nsince %s, %s: %s\nlocalonly %s perf %s\n' "$KIND" "$HOSTS" "$PREFER" "$(date '+%F %T')" "$PWD" "$*" "$lo" "$PERF" > "$f"
+	# line 4 (HEAVYSLOTS): older copies read three lines only, so this can't break their parsing
+	printf '%s %s %s\nsince %s, %s: %s\nlocalonly %s perf %s\nwheavy %s\n' "$KIND" "$HOSTS" "$PREFER" "$(date '+%F %T')" "$PWD" "$*" "$lo" "$PERF" "$(worker_heavy)" > "$f"
 }
 worker_check() {   # KEY
 	if [[ -n $W_CHECK_CMD ]]; then FB_ANY_WORKER=${KNAME[$1]} bash -c "$W_CHECK_CMD" > /dev/null 2>&1
@@ -373,7 +401,7 @@ remote_target() {   # KEY: the remote.sh arguments that pick it
 WHY=""
 decide() {
 	local lok=0 slots heavy=0 t k hs pr lo pf h choice="" mine lused=0 lcap=0 n eff tok wstate=""
-	local -A cap=() empty=() pnote=()
+	local -A cap=() empty=() pnote=() hcap=()
 	load_ok && lok=1
 	read_local_max
 	if [[ -n $LMAX ]]; then lused=$(local_used); lcap=$(( LMAX - lused )); fi
@@ -389,12 +417,14 @@ decide() {
 		# PERFROUTE: a perf job of ours on a worker fills all its slots
 		if perf_inflight "$k"; then cap[$k]=0 empty[$k]=0 pnote[$k]=", perf job $PERF_INFLIGHT holds it"; fi
 		USED[$k]=$n
+		HUSED[$k]=$(heavy_used "$k"); hcap[$k]=$(( KHEAVY[$k] - HUSED[$k] ))
 	done
-	host_free() {   # $1 host $2 kind $3 local-only flag $4 perf flag
+	host_free() {   # $1 host $2 kind $3 local-only flag $4 perf flag $5 worker-heavy flag
 		# perf only on an empty perf worker (nothing running, queued or in flight, nobody earlier taking it)
 		if [[ $1 != local ]]; then
 			[[ -n ${cap[$1]+x} ]] || return 1
 			(( cap[$1] > 0 )) || return 1
+			if [[ $5 == 1 ]] && (( hcap[$1] < 1 )); then return 1; fi
 			[[ $4 != 1 ]] || { (( ${KPERF[$1]:-0} && empty[$1] )); }
 			return
 		fi
@@ -404,8 +434,12 @@ decide() {
 		if needs_heavy "$2" && (( ! heavy )); then return 1; fi
 		return 0
 	}
-	take() {   # $1 host $2 kind $3 perf flag
-		if [[ $1 != local ]]; then cap[$1]=$(( cap[$1] - 1 )); empty[$1]=0; [[ $3 == 1 ]] && cap[$1]=0; return 0; fi
+	take() {   # $1 host $2 kind $3 perf flag $4 worker-heavy flag
+		if [[ $1 != local ]]; then
+			cap[$1]=$(( cap[$1] - 1 )); empty[$1]=0; [[ $3 == 1 ]] && cap[$1]=0
+			[[ $4 == 1 ]] && hcap[$1]=$(( hcap[$1] - 1 ))
+			return 0
+		fi
 		[[ $2 != light ]] && lcap=$((lcap - 1))
 		needs_slot "$2" && slots=$((slots - 1))
 		needs_heavy "$2" && heavy=0
@@ -415,15 +449,17 @@ decide() {
 		[[ -e $t ]] || continue
 		if ! kill -0 "${t##*.}" 2>/dev/null; then rm -f "$t"; continue; fi
 		mine=0; [[ $t == "$TICKET" ]] && mine=1
-		lo=0 pf=0 k=""; { read -r k hs pr _ && read -r _ && read -r _ lo _ pf; } < "$t"
+		lo=0 pf=0 wh="" k=""; { read -r k hs pr _ && read -r _ && read -r _ lo _ pf && read -r _ wh; } < "$t"
 		[[ -n $k ]] || continue
+		# a ticket from an older copy has no line 4: its heavy and full kinds are heavy for a worker
+		[[ -n $wh ]] || { wh=0; [[ $k == heavy || $k == full ]] && wh=1; }
 		choice=""
 		for h in ${pr//,/ } local "${WKEYS[@]}"; do
 			[[ ",$hs," == *",$h,"* ]] || continue
-			if host_free "$h" "$k" "${lo:-0}" "${pf:-0}"; then choice=$h; break; fi
+			if host_free "$h" "$k" "${lo:-0}" "${pf:-0}" "$wh"; then choice=$h; break; fi
 		done
 		if (( mine )); then break; fi
-		[[ -n $choice ]] && take "$choice" "$k" "${pf:-0}"
+		[[ -n $choice ]] && take "$choice" "$k" "${pf:-0}" "$wh"
 		# an earlier perf waiter still waiting for a perf worker reserves it, so it drains for it
 		if [[ -z $choice && ${pf:-0} == 1 ]]; then
 			for tok in ${hs//,/ }; do
@@ -438,7 +474,7 @@ decide() {
 	for k in "${WKEYS[@]}"; do
 		[[ ",$HOSTS," == *",$k,"* ]] || continue
 		if (( WOK[$k] )); then
-			wstate+="; ${KNAME[$k]} ${USED[$k]} running/queued of $( [[ -n $DEPTH ]] && echo "depth $DEPTH" || echo "${KSLOTS[$k]} slots")$( ((PERF)) && { ((KPERF[$k])) && echo ", perf: empty only" || echo ", not a perf worker"; })${pnote[$k]:-}"
+			wstate+="; ${KNAME[$k]} ${USED[$k]} running/queued of $( [[ -n $DEPTH ]] && echo "depth $DEPTH" || echo "${KSLOTS[$k]} slots"), heavy ${HUSED[$k]}/${KHEAVY[$k]}$( ((PERF)) && { ((KPERF[$k])) && echo ", perf: empty only" || echo ", not a perf worker"; })${pnote[$k]:-}"
 		else wstate+="; ${KNAME[$k]} unreachable"; fi
 	done
 	if (( ${#WKEYS[@]} == 0 )); then wstate="; no workers configured"
@@ -446,7 +482,7 @@ decide() {
 	WHY="$lstate$wstate"
 	DECISION=$choice
 }
-declare -A USED=()
+declare -A USED=() HUSED=()
 
 # ---- --status --------------------------------------------------------------------------------
 if (( STATUS )); then
@@ -464,7 +500,7 @@ if (( STATUS )); then
 	for k in "${WKEYS[@]}"; do
 		worker_probe "$k"
 		roles=""; (( KADHOC[$k] )) || roles=" [${WK_ROLES[${KNAME[$k]}]}]"
-		if (( WOK[$k] )); then echo "${KNAME[$k]}$roles: $(worker_used "$k") running/queued of ${KSLOTS[$k]} slots (incl. sends in flight)"
+		if (( WOK[$k] )); then echo "${KNAME[$k]}$roles: $(worker_used "$k") running/queued of ${KSLOTS[$k]} slots (incl. sends in flight), heavy $(heavy_used "$k")/${KHEAVY[$k]} (sent from this queue)"
 		else echo "${KNAME[$k]}$roles: unreachable"; fi
 		perf_inflight "$k" && echo "${KNAME[$k]}: perf job $PERF_INFLIGHT in flight: no other anywhere job is sent there until it ends"
 	done
@@ -580,6 +616,8 @@ elif needs_heavy "$KIND"; then claim="$DIR/claims/local-heavy.$child"; fi
 [[ -n $claim ]] && echo "$KIND $*" > "$claim"
 # PERFROUTE: kept after this waiter exits while its worker job (named in the route file) runs (perf_inflight)
 if [[ $DECISION != local ]] && (( PERF )); then printf "route=%s\ncmd %s\n" "$ROUTE_FILE" "$*" > "$DIR/claims/$DECISION-perf.$child"; fi
+# HEAVYSLOTS: the same for a heavy job on a worker (heavy_used)
+if [[ $DECISION != local && $(worker_heavy) == 1 ]]; then printf "route=%s\ncmd %s\n" "$ROUTE_FILE" "$*" > "$DIR/claims/$DECISION-heavy.$child"; fi
 lclaim=""   # counted by the quiet switch (local_used)
 if [[ $DECISION == local && $KIND != light ]]; then lclaim="$DIR/claims/local-run.$child"; echo "$KIND $*" > "$lclaim"; fi
 rm -f "$TICKET"; TICKET=""

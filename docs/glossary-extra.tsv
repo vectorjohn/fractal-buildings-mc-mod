@@ -86,3 +86,4 @@ warmer	RegionWarmer: plans settlements and roads on background threads ahead of 
 CASCADE	the exit trim and link rule (MAINSTUB) made cheaper, parallel and warmed early, byte-identical; proposed by the JFLAZY plan instead of a lazy junction field	plans/jflazy.md	open
 QUIETHOLE	the quiet check judges the whole timed window (the worker's job history, lock and CPU sampler), not only step boundaries; perf.sh says NOT A MEASUREMENT with what overlapped	../scripts/quiet-check.sh	done
 PERFROUTE	scripts/anywhere.sh sends a timing run (perf.sh, profile.sh, test-all --perf) to the perf worker only when it is empty, and lets nothing else in beside it while it runs or waits	../scripts/anywhere.sh	done
+HEAVYSLOTS	per-worker `heavy_slots` in the worker pool file: scripts/anywhere.sh sends at most that many heavy jobs (client runs, full test-all, order test) to a worker at once; light and suite jobs fill its other slots	../scripts/anywhere.sh	done

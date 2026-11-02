@@ -105,7 +105,7 @@ if [[ $MODE == workers ]]; then
 	workers_hint
 	(( WK_MISSING )) && { echo "  (no file: no workers; everything runs on this host)"; exit 0; }
 	for w in "${WK_NAMES[@]}"; do
-		printf '%s  host %s  roles [%s]  slots %s  %s\n' "$w" "${WK_HOST[$w]}" "${WK_ROLES[$w]}" "${WK_SLOTS[$w]}" \
+		printf '%s  host %s  roles [%s]  slots %s (heavy %s)  %s\n' "$w" "${WK_HOST[$w]}" "${WK_ROLES[$w]}" "${WK_SLOTS[$w]}" "${WK_HEAVY[$w]}" \
 			"$( [[ ${WK_ENABLED[$w]} == yes ]] && echo enabled || echo DISABLED)"
 		for k in MEMORY RENDERER SPECS NOTE; do
 			declare -n m="WK_$k"; [[ -n ${m[$w]:-} ]] && printf '    %s: %s\n' "${k,,}" "${m[$w]}"; unset -n m

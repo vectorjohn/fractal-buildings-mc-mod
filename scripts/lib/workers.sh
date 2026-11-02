@@ -13,6 +13,9 @@
 #   roles    = space-separated roles: perf (the benchmark machine for quiet measurements; perf.sh / profile.sh
 #              timings go only there), heavy (client tests, galleries), suite (full fast suites); default "heavy suite"
 #   slots    = jobs the worker's queue runs at once (default 1); scripts/anywhere.sh fills up to this many
+#   heavy_slots = at most this many of them heavy at once (client runs, full test-all, the order test, flythrough;
+#              anywhere.sh's kinds heavy and full plus order-test.sh); default = slots. Light and suite jobs fill
+#              the remaining slots. Only jobs sent through scripts/anywhere.sh are counted
 #   enabled  = yes|no (default yes); a disabled worker is listed but never used
 #   memory   = per-job memory cap, free text (e.g. "MemoryMax 28 %, about 7.9 GiB")
 #   renderer = GPU / display notes, free text
@@ -22,7 +25,7 @@
 # Lines starting with # or ; are comments. Unknown keys are kept and ignored.
 #
 #   workers_load            parse the file (once); sets WK_NAMES (all, in file order), WK_CONF, WK_MISSING=0|1
-#                           and the maps WK_HOST WK_ROLES WK_SLOTS WK_ENABLED WK_MEMORY WK_RENDERER WK_ICD
+#                           and the maps WK_HOST WK_ROLES WK_SLOTS WK_HEAVY WK_ENABLED WK_MEMORY WK_RENDERER WK_ICD
 #                           WK_SPECS WK_NOTE; returns 2 (with a message) on a malformed file
 #   workers_enabled         enabled worker names, one per line
 #   workers_resolve SPEC    enabled names matching SPEC, one per line: a worker name, a role, or an ssh host
@@ -53,7 +56,7 @@ workers_hint() {
 
 workers_load() {
 	(( WK_LOADED )) && return 0
-	declare -gA WK_HOST=() WK_ROLES=() WK_SLOTS=() WK_ENABLED=() WK_MEMORY=() WK_RENDERER=() WK_ICD=() WK_SPECS=() WK_NOTE=()
+	declare -gA WK_HOST=() WK_ROLES=() WK_SLOTS=() WK_HEAVY=() WK_ENABLED=() WK_MEMORY=() WK_RENDERER=() WK_ICD=() WK_SPECS=() WK_NOTE=()
 	WK_NAMES=() WK_MISSING=0
 	WK_CONF=$(workers_conf_path)
 	WK_LOADED=1
@@ -78,6 +81,7 @@ workers_load() {
 				host) WK_HOST[$sec]=$v ;;
 				roles) WK_ROLES[$sec]=$v ;;
 				slots) [[ $v =~ ^[0-9]+$ && $v -ge 1 ]] || { err="line $n: slots takes a whole number >= 1"; break; }; WK_SLOTS[$sec]=$v ;;
+				heavy_slots) [[ $v =~ ^[0-9]+$ ]] || { err="line $n: heavy_slots takes a whole number >= 0"; break; }; WK_HEAVY[$sec]=$v ;;
 				enabled) case ${v,,} in yes|true|1|on) WK_ENABLED[$sec]=yes ;; no|false|0|off) WK_ENABLED[$sec]=no ;;
 					*) err="line $n: enabled takes yes or no"; break ;; esac ;;
 				memory) WK_MEMORY[$sec]=$v ;;
@@ -91,7 +95,11 @@ workers_load() {
 		err="line $n: not a [section] or key = value: $line"; break
 	done < "$WK_CONF"
 	if [[ -z $err ]]; then
-		for sec in "${WK_NAMES[@]}"; do [[ -n ${WK_HOST[$sec]:-} ]] || { err="worker '$sec' has no host"; break; }; done
+		for sec in "${WK_NAMES[@]}"; do
+			[[ -n ${WK_HOST[$sec]:-} ]] || { err="worker '$sec' has no host"; break; }
+			[[ -n ${WK_HEAVY[$sec]:-} ]] || WK_HEAVY[$sec]=${WK_SLOTS[$sec]}
+			(( WK_HEAVY[$sec] <= WK_SLOTS[$sec] )) || { err="worker '$sec': heavy_slots ${WK_HEAVY[$sec]} is more than slots ${WK_SLOTS[$sec]}"; break; }
+		done
 	fi
 	if [[ -n $err ]]; then
 		echo "workers: $WK_CONF: $err" >&2

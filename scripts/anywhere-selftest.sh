@@ -11,7 +11,7 @@ cd "$ROOT" || exit 2
 T=$(mktemp -d); trap 'kill $(jobs -p) 2>/dev/null; wait 2>/dev/null; rm -rf "$T"' EXIT
 mkdir -p "$T/status.perfw.d" "$T/status.worker2.d"
 printf "[perfw]\nhost = perf-host\nroles = perf heavy suite\nslots = 3\n" > "$T/workers.conf"
-printf "[perfw]\nhost = perf-host\nroles = perf heavy suite\nslots = 3\n[worker2]\nhost = user@w2.example\nroles = heavy suite\nslots = 2\n[off]\nhost = off-host\nenabled = no\n" > "$T/workers2.conf"
+printf "[perfw]\nhost = perf-host\nroles = perf heavy suite\nslots = 3\n[worker2]\nhost = user@w2.example\nroles = heavy suite\nslots = 2\nheavy_slots = 1\n[off]\nhost = off-host\nenabled = no\n" > "$T/workers2.conf"
 export FB_WORKERS_CONF=$T/workers.conf
 export FB_ANY_DIR=$T/any FB_SUITE_LOCK_DIR=$T/locks FB_HEAVY_LOCK=$T/heavy.lock FB_SUITE_SLOTS=2
 export FB_ANY_LOADAVG=$T/loadavg FB_ANY_POLL=1 FB_ANY_REMOTE=$T/fake-remote
@@ -226,7 +226,7 @@ flock -o "$T/heavy.lock" sleep 60 & hp=$!; sleep 0.3   # local heavy busy
 bee_busy perfw
 check "2 workers: perfw busy: heavy -> worker2" "$(go -- scripts/client-test.sh)" "go to worker2"
 check "2 workers: perf job never on worker2: waits" "$(go -- scripts/perf.sh)" "go to nowhere"
-check "2 workers: perf why says so" "$("$A" --dry-run -- scripts/perf.sh | grep -c 'worker2 0 running/queued of depth 0, not a perf worker')" "1"
+check "2 workers: perf why says so" "$("$A" --dry-run -- scripts/perf.sh | grep -c 'worker2 0 running/queued of depth 0, heavy 0/1, not a perf worker')" "1"
 check "2 workers: --only heavy (role, both): worker2" "$(go --only heavy -- scripts/client-test.sh)" "go to worker2"
 check "2 workers: --only off (disabled): refused (2)" "$("$A" --dry-run --only off -- true >/dev/null 2>&1; echo $?)" "2"
 "$A" --kind heavy -- true 2> "$T/out.t1"
@@ -247,6 +247,50 @@ check "old perf claim on perfw: heavy -> worker2" "$(go -- scripts/client-test.s
 kill $old; wait $old 2>/dev/null; rm -f "$T"/any/claims/perf-host-perf.*
 kill $hp; wait $hp 2>/dev/null
 check "--status lists both workers" "$("$A" --status | grep -c -e '^perfw \[perf heavy suite\]: ' -e '^worker2 \[heavy suite\]: ')" "2"
+
+# HEAVYSLOTS: worker2 has 2 slots, heavy_slots 1; real slot counts (no --depth); this host busy (load 15), perfw down
+export FB_WORKERS_CONF=$T/workers2.conf
+reset; load 15; touch "$T/down.perfw"   # perfw unreachable: only worker2 is in play
+gh() { FB_ANY_DEPTH='' "$A" --dry-run "$@" | grep -o 'go to [A-Za-z0-9_-]*'; }
+check "heavy slots: idle worker2 takes a heavy job" "$(gh -- scripts/client-test.sh)" "go to worker2"
+FB_ANY_DEPTH='' "$A" --kind heavy -- sleep 4 2> "$T/out.h1" & h1=$!; sleep 1.5
+check "heavy slots: 1st heavy went to worker2" "$(route "$T/out.h1")" "worker2"
+rm -f "$T"/any/worker-status.*
+check "heavy slots: 2nd heavy waits (heavy 1/1)" "$(gh -- scripts/client-test.sh)" "go to nowhere"
+check "heavy slots: full test-all waits too" "$(gh -- scripts/test-all.sh)" "go to nowhere"
+check "heavy slots: the order test counts as heavy there" "$(gh -- scripts/order-test.sh)" "go to nowhere"
+check "heavy slots: a light job fills the free slot" "$(gh -- true)" "go to worker2"
+check "heavy slots: a suite job fills the free slot" "$(gh --kind suite -- true)" "go to worker2"
+check "heavy slots: why says heavy 1/1" "$(FB_ANY_DEPTH='' "$A" --dry-run -- scripts/client-test.sh | grep -c 'worker2 1 running/queued of 2 slots, heavy 1/1')" "1"
+check "heavy slots: --status shows it" "$("$A" --status | grep -c '^worker2 \[heavy suite\]: 1 running/queued of 2 slots (incl. sends in flight), heavy 1/1')" "1"
+# a light job and the heavy one fill worker2; a later heavy waiter behind them waits, the light one went
+FB_ANY_DEPTH='' "$A" -- sleep 3 2> "$T/out.h2" & h2=$!; sleep 1.5
+check "heavy slots: light job sent beside the heavy one" "$(route "$T/out.h2")" "worker2"
+rm -f "$T"/any/worker-status.*
+check "heavy slots: worker2 full (2/2): light waits" "$(gh -- true)" "go to nowhere"
+wait $h1 $h2; rm -f "$T"/any/worker-status.*
+check "heavy slots: heavy done: next heavy goes" "$(gh -- scripts/client-test.sh)" "go to worker2"
+check "heavy slots: claim removed after the job" "$(compgen -G "$T/any/claims/w2-example-heavy.*" | wc -l)" "0"
+# the heavy waiter died (SIGHUP) but its job still runs on worker2: still counted
+echo "remote job fb-hghost-1 (worker2 job 8)" > "$T/route-hghost"
+printf 'route=%s\ncmd scripts/client-test.sh\n' "$T/route-hghost" > "$T/any/claims/w2-example-heavy.999998"
+echo "8 running x x [fb-hghost-1]systemd-run" > "$T/status.worker2.d/hghost"; rm -f "$T"/any/worker-status.*
+check "heavy slots: dead waiter, job running: heavy waits" "$(gh -- scripts/client-test.sh)" "go to nowhere"
+check "heavy slots: dead waiter: light still goes" "$(gh -- true)" "go to worker2"
+rm -f "$T/status.worker2.d/hghost" "$T"/any/worker-status.*
+check "heavy slots: dead waiter, job gone: heavy goes" "$(gh -- scripts/client-test.sh)" "go to worker2"
+check "heavy slots: stale claim removed" "$(compgen -G "$T/any/claims/w2-example-heavy.*" | wc -l)" "0"
+# an earlier heavy waiter (line 4 "wheavy 1") takes the one heavy slot first; an old 3-line heavy ticket counts as heavy
+sleep 300 & old=$!
+printf 'heavy w2-example w2-example\nsince x, y: earlier\nlocalonly 0 perf 0\nwheavy 1\n' > "$T/any/queue/000000000001.$old"
+check "heavy slots: earlier heavy waiter ahead: heavy waits, light goes" "$(gh -- scripts/client-test.sh) $(gh -- true)" "go to nowhere go to worker2"
+printf 'heavy w2-example w2-example\nsince x, y: older copy\nlocalonly 0 perf 0\n' > "$T/any/queue/000000000001.$old"
+check "heavy slots: old 3-line heavy ticket counts as heavy" "$(gh -- scripts/client-test.sh)" "go to nowhere"
+kill $old; wait $old 2>/dev/null; rm -f "$T"/any/queue/000000000001.*
+printf '[x]\nhost = h\nslots = 1\nheavy_slots = 2\n' > "$T/bad2.conf"
+check "heavy_slots > slots: refused (2)" "$(FB_WORKERS_CONF=$T/bad2.conf "$A" --dry-run -- true >/dev/null 2>&1; echo $?)" "2"
+export FB_WORKERS_CONF=$T/workers.conf
+reset
 
 # No pool file: everything local; naming a worker fails clearly
 export FB_WORKERS_CONF=$T/none.conf

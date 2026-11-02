@@ -15,6 +15,7 @@
 host = perf-worker.example
 roles = perf heavy suite
 slots = 3
+heavy_slots = 3
 memory = MemoryMax 28 % per job (about 7.9 GiB); a job over it is killed whole (remote.sh: JOB OOM-KILLED)
 renderer = AMD iGPU, radeonsi/radv in a headless sway + Xwayland session
 vk_icd = /run/opengl-driver/share/vulkan/icd.d/radeon_icd.x86_64.json
@@ -25,6 +26,8 @@ enabled = yes
 host = worker2.example
 roles = heavy suite
 slots = 2
+# at most one heavy job (client run, full test-all, order test) at once; light jobs fill the other slot
+heavy_slots = 1
 memory = 45 % of system memory per job
 renderer = none checked yet
 specs = free text
