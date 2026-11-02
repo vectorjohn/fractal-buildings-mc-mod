@@ -141,6 +141,7 @@ Item codes (PARREADS, MAINSTUB, TPHOLD, ...) and run terms, one row each. **Gene
 | QUAYFAST |  | , quays traced run by run (fewer chunks, the same quays) | - | [[docs/plans/quayfast|plan]] |
 | QUAYLAZY |  | , a lazy quay trace that runs in parallel | - | [[docs/plans/quaylazy|plan]] |
 | QUAYOUT |  | take the quay trace out of structure starts so a late warmer can't freeze the server | open | [[docs/PERFORMANCE|PERFORMANCE]] |
+| QUIETHOLE |  | the quiet check judges the whole timed window (beebox job history, lock and CPU sampler), not only step... | done | [[scripts/quiet-check.sh|quiet-check.sh]] |
 | QUIETLOCAL |  | `scripts/anywhere.sh --local-max`: cap heavy jobs on this machine while John uses it | done | [[CLAUDE|CLAUDE]] |
 | QUIETPERF |  | quiet-machine rule: a timing taken on a busy host is not a measurement (John 2026-10-30) | - | [[CLAUDE|CLAUDE]] |
 | R1 |  | Phase 5 step: region field, tiers, `region` command | done | [[docs/log/2026-10-21-p5-r1-region|log]] |

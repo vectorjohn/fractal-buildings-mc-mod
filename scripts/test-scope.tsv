@@ -52,6 +52,7 @@ path	scripts/test-scope.*	test-scope	-	this policy; try it with --check-table an
 path	scripts/test-all.sh	test-infra	fast	runs the fast layers
 path	scripts/client-test.sh	test-infra	client-quick	client test runner and watchdog
 path	scripts/order-test.sh	test-infra	order	order harness
+path	scripts/quiet-check*	test-infra	-	quiet-host verdict of perf.sh (QUIETHOLE windows): run scripts/quiet-check-selftest.sh (fake beebox, ~1 min, no timing)
 path	scripts/perf*	test-infra	perf	perf runner and budget check
 path	scripts/flythrough.sh	test-infra	flythrough	fly-through runner
 path	scripts/server-only-test.sh	test-infra	server-only	server-only runner

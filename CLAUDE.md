@@ -231,7 +231,7 @@ source of truth, and update it when a command changes.)*
 - Whole Gradle build (all three modules + boundary check): `scripts/dev ./gradlew build`
 - Boundary check alone: `scripts/dev ./gradlew :planner-core:checkNoMinecraft` (also part of `check` and run before `compileJava`)
 - **Any of the above on the worker box:** `scripts/remote.sh -- <command>`, the command exactly as you'd run it from the worktree root but without a `flock .../heavy.lock` prefix (e.g. `scripts/remote.sh -- scripts/test-all.sh`, `scripts/remote.sh -- scripts/client-test.sh`, `scripts/remote.sh -- scripts/dev ./gradlew :planner-core:test`). It copies the worktree (no `.git`, nothing gitignored), queues the command, prints the last 40 lines and saves the full log to `build/remote/<job>.log`, copies results back to the same paths (`build/test-all/`, JUnit XML, `mod/build/screenshots/`, client test logs, `viewer/out/`; `--fetch PATH` for more) and exits with the command's status (137, with a `JOB OOM-KILLED` line, when the job went over beebox's per-job memory cap, MemoryMax 28 % = 7.9 GiB). Output written elsewhere doesn't come back unless you `--fetch` it. Each job has a state file `build/remote/<job>.state` (id, command, fetch paths, commit, status) and its copy on beebox is kept until the results are back, so a job whose waiter died (SIGKILL, or SIGHUP when a tool call or session ends; SIGINT/SIGTERM still cancel it) runs on: `scripts/remote.sh --list` shows this worktree's unfetched jobs, `--attach <job>` / `--attach-last` waits if needed, fetches, writes the log and exits with the job's status, and `scripts/evidence.sh <label> scripts/remote.sh --attach <job>` pins evidence for it; copies older than 3 days (`FB_REMOTE_KEEP_DAYS`) are deleted on the next call. `scripts/remote.sh --check` exits 0 if the worker is reachable; `--help` for the rest.
-- **Either host, whichever frees first (preferred for full suites and client runs):** `scripts/anywhere.sh -- <command>` (same command form as `remote.sh`; e.g. `scripts/evidence.sh <slug> scripts/anywhere.sh -- scripts/test-all.sh --no-client`) waits here in a FIFO queue (`.claude/anywhere/`), not in beebox's queue, and starts the command locally when what it needs is free (a suite slot, the heavy lock, 1-min load < 14) or through `scripts/remote.sh` when beebox has nothing running or queued, whichever comes first; logs one `anywhere: -> HOST (why)` line (also in the evidence); `--prefer`/`--only local|beebox`, `--fetch`, `--cpu`, `--wait S`; `--status` shows the queue and both hosts; `--dry-run` says where it would go now; FB_VK, interactive runs and a subdirectory cwd stay local; tests: `scripts/anywhere-selftest.sh`
+- **Either host, whichever frees first (preferred for full suites and client runs):** `scripts/anywhere.sh -- <command>` (same command form as `remote.sh`; e.g. `scripts/evidence.sh <slug> scripts/anywhere.sh -- scripts/test-all.sh --no-client`) waits here in a FIFO queue (`.claude/anywhere/`), not in beebox's queue, and starts the command locally when what it needs is free (a suite slot, the heavy lock, 1-min load < 14) or through `scripts/remote.sh` when beebox has a free slot (at most `--depth` jobs, default 2, running or queued there; so a job sent there may run beside others: for a measurement, use `--depth 0` or check `scripts/quiet-check.sh --beebox` and let perf.sh judge the window), whichever comes first; logs one `anywhere: -> HOST (why)` line (also in the evidence); `--prefer`/`--only local|beebox`, `--fetch`, `--cpu`, `--wait S`; `--status` shows the queue and both hosts; `--dry-run` says where it would go now; FB_VK, interactive runs and a subdirectory cwd stay local; tests: `scripts/anywhere-selftest.sh`
 
 ## Parallel work (a priority)
 
@@ -256,15 +256,21 @@ agents can work and test at once. The rules below exist to make that safe.
   job or agent work on the host** for the whole timed run (not a loadavg
   threshold: the measured job's own threads raise the load, 4 to 6 on beebox
   under a perf run). **Measure on beebox**, sent when `ssh beebox job status`
-  shows nothing else running or queued, and checked again after. This host
+  shows nothing else running or queued. beebox runs up to 3 jobs at once, so
+  on beebox quiet means **its queue empty and no job running besides ours
+  for the whole timed window** (one that starts and ends inside it counts).
+  This host
   is not quiet (John runs his own Minecraft client here, and other agents
   work all day): don't wait for local quiet. `scripts/quiet-check.sh`
-  checks it (no suite slot, heavy lock or `scripts/anywhere.sh` job held, no
-  other beebox job, processes outside the run's own session under half a
-  core; exit 0 quiet, 1 busy; `--beebox` asks beebox from here), and
-  `scripts/perf.sh` runs it before and after each step into
+  checks it (no suite slot, heavy lock or `scripts/anywhere.sh` job held by
+  anyone else, no other beebox job, processes that aren't the run's own
+  under half a core; exit 0 quiet, 1 busy; `--beebox` asks beebox from
+  here); `--window-start DIR` / `--window-end DIR` judge a whole window
+  (beebox's job history plus a lock and CPU sampler every 10 s), and
+  `scripts/perf.sh` watches its whole run that way, writes it to
   `mod/build/perf/quiet.txt` and ends with `perf: quiet host` or `perf: NOT
-  A MEASUREMENT`. Record host, renderer and the loadavg sampled just before
+  A MEASUREMENT (busy host: <what overlapped>)` (self-test
+  `scripts/quiet-check-selftest.sh`). Record host, renderer and the loadavg sampled just before
   the run next to every number, and compare like with like (mod against the
   vanilla base on the same host; never beebox against local). The one
   exception: a speed-up so large it shows despite the load may be reported,
@@ -279,8 +285,9 @@ agents can work and test at once. The rules below exist to make that safe.
   "waiting for suite slot" with the holders and waits. Single-class `--tests X`
   runs, CLI runs and heavy jobs (heavy lock) don't need it. Locks:
   `<repo root>/.claude/suite.lock.1..N`, freed when the holder exits or is killed.
-- **The worker box (`beebox`) is a second heavy slot.** It runs one job at a
-  time from its own queue, so it doesn't use the heavy lock, and a busy local
+- **The worker box (`beebox`) is a second heavy host.** It runs up to 3 jobs
+  at once from its own queue (task-spooler, `[run=N/3]` in `job status`;
+  since 2026-10-27), so it doesn't use the heavy lock, and a busy local
   heavy lock doesn't block it. When `scripts/remote.sh --check` succeeds, send
   heavy jobs and long runs there with `scripts/remote.sh -- <cmd>`: client
   game tests, `scripts/test-all.sh`, the ~10 min `:planner-core:test`,
@@ -302,7 +309,10 @@ agents can work and test at once. The rules below exist to make that safe.
     differ slightly from lavapipe ones. If a run fails in a way that looks
     like a GPU or display problem, retry with `scripts/remote.sh --cpu`
     (Xvfb + lavapipe, as locally) and add a line to `docs/NOTES.md`.
-  - It runs one job at a time, so it's quiet, which suits measurements, but
+  - It is **not quiet by nature**: up to 3 jobs share it (each 28 % RAM,
+    CPUWeight 50), so a measurement there counts only when nothing else ran
+    beside it for the whole window (`scripts/perf.sh` checks; another job
+    can start right after yours is sent). And
     **timings from different hosts or renderers aren't comparable**: record
     the host (`beebox` or this one) and renderer with every number, and
     compare like with like.
@@ -313,8 +323,8 @@ agents can work and test at once. The rules below exist to make that safe.
     checkout's `build/` directories.
   - Its output is the tail of the log, lines cut to 300 characters; the full
     log is in `build/remote/<job>.log`. Grep that rather than printing it.
-  - **One slot for everyone**, so jobs can wait in its queue for a long
-    time (26 min on its first busy morning). Look at `ssh beebox job status`
+  - **Three slots for everyone**, so jobs can still wait in its queue for a
+    long time (26 min on its first busy morning, when it had one slot). Look at `ssh beebox job status`
     before sending, run anything long detached (`setsid nohup scripts/remote.sh
     -- ... > log 2>&1 &`) so a tool timeout can't kill the wait (if it dies
     anyway, `scripts/remote.sh --list` and `--attach <job>` get the results

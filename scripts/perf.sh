@@ -22,7 +22,10 @@
 #      also writes mod/build/perf/summary.md.
 # Quiet-machine rule (CLAUDE.md): a timing from a busy host is not a measurement. scripts/quiet-check.sh judges the host when the
 # heavy lock is taken and after each step (no other job or agent work on the host: locks, beebox jobs, other processes' CPU;
-# loadavg recorded, not judged) in mod/build/perf/quiet.txt; the run ends with "perf: quiet host" or "perf: NOT A MEASUREMENT (busy host)".
+# loadavg recorded, not judged) and WATCHES THE WHOLE RUN (QUIETHOLE): --window-start at the first check samples locks and other
+# processes' CPU every FB_QUIET_SAMPLE s and records beebox's job list; --window-end before the verdict fails the window if any
+# other beebox job ran, started or finished in between, or any sample was busy. All of it goes to mod/build/perf/quiet.txt;
+# the run ends with "perf: quiet host" or "perf: NOT A MEASUREMENT (busy host: <what overlapped>)" (quiet-check.sh --verdict).
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 # A copy without .git (scripts/remote.sh on the worker) uses its own root.
@@ -49,7 +52,13 @@ if [ "$CHECK_ONLY" = 0 ]; then
 	# Quiet-machine rule (CLAUDE.md "Parallel work"): judged once the heavy lock is ours (the first line, "start"); later lines
 	# record load and other holders (that load includes this run's own work)
 	: > "$LOGDIR/quiet.txt"
-	qc() { local l=$1; [ -s "$LOGDIR/quiet.txt" ] || l=start; "$ROOT/scripts/quiet-check.sh" --own-heavy --label "$l" >> "$LOGDIR/quiet.txt" || true; }
+	# the first check also starts the window watcher (QUIETHOLE); it stops with this script or at --window-end below
+	QWIN="$LOGDIR/quiet-window"; rm -rf "$QWIN"
+	qc() {
+		local l=$1
+		if [ ! -s "$LOGDIR/quiet.txt" ]; then l=start; "$ROOT/scripts/quiet-check.sh" --window-start "$QWIN" >> "$LOGDIR/quiet.txt" || true; fi
+		"$ROOT/scripts/quiet-check.sh" --own-heavy --label "$l" >> "$LOGDIR/quiet.txt" || true
+	}
 	echo "perf: waiting for heavy lock ..." >&2
 	# a failing gradle run (build error, test exception, crashed client) must fail the script: no `| ... || true`
 	if [ "$MOD_ONLY" = 0 ] && [ "$WORLD_ONLY" = 0 ]; then
@@ -57,7 +66,7 @@ if [ "$CHECK_ONLY" = 0 ]; then
 	exec 9>"$HEAVY_LOCK"
 	flock 9
 	qc start
-	"$ROOT/scripts/dev" --fresh ./gradlew --console=plain :mod:test -Dfb.perf=1 --tests '*PerfPlannerTest*' --rerun-tasks 9>&- > "$LOGDIR/planner.log" 2>&1
+	"$ROOT/scripts/dev" --fresh ./gradlew --console=plain --no-daemon :mod:test -Dfb.perf=1 --tests '*PerfPlannerTest*' --rerun-tasks 9>&- > "$LOGDIR/planner.log" 2>&1
 	rc=$?
 	set -e
 	grep -E "PERF |FAILED" "$LOGDIR/planner.log" || true
@@ -123,13 +132,11 @@ P
 	fi
 fi
 if [ "$CHECK_ONLY" = 0 ] && [ -f "$LOGDIR/quiet.txt" ]; then
+	# the whole run: any other beebox job or busy sample between the first check and now (QUIETHOLE)
+	[ -f "$QWIN/start" ] && { "$ROOT/scripts/quiet-check.sh" --window-end "$QWIN" >> "$LOGDIR/quiet.txt" || true; }
 	cat "$LOGDIR/quiet.txt"
-	# other job or agent work on the host at any step (not our own load): not a measurement
-	if grep -q "^quiet-check: [a-z-]* BUSY" "$LOGDIR/quiet.txt"; then
-		echo "perf: NOT A MEASUREMENT (busy host, see $LOGDIR/quiet.txt): its timings are not reported as results (CLAUDE.md quiet-machine rule)" >&2
-	else
-		echo "perf: quiet host ($LOGDIR/quiet.txt)" >&2
-	fi
+	# other job or agent work on the host at any step or in between (not our own load): not a measurement
+	"$ROOT/scripts/quiet-check.sh" --verdict "$LOGDIR/quiet.txt" >&2 || true
 fi
 ALLOW=""
 if [ "$PLANNER_ONLY" = 1 ] || [ "$CHECK_ONLY" = 1 ] || [ "$WORLD_ONLY" = 1 ]; then ALLOW="--allow-absent"

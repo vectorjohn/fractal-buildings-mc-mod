@@ -45,4 +45,5 @@ Every decision waiting for you, one line each, newest first under each heading. 
 
 # Process
 
+- [ ] **beebox exclusive jobs** (2026-11-01): beebox now runs 3 jobs at once (`ts -S 3` since NixOS generation 6, 2026-10-27), so it is no longer quiet by nature. Perf measurements need it empty for the whole run; QUIETHOLE (quiet check over the whole timed window) now detects overlaps and PERFROUTE makes our router wait for an empty beebox, but nothing can stop another job being queued during a perf run. Would you add an exclusive option to beebox's `job` wrapper (task-spooler `ts -N 3`, the job takes all 3 slots) so perf runs can reserve the box? That change lives on beebox, outside this repo. [CLAUDE.md](../CLAUDE.md) "Parallel work".
 - [ ] **Workflow proposal** (2026-10-27): answer the 10 points under "What John decides" (merge queue, goldens, heavy batches, reaping, status board, reference worlds). [workflow-proposal.md](review/workflow-proposal.md).
