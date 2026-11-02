@@ -68,6 +68,18 @@ motd=server-only test
 spawn-protection=0
 P
 
+# Xvfb is not in the flake: it comes from the host. A worker may have only the NixOS xvfb-run wrapper,
+# which puts Xvfb on its own PATH but not on ours (worker2, 2026-11-02: "env: 'Xvfb': No such file",
+# then the client died with "Unable to initialize SDL: x11 not available"). Use the Xvfb that wrapper
+# names in that case, and fail fast (before the server starts) when there is none.
+XVFB="$(command -v Xvfb 2>/dev/null)"
+if [ -z "$XVFB" ] && XR="$(command -v xvfb-run 2>/dev/null)"; then
+	for d in $(grep -o '/nix/store/[^/:'\'' ]*-xvfb-[^/:'\'' ]*/bin' "$(readlink -f "$XR")" 2>/dev/null | sort -u); do
+		[ -x "$d/Xvfb" ] && { XVFB="$d/Xvfb"; break; }
+	done
+fi
+[ -n "$XVFB" ] || { say "FAIL: no Xvfb on this host (not on PATH, none found through xvfb-run); install xvfb on it"; exit 2; }
+
 cd "$ROOT"
 exec 3<>"$FIFO"
 setsid ./gradlew --console=plain :mod:runServerOnly <&3 > "$OUT/gradle-server.log" 2>&1 &
@@ -95,9 +107,11 @@ O
 export DISPLAY_NUM=97
 # No LD_LIBRARY_PATH for Xvfb: with the dev shell's it offers an sRGB GLX visual and the client renders
 # OpenGL on llvmpipe instead of the Vulkan driver vk-select picks (HEAVY6, 2026-10-29).
-env -u LD_LIBRARY_PATH Xvfb :$DISPLAY_NUM -screen 0 1280x720x24 >"$OUT/xvfb.log" 2>&1 &
+env -u LD_LIBRARY_PATH "$XVFB" :$DISPLAY_NUM -screen 0 1280x720x24 >"$OUT/xvfb.log" 2>&1 &
 XPID=$!
 sleep 2
+kill -0 "$XPID" 2>/dev/null || { XPID=""; say "FAIL: Xvfb ($XVFB) exited at startup: $(tail -3 "$OUT/xvfb.log" | tr '\n' ' ')"; exit 2; }
+say "Xvfb: $XVFB on :$DISPLAY_NUM"
 # CI unset for the client: with CI set Loom wraps runClient in its own xvfb-run (dev-shell env, sRGB GLX
 # visual), and the client would render OpenGL on llvmpipe there instead of on :$DISPLAY_NUM (HEAVY8, 2026-10-29).
 # Renderer for the client: Intel iGPU by default, lavapipe as fallback or with FB_VK=lavapipe.
@@ -106,7 +120,7 @@ FB_VK_LOG_TAG=server-only-test fb_vk_select 2> >(tee -a "$RES" >&2) || { say "FA
 env -u WAYLAND_DISPLAY -u CI DISPLAY=:$DISPLAY_NUM SDL_VIDEODRIVER=x11 setsid ./gradlew --console=plain -p tools/vanilla-client -PserverPort=$PORT runClient > "$OUT/gradle-client.log" 2>&1 &
 CPID=$!
 for i in $(seq 1 180); do grep -q 'Vanilla joined the game' "$SLOG" 2>/dev/null && break; sleep 2; done
-grep -q 'Vanilla joined the game' "$SLOG" || { say "FAIL: client did not join"; kill $XPID; exit 1; }
+grep -q 'Vanilla joined the game' "$SLOG" || { say "FAIL: client did not join"; exit 1; }
 say "client joined: $(grep 'Vanilla joined\|logged in with entity' "$SLOG" | head -2 | tr '\n' '|')"
 
 # Viewpoints on a ring of radius R around the located settlement centre, each looking at it
