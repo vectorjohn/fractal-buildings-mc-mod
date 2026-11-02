@@ -378,6 +378,7 @@ path `M`. Don't review each item again.
 
 ## Re-verification (when resumed)
 
+A remote run that ends `JOB LOST (worker preempted)` (exit 75) is not a test result: rerun it (through `scripts/anywhere.sh`), don't count it as a failure or a flake (CLAUDE.md "Workers may be preempted").
 After a restart or compaction, run `scripts/remote.sh --list` in your worktree first and re-attach any unfetched worker job (`scripts/evidence.sh <slug> scripts/remote.sh --attach <job>`) instead of re-running it.
 
 Read the new report and the new commits only. For each gap you reported,

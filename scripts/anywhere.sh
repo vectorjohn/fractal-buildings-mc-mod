@@ -31,6 +31,15 @@
 #           queue's own claims (claims/<host>-heavy.<pid>, kept while the waiter lives or, after it died,
 #           while its job named in the route file is running or queued); light and suite jobs still
 #           fill the remaining slots. Jobs sent to a worker another way are not counted as heavy.
+#   HEALTH (WORKERHEALTH): the probe is a fast `ssh -o ConnectTimeout=5 HOST job status`; a worker that
+#           doesn't answer (suspended, asleep, down) is skipped, so the job goes to another worker or
+#           here, and --status shows it as unreachable; that answer is cached FB_ANY_DOWN_TTL s (60) so a
+#           paused machine isn't asked every poll. A preemptible worker (pool file) never gets perf jobs.
+#           A job already sent is never re-routed: remote.sh waits out a suspended worker (the job is
+#           queued or paused there and resumes with it). If remote.sh exits 75 (JOB LOST: the worker
+#           was preempted and the job killed or lost), this script says so and returns 75; the caller
+#           reruns (through this script, which routes it afresh). It doesn't rerun by itself: a rerun
+#           can repeat side effects and the caller decides.
 #   PERF (PERFROUTE, timing runs: perf.sh or profile.sh anywhere in CMD, so also under evidence.sh, or
 #           test-all.sh --perf): goes only to a worker with the perf role, and only when it is EMPTY
 #           (nothing running or queued, no send in flight); while it runs there it fills all of that
@@ -80,7 +89,7 @@
 # FB_HEAVY_LOCK, FB_SUITE_LOCK_DIR, FB_SUITE_SLOTS.
 set -uo pipefail
 
-usage() { sed -n '2,75p' "$0" | sed 's/^# \{0,1\}//'; }
+usage() { sed -n '2,89p' "$0" | sed 's/^# \{0,1\}//'; }
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 # shellcheck source-path=SCRIPTDIR source=lib/suite-slot.sh
@@ -302,12 +311,12 @@ worker_probe() {   # KEY: sets WOK[KEY], WTEXT[KEY]; cached in $DIR for POLL-2 s
 	local key=$1 cache="$DIR/worker-status.$1" age out rc
 	if [[ -f $cache ]]; then
 		age=$(( $(date +%s) - $(stat -c %Y "$cache") ))
-		if (( age < POLL - 2 || age < 3 )); then
+		if (( age < POLL - 2 || age < 3 )) || { (( age < ${FB_ANY_DOWN_TTL:-60} )) && [[ $(head -n1 "$cache") == 0 ]]; }; then
 			WOK[$key]=$(head -n1 "$cache"); WTEXT[$key]=$(tail -n +2 "$cache"); return
 		fi
 	fi
 	if [[ -n $W_STATUS_CMD ]]; then out=$(FB_ANY_WORKER=${KNAME[$key]} bash -c "$W_STATUS_CMD" 2>/dev/null); rc=$?
-	else out=$(timeout 30 "${SSH[@]}" "${KHOST[$key]}" job status 2>/dev/null); rc=$?; fi
+	else out=$(timeout 15 "${SSH[@]}" -o ConnectTimeout=5 -o ServerAliveInterval=5 -o ServerAliveCountMax=2 "${KHOST[$key]}" job status 2>/dev/null); rc=$?; fi
 	WOK[$key]=$(( rc == 0 )); WTEXT[$key]=$out
 	{ echo "${WOK[$key]}"; echo "$out"; } > "$cache.tmp.$$" && mv "$cache.tmp.$$" "$cache"
 }
@@ -475,7 +484,7 @@ decide() {
 		[[ ",$HOSTS," == *",$k,"* ]] || continue
 		if (( WOK[$k] )); then
 			wstate+="; ${KNAME[$k]} ${USED[$k]} running/queued of $( [[ -n $DEPTH ]] && echo "depth $DEPTH" || echo "${KSLOTS[$k]} slots"), heavy ${HUSED[$k]}/${KHEAVY[$k]}$( ((PERF)) && { ((KPERF[$k])) && echo ", perf: empty only" || echo ", not a perf worker"; })${pnote[$k]:-}"
-		else wstate+="; ${KNAME[$k]} unreachable"; fi
+		else wstate+="; ${KNAME[$k]} unreachable (skipped)"; fi
 	done
 	if (( ${#WKEYS[@]} == 0 )); then wstate="; no workers configured"
 	elif [[ -z $wstate ]]; then wstate="; workers not allowed"; fi
@@ -499,9 +508,9 @@ if (( STATUS )); then
 	(( ${#WKEYS[@]} )) || echo "workers: none configured ($(workers_hint))"
 	for k in "${WKEYS[@]}"; do
 		worker_probe "$k"
-		roles=""; (( KADHOC[$k] )) || roles=" [${WK_ROLES[${KNAME[$k]}]}]"
+		roles=""; (( KADHOC[$k] )) || roles=" [${WK_ROLES[${KNAME[$k]}]}$( [[ ${WK_PREEMPT[${KNAME[$k]}]} == yes ]] && echo "; preemptible")]"
 		if (( WOK[$k] )); then echo "${KNAME[$k]}$roles: $(worker_used "$k") running/queued of ${KSLOTS[$k]} slots (incl. sends in flight), heavy $(heavy_used "$k")/${KHEAVY[$k]} (sent from this queue)"
-		else echo "${KNAME[$k]}$roles: unreachable"; fi
+		else echo "${KNAME[$k]}$roles: unreachable (suspended, asleep or down?): skipped; checked $(( $(date +%s) - $(stat -c %Y "$DIR/worker-status.$k" 2>/dev/null || date +%s) )) s ago"; fi
 		perf_inflight "$k" && echo "${KNAME[$k]}: perf job $PERF_INFLIGHT in flight: no other anywhere job is sent there until it ends"
 	done
 	echo "recent routes:"; tail -n 5 "$DIR/route.log" 2>/dev/null | sed 's/^/  /'
@@ -633,4 +642,8 @@ while :; do
 	wait "$child"; rc=$?
 	kill -0 "$child" 2>/dev/null || break   # a trapped signal ended the wait: keep waiting
 done
+if [[ $DECISION != local && $rc == 75 ]]; then
+	echo "anywhere: JOB LOST on ${KNAME[$DECISION]} (worker preempted): not a test result and not a flake; rerun the command (anywhere.sh routes it again)" >&2
+	echo "$(date '+%F %T') pid $$ ${ROOT##*/}: JOB LOST on ${KNAME[$DECISION]} (exit 75); cmd: $*" >> "$DIR/route.log"
+fi
 exit "$rc"

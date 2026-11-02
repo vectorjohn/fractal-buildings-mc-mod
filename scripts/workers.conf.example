@@ -21,6 +21,9 @@ renderer = AMD iGPU, radeonsi/radv in a headless sway + Xwayland session
 vk_icd = /run/opengl-driver/share/vulkan/icd.d/radeon_icd.x86_64.json
 specs = 12 CPUs, 28 GiB RAM
 enabled = yes
+# the benchmark machine must not be preemptible (a preemptible worker never gets perf jobs)
+preemptible = no
+availability = always up
 
 [worker2]
 host = worker2.example
@@ -32,4 +35,8 @@ memory = 45 % of system memory per job
 renderer = none checked yet
 specs = free text
 enabled = no
+# a machine with other uses (e.g. a gaming PC or a VM it pauses): it may suspend, shrink or reboot at any
+# time; scripts skip it while it does not answer, and a job killed there ends JOB LOST (exit 75): rerun it
+preemptible = yes
+availability = idle most of the time; suspended while its host plays games
 note = disabled until it has the job queue

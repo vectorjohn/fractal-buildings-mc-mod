@@ -52,11 +52,24 @@
 #
 # The first run on a fresh worker is slow: it fetches the dev shell and fills
 # Gradle's Loom cache (kept on the worker between jobs).
-# Exit: CMD's status; 137 OOM-killed; 255 worker unreachable; 3 --attach: no such job, or
+# Health and preemption (WORKERHEALTH): a worker may be a machine with other uses that suspends,
+# shrinks or reboots without warning (preemptible = yes in the pool file). Before sending, a fast
+# check (ssh ConnectTimeout 5 + `job status`) must answer, or nothing is sent (exit 255, "does not
+# answer"). While waiting, an unreachable worker is retried with backoff (FB_REMOTE_RETRY_MIN 10 s,
+# doubling to FB_REMOTE_RETRY_MAX 300 s) for up to FB_REMOTE_UNREACHABLE_MAX s (default 21600, 6 h):
+# the job runs on (or stays queued) there and resumes with the worker; the queue's job list, not the
+# ssh exit, says when the job is over. JOB LOST (exit 75): the job was killed or vanished because the
+# worker was preempted: it left no exit code and the queue forgot it, or it failed after the worker
+# rebooted (boot id changed), lost memory (MemTotal shrank), was suspended (the runner logs wall-clock
+# jumps over 60 s to .fb-gaps), or it was killed while the worker was unreachable. Its output is NOT a
+# test result: rerun it. An OOM kill with none of those signs stays JOB OOM-KILLED (137). A passing
+# job that saw a suspend says so ("WORKER SUSPENDED"): its timings are not measurements.
+# Exit: CMD's status; 75 JOB LOST (preempted; rerun); 137 OOM-killed; 255 worker unreachable (not
+# sent, or unreachable longer than the limit: --attach later); 3 --attach: no such job, or
 # cancelled/gone; 129 detached on SIGHUP; 130 cancelled or attach stopped; 2 bad usage.
 set -euo pipefail
 
-usage() { sed -n '2,56p' "$0" | sed 's/^# \{0,1\}//'; }
+usage() { sed -n '2,69p' "$0" | sed 's/^# \{0,1\}//'; }
 
 # Not every host has rsync installed for the agent user.
 if ! command -v rsync > /dev/null; then
@@ -98,6 +111,12 @@ done
 [[ $KEEP_DAYS =~ ^[0-9]+$ && $KEEP_DAYS -ge 1 ]] || { echo "remote: FB_REMOTE_KEEP_DAYS takes a whole number >= 1" >&2; exit 2; }
 
 SSH=(ssh -o BatchMode=yes -o ConnectTimeout=10 -o ServerAliveInterval=30)
+# the fast health check: a suspended machine never answers, so don't wait long for it
+FAST_SSH=(ssh -o BatchMode=yes -o ConnectTimeout=5 -o ServerAliveInterval=5 -o ServerAliveCountMax=2)
+RETRY_MIN=${FB_REMOTE_RETRY_MIN:-10} RETRY_MAX=${FB_REMOTE_RETRY_MAX:-300} UNREACH_MAX=${FB_REMOTE_UNREACHABLE_MAX:-21600}
+health() {   # $1 host: 0 when it answers `job status` quickly
+	timeout 20 "${FAST_SSH[@]}" "$1" job status > /dev/null 2>&1
+}
 
 # ---- which worker -----------------------------------------------------------------------------
 workers_load || exit 2
@@ -105,10 +124,11 @@ if [[ $MODE == workers ]]; then
 	workers_hint
 	(( WK_MISSING )) && { echo "  (no file: no workers; everything runs on this host)"; exit 0; }
 	for w in "${WK_NAMES[@]}"; do
-		printf '%s  host %s  roles [%s]  slots %s (heavy %s)  %s\n' "$w" "${WK_HOST[$w]}" "${WK_ROLES[$w]}" "${WK_SLOTS[$w]}" "${WK_HEAVY[$w]}" \
+		printf '%s  host %s  roles [%s]  slots %s (heavy %s)%s  %s\n' "$w" "${WK_HOST[$w]}" "${WK_ROLES[$w]}" "${WK_SLOTS[$w]}" "${WK_HEAVY[$w]}" \
+			"$( [[ ${WK_PREEMPT[$w]} == yes ]] && echo "  PREEMPTIBLE$( [[ " ${WK_ROLES[$w]} " == *" perf "* ]] && echo " (perf role ignored)")")" \
 			"$( [[ ${WK_ENABLED[$w]} == yes ]] && echo enabled || echo DISABLED)"
-		for k in MEMORY RENDERER SPECS NOTE; do
-			declare -n m="WK_$k"; [[ -n ${m[$w]:-} ]] && printf '    %s: %s\n' "${k,,}" "${m[$w]}"; unset -n m
+		for k in AVAIL MEMORY RENDERER SPECS NOTE; do
+			declare -n m="WK_$k"; [[ -n ${m[$w]:-} ]] && printf '    %s: %s\n' "$( [[ $k == AVAIL ]] && echo availability || echo "${k,,}")" "${m[$w]}"; unset -n m
 		done
 	done
 	exit 0
@@ -133,7 +153,9 @@ ICD=/run/opengl-driver/share/vulkan/icd.d/radeon_icd.x86_64.json
 [[ -n $WNAME && -n ${WK_ICD[$WNAME]:-} ]] && ICD=${WK_ICD[$WNAME]}
 
 if [[ $MODE == check ]]; then
-	exec "${SSH[@]}" "$HOST" true
+	health "$HOST" && exit 0
+	echo "remote: worker $WNAME ($HOST) does not answer (suspended, asleep or down?)" >&2
+	exit 255
 fi
 if [[ $MODE == run && $# -eq 0 ]]; then
 	usage >&2
@@ -147,7 +169,7 @@ mkdir -p "$SDIR"
 # ---- state files ------------------------------------------------------------------------------
 # key=value lines; fetch= repeats; cmd is the command shell-quoted (printf %q). Rewritten whole
 # (tmp + mv) on every change, so a reader never sees half a file.
-NAME="" ID="" CMDQ="" STARTED="" COMMIT="" STATUS="" EXIT="" WAITER="" STATE=""
+NAME="" ID="" CMDQ="" STARTED="" COMMIT="" STATUS="" EXIT="" WAITER="" STATE="" BOOT0="" MEM0=""
 state_write() {
 	local f
 	{
@@ -155,18 +177,20 @@ state_write() {
 		echo "worktree=$ROOT"; echo "cmd=$CMDQ"; echo "commit=$COMMIT"; echo "gpu=$GPU"; echo "keep=$KEEP"
 		echo "started=$STARTED"; echo "started_at=$(date -d "@$STARTED" '+%F %T %z')"
 		echo "waiter=$WAITER"; echo "status=$STATUS"; echo "exit=$EXIT"; echo "updated=$(date '+%F %T %z')"
+		echo "boot=$BOOT0"; echo "memtotal=$MEM0"
 		for f in "${FETCH[@]}"; do echo "fetch=$f"; done
 	} > "$STATE.tmp.$$" && mv "$STATE.tmp.$$" "$STATE"
 }
 state_read() {   # $1 file: sets the globals from it
 	local k v line
-	FETCH=() NAME="" ID="" CMDQ="" STARTED="" COMMIT="" STATUS="" EXIT="" WAITER="" GPU=1 KEEP=0
+	FETCH=() NAME="" ID="" CMDQ="" STARTED="" COMMIT="" STATUS="" EXIT="" WAITER="" GPU=1 KEEP=0 BOOT0="" MEM0=""
 	while IFS= read -r line; do
 		k=${line%%=*} v=${line#*=}
 		case "$k" in
 			job) NAME=$v ;; id) ID=$v ;; host) (( HOST_SET )) || HOST=$v ;; worker) (( HOST_SET )) || WNAME=$v ;; worktree) ROOT=$v ;;
 			cmd) CMDQ=$v ;; commit) COMMIT=$v ;; gpu) GPU=$v ;; keep) KEEP=$v ;; started) STARTED=$v ;;
 			waiter) WAITER=$v ;; status) STATUS=$v ;; exit) EXIT=$v ;; fetch) FETCH+=("$v") ;;
+			boot) BOOT0=$v ;; memtotal) MEM0=$v ;;
 		esac
 	done < "$1"
 	STATE=$1
@@ -220,43 +244,101 @@ cleanup_remote() {   # $1 ssh host
 }
 
 # ---- waiting and copy-back (shared by the normal path and --attach) --------------------------
-WAITPID="" QUEUE_LOG=1
+WAITPID="" QUEUE_LOG=1 VANISHED=0 DOWN_SEEN=0 DOWN_TOTAL=0 GAVEUP=0
 status=255
-wait_job() {   # sets status: the job's exit, or 255 when the worker can't be reached
-	# `job wait` exits with the job's status; 255 means the SSH connection itself
-	# failed (the job keeps running), so reconnect a few times.
+# The worker's identity facts: boot id and MemTotal (kB), one line each.
+# shellcheck disable=SC2016 # expanded on the worker
+FACTS_CMD='cat /proc/sys/kernel/random/boot_id; awk "/^MemTotal/ { print \$2 }" /proc/meminfo'
+nap() {   # $1 seconds, interruptible by the traps (they kill WAITPID)
+	sleep "$1" & WAITPID=$!; wait "$WAITPID" || true; WAITPID=""
+}
+# Until the worker answers `job status` again (backoff); returns 1 after UNREACH_MAX s without it.
+wait_reachable() {
+	local since=$SECONDS delay=$RETRY_MIN
+	while :; do
+		fetch_list
+		if (( LIST_OK )); then
+			if (( SECONDS - since > 0 && DOWN_SEEN )); then
+				DOWN_TOTAL=$(( DOWN_TOTAL + SECONDS - since ))
+				echo "remote: $HOST answers again after $(( SECONDS - since )) s unreachable" >&2
+			fi
+			return 0
+		fi
+		DOWN_SEEN=1
+		if (( SECONDS - since >= UNREACH_MAX )); then return 1; fi
+		echo "remote: $HOST unreachable ($(( SECONDS - since )) s; suspended or down?); the job stays there; retrying in ${delay} s (gives up after ${UNREACH_MAX} s)" >&2
+		nap "$delay"
+		delay=$(( delay * 2 )); (( delay > RETRY_MAX )) && delay=$RETRY_MAX
+	done
+}
+wait_job() {   # sets status (the job's exit; "" with VANISHED=1 when the queue forgot it) or 255 (gave up)
+	local rc live lst lid lex
 	status=255
-	for _ in 1 2 3 4 5; do
+	while :; do
 		set +e
 		# In the background + `wait`: bash runs the INT/TERM trap only after a
 		# foreground child exits, so a foreground ssh would make stopping this
 		# script wait for the whole remote job instead of cancelling it.
-		"${SSH[@]}" "$HOST" job wait "$ID" &
+		"${SSH[@]}" "$HOST" job wait "$ID" > /dev/null 2>&1 &
 		WAITPID=$!
 		wait "$WAITPID"
-		status=$?
+		rc=$?
 		set -e
 		WAITPID=""
-		(( status != 255 )) && break
-		echo "remote: lost the connection to $HOST; reconnecting ..." >&2
-		sleep 10
+		# `job wait`'s status can't tell a lost connection (255) from a job's own 255 or an unknown id:
+		# the job list decides.
+		wait_reachable || { status=255 GAVEUP=1; return 0; }
+		live=$(live_state "$NAME"); lst="" lid="" lex=""; read -r lst lid lex <<< "$live" || true
+		case "$lst" in
+			finished) status=${lex:-$rc}; [[ $status =~ ^-?[0-9]+$ ]] || status=$rc; (( status < 0 )) && status=143; return 0 ;;   # ts: -1 = killed by a signal
+			queued|running) [[ -n $lid ]] && ID=$lid; nap 2 ;;   # the wait was cut short (connection lost)
+			*) VANISHED=1; status=""; return 0 ;;                 # the queue no longer knows it
+		esac
 	done
-	return 0
 }
 
-# After the job ended with $status: log, OOM check, copy-back under the job's lock, remote copy
-# deleted only when every fetch succeeded; state fetched (done when a fetch failed). Exits.
+# After the job ended with $status: log, preemption / OOM classification, copy-back under the job's
+# lock, remote copy deleted only when every fetch succeeded; state fetched (done when a fetch failed). Exits.
 finish() {
-	local LOG="$SDIR/$NAME.log" OOM="" p rc failed=0 lfd
+	local LOG="$SDIR/$NAME.log" OOM="" LOST="" SUSP="" p rc failed=0 lfd facts boot mem dir ex gaps gsec killed=0
 	exec {lfd}> "$SDIR/$NAME.lock"
 	flock "$lfd"
+	local keep_boot=$BOOT0 keep_mem=$MEM0
 	state_read "$STATE"
+	[[ -n $BOOT0 ]] || BOOT0=$keep_boot; [[ -n $MEM0 ]] || MEM0=$keep_mem
 	if [[ $STATUS == fetched || $STATUS == gone ]]; then
 		# Another waiter (the original, or a second --attach) already did it.
 		echo "remote: $NAME was already fetched (by another waiter); log $LOG" >&2
 		[[ -f $LOG ]] && tail -n 40 "$LOG" | cut -c1-300
 		exit "${EXIT:-$status}"
 	fi
+	# What the worker says now: boot id, MemTotal, the copy, the runner's exit file and its suspend gaps.
+	facts=$("${SSH[@]}" "$HOST" bash -s -- "$NAME" 2>/dev/null <<- EOF
+		$FACTS_CMD
+		test -d "jobs/\$1" && echo 1 || echo 0
+		echo "exit:\$(head -n1 "jobs/\$1/.fb-exit" 2>/dev/null)"
+		awk '{ n++; s += \$3 - \$2 } END { print n + 0, s + 0 }' "jobs/\$1/.fb-gaps" 2>/dev/null || echo 0 0
+	EOF
+	) || facts=""
+	{ read -r boot; read -r mem; read -r dir; read -r ex; read -r gaps gsec; } <<< "$facts" || true
+	dir=${dir:-0} gaps=${gaps:-0} gsec=${gsec:-0}
+	ex=${ex#exit:}; [[ $ex =~ ^[0-9]+$ ]] || ex=""
+	if (( VANISHED )); then
+		QUEUE_LOG=0
+		if [[ -n $ex ]]; then status=$ex   # the queue forgot it (restart, > 200 finished since) but it finished
+		else status=75 LOST="the worker's queue no longer knows the job and it left no exit code (restarted or rebooted)"; fi
+	fi
+	[[ -z $ex && $dir == 1 ]] && killed=1   # finished per the queue, but the runner never wrote its exit: killed whole
+	if [[ -z $LOST ]] && (( status != 0 )); then
+		local why=()
+		[[ -n $BOOT0 && -n $boot && $boot != "$BOOT0" ]] && why+=("the worker rebooted")
+		[[ $MEM0 =~ ^[0-9]+$ && $mem =~ ^[0-9]+$ ]] && (( mem * 100 < MEM0 * 95 )) && why+=("its memory shrank from $((MEM0 / 1024)) to $((mem / 1024)) MB")
+		(( gaps > 0 )) && why+=("it was suspended $gaps time(s), ${gsec} s in all")
+		(( killed && DOWN_SEEN )) && why+=("the job was killed while the worker was unreachable (${DOWN_TOTAL} s)")
+		if (( ${#why[@]} )); then LOST=$(printf '%s; ' "${why[@]}"); LOST="exit $status after ${LOST%; }"; status=75; fi
+	fi
+	(( status == 0 && gaps > 0 )) && SUSP="the worker was suspended $gaps time(s), ${gsec} s in all, during this job (it passed): its timings are NOT measurements"
+
 	if (( ! QUEUE_LOG )) || ! "${SSH[@]}" "$HOST" job log "$ID" > "$LOG" 2>&1; then
 		# The queue forgot the job (a restart, or > 200 finished since): the runner's own copy.
 		"${SSH[@]}" "$HOST" cat "jobs/$NAME/.fb-output.log" > "$LOG" 2>/dev/null || echo "remote: no log for $NAME on $HOST" > "$LOG"
@@ -264,15 +346,18 @@ finish() {
 
 	# A job over its memory cap (MemoryMax per job) is SIGKILLed whole by systemd: CMD prints nothing more and the
 	# job just "exits 1". Look for that in the worker's journal, say so loudly, and exit 137 (ORDERMEM).
-	if (( status != 0 )); then
+	if [[ -z $LOST ]] && (( status != 0 )); then
 		OOM=$("${SSH[@]}" "$HOST" "journalctl --user --no-pager -o cat -u 'job-$NAME-*' 2>/dev/null | grep -E \"Failed with result 'oom-kill'|memory peak\" | tail -n 2" 2>/dev/null || true)
 		[[ $OOM == *oom-kill* ]] || OOM=""
 	fi
-	if [[ -n $OOM ]]; then
+	if [[ -n $LOST ]]; then
+		printf 'remote: JOB LOST (worker preempted): %s job %s: %s. Its output is NOT a test result: rerun it.\n' "$HOST" "$ID" "$LOST" >> "$LOG"
+	elif [[ -n $OOM ]]; then
 		printf 'remote: JOB OOM-KILLED: %s job %s went over its memory cap and was killed whole; its output stops mid-run and is NOT a test result. Journal: %s\n' \
 			"$HOST" "$ID" "${OOM//$'\n'/ | }" >> "$LOG"
 		status=137
 	fi
+	[[ -n $SUSP ]] && echo "remote: WORKER SUSPENDED: $SUSP" >> "$LOG"
 
 	# Results back to the same relative paths. -R keeps the path after "/./".
 	if "${SSH[@]}" "$HOST" test -d "jobs/$NAME"; then
@@ -296,6 +381,10 @@ finish() {
 
 	# Short lines only: Minecraft logs lines of many KB (classpaths in stack traces).
 	tail -n 40 "$LOG" | cut -c1-300
+	if [[ -n $LOST ]]; then
+		echo "remote: $HOST job $ID JOB LOST (worker preempted; exit 75): not a test result, rerun it; log $LOG" >&2
+		exit 75
+	fi
 	if [[ -n $OOM ]]; then
 		echo "remote: $HOST job $ID OOM-KILLED (exit 137); full log $LOG" >&2
 		exit 137
@@ -356,25 +445,24 @@ if [[ $MODE == attach ]]; then
 	SDIR=$(dirname "$STATE")
 	cleanup
 	if [[ $STATUS == cancelled ]]; then echo "remote: $NAME was cancelled; nothing to fetch" >&2; exit 3; fi
-	fetch_list
-	(( LIST_OK )) || { echo "remote: can't reach $HOST" >&2; exit 255; }
-	live=$(live_state "$NAME"); lst="" lid="" lex=""; read -r lst lid lex <<< "$live" || true
-	echo "remote: attaching to $NAME ($HOST job ${lid:-$ID}: ${lst:-not in the queue}; state $STATUS) ..." >&2
 	# Stopping an attach stops only the waiting; the job runs on.
 	trap '[[ -n $WAITPID ]] && kill "$WAITPID" 2>/dev/null; echo "remote: stopped waiting; $NAME runs on (--attach $NAME)" >&2; exit 130' INT TERM HUP
+	# A worker that is suspended now may come back: wait for it like a waiter would.
+	wait_reachable || { echo "remote: can't reach $HOST for ${UNREACH_MAX} s; job $NAME may still be there: --attach $NAME later" >&2; exit 255; }
+	live=$(live_state "$NAME"); lst="" lid="" lex=""; read -r lst lid lex <<< "$live" || true
+	echo "remote: attaching to $NAME ($HOST job ${lid:-$ID}: ${lst:-not in the queue}; state $STATUS) ..." >&2
 	if [[ -n $live ]]; then
 		ID=$lid
 		[[ $lst == finished ]] || set_status "$lst"
 		wait_job
-		(( status == 255 )) && { echo "remote: can't reach $HOST; job $ID may still be running there" >&2; exit 255; }
+		(( GAVEUP )) && { echo "remote: can't reach $HOST; job $ID may still be running there; --attach $NAME later" >&2; exit 255; }
 	elif [[ $STATUS == fetched || $STATUS == gone ]]; then
 		status=${EXIT:-0}
-	elif ex=$("${SSH[@]}" "$HOST" cat "jobs/$NAME/.fb-exit" 2>/dev/null) && [[ $ex =~ ^[0-9]+$ ]]; then
-		# The queue forgot it; the runner wrote its exit code next to the copy. Its id may belong
-		# to another job by now, so the log comes from the copy too.
-		status=$ex QUEUE_LOG=0
+	elif "${SSH[@]}" "$HOST" test -d "jobs/$NAME"; then
+		# The queue forgot it: its exit file decides (finish: an exit file, or JOB LOST without one).
+		VANISHED=1 status=""
 	else
-		echo "remote: $HOST has no job $NAME in its queue and no exit file in jobs/$NAME: it never ran, was killed, or expired" >&2
+		echo "remote: $HOST has no job $NAME in its queue and no copy jobs/$NAME: it never ran, was killed, or expired" >&2
 		set_status gone; exit 3
 	fi
 	trap 'echo "remote: stopped during the copy-back; rerun scripts/remote.sh --attach $NAME" >&2; exit 130' INT TERM HUP
@@ -392,6 +480,10 @@ CMDQ=$(printf '%q ' "$@"); CMDQ=${CMDQ% }
 WAITER="$$@$HOSTNAME"
 COMMIT=$(git -C "$ROOT" rev-parse --short=10 HEAD 2>/dev/null || echo unknown)
 git -C "$ROOT" diff --quiet HEAD 2>/dev/null || COMMIT="$COMMIT-dirty"
+if ! health "$HOST"; then
+	echo "remote: worker $WNAME ($HOST) does not answer (suspended, asleep or down?); nothing sent. scripts/anywhere.sh skips such a worker and uses another host." >&2
+	exit 255
+fi
 STATUS=submitting
 state_write
 RUNNER=$(mktemp)
@@ -413,7 +505,11 @@ cleanup
 	echo 'export FB_REMOTE=1'
 	echo "gpu=$GPU"
 	printf 'icd=%q\n' "$ICD"
-	echo 'rm -f .fb-exit'
+	echo 'rm -f .fb-exit .fb-gaps'
+	# suspend detector (WORKERHEALTH): the wall clock jumping over 60 s across a 10 s sleep means the machine
+	# was paused or suspended; finish() reads .fb-gaps ("gap FROM TO" lines)
+	echo '( last=$(date +%s); while sleep 10; do now=$(date +%s); [ $((now - last)) -gt 60 ] && echo "gap $last $now" >> .fb-gaps; last=$now; done ) < /dev/null > /dev/null 2>&1 &'
+	echo 'gapper=$!'
 	echo '{'
 	echo 'if [ "$gpu" = 1 ] && [ -e /dev/dri/renderD128 ] && [ -f "$icd" ] && command -v headless-run > /dev/null; then'
 	echo '	export FB_USE_DISPLAY=1 FB_VK_DRIVER_FILES="$icd"'
@@ -425,6 +521,7 @@ cleanup
 	echo 'fi'
 	echo '} 2>&1 | tee .fb-output.log'
 	echo 'rc=${PIPESTATUS[0]}'
+	echo 'kill "$gapper" 2>/dev/null'
 	echo 'echo "$rc" > .fb-exit'
 	echo 'exit "$rc"'
 } > "$RUNNER"
@@ -432,15 +529,17 @@ cleanup
 echo "remote: copying $ROOT to $HOST:jobs/$NAME ..." >&2
 # .claude/agents/ is tracked and needed (design-blocks --check reads it); the
 # rest of .claude/ (worktrees, locks, reports, settings) stays here.
-rsync -a --filter=':- .gitignore' --exclude=/.git \
-	--include=/.claude/ --include='/.claude/agents/***' --exclude='/.claude/*' \
-	-e "${SSH[*]}" "$ROOT/" "$HOST:jobs/$NAME/"
 COMMIT_FILE=$(mktemp)
 printf '%s' "$COMMIT" > "$COMMIT_FILE"
-rsync -a -e "${SSH[*]}" "$COMMIT_FILE" "$HOST:jobs/$NAME/.fb-commit"; rm -f "$COMMIT_FILE"
-rsync -a -e "${SSH[*]}" "$RUNNER" "$HOST:jobs/$NAME/.fb-remote-run.sh"
-
-ID=$("${SSH[@]}" "$HOST" job submit "$NAME" bash .fb-remote-run.sh)
+not_sent() { rm -f "$COMMIT_FILE"; set_status cancelled 255; echo "remote: $1 failed ($HOST went away?); nothing queued" >&2; exit 255; }
+rsync -a --filter=':- .gitignore' --exclude=/.git \
+	--include=/.claude/ --include='/.claude/agents/***' --exclude='/.claude/*' \
+	-e "${SSH[*]}" "$ROOT/" "$HOST:jobs/$NAME/" || not_sent "the copy to $HOST"
+rsync -a -e "${SSH[*]}" "$COMMIT_FILE" "$HOST:jobs/$NAME/.fb-commit" || not_sent "the copy to $HOST"; rm -f "$COMMIT_FILE"
+rsync -a -e "${SSH[*]}" "$RUNNER" "$HOST:jobs/$NAME/.fb-remote-run.sh" || not_sent "the copy to $HOST"
+F=$("${SSH[@]}" "$HOST" "$FACTS_CMD" 2>/dev/null) || F=""
+{ read -r BOOT0; read -r MEM0; } <<< "$F" || true
+ID=$("${SSH[@]}" "$HOST" job submit "$NAME" bash .fb-remote-run.sh) || not_sent "job submit on $HOST"
 STATUS=queued; state_write
 echo "remote: queued as $HOST job $ID ($NAME); waiting (log: $SDIR/$NAME.log; if this waiter dies: scripts/remote.sh --attach $NAME) ..." >&2
 # scripts/anywhere.sh asks for the job name this way (it adds it to its route file).
@@ -463,11 +562,11 @@ trap 'cancel_remote; exit 130' INT TERM
 trap 'detach; exit 129' HUP
 
 wait_job
-if (( status == 255 )); then
-	echo "remote: can't reach $HOST; job $ID may still be running there (ssh $HOST job status $ID); later: scripts/remote.sh --attach $NAME" >&2
+if (( GAVEUP )); then
+	echo "remote: can't reach $HOST for ${UNREACH_MAX} s; job $ID may still be there (queued, running or suspended with the worker); later: scripts/remote.sh --attach $NAME" >&2
 	exit 255
 fi
-set_status "done" "$status"
+(( VANISHED )) || set_status "done" "$status"
 # Stopped while copying back: the job is over and its copy stays; --attach finishes the copy-back.
 trap 'echo "remote: stopped during the copy-back; finish it with scripts/remote.sh --attach $NAME" >&2; exit 130' INT TERM HUP
 finish

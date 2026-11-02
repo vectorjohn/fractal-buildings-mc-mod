@@ -98,6 +98,7 @@ Item codes (PARREADS, MAINSTUB, TPHOLD, ...) and run terms, one row each. **Gene
 | IRR1 |  | old-town subdivision and diagonal-avenue frontage (5.13) | done | [[docs/log/2026-10-21-p5-irr1-oldtown|log]] |
 | ITEOF |  | planner-core test failures (end of file) caused by two Gradle runs in the same checkout | done | [[docs/NOTES|NOTES]] |
 | JFLAZY |  | the junction field on cold arrival, and the cascade a cold chunk really waits for | - | [[docs/plans/jflazy|plan]] |
+| JOB LOST |  | `scripts/remote.sh` exit 75: a worker job was killed or vanished because the worker was preempted... | - | [[CLAUDE|CLAUDE]] |
 | JT |  | Phase 5 step: jetties over streets | done | [[docs/log/2026-10-21-p5-jt-jetties|log]] |
 | JUNCTION |  | street heights where streets meet (round 1: rule and diagnosis; round 2: the planner fix) | done | [[docs/log/2026-10-23-p6-junction|log]] |
 | LAMPS |  | every high-rise room gets a standing lantern and a hung one (`HighriseRooms.hooks` adds `light` and always... | polish | [[docs/ROADMAP|ROADMAP polish]] |
@@ -232,6 +233,7 @@ Item codes (PARREADS, MAINSTUB, TPHOLD, ...) and run terms, one row each. **Gene
 | WALLWALK |  | curtain walls and a continuous wall walk | done | [[docs/log/2026-10-21-p5-wallwalk|log]] |
 | warmer |  | RegionWarmer: plans settlements and roads on background threads ahead of the player, so chunks don't wait | - | [[docs/NOTES|NOTES]] |
 | worker pool |  | the machines `scripts/remote.sh` and `scripts/anywhere.sh` send jobs to, listed in the gitignored... | - | [[CLAUDE|CLAUDE]] |
+| WORKERHEALTH |  | workers may be preempted: fast health check before routing and sending, waiters ride out a suspended... | done | [[scripts/remote.sh|remote.sh]] |
 | WORKERSFLAKE |  | WorkersShutdownTest flake | done | [[docs/log/2026-10-28-workersflake|log]] |
 | WORKSHOP |  | workshop lean-to stores: a back door to the yard and the right furniture (became part of DS35DOORS) | done | [[docs/log/2026-10-28-ds35doors|2026-10-28-ds35doors]] |
 | WPOTFLAKE |  | flake: WorldPlannerOrderTest's 8-thread tiny-cache case timed out on a loaded host (compute-bound, not a... | done | [[docs/log/2026-10-28-wpotflake|log]] |

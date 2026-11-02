@@ -292,6 +292,39 @@ check "heavy_slots > slots: refused (2)" "$(FB_WORKERS_CONF=$T/bad2.conf "$A" --
 export FB_WORKERS_CONF=$T/workers.conf
 reset
 
+# WORKERHEALTH: an unreachable (suspended) worker is skipped; a stall then recovery; a lost job; preemptible != perf
+export FB_WORKERS_CONF=$T/workers2.conf
+reset; load 15; touch "$T/down.worker2"
+check "health: worker2 down: heavy goes to perfw" "$(go -- scripts/client-test.sh)" "go to perfw"
+check "health: the why says skipped" "$("$A" --dry-run -- true | grep -c 'worker2 unreachable (skipped)')" "1"
+check "health: --status shows it unreachable" "$("$A" --status | grep -c '^worker2 \[heavy suite\]: unreachable (suspended, asleep or down?): skipped')" "1"
+rm -f "$T/down.worker2"
+check "health: a down answer is cached (FB_ANY_DOWN_TTL)" "$("$A" --dry-run --only worker2 -- true | grep -o 'go to [A-Za-z0-9_-]*')" "go to nowhere"
+sleep 3   # past the short per-poll cache too
+check "health: after the TTL it is asked again" "$(FB_ANY_DOWN_TTL=0 "$A" --dry-run --only worker2 -- true | grep -o 'go to [A-Za-z0-9_-]*')" "go to worker2"
+# stall then recovery: a waiter for worker2 only waits while it is down and goes when it answers again
+reset; touch "$T/down.worker2"
+FB_ANY_DOWN_TTL=0 "$A" --only worker2 -- true 2> "$T/out.s1" & s1=$!
+sleep 2.5; rm -f "$T/down.worker2"
+wait $s1; rc=$?
+check "health: stall then recovery: waited, then worker2" "$rc $(grep -c 'waiting for a host' "$T/out.s1") $(route "$T/out.s1")" "0 1 worker2"
+# a lost job (remote.sh exit 75): said, logged, passed through, not rerun
+reset
+FB_ANY_DOWN_TTL=0 "$A" --only worker2 -- sh -c 'echo ran >> '"$T"'/lost-runs; exit 75' 2> "$T/out.l1"; rc=$?
+check "health: JOB LOST passed through (75), run once" "$rc $(wc -l < "$T/lost-runs")" "75 1"
+check "health: JOB LOST said" "$(grep -c 'JOB LOST on worker2 (worker preempted): not a test result' "$T/out.l1")" "1"
+check "health: JOB LOST in the route log" "$(grep -c 'JOB LOST on worker2 (exit 75)' "$T/any/route.log")" "1"
+# a preemptible worker with the perf role never gets perf jobs
+printf '[pw]\nhost = pw-host\nroles = perf heavy\nslots = 3\npreemptible = yes\n' > "$T/workers3.conf"
+export FB_WORKERS_CONF=$T/workers3.conf
+reset; load 15
+check "preemptible: perf job never goes there" "$(go -- scripts/perf.sh)" "go to nowhere"
+check "preemptible: a heavy job does" "$(go -- scripts/client-test.sh)" "go to pw"
+check "preemptible: --only perf matches nothing (2)" "$("$A" --dry-run --only perf -- true >/dev/null 2>&1; echo $?)" "2"
+check "preemptible: --status says so" "$("$A" --status | grep -c '^pw \[perf heavy; preemptible\]: ')" "1"
+export FB_WORKERS_CONF=$T/workers.conf
+reset
+
 # No pool file: everything local; naming a worker fails clearly
 export FB_WORKERS_CONF=$T/none.conf
 reset

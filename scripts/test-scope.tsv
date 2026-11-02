@@ -53,6 +53,7 @@ path	scripts/test-all.sh	test-infra	fast	runs the fast layers
 path	scripts/client-test.sh	test-infra	client-quick	client test runner and watchdog
 path	scripts/order-test.sh	test-infra	order	order harness
 path	scripts/quiet-check*	test-infra	-	quiet-host verdict of perf.sh (QUIETHOLE windows): run scripts/quiet-check-selftest.sh (fake worker, ~1 min, no timing)
+path	scripts/remote*	test-infra	-	worker job runner (health check, JOB LOST, attach): run scripts/remote-selftest.sh (fake worker, ~1 min, no ssh)
 path	scripts/anywhere*	test-infra	-	host router (PERFROUTE, worker pool): run scripts/anywhere-selftest.sh (fake workers, ~2 min, no ssh)
 path	scripts/lib/workers.sh	test-infra	-	worker pool reader: run scripts/anywhere-selftest.sh and scripts/quiet-check-selftest.sh (fake pools, no ssh)
 path	scripts/workers.conf.example	test-infra	-	worker pool example (no code): read it

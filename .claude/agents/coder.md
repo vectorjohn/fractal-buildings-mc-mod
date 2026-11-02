@@ -194,6 +194,7 @@ and mention them in the ROADMAP testing section.
 
 ### Environment quirks
 
+- A worker run that ends `JOB LOST (worker preempted)` (exit 75) is not a result: rerun it, say so in your report; not a failure, not a flake.
 - Waiting on a long or heavy job (a worker run, `scripts/anywhere.sh`, a
   client test in the background): wait with one long Monitor / until loop on
   its result, not many short wakes; each wake costs tokens for nothing.

@@ -17,6 +17,10 @@
 #              anywhere.sh's kinds heavy and full plus order-test.sh); default = slots. Light and suite jobs fill
 #              the remaining slots. Only jobs sent through scripts/anywhere.sh are counted
 #   enabled  = yes|no (default yes); a disabled worker is listed but never used
+#   preemptible = yes|no (default no): the machine has other uses and may suspend, shrink its memory or
+#              reboot at any time (a gaming PC, a VM that is paused when a game starts). Never used for perf
+#              (its perf role is ignored); jobs there may end JOB LOST (scripts/remote.sh, exit 75)
+#   availability = free text (e.g. "always up; the machine may move")
 #   memory   = per-job memory cap, free text (e.g. "MemoryMax 28 %, about 7.9 GiB")
 #   renderer = GPU / display notes, free text
 #   vk_icd   = Vulkan ICD json on the worker for GPU jobs (default: the radeon one under /run/opengl-driver)
@@ -56,7 +60,7 @@ workers_hint() {
 
 workers_load() {
 	(( WK_LOADED )) && return 0
-	declare -gA WK_HOST=() WK_ROLES=() WK_SLOTS=() WK_HEAVY=() WK_ENABLED=() WK_MEMORY=() WK_RENDERER=() WK_ICD=() WK_SPECS=() WK_NOTE=()
+	declare -gA WK_HOST=() WK_ROLES=() WK_SLOTS=() WK_HEAVY=() WK_PREEMPT=() WK_AVAIL=() WK_ENABLED=() WK_MEMORY=() WK_RENDERER=() WK_ICD=() WK_SPECS=() WK_NOTE=()
 	WK_NAMES=() WK_MISSING=0
 	WK_CONF=$(workers_conf_path)
 	WK_LOADED=1
@@ -70,7 +74,7 @@ workers_load() {
 			sec=${BASH_REMATCH[1]}
 			[[ $sec == local || $sec == any ]] && { err="line $n: '$sec' is reserved"; break; }
 			[[ -n ${WK_SLOTS[$sec]+x} ]] && { err="line $n: worker '$sec' twice"; break; }
-			WK_NAMES+=("$sec"); WK_ROLES[$sec]="heavy suite"; WK_SLOTS[$sec]=1; WK_ENABLED[$sec]=yes
+			WK_NAMES+=("$sec"); WK_ROLES[$sec]="heavy suite"; WK_SLOTS[$sec]=1; WK_ENABLED[$sec]=yes; WK_PREEMPT[$sec]=no
 			continue
 		fi
 		if [[ $line =~ ^[[:space:]]*([A-Za-z_]+)[[:space:]]*=[[:space:]]*(.*)$ ]]; then
@@ -84,6 +88,9 @@ workers_load() {
 				heavy_slots) [[ $v =~ ^[0-9]+$ ]] || { err="line $n: heavy_slots takes a whole number >= 0"; break; }; WK_HEAVY[$sec]=$v ;;
 				enabled) case ${v,,} in yes|true|1|on) WK_ENABLED[$sec]=yes ;; no|false|0|off) WK_ENABLED[$sec]=no ;;
 					*) err="line $n: enabled takes yes or no"; break ;; esac ;;
+				preemptible) case ${v,,} in yes|true|1|on) WK_PREEMPT[$sec]=yes ;; no|false|0|off) WK_PREEMPT[$sec]=no ;;
+					*) err="line $n: preemptible takes yes or no"; break ;; esac ;;
+				availability) WK_AVAIL[$sec]=$v ;;
 				memory) WK_MEMORY[$sec]=$v ;;
 				renderer) WK_RENDERER[$sec]=$v ;;
 				vk_icd) WK_ICD[$sec]=$v ;;
@@ -116,7 +123,8 @@ workers_enabled() {
 	return 0
 }
 
-worker_has_role() { [[ " ${WK_ROLES[$1]:-} " == *" $2 "* ]]; }
+# perf on a preemptible worker is ignored: a measurement can't run where the machine may be paused
+worker_has_role() { [[ $2 == perf && ${WK_PREEMPT[$1]:-no} == yes ]] && return 1; [[ " ${WK_ROLES[$1]:-} " == *" $2 "* ]]; }
 
 workers_resolve() {   # SPEC: name | role | host | any
 	local s=$1 w found=0
