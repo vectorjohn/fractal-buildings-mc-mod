@@ -54,6 +54,16 @@ public final class RoadNetwork {
 
 	static String key(DistrictGrid.Segment s) { return s.axis() + ":" + s.line() + ":" + s.index(); }
 
+	/**
+	 * THINDECK: the border segment lies between a planned tile and a tile the settlement does not plan, so only one tile builds it (half the
+	 * street, and none of a deck's centre-line piers).
+	 */
+	public boolean oneSided(DistrictGrid.Segment s) {
+		boolean xAxis = s.axis() == DistrictGrid.AXIS_X;
+		int kx = xAxis ? s.line() : s.index(), kz = xAxis ? s.index() : s.line();
+		return !(xAxis ? planned.contains(key(kx - 1, kz)) && planned.contains(key(kx, kz)) : planned.contains(key(kx, kz - 1)) && planned.contains(key(kx, kz)));
+	}
+
 	/** The tile is one of the settlement's planned districts. */
 	public boolean planned(int ix, int iz) { return planned.contains(key(ix, iz)); }
 
@@ -233,6 +243,7 @@ public final class RoadNetwork {
 		TreeSet<String> arterialIds = new TreeSet<>();
 		boolean lattice = latticeTier(src.site().tier());
 		BitSet live;
+		State state = null;
 		if (!lattice) {
 			live = flood(mains, hub, x0, z0, w, d);
 		} else {
@@ -255,18 +266,155 @@ public final class RoadNetwork {
 			BitSet[] lv = new BitSet[1];
 			boolean[] in = fixpoint(segs, atNode, off, mains, p, hub, x0, z0, w, d, lv);
 			live = lv[0];
-			for (int i = 0; i < segs.size(); i++) {
-				if (!in[i]) continue;
-				Seg s = segs.get(i);
-				present.put(s.key(), s.arterial());
-				if (s.arterial()) arterialIds.add(Ids.arterial(s.s().axis(), s.s().line(), s.s().from()));
-			}
+			collect(segs, in, present, arterialIds);
+			state = new State(segs, atNode, off, mains, p, src.density().arterials().width());
 		}
 		RoadNetwork n = new RoadNetwork(planned, x0, z0, w, d, live, hub, present);
 		n.lattice = lattice;
 		n.mains = dirs;
 		n.arterialIds = arterialIds;
+		n.state = state;
 		return n;
+	}
+
+	private static void collect(List<Seg> segs, boolean[] in, TreeMap<String, Boolean> present, TreeSet<String> arterialIds) {
+		for (int i = 0; i < segs.size(); i++) {
+			if (!in[i]) continue;
+			Seg s = segs.get(i);
+			present.put(s.key(), s.arterial());
+			if (s.arterial()) arterialIds.add(Ids.arterial(s.s().axis(), s.s().line(), s.s().from()));
+		}
+	}
+
+	/** What {@link #withWater} needs from the build: the eligible segments, their corner index, the yields decided, the main-road raster, the painter and the arterial width. */
+	private record State(List<Seg> segs, TreeMap<Long, List<Integer>> atNode, boolean[] off, BitSet mains, Painter painter, int arterialWidth) {}
+
+	/** Null without a lattice, and on a network {@link #withWater} made. */
+	private State state;
+
+	/** THINDECK: present one-sided segments drawn inside their planned tile, by key: the shift of the centre line across it. */
+	private final TreeMap<String, Integer> insets = new TreeMap<>();
+	/** The same shifts for the inset arterials, by arterial id ({@link Ids#arterial}). */
+	private final TreeMap<String, Integer> arterialInsets = new TreeMap<>();
+
+	/**
+	 * THINDECK: the network over the exact terrain. A lattice segment on the edge of the planned area ({@link #oneSided}) is built by its
+	 * planned tile alone, which clips it at the tile border: centred on the border it would be half a street, and over water half a deck
+	 * whose centre-line piers nobody builds. So a one-sided segment whose centre line has water (the exact probe, every column) is never
+	 * drawn on its line. One that crosses more than {@link #SHORT_CROSSING} wet columns in a row (a lake, as on the THINDECK playtest
+	 * spot) is dropped, unless dropping it costs another segment its link to the hub (the test METROFILL R2 uses for yields: candidates
+	 * in key order, each tried on top of those already dropped; round 1 dropped them all and cut a dry quarter of the coast city off).
+	 * Every other wet one-sided segment, a short crossing or one something hangs on, is drawn whole inside its planned tile
+	 * ({@link #inset}): the full width, its centre line and its piers, a real bridge. Dry one-sided segments are unchanged.
+	 *
+	 * <p>A pure function of the network and the exact terrain (the coarse lattice samples every 32 blocks and misses a pond between
+	 * them). Returns this network when no one-sided segment is wet.
+	 */
+	public RoadNetwork withWater(dev.fractalbuildings.core.probe.TerrainProbe exact) {
+		State st = state;
+		if (!lattice || st == null) return this;
+		List<Seg> segs = new ArrayList<>(st.segs());
+		List<Integer> wet = new ArrayList<>();
+		int[] shift = new int[segs.size()];
+		boolean[] long_ = new boolean[segs.size()];
+		for (int i = 0; i < segs.size(); i++) {
+			Seg s = segs.get(i);
+			int run = oneSided(s.s()) ? wetRun(s.cols(), exact) : 0;
+			if (run == 0) continue;
+			long_[i] = run > SHORT_CROSSING;
+			shift[i] = insetShift(s.s(), s.arterial() ? st.arterialWidth() : StreetRules.BORDER_WIDTH);
+			segs.set(i, new Seg(s.s(), s.key(), s.n0(), s.n1(), band(s.cols(), s.s().axis(), shift[i]), s.arterial(), s.yields()));
+			wet.add(i);
+		}
+		if (wet.isEmpty()) return this;
+		boolean[] off = st.off().clone();
+		boolean[] all = fixpoint(segs, st.atNode(), off, st.mains(), st.painter(), hub, x0, z0, w, d, null);
+		for (int c : wet) {
+			if (off[c] || !long_[c]) continue; // a short crossing stays: an ordinary small bridge, whole
+			off[c] = true;
+			boolean[] t = fixpoint(segs, st.atNode(), off, st.mains(), st.painter(), hub, x0, z0, w, d, null);
+			for (int i = 0; i < segs.size() && off[c]; i++) if (all[i] && !t[i] && !off[i]) off[c] = false;
+		}
+		BitSet[] lv = new BitSet[1];
+		boolean[] in = fixpoint(segs, st.atNode(), off, st.mains(), st.painter(), hub, x0, z0, w, d, lv);
+		TreeMap<String, Boolean> pres = new TreeMap<>();
+		TreeSet<String> arts = new TreeSet<>();
+		collect(segs, in, pres, arts);
+		RoadNetwork n = new RoadNetwork(planned, x0, z0, w, d, lv[0], hub, pres);
+		n.lattice = true;
+		n.mains = mains;
+		n.arterialIds = arts;
+		for (int c : wet) {
+			if (!in[c]) continue;
+			Seg s = segs.get(c);
+			n.insets.put(s.key(), shift[c]);
+			if (s.arterial()) n.arterialInsets.put(Ids.arterial(s.s().axis(), s.s().line(), s.s().from()), shift[c]);
+		}
+		return n;
+	}
+
+	/** Wet edge streets whose longest run of wet centre-line columns is at most this (DS-19's longest crossing) are kept, drawn whole as a small bridge: dropping them would cost their lots for nothing. */
+	static final int SHORT_CROSSING = 20;
+
+	/** The longest run of consecutive centre-line columns over water (exact), 0 when the line is dry. */
+	private static int wetRun(List<int[]> cols, dev.fractalbuildings.core.probe.TerrainProbe exact) {
+		int run = 0, max = 0;
+		for (int[] c : cols) {
+			run = exact.waterDepth(c[0], c[1]) > 0 ? run + 1 : 0;
+			max = Math.max(max, run);
+		}
+		return max;
+	}
+
+	/**
+	 * The shift across its line that puts a street of this width on a one-sided segment wholly inside its planned tile. A tile owns
+	 * {@code [min, max)}, so the line belongs to the tile on its high side; the footprint of centre {@code c} is {@code c - width/2} to
+	 * {@code c - width/2 + width - 1}.
+	 */
+	int insetShift(DistrictGrid.Segment s, int width) {
+		boolean xAxis = s.axis() == DistrictGrid.AXIS_X;
+		int kx = xAxis ? s.line() : s.index(), kz = xAxis ? s.index() : s.line();
+		return planned.contains(key(kx, kz)) ? width / 2 : -(width - width / 2);
+	}
+
+	/** The centre-line columns and every column between them and the shifted line (the raster link from the border to the drawn street). */
+	private static List<int[]> band(List<int[]> cols, int axis, int shift) {
+		List<int[]> out = new ArrayList<>();
+		int step = shift > 0 ? 1 : -1;
+		for (int[] c : cols) {
+			for (int o = 0; o != shift + step; o += step) out.add(axis == DistrictGrid.AXIS_X ? new int[] {c[0] + o, c[1]} : new int[] {c[0], c[1] + o});
+		}
+		return out;
+	}
+
+
+	/**
+	 * A skeleton arterial road ({@code Skeletons}, id {@link Ids#arterial}, points on its tile border) as district detail draws it: moved
+	 * across its line by the segment's {@link #inset}, or unchanged.
+	 */
+	public Road drawn(Road r) {
+		Integer o = r.kind() == RoadKind.ARTERIAL ? arterialInsets.get(r.id()) : null;
+		if (o == null || r.points().isEmpty()) return r;
+		boolean alongZ = true;
+		for (Pt p : r.points()) alongZ &= p.x() == r.points().get(0).x();
+		List<Pt> pts = new ArrayList<>();
+		for (Pt p : r.points()) pts.add(alongZ ? new Pt(p.x() + o, p.z()) : new Pt(p.x(), p.z() + o));
+		return new Road(r.id(), r.kind(), r.width(), pts, r.bridges());
+	}
+	/** THINDECK: how far across its line a present border segment is drawn ({@link #withWater}); 0 for every segment drawn on its line. */
+	public int inset(DistrictGrid.Segment s) {
+		Integer o = insets.get(key(s));
+		return o == null ? 0 : o;
+	}
+
+	/** The centre line a present border segment is drawn on: {@link Arterials#points} moved across by {@link #inset}. */
+	public List<Pt> points(Arterials art, DistrictGrid.Segment s) {
+		List<Pt> p = art.points(s, s.from(), s.to());
+		int o = inset(s);
+		if (o == 0) return p;
+		List<Pt> out = new ArrayList<>();
+		for (Pt q : p) out.add(s.axis() == DistrictGrid.AXIS_X ? new Pt(q.x() + o, q.z()) : new Pt(q.x(), q.z() + o));
+		return out;
 	}
 
 	/** Largest rise over 32 blocks along a plain lattice street (1 in 2; it was 1 in 4 before CITYQ, which cut hilly tiles off the hub; arterials keep the arterial rule's 3 in 4). */

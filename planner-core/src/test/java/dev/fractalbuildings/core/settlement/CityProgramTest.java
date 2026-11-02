@@ -439,7 +439,8 @@ class CityProgramTest {
 		for (Planned p : cities()) {
 			if (!TERRAINS[(int) ((p.setup().seed() - 900) % TERRAINS.length)].equals("flat:64")) continue;
 			SkeletonSource src = p.setup().source();
-			StreetRules rules = new StreetRules(src);
+			dev.fractalbuildings.core.probe.TerrainProbe exact0 = p.setup().p().terrain();
+			StreetRules rules = new StreetRules(src, exact0);
 			dev.fractalbuildings.core.probe.TerrainProbe exact = p.setup().p().terrain();
 			for (DistrictPlan d : p.city().districts().values()) {
 				DistrictGrid.Tile t = src.grid().tile(d.district().ix(), d.district().iz());

@@ -203,6 +203,7 @@ public final class DistrictScenes {
 			}
 			addBoxes(g.boxes(), ground, roadRole(tier, s.kind()), tier.atLeast(Tier.CITY)); // DS-44: city decks carry the street surface; piers stay deck
 			settlement.addAll(SettlementChecks.roadGrade(s.id(), g.profile().x(), g.profile().z(), g.profile().y()));
+			settlement.addAll(deckSupport(s.id(), plan.district().rect(), g)); // THINDECK
 		}
 		for (Plaza p : plan.plazas()) {
 			Optional<Grading.PlazaGrade> g = Grading.plaza(new Rect(p.x(), p.z(), p.w(), p.d()), exact);
@@ -214,6 +215,33 @@ public final class DistrictScenes {
 		// cut away by another street's trench), then bridge parts, then road and plaza surfaces.
 		ground.sort(java.util.Comparator.comparingInt(b -> phase(b.role())));
 		return new Ground(ground, settlement);
+	}
+
+	/**
+	 * THINDECK {@code street-deck-unsupported}: every run of {@link SettlementChecks#DECK_PIER_RUN} or more deck columns over water, inside the
+	 * tile (the part this tile builds), has a pier among the boxes the tile builds. A deck cut at a tile edge loses its centre-line piers.
+	 */
+	static List<Violation> deckSupport(String id, Rect tile, Grading.RoadGrade g) {
+		var pr = g.profile();
+		java.util.Set<Long> piers = new java.util.TreeSet<>();
+		for (GroundBox b : g.boxes()) {
+			if (b.kind() != GroundBox.Kind.PIER) continue;
+			Box3 bx = b.box();
+			if (bx.x() >= tile.x() && bx.x() < tile.x() + tile.w() && bx.z() >= tile.z() && bx.z() < tile.z() + tile.d()) piers.add(((long) bx.z() << 32) ^ (bx.x() & 0xffffffffL));
+		}
+		List<Violation> out = new ArrayList<>();
+		int n = pr.x().length;
+		for (int i = 0; i < n; i++) {
+			if (!pr.bridge()[i]) continue;
+			int j = i;
+			boolean pier = false;
+			while (j < n && pr.bridge()[j]) { pier |= piers.contains(((long) pr.z()[j] << 32) ^ (pr.x()[j] & 0xffffffffL)); j++; }
+			int inside = 0;
+			for (int k = i; k < j; k++) if (pr.x()[k] >= tile.x() && pr.x()[k] < tile.x() + tile.w() && pr.z()[k] >= tile.z() && pr.z()[k] < tile.z() + tile.d()) inside++;
+			if (inside >= SettlementChecks.DECK_PIER_RUN && !pier) out.add(new Violation(SettlementChecks.STREET_DECK_UNSUPPORTED, null, "street " + id + " has a deck of " + inside + " columns over water with no pier under it", List.of(new Box3(pr.x()[i], pr.y()[i] - 1, pr.z()[i], 1, 1, 1))));
+			i = j;
+		}
+		return out;
 	}
 
 	private static int phase(Role r) {

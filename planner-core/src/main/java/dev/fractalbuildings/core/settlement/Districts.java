@@ -398,7 +398,7 @@ public final class Districts {
 			this.ix = ix;
 			this.iz = iz;
 			this.exact = exact;
-			this.rules = new StreetRules(src);
+			this.rules = new StreetRules(src, exact);
 			this.grid = src.grid();
 			this.tile = grid.tile(ix, iz);
 			this.tr = tile.rect();
@@ -501,7 +501,7 @@ public final class Districts {
 		 * Every tile reads the same network, so the answer does not depend on which tiles were planned before.
 		 */
 		void markLotEligible(List<Raw> finals) {
-			RoadNetwork net = src.network();
+			RoadNetwork net = src.network(exact);
 			int n = finals.size(), np = plazas.size();
 			int[] parent = new int[n + np];
 			for (int i = 0; i < n + np; i++) parent[i] = i;
@@ -1430,7 +1430,7 @@ public final class Districts {
 				}
 			}
 			List<Road> out = new ArrayList<>();
-			RoadNetwork net = rules.lattice() ? src.network() : null;
+			RoadNetwork net = rules.lattice() ? src.network(exact) : null;
 			for (Cell c : cells.keySet()) for (Road r : src.skeleton(c).roads()) if (r.kind() != RoadKind.ARTERIAL && (net == null || net.reaches(r))) out.add(r);
 			return out;
 		}
@@ -1445,7 +1445,7 @@ public final class Districts {
 			for (Road r : nearbyRoads()) roads.add(new Object[] {StreetCols.columns(r.points()), r.width()});
 			Arterials art = rules.arterials();
 			for (DistrictGrid.Segment s : art.segmentsIn(tile.minX() - MARGIN, tile.minZ() - MARGIN, tile.maxX() + MARGIN, tile.maxZ() + MARGIN)) {
-				if (rules.borderKind(s) == RoadKind.ARTERIAL) roads.add(new Object[] {StreetCols.columns(art.points(s, s.from(), s.to())), art.width()});
+				if (rules.borderKind(s) == RoadKind.ARTERIAL) roads.add(new Object[] {StreetCols.columns(rules.borderPoints(s)), art.width()});
 			}
 			for (Object[] o : roads) {
 				@SuppressWarnings("unchecked") List<int[]> cols = (List<int[]>) o[0];
@@ -1479,11 +1479,11 @@ public final class Districts {
 				RoadKind k = rules.borderKind(s);
 				if (k == null) continue;
 				if (k == RoadKind.ARTERIAL) {
-					addPieces(Ids.arterial(s.axis(), s.line(), s.from()), k, art.width(), StreetCols.columns(art.points(s, s.from(), s.to())), true, JunctionField.lineKey(s.axis(), s.fixed()));
+					addPieces(Ids.arterial(s.axis(), s.line(), s.from()), k, art.width(), StreetCols.columns(rules.borderPoints(s)), true, rules.borderKey(s));
 					continue;
 				}
 				if (rules.lattice()) {
-					addPieces("b" + s.axis() + Ids.n(s.line()) + "_" + Ids.n(s.from()), RoadKind.STREET, StreetRules.BORDER_WIDTH, StreetCols.columns(art.points(s, s.from(), s.to())), true, JunctionField.lineKey(s.axis(), s.fixed()));
+					addPieces("b" + s.axis() + Ids.n(s.line()) + "_" + Ids.n(s.from()), RoadKind.STREET, StreetRules.BORDER_WIDTH, StreetCols.columns(rules.borderPoints(s)), true, rules.borderKey(s));
 					continue;
 				}
 				for (List<Pt> run : nodeRuns(s.from(), s.to(), (a, b) -> StreetRules.borderEdgeOk(exact, Arterials.ax(s, a), Arterials.az(s, a), Arterials.ax(s, b), Arterials.az(s, b)), s)) {
@@ -1785,7 +1785,7 @@ public final class Districts {
 		 */
 		/** The plaza is the hub square: the hub column lies within {@value #HUB_SQUARE_REACH} blocks of it (the skeleton joins that one itself). */
 		boolean hubSquare(Plaza pz) {
-			Pt h = src.network().hub();
+			Pt h = src.network(exact).hub();
 			if (h == null) return false;
 			int dx = Math.max(Math.max(pz.x() - h.x(), h.x() - (pz.x() + pz.w() - 1)), 0), dz = Math.max(Math.max(pz.z() - h.z(), h.z() - (pz.z() + pz.d() - 1)), 0);
 			return dx <= HUB_SQUARE_REACH && dz <= HUB_SQUARE_REACH;
@@ -1827,7 +1827,7 @@ public final class Districts {
 		void dropUnrooted(boolean plazasToo) {
 			boolean latt = rules.lattice();
 			if (!latt && !plazasToo) return;
-			RoadNetwork net = src.network();
+			RoadNetwork net = src.network(exact);
 			int n = raws.size();
 			int[] parent = new int[n];
 			for (int i = 0; i < n; i++) parent[i] = i;
@@ -1917,7 +1917,7 @@ public final class Districts {
 			}
 			boolean[] good = new boolean[n];
 			boolean latt = rules.lattice();
-			RoadNetwork net = src.network();
+			RoadNetwork net = src.network(exact);
 			for (int i = 0; i < n; i++) {
 				Raw r = raws.get(i);
 				if (!latt) { if (r.skeletonish() || touchesBorder(r)) good[find(parent, i)] = true; continue; }
@@ -2465,6 +2465,10 @@ public final class Districts {
 				if (horizontal == vertical) continue;
 				int line = horizontal ? a[1] : a[0], lo = horizontal ? tile.minZ() : tile.minX(), hi = horizontal ? tile.maxZ() : tile.maxX();
 				int sgn = line == lo ? 1 : 0; // only the tile's low borders: a lane beside a high border would cover the column just inside the band both tiles compare
+				if (sgn == 0 && r.id.startsWith("b")) { // THINDECK: an edge street drawn inside its tile (RoadNetwork.inset); no neighbour compares a band there, so either border
+					int h = StreetRules.BORDER_WIDTH / 2;
+					sgn = line == lo + h ? 1 : line == hi - (StreetRules.BORDER_WIDTH - h) ? -1 : 0;
+				}
 				if (sgn == 0) continue;
 				for (int[] c : r.cols) {
 					int along = horizontal ? c[0] : c[1];

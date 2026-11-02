@@ -206,11 +206,11 @@ public final class JunctionField {
 
 	/** The whole streets of the settlement, as district detail draws them (any tile, any window), in a fixed order. */
 	static List<Whole> wholeStreets(SkeletonSource src, TerrainProbe exact) {
-		RoadNetwork net = src.network();
+		RoadNetwork net = src.network(exact);
 		int[] box = net.box();
 		List<Whole> out = new ArrayList<>();
 		if (box[2] == 0 || box[3] == 0) return out;
-		StreetRules rules = new StreetRules(src);
+		StreetRules rules = new StreetRules(src, exact);
 		boolean lattice = rules.lattice();
 		// skeleton main roads and paths (Districts.nearbyRoads, every member cell)
 		List<Cell> cells = new ArrayList<>(src.site().cells());
@@ -231,8 +231,8 @@ public final class JunctionField {
 			RoadKind k = rules.borderKind(s);
 			if (k == null) continue;
 			String key = lineKey(s.axis(), s.fixed());
-			if (k == RoadKind.ARTERIAL) { out.add(new Whole(key, art.width(), StreetCols.columns(art.points(s, s.from(), s.to())))); continue; }
-			if (lattice) { out.add(new Whole(key, StreetRules.BORDER_WIDTH, StreetCols.columns(art.points(s, s.from(), s.to())))); continue; }
+			if (k == RoadKind.ARTERIAL) { out.add(new Whole(rules.borderKey(s), art.width(), StreetCols.columns(rules.borderPoints(s)))); continue; }
+			if (lattice) { out.add(new Whole(rules.borderKey(s), StreetRules.BORDER_WIDTH, StreetCols.columns(rules.borderPoints(s)))); continue; }
 			for (int[] run : runs(s.from(), s.to(), (a, b) -> StreetRules.borderEdgeOk(exact, Arterials.ax(s, a), Arterials.az(s, a), Arterials.ax(s, b), Arterials.az(s, b)))) {
 				out.add(new Whole(key, StreetRules.BORDER_WIDTH, StreetCols.columns(List.of(new Pt(Arterials.ax(s, run[0]), Arterials.az(s, run[0])), new Pt(Arterials.ax(s, run[1]), Arterials.az(s, run[1]))))));
 			}

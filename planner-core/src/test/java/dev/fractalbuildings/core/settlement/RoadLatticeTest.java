@@ -43,13 +43,13 @@ class RoadLatticeTest {
 	void everyDrawnBorderSegmentReachesTheHub() throws Exception {
 		int present = 0;
 		for (CityRoadsTest.Planned p : all()) {
-			RoadNetwork net = p.src().network();
+			RoadNetwork net = p.src().network(p.exact()); // THINDECK: the network as districts draw it (a wet edge street may be moved into its tile)
 			if (!net.hasLattice()) continue;
 			Arterials art = p.src().density().arterials();
 			for (DistrictGrid.Segment s : segments(p)) {
 				if (net.kind(s) == null) continue;
 				present++;
-				assertTrue(touchesLive(net, StreetCols.columns(art.points(s, s.from(), s.to()))), p.name() + " segment " + s + " is drawn but reaches no live road");
+				assertTrue(touchesLive(net, StreetCols.columns(net.points(art, s))), p.name() + " segment " + s + " is drawn but reaches no live road");
 			}
 		}
 		assertTrue(present > 500, present + " lattice segments checked");
@@ -60,7 +60,7 @@ class RoadLatticeTest {
 	void districtsDrawOnlyTheNetworksStreets() throws Exception {
 		int arterials = 0, borders = 0;
 		for (CityRoadsTest.Planned p : all()) {
-			RoadNetwork net = p.src().network();
+			RoadNetwork net = p.src().network(p.exact()); // THINDECK: the network districts draw from
 			if (!net.hasLattice()) continue;
 			for (Road r : p.city().plan().roads()) if (r.kind() == RoadKind.ARTERIAL) assertTrue(net.arterialPresent(r.id()), p.name() + " plan lists arterial " + r.id() + " that the lattice does not draw");
 			for (DistrictPlan dp : p.city().districts().values()) {
@@ -83,7 +83,7 @@ class RoadLatticeTest {
 	void arterialsThatCannotBeLinkedAreNotDrawn() throws Exception {
 		int picked = 0, drawn = 0;
 		for (CityRoadsTest.Planned p : CityRoadsTest.gates()) {
-			RoadNetwork net = p.src().network();
+			RoadNetwork net = p.src().network(p.exact());
 			Arterials art = p.src().density().arterials();
 			for (DistrictGrid.Segment s : segments(p)) {
 				if (!art.is(s)) continue;

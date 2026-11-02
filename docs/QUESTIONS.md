@@ -16,6 +16,7 @@ Every decision waiting for you, one line each, newest first under each heading. 
 
 
 # Rules (DS proposals)
+- [ ] **DS-19 amendment 2: how long may a city street cross water?** (2026-11-02, from THINDECK (6.40, no thin road decks over water in cities), merged 4bd2abe9): (a) streets inside a city with lots on both sides: up to 40 blocks, or 20? (20 is what the code does now; the snow-city gate window loses one block of lots at 20, keeps it at 40); (b) edge streets: built whole inside their tile, max 20; (c) an edge street kept because other streets need it for their hub link: bank to bank only, max 100 (decks up to 145 blocks exist today, from before THINDECK); plus "no half streets" (full width or none). Architect proposal in the run ledger "Proposed rules" (source .claude/reports/p6-thindeck-architect.md).
 
 - [ ] **DS-55 to DS-73 and amendments** (2026-10-29; updated 2026-10-31): accept, edit or drop each proposal still open: DS-55 and DS-57 to DS-73, and the amendments to DS-6, DS-20 (cut trees go whole), DS-25, DS-35 (the main door is the marked one; doors on the axis), DS-36, DS-45 (secondary doors near the ground), DS-47, DS-52, DS-54 (joins are level) and DS-56 (exit roads with nothing beyond). Decided since and filed: DS-56 itself, the DS-54 narrowing, DS-75, DS-76, DS-77 and the DS-45 high-rise and DS-35 small-wing amendments. [STANDARDS.md](design/STANDARDS.md), "Proposed by agents".
 

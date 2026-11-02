@@ -918,6 +918,60 @@ public final class SettlementChecks {
 		return List.of(v(SETTLEMENT_EMPTY, "settlement " + settlementId + " has no building", x, z, 1, 1));
 	}
 
+	/** THINDECK: a street on the border of a planned tile whose other side is no planned tile (it would be built half, or as a deck without its piers). */
+	public static final String STREET_EDGE_CUT = "street-edge-cut";
+	/** THINDECK: a bridge deck over water at least {@link #DECK_PIER_RUN} columns long with no pier under it (in the columns the tile builds). */
+	public static final String STREET_DECK_UNSUPPORTED = "street-deck-unsupported";
+	public static final int DECK_PIER_RUN = 6;
+	/** Pieces shorter than this inside their tile are the margin slivers of a street that runs through the next tile, not built streets. */
+	static final int MIN_EDGE_RUN = 4;
+
+	/**
+	 * {@code street-edge-cut} over a whole settlement: a lattice street whose centre line runs along the border of a planned tile is drawn
+	 * by the tiles on both sides, so the tile across must be planned too; if it is not, the street is only half there. Streets that
+	 * merely leave a tile through its border (exit roads, lanes) are not on the border line and are not checked.
+	 */
+	public static List<Violation> streetEdgeCut(java.util.Collection<DistrictPlan> plans, TerrainProbe exact) {
+		java.util.Set<Long> planned = new java.util.TreeSet<>();
+		for (DistrictPlan p : plans) planned.add(key(p.district().ix(), p.district().iz()));
+		List<DistrictPlan> sorted = new ArrayList<>(plans);
+		sorted.sort(java.util.Comparator.comparing((DistrictPlan p) -> p.district().id()));
+		List<Violation> out = new ArrayList<>();
+		for (DistrictPlan p : sorted) {
+			Rect t = p.district().rect();
+			int ix = p.district().ix(), iz = p.district().iz();
+			for (Street s : p.streets()) {
+				if (s.kind() != RoadKind.STREET && s.kind() != RoadKind.ARTERIAL) continue;
+				List<Pt> ps = s.points();
+				boolean west = true, east = true, north = true, south = true;
+				for (Pt q : ps) {
+					west &= q.x() == t.x(); east &= q.x() == t.x() + t.w();
+					north &= q.z() == t.z(); south &= q.z() == t.z() + t.d();
+				}
+				int nx = west ? ix - 1 : east ? ix + 1 : ix, nz = north ? iz - 1 : south ? iz + 1 : iz;
+				if (!(west || east || north || south) || planned.contains(key(nx, nz))) continue;
+				Pt a = ps.get(0), b = ps.get(ps.size() - 1);
+				boolean vertical = west || east; // the piece runs along z; how much of it lies inside the tile (the rest is the margin sliver of a neighbouring street)
+				int inside = vertical ? Math.min(Math.max(a.z(), b.z()), t.z() + t.d()) - Math.max(Math.min(a.z(), b.z()), t.z()) : Math.min(Math.max(a.x(), b.x()), t.x() + t.w()) - Math.max(Math.min(a.x(), b.x()), t.x());
+				if (inside < MIN_EDGE_RUN) continue;
+				if (!wetAlong(a, b, exact)) continue; // dry, the street is a narrow strip at the edge of the city: looks, not a break (polish)
+				out.add(v(STREET_EDGE_CUT, "street " + s.id() + " of " + p.district().id() + " runs along the border of tile " + nx + "," + nz + ", which no settlement tile plans (only half of it is built), from " + a + " to " + b,
+						Math.min(a.x(), b.x()), Math.min(a.z(), b.z()), Math.abs(b.x() - a.x()) + 1, Math.abs(b.z() - a.z()) + 1));
+			}
+		}
+		return out;
+	}
+
+	/** Some column of the axis-aligned run a to b (every 2 blocks) has water. */
+	private static boolean wetAlong(Pt a, Pt b, TerrainProbe exact) {
+		int n = Math.max(Math.abs(b.x() - a.x()), Math.abs(b.z() - a.z()));
+		for (int i = 0; i <= n; i += 2) {
+			int x = n == 0 ? a.x() : a.x() + (b.x() - a.x()) * i / n, z = n == 0 ? a.z() : a.z() + (b.z() - a.z()) * i / n;
+			if (exact.waterDepth(x, z) > 0) return true;
+		}
+		return false;
+	}
+
 	private static Violation v(String id, String msg, int x, int z, int w, int d) {
 		return new Violation(id, null, msg, List.of(new Box3(x, 0, z, w, 1, d)));
 	}

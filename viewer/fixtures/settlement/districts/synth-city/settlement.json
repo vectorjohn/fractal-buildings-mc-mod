@@ -33,7 +33,7 @@
     {"cx": 0, "cz": 0, "site": [278, 392], "polygon": [[17, 707], [-33, 637], [10, 153], [92, 73], [461, 124], [694, 519], [622, 607]]}
   ],
   "districts": [
-    {"id": "dm1_m4", "ix": -1, "iz": -4, "x": -144, "z": -640, "w": 160, "d": 160, "origin": [-9, -40], "quarter": 7, "density": 38, "styles": [{"style": "plains", "weight": 31}], "lots": 31, "detail": "districts/dm1_m4.json"},
+    {"id": "dm1_m4", "ix": -1, "iz": -4, "x": -144, "z": -640, "w": 160, "d": 160, "origin": [-9, -40], "quarter": 7, "density": 38, "styles": [{"style": "plains", "weight": 26}], "lots": 26, "detail": "districts/dm1_m4.json"},
     {"id": "d0_m4", "ix": 0, "iz": -4, "x": 16, "z": -640, "w": 160, "d": 160, "origin": [1, -40], "quarter": 3, "density": 42, "styles": [{"style": "plains", "weight": 40}], "lots": 40, "detail": "districts/d0_m4.json"},
     {"id": "d1_m4", "ix": 1, "iz": -4, "x": 176, "z": -640, "w": 144, "d": 160, "origin": [11, -40], "quarter": 7, "density": 40, "styles": [{"style": "plains", "weight": 43}], "lots": 43, "detail": "districts/d1_m4.json"},
     {"id": "d2_m4", "ix": 2, "iz": -4, "x": 320, "z": -640, "w": 160, "d": 160, "origin": [20, -40], "quarter": 7, "density": 26, "styles": [{"style": "plains", "weight": 19}], "lots": 19, "detail": "districts/d2_m4.json"},

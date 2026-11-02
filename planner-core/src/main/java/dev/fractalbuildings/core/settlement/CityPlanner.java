@@ -79,9 +79,10 @@ public final class CityPlanner {
 			hub = new Pt(hp.x() + hp.w() / 2, hp.z() + hp.d() / 2);
 			break;
 		}
-		if (src.network().hasLattice()) {
+		if (src.network(exact).hasLattice()) {
 			List<Road> roads = new ArrayList<>();
-			for (Road r : plan.roads()) if (r.kind() == RoadKind.ARTERIAL ? src.network().arterialPresent(r.id()) : src.network().reaches(r)) roads.add(r);
+			RoadNetwork net = src.network(exact);
+			for (Road r : plan.roads()) if (r.kind() == RoadKind.ARTERIAL ? net.arterialPresent(r.id()) : net.reaches(r)) roads.add(net.drawn(r)); // THINDECK: an inset arterial where its tile draws it
 			plan = plan.withRoads(roads);
 		}
 		plan = plan.withLandmarks(placedLandmarks(plan.landmarks(), districts, landmarks));
@@ -89,6 +90,7 @@ public final class CityPlanner {
 		SettlementChecks.CityRoads cr = SettlementChecks.cityRoads(districts.values(), hub);
 		v.addAll(cr.violations());
 		v.addAll(SettlementChecks.cityTileBorders(districts.values()));
+		v.addAll(SettlementChecks.streetEdgeCut(districts.values(), exact)); // THINDECK: no street half-built along an unplanned tile
 		v.addAll(SettlementChecks.cityJunctionHeights(districts.values())); // JUNCTION: streets that share ground meet within a block
 		v.addAll(SettlementChecks.exitStubs(stubs));
 		return new City(plan.withDistricts(out).withViolations(v), districts, landmarks, notes, hub, cr.strays(), cr.hubPiece(), cr.total(), stubsBefore, stubs);

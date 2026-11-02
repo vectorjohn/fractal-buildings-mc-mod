@@ -40,8 +40,11 @@ final class StreetRules {
 	private final TreeMap<String, RoadKind> borderMemo = new TreeMap<>();
 	private final SkeletonSource src;
 	private RoadNetwork network;
+	/** The exact terrain the network is drawn over ({@link SkeletonSource#network(TerrainProbe)}). */
+	private final TerrainProbe exact;
 
-	StreetRules(SkeletonSource src) {
+	StreetRules(SkeletonSource src, TerrainProbe exact) {
+		this.exact = exact;
 		this.src = src;
 		this.seed = src.seed();
 		this.tier = src.site().tier();
@@ -57,7 +60,7 @@ final class StreetRules {
 	/** Border streets come from the settlement's street lattice (city and metropolis): drawn whole, attached by construction. */
 	boolean lattice() {
 		if (!RoadNetwork.latticeTier(tier)) return false;
-		if (network == null) network = src.network();
+		if (network == null) network = src.network(exact);
 		return network.hasLattice();
 	}
 
@@ -98,7 +101,7 @@ final class StreetRules {
 
 	private RoadKind computeBorder(DistrictGrid.Segment s) {
 		if (RoadNetwork.latticeTier(tier)) {
-			if (network == null) network = src.network();
+			if (network == null) network = src.network(exact);
 			if (network.hasLattice()) return network.kind(s);
 		}
 		if (arterials.is(s)) return RoadKind.ARTERIAL;
@@ -107,6 +110,15 @@ final class StreetRules {
 		if (!gridAt(Arterials.ax(s, mid), Arterials.az(s, mid))) return null;
 		return arterials.waterOk(s) ? RoadKind.STREET : null;
 	}
+
+	/** THINDECK: how far across its line the border segment's street is drawn ({@link RoadNetwork#inset}; 0 without a lattice). */
+	int borderInset(DistrictGrid.Segment s) { return lattice() ? network.inset(s) : 0; }
+
+	/** The centre line of the border segment's whole street as drawn: on its line, or moved into its planned tile ({@link #borderInset}). */
+	List<Pt> borderPoints(DistrictGrid.Segment s) { return lattice() ? network.points(arterials, s) : arterials.points(s, s.from(), s.to()); }
+
+	/** The pin key of the border segment's whole street ({@link JunctionField#lineKey} of the line it is drawn on). */
+	String borderKey(DistrictGrid.Segment s) { return JunctionField.lineKey(s.axis(), s.fixed() + borderInset(s)); }
 
 	/** Carriageway width of the street on a border segment, 0 when it has none. */
 	int borderWidth(DistrictGrid.Segment s) {

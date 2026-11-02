@@ -31,6 +31,13 @@ public interface SkeletonSource {
 	default RoadNetwork network() { return RoadNetwork.build(this); }
 
 	/**
+	 * The network as district detail draws it over this exact terrain ({@link RoadNetwork#withWater}, THINDECK: no edge street half-built
+	 * over water). Every lattice and live-road question of district detail, the junction field and the city checks asks this one; {@link
+	 * #network()} alone answers which tiles are planned. Memoised per exact probe through {@link #shared}.
+	 */
+	default RoadNetwork network(dev.fractalbuildings.core.probe.TerrainProbe exact) { return shared("network-water", exact, () -> network().withWater(exact)); }
+
+	/**
 	 * The heights at which the settlement's whole streets meet ({@link JunctionField}), over the given exact terrain. This default builds
 	 * it on every call; sources that serve many tiles memoise it (per probe).
 	 */

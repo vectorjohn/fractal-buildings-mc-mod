@@ -48,9 +48,9 @@
     {"id": "d55_m21", "ix": 55, "iz": -21, "x": 8784, "z": -3344, "w": 160, "d": 144, "origin": [549, -209], "quarter": 3, "density": 62, "styles": [{"style": "jungle", "weight": 7}, {"style": "plains", "weight": 20}], "lots": 33, "detail": "districts/d55_m21.json"},
     {"id": "d56_m21", "ix": 56, "iz": -21, "x": 8944, "z": -3344, "w": 160, "d": 144, "origin": [559, -209], "quarter": 7, "density": 7, "styles": [], "lots": 0, "detail": "districts/d56_m21.json"},
     {"id": "d52_m20", "ix": 52, "iz": -20, "x": 8304, "z": -3200, "w": 160, "d": 160, "origin": [519, -200], "quarter": 3, "density": 85, "styles": [{"style": "desert", "weight": 27}, {"style": "plains", "weight": 8}], "lots": 35, "detail": "districts/d52_m20.json"},
-    {"id": "d53_m20", "ix": 53, "iz": -20, "x": 8464, "z": -3200, "w": 160, "d": 160, "origin": [529, -200], "quarter": 3, "density": 78, "styles": [{"style": "desert", "weight": 13}, {"style": "plains", "weight": 43}], "lots": 56, "detail": "districts/d53_m20.json"},
-    {"id": "d54_m20", "ix": 54, "iz": -20, "x": 8624, "z": -3200, "w": 160, "d": 160, "origin": [539, -200], "quarter": 5, "density": 71, "styles": [{"style": "desert", "weight": 5}, {"style": "plains", "weight": 28}], "lots": 40, "detail": "districts/d54_m20.json"},
-    {"id": "d52_m19", "ix": 52, "iz": -19, "x": 8304, "z": -3040, "w": 160, "d": 160, "origin": [519, -190], "quarter": 5, "density": 57, "styles": [{"style": "desert", "weight": 32}], "lots": 32, "detail": "districts/d52_m19.json"}
+    {"id": "d53_m20", "ix": 53, "iz": -20, "x": 8464, "z": -3200, "w": 160, "d": 160, "origin": [529, -200], "quarter": 3, "density": 78, "styles": [{"style": "desert", "weight": 12}, {"style": "plains", "weight": 41}], "lots": 53, "detail": "districts/d53_m20.json"},
+    {"id": "d54_m20", "ix": 54, "iz": -20, "x": 8624, "z": -3200, "w": 160, "d": 160, "origin": [539, -200], "quarter": 5, "density": 71, "styles": [{"style": "desert", "weight": 4}, {"style": "plains", "weight": 29}], "lots": 40, "detail": "districts/d54_m20.json"},
+    {"id": "d52_m19", "ix": 52, "iz": -19, "x": 8304, "z": -3040, "w": 160, "d": 160, "origin": [519, -190], "quarter": 5, "density": 57, "styles": [{"style": "desert", "weight": 26}], "lots": 26, "detail": "districts/d52_m19.json"}
   ],
   "roads": [
     {"id": "r8_m4_0", "kind": "main", "width": 7, "points": [[8512, -3296], [8352, -3136], [8352, -3104]], "bridges": []},

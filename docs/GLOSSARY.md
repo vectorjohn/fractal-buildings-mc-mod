@@ -223,6 +223,7 @@ Item codes (PARREADS, MAINSTUB, TPHOLD, ...) and run terms, one row each. **Gene
 | TESTLAYERS |  | client test layers, B2 off the client, worker shutdown | done | [[docs/log/2026-10-26-p6-testlayers|log]] |
 | TESTSPEED |  | planner-core suite time | done | [[docs/ROADMAP|ROADMAP]] |
 | TESTSPEED2 |  | share planned sites across planner-core test classes | done | [[docs/log/2026-10-28-testspeed2|log]] |
+| THINDECK | 6.40 | a city street laid flat across a deep lake | done | [[docs/ROADMAP|ROADMAP 6.40]] |
 | TIDY |  | pre-gate tidy | done | [[docs/log/2026-10-21-p5-tidy|log]] |
 | to-main |  | merging the run branch into main, after a full test run | - | [[docs/runs/2026-10-22-phase6|2026-10-22-phase6]] |
 | TOKENSAVE |  | agent-definition change to save tokens: at most 3 coding items, verdict blocks, Sonnet verifiers for small... | done | [coordinator](../.claude/agents/coordinator.md) |
