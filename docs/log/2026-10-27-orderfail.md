@@ -18,7 +18,7 @@ The world was not.
 - Order dependence: when a lake's origin chunk is decorated after the neighbour chunk that holds our piece, the lake overwrites the
   piece. When it is decorated before, our piece overwrites the lake, and the lake's shape test also reads our blocks. So it is a real
   difference in the world, not a classifier gap.
-- Why now: HEAVY2 bisected it on beebox. 6e0eb94c (DEADMAIN) passes and 48791604 fails with the same 52 cells, so the trigger is 499b82ee,
+- Why now: HEAVY2 bisected it on the perf worker. 6e0eb94c (DEADMAIN) passes and 48791604 fails with the same 52 cells, so the trigger is 499b82ee,
   7.17 SHOPLOW S2+S3 dig-in. The dug-in walls now reach down into the lake's grid. Before that the lake was in the ground under the
   city, where it was harmless.
 - A gap found on the way: `BuildingPiece.box` does not cover the deep foundation that `Pieces.deepen` adds when rastering
@@ -51,7 +51,7 @@ The world was not.
 ## ROADCLEAR snowy-site data point (seed 1709797029209580947, 4500,1700)
 
 This is not the lake mechanism, and the world was not order dependent here. `RoadsClientGameTest`'s digest covered the whole
-`PieceLedger` recording. The new `CELLDIFF` lines (beebox job 22, commit 71ad7262) showed what differed between asc and
+`PieceLedger` recording. The new `CELLDIFF` lines (the perf worker job 22, commit 71ad7262) showed what differed between asc and
 shuffled-evicting: 7548 district cells, 0 road cells, in chunks 10..13,14..16 (around 175,55,256). Those cells are present in one run
 and absent in the other. That is a settlement near the world spawn, 4300 blocks from the corridor. The client loads the spawn area at
 the same time as the test, so its district cells land in the recording in some runs and not in others. That is timing in the test

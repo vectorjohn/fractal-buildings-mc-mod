@@ -2,26 +2,29 @@
 # Is this host quiet enough for a timing to count as a measurement? (John 2026-10-30/31: a timing taken on a
 # busy machine is not a measurement and is not reported as a result; CLAUDE.md "Parallel work".)
 #
-#   scripts/quiet-check.sh [--own-heavy] [--beebox] [--own-job L] [--cpu C] [--wait S] [--label L]    one look now
-#   scripts/quiet-check.sh [--beebox] [--own-job L] [--cpu C] --window-start DIR   start watching a timed window
+#   scripts/quiet-check.sh [--own-heavy] [--worker W] [--own-job L] [--cpu C] [--wait S] [--label L]    one look now
+#   scripts/quiet-check.sh [--worker W] [--own-job L] [--cpu C] --window-start DIR   start watching a timed window
 #   scripts/quiet-check.sh --window-end DIR                                        verdict for the whole window
 #   scripts/quiet-check.sh --verdict FILE                                          perf.sh's end line (quiet.txt)
 #
 # Quiet means NO OTHER JOB OR AGENT WORK on the host. Not a loadavg threshold: the measured job's own threads
-# raise the load (a perf run on beebox shows 4 to 6). Checked:
+# raise the load (a perf run on the perf worker shows 4 to 6). Checked:
 #   - no suite slot (<main root>/.claude/suite.lock.1..N) or heavy lock held by anyone but us (the holder comes
-#     from /proc/*/fdinfo; "us" = the caller, its ancestors, its descendants, its session and, inside a beebox
-#     job, its job unit's cgroup; --own-heavy: a heavy lock whose holder can't be found counts as ours); no job
+#     from /proc/*/fdinfo; "us" = the caller, its ancestors, its descendants, its session and, inside a
+#     worker job, its job unit's cgroup; --own-heavy: a heavy lock whose holder can't be found counts as ours); no job
 #     started here by scripts/anywhere.sh running (.claude/anywhere/claims/local-run.<pid>) but one we run in;
-#   - on beebox (inside a scripts/remote.sh job, where `job` is on PATH, or --beebox from this host over ssh): no
-#     other beebox job running or queued (our own job, by its label, is not counted: --own-job L, default the job
-#     dir name of $JOB_RESULTS). beebox runs up to 3 jobs at once (`[run=N/3]`), so others can run beside ours;
+#   - on a worker (inside a scripts/remote.sh job, where `job` is on PATH, or --worker W from this host over ssh;
+#     W is a worker name or role from the gitignored worker pool file, see scripts/lib/workers.sh): no other job
+#     of that worker running or queued (our own job, by its label, is not counted: --own-job L, default the job
+#     dir name of $JOB_RESULTS). A worker runs several jobs at once (its slots, `[run=N/S]`), so others can run
+#     beside ours. The old one-worker flag --<ssh host> (deprecated) still works: it is --worker with the
+#     worker whose host it names in the pool file;
 #   - processes that are not ours use less than C cores (FB_QUIET_CPU, default 0.5; --cpu C), over 3 s for one
 #     look and over each sample interval in a window: another agent's build, a human's Minecraft client.
-# The 1-min loadavg is sampled and printed, never judged. This host is rarely quiet: send measurements to beebox.
+# The 1-min loadavg is sampled and printed, never judged. This host is rarely quiet: send measurements to the perf worker.
 #
-# WINDOW (QUIETHOLE, 2026-11-01: one look per step boundary missed two beebox jobs that started and ended between
-# two looks). --window-start records beebox's job list (its highest id and the jobs running or queued) and, on
+# WINDOW (QUIETHOLE, 2026-11-01: one look per step boundary missed two worker jobs that started and ended between
+# two looks). --window-start records the worker's job list (its highest id and the jobs running or queued) and, on
 # a local window, starts a sampler (every FB_QUIET_SAMPLE s, default 10: locks, anywhere claims, other
 # processes' CPU) into DIR/samples; the caller must live until --window-end (the sampler stops with it).
 # --window-end stops the sampler, takes a last sample and compares the job list: every other job that was
@@ -33,14 +36,14 @@
 # --wait S polls every 15 s until quiet, for at most S seconds (one look only).
 # One look prints `quiet-check: [L ]QUIET|BUSY <host> load=<1 5 15> cpus=N other-cpu=X ...; busy: <reasons>` and
 # the holders' notes. Exit 0 quiet, 1 busy, 2 bad usage. Self-test: scripts/quiet-check-selftest.sh.
-# Test hooks: FB_QUIET_JOB (a command used as beebox's `job`), FB_QUIET_CLAUDE_DIR (the .claude dir with the locks).
+# Test hooks: FB_QUIET_JOB (a command used as the worker's `job`), FB_QUIET_CLAUDE_DIR (the .claude dir with the locks).
 set -uo pipefail
-OWN_HEAVY=0 BEE=0 WAIT=0 LABEL="" MAXCPU=${FB_QUIET_CPU:-0.5} MODE=check WDIR="" VFILE="" OWNJOB=""
+OWN_HEAVY=0 BEE=0 OLDFLAG="" WSPEC="" WHOST="" WL=worker WAIT=0 LABEL="" MAXCPU=${FB_QUIET_CPU:-0.5} MODE=check WDIR="" VFILE="" OWNJOB=""
 SAMPLE=${FB_QUIET_SAMPLE:-10}
 while [[ $# -gt 0 ]]; do
 	case $1 in
 		--own-heavy) OWN_HEAVY=1 ;;
-		--beebox) BEE=1 ;;
+		--worker) BEE=1 WSPEC=${2:?--worker W}; shift ;;
 		--own-job) OWNJOB=${2:?}; shift ;;
 		--cpu) MAXCPU=${2:?}; shift ;;
 		--wait) WAIT=${2:?}; shift ;;
@@ -49,7 +52,9 @@ while [[ $# -gt 0 ]]; do
 		--window-end) MODE=wend WDIR=${2:?}; shift ;;
 		--sample-loop) MODE=sloop WDIR=${2:?}; shift ;;   # internal: the sampler --window-start starts
 		--verdict) MODE=verdict VFILE=${2:?}; shift ;;
-		-h|--help) sed -n '2,37p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+		-h|--help) sed -n '2,38p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+		--?*) # deprecated --<ssh host> (the one-worker flag before the pool): --worker by host, checked below
+			BEE=1 WSPEC=${1#--} OLDFLAG=$1 ;;
 		*) echo "quiet-check: unknown $1" >&2; exit 2 ;;
 	esac
 	shift
@@ -70,6 +75,21 @@ if [[ $MODE == verdict ]]; then
 fi
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+if (( BEE )) && [[ -z ${FB_QUIET_JOB:-} ]]; then
+	# shellcheck source-path=SCRIPTDIR source=lib/workers.sh
+	. "$ROOT/scripts/lib/workers.sh"
+	workers_load || exit 2
+	WL=""
+	if [[ -n $OLDFLAG ]]; then
+		for w in "${WK_NAMES[@]}"; do [[ ${WK_ENABLED[$w]} == yes && ( ${WK_HOST[$w]} == "$WSPEC" || $(worker_key "$w") == "$WSPEC" ) ]] && { WL=$w; break; }; done
+		[[ -n $WL ]] || { echo "quiet-check: unknown $OLDFLAG (an old --<ssh host> flag needs that host in the worker pool file$( ((WK_MISSING)) && echo ", and none is configured"); $(workers_hint))" >&2; exit 2; }
+		echo "quiet-check: $OLDFLAG is deprecated: use --worker $WL (or --worker perf)" >&2
+	elif ! WL=$(workers_resolve "$WSPEC" | head -n1) || [[ -z $WL ]]; then
+		echo "quiet-check: no enabled worker matches '$WSPEC'$( ((WK_MISSING)) && echo ': no worker pool is configured'); $(workers_hint)" >&2
+		exit 2
+	fi
+	WHOST=${WK_HOST[$WL]}
+elif (( BEE )); then WL=${WSPEC:-worker}; fi
 if [[ -n ${FB_QUIET_CLAUDE_DIR:-} ]]; then CL=$FB_QUIET_CLAUDE_DIR
 elif common=$(git -C "$ROOT" rev-parse --path-format=absolute --git-common-dir 2>/dev/null); then CL="$(dirname "$common")/.claude"
 else CL="$ROOT/.claude"; fi
@@ -87,7 +107,7 @@ stat_field() {   # stat_field PID N: field N of /proc/PID/stat counted after the
 ppid_of() { stat_field "$1" 2; }
 sid_of() { stat_field "$1" 4; }
 cgroup_of() { sed -n 's/^0:://p' "/proc/$1/cgroup" 2>/dev/null; }
-set_owner() {   # set_owner PID: OWNER, OWNER_SID, OWNER_CG (only a beebox job unit's cgroup), ANCESTORS
+set_owner() {   # set_owner PID: OWNER, OWNER_SID, OWNER_CG (only a worker job unit's cgroup), ANCESTORS
 	local p=$1 cg
 	OWNER=$p OWNER_SID=$(sid_of "$p") OWNER_CG="" ANCESTORS=" "
 	cg=$(cgroup_of "$p"); [[ ${cg##*/} == job-*.service ]] && OWNER_CG=$cg
@@ -137,11 +157,11 @@ lock_foreign() {   # lock_foreign FILE [own-if-unknown]: 0 when someone not ours
 	LOCKWHO="holder unknown"; return 0
 }
 
-# ---- beebox's job list ---------------------------------------------------------------------------------------
+# ---- the worker's job list ---------------------------------------------------------------------------------------
 have_job() { [[ -n ${FB_QUIET_JOB:-} ]] || (( BEE )) || command -v job > /dev/null 2>&1; }
 job_cmd() {
 	if [[ -n ${FB_QUIET_JOB:-} ]]; then bash -c "$FB_QUIET_JOB \"\$@\"" _ "$@"
-	elif (( BEE )); then timeout 30 ssh -o BatchMode=yes beebox job "$@"
+	elif (( BEE )); then timeout 30 ssh -o BatchMode=yes "$WHOST" job "$@"
 	else timeout 20 job "$@"; fi
 }
 bee_list() {   # "ID STATE LABEL" per job from `job status` (ts -l); the label is ts -L NAME, remote.sh's fb-<...>
@@ -204,8 +224,8 @@ check_local() {
 	if have_job && out=$(bee_list); then
 		n=$(bee_others <<< "$out" | wc -l)
 		BEEJOBS=" other-jobs=$n"
-		(( n > 0 )) && busy+=("$n other beebox job(s)")
-		while read -r line; do [[ -n $line ]] && NOTES+=("  beebox job $line"); done < <(bee_others <<< "$out")
+		(( n > 0 )) && busy+=("$n other $WL job(s)")
+		while read -r line; do [[ -n $line ]] && NOTES+=("  $WL job $line"); done < <(bee_others <<< "$out")
 	fi
 	a=$(cpu_snapshot); sleep 3; b=$(cpu_snapshot)
 	other_cpu_from "$a" "$b" 3
@@ -216,13 +236,13 @@ check_local() {
 check_bee() {
 	local out n
 	BUSY=() NOTES=()
-	if ! out=$(bee_list); then REPORT="beebox unreachable"; BUSY=("unreachable"); return; fi
+	if ! out=$(bee_list); then REPORT="$WL unreachable"; BUSY=("unreachable"); return; fi
 	n=$(bee_others <<< "$out" | wc -l)
 	if (( n > 0 )); then
 		BUSY=("$n job(s) running/queued")
 		while read -r line; do NOTES+=("  $line"); done < <(bee_others <<< "$out")
 	fi
-	REPORT="beebox jobs running/queued=$n"
+	REPORT="$WL jobs running/queued=$n"
 }
 
 # ---- window --------------------------------------------------------------------------------------------------
@@ -246,7 +266,7 @@ load_start() {
 	[[ -f $WDIR/start ]] || { echo "quiet-check: no window started in $WDIR" >&2; exit 2; }
 	# shellcheck disable=SC1091
 	. "$WDIR/start"
-	BEE=$W_BEE OWNJOB=$W_OWNJOB MAXCPU=$W_MAXCPU OWN_HEAVY=$W_OWN_HEAVY
+	BEE=$W_BEE WL=$W_WL WHOST=$W_WHOST OWNJOB=$W_OWNJOB MAXCPU=$W_MAXCPU OWN_HEAVY=$W_OWN_HEAVY
 	OWNER=$W_OWNER OWNER_SID=$W_OWNER_SID OWNER_CG=$W_OWNER_CG ANCESTORS=$W_ANCESTORS
 }
 max_id() { awk 'BEGIN { m = 0 } $1 + 0 > m { m = $1 + 0 } END { print m }'; }
@@ -265,14 +285,14 @@ case $MODE in
 		{
 			printf 'W_T0=%q\nW_BEE=%q\nW_OWNJOB=%q\nW_MAXCPU=%q\nW_OWN_HEAVY=%q\n' "$(date +%s)" "$BEE" "$OWNJOB" "$MAXCPU" "$OWN_HEAVY"
 			printf 'W_OWNER=%q\nW_OWNER_SID=%q\nW_OWNER_CG=%q\nW_ANCESTORS=%q\n' "$OWNER" "$OWNER_SID" "$OWNER_CG" "$ANCESTORS"
-			printf 'W_BEE_MAX=%q\nW_BEE_ACTIVE=%q\n' "$bmax" "$bact"
+			printf 'W_BEE_MAX=%q\nW_BEE_ACTIVE=%q\nW_WL=%q\nW_WHOST=%q\n' "$bmax" "$bact" "$WL" "$WHOST"
 		} > "$WDIR/start"
 		if (( ! BEE )); then
 			# the sampler runs until --window-end (DIR/stop) or its owner exits; it is the owner's child, so ours
 			"$0" --sample-loop "$WDIR" > /dev/null 2>&1 < /dev/null &
 			echo $! > "$WDIR/sampler.pid"
 		fi
-		echo "quiet-check: window start $( ((BEE)) && echo beebox || hostname) owner=$OWNER$( [[ -n $bmax ]] && echo " beebox-max-id=$bmax other-active=[${bact% }] own-job=${OWNJOB:--}")$( ((BEE)) || echo " sample=${SAMPLE}s") ($(date '+%F %T'))"
+		echo "quiet-check: window start $( ((BEE)) && echo "$WL" || hostname) owner=$OWNER$( [[ -n $bmax ]] && echo " $WL-max-id=$bmax other-active=[${bact% }] own-job=${OWNJOB:--}")$( ((BEE)) || echo " sample=${SAMPLE}s") ($(date '+%F %T'))"
 		exit 0 ;;
 	sloop)
 		load_start
@@ -300,14 +320,14 @@ case $MODE in
 			notes+=("  ${key//_/ } $(date -d "@$first" '+%T')..$(date -d "@$last" '+%T'): $detail")
 		done < <(awk '$1 == "B" { k = $3; if (!(k in c)) { o[++n] = k; f[k] = $2; d = ""; for (i = 4; i <= NF; i++) d = d (i > 4 ? " " : "") $i; det[k] = d }
 				c[k]++; l[k] = $2 } END { for (i = 1; i <= n; i++) { k = o[i]; printf "%s|%d|%s|%s|%s\n", k, c[k], f[k], l[k], det[k] } }' "$WDIR/samples" 2>/dev/null)
-		# beebox: every other job that overlapped [start, now]
+		# the worker: every other job that overlapped [start, now]
 		BEEREP=""
 		if [[ -n $W_BEE_MAX ]]; then
-			if [[ $W_BEE_MAX == unavailable ]]; then busy+=("beebox job list unavailable at the window start"); BEEREP=" beebox=unknown"
-			elif ! l=$(bee_list); then busy+=("beebox job list unavailable at the window end"); BEEREP=" beebox=unknown"
+			if [[ $W_BEE_MAX == unavailable ]]; then busy+=("$WL job list unavailable at the window start"); BEEREP=" $WL=unknown"
+			elif ! l=$(bee_list); then busy+=("$WL job list unavailable at the window end"); BEEREP=" $WL=unknown"
 			else
 				cmax=$(max_id <<< "$l")
-				(( cmax < W_BEE_MAX )) && busy+=("beebox job ids went back from $W_BEE_MAX to $cmax (queue restarted): overlap not ruled out")
+				(( cmax < W_BEE_MAX )) && busy+=("$WL job ids went back from $W_BEE_MAX to $cmax (queue restarted): overlap not ruled out")
 				ov=$(awk -v own="$OWNJOB" -v max="$W_BEE_MAX" -v act=" $W_BEE_ACTIVE" '
 					$3 != own && (index(act, " " $1 " ") || $1 + 0 > max + 0 || $2 == "running" || $2 == "queued") { print $1, $2, $3; seen[$1] = 1 }
 					END { n = split(act, a, " "); for (i = 1; i <= n; i++) if (!(a[i] in seen)) print a[i], "gone", "-" }' <<< "$l")
@@ -315,14 +335,14 @@ case $MODE in
 				while read -r id st lb; do
 					[[ -n $id ]] || continue
 					n=$((n + 1))
-					notes+=("  beebox job $id [$lb] $st, $(bee_times "$id")")
+					notes+=("  $WL job $id [$lb] $st, $(bee_times "$id")")
 				done <<< "$ov"
-				(( n > 0 )) && busy+=("$n other beebox job(s) during the window")
-				BEEREP=" beebox-other-jobs=$n"
+				(( n > 0 )) && busy+=("$n other $WL job(s) during the window")
+				BEEREP=" $WL-other-jobs=$n"
 			fi
 		fi
 		read -r l1 l5 l15 _ < /proc/loadavg
-		REPORT="$( ((BEE)) && echo beebox || hostname) window $((t1 - W_T0))s samples=${nsamp:-0}$( ((BEE)) || echo " load=$l1 $l5 $l15")$BEEREP"
+		REPORT="$( ((BEE)) && echo "$WL" || hostname) window $((t1 - W_T0))s samples=${nsamp:-0}$( ((BEE)) || echo " load=$l1 $l5 $l15")$BEEREP"
 		ts=$(date '+%F %T')
 		if (( ${#busy[@]} == 0 )); then echo "quiet-check: window QUIET $REPORT ($ts)"; exit 0; fi
 		(IFS=,; echo "quiet-check: window BUSY $REPORT ($ts); busy: ${busy[*]}")

@@ -35,7 +35,7 @@ Verdict: should-fix round needed
 Mode: review. Round: re-review after r2 and r3.
 Counts: 0 violations, 0 should-fix, 6 suggestions, 0 proposed rules (DS-44, my earlier proposal, is now accepted).
 
-Looked at (in game, beebox AMD, seed 987654321, evidence `p7-roads1-roadlook-evidence/66dd2efc0b-20261027T103023Z/mod/build/flythrough/`, all 14 frames plus `manifest.tsv`):
+Looked at (in game, the perf worker AMD, seed 987654321, evidence `p7-roads1-roadlook-evidence/66dd2efc0b-20261027T103023Z/mod/build/flythrough/`, all 14 frames plus `manifest.tsv`):
 `metropolis-3-quay-stone_bricks` (s2_m2), `metropolis-2-bridge-city-light_gray_concrete` (s2_m2), `metropolis-1-junction` (s2_m2), `town-1-street-stone_bricks` (s1_2, taiga snow town), `town-1-street-smooth_sandstone` (sm3_2, desert), `town-2-bridge-town-spruce_planks` (s1_2), `village-1-track-gravel` (s0_1, snowy taiga), `village-1-track-dirt_path` (sm1_0), `hamlet-1-track-mud_bricks` (sm1_m3, savanna/desert edge), `asphalt-1-overview`, `asphalt-2-cobbled_deepslate`, `asphalt-3-polished_deepslate`, `asphalt-4-gray_concrete`, `asphalt-5-joint`. Coder reports r2 and r3. Not seen: a desert-village track, a snowy track with a cut or embankment edge, the piers under a city bridge, seeds 12345 and 1 (no new surface kinds found there).
 
 ## Earlier violation and should-fix

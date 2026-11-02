@@ -21,10 +21,10 @@
 #      /locate fresh) skipped far over its ceiling exits 5 (`PERF SKIPPED ROW FAR OVER CEILING`); self-test node scripts/perf-check.test.mjs;
 #      also writes mod/build/perf/summary.md.
 # Quiet-machine rule (CLAUDE.md): a timing from a busy host is not a measurement. scripts/quiet-check.sh judges the host when the
-# heavy lock is taken and after each step (no other job or agent work on the host: locks, beebox jobs, other processes' CPU;
+# heavy lock is taken and after each step (no other job or agent work on the host: locks, other jobs of the worker it runs in, other processes' CPU;
 # loadavg recorded, not judged) and WATCHES THE WHOLE RUN (QUIETHOLE): --window-start at the first check samples locks and other
-# processes' CPU every FB_QUIET_SAMPLE s and records beebox's job list; --window-end before the verdict fails the window if any
-# other beebox job ran, started or finished in between, or any sample was busy. All of it goes to mod/build/perf/quiet.txt;
+# processes' CPU every FB_QUIET_SAMPLE s and records the worker's job list; --window-end before the verdict fails the window if any
+# other worker job ran, started or finished in between, or any sample was busy. All of it goes to mod/build/perf/quiet.txt;
 # the run ends with "perf: quiet host" or "perf: NOT A MEASUREMENT (busy host: <what overlapped>)" (quiet-check.sh --verdict).
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -132,7 +132,7 @@ P
 	fi
 fi
 if [ "$CHECK_ONLY" = 0 ] && [ -f "$LOGDIR/quiet.txt" ]; then
-	# the whole run: any other beebox job or busy sample between the first check and now (QUIETHOLE)
+	# the whole run: any other worker job or busy sample between the first check and now (QUIETHOLE)
 	[ -f "$QWIN/start" ] && { "$ROOT/scripts/quiet-check.sh" --window-end "$QWIN" >> "$LOGDIR/quiet.txt" || true; }
 	cat "$LOGDIR/quiet.txt"
 	# other job or agent work on the host at any step or in between (not our own load): not a measurement

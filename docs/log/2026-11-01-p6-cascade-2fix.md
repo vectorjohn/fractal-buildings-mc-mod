@@ -1,6 +1,6 @@
 # CASCADE 2fix: the cold district p95 FAIL after CASCADE step 2
 
-Item: diagnosis of HEAVY12's FAIL (perf row "Cold district plan, p95", 5,660 ms against ci 3,000 on a quiet beebox,
+Item: diagnosis of HEAVY12's FAIL (perf row "Cold district plan, p95", 5,660 ms against ci 3,000 on a quiet perf worker,
 bisected to bfa3f27d, CASCADE step 2, the bounded exit-cut walk). Plan: [plans/jflazy.md](../plans/jflazy.md), step 2.
 
 ## Cause
@@ -27,13 +27,13 @@ Counts (serial, no reads pool, deterministic; `ColdRowCountTest`, busy host, cou
 | neighbour + 7 samples | 4,145 | 4,281 |
 | whole-road fullCut calls | 0 | 2 (r2_m6_4, r2_m6_6, both none) |
 
-The verifier's quiet beebox runs agree: `district.cold.neighbour.ms` fell from 8,912 ms (af15ad4f) to 1,615 ms (bfa3f27d), while the
+The verifier's the quiet perf worker runs agree: `district.cold.neighbour.ms` fell from 8,912 ms (af15ad4f) to 1,615 ms (bfa3f27d), while the
 p95 rose by about 4.5 s. The worst cold tile in the sequence got cheaper (8.9 s -> 5.7 s); the budgeted row got dearer because the
 cost landed inside it. The verifier's guesses (walk fails then `fullCut` runs; per-call memo) do not happen here: every walk in the
 sequence returned true.
 
 So the row's 1.1 s since QUAYLAZY 5 was an artifact of the old exit cut prepaying this chain in the neighbour row. The real cold
-cost of planning 16,-35 with only the skeleton warm is about 5.7 s on beebox, almost all one quay chain trace.
+cost of planning 16,-35 with only the skeleton warm is about 5.7 s on the perf worker, almost all one quay chain trace.
 
 ## Why that chain trace is slow on the reads pool
 
@@ -61,7 +61,7 @@ the far end missed it, re-centred the box and paid one parallel round for a sliv
 - `ColdRowCountTest` serial: pass (4,145 fills, 648 rounds); planner-core `--tests '*Quay*'` 35/35.
 - `scripts/test-all.sh --no-client` at 995ae8c2: OK (planner-core 1040/1055, 15 skipped; cli 38/38; determinism 17/17; mod 132/140 +
   42/42 server game tests; viewer 142/142).
-- Quiet beebox `scripts/perf.sh --planner-only` at 995ae8c2 (radeonsi host, planner rows only, quiet-check QUIET before and after,
+- Quiet perf worker `scripts/perf.sh --planner-only` at 995ae8c2 (radeonsi host, planner rows only, quiet-check QUIET before and after,
   `perf: quiet host`), two runs:
 
 | run | p95 | median | neighbour | district CPU | load at start |

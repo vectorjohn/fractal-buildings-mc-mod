@@ -129,11 +129,13 @@ that works in all three. Full conventions: `docs/SILVERBULLET.md`.
 - LAN (`192.168.0.0/16` etc.) and the tailnet (`100.64.0.0/10`) are **blocked by
   a per-user firewall**. This is intentional; don't try to work around it.
   Loopback and DNS are open.
-- **One exception: SSH to the worker box `beebox`**, for running builds and
-  tests there through `scripts/remote.sh` (see "Parallel work"). Use it only
-  for that; nothing else on the LAN or tailnet is reachable, and that's on
-  purpose. It may not be set up on every host: `scripts/remote.sh --check`
-  says whether it is.
+- **One exception: SSH to the workers listed in the worker pool file**
+  (`.claude/workers.conf`, see "Parallel work"), for running builds and tests
+  there through `scripts/remote.sh` and `scripts/anywhere.sh`. Use it only for
+  that; nothing else on the LAN or tailnet is reachable, and that's on
+  purpose. There may be no workers on a host (no file): then everything runs
+  locally. `scripts/remote.sh --workers` lists them and `--check` says whether
+  one is reachable.
 - If a DNS lookup fails, report it rather than switching URLs to dodge it.
 
 ## Dev shell
@@ -174,10 +176,10 @@ that works in all three. Full conventions: `docs/SILVERBULLET.md`.
   desktop); the scripts refuse `FB_VK=nvidia` and only ever list one ICD.
   Other ad-hoc runs (a bare `xvfb-run ... ./gradlew`, Xvnc) stay on the dev
   shell's lavapipe unless you source `scripts/vk-select.sh`. If the Intel
-  iGPU or lavapipe is too slow for something, say so, or run it on the worker
-  box, which renders on its own GPU (`scripts/remote.sh`, see "Parallel work").
+  iGPU or lavapipe is too slow for something, say so, or run it on a worker
+  (the perf worker renders on its own GPU; `scripts/remote.sh`, see "Parallel work").
 - **Automated runs:** `xvfb-run -a scripts/dev ./gradlew <task>`, under the
-  heavy lock, or on the worker box with `scripts/remote.sh` (see "Parallel
+  heavy lock, or on a worker with `scripts/remote.sh` (see "Parallel
   work").
 - **When the human wants to watch:** a VNC display on `:1`, localhost only:
   ```sh
@@ -209,7 +211,7 @@ source of truth, and update it when a command changes.)*
   with a per-layer summary, screenshot and log paths; non-zero exit on failure.
 - Planner core (pure, fast): `scripts/dev ./gradlew :planner-core:test` (the full run under a suite slot: `scripts/suite.sh scripts/dev ./gradlew :planner-core:test`; see "Parallel work"); tests tagged `@Tag("heavy")` (minutes each: the metropolis all-caches-at-1 case of `ApproachCacheTest`, all city presets of `SettlementDeterminismTest`) are excluded by default: `-PfbTests=heavy` runs only them, `-PfbTests=all` everything; `scripts/test-all.sh --planner-heavy` runs them as the `planner-heavy` step (about 80 min; not part of `--full`; the to-main run adds it: `--full --planner-heavy --perf`)
 - Mod, incl. server game tests (`:mod:runGameTest`, wired into `check`): `scripts/dev ./gradlew :mod:build` (jar in `mod/build/libs/`, planner-core bundled as jar-in-jar); server tests alone: `scripts/dev ./gradlew :mod:runGameTest`
-- District-order test (B2; dedicated servers, no renderer, not heavy, ~10 min): `scripts/order-test.sh [--jobs N] [--only label,..]` (one fresh world per run label in parallel; each run picks a free port from `FB_ORDER_PORT`+idx up and retries on a bind failure with a `PORT RETRY` line (ORDERPORT); default `--jobs` from memory (cgroup `memory.max`, else MemAvailable, `FB_ORDER_RUN_MB` per run, max 6; an explicit `--jobs` over budget warns), 2 on beebox; outputs in `build/order-test/` with `STATUS`; exit 0 all PASS, 1 a FAIL verdict, 2 bad args or build failed, **4 = ORDER TEST DID NOT COMPLETE** (a run got no verdict: killed, OOM, timeout; not a test result, rerun) ; each run goes through `scripts/order-run-bounded.sh`: `FB_ORDER_TIMEOUT` (default 3000 s) bounds a run with no verdict, and a server still alive `FB_ORDER_GRACE` s (default 120) after its verdict logs `SHUTDOWN SLOW`, saves `build/order-test/<label>.hang-jstack.<pid>` and has only its own process group killed, still counted by its verdict; a beebox job killed over its memory cap makes `scripts/remote.sh` print `JOB OOM-KILLED` and exit 137; copies `mod/build/run/order/eula.txt` (worktree, else main checkout) into each run dir and, when there is none, writes `eula=true` itself under the standing EULA approval above (local 127.0.0.1, online-mode=false servers, which it checks), so `scripts/remote.sh` copies work; pin with `scripts/evidence.sh`)
+- District-order test (B2; dedicated servers, no renderer, not heavy, ~10 min): `scripts/order-test.sh [--jobs N] [--only label,..]` (one fresh world per run label in parallel; each run picks a free port from `FB_ORDER_PORT`+idx up and retries on a bind failure with a `PORT RETRY` line (ORDERPORT); default `--jobs` from memory (cgroup `memory.max`, else MemAvailable, `FB_ORDER_RUN_MB` per run, max 6; an explicit `--jobs` over budget warns), 2 in a perf worker job (it reads the job's own memory cap, so a worker with a smaller cap gets fewer); outputs in `build/order-test/` with `STATUS`; exit 0 all PASS, 1 a FAIL verdict, 2 bad args or build failed, **4 = ORDER TEST DID NOT COMPLETE** (a run got no verdict: killed, OOM, timeout; not a test result, rerun) ; each run goes through `scripts/order-run-bounded.sh`: `FB_ORDER_TIMEOUT` (default 3000 s) bounds a run with no verdict, and a server still alive `FB_ORDER_GRACE` s (default 120) after its verdict logs `SHUTDOWN SLOW`, saves `build/order-test/<label>.hang-jstack.<pid>` and has only its own process group killed, still counted by its verdict; a worker job killed over its memory cap makes `scripts/remote.sh` print `JOB OOM-KILLED` and exit 137; copies `mod/build/run/order/eula.txt` (worktree, else main checkout) into each run dir and, when there is none, writes `eula=true` itself under the standing EULA approval above (local 127.0.0.1, online-mode=false servers, which it checks), so `scripts/remote.sh` copies work; pin with `scripts/evidence.sh`)
 - Client test layers: `FB_LAYER=quick` (default of `scripts/client-test.sh` and `test-all.sh`: Hello, District B1, Gameplay B5, Terrain B3, TeleportHold) or `FB_LAYER=full` (adds Roads, Foliage, PortalHold, Compat; `test-all.sh --full`, heavy batches and the to-main run use it plus the order test); `FB_ONLY=<TestClass>` runs one client test (e.g. `FB_ONLY=RoadsClientGameTest`); fly-through and perf stay opt-in
 - Client game tests (heavy, exits on its own): `scripts/client-test.sh [gradle args]` (enters the dev shell and takes the heavy lock itself; runs `:mod:runClientGameTest` under `xvfb-run` on the Intel iGPU, lavapipe fallback; the bare `xvfb-run -a scripts/dev ./gradlew :mod:runClientGameTest` is also safe (on lavapipe), since the task itself drops `WAYLAND_DISPLAY` and sets `SDL_VIDEODRIVER=x11`); screenshots are copied to `mod/build/screenshots/` (e.g. `hello-hut.png`; the raw ones are in `mod/build/run/clientGameTest/screenshots/`), log in `mod/build/run/clientGameTest/logs/latest.log`
 - Client test renderer: `FB_VK=intel` (default: the Intel iGPU, with an automatic lavapipe fallback and a `FALLBACK` line in `build/client-test/gradle.log`) or `FB_VK=lavapipe`; nvidia refused
@@ -217,7 +219,7 @@ source of truth, and update it when a command changes.)*
 - Viewer (`viewer/`: Vite + Vitest + strict TS; `npm test` type-checks then runs headless): `cd viewer && ../scripts/dev npm ci` once, then `../scripts/dev npm test`, `../scripts/dev npm run build`, `../scripts/dev npm run dev` (dev server); how-to for humans (URLs, controls, env vars): `docs/VIEWER.md`; gallery: `../scripts/dev npm run gallery` (one gallery per `viewer/gallery-presets/<name>.json`: generates each with the CLI batch (or, for `"kind": "dump"`, the core fixture dump) into `viewer/gallery-data/gen/<name>/`, builds into `dist-gallery/`, captures one PNG per preset x camera to `viewer/out/gallery/<name>-<camera>.png`, cameras front-left, back-right, top, front and optionally cutaway; `FB_PRESETS=a,b` limits the presets, `npm run gen -- a b` regenerates only those; `FB_PORT` picks the preview port; `npm run dev:gen` serves the same data in the dev server)
 - CLI: `scripts/dev ./gradlew :cli:installDist` then `cli/build/install/fractal-cli/bin/fractal-cli <gen|floorplan|batch|check|bench|diversity|region|roads|city|city-check|sample-city> ...` (inside the dev shell; no args prints usage, bad input exits 2; generator v1 by default, `--gen v0` for Phase 3 output, `--type T` picks the building type (`check`/`bench`: `--types`), style `auto` picks it from the biome), e.g. `gen --seed 1 --lot 16x12 --style medieval --terrain plane:64:1:0:4 --check --out out.json`, `batch --seeds 0..15 --lot 16x12 --style medieval --out-dir viewer/gallery-data/gen/medieval` (seed-N.json plus index.json for the viewer), `floorplan --seed 5 --lot 20x16 --style medieval --type house [--wide]` or `floorplan --in scene.json [--building ID]` (a building's storeys as ASCII grids with legend, room table, openings, furniture and circulation, for text-reading reviewers; `Floorplan` in `docs/VIEWER.md`), `city --seed 12345 --terrain recorded:fixtures/terrain/w12345-river-s8.json.gz --site -900,-3500,town,300 --out-dir viewer/fixtures/settlement/skeleton/river-town` (a settlement skeleton: `settlement.json` + `terrain.json.gz`; `--cell CX,CZ` instead of `--site` plans the settlement a region cell belongs to through the join rule; fixtures in `viewer/fixtures/settlement/skeleton/README.md`; `--districts` also plans every district: `districts/<id>.json` with briefs filled and lot counts in `settlement.json`, `--scenes all|none|auto:N|ID,ID` adds exterior district scenes (`--scene` is the old spelling; `--interiors` keeps interiors; `--check` prints every violation); fixtures in `viewer/fixtures/settlement/districts/README.md`), `roads --seed S --terrain recorded:FILE [--out FILE]` (the road graph and every route of ADR 0004 over a recorded world: a region dump with a `roads` layer for `region.html`, and a report on stdout: linked share, edge lengths, crossings, per-route cost; `city --cell ... --roads` plans a settlement with required exits and approaches toward its links), `city-check --seeds A..B [--terrain T,..] [--sites cells|random:N|at:X,Z,TIER,RADIUS|gates:FILE] [--scenes auto:N] [--door-rise] [--ignore RULE,..] [--out FILE.md] [--fill-json FILE]` (plans every district of each settlement, builds scenes for N of them, runs every settlement and building rule, markdown report; a `## Fill` section (DS-47 metrics, METROFILL M0; warnings `core-fill`, `road-sliver`, `road-hierarchy`) is always written and `--fill-json` saves its numbers for before/after diffs; `--door-rise` also builds them with interiors and adds the `## Door rise (DS-45)` table, about 2.5x slower; exit 1 on a violation not ignored; e.g. `city-check --seeds 1 --sites gates:fixtures/terrain/gate-sites.tsv --scenes auto:2`), `sample-city --out-dir viewer/fixtures/settlement/sample` (the sample settlement plan, its districts and one district scene; `--big N` writes a synthetic N x N grid for viewer performance tests, put it under `viewer/out/`; regenerate the committed fixture with it when `SampleSettlementTest` says it is stale), `check --seeds 0..999` (exit 1 on any violation), `bench --n 1000`; or `:cli:run --args="..."`; city gallery (D0): `scripts/dev npm run city` plans every `viewer/city-presets/<name>.json` (one per T2 gate window, plus the T1 river-town, mixed-city and a synthetic city, and a hamlet and a village on each of the T1 windows (D1)) into `viewer/out/city/<name>/` (`npm run city -- a b` only those), and `npm run city-gallery` also builds the viewer and captures `plan.png` plus a 3D overview and street frame of two district scenes per city next to the data (`FB_CITIES=a,b` limits it; not part of `scripts/test-all.sh`)
 - Server-only install test (heavy; takes the heavy lock itself): `scripts/server-only-test.sh [--seed N]` runs a dedicated server WITH the mod (`:mod:runServerOnly`, dir `mod/build/run/serverOnly/`, 127.0.0.1:25599, online-mode=false) and an UNMODDED client (`tools/vanilla-client`: Minecraft + Fabric Loader only, a standalone Gradle build) under Xvfb; teleports it to a settlement, screenshots, checks both logs; output in `build/server-only/` (`result.txt`, `screenshot*.png`, logs); findings in `docs/research/spikes/server-only.md`
-- Gate playtest kit (C2): `scripts/playtest-kit.sh [--fly] [--seeds A,B,random] [--radius R] [--fly-from DIR]` writes `docs/review/phase6/gate-kit/` (per-seed settlement lists with `/tp` lines, road links, route, `map.svg`; `--fly` adds fly-through frames via `anywhere.sh`, ~1 h on beebox; ~40 s without); rerun with `--fly` on the release candidate; self-test `scripts/dev node scripts/playtest-kit.test.mjs`
+- Gate playtest kit (C2): `scripts/playtest-kit.sh [--fly] [--seeds A,B,random] [--radius R] [--fly-from DIR]` writes `docs/review/phase6/gate-kit/` (per-seed settlement lists with `/tp` lines, road links, route, `map.svg`; `--fly` adds fly-through frames via `anywhere.sh`, ~1 h on the perf worker; ~40 s without); rerun with `--fly` on the release candidate; self-test `scripts/dev node scripts/playtest-kit.test.mjs`
 - Playtest notes (FBNOTE, debug; off by default, always on in a dev run): in game `/fbnote <comment>` (client command; enable with `-Dfractalbuildings.debugNotes=true` or `debugNotes=true` in `config/fractalbuildings-client.properties`) writes `screenshots/<name>.png` plus `<name>.json` (position, seed, biome, targeted block, planner settlement/lot/building/room in singleplayer); `scripts/dev scripts/playtest-gallery.mjs <screenshots-dir> [--date D] [--out DIR] [--notes-only]` turns them into `docs/review/playtest-<date>/REVIEW.md` plus JPEGs; how-to `docs/PLAYTEST.md`; client test `FB_ONLY=FbNoteClientGameTest scripts/client-test.sh`
 - Viewer screenshot (Playwright, software WebGL, writes `viewer/out/smoke.png`): `cd viewer && ../scripts/dev npm run screenshot`
 - Test scope (which layers a change needs; git reads only, seconds): `scripts/test-scope.sh [<base branch>|A..B] [--explain] [--dirty]` (`<base>`: merge-base(base, HEAD)..HEAD of the checkout you run it in; `A..B`: what B changed since A, from any checkout) prints the required and advisory layers with their commands; mapping in `scripts/test-scope.tsv` (`--check-table` finds unmapped files); policy in `docs/TESTING.md`
@@ -230,8 +232,8 @@ source of truth, and update it when a command changes.)*
 - Glossary: `scripts/glossary.sh` regenerates `docs/GLOSSARY.md` (one row per item code or run term) from the bold ROADMAP and archived item names, plans named after a code, work-log headings, `6.x` Polish backlog lines and the hand-kept `docs/glossary-extra.tsv` (CODE, meaning, link relative to `docs/`, status); sorted, deterministic, under a second; `--check` writes nothing and exits 1 if stale, `--stdout` prints it; `scripts/test-all.sh` runs the check and reports `stale` without failing
 - Whole Gradle build (all three modules + boundary check): `scripts/dev ./gradlew build`
 - Boundary check alone: `scripts/dev ./gradlew :planner-core:checkNoMinecraft` (also part of `check` and run before `compileJava`)
-- **Any of the above on the worker box:** `scripts/remote.sh -- <command>`, the command exactly as you'd run it from the worktree root but without a `flock .../heavy.lock` prefix (e.g. `scripts/remote.sh -- scripts/test-all.sh`, `scripts/remote.sh -- scripts/client-test.sh`, `scripts/remote.sh -- scripts/dev ./gradlew :planner-core:test`). It copies the worktree (no `.git`, nothing gitignored), queues the command, prints the last 40 lines and saves the full log to `build/remote/<job>.log`, copies results back to the same paths (`build/test-all/`, JUnit XML, `mod/build/screenshots/`, client test logs, `viewer/out/`; `--fetch PATH` for more) and exits with the command's status (137, with a `JOB OOM-KILLED` line, when the job went over beebox's per-job memory cap, MemoryMax 28 % = 7.9 GiB). Output written elsewhere doesn't come back unless you `--fetch` it. Each job has a state file `build/remote/<job>.state` (id, command, fetch paths, commit, status) and its copy on beebox is kept until the results are back, so a job whose waiter died (SIGKILL, or SIGHUP when a tool call or session ends; SIGINT/SIGTERM still cancel it) runs on: `scripts/remote.sh --list` shows this worktree's unfetched jobs, `--attach <job>` / `--attach-last` waits if needed, fetches, writes the log and exits with the job's status, and `scripts/evidence.sh <label> scripts/remote.sh --attach <job>` pins evidence for it; copies older than 3 days (`FB_REMOTE_KEEP_DAYS`) are deleted on the next call. `scripts/remote.sh --check` exits 0 if the worker is reachable; `--help` for the rest.
-- **Either host, whichever frees first (preferred for full suites and client runs):** `scripts/anywhere.sh -- <command>` (same command form as `remote.sh`; e.g. `scripts/evidence.sh <slug> scripts/anywhere.sh -- scripts/test-all.sh --no-client`) waits here in a FIFO queue (`.claude/anywhere/`), not in beebox's queue, and starts the command locally when what it needs is free (a suite slot, the heavy lock, 1-min load < 14) or through `scripts/remote.sh` when beebox has a free slot (at most `--depth` jobs, default 2, running or queued there, so a job may run beside others; a timing run (perf.sh or profile.sh, also under evidence.sh, or `test-all.sh --perf`) goes there only when beebox is empty, prefers beebox, fills all its slots while it runs, and reserves beebox while it waits for it (PERFROUTE); use `--only beebox` for a measurement, since a free local heavy lock still takes it; perf.sh judges the window either way), whichever comes first; logs one `anywhere: -> HOST (why)` line (also in the evidence); `--prefer`/`--only local|beebox`, `--fetch`, `--cpu`, `--wait S`; `--status` shows the queue and both hosts; `--dry-run` says where it would go now; FB_VK, interactive runs and a subdirectory cwd stay local; tests: `scripts/anywhere-selftest.sh`
+- **Any of the above on a worker:** `scripts/remote.sh [--worker W] -- <command>` (W: a worker name or role from the worker pool file; default the perf worker), the command exactly as you'd run it from the worktree root but without a `flock .../heavy.lock` prefix (e.g. `scripts/remote.sh -- scripts/test-all.sh`, `scripts/remote.sh -- scripts/client-test.sh`, `scripts/remote.sh -- scripts/dev ./gradlew :planner-core:test`). It copies the worktree (no `.git`, nothing gitignored), queues the command, prints the last 40 lines and saves the full log to `build/remote/<job>.log`, copies results back to the same paths (`build/test-all/`, JUnit XML, `mod/build/screenshots/`, client test logs, `viewer/out/`; `--fetch PATH` for more) and exits with the command's status (137, with a `JOB OOM-KILLED` line, when the job went over the worker's per-job memory cap, its `memory` in the pool file). Output written elsewhere doesn't come back unless you `--fetch` it. Each job has a state file `build/remote/<job>.state` (id, command, fetch paths, commit, status) and its copy on the worker is kept until the results are back, so a job whose waiter died (SIGKILL, or SIGHUP when a tool call or session ends; SIGINT/SIGTERM still cancel it) runs on: `scripts/remote.sh --list` shows this worktree's unfetched jobs, `--attach <job>` / `--attach-last` waits if needed, fetches, writes the log and exits with the job's status, and `scripts/evidence.sh <label> scripts/remote.sh --attach <job>` pins evidence for it; copies older than 3 days (`FB_REMOTE_KEEP_DAYS`) are deleted on the next call. `scripts/remote.sh --check` exits 0 if the worker is reachable, `--workers` lists the pool; with no pool file it exits 2 and says where the file goes; `--help` for the rest.
+- **Any host, whichever frees first (preferred for full suites and client runs):** `scripts/anywhere.sh -- <command>` (same command form as `remote.sh`; e.g. `scripts/evidence.sh <slug> scripts/anywhere.sh -- scripts/test-all.sh --no-client`) waits here in a FIFO queue (`.claude/anywhere/`), not in a worker's queue, and starts the command locally when what it needs is free (a suite slot, the heavy lock, 1-min load < 18) or through `scripts/remote.sh` on the first worker of the pool with a free slot (fewer jobs running or queued than its `slots`; `--depth N` overrides, so a job may run beside others; a timing run (perf.sh or profile.sh, also under evidence.sh, or `test-all.sh --perf`) goes only to a worker with the perf role and only when it is empty, prefers it, fills all its slots while it runs, and reserves it while it waits for it (PERFROUTE); use `--only perf` for a measurement, since a free local heavy lock still takes it; perf.sh judges the window either way), whichever comes first; logs one `anywhere: -> HOST (why)` line (also in the evidence); `--prefer`/`--only` take `local`, a worker name, a role or a comma list (the old `--only <ssh host>` still works, resolved through the pool file), `--fetch`, `--cpu`, `--wait S`; `--status` shows the queue, this host and every worker; `--dry-run` says where it would go now; FB_VK, interactive runs and a subdirectory cwd stay local; tests: `scripts/anywhere-selftest.sh`
 
 ## Parallel work (a priority)
 
@@ -254,25 +256,29 @@ agents can work and test at once. The rules below exist to make that safe.
   2026-10-30): don't report it as a result, in a log, brief, review or
   PERFORMANCE entry; measure again on a quiet host. **Quiet means no other
   job or agent work on the host** for the whole timed run (not a loadavg
-  threshold: the measured job's own threads raise the load, 4 to 6 on beebox
-  under a perf run). **Measure on beebox**, sent when `ssh beebox job status`
-  shows nothing else running or queued. beebox runs up to 3 jobs at once, so
-  on beebox quiet means **its queue empty and no job running besides ours
-  for the whole timed window** (one that starts and ends inside it counts).
+  threshold: the measured job's own threads raise the load, 4 to 6 on the
+  perf worker under a perf run). **Measure on the perf worker** (the worker
+  with the `perf` role in the pool file: the benchmark machine all reported
+  timings come from), sent when its queue (`scripts/anywhere.sh --status`)
+  shows nothing else running or queued (`scripts/anywhere.sh --only perf`
+  does this). It runs several jobs at once, so there quiet means **its queue
+  empty and no job running besides ours for the whole timed window** (one
+  that starts and ends inside it counts).
   This host
   is not quiet (John runs his own Minecraft client here, and other agents
   work all day): don't wait for local quiet. `scripts/quiet-check.sh`
   checks it (no suite slot, heavy lock or `scripts/anywhere.sh` job held by
-  anyone else, no other beebox job, processes that aren't the run's own
-  under half a core; exit 0 quiet, 1 busy; `--beebox` asks beebox from
-  here); `--window-start DIR` / `--window-end DIR` judge a whole window
-  (beebox's job history plus a lock and CPU sampler every 10 s), and
+  anyone else, no other job on the worker it runs in, processes that aren't
+  the run's own under half a core; exit 0 quiet, 1 busy; `--worker perf`
+  asks the perf worker from here); `--window-start DIR` / `--window-end DIR`
+  judge a whole window (the worker's job history plus a lock and CPU sampler
+  every 10 s), and
   `scripts/perf.sh` watches its whole run that way, writes it to
   `mod/build/perf/quiet.txt` and ends with `perf: quiet host` or `perf: NOT
   A MEASUREMENT (busy host: <what overlapped>)` (self-test
   `scripts/quiet-check-selftest.sh`). Record host, renderer and the loadavg sampled just before
   the run next to every number, and compare like with like (mod against the
-  vanilla base on the same host; never beebox against local). The one
+  vanilla base on the same host; never the perf worker against local). The one
   exception: a speed-up so large it shows despite the load may be reported,
   labelled "busy host, speed-up only", never as the new number.
 - **Full fast suites take a suite slot**: at most `FB_SUITE_SLOTS` (default 2)
@@ -285,36 +291,47 @@ agents can work and test at once. The rules below exist to make that safe.
   "waiting for suite slot" with the holders and waits. Single-class `--tests X`
   runs, CLI runs and heavy jobs (heavy lock) don't need it. Locks:
   `<repo root>/.claude/suite.lock.1..N`, freed when the holder exits or is killed.
-- **The worker box (`beebox`) is a second heavy host.** It runs up to 3 jobs
-  at once from its own queue (task-spooler, `[run=N/3]` in `job status`;
-  since 2026-10-27), so it doesn't use the heavy lock, and a busy local
-  heavy lock doesn't block it. When `scripts/remote.sh --check` succeeds, send
-  heavy jobs and long runs there with `scripts/remote.sh -- <cmd>`: client
-  game tests, `scripts/test-all.sh`, the ~10 min `:planner-core:test`,
-  galleries. Run quick builds and tests locally as before; copying the
-  worktree over costs a few seconds. If the check fails, use the local heavy
-  lock as above.
+- **Workers are more heavy hosts.** The worker pool is a gitignored file,
+  `<repo root>/.claude/workers.conf` in the main checkout (format in
+  `scripts/lib/workers.sh`; start from `scripts/workers.conf.example`), one
+  entry per machine: a symbolic name, its ssh host, roles, job slots, memory
+  cap per job, renderer and specs. The docs never name a host; they say
+  **the perf worker** (the worker with the `perf` role: the benchmark
+  machine, where quiet measurements are taken) and **a worker** (any enabled
+  entry, e.g. one with roles `heavy suite`). `scripts/remote.sh --workers`
+  prints the pool. **No file means no workers**: everything runs on this
+  host, and only commands that name a worker fail (exit 2, pointing to the
+  example). Each worker runs `slots` jobs at once from its own queue
+  (task-spooler behind a `job` command, `[run=N/S]` in `job status`), so it
+  doesn't use the heavy lock, and a busy local heavy lock doesn't block it.
+  When `scripts/remote.sh --check` succeeds, send heavy jobs and long runs
+  there with `scripts/remote.sh [--worker W] -- <cmd>`: client game tests,
+  `scripts/test-all.sh`, the ~10 min `:planner-core:test`, galleries. Run
+  quick builds and tests locally as before; copying the worktree over costs
+  a few seconds. If the check fails, use the local heavy lock as above.
   - **Prefer `scripts/anywhere.sh -- <cmd>` for full suites and client
     runs** over picking a host yourself: it holds the job locally and starts
     it on whichever host frees first (the local suite slot or heavy lock, or
-    an idle beebox), so both machines stay busy and nothing gets stuck in
-    beebox's queue, which can't drop a queued job. Run it in the background
+    a worker with a free slot), so every machine stays busy and nothing gets
+    stuck in a worker's queue, which can't drop a queued job. Run it in the background
     (it can wait a long time); stop it with SIGTERM, never SIGKILL.
-  - **Quiet switch:** `scripts/anywhere.sh --local-max N [--until HH:MM]` caps this host at N anywhere-routed suite/heavy/full jobs at once (also counting suite slots and the heavy lock held outside anywhere; N=0: all of them go to beebox), `--local-max off` lifts it, `--status` shows it; light and local-only jobs (FB_VK, snapshot-test.sh, squash-merge.sh) are not held back, and it only gates jobs started through anywhere.sh, so while it is on, send full suites and client runs through it.
-  - **It renders on its GPU**, not lavapipe: there's no desktop on it to
-    share the GPU with. `scripts/remote.sh` runs the command in a headless
-    sway session and the test scripts use its Xwayland display instead of
-    Xvfb (`FB_USE_DISPLAY=1`), so Minecraft gets hardware OpenGL (radeonsi;
-    the log says "Using graphics device: AMD Radeon Graphics"). Screenshots can
+  - **Quiet switch:** `scripts/anywhere.sh --local-max N [--until HH:MM]` caps this host at N anywhere-routed suite/heavy/full jobs at once (also counting suite slots and the heavy lock held outside anywhere; N=0: all of them go to workers), `--local-max off` lifts it, `--status` shows it; light and local-only jobs (FB_VK, snapshot-test.sh, squash-merge.sh) are not held back, and it only gates jobs started through anywhere.sh, so while it is on, send full suites and client runs through it.
+  - **A worker with a GPU renders on it**, not lavapipe: there's no desktop
+    on it to share the GPU with. `scripts/remote.sh` runs the command in a
+    headless sway session and the test scripts use its Xwayland display
+    instead of Xvfb (`FB_USE_DISPLAY=1`), so Minecraft gets hardware OpenGL
+    (the perf worker's GPU is in the pool file's `renderer` line, and the log
+    names it: "Using graphics device: ..."). A worker without a GPU (no
+    `/dev/dri`) falls back to Xvfb + lavapipe by itself. Screenshots can
     differ slightly from lavapipe ones. If a run fails in a way that looks
     like a GPU or display problem, retry with `scripts/remote.sh --cpu`
     (Xvfb + lavapipe, as locally) and add a line to `docs/NOTES.md`.
-  - It is **not quiet by nature**: up to 3 jobs share it (each 28 % RAM,
-    CPUWeight 50), so a measurement there counts only when nothing else ran
+  - A worker is **not quiet by nature**: up to `slots` jobs share it (each
+    under its memory cap, CPUWeight 50), so a measurement there counts only when nothing else ran
     beside it for the whole window (`scripts/perf.sh` checks; another job
     can start right after yours is sent). And
     **timings from different hosts or renderers aren't comparable**: record
-    the host (`beebox` or this one) and renderer with every number, and
+    the host (the worker's name from the pool file, or this one) and renderer with every number, and
     compare like with like.
   - Interactive runs (`runClient` you or the human watch, VNC, the desktop
     launch) stay local.
@@ -323,14 +340,15 @@ agents can work and test at once. The rules below exist to make that safe.
     checkout's `build/` directories.
   - Its output is the tail of the log, lines cut to 300 characters; the full
     log is in `build/remote/<job>.log`. Grep that rather than printing it.
-  - **Three slots for everyone**, so jobs can still wait in its queue for a
-    long time (26 min on its first busy morning, when it had one slot). Look at `ssh beebox job status`
-    before sending, run anything long detached (`setsid nohup scripts/remote.sh
+  - **A few slots for everyone**, so jobs can still wait in a worker's queue
+    for a long time (26 min on the perf worker's first busy morning, when it
+    had one slot). Look at `scripts/anywhere.sh --status` before sending, run anything long detached (`setsid nohup scripts/remote.sh
     -- ... > log 2>&1 &`) so a tool timeout can't kill the wait (if it dies
     anyway, `scripts/remote.sh --list` and `--attach <job>` get the results
     back), and watch a
-    running job with `ssh beebox 'timeout 5 job log <ID>'`. Timings and the
-    shortest client run are in `docs/NOTES.md` ("beebox").
+    running job with `ssh <host> 'timeout 5 job log <ID>'` (the host from
+    `scripts/remote.sh --workers`). Timings and the shortest client run are
+    in `docs/NOTES.md` ("perf worker").
 - **Merges into a shared branch take the merge lock**: hold
   `flock <repo root>/.claude/merge.lock` for the merge itself (clean-checkout
   check, merge, commit) in one process, then release it. Two merges into the

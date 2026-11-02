@@ -11,7 +11,7 @@ Item codes (PARREADS, MAINSTUB, TPHOLD, ...) and run terms, one row each. **Gene
 | A3F |  | Phase 6 step: interiors clear terrain, RAIL shape, full-interior ownership test | done | [[docs/log/2026-10-22-p6-a3f-interiors|log]] |
 | A4 |  | Phase 6 step: block mapping (6.1 palette half) | done | [[docs/log/2026-10-22-p6-a4-blocks|log]] |
 | ADR4 |  | ADR 0004, roads between settlements (with John's water rule) | done | [[docs/adr/0004-roads-between-settlements|0004-roads-between-settlements]] |
-| anywhere |  | `scripts/anywhere.sh`: runs a job on whichever host (this machine or beebox) frees first | - | [[CLAUDE|CLAUDE]] |
+| anywhere |  | `scripts/anywhere.sh`: runs a job on whichever host (this machine or a worker of the pool) frees first | - | [[CLAUDE|CLAUDE]] |
 | B0 |  | Phase 7 step: high-rise design checks (warnings) | done | [[docs/log/2026-10-25-p7-hr-b0|log]] |
 | B1 |  | Phase 6 step: registration, placement, structures, pieces (6.1 pieces half, 6.2) | done | [[docs/log/2026-10-22-p6-b1-worldgen|log]] |
 | B2 |  | Phase 6 step: in-world determinism (6.1 / 6.2 evidence) | done | [[docs/log/2026-10-22-p6-b2-order|log]] |
@@ -25,12 +25,11 @@ Item codes (PARREADS, MAINSTUB, TPHOLD, ...) and run terms, one row each. **Gene
 | BASEMENT | 7.18 | storeys below the entrance (cellars, undercrofts, walk-outs, high-rise plant levels) | open | [[docs/ROADMAP|ROADMAP 7.18]] |
 | BEARDFIT | 7.26 | entrance flights fitted to the ground the beard leaves | open | [[docs/ROADMAP|ROADMAP 7.26]] |
 | BEDFIX |  | bed halves lost at chunk borders | done | [[docs/log/2026-10-23-p6-bedfix|log]] |
-| beebox |  | the worker box: a second machine for heavy jobs and long runs, reached by `scripts/remote.sh` | - | [[CLAUDE|CLAUDE]] |
 | BLK16 |  | fix: the entrance-reachable check failed at the steepest allowed grade (Phase 5) | done | [[docs/runs/2026-10-21-phase5|2026-10-21-phase5]] |
 | BRIDGEENDS |  | bridge ends and high road embankments faced in foundation stone (abutments) | done | [[docs/REVIEW|REVIEW]] |
 | CACHE |  | retention for in-flight and recently used tiles | done | [[docs/log/2026-10-22-p6-cache|log]] |
 | CASCADE |  | the exit trim and link rule (MAINSTUB) made cheaper, parallel and warmed early, byte-identical; proposed... | open | [[docs/log/2026-11-01-p6-cascade-7|log]], [[docs/plans/jflazy|jflazy]] |
-| CASCADE2FIX |  | perf row "Cold district plan, p95" 3.6-3.9 s vs ci 3 s on quiet beebox (cold quay-chain trace of sample... | polish | [[docs/ROADMAP|ROADMAP polish]] |
+| CASCADE2FIX |  | perf row "Cold district plan, p95" 3.6-3.9 s vs ci 3 s on the quiet perf worker (cold quay-chain trace of... | polish | [[docs/ROADMAP|ROADMAP polish]] |
 | CIRC |  | 5.11 interior circulation (hub door graph, fewer walk-through rooms) | done | [[docs/archive/roadmap-phase-5|roadmap-phase-5]] |
 | CIRC2 |  | squarer rooms, bedrooms first | done | [[docs/log/2026-10-21-p5-circ2|log]] |
 | CITYQ |  | sparse and "ocean" cities in the B9 fly-through | done | [[docs/log/2026-10-23-p6-cityq|log]] |
@@ -121,8 +120,9 @@ Item codes (PARREADS, MAINSTUB, TPHOLD, ...) and run terms, one row each. **Gene
 | PARTITIONS |  | high-rise corridors in exposed brick on both sides; inner walls should be plaster (DS-49) | polish | [[docs/ROADMAP|ROADMAP polish]], [[docs/design/STANDARDS|STANDARDS]] |
 | PBLOCKS |  | process item: the generated block reference for the design agents (`scripts/design-blocks.sh`) | done | [[docs/design/blocks|blocks]] |
 | PDESIGN |  | process item: the design reviewer agents (architect, interior designer) and the design standards | done | [[docs/design/STANDARDS|STANDARDS]] |
+| perf worker |  | the worker with the `perf` role in the gitignored worker pool file `.claude/workers.conf`: the benchmark... | - | [[CLAUDE|CLAUDE]] |
 | PERFBASE |  | the perf base world is vanilla | done | [[docs/log/2026-10-31-p6-perfbase|log]] |
-| PERFROUTE |  | scripts/anywhere.sh sends a timing run (perf.sh, profile.sh, test-all --perf) to beebox only when it is... | done | [[scripts/anywhere.sh|anywhere.sh]] |
+| PERFROUTE |  | scripts/anywhere.sh sends a timing run (perf.sh, profile.sh, test-all --perf) to the perf worker only when... | done | [[scripts/anywhere.sh|anywhere.sh]] |
 | PERFSRV |  | perf.sh world half off the renderer | done | [[docs/log/2026-10-26-p6-perfsrv|log]] |
 | PFLOOR |  | process item: `fractal-cli floorplan`, storeys as ASCII grids for text-reading reviewers | done | [[docs/log/2026-10-25-proc-floorplan|2026-10-25-proc-floorplan]] |
 | PLAN6 |  | the Phase 6 plan | done | [[docs/plans/phase6|phase6]] |
@@ -142,7 +142,7 @@ Item codes (PARREADS, MAINSTUB, TPHOLD, ...) and run terms, one row each. **Gene
 | QUAYFAST |  | , quays traced run by run (fewer chunks, the same quays) | - | [[docs/plans/quayfast|plan]] |
 | QUAYLAZY |  | , a lazy quay trace that runs in parallel | - | [[docs/plans/quaylazy|plan]] |
 | QUAYOUT |  | take the quay trace out of structure starts so a late warmer can't freeze the server | open | [[docs/PERFORMANCE|PERFORMANCE]] |
-| QUIETHOLE |  | the quiet check judges the whole timed window (beebox job history, lock and CPU sampler), not only step... | done | [[scripts/quiet-check.sh|quiet-check.sh]] |
+| QUIETHOLE |  | the quiet check judges the whole timed window (the worker's job history, lock and CPU sampler), not only... | done | [[scripts/quiet-check.sh|quiet-check.sh]] |
 | QUIETLOCAL |  | `scripts/anywhere.sh --local-max`: cap heavy jobs on this machine while John uses it | done | [[CLAUDE|CLAUDE]] |
 | QUIETPERF |  | quiet-machine rule: a timing taken on a busy host is not a measurement (John 2026-10-30) | - | [[CLAUDE|CLAUDE]] |
 | R1 |  | Phase 5 step: region field, tiers, `region` command | done | [[docs/log/2026-10-21-p5-r1-region|log]] |
@@ -230,6 +230,7 @@ Item codes (PARREADS, MAINSTUB, TPHOLD, ...) and run terms, one row each. **Gene
 | WALLSLOPE |  | a continuous wall walk on sloping ground | done | [[docs/log/2026-10-21-p5-wallslope|log]] |
 | WALLWALK |  | curtain walls and a continuous wall walk | done | [[docs/log/2026-10-21-p5-wallwalk|log]] |
 | warmer |  | RegionWarmer: plans settlements and roads on background threads ahead of the player, so chunks don't wait | - | [[docs/NOTES|NOTES]] |
+| worker pool |  | the machines `scripts/remote.sh` and `scripts/anywhere.sh` send jobs to, listed in the gitignored... | - | [[CLAUDE|CLAUDE]] |
 | WORKERSFLAKE |  | WorkersShutdownTest flake | done | [[docs/log/2026-10-28-workersflake|log]] |
 | WORKSHOP |  | workshop lean-to stores: a back door to the yard and the right furniture (became part of DS35DOORS) | polish | [[docs/ROADMAP|ROADMAP polish]] |
 | WPOTFLAKE |  | flake: WorldPlannerOrderTest's 8-thread tiny-cache case timed out on a loaded host (compute-bound, not a... | done | [[docs/log/2026-10-28-wpotflake|log]] |

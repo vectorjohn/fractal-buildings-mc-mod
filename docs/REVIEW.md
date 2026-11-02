@@ -426,7 +426,7 @@ in `.claude/reports/` (John, 2026-10-28; earlier report copies are in
 
 - [ ] **REGIONPERF: the region layer is 36 s, budget 6 s (2026-10-27)**: decide the budget and the teleport-hold tradeoff (the 4 s you accepted is now about 36 s plus 69 s of quays on a waterfront metropolis, and TPHOLD gives up at 30 s).
   Where: [review/regionperf-decision.md](review/regionperf-decision.md) (who pays it, why it is slow, what each piece buys, options, a recommendation); numbers in [PERFORMANCE.md](PERFORMANCE.md), "Region layer row".
-  - @assistant 2026-10-29: HEAVY6 numbers (after PARREADS) are in section 7 of [review/regionperf-decision.md](review/regionperf-decision.md): worst cold chunk 21.8 s local quiet / 37.8 s beebox, `/locate` fresh 2.7 / 4.6 s, region layer 8.1 / 11.2 s (ceiling 10 s). Suggestion for release-plan question 4: a 60 s cold-arrival budget, `/locate` ceiling stays at 5 s.
+  - @assistant 2026-10-29: HEAVY6 numbers (after PARREADS) are in section 7 of [review/regionperf-decision.md](review/regionperf-decision.md): worst cold chunk 21.8 s local quiet / 37.8 s on the perf worker, `/locate` fresh 2.7 / 4.6 s, region layer 8.1 / 11.2 s (ceiling 10 s). Suggestion for release-plan question 4: a 60 s cold-arrival budget, `/locate` ceiling stays at 5 s.
   Result:
 
 - [ ] **Phase 6 gate: the playtest (C2 kit)**: three seeds, about an hour each, on the release candidate.

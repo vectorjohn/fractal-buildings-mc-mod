@@ -10,9 +10,9 @@ It passed at 067e5415 (run-phase6 2c06e7af).
 
 ## Bisect
 
-- 117aeb45 (DOORBANK), beebox radeonsi: pass; seed 1 street columns 734 (as before).
+- 117aeb45 (DOORBANK), the perf worker radeonsi: pass; seed 1 street columns 734 (as before).
 - c2f082d8 (PORCHSTEP + docs), local Intel: fail; street columns 736.
-- The fixed branch shows the same leaf (now counted as unclaimed) on both the Intel iGPU and beebox, so it is not a host difference.
+- The fixed branch shows the same leaf (now counted as unclaimed) on both the Intel iGPU and the perf worker, so it is not a host difference.
 
 Culprit: 46a0c194 (6.19 PORCHSTEP).
 
@@ -39,8 +39,8 @@ The control (leaf clear off) still has a signal: street 25 (26 before, minus thi
 
 ## Verification
 
-- `FB_ONLY=FoliageClientGameTest scripts/client-test.sh` at d7cf99a4, local Intel: pass; beebox radeonsi: pass (evidence
-  `p6-foliagefail-local`, `p6-foliagefail-beebox`). Seed 1 shows `unclaimed 1` and claimed 0 on both hosts.
+- `FB_ONLY=FoliageClientGameTest scripts/client-test.sh` at d7cf99a4, local Intel: pass; the perf worker radeonsi: pass (evidence
+  `p6-foliagefail-local` and its twin named after the perf worker). Seed 1 shows `unclaimed 1` and claimed 0 on both hosts.
 - `scripts/order-test.sh`: see the report (it only changes the test, so the mod's main code is the run branch's).
 
 ## Finding (not fixed)

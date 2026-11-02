@@ -102,7 +102,7 @@
     },
     {
       "key": "region.cold.quays.tile.ms",
-      "label": "QUAYLAZY: lazy quays of the owned waterfront tile nearest the metropolis centre, cold planner after the region warm (quiet beebox 2026-11-01: 2.25 / 2.17 s; the whole trace is 20 s)",
+      "label": "QUAYLAZY: lazy quays of the owned waterfront tile nearest the metropolis centre, cold planner after the region warm (the quiet perf worker 2026-11-01: 2.25 / 2.17 s; the whole trace is 20 s)",
       "unit": "ms",
       "budget": 3000,
       "ci": 6000

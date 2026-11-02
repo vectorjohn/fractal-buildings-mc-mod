@@ -148,7 +148,7 @@ public class PortalHoldGameTest {
 	@GameTest(maxTicks = TestArea.TICKS)
 	public void leavingThePortalDropsTheRequest(GameTestHelper helper) {
 		// the request opened for this pig gives up after 5 idle ticks instead of 100 (it keeps the value it opened with), and the wait is bounded
-		// by wall time, not ticks: in the 40-test batch the server once managed 53 ticks in 150 s (verifier, beebox job 316)
+		// by wall time, not ticks: in the 40-test batch the server once managed 53 ticks in 150 s (verifier, perf worker job 316)
 		PortalHold.testIdleTicks = 5;
 		AtomicInteger ticks = new AtomicInteger();
 		String[] seen = {null};

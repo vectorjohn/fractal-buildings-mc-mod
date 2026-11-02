@@ -85,7 +85,7 @@ tasks.named('test') {
 // agents building at once don't starve each other.
 // FORKMEM: the fork count is also capped by memory. forks = max(1, min(6, cpus/3, (budget - 1.5 GiB) / (heap + 0.5 GiB))), where budget
 // is the tightest cgroup v2 memory.max from this build's cgroup up to the root (like scripts/order-test.sh), else MemAvailable (the
-// lower of the two when both apply). A beebox job (MemoryMax 28 %, 7.9 GiB) gets 2 forks of 2g instead of 4, which peaked at 7.8G.
+// lower of the two when both apply). A perf worker job (MemoryMax 28 %, 7.9 GiB) gets 2 forks of 2g instead of 4, which peaked at 7.8G.
 def testHeapMb = 2048
 def testOverheadMb = 512
 def reserveMb = 1536

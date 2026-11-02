@@ -358,7 +358,7 @@ tick times plus samples of waiting threads find it.
   - Overlap: `scripts/profile-overlap.sh .claude/reports/profile-evidence/reach-7ba928e426/reach-units.tsv <R4 dir>/mod/build/perf/jfr`
 - **Not checked:** whether the freeze also happens with a real client
   (`CatSpawner` runs the same way, so very likely), and how long it lasts on
-  beebox.
+  the perf worker.
 
 ## Tools
 

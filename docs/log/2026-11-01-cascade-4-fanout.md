@@ -1,6 +1,6 @@
 # CASCADE step 4: A3, fan-out
 
-Branch `claude/p6-cascade-4`, base `claude/run-phase6`. Step 4 of [plans/jflazy.md](../plans/jflazy.md). No timings taken (step 7 measures on a quiet beebox).
+Branch `claude/p6-cascade-4`, base `claude/run-phase6`. Step 4 of [plans/jflazy.md](../plans/jflazy.md). No timings taken (step 7 measures on a quiet perf worker).
 
 ## Done
 

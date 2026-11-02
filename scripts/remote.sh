@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
-# Run a command on the worker box (beebox) instead of this machine.
+# Run a command on a worker (see the worker pool below) instead of this machine.
 #
-#   scripts/remote.sh [--host H] [--fetch PATH]... [--keep] [--cpu] -- CMD [ARGS...]
-#   scripts/remote.sh --check [--host H]    exit 0 if the worker is reachable
+#   scripts/remote.sh [--worker W] [--fetch PATH]... [--keep] [--cpu] -- CMD [ARGS...]
+#   scripts/remote.sh --check [--worker W]  exit 0 if the worker is reachable
+#   scripts/remote.sh --workers             list the configured workers
 #   scripts/remote.sh --list                this worktree's jobs not fetched yet, with their live state
 #   scripts/remote.sh --attach JOB|STATE    wait for / fetch a job whose waiter died (JOB = fb-...)
 #   scripts/remote.sh --attach-last         the same for this worktree's newest unfetched job
@@ -36,11 +37,18 @@
 #
 # Cleanup: each call (but --check) first deletes fb-* copies on the worker older than
 # FB_REMOTE_KEEP_DAYS days (default 3) whose job isn't running or queued, and this worktree's
-# state files of fetched/cancelled/gone jobs as old. (beebox also expires dirs untouched 3d.)
+# state files of fetched/cancelled/gone jobs as old. (A worker may also expire old dirs itself.)
 #
-# Rendering: the worker has no desktop, so CMD runs on its GPU (radv) in a
-# headless sway session, with Xwayland as $DISPLAY in place of Xvfb
-# (FB_USE_DISPLAY, FB_VK_DRIVER_FILES). --cpu uses Xvfb + lavapipe as locally.
+# Worker pool: the workers are listed in the gitignored <main root>/.claude/workers.conf (format in
+# scripts/lib/workers.sh, example scripts/workers.conf.example). W is a worker name, a role (perf,
+# heavy, suite) or, as a deprecated alias, the worker's ssh host. Default: FB_REMOTE_HOST if set, else
+# the first enabled perf worker, else the first enabled worker. --host H is the old spelling of
+# --worker; an H that matches no configured worker is used as a plain ssh host. No config and no
+# --host: exits 2 with a pointer to the example. --list / --attach take the host from the job's state.
+#
+# Rendering: a worker has no desktop, so CMD runs on its GPU in a headless sway session, with
+# Xwayland as $DISPLAY in place of Xvfb (FB_USE_DISPLAY, FB_VK_DRIVER_FILES = the worker's vk_icd
+# from the config). --cpu uses Xvfb + lavapipe as locally.
 #
 # The first run on a fresh worker is slow: it fetches the dev shell and fills
 # Gradle's Loom cache (kept on the worker between jobs).
@@ -48,14 +56,16 @@
 # cancelled/gone; 129 detached on SIGHUP; 130 cancelled or attach stopped; 2 bad usage.
 set -euo pipefail
 
-usage() { sed -n '2,48p' "$0" | sed 's/^# \{0,1\}//'; }
+usage() { sed -n '2,56p' "$0" | sed 's/^# \{0,1\}//'; }
 
 # Not every host has rsync installed for the agent user.
 if ! command -v rsync > /dev/null; then
 	exec nix shell nixpkgs#rsync -c "$0" "$@"
 fi
 
-HOST=${FB_REMOTE_HOST:-beebox}
+# shellcheck source-path=SCRIPTDIR source=lib/workers.sh
+. "$(dirname "${BASH_SOURCE[0]}")/lib/workers.sh"
+HOST="" WSPEC="" WSPEC_RAW_OK=1 WNAME=""
 HOST_SET=0
 MODE=run KEEP=0 GPU=1 ATTACH=""
 KEEP_DAYS=${FB_REMOTE_KEEP_DAYS:-3}
@@ -69,7 +79,9 @@ FETCH=(
 )
 while [[ $# -gt 0 ]]; do
 	case "$1" in
-		--host) HOST=$2; HOST_SET=1; shift 2 ;;
+		--host) WSPEC=$2; WSPEC_RAW_OK=1; HOST_SET=1; shift 2 ;;
+		--worker) WSPEC=$2; WSPEC_RAW_OK=0; HOST_SET=1; shift 2 ;;
+		--workers) MODE=workers; shift ;;
 		--fetch) FETCH+=("$2"); shift 2 ;;
 		--keep) KEEP=1; shift ;;
 		--cpu) GPU=0; shift ;;
@@ -86,6 +98,39 @@ done
 [[ $KEEP_DAYS =~ ^[0-9]+$ && $KEEP_DAYS -ge 1 ]] || { echo "remote: FB_REMOTE_KEEP_DAYS takes a whole number >= 1" >&2; exit 2; }
 
 SSH=(ssh -o BatchMode=yes -o ConnectTimeout=10 -o ServerAliveInterval=30)
+
+# ---- which worker -----------------------------------------------------------------------------
+workers_load || exit 2
+if [[ $MODE == workers ]]; then
+	workers_hint
+	(( WK_MISSING )) && { echo "  (no file: no workers; everything runs on this host)"; exit 0; }
+	for w in "${WK_NAMES[@]}"; do
+		printf '%s  host %s  roles [%s]  slots %s  %s\n' "$w" "${WK_HOST[$w]}" "${WK_ROLES[$w]}" "${WK_SLOTS[$w]}" \
+			"$( [[ ${WK_ENABLED[$w]} == yes ]] && echo enabled || echo DISABLED)"
+		for k in MEMORY RENDERER SPECS NOTE; do
+			declare -n m="WK_$k"; [[ -n ${m[$w]:-} ]] && printf '    %s: %s\n' "${k,,}" "${m[$w]}"; unset -n m
+		done
+	done
+	exit 0
+fi
+if [[ -z $WSPEC && -n ${FB_REMOTE_HOST:-} ]]; then WSPEC=$FB_REMOTE_HOST WSPEC_RAW_OK=1 HOST_SET=1; fi
+if [[ -n $WSPEC ]]; then
+	if WNAME=$(workers_resolve "$WSPEC" | head -n1) && [[ -n $WNAME ]]; then HOST=${WK_HOST[$WNAME]}
+	elif (( WSPEC_RAW_OK )); then HOST=$WSPEC WNAME=$WSPEC
+	else
+		echo "remote: no enabled worker matches '$WSPEC' (enabled: $(workers_enabled | tr '\n' ' '))" >&2
+		workers_hint >&2; exit 2
+	fi
+elif [[ $MODE == run || $MODE == check ]]; then
+	if ! WNAME=$(worker_default); then
+		if (( WK_MISSING )); then echo "remote: no worker configured, so nothing can run remotely; run the command locally instead" >&2
+		else echo "remote: no enabled worker in $WK_CONF" >&2; fi
+		workers_hint >&2; exit 2
+	fi
+	HOST=${WK_HOST[$WNAME]}
+fi
+ICD=/run/opengl-driver/share/vulkan/icd.d/radeon_icd.x86_64.json
+[[ -n $WNAME && -n ${WK_ICD[$WNAME]:-} ]] && ICD=${WK_ICD[$WNAME]}
 
 if [[ $MODE == check ]]; then
 	exec "${SSH[@]}" "$HOST" true
@@ -106,7 +151,7 @@ NAME="" ID="" CMDQ="" STARTED="" COMMIT="" STATUS="" EXIT="" WAITER="" STATE=""
 state_write() {
 	local f
 	{
-		echo "job=$NAME"; echo "id=$ID"; echo "host=$HOST"; echo "remote_dir=jobs/$NAME"
+		echo "job=$NAME"; echo "id=$ID"; echo "host=$HOST"; echo "worker=$WNAME"; echo "remote_dir=jobs/$NAME"
 		echo "worktree=$ROOT"; echo "cmd=$CMDQ"; echo "commit=$COMMIT"; echo "gpu=$GPU"; echo "keep=$KEEP"
 		echo "started=$STARTED"; echo "started_at=$(date -d "@$STARTED" '+%F %T %z')"
 		echo "waiter=$WAITER"; echo "status=$STATUS"; echo "exit=$EXIT"; echo "updated=$(date '+%F %T %z')"
@@ -119,7 +164,7 @@ state_read() {   # $1 file: sets the globals from it
 	while IFS= read -r line; do
 		k=${line%%=*} v=${line#*=}
 		case "$k" in
-			job) NAME=$v ;; id) ID=$v ;; host) (( HOST_SET )) || HOST=$v ;; worktree) ROOT=$v ;;
+			job) NAME=$v ;; id) ID=$v ;; host) (( HOST_SET )) || HOST=$v ;; worker) (( HOST_SET )) || WNAME=$v ;; worktree) ROOT=$v ;;
 			cmd) CMDQ=$v ;; commit) COMMIT=$v ;; gpu) GPU=$v ;; keep) KEEP=$v ;; started) STARTED=$v ;;
 			waiter) WAITER=$v ;; status) STATUS=$v ;; exit) EXIT=$v ;; fetch) FETCH+=("$v") ;;
 		esac
@@ -143,7 +188,22 @@ live_state() {   # $1 name
 # Worker copies older than KEEP_DAYS whose job is not running or queued (by name), and local
 # state files of finished business (fetched/cancelled/gone) as old.
 cleanup() {
-	local out f st
+	local f st h w
+	if [[ -n $HOST ]]; then cleanup_remote "$HOST"
+	else
+		# --list / --cleanup with no worker given: every host this worktree has state files for, and every
+		# enabled worker
+		for h in $( { for f in "$SDIR"/fb-*.state; do [[ -e $f ]] && sed -n 's/^host=//p' "$f"; done
+			for w in $(workers_enabled); do echo "${WK_HOST[$w]}"; done; } | sort -u); do cleanup_remote "$h"; done
+	fi
+	while IFS= read -r f; do
+		st=$(sed -n 's/^status=//p' "$f")
+		case "$st" in fetched|cancelled|gone) rm -f "$f" "${f%.state}.lock" ;; esac
+	done < <(find "$SDIR" -maxdepth 1 -name 'fb-*.state' -mmin +$((KEEP_DAYS * 1440)) 2>/dev/null)
+	return 0
+}
+cleanup_remote() {   # $1 ssh host
+	local HOST=$1 out
 	out=$("${SSH[@]}" "$HOST" bash -s -- "$KEEP_DAYS" 2>/dev/null <<- 'EOF'
 		days=$1
 		active=$(job status 2>/dev/null | awk '$2 == "running" || $2 == "queued"' | grep -o '\[fb-[^]]*\]' | tr -d '[]')
@@ -156,10 +216,6 @@ cleanup() {
 	EOF
 	) || true
 	[[ -n $out ]] && echo "remote: cleanup: deleted $(wc -l <<< "$out") copies on $HOST older than ${KEEP_DAYS}d: $(tr '\n' ' ' <<< "$out")" >&2
-	while IFS= read -r f; do
-		st=$(sed -n 's/^status=//p' "$f")
-		case "$st" in fetched|cancelled|gone) rm -f "$f" "${f%.state}.lock" ;; esac
-	done < <(find "$SDIR" -maxdepth 1 -name 'fb-*.state' -mmin +$((KEEP_DAYS * 1440)) 2>/dev/null)
 	return 0
 }
 
@@ -254,12 +310,12 @@ if [[ $MODE == cleanup ]]; then
 fi
 if [[ $MODE == list ]]; then
 	cleanup
-	fetch_list
-	n=0
+	n=0 listed_host="-"
 	for f in "$SDIR"/fb-*.state; do
 		[[ -e $f ]] || continue
 		state_read "$f"
 		case "$STATUS" in fetched|cancelled|gone) continue ;; esac
+		[[ $HOST == "$listed_host" ]] || { fetch_list; listed_host=$HOST; }
 		n=$((n + 1))
 		live=$(live_state "$NAME"); lst="" lid="" lex=""; read -r lst lid lex <<< "$live" || true
 		if (( ! LIST_OK )); then where="$HOST unreachable"
@@ -356,12 +412,12 @@ cleanup
 	echo 'export PATH="/run/wrappers/bin:/etc/profiles/per-user/$USER/bin:/run/current-system/sw/bin:$PATH"'
 	echo 'export FB_REMOTE=1'
 	echo "gpu=$GPU"
-	echo 'icd=/run/opengl-driver/share/vulkan/icd.d/radeon_icd.x86_64.json'
+	printf 'icd=%q\n' "$ICD"
 	echo 'rm -f .fb-exit'
 	echo '{'
 	echo 'if [ "$gpu" = 1 ] && [ -e /dev/dri/renderD128 ] && [ -f "$icd" ] && command -v headless-run > /dev/null; then'
 	echo '	export FB_USE_DISPLAY=1 FB_VK_DRIVER_FILES="$icd"'
-	echo '	echo "remote: rendering on the GPU (radv, headless sway + Xwayland)"'
+	echo '	echo "remote: rendering on the GPU ($icd, headless sway + Xwayland)"'
 	printf '\theadless-run --size 1920x1080'; printf ' %q' "$@"; echo
 	echo 'else'
 	echo '	[ "$gpu" = 1 ] && echo "remote: no GPU or headless-run here; rendering with lavapipe + Xvfb"'

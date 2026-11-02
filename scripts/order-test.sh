@@ -14,16 +14,16 @@
 # COMPLETE or INCOMPLETE with the counts.
 #
 # Exit codes: 0 every run PASS; 1 a run gave a FAIL verdict (a real test failure); 2 bad arguments or the build failed; 4 ORDER TEST
-# DID NOT COMPLETE: at least one run ended without a verdict (its server was killed, crashed or timed out; on beebox usually the
+# DID NOT COMPLETE: at least one run ended without a verdict (its server was killed, crashed or timed out; on a worker usually the
 # per-job memory cap, OOM), so there is no full report. Rerun it (fewer --jobs); don't read it as a test result. When the whole script
-# is killed (an OOM kill on beebox stops every process of the job) it prints nothing more: STATUS still says RUNNING, and
+# is killed (an OOM kill on a worker stops every process of the job) it prints nothing more: STATUS still says RUNNING, and
 # scripts/remote.sh prints the OOM kill itself and exits 137.
 #
 # Jobs and memory (ORDERMEM): one run is a Gradle client + a single-use Gradle daemon (-Xmx2G, gradle.properties) + the server JVM
-# (no -Xmx: the JVM default, 1/4 of the memory it sees, cgroup-aware); FB_ORDER_RUN_MB (default 3000; 2300 tried 2026-10-27 and OOM-killed a 3-job beebox run) is the budget per run. Default
+# (no -Xmx: the JVM default, 1/4 of the memory it sees, cgroup-aware); FB_ORDER_RUN_MB (default 3000; 2300 tried 2026-10-27 and OOM-killed a 3-job perf worker run) is the budget per run. Default
 # --jobs = min(6, (budget - 1 GiB) / FB_ORDER_RUN_MB), at least 1; the budget is the tightest cgroup v2 memory.max above this process
 # (when one is set; the lower of it and MemAvailable), else MemAvailable. An explicit --jobs wins but warns when over the budget. Under
-# a cgroup cap the build step runs --no-daemon, so no idle daemon holds memory during the runs. A beebox job (MemoryMax 28 %, 7.9 GiB)
+# a cgroup cap the build step runs --no-daemon, so no idle daemon holds memory during the runs. A perf worker job (MemoryMax 28 %, 7.9 GiB)
 # gets 2. The final line gives the cgroup's memory peak when there is a cap.
 #
 # EULA: each run dir mod/build/run/order/<label>/ gets a copy of mod/build/run/order/eula.txt (this worktree's, else the main checkout's).

@@ -68,8 +68,9 @@ WPOTFLAKE	flake: WorldPlannerOrderTest's 8-thread tiny-cache case timed out on a
 XVFBLEAK2	`test-all.sh` exported CI=1, so Loom wrapped the client in its own Xvfb on software OpenGL instead of the Intel GPU	../CLAUDE.md	done
 #
 # --- run terms
-anywhere	`scripts/anywhere.sh`: runs a job on whichever host (this machine or beebox) frees first	../CLAUDE.md
-beebox	the worker box: a second machine for heavy jobs and long runs, reached by `scripts/remote.sh`	../CLAUDE.md
+anywhere	`scripts/anywhere.sh`: runs a job on whichever host (this machine or a worker of the pool) frees first	../CLAUDE.md
+perf worker	the worker with the `perf` role in the gitignored worker pool file `.claude/workers.conf`: the benchmark machine where quiet measurements are taken; also runs heavy jobs	../CLAUDE.md
+worker pool	the machines `scripts/remote.sh` and `scripts/anywhere.sh` send jobs to, listed in the gitignored `.claude/workers.conf` (example `scripts/workers.conf.example`); none by default	../CLAUDE.md
 docs-feedback	the worktree where John edits docs in SilverBullet; the coordinator syncs it into the run branch	../CLAUDE.md
 evidence	the pinned record of a heavy run (commit, command, result, load, logs) from `scripts/evidence.sh`	../CLAUDE.md
 gate	the review at the end of a phase: John looks and approves before the next phase starts	ROADMAP.md
@@ -83,5 +84,5 @@ suite slot	one of the few slots that limit how many full fast test suites run at
 to-main	merging the run branch into main, after a full test run	runs/2026-10-22-phase6.md
 warmer	RegionWarmer: plans settlements and roads on background threads ahead of the player, so chunks don't wait	NOTES.md
 CASCADE	the exit trim and link rule (MAINSTUB) made cheaper, parallel and warmed early, byte-identical; proposed by the JFLAZY plan instead of a lazy junction field	plans/jflazy.md	open
-QUIETHOLE	the quiet check judges the whole timed window (beebox job history, lock and CPU sampler), not only step boundaries; perf.sh says NOT A MEASUREMENT with what overlapped	../scripts/quiet-check.sh	done
-PERFROUTE	scripts/anywhere.sh sends a timing run (perf.sh, profile.sh, test-all --perf) to beebox only when it is empty, and lets nothing else in beside it while it runs or waits	../scripts/anywhere.sh	done
+QUIETHOLE	the quiet check judges the whole timed window (the worker's job history, lock and CPU sampler), not only step boundaries; perf.sh says NOT A MEASUREMENT with what overlapped	../scripts/quiet-check.sh	done
+PERFROUTE	scripts/anywhere.sh sends a timing run (perf.sh, profile.sh, test-all --perf) to the perf worker only when it is empty, and lets nothing else in beside it while it runs or waits	../scripts/anywhere.sh	done

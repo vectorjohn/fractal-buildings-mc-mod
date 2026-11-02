@@ -12,9 +12,9 @@ Date 2026-10-31, branch `claude/p6-coldarrival`. Input for John's REGIONPERF dec
 - `node scripts/perf-check.test.mjs`: all ok (incl. report-only row, 30.0x ratio; absent report-only row still fails a full run).
 - Local functional smoke of both arrival variants (not a measurement; this host is never quiet): both complete, 81/81 chunks, hold engaged in both.
 - `scripts/test-all.sh --no-client` locally: everything passed except planner-core, which failed with `NoSuchFileException ... in-progress-results-generic.bin`: my own mistake, a second test-all started by accident in the same worktree. Rerun `scripts/suite.sh scripts/dev ./gradlew :planner-core:test`: pass.
-- Measurement: `scripts/evidence.sh p6-coldarrival-rN scripts/remote.sh -- scripts/perf.sh`, twice, beebox (12 CPUs, no renderer), quiet before and at every step, ends "perf: quiet host". Run 1 mod first, run 2 base first (`FB_PERF_VARIANTS="base mod"`).
+- Measurement: `scripts/evidence.sh p6-coldarrival-rN scripts/remote.sh -- scripts/perf.sh`, twice, the perf worker (12 CPUs, no renderer), quiet before and at every step, ends "perf: quiet host". Run 1 mod first, run 2 base first (`FB_PERF_VARIANTS="base mod"`).
 
-| Row (beebox, quiet) | Mod run 1 / run 2 | Vanilla run 1 / run 2 |
+| Row (the perf worker, quiet) | Mod run 1 / run 2 | Vanilla run 1 / run 2 |
 |---|---|---|
 | Cold arrival, 9 x 9 FULL | 69.5 s / 71.5 s | 4.7 s / 5.1 s |
 | Longest server tick in the wait | 9.2 s / 11.3 s | 0.38 s / 0.44 s |

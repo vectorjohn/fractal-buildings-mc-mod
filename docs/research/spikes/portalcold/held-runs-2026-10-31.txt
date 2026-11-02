@@ -1,4 +1,4 @@
-6.30 PORTALCOLD held vs unheld, scripts/portalcold.sh on beebox; [PORTAL] rows as printed by the script.
+6.30 PORTALCOLD held vs unheld, scripts/portalcold.sh on the perf worker; [PORTAL] rows as printed by the script.
 Jobs 300 (commit 6824675f, quiet) and 301 (71868d1f, quiet) ran alone; job 302 (eb07f2c2) ran beside a client test (not quiet, timings not reported).
 
 === fb-p6-portalcold-1793476415-3372270.log

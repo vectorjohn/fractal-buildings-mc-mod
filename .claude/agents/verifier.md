@@ -74,7 +74,7 @@ Work by path: `cd <worktree> && ...` or `git -C <worktree> ...`.
      always, plus CLI, viewer and server game tests (`:mod:runGameTest`) as
      the change touches them (`scripts/test-all.sh --no-client` runs them
      all). **Don't run heavy layers** (client game tests, `scripts/perf.sh`,
-     `scripts/flythrough.sh`), locally or on the worker box: if the item needed one (`scripts/test-scope.sh` requires
+     `scripts/flythrough.sh`), locally or on a worker: if the item needed one (`scripts/test-scope.sh` requires
      it), check the coder's pinned
      evidence by the **evidence rule** below. Only if the evidence fails the
      rule, run that layer yourself with
@@ -91,7 +91,7 @@ Work by path: `cd <worktree> && ...` or `git -C <worktree> ...`.
    - `level: full`: the fast layers, **and** every heavy layer `scripts/test-scope.sh`
      requires, run yourself through `scripts/evidence.sh <slug> <command>`
      (an independent run; the coder's evidence doesn't replace it). Heavy
-     layers can run on the worker box instead of under the local heavy lock
+     layers can run on a worker instead of under the local heavy lock
      (`scripts/evidence.sh <slug> scripts/remote.sh -- <command>`, preferred
      when `scripts/remote.sh --check` succeeds); or let
      `scripts/evidence.sh <slug> scripts/anywhere.sh -- <command>` start it on
@@ -316,7 +316,7 @@ heavy layers on a snapshot of the integration branch head `H`:
 (each takes the heavy lock itself; the snapshot's own lock is
 `.claude/snapshot-heavy.lock`, so they don't wait on it). When the local heavy
 lock is busy and `scripts/remote.sh --check` succeeds, the client and
-fly-through layers can go to the worker box instead, from the same snapshot:
+fly-through layers can go to a worker instead, from the same snapshot:
 `'scripts/remote.sh -- env FB_LAYER=full scripts/client-test.sh' 'scripts/remote.sh -- scripts/flythrough.sh'`
 (keep `scripts/perf.sh` local; say which host ran each). Open at least two screenshots and the
 fly-through frames, and read the perf table. A run that ends with `perf: NOT A MEASUREMENT`
@@ -353,7 +353,7 @@ path `M`. Don't review each item again.
    of the run branch head `H`, not in the worktree itself:
    `scripts/snapshot-test.sh --name heavy <worktree> H to-main 'scripts/test-all.sh --full --planner-heavy --perf' scripts/flythrough.sh`.
    When `scripts/remote.sh --check` succeeds, the client and fly-through
-   layers can go to the worker box instead:
+   layers can go to a worker instead:
    `scripts/snapshot-test.sh --name heavy <worktree> H to-main 'scripts/remote.sh -- scripts/test-all.sh --full --planner-heavy' 'scripts/remote.sh -- scripts/flythrough.sh' scripts/perf.sh`.
    Keep `scripts/perf.sh` local: its budgets were set on this host, and
    timings across hosts aren't comparable. Say which host ran each layer.
@@ -378,7 +378,7 @@ path `M`. Don't review each item again.
 
 ## Re-verification (when resumed)
 
-After a restart or compaction, run `scripts/remote.sh --list` in your worktree first and re-attach any unfetched beebox job (`scripts/evidence.sh <slug> scripts/remote.sh --attach <job>`) instead of re-running it.
+After a restart or compaction, run `scripts/remote.sh --list` in your worktree first and re-attach any unfetched worker job (`scripts/evidence.sh <slug> scripts/remote.sh --attach <job>`) instead of re-running it.
 
 Read the new report and the new commits only. For each gap you reported,
 confirm it's fixed and covered by a test; apply steps 3–4 to the new changes;

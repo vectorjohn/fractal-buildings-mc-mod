@@ -44,7 +44,7 @@ class OrderSimHarnessTest {
 		long t0 = System.nanoTime(), c0 = java.lang.management.ManagementFactory.getThreadMXBean().getCurrentThreadCpuTime();
 		OrderSim.Result res = OrderSim.runAll(s, fast(s), true);
 		long ms = (System.nanoTime() - t0) / 1_000_000;
-		long cpuMs = (java.lang.management.ManagementFactory.getThreadMXBean().getCurrentThreadCpuTime() - c0) / 1_000_000; // this thread CPU time: independent of host load (wall clock flaked at 10115 ms on a busy beebox)
+		long cpuMs = (java.lang.management.ManagementFactory.getThreadMXBean().getCurrentThreadCpuTime() - c0) / 1_000_000; // this thread CPU time: independent of host load (wall clock flaked at 10115 ms on a busy perf worker)
 		SimReport.write(res);
 		System.out.println("[ordersim] SC1 smoke: " + res.runs.size() + " orders in " + ms + " ms (cpu " + cpuMs + " ms), loadavg " + SimReport.load());
 		assertEquals(List.of(), res.failed());

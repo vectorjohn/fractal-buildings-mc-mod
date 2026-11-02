@@ -14,7 +14,7 @@
 # test log, build/anywhere/* (scripts/anywhere.sh: which host ran it; also a "route:" line),
 # build/remote/*.log and *.state (scripts/remote.sh jobs; also a "remote job:" line each), mod/build/screenshots/*.png, mod/build/perf/*, mod/build/flythrough/*, build/server-only/*, build/order-test/*,
 # viewer/out/** screenshots).
-# Re-attach: if this run dies with its beebox waiter (SIGKILL, session end), its EVIDENCE.md says
+# Re-attach: if this run dies with its worker waiter (SIGKILL, session end), its EVIDENCE.md says
 # "interrupted"; the job runs on. Rerun as `scripts/evidence.sh <label> scripts/remote.sh --attach <job>`
 # (the job is named in build/remote/*.state, `scripts/remote.sh --list`, and the route file of
 # scripts/anywhere.sh): the new folder pins the job's commit, command and start (from its state file;
@@ -82,7 +82,7 @@ START=$(date -u +%FT%TZ); LOAD0=$(cut -d' ' -f1-3 /proc/loadavg)
   echo
   echo "- command: $*"
   echo "- start: $START; this file is replaced when the command ends. If it stays, the run was killed:"
-  echo "  a beebox job runs on; see scripts/remote.sh --list and rerun as"
+  echo "  a worker job runs on; see scripts/remote.sh --list and rerun as"
   echo "  scripts/evidence.sh $LABEL scripts/remote.sh --attach <job>"
 } > "$OUT/EVIDENCE.md"
 

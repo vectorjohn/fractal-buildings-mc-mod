@@ -125,7 +125,7 @@ class WorldPlannerOrderTest {
 
 	/**
 	 * Waits for the walkers. The bound is on progress, not on total time: with capacity-1 caches every lookup recomputes, so the run is
-	 * compute-bound (62 s locally at load 14, over the old 5 min total bound twice on a loaded beebox). It fails, with a thread dump,
+	 * compute-bound (62 s locally at load 14, over the old 5 min total bound twice on a loaded perf worker). It fails, with a thread dump,
 	 * only when no tile finishes for STALL_SECONDS (a deadlock or livelock) or after HARD_MINUTES overall.
 	 */
 	static final long STALL_SECONDS = 180, HARD_MINUTES = 30;

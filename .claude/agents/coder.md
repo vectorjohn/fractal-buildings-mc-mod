@@ -123,7 +123,7 @@ Each behaviour gets a test at the **cheapest layer that can catch its bugs**
    `fabric.mod.json`.
 5. **In-game appearance**: Fabric client game tests under Xvfb (`scripts/client-test.sh`; Intel iGPU, lavapipe fallback),
    quick layer by default (`FB_LAYER=full` adds Roads, Foliage, Compat; `FB_ONLY=<TestClass>` runs one), and `scripts/order-test.sh` for the district-order test (dedicated servers),
-   with screenshots. **Heavy (client tests): always under the heavy lock**, or on the worker box with `scripts/remote.sh -- env FB_LAYER=quick scripts/client-test.sh` (CLAUDE.md); the order test is not heavy.
+   with screenshots. **Heavy (client tests): always under the heavy lock**, or on a worker with `scripts/remote.sh -- env FB_LAYER=quick scripts/client-test.sh` (CLAUDE.md); the order test is not heavy.
 
 Run the relevant layers once on your final code before you report: after
 merging the integration branch into yours (below), and after your last code
@@ -170,7 +170,7 @@ and mention them in the ROADMAP testing section.
   verifier's squash merge goes through cleanly.
 - Run Minecraft client tests, `runClient` and timing measurements under
   `flock <repo root>/.claude/heavy.lock`. Everything else can run concurrently
-  with other agents. When the worker box is up (`scripts/remote.sh --check`),
+  with other agents. When a worker is up (`scripts/remote.sh --check`),
   prefer it for client tests and long runs like `scripts/test-all.sh`:
   `scripts/remote.sh -- <cmd>` (CLAUDE.md "Parallel work"). Better still, let
   `scripts/anywhere.sh -- <cmd>` pick: it waits locally and starts full
@@ -194,7 +194,7 @@ and mention them in the ROADMAP testing section.
 
 ### Environment quirks
 
-- Waiting on a long or heavy job (a beebox run, `scripts/anywhere.sh`, a
+- Waiting on a long or heavy job (a worker run, `scripts/anywhere.sh`, a
   client test in the background): wait with one long Monitor / until loop on
   its result, not many short wakes; each wake costs tokens for nothing.
 - Never wait on `runClient` in the foreground: it doesn't exit. Prefer client

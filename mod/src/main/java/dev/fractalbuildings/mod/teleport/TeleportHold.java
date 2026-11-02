@@ -44,7 +44,7 @@ public final class TeleportHold {
 	static final int RADIUS = 1;
 	/** Jumps shorter than this are never held, whatever the view distance. */
 	static final int MIN_DISTANCE = 64;
-	/** The default of {@link #timeoutMillis}: 60 s (John 2026-11-01: "For the tp hold, 60s is fine"; was 90 s in TPHOLD15 r2; the hold still ends as soon as the 3 x 3 is FULL, so the cap only matters on cold metropolis arrivals, about 33 to 48 s on a quiet beebox after CASCADE). */
+	/** The default of {@link #timeoutMillis}: 60 s (John 2026-11-01: "For the tp hold, 60s is fine"; was 90 s in TPHOLD15 r2; the hold still ends as soon as the 3 x 3 is FULL, so the cap only matters on cold metropolis arrivals, about 33 to 48 s on a quiet perf worker after CASCADE). */
 	public static final long DEFAULT_TIMEOUT_MILLIS = 60_000;
 	/** Longest wait, milliseconds of wall clock (a lagging server still counts real time), before the teleport happens anyway. */
 	public static volatile long timeoutMillis = DEFAULT_TIMEOUT_MILLIS;
@@ -55,7 +55,7 @@ public final class TeleportHold {
 	 * TPHOLD15 option 3 (John: "hold for what the tile requires"): on a planner-backed level the hold ends once the destination tile is planned
 	 * and warmed (or at the limit), without waiting for the 3 x 3 chunks. OFF by default: the teleport then places the player in a chunk that is
 	 * not FULL yet, and vanilla loads it synchronously on the server thread, which freezes the whole server until it is generated (observed:
-	 * about 40 s on beebox after a 15 s limit, see docs/log/2026-10-31-p6-tphold15.md). Players never fall or take damage. On with
+	 * about 40 s on the perf worker after a 15 s limit, see docs/log/2026-10-31-p6-tphold15.md). Players never fall or take damage. On with
 	 * -Dfractalbuildings.teleportHoldReleaseOnPlan=true.
 	 */
 	public static volatile boolean releaseOnPlan = "true".equals(System.getProperty("fractalbuildings.teleportHoldReleaseOnPlan"));

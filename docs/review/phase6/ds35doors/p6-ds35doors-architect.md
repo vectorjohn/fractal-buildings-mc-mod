@@ -94,7 +94,7 @@ Looked at (worktree `.claude/worktrees/p6-ds35doors`, HEAD ee3b610a; CLI rebuilt
 - IR from `gen` of house medieval 20x20 on `hill:64:20:24` seeds 0..11: doors and site boxes. For s4 I traced every stair, rail and paving box of the back flight;
 - floorplan front rows of 32 high-rises (`tall` 24x24 s0..7, `tall-brick` 30x30 s0..7, `tall` 25x25 s0..7, `tall-terracotta` 24x24 s0..7).
 
-No images: the gallery PNGs in `viewer/out/gallery/` are dated 2026-10-28 20:50, before r3, and the r3 gallery ran on beebox. Not seen in pictures or in game: how the slope flights look.
+No images: the gallery PNGs in `viewer/out/gallery/` are dated 2026-10-28 20:50, before r3, and the r3 gallery ran on the perf worker. Not seen in pictures or in game: how the slope flights look.
 
 ## Checks
 

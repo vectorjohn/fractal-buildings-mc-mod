@@ -88,7 +88,7 @@ an expensive or hard-to-undo change.
   the run branch or `main`.
 - **When `heavy: busy`**, don't start Minecraft client tests or timing
   measurements yourself without the heavy lock (CLAUDE.md); everything else is
-  fine. Or run them on the worker box with `scripts/remote.sh`, which has its
+  fine. Or run them on a worker with `scripts/remote.sh`, which has its
   own queue.
 - **Timings count only from a quiet host** (`scripts/quiet-check.sh`, CLAUDE.md
   "Parallel work"): a number from a busy machine is not a result; don't put

@@ -6,7 +6,7 @@ Written by the assistant from the run ledger ([2026-10-22-phase6](../runs/2026-1
 
 # What exists already (not proposed again)
 
-- [`scripts/anywhere.sh`](../../scripts/anywhere.sh) (merged 0ae0c46a today): a job waits locally in a FIFO and starts on whichever host frees first. It solved "one host idle while the other has a backlog" and "beebox can't drop a queued job" for jobs sent through it.
+- [`scripts/anywhere.sh`](../../scripts/anywhere.sh) (merged 0ae0c46a today): a job waits locally in a FIFO and starts on whichever host frees first. It solved "one host idle while the other has a backlog" and "the perf worker can't drop a queued job" for jobs sent through it.
 - [`scripts/test-scope.sh`](../../scripts/test-scope.sh) and [TESTING.md](../TESTING.md): which layers a change needs, from git paths.
 - [`scripts/evidence.sh`](../../scripts/evidence.sh): pins commit, command, exit and logs, so a verifier can reuse a coder's heavy run.
 - Merge trains and batched heavy runs: written down in `.claude/agents/verifier.md` ("merge: train", "heavy-batch"), but done by hand by an LLM verifier, so they are rarely used and each step costs context.
@@ -64,20 +64,20 @@ The run branch then only ever moves to a commit whose tests passed, and a confli
 
 *Saves:* the golden/fixture conflict round on nearly every generator merge. *Risk:* an unintended digest change rides along when the branch did touch that file; the verifier still reads the branch's own golden diff as today.
 
-**Option 2d: no agent waits synchronously on a long lock (S, rule plus helper).** Anything that can wait more than ~10 min (suite slot, heavy lock, beebox) runs detached with a result file: `scripts/bg.sh <label> <cmd>` = `setsid nohup evidence.sh <label> anywhere.sh -- <cmd>`, writing `.claude/status/jobs/<label>.done` with the exit code. Agents poll the file (or the coordinator's notification arrives once, at the end). This is what killed post-merge runs today: the wait sat inside a tool call with a time limit.
+**Option 2d: no agent waits synchronously on a long lock (S, rule plus helper).** Anything that can wait more than ~10 min (suite slot, heavy lock, the perf worker) runs detached with a result file: `scripts/bg.sh <label> <cmd>` = `setsid nohup evidence.sh <label> anywhere.sh -- <cmd>`, writing `.claude/status/jobs/<label>.done` with the exit code. Agents poll the file (or the coordinator's notification arrives once, at the end). This is what killed post-merge runs today: the wait sat inside a tool call with a time limit.
 
 # 3. Seeing what the agents are doing (no LLM)
 
 **Problem (today).** John can't see what each agent is doing; neither can a fresh coordinator without the ledger. Everything needed is already on disk, just not in one place:
 
 - each subagent's transcript, `~/.claude/projects/<project>/<session>/subagents/agent-<id>.jsonl`, with `agent-<id>.meta.json` (`agentType`, `description`); every line has a timestamp and `cwd`, tool calls carry the Bash `description`, and a `SubagentHandback` call marks the end (checked: 130 transcripts in this session's folder);
-- lock files (suite-slot notes), the anywhere queue (`.claude/anywhere/`), `ssh beebox job status`, `/proc/loadavg`;
+- lock files (suite-slot notes), the anywhere queue (`.claude/anywhere/`), `ssh <perf worker> job status`, `/proc/loadavg`;
 - worktrees and branches (`git worktree list`), evidence folders and reports (`.claude/reports/`).
 
 **Option 3a: `scripts/status.sh` (M).** A shell + `jq` script (jq is installed) that prints, and writes to `.claude/status/board.md`:
 
 - **Agents**: one row per agent active in the last 2 h: id, type, description, worktree/branch (from `cwd`), lane and item (from the board), last activity age, the last Bash description, and `WAITING <lock>` / `RUNNING <job>` when its last call is a background command; finished agents drop out after an hour.
-- **Machines**: load, heavy lock holder and age, suite slots, anywhere queue (`anywhere.sh --status`), beebox jobs (its `job help` now says 3 slots at a time and a 2 h job limit; `anywhere.sh` assumes one slot with `--depth 0`, worth revisiting).
+- **Machines**: load, heavy lock holder and age, suite slots, anywhere queue (`anywhere.sh --status`), the perf worker jobs (its `job help` now says 3 slots at a time and a 2 h job limit; `anywhere.sh` assumes one slot with `--depth 0`, worth revisiting).
 - **Items by lane**, from `board.sh`.
 - **Recent**: the last 10 merges, evidence folders and failures.
 
@@ -89,9 +89,9 @@ John runs `watch -n 60 scripts/status.sh` in a terminal, or reads the file. *Sav
 
 # 4. What needs John, at a glance
 
-**Problem (today).** Requests for John are scattered: the order-test EULA file blocked TESTLAYERS for hours (now a standing approval), the squash-merge of S4 and of HR-B1 was denied by the permission classifier ("Modify Shared Resources"), killing the orphan client pid 75050 was denied ("Interfere With Workloads") until John OK'd it, stale beebox jobs 8, 10, 12 and 13 needed a manual cleanup, and REVIEW.md has 33 open items. All of it reached John through chat. The transcripts show 8 classifier denials in this session alone, with the reason in the text.
+**Problem (today).** Requests for John are scattered: the order-test EULA file blocked TESTLAYERS for hours (now a standing approval), the squash-merge of S4 and of HR-B1 was denied by the permission classifier ("Modify Shared Resources"), killing the orphan client pid 75050 was denied ("Interfere With Workloads") until John OK'd it, stale the perf worker jobs 8, 10, 12 and 13 needed a manual cleanup, and REVIEW.md has 33 open items. All of it reached John through chat. The transcripts show 8 classifier denials in this session alone, with the reason in the text.
 
-**Option 4a: `scripts/ask-john.sh` and a generated list (S).** `scripts/ask-john.sh [--blocking] [--cmd '<command John can paste>'] "<one line>"` appends a row (id, time, agent, item, text, command) to `.claude/status/asks.tsv`; `ask-john.sh --done ID [answer]` closes it. Agents and scripts use it instead of a chat line (client-test.sh when a EULA file is missing, remote.sh when beebox is unreachable, the watchdog for anything it won't kill). `scripts/needs-john.sh` then writes `.claude/status/needs-john.md`, blocking items first:
+**Option 4a: `scripts/ask-john.sh` and a generated list (S).** `scripts/ask-john.sh [--blocking] [--cmd '<command John can paste>'] "<one line>"` appends a row (id, time, agent, item, text, command) to `.claude/status/asks.tsv`; `ask-john.sh --done ID [answer]` closes it. Agents and scripts use it instead of a chat line (client-test.sh when a EULA file is missing, remote.sh when the perf worker is unreachable, the watchdog for anything it won't kill). `scripts/needs-john.sh` then writes `.claude/status/needs-john.md`, blocking items first:
 
 1. open asks (blocking first), with the command to paste;
 2. **permission denials**: grep the transcripts for "denied by the Claude Code auto mode classifier" since the last check, with agent, time, reason and the denied command (so a denied merge shows up without anyone relaying it);
@@ -106,24 +106,24 @@ John runs `watch -n 60 scripts/status.sh` in a terminal, or reads the file. *Sav
 
 # 5. Stalled jobs
 
-**Problem (today).** The HEAVY2 deadlock held the heavy lock for hours and earlier "2-h limit" kills may have been the same thing. An orphan client JVM (pid 75050) ran at ~150 % CPU with no lock after its test failed. Wrappers died at 30 min while waiting. Beebox jobs 8, 10, 12 and 13 sat in its queue after the agents that sent them were gone, and their copies stayed (NOTES "beebox job copies"). One agent killed another's process and ran `gradlew --stop`, which stops **every** Gradle daemon of the `agent` user in every worktree, including other agents' builds and post-merge runs (it killed METROFILL's post-merge). Agents can't kill their own stale jobs because a bare `kill` of a pid looks to the classifier like interfering with someone else's workload. There are 19 worktrees and 33 local branches, several merged long ago.
+**Problem (today).** The HEAVY2 deadlock held the heavy lock for hours and earlier "2-h limit" kills may have been the same thing. An orphan client JVM (pid 75050) ran at ~150 % CPU with no lock after its test failed. Wrappers died at 30 min while waiting. Perf worker jobs 8, 10, 12 and 13 sat in its queue after the agents that sent them were gone, and their copies stayed (NOTES "the perf worker job copies"). One agent killed another's process and ran `gradlew --stop`, which stops **every** Gradle daemon of the `agent` user in every worktree, including other agents' builds and post-merge runs (it killed METROFILL's post-merge). Agents can't kill their own stale jobs because a bare `kill` of a pid looks to the classifier like interfering with someone else's workload. There are 19 worktrees and 33 local branches, several merged long ago.
 
 **Option 5a: `scripts/watchdog.sh`, report only (M).** One pass, run every 5 min by a systemd user timer (`systemctl --user` works here; with `Linger=no` it runs only while the agent user has a session, which is the case during a run) or by the merge-queue runner's loop. It writes state changes only (not repeats) to `.claude/status/watchdog.log` and the needs-john list:
 
 - **lock stalls**: heavy lock held longer than the command's budget (client full 90 min, quick 40, perf 20) with no growth in its log; suite slot held 10 min by a process using no CPU;
 - **deadlocks**: a waiter whose lock's holder is its own ancestor, or a holder that is itself waiting on a lock (from the lock notes, 1c);
 - **orphans**: `KnotClient`/`KnotServer`/Gradle worker JVMs whose process group's leader (one of our scripts) is gone, or whose worktree no longer exists;
-- **stale beebox jobs**: jobs whose submitting `remote.sh` pid is gone (needs `remote.sh` to record job id and pid in `.claude/procs/`);
+- **stale the perf worker jobs**: jobs whose submitting `remote.sh` pid is gone (needs `remote.sh` to record job id and pid in `.claude/procs/`);
 - **quiet agents**: a transcript with no new line in 30 min that hasn't handed back (unless its last call is a known long wait);
 - **stale worktrees and branches**: branch merged into the run branch (or its squash content is: `git cherry`) and no process has its cwd there for a day.
 
 **Option 5b: a process registry and `scripts/reap.sh` with safe rules (M, after 5a).** Our test scripts already run their work in their own process group (`client-test.sh`). They record it in `.claude/procs/<pgid>.tsv` (owner label, worktree, command, start, expected budget). `reap.sh` then:
 
-- `reap.sh --mine <label>`: kills only process groups registered under that label (SIGTERM, then SIGKILL after 30 s), cancels its beebox jobs, removes the entries. That is a narrow, named action an agent can be allowed to run on its own jobs.
+- `reap.sh --mine <label>`: kills only process groups registered under that label (SIGTERM, then SIGKILL after 30 s), cancels its perf worker jobs, removes the entries. That is a narrow, named action an agent can be allowed to run on its own jobs.
 - `reap.sh --orphans`: kills only registered groups whose leader is dead and whose budget is exceeded, and logs each kill. Anything not in the registry (John's own client, another user's process, an unregistered daemon) is never touched; it goes to needs-john with a command instead.
 - never `gradlew --stop`: CLAUDE.md and `coder.md` forbid it, and test scripts run Gradle `--no-daemon` (client-test.sh does already) so there is nothing to stop.
 
-**Option 5c: beebox clean-up (S).** `job kill` refuses queued jobs today; `job` lives on beebox, so allowing a queued kill is John's change there (or ours, if he wants). Until then `anywhere.sh` keeps jobs out of beebox's queue, and the watchdog lists abandoned jobs and stale `~/jobs/<name>` copies.
+**Option 5c: the perf worker clean-up (S).** `job kill` refuses queued jobs today; `job` lives on the perf worker, so allowing a queued kill is John's change there (or ours, if he wants). Until then `anywhere.sh` keeps jobs out of the perf worker's queue, and the watchdog lists abandoned jobs and stale `~/jobs/<name>` copies.
 
 **Option 5d: fewer "still waiting" notifications (S).** The coordinator gets a notification for each background command or monitor an agent hands back. With 2d (result files) and 1b (the queue), agents end instead of handing back "still waiting", and the coordinator reads `board.md` when it wants a picture, so its context only sees finished work.
 
@@ -143,9 +143,9 @@ So the habit John asks about exists only for offline block reads; looking is alw
 
 - **Where**: `~/.cache/fractal-worlds/<seed>-<short sha>/` on each host (outside every worktree, so `git clean` and worktree removal never touch it), holding `world/` (the save), `mod.jar` (the exact jar that generated it), `reference.json` (commit, seed, generation hash (below), radius, mod config, Minecraft version, date, host) and `places.tsv`. A `current-<seed>` symlink points at the newest. Keep the last two per seed.
 - **Seeds**: the three review seeds the fly-through already uses (987654321, 12345, 1), plus John's playtest seed when he wants it.
-- **Generation (`scripts/refworld-gen.sh --seed S [--radius R]`)**: the `server-only-test.sh` machinery (modded dedicated server, console on a FIFO, 127.0.0.1 only) with no client: `worldborder set` to the radius, then pregenerate by `forceload add` in blocks of at most 256 chunks through the console (vanilla only; no pregenerator mod needed; Chunky is the fallback, run as a black-box test-only jar like `fetch-test-mods.sh`'s), then `save-all flush` and stop. Run by the heavy batch (2b), on beebox or locally, after the batch's tests pass, so a reference world only ever comes from a tested commit.
+- **Generation (`scripts/refworld-gen.sh --seed S [--radius R]`)**: the `server-only-test.sh` machinery (modded dedicated server, console on a FIFO, 127.0.0.1 only) with no client: `worldborder set` to the radius, then pregenerate by `forceload add` in blocks of at most 256 chunks through the console (vanilla only; no pregenerator mod needed; Chunky is the fallback, run as a black-box test-only jar like `fetch-test-mods.sh`'s), then `save-all flush` and stop. Run by the heavy batch (2b), on the perf worker or locally, after the batch's tests pass, so a reference world only ever comes from a tested commit.
 - **The index (`places.tsv`)**: one row per interesting place: kind, label, x, y, z, yaw, pitch, plus the site id and tier. Kinds: settlement centre per tier and style, a sample building per building type (house, shop, highrise, ...), bridge, quay, gate, road join, plaza, slope street. Sources, cheapest first: the fly-through's `manifest.tsv` (it already finds sites and frames per tier) and `/fb locate <tier>` through the console; then building types from the planner itself, either `fractal-cli city --districts` on a terrain dump of the same world (NOTES warns live and recorded site choice differed once, so check each row against the save with McaTop), or, better, a small mod-side `/fb places` dump command (a **coder** item, S) that writes what the live planner placed. Camera presets come from the same rows (the fly-through's ring and street views).
-- **Looking (`scripts/refworld-look.sh --world current-12345 --places 'kind=quay,tier=metropolis' | --at X,Y,Z,YAW,PITCH ...`)**: copy the save to a scratch dir (the cached copy is never opened for writing), start the modded server on the stored `mod.jar` with the world border at the pregenerated radius, join with the vanilla client (`tools/vanilla-client`, as `server-only-test.sh` does), `tp` to each preset in spectator mode, wait until two captures agree (the fly-through's `stableShot` rule), `import -window root`, then stop. Every frame gets the stamp burnt in with ImageMagick (already in the flake): `refworld 12345 @ <sha> (N generator commits behind HEAD) x,y,z`, and the same in the output `manifest.tsv` and the file name. Still a client, so it takes the heavy lock (or goes to beebox through `anywhere.sh`), but for minutes, not the 25-40 of a fly-through or suite.
+- **Looking (`scripts/refworld-look.sh --world current-12345 --places 'kind=quay,tier=metropolis' | --at X,Y,Z,YAW,PITCH ...`)**: copy the save to a scratch dir (the cached copy is never opened for writing), start the modded server on the stored `mod.jar` with the world border at the pregenerated radius, join with the vanilla client (`tools/vanilla-client`, as `server-only-test.sh` does), `tp` to each preset in spectator mode, wait until two captures agree (the fly-through's `stableShot` rule), `import -window root`, then stop. Every frame gets the stamp burnt in with ImageMagick (already in the flake): `refworld 12345 @ <sha> (N generator commits behind HEAD) x,y,z`, and the same in the output `manifest.tsv` and the file name. Still a client, so it takes the heavy lock (or goes to the perf worker through `anywhere.sh`), but for minutes, not the 25-40 of a fly-through or suite.
 - **Reading offline (`scripts/world-query.sh`)**: McaTop and FloatingSnow promoted to one tool with subcommands (`top BOX`, `block X Y Z`, `column X Z`, `find BLOCK BOX`, `count BLOCK BOX`, `scan <check>`), on a reference world or any save (John's included). No lock, no game, seconds. Checks like "is there floating snow on any road" or "what is at the coordinate John reported" become one command; reviewers who may not run clients may run this.
 
 **When a reference world is valid.** `reference.json` stores a **generation hash**: the tree hash of the paths that can change what is generated (`planner-core/src/main`, `mod/src/main`, the mod's `resources/data`, `gradle.properties`; the list kept next to `test-scope.tsv`). `refworld-look.sh` prints, and stamps, one of:
@@ -164,7 +164,7 @@ So the habit John asks about exists only for offline block reads; looking is alw
 - **Chunks generated by a different build**: walking past the pregenerated edge would generate new chunks with whatever jar is loaded and leave a seam. The look script loads the stored jar, keeps the world border at the pregenerated radius, and keeps presets inside it minus the render distance.
 - **Loading changes the save** (entities move, block ticks run, a newer Minecraft upgrades the chunks): the cached copy is never opened, only a scratch copy; after a Minecraft version bump the cache is thrown away.
 - **Index drift**: `places.tsv` rows are checked against the save (McaTop top block at each row) when the world is built; a row that finds no building is dropped and logged.
-- **Disk and transfer**: ~2 GB per host; whether `remote.sh`'s channel to beebox suits a ~1 GB copy is not checked, so generating on each host may be simpler than copying.
+- **Disk and transfer**: ~2 GB per host; whether `remote.sh`'s channel to the perf worker suits a ~1 GB copy is not checked, so generating on each host may be simpler than copying.
 
 # Other fixes found on the way
 
@@ -203,6 +203,6 @@ Items 1-5 are a day's work for one assistant and change nothing about how items 
 5. **Reaping**: report-only first (proposed), then automatic kills of registered orphans past their budget? Allow `reap.sh --mine` for agents?
 6. **Permissions**: add allow rules for the merge and reap scripts in `.claude/settings.json`?
 7. **Where you look**: terminal (`watch scripts/status.sh`), a file, or a page in SilverBullet (needs a git-ignored file in docs-feedback)?
-8. **beebox**: allow `job kill` on queued jobs, and does `anywhere.sh` count beebox as 3 slots now that `job help` says 3 at a time?
+8. **The perf worker**: allow `job kill` on queued jobs, and does `anywhere.sh` count the perf worker as 3 slots now that `job help` says 3 at a time?
 9. **Haiku digest**: wanted, or the generated board only?
 10. **Reference worlds**: build them (which seeds; add your playtest seed?), and is a "stale, N commits behind" world acceptable for looks reviews of things the change didn't touch, or only an exact one? Disk budget (~2 GB per host proposed)?

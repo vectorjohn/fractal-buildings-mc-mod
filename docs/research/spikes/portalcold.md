@@ -8,7 +8,7 @@ When a player first goes through a nether portal and comes out in an unvisited (
 
 ## Answer
 
-**The stall is real and long: about 37 s into a cold town and about 64 s into a cold metropolis core, against about 12.5 s for the same jump into cold wild terrain (all on beebox, a quiet box).** The extra 24 s (town) and 52 s (metropolis) is ours. Nothing is sent to the player meanwhile, and the whole server is frozen, not only that player. A default dedicated server has `max-tick-time=60000`, so the metropolis case (63-65 s here, 60 s on the busy local host) would trip the watchdog and crash the server (the harness runs with `max-tick-time=-1`, so this is inferred, not observed).
+**The stall is real and long: about 37 s into a cold town and about 64 s into a cold metropolis core, against about 12.5 s for the same jump into cold wild terrain (all on the perf worker, a quiet box).** The extra 24 s (town) and 52 s (metropolis) is ours. Nothing is sent to the player meanwhile, and the whole server is frozen, not only that player. A default dedicated server has `max-tick-time=60000`, so the metropolis case (63-65 s here, 60 s on the busy local host) would trip the watchdog and crash the server (the harness runs with `max-tick-time=-1`, so this is inferred, not observed).
 
 The cause is not the portal logic. It is the number of chunks the exit forces. In every cold case `overworld.loadedChunks` went from 0 to **625 (a 25 x 25 chunk square, 400 blocks across)** inside the one `NetherPortalBlock.getPortalDestination` call (`PortalForcer` searches for a portal over a wide radius and then builds one). When the same area was already loaded (case `wild2`, around world spawn, 841 chunks loaded before) the identical call took **4-5 ms**. The server thread is parked (`Unsafe.park`, 98-99 % of 250 ms samples) while worker threads generate the chunks; 25 x 25 chunks cover about 3 x 3 settlement tiles of 144-160 blocks, so a city exit plans several tiles, which is where the extra time goes (lane counters at arrival: 4 starts (town) and 6 (metropolis) created, 33 and 40 postProcess calls, 1 % of building lookups inline).
 
@@ -18,7 +18,7 @@ Exit position: in both cities the exit portal came out on open ground next to no
 
 ## Numbers
 
-Seed 987654321 (the PERFSRV world), fresh world dir and fresh JVM per case, dedicated server (no renderer), creative mock player with view distance 8, spawn area loaded first. Host `beebox` (12 cores, quiet), loadavg at the trigger 4-6; `renderer: none`. Final run, merged with run-phase6 at `b7ab02d0` (evidence `.claude/reports/p6-portalcold-m-evidence/b7ab02d067-20261030T230411Z`, remote job log; the result JSONs are copied to `docs/research/spikes/portalcold/`).
+Seed 987654321 (the PERFSRV world), fresh world dir and fresh JVM per case, dedicated server (no renderer), creative mock player with view distance 8, spawn area loaded first. Host the perf worker (12 cores, quiet), loadavg at the trigger 4-6; `renderer: none`. Final run, merged with run-phase6 at `b7ab02d0` (evidence `.claude/reports/p6-portalcold-m-evidence/b7ab02d067-20261030T230411Z`, remote job log; the result JSONs are copied to `docs/research/spikes/portalcold/`).
 
 | case | overworld exit | exit tile | `getPortalDestination` | teleport call | longest tick after | chunks loaded (before / after) |
 |---|---|---|---|---|---|---|
@@ -27,7 +27,7 @@ Seed 987654321 (the PERFSRV world), fresh world dir and fresh JVM per case, dedi
 | town | 1280, -9600 | 8,-60 | **36.6 s** | 5 ms | 58 ms | 0 / 625 |
 | metropolis core | 2432, -5696 | 15,-36 | **65.3 s** | 6 ms | 33 ms | 0 / 625 |
 
-Repeats on beebox (same code before the merge): wild 12.3, 12.7, 13.1 s; town 36.6, 37.3, 38.1 s; metropolis 63.3, 64.1, 64.5 s. The spread is under 5 %. A local run at loadavg 16-22 (host `central`, 20 cores, loaded by other agents): town 40.3 s, metropolis 60.4 s. Wild 12.7 s includes our mod with no settlement in range (0 starts created), so it is mostly vanilla worldgen of 625 chunks on this server (about 20 ms a chunk); no vanilla-only (mod off) run was made.
+Repeats on the perf worker (same code before the merge): wild 12.3, 12.7, 13.1 s; town 36.6, 37.3, 38.1 s; metropolis 63.3, 64.1, 64.5 s. The spread is under 5 %. A local run at loadavg 16-22 (host `central`, 20 cores, loaded by other agents): town 40.3 s, metropolis 60.4 s. Wild 12.7 s includes our mod with no settlement in range (0 starts created), so it is mostly vanilla worldgen of 625 chunks on this server (about 20 ms a chunk); no vanilla-only (mod off) run was made.
 
 Where the time is, from 250 ms samples of the server thread during the call: 98-99 % parked waiting on worker threads, under 1 % in our code on that thread. The work runs in the worker pools, so it parallelises but the server thread waits for all 625 chunks.
 
@@ -47,7 +47,7 @@ Where the time is, from 250 ms samples of the server thread during the call: 98-
 
 ## Re-running
 
-`scripts/portalcold.sh [wild wild2 town metro]` (fresh world per case; takes the heavy lock; on beebox `scripts/evidence.sh p6-portalcold-m scripts/remote.sh --fetch mod/build/portalcold -- scripts/portalcold.sh`). Harness `mod/src/gametest/java/dev/fractalbuildings/gametest/perf/PortalColdHarness.java` (run `:mod:runPortalColdServer`, not part of `check`, so the default fast suites do not run it). To make it a regression test for a fix, assert `getPortalDestination.ms` and the longest tick.
+`scripts/portalcold.sh [wild wild2 town metro]` (fresh world per case; takes the heavy lock; on the perf worker `scripts/evidence.sh p6-portalcold-m scripts/remote.sh --fetch mod/build/portalcold -- scripts/portalcold.sh`). Harness `mod/src/gametest/java/dev/fractalbuildings/gametest/perf/PortalColdHarness.java` (run `:mod:runPortalColdServer`, not part of `check`, so the default fast suites do not run it). To make it a regression test for a fix, assert `getPortalDestination.ms` and the longest tick.
 
 ## Result: option c built (6.30, 2026-10-31)
 
@@ -56,7 +56,7 @@ John chose (c) and asked for the minimum wait ("I want to wait the minimum, even
 - Not 625 FULL chunks. Vanilla needs the POI chunks (17 x 17 in the overworld) at EMPTY only (no generation), and then either the found portal's chunks at FULL or the 3 x 3 (sometimes 3 x 4) chunks `createPortal` reads. Those are FULL in vanilla, which drags in the 25 x 25 dependency square; the hold takes them, plus one ring, to INITIALIZE_LIGHT and lets vanilla's call do the last three steps (40-76 ms).
 - The exit is vanilla's: `Level.getHeight` treats a chunk without a FULL-level ticket as empty, and `createPortal` depends on that for the first column of each cold chunk; holding the chunks at ticket level 34 keeps that answer. Exit portals were identical with and without the hold in all three cases.
 
-Beebox, quiet (loadavg 2-7), current tree (the unheld stall is shorter than above: 46 s, not 65 s, for the metropolis):
+Perf worker, quiet (loadavg 2-7), current tree (the unheld stall is shorter than above: 46 s, not 65 s, for the metropolis):
 
 | case | unheld (one tick) | held wait | longest tick while held | release | exit |
 |---|---|---|---|---|---|

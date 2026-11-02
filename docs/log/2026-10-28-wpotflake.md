@@ -1,6 +1,6 @@
 # WPOTFLAKE
 
-Flake: `WorldPlannerOrderTest.eightThreadsTinyCachesAndAnEvictor` TimeoutException (line 139 = the 5 min `f.get`) on beebox, twice.
+Flake: `WorldPlannerOrderTest.eightThreadsTinyCachesAndAnEvictor` TimeoutException (line 139 = the 5 min `f.get`) on the perf worker, twice.
 
 Diagnosis: not a deadlock. With capacity-1 caches every lookup recomputes, so 8 walkers are compute-bound: 62 s locally at load 14, 87 s, and 231 s at load 27 (24 busy-loop processes, 6 min Gradle run), close to the old 5 min total bound. TESTSPEED changes nearby did not touch this test.
 

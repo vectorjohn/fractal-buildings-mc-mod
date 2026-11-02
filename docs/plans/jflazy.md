@@ -8,7 +8,7 @@ John's teleport hold "for what the tile requires, max 15 s", revisited once the 
 # Summary
 
 **The premise was wrong.** QUAYLAZY step 6 concluded that "the junction field and region layer" make up the 34.7 s slowest cold chunk.
-A wall-clock profile of that chunk (two runs on a quiet beebox, below) says otherwise:
+A wall-clock profile of that chunk (two runs on a quiet perf worker, below) says otherwise:
 
 - The **junction field is about 3.5 s** of the 35.5 s, plus about 1.6 CPU-s for a second settlement's field further down. The
   **region layer is about 0 s** in that row: the flight before it already decided the region cells.
@@ -39,8 +39,8 @@ has a planner frame, RUN or WAIT, and classifies it by part, with `LINKRULE>` / 
 `ExitTrim.fullCut` is on the stack. Each run also records JFR, through `scripts/profile.sh` with `FB_PERF_VARIANTS=mod`
 (`jdk.CPUTimeSample`, stack depth 1024).
 
-**Runs.** Two runs on beebox (12 CPUs, dedicated server, no renderer), commit 1f915a1d plus the sampler. Each was sent when
-`ssh beebox job status` showed nothing running or queued. `scripts/quiet-check.sh --beebox` was QUIET before each run and after
+**Runs.** Two runs on the perf worker (12 CPUs, dedicated server, no renderer), commit 1f915a1d plus the sampler. Each was sent when
+`ssh <perf worker> job status` showed nothing running or queued. `scripts/quiet-check.sh --worker perf` was QUIET before each run and after
 the last. Inside the job, quiet-check was QUIET at start and at world end: other-cpu 0.02-0.04, other jobs 0. Load at start was
 0.21 and 0.25; at world end 5.10 and 6.21, all from the run's own work. Evidence (forensic, gitignored):
 `.claude/reports/p6-jflazy-plan-prof-evidence/1f915a1d9f-20261101T045039Z` and
@@ -188,8 +188,8 @@ Every change below must leave every answer byte-identical. The guards are: live 
      2 km wait until the hold ends.
 
   This needs a small public `WorldPlanner.linkNeighbours(site)` (the far ends of `roads.edgesOf(graphNode(site))`).
-- **B1 (optional), reads threads.** The reads pool is a third of the CPUs, at most 6 (`Workers.readThreads`; 4 on beebox). While
-  the chunk threads wait, cores sit idle. Measure `-Dfractalbuildings.readThreads=4/8/11` on quiet beebox and keep the best
+- **B1 (optional), reads threads.** The reads pool is a third of the CPUs, at most 6 (`Workers.readThreads`; 4 on the perf worker). While
+  the chunk threads wait, cores sit idle. Measure `-Dfractalbuildings.readThreads=4/8/11` on the quiet perf worker and keep the best
   default. No code change unless the default moves.
 - **B2 (optional), sparse edge reads.** The 529 chunks only the edge tests read could be single-column reads (0.35-0.55 ms each)
   instead of chunk fills (1.9 ms). That saves at most about 0.5-1 CPU-s per metropolis field. Low priority; only if B1 shows the
@@ -210,7 +210,7 @@ Every change below must leave every answer byte-identical. The guards are: live 
 step 1 (tooling + count harness) ──┬─> step 2 (A1 cut walk) ──┐
                                    ├─> step 3 (A2 short cut) ─┴─> step 4 (A3 fan-out) ─┐
 step 5 (A4 warmer order) ──────────┤                                                   ├─> step 7 (verify + measure)
-step 6 (B1 reads threads) ─────────┘ (needs a quiet beebox; any time)                  ┘
+step 6 (B1 reads threads) ─────────┘ (needs a quiet perf worker; any time)                  ┘
 ```
 
 Steps 1, 5 and 6 can start at once. Steps 2 and 3 run in parallel after step 1: they touch different methods (`ExitTrim` and the
@@ -312,9 +312,9 @@ Files: `mod/.../worldgen/RegionWarmer.java`, `planner-core/.../world/WorldPlanne
 - **Tests:** `WarmingGameTest` and `TeleportHoldGameTest` green; a unit test that `warm` visits the settlements in distance order;
   the client quick layer (TeleportHold) through `scripts/test-scope.sh`.
 
-## Step 6: B1, reads-pool size (S, measurement only; any time a quiet beebox is free)
+## Step 6: B1, reads-pool size (S, measurement only; any time a quiet perf worker is free)
 
-- Run `scripts/perf.sh --world-only` on quiet beebox with `JAVA_TOOL_OPTIONS=-Dfractalbuildings.readThreads=N` for N = 4
+- Run `scripts/perf.sh --world-only` on the quiet perf worker with `JAVA_TOOL_OPTIONS=-Dfractalbuildings.readThreads=N` for N = 4
   (today's default there), 8 and 11. Check that the property reaches the server JVM (it is read in `Workers.readThreads`).
 - Run each N twice, same protocol as QUAYLAZY step 6: quiet-check before and after, nothing else queued.
 - Report `mod.cold.chunk.max`, the arrival rows and the flight tick rows.
@@ -330,7 +330,7 @@ Files: `mod/.../worldgen/RegionWarmer.java`, `planner-core/.../world/WorldPlanne
   - `--planner-heavy` for the heavy equality cases;
   - `city-check` on the 9 gate windows (0 new violations).
 - **Counts:** step 1's cascade table before and after. Set the count rows' ci to 1.2 x the new values.
-- **Timing**, on a quiet beebox only, as QUAYLAZY step 6:
+- **Timing**, on a quiet perf worker only, as QUAYLAZY step 6:
   - two `scripts/perf.sh` runs and one `FB_PERF_SAMPLE=1 scripts/profile.sh` run;
   - same-session before and after;
   - rows: `mod.cold.chunk.max.ms`, `arrival.cold.metro.ms`, `arrival.hold.ms`, `arrival.maxTick.ms`, the flight tick rows,

@@ -1,0 +1,32 @@
+# Worker pool for scripts/remote.sh, scripts/anywhere.sh and scripts/quiet-check.sh --worker.
+#
+# Copy to .claude/workers.conf in the MAIN checkout (gitignored; every worktree reads that one file) and fill in
+# your own hosts. No file = no workers: everything runs on this host. Format and keys: scripts/lib/workers.sh.
+# The docs never name a host: they say "the perf worker" (role perf, the benchmark machine for quiet
+# measurements) and "a worker" (any enabled entry); the section names below are what logs and --worker show.
+#
+# Each worker needs: key-based ssh (BatchMode) from this host, Nix with flakes for scripts/dev, and a `job`
+# command on PATH, the small job queue remote.sh drives (job submit NAME CMD.. | status [ID] | wait ID |
+# log ID | kill ID | clean NAME; one systemd --user unit per job, `slots` at once, MemoryMax per job).
+# GPU jobs also want `headless-run` (a headless sway session with Xwayland as $DISPLAY); without it a job
+# renders with lavapipe under Xvfb.
+
+[perf1]
+host = perf-worker.example
+roles = perf heavy suite
+slots = 3
+memory = MemoryMax 28 % per job (about 7.9 GiB); a job over it is killed whole (remote.sh: JOB OOM-KILLED)
+renderer = AMD iGPU, radeonsi/radv in a headless sway + Xwayland session
+vk_icd = /run/opengl-driver/share/vulkan/icd.d/radeon_icd.x86_64.json
+specs = 12 CPUs, 28 GiB RAM
+enabled = yes
+
+[worker2]
+host = worker2.example
+roles = heavy suite
+slots = 2
+memory = 45 % of system memory per job
+renderer = none checked yet
+specs = free text
+enabled = no
+note = disabled until it has the job queue

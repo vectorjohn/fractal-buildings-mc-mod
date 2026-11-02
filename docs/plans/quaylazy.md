@@ -12,7 +12,7 @@ chunks), PERFORMANCE.md "Quays front-load probes" and "PARREADS", NOTES "Quays (
 
 A waterfront tile's structure start, and the teleport hold for a waterfront tile, should pay only for the quays
 near that tile, not for the whole settlement's waterfront. Today that whole trace takes about 20 s on a quiet
-beebox (`region.cold.quays.ms`) and runs inside a vanilla structure start whenever the warmer hasn't done it
+The perf worker (`region.cold.quays.ms`) and runs inside a vanilla structure start whenever the warmer hasn't done it
 first. **The output must not change at all**: every tile gets the same quay runs, byte for byte, as the current
 code. That one property gives us `tile-border-agree`, determinism and "no visual review needed" in a single test.
 
@@ -349,8 +349,8 @@ Files: `mod/.../worldgen/RegionWarmer.java`, `planner-core/.../world/WorldPlanne
     and `SettlementDeterminismTest`;
   - the ORDERSIM sims in `:mod:test`.
   - Then delete `filter-digests.tsv` and `QuayFilterTest` (the live lazy-against-reference tests cover them).
-- Measurement, **quiet beebox only** (CLAUDE.md, regionperf section 7 protocol):
-  - Send each run when `ssh beebox job status` shows nothing running or queued. Run `scripts/quiet-check.sh`
+- Measurement, **the quiet perf worker only** (CLAUDE.md, regionperf section 7 protocol):
+  - Send each run when `ssh <perf worker> job status` shows nothing running or queued. Run `scripts/quiet-check.sh`
     inside the job, and `scripts/evidence.sh quaylazy-bee-rN scripts/remote.sh -- scripts/perf.sh`, twice.
   - The same session also runs the **before** commit (the run-branch merge-base), so before and after share
     host and protocol.
@@ -373,7 +373,7 @@ Files: `mod/.../worldgen/RegionWarmer.java`, `planner-core/.../world/WorldPlanne
 
 # Expected effect (estimates, not measured)
 
-- The quay part of a cold waterfront tile: from the whole trace (about 20 s on quiet beebox) to its lazy share.
+- The quay part of a cold waterfront tile: from the whole trace (about 20 s on the quiet perf worker) to its lazy share.
   Assuming cost scales with chunks (7 to 13 times fewer on recorded s4_m2), that is about 1.5 to 3 s before
   step 4 and less after it. A long coast chain is the worst case: s4_m5's worst tile is 3.6k chunks, about 2.5
   times fewer than whole.
@@ -381,7 +381,7 @@ Files: `mod/.../worldgen/RegionWarmer.java`, `planner-core/.../world/WorldPlanne
   vanilla.** The rest is the settlement's junction field and the region layer, which a structure start still
   waits for. Lazy junction fields would be the next item; that is the coordinator's call.
 - TPHOLD15 15 s cap, waterfront destination: region warm, junction field, lazy quays and the tile plan come to
-  roughly 10 + 2 + 1 s on beebox, so it is borderline. Step 6 measures it (`arrival.hold.ms`).
+  roughly 10 + 2 + 1 s on the perf worker, so it is borderline. Step 6 measures it (`arrival.hold.ms`).
 
 # Risks
 

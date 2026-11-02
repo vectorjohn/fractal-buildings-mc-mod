@@ -10,9 +10,9 @@
 - 1c10f931 tests and hooks; 59e09f4c docs; da373ac6 NOTES flake line; 737c6d4e merge of run-phase6 (S4b)
 ## Verification
 - `:mod:test --tests '*OrderSim*'` -> pass (harness 4, rock 1, OrderSimTest 5). Cost on loaded host (loadavg 8-13): SC1 6 orders 4.7 s, SC5 2.3 s, controls ~4 s, rock ~3-7 s; classes 16-19 s + 7 s test time.
-- `scripts/evidence.sh p6-ordersim-s4a scripts/anywhere.sh -- scripts/test-all.sh --no-client` at 59e09f4c75 (run-phase6 1a7a29d4, merged already), ran on beebox (1h11m, busy): cli 37, determinism 17, mod 80/84 + 36 game tests, viewer 142 pass; planner-core 903/912 with 1 failure: WorldPlannerOrderTest.eightThreadsTinyCachesAndAnEvictor TimeoutException (known load flake in NOTES). Identical local rerun of that class alone: pass. Evidence .claude/reports/p6-ordersim-s4a-evidence/59e09f4c75-20261028T081013Z. Later commits are NOTES only.
+- `scripts/evidence.sh p6-ordersim-s4a scripts/anywhere.sh -- scripts/test-all.sh --no-client` at 59e09f4c75 (run-phase6 1a7a29d4, merged already), ran on the perf worker (1h11m, busy): cli 37, determinism 17, mod 80/84 + 36 game tests, viewer 142 pass; planner-core 903/912 with 1 failure: WorldPlannerOrderTest.eightThreadsTinyCachesAndAnEvictor TimeoutException (known load flake in NOTES). Identical local rerun of that class alone: pass. Evidence .claude/reports/p6-ordersim-s4a-evidence/59e09f4c75-20261028T081013Z. Later commits are NOTES only.
 - heavy: none (no client layer needed; test-only change).
-- flakes: WorldPlannerOrderTest.eightThreadsTinyCachesAndAnEvictor timeout on loaded beebox (recorded in NOTES).
+- flakes: WorldPlannerOrderTest.eightThreadsTinyCachesAndAnEvictor timeout on the loaded perf worker (recorded in NOTES).
 - output looked at: reports in mod/build/ordersim/*.report (printed: SC1 differing claimed cells vs forward 45-134, SC5 34-186, all spill; SC5 reverse has 132 air->snow cells on street edges, accepted spill).
 - mutation checks: controls are themselves the mutations (SpillClear/StreetAirFix/BuildingAirClear off: residue 0 -> 4 / 11 / 27); rock test shows the unknown solid cell with the rock as last writer (forward, shuffle-2, spiral C3; reverse/shuffle-1/checker C4).
 ## Not done / blockers

@@ -3,7 +3,7 @@
 Lead-coder plan, 2026-11-01, branch `claude/p6-quayfast-plan` (base `claude/run-phase6` at 6e0826c8).
 Item: QUAYFAST, the follow-up to QUAYLAZY (a tile traces only the quays that reach it; [plan](quaylazy.md)) that
 CASCADE2FIX left open: the perf row "Cold district plan, p95" (the slowest of 7 cold district plans in
-`PerfPlannerTest`) is 3.67 s on a quiet beebox against its 3 s ceiling, and almost all of it is one tile, 16,-35,
+`PerfPlannerTest`) is 3.67 s on a quiet perf worker against its 3 s ceiling, and almost all of it is one tile, 16,-35,
 tracing one river's quay chain. John approved option (A), byte-identical read savings, on 2026-11-01 (coordinator
 message). Part (A) is ready to hand to coders: section 4. Part (B), which changes output, is analysis only (section 6).
 
@@ -126,7 +126,7 @@ A5 is exact for the reasons in section 1. The argument, for the coder and the ve
 ```
 step 1 (run walker, Quays)        ─┐
 step 2 (screen predicate, Bank)   ─┼─> step 3 (run-level QuayTrace) ──> step 4 (screened scan, optional) ─┐
-step 0 (per-sample perf rows)     ─┘                                 └────────────────────────────────────┴─> step 5 (counts, guards) ─> step 6 (quiet beebox)
+step 0 (per-sample perf rows)     ─┘                                 └────────────────────────────────────┴─> step 5 (counts, guards) ─> step 6 (the quiet perf worker)
 ```
 
 Steps 0, 1 and 2 run in parallel. Step 3 can start at the same time as 1 and 2 against a stand-in walker (below),
@@ -281,10 +281,10 @@ Files: `QuayTrace.java`, `QuayTraceTest.java`.
   CASCADE2FIX verifier noted they are opt-in and nothing enforces them). If not cheap, leave a polish line.
 - NOTES: one line each for "the quay unit is the run" and the new counts. Log, ROADMAP tick.
 
-## Step 6: quiet beebox measurement (assistant or coder; last)
+## Step 6: the quiet perf worker measurement (assistant or coder; last)
 
 - `scripts/evidence.sh quayfast-bee-rN scripts/remote.sh -- scripts/perf.sh --planner-only`, twice, each sent only when
-  `ssh beebox job status` shows nothing running or queued (HEAVY13 may hold beebox: wait for it), with
+  `ssh <perf worker> job status` shows nothing running or queued (HEAVY13 may hold the perf worker: wait for it), with
   `scripts/quiet-check.sh` before and after (perf.sh does this) and the log ending `perf: quiet host`. Any other run
   is "not valid".
 - Then one full `scripts/perf.sh` (world rows: cold chunk, arrival, hold, flight tick, the cascade counts) under the

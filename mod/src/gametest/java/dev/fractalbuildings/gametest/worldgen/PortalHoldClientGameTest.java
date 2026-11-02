@@ -28,8 +28,8 @@ public class PortalHoldClientGameTest implements FabricClientGameTest {
 	/** The metropolis centre of seed 987654321 (PerfSupport.METRO_X/Z); the nether portal stands at it / 8. */
 	private static final int MX = 2432, MZ = -5696;
 	/**
-	 * Longest acceptable server tick while the trip waits and goes, ms. Unheld, one tick takes about 46 s (beebox); the stale supporting
-	 * block after the trip (PortalHold.afterTrip) cost a further 8-15 s tick here; with both fixed the longest was 110 ms on beebox.
+	 * Longest acceptable server tick while the trip waits and goes, ms. Unheld, one tick takes about 46 s (the perf worker); the stale supporting
+	 * block after the trip (PortalHold.afterTrip) cost a further 8-15 s tick here; with both fixed the longest was 110 ms on the perf worker.
 	 */
 	private static final long MAX_TICK_MS = 3_000;
 

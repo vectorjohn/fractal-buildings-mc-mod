@@ -38,6 +38,8 @@ replay_*.log
 # Lock files for shared resources (see CLAUDE.md "Parallel work")
 /.claude/*.lock
 /.claude/suite.lock.*
+# The worker pool: host names stay local (see scripts/workers.conf.example)
+/.claude/workers.conf
 # scripts/anywhere.sh queue, claims and route log
 /.claude/anywhere/
 # scripts/postmerge-run.sh state: result files, logs (see scripts/squash-merge.sh)

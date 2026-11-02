@@ -31,6 +31,6 @@ Branch `claude/p6-testlayers` (base run-phase6 `bceeefb7`, then merged run-phase
 
 ## Round 2 (2026-10-27): merged run-phase6, ran the layers
 - Merged `claude/run-phase6` (conflicts in `client-test.sh`, `test-all.sh`, `coder.md`, `verifier.md`: both sides kept; the lock line now names the worker GPU renderer, layer and FB_ONLY). All client tests still call `CompatOnly.skip`/`ClientLayers`.
-- `FB_LAYER=quick scripts/client-test.sh` on beebox (AMD radeonsi, job 16): exit 0, BUILD SUCCESSFUL in 11 m 25 s; log shows Compat, Roads, Foliage skipped by `[layers]`, FlyThrough off.
-- `FB_ONLY=HelloClientGameTest scripts/client-test.sh` on beebox (job 17): exit 0, 28 s; the other seven tests log `skipped (FB_ONLY=...)`.
+- `FB_LAYER=quick scripts/client-test.sh` on the perf worker (AMD radeonsi, job 16): exit 0, BUILD SUCCESSFUL in 11 m 25 s; log shows Compat, Roads, Foliage skipped by `[layers]`, FlyThrough off.
+- `FB_ONLY=HelloClientGameTest scripts/client-test.sh` on the perf worker (job 17): exit 0, 28 s; the other seven tests log `skipped (FB_ONLY=...)`.
 - `scripts/order-test.sh` locally (no renderer, not heavy): 11 of 16 pass, 5 fail with the same 52 `unknown` cells (see NOTES); reproduced on rerun. `order-test.sh` now kills its servers on TERM/INT.

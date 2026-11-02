@@ -56,9 +56,9 @@ time.
   plus their verifiers and any number of research or docs agents. The human
   can change the cap in the ledger. Fewer if items are heavy (Minecraft
   client tests share the heavy lock, so several of those in parallel mostly
-  queue). When the worker box is up (`scripts/remote.sh --check`), there are
-  two heavy slots: the local heavy lock and the worker's queue (CLAUDE.md
-  "Parallel work"). Tell heavy items' agents to send their heavy runs there.
+  queue). When workers are configured and up (`scripts/remote.sh --workers`,
+  `--check`), each adds heavy slots beside the local heavy lock: its queue
+  runs `slots` jobs (CLAUDE.md "Parallel work"). Tell heavy items' agents to send their heavy runs there.
 - **Waiting on a heavy job:** tell agents (and do it yourself) to wait with one
   long Monitor / until loop on the job's result, not many short wakes; each
   wake re-reads context and costs tokens for nothing.
@@ -95,7 +95,7 @@ Start it with `subagent_type: "assistant"` and a short prompt:
 - the human's message, quoted as written
 - `slug: <short-slug>`, the run branch and the integration checkout path
 - `heavy: busy` if a client game test or measurement is running locally, else
-  `heavy: free` (the worker box has its own queue: `scripts/remote.sh`)
+  `heavy: free` (each worker has its own queue: `scripts/remote.sh`)
 - at most a line or two of run state, only if the message refers to it
 
 Relay its final message to the human. Then:
@@ -131,7 +131,7 @@ means one was missed: regenerate then.
    in scope (slices, not the whole file), `docs/ASSUMPTIONS.md`, and
    `docs/research/INDEX.md` if research is in scope. To resume a run, read its
    ledger first; it tells you everything else. After a restart, run
-   `scripts/remote.sh --list` in the integration checkout and re-attach unfetched beebox jobs (`scripts/remote.sh --attach <job>`) instead of re-running them.
+   `scripts/remote.sh --list` in the integration checkout and re-attach unfetched worker jobs (`scripts/remote.sh --attach <job>`) instead of re-running them.
 2. Work out the scope: exactly which items. "Phase 3" means every unchecked
    item in it. Build a **dependency picture**: which items are ready now, and
    what each waiting item waits for. Write it in the ledger.
@@ -306,7 +306,7 @@ names the culprit squash commit; decide revert vs fix-forward as for a
 post-merge failure. **A timing from a busy host is not a measurement**
 (John 2026-10-30; CLAUDE.md "Parallel work", `scripts/quiet-check.sh`):
 don't relay it to John, into PERFORMANCE.md, a brief or a ledger outcome;
-schedule the measurement again on beebox with nothing else running or
+schedule the measurement again on the perf worker with nothing else running or
 queued (this host is never quiet: John plays here).
 
 **6. Act on the verdict.**

@@ -38,7 +38,7 @@ hand-backs and output apply to you too. This file only adds what's different.
   works, where it breaks, what exactly we'd borrow) rather than rewriting it.
 - **Test claims cheaply when reading isn't conclusive**: a tiny probe test or
   throwaway experiment in your worktree (Minecraft runs under the heavy lock,
-  or on the worker box with `scripts/remote.sh`).
+  or on a worker with `scripts/remote.sh`).
   Report what it showed; the code isn't merged.
 - **Think about our constraints**, not the technique in the abstract:
   determinism from the seed, chunks generated independently and in any order,

@@ -15,7 +15,7 @@
   "followTicks.over100ms": "0",
   "followTicks.top3": "[58, 58, 49]",
   "getPortalDestination.ms": "36595",
-  "host": "beebox",
+  "host": "the perf worker",
   "lanes.at.arrival": "lane counters (on): start creation 4, mean 361.7 ms, max 699.3 ms, peak concurrent 1 postProcess 33, mean 2.83 ms, peak concurrent 1 building lookups: done ahead 495, joined a worker 2, inline 4 (1% inline) start decisions 9, stubs 4 (biome-rejected 0), in a start now 0 prefetch calls 0, warm calls 0 (mean 0.0 ms), refused by a full pool 0",
   "load.arrive": "3.72",
   "load.start": "4.49",

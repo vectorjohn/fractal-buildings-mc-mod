@@ -58,8 +58,8 @@ decide (worked through in the report); judging only a chunk's own trees needs no
   with `FoliageClear.OWN` off (`own` now also puts back what a chunk's own trees grew into claimed air, which hid them); the C5 contract
   allows `own` to put back natural blocks; `FoliageClusterOrderSimTest` plants its floating leaf and log as a tree of chunk C next to our
   claims (the old scenario was a foreign cut).
-- In game, `FB_FOLIAGE_REPEAT=6` (beebox, 6d3fc425): seed 1 road 0 cells differ in all 6 worlds (39 leaves each; before: 1 to 14 cells, 111 leaves), streets 0 on both seeds; seed 31337 road 0, 6, 7 or 18 cells, all in chunks 87..89,-128, the spot where the vanilla-only control shows the trees themselves move. Orphans 0, headroom 0, residual 0. Fewer leaves over the road windows (seed 1 111 to 39, seed 31337 31 to 23): crowns our road cut that the old pass kept because a neighbour's crown touched them. Screenshots (`foliage-*-after.png`) look the same as LEAFORDER's at the camera spots.
-- `scripts/order-test.sh` 17/17 PASS, `scripts/test-all.sh --no-client` pass, `scripts/perf.sh` exit 0 (beebox: wall per downtown chunk 2.44 x, budget 3), `FB_LAYER=full` client layer: see the report. Evidence folders `.claude/reports/p6-roadleaforder-*-evidence/`.
+- In game, `FB_FOLIAGE_REPEAT=6` (the perf worker, 6d3fc425): seed 1 road 0 cells differ in all 6 worlds (39 leaves each; before: 1 to 14 cells, 111 leaves), streets 0 on both seeds; seed 31337 road 0, 6, 7 or 18 cells, all in chunks 87..89,-128, the spot where the vanilla-only control shows the trees themselves move. Orphans 0, headroom 0, residual 0. Fewer leaves over the road windows (seed 1 111 to 39, seed 31337 31 to 23): crowns our road cut that the old pass kept because a neighbour's crown touched them. Screenshots (`foliage-*-after.png`) look the same as LEAFORDER's at the camera spots.
+- `scripts/order-test.sh` 17/17 PASS, `scripts/test-all.sh --no-client` pass, `scripts/perf.sh` exit 0 (the perf worker: wall per downtown chunk 2.44 x, budget 3), `FB_LAYER=full` client layer: see the report. Evidence folders `.claude/reports/p6-roadleaforder-*-evidence/`.
 - Mutation checks: `ClaimMask` clear one lower (`- 1`) fails `ClaimMaskTest` (road cells missing); `own` not putting back claimed-air cells fails `RoadLeafOrderSimTest`.
 
 ## Round 2 (verifier)
@@ -72,4 +72,4 @@ decide (worked through in the report); judging only a chunk's own trees needs no
   removes every own log and leaf fails it; the old `contains("_log")` check passed anything); new
   `aWriteOutsideTheWriteZoneIsNeitherReadNorReadBack` (fails with the read-back guard removed).
 - Pinned at e5a2a2a9 (merged run-phase6 b47a47e1): `:mod:test` 134 tests, 0 failed; FoliageClientGameTest and CompatClientGameTest pass
-  (beebox, no "far chunk" line); order-test 17/17.
+  (the perf worker, no "far chunk" line); order-test 17/17.

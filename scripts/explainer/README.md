@@ -23,6 +23,6 @@ cd viewer && ../scripts/dev node ../scripts/explainer/shoot.mjs ../docs/review/e
 ```
 
 `template.html` holds the page (CSS, text, drawing code); `build-page.mjs` draws the architecture SVG and inlines the
-data and `docs/review/road-refine/profile-r3_m2_2.png`. Timings on the page are copied by hand from the quiet-beebox
+data and `docs/review/road-refine/profile-r3_m2_2.png`. Timings on the page are copied by hand from the quiet-perf-worker
 sources it cites (PERFBASE section 7 of `docs/review/regionperf-decision.md` on `claude/p6-perfbase`, HEAVY10,
 PERFORMANCE.md PARREADS); nothing here measures time.
