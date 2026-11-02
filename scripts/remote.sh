@@ -16,6 +16,15 @@
 # minus any `flock .../heavy.lock` prefix: the worker runs jobs from its own queue,
 # so the local heavy lock doesn't apply there.
 #
+# Environment (RUNGUARD): ssh carries none, so the runner exports the knobs set here itself: every
+# exported FB_* variable plus JAVA_TOOL_OPTIONS, PERF_SKIP_FAR, PERF_LOAD_SKIP and FRACTAL_TEST_MODS,
+# e.g. `FB_ONLY=RoadsClientGameTest scripts/remote.sh -- scripts/client-test.sh`. Not forwarded (and
+# said so): FB_VK* (the worker uses its GPU; --cpu for lavapipe), this host's locks and tooling
+# (FB_HEAVY_LOCK, FB_SUITE_*, FB_QUIET_*, FB_POSTMERGE_*, FB_SNAPSHOT_*, FB_SB_*), remote.sh's and
+# anywhere.sh's own settings, and any absolute path outside this worktree (a path inside it is
+# rewritten to the worker's copy). `env X=Y CMD` still works and wins. The forwarded list is printed,
+# written to the job log and kept in the state file (env=).
+#
 # What it does: copies this worktree (minus .git, .claude but its agents/, and everything
 # .gitignore'd: build/, run/, node_modules/, ...) to the worker, queues CMD,
 # waits, saves the full output to build/remote/<job>.log and prints its tail,
@@ -69,7 +78,7 @@
 # cancelled/gone; 129 detached on SIGHUP; 130 cancelled or attach stopped; 2 bad usage.
 set -euo pipefail
 
-usage() { sed -n '2,69p' "$0" | sed 's/^# \{0,1\}//'; }
+usage() { sed -n '2,78p' "$0" | sed 's/^# \{0,1\}//'; }
 
 # Not every host has rsync installed for the agent user.
 if ! command -v rsync > /dev/null; then
@@ -166,6 +175,44 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 SDIR="$ROOT/build/remote"
 mkdir -p "$SDIR"
 
+# ---- environment forwarded to the worker (RUNGUARD) -------------------------------------------
+# ssh carries no environment, so `FB_ONLY=X scripts/remote.sh -- scripts/client-test.sh` used to run
+# every test there. Forwarded: every exported FB_* variable plus the knobs in ENV_EXTRA, except the
+# ones env_withheld names. A value that is a path in this worktree is rewritten to the same path in
+# the worker's copy; any other absolute path is withheld (it doesn't exist there), loudly.
+ENV_EXTRA=(JAVA_TOOL_OPTIONS PERF_SKIP_FAR PERF_LOAD_SKIP FRACTAL_TEST_MODS)
+env_withheld() {   # $1 name: why it is not forwarded ("-" first: internal, not reported), or nothing
+	case $1 in
+		FB_REMOTE | FB_REMOTE_* | FB_ANY_* | FB_WORKERS_CONF) echo "- remote.sh / anywhere.sh setting" ;;
+		FB_USE_DISPLAY | FB_VK_DRIVER_FILES) echo "$1 (the worker sets it itself)" ;;
+		FB_VK | FB_VK_*) echo "$1 (this host's renderer; the worker renders on its GPU, --cpu for lavapipe)" ;;
+		FB_SUITE_SLOT_HELD) echo "- this host's suite slot" ;;
+		FB_HEAVY_LOCK | FB_SUITE_* | FB_QUIET_* | FB_POSTMERGE_* | FB_SNAPSHOT_* | FB_KEEP_SNAPSHOT | FB_SB_*)
+			echo "$1 (this host's locks and tooling)" ;;
+	esac
+}
+ENV_FWD=() ENV_SHOW=() ENV_HELD=() ENVQ=""
+env_collect() {   # fills ENV_FWD (runner lines), ENV_SHOW (NAME=value, for logs) and ENV_HELD (reasons)
+	local n v why
+	ENV_FWD=() ENV_SHOW=() ENV_HELD=()
+	for n in $( { compgen -e | grep -E '^FB_[A-Za-z0-9_]*$'; printf '%s\n' "${ENV_EXTRA[@]}"; } | LC_ALL=C sort -u); do
+		[[ -v $n ]] || continue
+		v=${!n}
+		why=$(env_withheld "$n")
+		if [[ -n $why ]]; then [[ $why == -* ]] || ENV_HELD+=("$why"); continue; fi
+		if [[ $v == "$ROOT" || $v == "$ROOT"/* ]]; then
+			# shellcheck disable=SC2016 # $PWD is the worker copy's root, expanded by the runner
+			ENV_FWD+=("export $n=\"\$PWD\"$(printf '%q' "${v#"$ROOT"}")")
+			ENV_SHOW+=("$n=<copy>${v#"$ROOT"}")
+		elif [[ $v == /* ]]; then
+			ENV_HELD+=("$n=$v (a path on this host outside the worktree; pass a path inside the worktree)")
+		else
+			ENV_FWD+=("export $n=$(printf '%q' "$v")")
+			ENV_SHOW+=("$(printf '%s=%q' "$n" "$v")")
+		fi
+	done
+}
+
 # ---- state files ------------------------------------------------------------------------------
 # key=value lines; fetch= repeats; cmd is the command shell-quoted (printf %q). Rewritten whole
 # (tmp + mv) on every change, so a reader never sees half a file.
@@ -174,7 +221,7 @@ state_write() {
 	local f
 	{
 		echo "job=$NAME"; echo "id=$ID"; echo "host=$HOST"; echo "worker=$WNAME"; echo "remote_dir=jobs/$NAME"
-		echo "worktree=$ROOT"; echo "cmd=$CMDQ"; echo "commit=$COMMIT"; echo "gpu=$GPU"; echo "keep=$KEEP"
+		echo "worktree=$ROOT"; echo "env=$ENVQ"; echo "cmd=$CMDQ"; echo "commit=$COMMIT"; echo "gpu=$GPU"; echo "keep=$KEEP"
 		echo "started=$STARTED"; echo "started_at=$(date -d "@$STARTED" '+%F %T %z')"
 		echo "waiter=$WAITER"; echo "status=$STATUS"; echo "exit=$EXIT"; echo "updated=$(date '+%F %T %z')"
 		echo "boot=$BOOT0"; echo "memtotal=$MEM0"
@@ -183,12 +230,12 @@ state_write() {
 }
 state_read() {   # $1 file: sets the globals from it
 	local k v line
-	FETCH=() NAME="" ID="" CMDQ="" STARTED="" COMMIT="" STATUS="" EXIT="" WAITER="" GPU=1 KEEP=0 BOOT0="" MEM0=""
+	FETCH=() NAME="" ID="" CMDQ="" ENVQ="" STARTED="" COMMIT="" STATUS="" EXIT="" WAITER="" GPU=1 KEEP=0 BOOT0="" MEM0=""
 	while IFS= read -r line; do
 		k=${line%%=*} v=${line#*=}
 		case "$k" in
 			job) NAME=$v ;; id) ID=$v ;; host) (( HOST_SET )) || HOST=$v ;; worker) (( HOST_SET )) || WNAME=$v ;; worktree) ROOT=$v ;;
-			cmd) CMDQ=$v ;; commit) COMMIT=$v ;; gpu) GPU=$v ;; keep) KEEP=$v ;; started) STARTED=$v ;;
+			cmd) CMDQ=$v ;; env) ENVQ=$v ;; commit) COMMIT=$v ;; gpu) GPU=$v ;; keep) KEEP=$v ;; started) STARTED=$v ;;
 			waiter) WAITER=$v ;; status) STATUS=$v ;; exit) EXIT=$v ;; fetch) FETCH+=("$v") ;;
 			boot) BOOT0=$v ;; memtotal) MEM0=$v ;;
 		esac
@@ -419,7 +466,7 @@ if [[ $MODE == list ]]; then
 		fi
 		if waiter_alive; then w="waiter pid ${WAITER%@*} alive"; else w="no waiter: --attach $NAME"; fi
 		printf '%s  id %s  %s  [%s; %s]\n    started %s, commit %s: %s\n' "$NAME" "${lid:-$ID}" "$STATUS" "$where" "$w" \
-			"$(date -d "@$STARTED" '+%F %T')" "$COMMIT" "$CMDQ"
+			"$(date -d "@$STARTED" '+%F %T')" "$COMMIT" "${ENVQ:+$ENVQ }$CMDQ"
 	done
 	(( n )) || echo "remote: no unfetched jobs in $SDIR"
 	exit 0
@@ -477,6 +524,13 @@ NAME="fb-${WT:0:40}-$(date +%s)-$$"
 STATE="$SDIR/$NAME.state"
 STARTED=$(date +%s)
 CMDQ=$(printf '%q ' "$@"); CMDQ=${CMDQ% }
+# Environment for the worker (RUNGUARD): ssh passes none, so the runner exports these itself.
+env_collect
+if (( ${#ENV_FWD[@]} )); then
+	ENVQ=$(printf '%s ' "${ENV_SHOW[@]}"); ENVQ=${ENVQ% }
+	echo "remote: forwarding to the worker: $ENVQ" >&2
+fi
+for w in "${ENV_HELD[@]}"; do echo "remote: not forwarded: $w" >&2; done
 WAITER="$$@$HOSTNAME"
 COMMIT=$(git -C "$ROOT" rev-parse --short=10 HEAD 2>/dev/null || echo unknown)
 git -C "$ROOT" diff --quiet HEAD 2>/dev/null || COMMIT="$COMMIT-dirty"
@@ -503,6 +557,9 @@ cleanup
 	echo 'cd "$(dirname "$0")" || exit 2'
 	echo 'export PATH="/run/wrappers/bin:/etc/profiles/per-user/$USER/bin:/run/current-system/sw/bin:$PATH"'
 	echo 'export FB_REMOTE=1'
+	# RUNGUARD: the waiter's FB_* knobs (env_collect); an `env X=Y` in CMD still wins
+	for w in "${ENV_FWD[@]}"; do echo "$w"; done
+	(( ${#ENV_FWD[@]} )) && printf 'echo %q\n' "remote: environment from the waiter: $ENVQ"
 	echo "gpu=$GPU"
 	printf 'icd=%q\n' "$ICD"
 	echo 'rm -f .fb-exit .fb-gaps'

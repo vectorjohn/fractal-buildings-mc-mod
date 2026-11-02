@@ -336,5 +336,14 @@ check "malformed pool: refused (2)" "$(FB_WORKERS_CONF=$T/bad.conf "$A" --dry-ru
 export FB_WORKERS_CONF=$T/workers.conf
 reset
 
+# RUNGUARD: a job routed to a worker gets the caller's environment handed to remote.sh, which forwards the FB_* knobs
+# (scripts/remote-selftest.sh checks that half); a leading X=Y still gets its `env`
+reset; load 15
+FB_ONLY=RoadsClientGameTest "$A" -- sh -c 'echo "$FB_ONLY" > '"$T"'/only.out' 2> "$T/out.env"
+check "env: routed to perfw, FB_ONLY reaches remote.sh" "$(route "$T/out.env") $(cat "$T/only.out" 2>/dev/null)" "perfw RoadsClientGameTest"
+"$A" -- FB_LAYER=full sh -c 'echo "$FB_LAYER" > '"$T"'/layer.out' 2> /dev/null
+check "env: leading X=Y on a worker" "$(cat "$T/layer.out" 2>/dev/null)" "full"
+reset
+
 echo "anywhere-selftest: $fails failure(s)"
 (( fails == 0 ))

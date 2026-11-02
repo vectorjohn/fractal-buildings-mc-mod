@@ -7,7 +7,8 @@
 # --check; a stall mid-job then recovery (the job passes); a reboot that loses the job (JOB LOST 75);
 # a failure after a suspend (75); a failure after a memory shrink (75); an OOM kill without signs of
 # preemption (137); a passing job that saw a suspend (0 + WORKER SUSPENDED); --attach after the waiter
-# died while the worker was away.
+# died while the worker was away; RUNGUARD: FB_* knobs forwarded to the worker (and the ones withheld named),
+# the explicit `env X=Y CMD` form, no environment when nothing is set.
 set -uo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 T=$(mktemp -d)
@@ -30,8 +31,9 @@ cd $T/w || exit 255
 export HOME=$T/w PATH=$T/wbin:\$PATH
 fix() { local s=\$1; s=\${s//\/proc\/sys\/kernel\/random\/boot_id/$T/boot_id}; printf '%s' "\${s//\/proc\/meminfo/$T/meminfo}"; }
 cmd=\$(fix "\$*")
-if [[ \$cmd == "bash -s"* ]]; then input=\$(cat); exec bash -c "\$cmd" <<< "\$(fix "\$input")"; fi
-exec bash -c "\$cmd"
+# like real ssh, no environment of the caller reaches the worker (RUNGUARD)
+if [[ \$cmd == "bash -s"* ]]; then input=\$(cat); exec env -i HOME="\$HOME" PATH="\$PATH" bash -c "\$cmd" <<< "\$(fix "\$input")"; fi
+exec env -i HOME="\$HOME" PATH="\$PATH" bash -c "\$cmd"
 EOF
 # rsync: src dst, "fake-host:" = the worker dir; -R with /./ keeps the path after it
 cat > "$T/bin/rsync" <<EOF
@@ -146,6 +148,31 @@ sleep 1.5; touch "$T/down"; kill -9 $w 2>/dev/null; wait $w 2>/dev/null
 wait
 check "attach across a suspend: exit 0, result fetched" "$rc $(cat "$T/root/build/test-all/y" 2>/dev/null)" "0 late"
 has "attach: waited for the worker" "$T/o9b" "answers again after"
+
+# 10. RUNGUARD: FB_* knobs set before remote.sh reach the job; this host's renderer, locks and paths outside
+# the worktree do not (and are named); a worktree path points at the worker's copy; quoting survives
+rm -f "$T"/root/build/remote/*
+FB_ONLY=RoadsClientGameTest FB_LAYER=full FB_FLY_SEEDS='1, 2 "x"' FB_VK=intel FB_HEAVY_LOCK=/tmp/h.lock FB_SUITE_SLOT_HELD=1 	FB_FLY_OUT=$T/root/build/fly FB_CLIENT_GAME_LOG=/elsewhere/latest.log PERF_SKIP_FAR=5 	"$R" -- bash -c 'echo "seen ONLY=$FB_ONLY LAYER=$FB_LAYER SEEDS=$FB_FLY_SEEDS VK=${FB_VK-unset} LOCK=${FB_HEAVY_LOCK-unset} HELD=${FB_SUITE_SLOT_HELD-unset} LOG=${FB_CLIENT_GAME_LOG-unset} FAR=$PERF_SKIP_FAR"; [[ $FB_FLY_OUT == "$PWD/build/fly" ]] && echo "fly-out in copy"' > "$T/o10" 2>&1; rc=$?
+check "env: job passes" "$rc" "0"
+has "env: FB_ONLY, FB_LAYER, quoting, PERF_SKIP_FAR reach the job; VK, locks, outside paths don't" "$T/o10" 	'seen ONLY=RoadsClientGameTest LAYER=full SEEDS=1, 2 "x" VK=unset LOCK=unset HELD=unset LOG=unset FAR=5'
+has "env: a worktree path is rewritten to the worker's copy" "$T/o10" "fly-out in copy"
+has "env: forwarded list printed" "$T/o10" "remote: forwarding to the worker: .*FB_LAYER=full FB_ONLY=RoadsClientGameTest"
+has "env: forwarded list in the job log" "$T/o10" "remote: environment from the waiter: "
+has "env: FB_VK withheld, said" "$T/o10" "not forwarded: FB_VK (this host's renderer"
+has "env: FB_HEAVY_LOCK withheld, said" "$T/o10" "not forwarded: FB_HEAVY_LOCK (this host's locks"
+has "env: outside path withheld, said" "$T/o10" "not forwarded: FB_CLIENT_GAME_LOG=/elsewhere/latest.log (a path on this host outside"
+check "env: FB_SUITE_SLOT_HELD withheld silently" "$(grep -c FB_SUITE_SLOT_HELD "$T/o10")" "0"
+has "env: recorded in the state file" "$(ls "$T"/root/build/remote/*.state)" "^env=.*FB_ONLY=RoadsClientGameTest"
+
+# 11. the explicit `env X=Y CMD` form still works and wins over a forwarded value
+FB_ONLY=A "$R" -- env FB_ONLY=B FB_LAYER=full bash -c 'echo "got $FB_ONLY $FB_LAYER"' > "$T/o11" 2>&1; rc=$?
+check "env X=Y: exit 0" "$rc" "0"
+has "env X=Y: CMD's value wins" "$T/o11" "got B full"
+
+# 12. nothing set: no forwarding line, and the worker sees no FB_ONLY (the fake ssh passes no environment)
+env -u FB_ONLY "$R" -- bash -c 'echo "only=${FB_ONLY-unset}"' > "$T/o12" 2>&1
+has "no env: unset on the worker" "$T/o12" "only=unset"
+check "no env: no forwarding line" "$(grep -c 'forwarding to the worker' "$T/o12")" "0"
 
 (( fails == 0 )) && echo "remote-selftest: all passed" || echo "remote-selftest: $fails failed"
 (( fails == 0 ))

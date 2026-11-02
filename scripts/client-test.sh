@@ -48,8 +48,8 @@
 # (test-all.sh exports CI=1) Loom runs the client in a nested xvfb-run of its own that has the same leak (HEAVY8).
 #
 # Layers (TESTLAYERS): FB_LAYER=quick (default here) runs Hello, District (B1), Gameplay (B5), Terrain (B3), TeleportHold; FB_LAYER=full adds
-# Roads, Foliage, PortalHold (6.30) and the compat world (about twice the time). FB_ONLY=<TestClass> (e.g. RoadsClientGameTest) runs that one client test only, whatever
-# the layer. Fly-through and perf stay opt-in (FB_FLY, FB_PERF). The district-order test (B2) is not a client test: scripts/order-test.sh.
+# Roads, Foliage, PortalHold (6.30) and the compat world (about twice the time). FB_ONLY=<TestClass>[,<TestClass>...] (e.g. RoadsClientGameTest) runs only those client tests,
+# whatever the layer; a name that is no client test class exits 2 with the valid names, before the lock (RUNGUARD). Fly-through and perf stay opt-in (FB_FLY, FB_PERF). The district-order test (B2) is not a client test: scripts/order-test.sh.
 #
 # Test hooks (for checking the watchdog without a game; see docs/NOTES.md):
 #   FB_CLIENT_CMD   run this bash command instead of xvfb-run + Gradle
@@ -84,6 +84,36 @@ CRASH_RE='Minecraft has crashed|Failed to create backend Vulkan|#@!@# Game crash
 
 export FB_LAYER="${FB_LAYER:-quick}"
 case $FB_LAYER in quick | full) ;; *) echo "client-test: FB_LAYER must be quick or full, got '$FB_LAYER'" >&2; exit 2 ;; esac
+
+# RUNGUARD (6.36): every name in FB_ONLY (comma-separated) must be a client test class, found with the same
+# scan as mod/build.gradle's registration (`implements FabricClientGameTest` under src/gametest/java). An unknown
+# name used to skip every test and pass. The opt-in tests also need their switch, or they skip themselves.
+# (ClientLayers.only() makes the same name check inside the game, for a bare Gradle run.)
+if [[ -n ${FB_ONLY:-} ]]; then
+	mapfile -t CLIENT_TESTS < <(grep -rlE --include='*.java' '\bimplements\s+FabricClientGameTest\b' "$ROOT/mod/src/gametest/java" 2> /dev/null |
+		sed 's|.*/||; s|\.java$||' | sort -u)
+	if [[ ${#CLIENT_TESTS[@]} -eq 0 ]]; then
+		echo "client-test: FB_ONLY is set but no client test class was found under $ROOT/mod/src/gametest/java" >&2
+		exit 2
+	fi
+	IFS=, read -r -a ONLY_NAMES <<< "$FB_ONLY"
+	UNKNOWN=() NAMED=0
+	for n in "${ONLY_NAMES[@]}"; do
+		n="${n#"${n%%[![:space:]]*}"}" n="${n%"${n##*[![:space:]]}"}"
+		[[ -z $n ]] && continue
+		NAMED=$((NAMED + 1))
+		printf '%s\n' "${CLIENT_TESTS[@]}" | grep -qxF -- "$n" || UNKNOWN+=("$n")
+		case $n in
+			FlyThroughClientGameTest) [[ -n ${FB_FLY:-} ]] || { echo "client-test: FB_ONLY=$n needs FB_FLY set (the fly-through is opt-in and would skip itself)" >&2; exit 2; } ;;
+			PerfClientGameTest) [[ -n ${FB_PERF:-} ]] || { echo "client-test: FB_ONLY=$n needs FB_PERF set (the perf test is opt-in and would skip itself)" >&2; exit 2; } ;;
+		esac
+	done
+	if [[ ${#UNKNOWN[@]} -gt 0 || $NAMED -eq 0 ]]; then
+		echo "client-test: FB_ONLY='$FB_ONLY' names no client test${UNKNOWN[*]:+: ${UNKNOWN[*]}}; nothing would run. Valid (comma-separated):" >&2
+		printf '  %s\n' "${CLIENT_TESTS[@]}" >&2
+		exit 2
+	fi
+fi
 
 VK="${FB_VK:-intel}"
 case $VK in

@@ -74,8 +74,9 @@
 # local-only commands below are not held back (they still count as in use). File: `N [until=EPOCH]`.
 # Local only, whatever the options: a cwd other than the worktree root, FB_VK=... in CMD or the
 # environment (the Intel iGPU is this host's), runClient / run-desktop.sh / snapshot-test.sh /
-# squash-merge.sh. Environment variables are not sent to a worker: put them in CMD (`env X=1 ...`;
-# a leading `X=1` gets the `env` added). Tests of this script: scripts/anywhere-selftest.sh.
+# squash-merge.sh. On a worker, remote.sh forwards the FB_* knobs of this environment (RUNGUARD; see
+# its header for what it withholds); `env X=1 ...` in CMD also works
+# (a leading `X=1` gets the `env` added). Tests of this script: scripts/anywhere-selftest.sh.
 #
 # Never kills anything. SIGTERM/INT while waiting: drops the ticket and exits 143/130. After the
 # start: passed on to CMD (remote.sh then cancels its worker job), and CMD's status is returned;
@@ -89,7 +90,7 @@
 # FB_HEAVY_LOCK, FB_SUITE_LOCK_DIR, FB_SUITE_SLOTS.
 set -uo pipefail
 
-usage() { sed -n '2,89p' "$0" | sed 's/^# \{0,1\}//'; }
+usage() { sed -n '2,90p' "$0" | sed 's/^# \{0,1\}//'; }
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 # shellcheck source-path=SCRIPTDIR source=lib/suite-slot.sh

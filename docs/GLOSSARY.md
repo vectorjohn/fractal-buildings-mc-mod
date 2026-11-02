@@ -178,7 +178,7 @@ Item codes (PARREADS, MAINSTUB, TPHOLD, ...) and run terms, one row each. **Gene
 | ROOMWALK2 |  | shop counter walled in by a light | done | [[docs/log/2026-10-27-p6-roomwalk2|log]] |
 | run branch |  | the integration branch of a run (`claude/run-phase6`): items merge here, then it merges into main | - | [[CLAUDE|CLAUDE]] |
 | run ledger |  | the coordinator's record of a run: what's in flight, who's on it, outcomes | - | [[docs/runs/2026-10-22-phase6|2026-10-22-phase6]] |
-| RUNGUARD | 6.36 | test runs can't pass while testing the wrong thing | open | [[docs/ROADMAP|ROADMAP 6.36]] |
+| RUNGUARD | 6.36 | test runs can't pass while testing the wrong thing | done | [[docs/ROADMAP|ROADMAP 6.36]] |
 | S1 |  | Phase 3 step: IR JSON writer, validator, schema (3.1) | done | [[docs/log/2026-10-16-p3-s1-ir-json|log]] |
 | S10 |  | Spike: roads between settlements | done | [[docs/ROADMAP|ROADMAP]] |
 | S10M |  | spike S10, mod half: per-chunk road feature, digest, cost | done | [[docs/runs/2026-10-21-phase5|2026-10-21-phase5]] |
@@ -236,6 +236,7 @@ Item codes (PARREADS, MAINSTUB, TPHOLD, ...) and run terms, one row each. **Gene
 | V1 |  | Phase 5 step: plan view | done | [[docs/log/2026-10-21-p5-v1-planview|log]] |
 | VILLROAD |  | roads bend round vanilla villages and spur to their street | done | [[docs/log/2026-10-26-p6-villroad|log]] |
 | VPAL |  | viewer: one palette per building in district scenes | done | [[docs/log/2026-10-21-p5-viewer-palette|2026-10-21-p5-viewer-palette]] |
+| WALLGAPS |  | town and city walls that cope with water | - | [[docs/ROADMAP|ROADMAP]] |
 | WALLSLOPE |  | a continuous wall walk on sloping ground | done | [[docs/log/2026-10-21-p5-wallslope|log]] |
 | WALLWALK |  | curtain walls and a continuous wall walk | done | [[docs/log/2026-10-21-p5-wallwalk|log]] |
 | warmer |  | RegionWarmer: plans settlements and roads on background threads ahead of the player, so chunks don't wait | - | [[docs/NOTES|NOTES]] |

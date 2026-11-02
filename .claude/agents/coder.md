@@ -122,7 +122,7 @@ Each behaviour gets a test at the **cheapest layer that can catch its bugs**
    `mod/src/gametest/java` is picked up by the build. Do not edit the gametest
    `fabric.mod.json`.
 5. **In-game appearance**: Fabric client game tests under Xvfb (`scripts/client-test.sh`; Intel iGPU, lavapipe fallback),
-   quick layer by default (`FB_LAYER=full` adds Roads, Foliage, Compat; `FB_ONLY=<TestClass>` runs one), and `scripts/order-test.sh` for the district-order test (dedicated servers),
+   quick layer by default (`FB_LAYER=full` adds Roads, Foliage, Compat; `FB_ONLY=<TestClass>[,...]` runs only those; an unknown name exits 2), and `scripts/order-test.sh` for the district-order test (dedicated servers),
    with screenshots. **Heavy (client tests): always under the heavy lock**, or on a worker with `scripts/remote.sh -- env FB_LAYER=quick scripts/client-test.sh` (CLAUDE.md); the order test is not heavy.
 
 Run the relevant layers once on your final code before you report: after
