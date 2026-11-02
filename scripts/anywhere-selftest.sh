@@ -22,6 +22,7 @@ cat > "$T/fake-remote" <<EOF
 args=()
 while [[ \$1 != -- ]]; do args+=("\$1"); shift; done; shift
 echo "\${args[*]}" > $T/remote-args
+[[ -n \${FB_REMOTE_ANNOUNCE:-} ]] && echo "remote job fb-test-\$\$ (beebox job 1)" >> "\$FB_REMOTE_ANNOUNCE"
 sleep "\${FAKE_DELAY:-0}"
 echo "1 running x x [fb-test-\$\$]" > $T/status.d/\$\$
 "\$@"; rc=\$?
@@ -158,6 +159,54 @@ check "expired switch: --status says so" "$("$A" --status | grep -c '^quiet swit
 check "--until HH:MM: within a day" "$("$A" --local-max 1 --until 00:00 > /dev/null; awk -v now="$(date +%s)" 'NR == 1 { sub("until=", "", $2); print ($2 > now && $2 <= now + 86400) }' "$T/any/local-max")" "1"
 check "--local-max off removes it" "$("$A" --local-max off > /dev/null; [[ -e $T/any/local-max ]] && echo there || echo gone)" "gone"
 check "--local-max x: refused (2)" "$("$A" --local-max x > /dev/null 2>&1; echo $?)" "2"
+
+# PERFROUTE: perf goes to beebox only when it is empty and then fills it; depth 2 (beebox's 3 slots) here
+reset; "$A" --local-max off > /dev/null
+gd() { "$A" --dry-run --depth 2 "$@" | grep -o 'go to [a-z]*'; }
+flock -o "$T/heavy.lock" sleep 60 & hp=$!; sleep 0.3   # local heavy busy: only beebox is in play
+bee_busy
+check "perf: beebox has 1 other job: waits" "$(gd -- scripts/perf.sh)" "go to nowhere"
+check "perf: the dry-run says why" "$("$A" --dry-run --depth 2 -- scripts/perf.sh | grep -o 'perf: empty only')" "perf: empty only"
+check "non-perf heavy: beebox with 1 job, depth 2: beebox" "$(gd -- scripts/client-test.sh)" "go to beebox"
+check "perf under evidence.sh: waits" "$(gd -- scripts/evidence.sh x scripts/perf.sh --world-only)" "go to nowhere"
+check "test-all --perf is perf: waits" "$(gd -- scripts/test-all.sh --perf)" "go to nowhere"
+check "profile.sh is perf: waits" "$(gd -- scripts/profile.sh)" "go to nowhere"
+bee_idle; rm -f "$T"/any/beebox-status.*   # the probe is cached for a few seconds
+check "perf: beebox empty: beebox" "$(gd -- scripts/perf.sh)" "go to beebox"
+check "perf under evidence.sh: beebox empty: beebox" "$(gd -- scripts/evidence.sh x scripts/perf.sh)" "go to beebox"
+kill $hp; wait $hp 2>/dev/null
+check "perf: both free: prefers beebox" "$(gd -- scripts/perf.sh)" "go to beebox"
+check "perf: --prefer local still honoured" "$(gd --prefer local -- scripts/perf.sh)" "go to local"
+
+# a perf job running on beebox fills all its slots; afterwards beebox is free again
+reset; "$A" --depth 2 --only beebox -- sh -c 'sleep 4' x/perf.sh 2> "$T/out.p1" & p1=$!; sleep 1.5
+check "perf job sent to beebox" "$(route "$T/out.p1")" "beebox"
+rm -f "$T"/any/beebox-status.*
+check "perf in flight: other job waits (depth 2, 1 running)" "$(gd --only beebox -- scripts/client-test.sh)" "go to nowhere"
+check "perf in flight: why names it" "$("$A" --dry-run --depth 2 --only beebox -- true | grep -c 'perf job pid')" "1"
+check "perf in flight: --status says so" "$("$A" --status | grep -c 'perf job .* in flight')" "1"
+wait $p1; rm -f "$T"/any/beebox-status.*
+check "perf done: beebox free again" "$(gd --only beebox -- scripts/client-test.sh)" "go to beebox"
+check "perf done: claim cleaned up" "$(compgen -G "$T/any/claims/beebox-perf.*" | wc -l)" "0"
+
+# the perf waiter died (SIGHUP: remote.sh detached) but its beebox job runs on: still full
+reset
+echo "remote job fb-ghost-1 (beebox job 7)" > "$T/route-ghost"
+printf 'route=%s\ncmd x/perf.sh\n' "$T/route-ghost" > "$T/any/claims/beebox-perf.999999"
+echo "7 running x x [fb-ghost-1]systemd-run" > "$T/status.d/ghost"
+check "dead waiter, perf job running: waits" "$(gd --only beebox -- true)" "go to nowhere"
+rm -f "$T/status.d/ghost" "$T"/any/beebox-status.*
+check "dead waiter, perf job gone: beebox" "$(gd --only beebox -- true)" "go to beebox"
+check "dead waiter: stale claim removed" "$(compgen -G "$T/any/claims/beebox-perf.*" | wc -l)" "0"
+
+# an earlier perf waiter waiting for beebox reserves it: a later job doesn't slip in beside the drain
+reset; bee_busy
+"$A" --depth 2 --only beebox -- scripts/perf.sh 2> "$T/out.p2" & p2=$!; sleep 1.5
+check "reserved for an earlier perf waiter: later job waits" "$(gd --only beebox -- scripts/client-test.sh)" "go to nowhere"
+check "reservation named" "$("$A" --dry-run --depth 2 --only beebox -- true | grep -c 'reserved for an earlier perf waiter')" "1"
+kill -TERM $p2; wait $p2 2>/dev/null
+check "perf waiter gone: later job goes" "$(gd --only beebox -- scripts/client-test.sh)" "go to beebox"
+reset
 
 echo "anywhere-selftest: $fails failure(s)"
 (( fails == 0 ))

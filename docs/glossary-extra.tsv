@@ -84,3 +84,4 @@ to-main	merging the run branch into main, after a full test run	runs/2026-10-22-
 warmer	RegionWarmer: plans settlements and roads on background threads ahead of the player, so chunks don't wait	NOTES.md
 CASCADE	the exit trim and link rule (MAINSTUB) made cheaper, parallel and warmed early, byte-identical; proposed by the JFLAZY plan instead of a lazy junction field	plans/jflazy.md	open
 QUIETHOLE	the quiet check judges the whole timed window (beebox job history, lock and CPU sampler), not only step boundaries; perf.sh says NOT A MEASUREMENT with what overlapped	../scripts/quiet-check.sh	done
+PERFROUTE	scripts/anywhere.sh sends a timing run (perf.sh, profile.sh, test-all --perf) to beebox only when it is empty, and lets nothing else in beside it while it runs or waits	../scripts/anywhere.sh	done

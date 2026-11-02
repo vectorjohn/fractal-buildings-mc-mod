@@ -122,6 +122,7 @@ Item codes (PARREADS, MAINSTUB, TPHOLD, ...) and run terms, one row each. **Gene
 | PBLOCKS |  | process item: the generated block reference for the design agents (`scripts/design-blocks.sh`) | done | [[docs/design/blocks|blocks]] |
 | PDESIGN |  | process item: the design reviewer agents (architect, interior designer) and the design standards | done | [[docs/design/STANDARDS|STANDARDS]] |
 | PERFBASE |  | the perf base world is vanilla | done | [[docs/log/2026-10-31-p6-perfbase|log]] |
+| PERFROUTE |  | scripts/anywhere.sh sends a timing run (perf.sh, profile.sh, test-all --perf) to beebox only when it is... | done | [[scripts/anywhere.sh|anywhere.sh]] |
 | PERFSRV |  | perf.sh world half off the renderer | done | [[docs/log/2026-10-26-p6-perfsrv|log]] |
 | PFLOOR |  | process item: `fractal-cli floorplan`, storeys as ASCII grids for text-reading reviewers | done | [[docs/log/2026-10-25-proc-floorplan|2026-10-25-proc-floorplan]] |
 | PLAN6 |  | the Phase 6 plan | done | [[docs/plans/phase6|phase6]] |

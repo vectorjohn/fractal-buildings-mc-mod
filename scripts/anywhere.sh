@@ -23,6 +23,15 @@
 #   beebox  `ssh beebox job status` shows at most --depth jobs running or queued (default 2, i.e. 3 slots:
 #           idle), counting jobs other waiters sent there that aren't in its queue yet;
 #           `scripts/remote.sh --check` passes just before sending.
+#   PERF (PERFROUTE, timing runs: perf.sh or profile.sh anywhere in CMD, so also under evidence.sh, or
+#           test-all.sh --perf): goes to beebox only when it is EMPTY (depth 0: nothing running or queued,
+#           no send in flight), and while it runs there it fills all of beebox's slots, so no other
+#           anywhere job is sent beside it (a timing beside another job is not a measurement,
+#           CLAUDE.md). Its claim (claims/beebox-perf.<pid>) outlives a dead waiter while its beebox job
+#           (named in the route file) is still running or queued. A perf waiter that is waiting for
+#           beebox reserves it: later waiters don't take it meanwhile, so beebox drains for it.
+#           Default --prefer beebox for perf (measure on beebox); it still runs locally if the heavy
+#           lock is free first, unless --only beebox. A perf job sent with plain remote.sh is not seen.
 # Waiters queue FIFO (tickets in <main root>/.claude/anywhere/): a waiter takes a host only after
 # every earlier waiter that could use a free host has been given one, so N agents don't all rush
 # the same host. Then it runs CMD here, or as `scripts/remote.sh [--fetch P].. [--cpu] -- CMD`.
@@ -59,14 +68,14 @@
 # FB_ANY_REMOTE (replaces scripts/remote.sh), FB_HEAVY_LOCK, FB_SUITE_LOCK_DIR, FB_SUITE_SLOTS.
 set -uo pipefail
 
-usage() { sed -n '2,59p' "$0" | sed 's/^# \{0,1\}//'; }
+usage() { sed -n '2,68p' "$0" | sed 's/^# \{0,1\}//'; }
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 # shellcheck source-path=SCRIPTDIR source=lib/suite-slot.sh
 . "$(dirname "${BASH_SOURCE[0]}")/lib/suite-slot.sh"
 CLAUDE_DIR=$(suite_slot_dir)
 
-PREFER=local ONLY="" KIND="" DRY=0 STATUS=0 WAIT_MAX="" SET_LMAX="" SET_UNTIL=""
+PREFER="" ONLY="" KIND="" PERF=0 DRY=0 STATUS=0 WAIT_MAX="" SET_LMAX="" SET_UNTIL=""
 LOAD_MAX=${FB_ANY_LOAD_MAX:-18} DEPTH=${FB_ANY_DEPTH:-2} POLL=${FB_ANY_POLL:-20}
 HOST=${FB_REMOTE_HOST:-beebox}
 REMOTE_ARGS=()
@@ -92,7 +101,7 @@ while [[ $# -gt 0 ]]; do
 done
 REMOTE_ARGS+=(--host "$HOST")
 bad() { echo "anywhere: $*" >&2; exit 2; }
-[[ $PREFER == local || $PREFER == beebox ]] || bad "--prefer local|beebox, got '$PREFER'"
+[[ -z $PREFER || $PREFER == local || $PREFER == beebox ]] || bad "--prefer local|beebox, got '$PREFER'"
 [[ -z $ONLY || $ONLY == local || $ONLY == beebox ]] || bad "--only local|beebox, got '$ONLY'"
 [[ -z $KIND || $KIND =~ ^(suite|heavy|full|light)$ ]] || bad "--kind suite|heavy|full|light, got '$KIND'"
 [[ $LOAD_MAX =~ ^[0-9]+([.][0-9]+)?$ ]] || bad "--load takes a number"
@@ -161,7 +170,8 @@ classify() {   # sets KIND (unless given) and LOCAL_ONLY_WHY
 	LOCAL_ONLY_WHY=""
 	for w in "$@"; do
 		case "$w" in
-			*client-test.sh|*perf.sh|*flythrough.sh|*server-only-test.sh|*compat-matrix.sh|*city-bench.sh|*runClientGameTest) guess=heavy ;;
+			*perf.sh|*profile.sh) guess=heavy; PERF=1 ;;   # timing runs (PERFROUTE)
+			*client-test.sh|*flythrough.sh|*server-only-test.sh|*compat-matrix.sh|*city-bench.sh|*runClientGameTest) guess=heavy ;;
 			*test-all.sh) has_testall=1 ;;
 			--no-client) no_client=1 ;;
 			--perf) perf=1 ;;
@@ -179,10 +189,12 @@ classify() {   # sets KIND (unless given) and LOCAL_ONLY_WHY
 	if (( gradle && gradle_suite && ! single )) && [[ $guess == light ]]; then guess=suite; fi
 	if (( has_testall )); then
 		if (( no_client && ! perf )); then [[ $guess == heavy ]] || guess=suite; else guess=full; fi
+		(( perf )) && PERF=1
 	fi
 	[[ -n ${FB_VK:-} ]] && LOCAL_ONLY_WHY="FB_VK=$FB_VK in the environment (renderer of this host)"
 	[[ $PWD == "$ROOT" ]] || LOCAL_ONLY_WHY="cwd $PWD is not the worktree root (remote.sh runs from the root)"
 	[[ -z $KIND ]] && KIND=$guess
+	[[ -z $PREFER ]] && { if (( PERF )); then PREFER=beebox; else PREFER=local; fi; }
 	return 0
 }
 needs_slot()  { [[ $1 == suite || $1 == full ]]; }
@@ -271,6 +283,26 @@ bee_used() {   # jobs running or queued on beebox + jobs sent from here not in i
 	echo "$n"
 }
 
+PERF_INFLIGHT=""
+perf_inflight() {   # 0 (and PERF_INFLIGHT says which) while a perf job sent from here runs or waits on beebox
+	local f pid a name route
+	PERF_INFLIGHT=""
+	for f in "$DIR"/claims/beebox-perf.*; do
+		[[ -e $f ]] || continue
+		pid=${f##*.}; a=$(( $(date +%s) - $(stat -c %Y "$f") ))
+		route=$(sed -n 's/^route=//p' "$f")
+		name=$(sed -n 's/^remote job \([^ ]*\).*/\1/p' "$route" 2>/dev/null | tail -n1)
+		if (( a > 10800 )); then rm -f "$f"; continue; fi   # beebox stops a job after 2 h
+		if kill -0 "$pid" 2>/dev/null; then PERF_INFLIGHT="pid $pid${name:+ ($name)}"; return 0; fi
+		# the waiter is gone (SIGHUP: remote.sh detached, the job runs on): ask beebox's queue by name
+		if [[ -n $name ]] && awk -v n="[$name]" '($2 == "running" || $2 == "queued") && index($0, n)' <<< "$BEE_TEXT" | grep -q .; then
+			PERF_INFLIGHT="$name"; return 0
+		fi
+		(( BEE_OK )) && rm -f "$f"
+	done
+	return 1
+}
+
 # ---- the FIFO queue --------------------------------------------------------------------------
 TICKET=""
 take_ticket() {
@@ -287,7 +319,7 @@ take_ticket() {
 write_ticket() {
 	local f=$1 lo=0; shift
 	[[ -n $LOCAL_ONLY_WHY ]] && lo=1
-	printf '%s %s %s\nsince %s, %s: %s\nlocalonly %s\n' "$KIND" "$HOSTS" "$PREFER" "$(date '+%F %T')" "$PWD" "$*" "$lo" > "$f"
+	printf '%s %s %s\nsince %s, %s: %s\nlocalonly %s perf %s\n' "$KIND" "$HOSTS" "$PREFER" "$(date '+%F %T')" "$PWD" "$*" "$lo" "$PERF" > "$f"
 }
 bee_check() {
 	if [[ -n $BEE_CHECK_CMD ]]; then bash -c "$BEE_CHECK_CMD" > /dev/null 2>&1
@@ -299,7 +331,7 @@ bee_check() {
 # one could use. Call under the dispatch lock.
 WHY=""
 decide() {
-	local lok=0 slots heavy=0 bee_cap=0 bee_n=0 t k hs pr lo h choice="" mine lused=0 lcap=0
+	local lok=0 slots heavy=0 bee_cap=0 bee_n=0 bee_empty=0 t k hs pr lo pf h choice="" mine lused=0 lcap=0 pnote=""
 	load_ok && lok=1
 	read_local_max
 	if [[ -n $LMAX ]]; then lused=$(local_used); lcap=$(( LMAX - lused )); fi
@@ -308,17 +340,21 @@ decide() {
 	if [[ $HOSTS == *beebox* ]]; then
 		beebox_probe; bee_n=$(bee_used)
 		(( BEE_OK )) && bee_cap=$(( DEPTH + 1 - bee_n ))
+		(( BEE_OK && bee_n == 0 )) && bee_empty=1
+		# PERFROUTE: a perf job of ours on beebox fills all its slots
+		if perf_inflight; then bee_cap=0 bee_empty=0 pnote=", perf job $PERF_INFLIGHT holds it"; fi
 	fi
-	host_free() {   # $1 host $2 kind $3 local-only flag
-		if [[ $1 == beebox ]]; then (( bee_cap > 0 )); return; fi
+	host_free() {   # $1 host $2 kind $3 local-only flag $4 perf flag
+		# perf only on an empty beebox (depth 0: nothing running, queued or in flight, nobody earlier taking it)
+		if [[ $1 == beebox ]]; then (( bee_cap > 0 )) && { [[ $4 != 1 ]] || (( bee_empty )); }; return; fi
 		(( lok )) || return 1
 		if gated "$2" "$3" && (( lcap < 1 )); then return 1; fi
 		if needs_slot "$2" && (( slots < 1 )); then return 1; fi
 		if needs_heavy "$2" && (( ! heavy )); then return 1; fi
 		return 0
 	}
-	take() {
-		if [[ $1 == beebox ]]; then bee_cap=$((bee_cap - 1)); return; fi
+	take() {   # $1 host $2 kind $3 perf flag
+		if [[ $1 == beebox ]]; then bee_cap=$((bee_cap - 1)) bee_empty=0; [[ $3 == 1 ]] && bee_cap=0; return; fi
 		[[ $2 != light ]] && lcap=$((lcap - 1))
 		needs_slot "$2" && slots=$((slots - 1))
 		needs_heavy "$2" && heavy=0
@@ -328,21 +364,23 @@ decide() {
 		[[ -e $t ]] || continue
 		if ! kill -0 "${t##*.}" 2>/dev/null; then rm -f "$t"; continue; fi
 		mine=0; [[ $t == "$TICKET" ]] && mine=1
-		lo=0 k=""; { read -r k hs pr _ && read -r _ && read -r _ lo; } < "$t"
+		lo=0 pf=0 k=""; { read -r k hs pr _ && read -r _ && read -r _ lo _ pf; } < "$t"
 		[[ -n $k ]] || continue
 		choice=""
 		for h in "$pr" local beebox; do
 			[[ $hs == *$h* ]] || continue
-			if host_free "$h" "$k" "${lo:-0}"; then choice=$h; break; fi
+			if host_free "$h" "$k" "${lo:-0}" "${pf:-0}"; then choice=$h; break; fi
 		done
 		if (( mine )); then break; fi
-		[[ -n $choice ]] && take "$choice" "$k"
+		[[ -n $choice ]] && take "$choice" "$k" "${pf:-0}"
+		# an earlier perf waiter still waiting for beebox reserves it, so beebox drains for it
+		if [[ -z $choice && ${pf:-0} == 1 && $hs == *beebox* ]] && (( bee_cap > 0 )); then bee_cap=0 bee_empty=0; pnote=", reserved for an earlier perf waiter"; fi
 	done
 	local lstate bstate
 	lstate="load $(load1)/$LOAD_MAX, suite slots free $(( slots > 50 ? 0 : slots )), heavy lock $( ((heavy)) && echo free || echo busy)"
 	[[ -n $LMAX ]] && lstate="$lstate, quiet switch $LMAX_DESC with $lused in use"
 	if [[ $HOSTS == *beebox* ]]; then
-		if (( BEE_OK )); then bstate="$HOST $bee_n running/queued (depth $DEPTH)"; else bstate="$HOST unreachable"; fi
+		if (( BEE_OK )); then bstate="$HOST $bee_n running/queued (depth $DEPTH$( ((PERF)) && echo ", perf: empty only")$pnote)"; else bstate="$HOST unreachable"; fi
 	else bstate="$HOST not allowed"; fi
 	WHY="$lstate; $bstate"
 	DECISION=$choice
@@ -362,6 +400,7 @@ if (( STATUS )); then
 	echo "local: load $(load1) (ceiling $LOAD_MAX), suite slots free $(free_slots)/${FB_SUITE_SLOTS:-2}, heavy lock $(heavy_free && echo free || echo busy)"
 	beebox_probe
 	if (( BEE_OK )); then echo "$HOST: $(bee_used) running/queued (incl. sends in flight)"; else echo "$HOST: unreachable"; fi
+	perf_inflight && echo "$HOST: perf job $PERF_INFLIGHT in flight: no other anywhere job is sent there until it ends"
 	echo "recent routes:"; tail -n 5 "$DIR/route.log" 2>/dev/null | sed 's/^/  /'
 	exit 0
 fi
@@ -451,6 +490,8 @@ claim=""
 if [[ $DECISION == beebox ]]; then claim="$DIR/claims/beebox.$child"
 elif needs_heavy "$KIND"; then claim="$DIR/claims/local-heavy.$child"; fi
 [[ -n $claim ]] && echo "$KIND $*" > "$claim"
+# PERFROUTE: kept after this waiter exits while its beebox job (named in the route file) runs (perf_inflight)
+if [[ $DECISION == beebox ]] && (( PERF )); then printf "route=%s\ncmd %s\n" "$ROUTE_FILE" "$*" > "$DIR/claims/beebox-perf.$child"; fi
 lclaim=""   # counted by the quiet switch (local_used)
 if [[ $DECISION == local && $KIND != light ]]; then lclaim="$DIR/claims/local-run.$child"; echo "$KIND $*" > "$lclaim"; fi
 rm -f "$TICKET"; TICKET=""
