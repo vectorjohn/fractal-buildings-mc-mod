@@ -773,6 +773,7 @@ public class WorldPlanner {
 		long bestFail = Long.MAX_VALUE;
 		int bestLong = 0;
 		java.util.TreeSet<Long> banned = new java.util.TreeSet<>();
+		final List<int[]> corners0 = corners;
 		for (int attempt = 0; ; attempt++) {
 			List<int[]> nodes = withPort(corners, port);
 			double[][] st = dev.fractalbuildings.core.road.Curve.stations(nodes);
@@ -800,7 +801,42 @@ public class WorldPlanner {
 			if (re.isEmpty()) break;
 			corners = re;
 		}
+		// DECKDIAG F3: one more attempt that stays off the shore, from the original corners, when every attempt still has a run over the limit or along water
+		if (bestNodes != null && bestLong > 0 && corners0.size() >= 2) {
+			List<int[]> re = rerouteApproach(corners0.get(0), corners0.get(corners0.size() - 1), java.util.Set.of(), exits, urban, true);
+			if (!re.isEmpty()) {
+				List<int[]> nodes = withPort(re, port);
+				double[][] st = dev.fractalbuildings.core.road.Curve.stations(nodes);
+				if (st.length >= 2 && shoreDetourOk(bestNodes, nodes)) {
+					java.util.TreeMap<Integer, Integer> pins = new java.util.TreeMap<>();
+					if (pin.isPresent()) pins.put(st.length - 1, pin.getAsInt());
+					var prof = dev.fractalbuildings.core.road.Profile.approach(st, probes.roadExact(), pins, width, air, air ? dev.fractalbuildings.core.road.Profile.MAX_DECK_RUN : dev.fractalbuildings.core.road.Profile.MAX_CROSSING);
+					long score = (prof.longRuns() + prof.alongRuns()) * 1000L + prof.wetFailures();
+					if (score < bestFail) { bestFail = score; bestNodes = nodes; bestLong = prof.longRuns() + prof.alongRuns(); }
+				}
+			}
+		}
 		return bestNodes != null && bestLong == 0 ? new NodeChoice(bestNodes, (int) bestFail) : null;
+	}
+
+	/** F3's detour limit: the shore route is at most {@code SHORE_DETOUR} times as long as the route it replaces and has no turn over 90 degrees. */
+	static final double SHORE_DETOUR = 1.5;
+	static final long SHORE_NEAR_WET = 200;
+
+	static boolean shoreDetourOk(List<int[]> deck, List<int[]> shore) {
+		if (polyLength(shore) > SHORE_DETOUR * polyLength(deck)) return false;
+		for (int i = 1; i + 1 < shore.size(); i++) {
+			long ax = shore.get(i)[0] - shore.get(i - 1)[0], az = shore.get(i)[1] - shore.get(i - 1)[1];
+			long bx = shore.get(i + 1)[0] - shore.get(i)[0], bz = shore.get(i + 1)[1] - shore.get(i)[1];
+			if (ax * bx + az * bz < 0) return false; // a turn over 90 degrees
+		}
+		return true;
+	}
+
+	private static double polyLength(List<int[]> n) {
+		double len = 0;
+		for (int i = 1; i < n.size(); i++) { double dx = n.get(i)[0] - n.get(i - 1)[0], dz = n.get(i)[1] - n.get(i - 1)[1]; len += Math.sqrt(dx * dx + dz * dz); } // sqrt is exactly rounded: hypot is not
+		return len;
 	}
 
 	/** The skeleton ends on its coarse lattice; the road it joins starts exactly at the port (a meeting point is off the lattice). */
@@ -1240,7 +1276,16 @@ public class WorldPlanner {
 	 * Empty when none exists. The skeleton may read lattice columns only (ADR 0003 D4), which is all this does.
 	 */
 	private List<int[]> rerouteApproach(int[] from, int[] to, java.util.Set<Long> banned, List<int[]> exits, java.util.Set<Long> urban) {
+		return rerouteApproach(from, to, banned, exits, urban, false);
+	}
+
+	/**
+	 * {@code shore}: DECKDIAG F3, the link router's water rule (ADR 0004 WR1): a node is wet at depth >= 1 as well as in a water biome, no
+	 * diagonal cuts a wet corner, and a node next to a wet node costs 200 more.
+	 */
+	List<int[]> rerouteApproach(int[] from, int[] to, java.util.Set<Long> banned, List<int[]> exits, java.util.Set<Long> urban, boolean shore) {
 		var coarse = probes.coarse();
+		java.util.function.BiPredicate<Integer, Integer> wetN = (x, z) -> coarse.water(x, z) || coarse.waterDepth(x, z) >= 1;
 		int step = coarse.stride();
 		int grow = 128;
 		var bounds = new dev.fractalbuildings.core.terrain.LatticePath.Bounds(
@@ -1257,7 +1302,12 @@ public class WorldPlanner {
 				if (dy * 3 > len) return FORBIDDEN;
 				// an approach leaves town (ROADJOIN step 4, as LinkExits.approach): crossing the urban footprint is a last resort
 				long town = urban != null && urban.contains(((long) nz << 32) ^ (nx & 0xffffffffL)) ? URBAN_PENALTY * step : 0;
-				return (diag ? 14L : 10L) * step + 60L * dy + town;
+				long near = 0;
+				if (shore) {
+					if (wetN.test(nx, nz) || diag && (wetN.test(x, nz) || wetN.test(nx, z))) return FORBIDDEN;
+					for (int dz = -step; dz <= step && near == 0; dz += step) for (int dx = -step; dx <= step; dx += step) if ((dx != 0 || dz != 0) && wetN.test(nx + dx, nz + dz)) { near = SHORE_NEAR_WET; break; }
+				}
+				return (diag ? 14L : 10L) * step + 60L * dy + town + near;
 			}
 		};
 		List<dev.fractalbuildings.core.terrain.LatticePath.Pt> path;

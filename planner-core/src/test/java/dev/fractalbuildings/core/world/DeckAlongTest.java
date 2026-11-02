@@ -57,6 +57,17 @@ class DeckAlongTest {
 		assertTrue(w.approachNodes(w.siteOf(new Cell(1, 2)).orElseThrow()).stream().anyMatch(a -> a.road().id().equals("k2_1_0")));
 		assertTrue(w.approachNodes(w.siteOf(new Cell(8, 10)).orElseThrow()).stream().anyMatch(a -> a.road().id().equals("k8_10_0")));
 		assertTrue(w.approachNodes(w.siteOf(new Cell(-4, -6)).orElseThrow()).stream().anyMatch(a -> a.road().id().equals("km4_m6_0")));
-		assertTrue(w.approachNodes(w.siteOf(new Cell(-11, -2)).orElseThrow()).stream().noneMatch(a -> a.road().id().equals("km11_m2_0")), "the along-shore deck is dropped");
+		var lake = w.siteOf(new Cell(-11, -2)).orElseThrow();
+		// F3: the raw skeleton route is along the lake and would be dropped; the shore-aware reroute moves west and the approach is live
+		assertTrue(w.approachNodes(lake).stream().anyMatch(a -> a.road().id().equals("km11_m2_0")), "sm11_m2: the shore reroute keeps the approach");
+		assertTrue(w.deadEndPorts(lake).isEmpty(), "sm11_m2: its port is no longer a dead end");
+	}
+
+	@Test
+	void shoreDetourLimit() {
+		List<int[]> deck = List.of(new int[] {0, 0}, new int[] {100, 0});
+		assertTrue(WorldPlanner.shoreDetourOk(deck, List.of(new int[] {0, 0}, new int[] {60, 40}, new int[] {100, 0})), "1.1x, turns under 90");
+		assertFalse(WorldPlanner.shoreDetourOk(deck, List.of(new int[] {0, 0}, new int[] {75, 100}, new int[] {100, 0})), "over 1.5x");
+		assertFalse(WorldPlanner.shoreDetourOk(List.of(new int[] {0, 0}, new int[] {10, 0}), List.of(new int[] {0, 0}, new int[] {10, 0}, new int[] {0, 1})), "a turn over 90 degrees");
 	}
 }
