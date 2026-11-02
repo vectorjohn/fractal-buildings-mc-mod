@@ -6,6 +6,7 @@ Every decision waiting for you, one line each, newest first under each heading. 
 
 # Release (0.1.0)
 
+- [ ] **Polish triage** (2026-11-01): confirm the 5 proposed P6 items (a floating glass pane, test runs that pass while testing the wrong thing, unexplained cold-arrival freezes, doors with no path from the street, perf ceilings already asked below). [polish-triage.md](review/polish-triage.md).
 - [ ] **Release scope** (2026-10-29): is the P6 checklist the whole release scope, with nothing added? See [release-plan.md](review/release-plan.md) section 3, Q1.
 - [ ] **PORCHSTEP, DOORBANK, STAIRFOOT** (2026-10-29): release blockers, or any of them to P7? (All three are merged now.) [release-plan.md](review/release-plan.md) Q2.
 - [ ] **Long crossings at approaches** (2026-10-29): for 6.15, drop the approach, or allow a long deck at town tier and up until 7.3? Architect: allow the deck. [release-plan.md](review/release-plan.md) Q3, [REVIEW 6.15 ROADJOIN](REVIEW.md), [architect](review/roadjoin/p6-roadjoin-s1-architect.md).

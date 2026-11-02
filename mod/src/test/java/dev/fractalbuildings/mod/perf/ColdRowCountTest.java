@@ -36,14 +36,16 @@ import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
  * gives the pre-CASCADE-2 exit cut). Never in the normal run.
  */
 class ColdRowCountTest {
-	/** Serial chunk fills of the neighbour plus the 7 cold samples at 21fc8570 (4,281 with -Dfb.exitcut.reference=true); prefetch only hints, so walk boxes do not change it. */
-	static final long WINDOW_FILLS = 4145;
-	/** Serial quay walk-ahead rounds of the same window with 4 walk boxes (CASCADE 2fix; one box: 4,238). */
-	static final long WINDOW_ROUNDS = 648;
+	/** Serial chunk fills of the neighbour plus the 7 cold samples after QUAYFAST 4 (was 4,145 at 21fc8570; 4,281 with -Dfb.exitcut.reference=true); prefetch only hints, so walk boxes do not change it. */
+	static final long WINDOW_FILLS = 1066;
+	/** Sample 16,-35 (the slowest of the old window) after QUAYFAST: 144 serial fills; the guard allows 400 (the plan's step-3 probe bound was 166). */
+	static final long SAMPLE_16_35_MAX = 400;
+	/** Serial quay walk-ahead rounds of the same window with 4 walk boxes (after QUAYFAST 4; was 648, one box 4,238 at CASCADE 2fix). */
+	static final long WINDOW_ROUNDS = 5;
 
 	private final Map<String, Long> parts = new ConcurrentHashMap<>();
 	private final TreeSet<Object> seenRaw = new TreeSet<>(), seenCuts = new TreeSet<>(), seenWalk = new TreeSet<>();
-	private long fills0, rounds0;
+	private long fills0, rounds0, s1635 = -1;
 
 	@Test
 	@EnabledIfSystemProperty(named = "fb.perf.coldrow", matches = ".+")
@@ -61,6 +63,7 @@ class ColdRowCountTest {
 				: new LiveProbes(gen, rs, fill, LiveProbes.DEFAULT_CHUNKS, Fanout.over(() -> pool, threads));
 			WorldPlanner cold = new WorldPlanner(PerfPlannerTest.SEED, WorldConfig.defaults(), lp.world(lp.exact()), null, WorldPlanner.Caches.DEFAULT);
 			QuayTuning.walkPrefetches.set(0);
+			if (System.getProperty("fb.perf.coldrow.walkAhead") != null) QuayTuning.walkAhead = Integer.getInteger("fb.perf.coldrow.walkAhead"); // knob for the pooled runs: printed, not checked
 			int sx = PerfPlannerTest.MX, sz = PerfPlannerTest.MZ; // the centre of s2_m6, as PerfPlannerTest's nearest() finds it
 			cold.warm(sx, sz, 2 * cold.config().cellSize());
 			stage("warm", cold, lp);
@@ -78,13 +81,17 @@ class ColdRowCountTest {
 			for (int d = -3; d <= 3; d++) {
 				int ix = tile.ix() + d, iz = tile.iz() + 1;
 				if (cold.tile(ix, iz).isPresent()) { cold.buildings(ix, iz); cold.ground(ix, iz); }
-				add(window, stage("sample " + ix + "," + iz, cold, lp));
+				long[] st = stage("sample " + ix + "," + iz, cold, lp);
+				add(window, st);
+				if (ix == 16 && iz == -35) s1635 = st[0];
 			}
 			System.out.println("[COLDROW] neighbour + samples (" + (pool == null ? "serial" : threads + " read threads") + "): fills " + window[0] + " (recorded " + WINDOW_FILLS + "), walk rounds " + window[1] + " (recorded " + WINDOW_ROUNDS + ")");
 			if (pool != null) return;
 			assertTrue(window[0] <= WINDOW_FILLS * 11 / 10, "the cold district window fills " + window[0] + " chunks, over 110 % of the " + WINDOW_FILLS + " recorded: work was added to the path the p95 row times");
-			assertTrue(window[1] <= WINDOW_ROUNDS * 11 / 10, "the cold district window's quay walks wait for " + window[1] + " prefetch rounds, over 110 % of the " + WINDOW_ROUNDS + " recorded (QuayTrace.WALK_BOXES)");
+			assertTrue(s1635 >= 0 && s1635 <= SAMPLE_16_35_MAX, "sample 16,-35 fills " + s1635 + " chunks, over " + SAMPLE_16_35_MAX + ": the quay run walk got expensive again (QUAYFAST)");
+			assertTrue(window[1] <= Math.max(WINDOW_ROUNDS * 11 / 10, WINDOW_ROUNDS + 3), "the cold district window's quay walks wait for " + window[1] + " prefetch rounds, over 110 % of the " + WINDOW_ROUNDS + " recorded (QuayTrace.WALK_BOXES)");
 		} finally {
+			QuayTuning.walkAhead = 32;
 			if (pool != null) Workers.shutdown(pool);
 		}
 	}

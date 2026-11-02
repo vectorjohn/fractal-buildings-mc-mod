@@ -57,13 +57,13 @@ SETBACKSILL	window sills on high-rise setbacks; folded into HR-B3b	runs/2026-10-
 SHOPBACK	shops chain bedrooms behind the shop floor; shop rear rooms need their own program	runs/2026-10-22-phase6.md	open
 STREETSNOW	snow left on streets after clearing (6.17 follow-up, StreetAirFix)	log/2026-10-27-p6-roadclear2.md	done
 SUBDIVIDE	old-town lot subdivision (5.13)	archive/roadmap-phase-5.md	done
-SWITCHBACK	exterior flights round a plinth that turn every step or two; make switchbacks more generous
+SWITCHBACK	exterior flights round a plinth that turn every step or two; make switchbacks more generous (done by 6.31 STAIRJOG)	log/2026-10-31-p6-stairjog.md	done
 TOKENSAVE	agent-definition change to save tokens: at most 3 coding items, verdict blocks, Sonnet verifiers for small items	../.claude/agents/coordinator.md	done
 TOMAINn	the n-th merge of the run branch into main (TOMAIN3, ...)	runs/2026-10-22-phase6.md
 TPORTS	test tooling: one viewer-screenshot port per run	runs/2026-10-22-phase6.md	done
 TRUNKDIRT	dirt left under tree trunks next to streets (6.17 follow-up, StreetAirFix)	log/2026-10-27-p6-roadclear2.md	done
 VPAL	viewer: one palette per building in district scenes	log/2026-10-21-p5-viewer-palette.md	done
-WORKSHOP	workshop lean-to stores: a back door to the yard and the right furniture (became part of DS35DOORS)
+WORKSHOP	workshop lean-to stores: a back door to the yard and the right furniture (became part of DS35DOORS)	log/2026-10-28-ds35doors.md	done
 WPOTFLAKE	flake: WorldPlannerOrderTest's 8-thread tiny-cache case timed out on a loaded host (compute-bound, not a deadlock)		done
 XVFBLEAK2	`test-all.sh` exported CI=1, so Loom wrapped the client in its own Xvfb on software OpenGL instead of the Intel GPU	../CLAUDE.md	done
 #

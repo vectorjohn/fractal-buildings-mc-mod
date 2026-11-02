@@ -381,3 +381,9 @@ Cost and value:
   shoreline. Done at the level of a run, it changes nothing you'd see and should bring the p95 tile from about 2,800
   chunk reads to about 260.
 - Going finer than a run would change how quays look and buys little after this; I recommend against it for now.
+
+# Status (2026-11-02)
+
+- [x] Step 0 per-sample rows, [x] 1 run walker, [x] 2 cheap screen, [x] 3 run-level QuayTrace, [x] 4 screened scans (merged).
+- [x] Step 5 counts, guards and budgets (`claude/p6-quayfast-56`): `ColdRowCountTest` records 1,066 fills / 5 walk rounds (was 4,145 / 648) and guards sample 16,-35 at 400 fills; `cascade.neighbours.chunkFills` 11,891 (ci 14,270). Deviation: the `region.cold.quays.tile.chunkFills` budget (2,700) is left as is; it is now 151 (quiet perf worker), a proposal for the coordinator is in the report.
+- [x] Step 6 quiet perf-worker measurement: two valid full `perf.sh` runs (r2, r3). Result: **the cold district p95 is 5.96 s, not under 3 s** (was 3.67 s); the screen itself dominates tile 18,-35. See [log](../log/2026-11-02-p6-quayfast-56.md).

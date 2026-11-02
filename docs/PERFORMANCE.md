@@ -386,3 +386,11 @@ How to use it:
 - **Planner row after CASCADE 2fix** (the quiet perf worker, 72917c94): cold district plan p95 3.67 s against ceiling 3 s (FAIL, median 668 ms), was 5.7 s before 2fix and about 1.15 s before CASCADE 2. Known issue; John decides a QUAYLAZY follow-up or a different ceiling. Count rows unchanged (16,460 / 38).
 - **Decision**: open (TeleportHold cap, QUESTIONS; the arrival is still 9 to 11x vanilla).
 - **Improve**: the remaining 14 s is the far settlements' tile plans and quays for the link check (plan DQ1 and DQ2 change output); saving warmed data with the world (regionperf option 6) is the other lever.
+
+### The quay trace by runs and the cheap screen (QUAYFAST, 2026-11-02)
+
+- **What**: the quay trace walks each waterfront run once and a cheap screen skips cells that cannot hold a quay (steps 0 to 4, byte-identical output).
+- **Measured** (two full `scripts/perf.sh` runs, the perf worker (12 CPUs), commit 05142f53, `perf: quiet host`, loadavg before 1.77 / 1.42): the district window needs 1,066 chunk fills (was 4,145) and 5 walk rounds (was 648); CPU 29.5 / 28.4 s (was 49 to 53); the owned quay tile 0.95 s and 151 fills (was 2.2 s, 2,606); cold arrival 35.4 / 34.9 s (HEAVY13 42.3, CASCADE 7 39); hold 28.7 / 28.6 s. **Cold district p95 5.96 / 5.97 s against the 3 s ceiling: FAIL, worse than before (3.7 s)**: tile 18,-35 alone is 5.96 s, dominated by the screen's uncached biome reads (`QuayTrace.maybeOf` to `LiveBiomeProbe.biome`).
+- **Budget**: `cascade.neighbours.chunkFills` lowered to 11,891 (ci 14,270). `region.cold.quays.tile.chunkFills` (2,700) is now 151; proposal: budget 160, ci 320.
+- **Decision**: open; details in `docs/review/regionperf-decision.md` section 7, "After QUAYFAST".
+- **Improve**: cache or batch the screen's water and biome reads per coarse cell (the p95 is one tile); the flight tick two-mode (4 to 5 s) is back.

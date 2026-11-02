@@ -292,6 +292,33 @@ What it says:
 - **The warm settle and the reads pool**: the perf "settle" after the flight took 4.99 and 4.46 s, the same as in every earlier run (4.99 s in the B1 runs), so CASCADE 5b's wait for neighbour plans costs the measurement nothing. Tile plans on reads-pool threads did not visibly starve the terrain reads: the mean cold chunk fell 28 % (576 to 414 ms) and the median chunk is 60 ms; there was no sign of a slower ordinary chunk, but no run isolated it either.
 - **Planner rows (after CASCADE 2fix, 3ca5a468 merged; one `perf.sh --planner-only` on the quiet perf worker at 72917c94, `perf: quiet host`, load 0.27 before, 2.3 after): "Cold district plan, p95" is still 3.67 s (ceiling 3 s, FAIL; median 668 ms, budget 300 ms; before CASCADE step 2 about 1.15 s). Step 2 removed a `fullCut` whose quay-chain trace the sample tile 16,-35 reused; 2fix cut it from 5.7 s. Known issue, John decides between a QUAYLAZY follow-up and a different ceiling. The cascade count rows are unchanged by 2fix (16,460 and 38, ok), the region layer and the lazy-quay tile rows are ok. The world rows above were measured before 2fix; it only changes the walk-ahead boxes, but they were not re-run.**
 
+### After QUAYFAST (2026-11-02, quiet perf worker)
+
+QUAYFAST ("quays traced run by run": the quay trace walks each stretch of waterfront once as a run, with a cheap screen that skips cells that cannot hold a quay; byte-identical output; the [plan](../plans/quayfast.md)) is merged through step 4. **Valid numbers only:** two full `scripts/perf.sh` runs on the perf worker (12 CPUs, AMD GPU via radv, dedicated server, no renderer in the rows), commit 05142f53, each ended `perf: quiet host` (window 1,202 and 1,260 s, no other job on the worker, loadavg sampled just before 1.77 and 1.42). A third run before them was discarded as not a measurement (another process used 3.5 cores for 6 minutes).
+
+| What is timed | CASCADE 7 / HEAVY13 | **After QUAYFAST, runs 1 / 2** | Vanilla, same runs |
+|---|---|---|---|
+| Cold district plan, p95 (`district.cold.p95.ms`, ceiling 3 s) | 3.67 to 3.72 s | **5.96 / 5.97 s (FAIL)** | |
+| Same, median | 668 ms | 781 / 711 ms | |
+| Same, CPU (`district.cold.cpu.ms`) | 49 to 53 s | 29.5 / 28.4 s | |
+| The 7 sample tiles 12 to 18 at z -35 | | 598 / 535 / 693 / 972 / 781 / 1,510 / **5,961** ms; 646 / 511 / 685 / 1,084 / 711 / 1,525 / **5,967** ms | |
+| First tile of a metropolis, cold | | 890 / 930 ms | |
+| Region warm + roads, cold (`region.cold.warm`) | 9.2 s | 9.22 / 9.24 s (6 s budget, 10 s ceiling) | |
+| Quays of the owned tile (`region.cold.quays.tile.ms`) | 2.2 s | 0.95 / 0.97 s, 151 chunk fills (was 2,606) | |
+| Cold arrival, 9 x 9 view FULL | 42.3 s (HEAVY13), 39 s (CASCADE 7) | **35.4 / 34.9 s** | 4.7 / 3.9 s |
+| TeleportHold held | 37.0 s (HEAVY13), 33 s (CASCADE 7) | **28.7 / 28.6 s** | |
+| Slowest chunk of the cold block | 24.5 s (CASCADE 7) | 26.1 / 28.4 s | 0.2 s |
+| Flight tick max / p95 | 0.91 s / 10 ms | **4.52 / 4.07 s** / 9.9 / 11.1 ms | 127 ms |
+| `/locate` settlement, fresh area | 3.35 s | 3.33 / 3.31 s | 0.21 to 0.25 s (village) |
+
+What it says:
+
+- **The district p95 is not under 3 s; it got worse, from 3.7 to 5.96 s.** The counts did what the plan said (the 8-tile window needs 1,066 chunk fills, was 4,145; the CPU fell about 45 %), but one tile, 18,-35, takes 5.96 s in both runs while the other six take 0.5 to 1.5 s (the old p95 holder, 16,-35, now 0.7 to 0.8 s). Stack sampling of that tile (locally, same 6 s serial) puts 15 of 19 samples inside the new cheap screen: it reads biome noise per cell, uncached, and on this tile that costs more than the fills it saved. Caching or batching those reads per coarse cell is the obvious next step (not done; no output change).
+- **The cold arrival is 4 to 5 s faster than HEAVY13 (42.3 to 35.4 / 34.9 s) and 4 s faster than CASCADE 7 (39 s); the hold is 28.6 s (was 33 to 37 s).** The 3 to 4 s arrival rise HEAVY13 showed is gone. The slowest single chunk is 2 to 4 s slower than in CASCADE 7 (26.1 / 28.4 against 24.5 s), so the arrival gain comes from the other chunks, not from the slowest one.
+- **The two-mode flight tick is back** (4.5 and 4.1 s, at about 2,360 blocks flown; CASCADE 7 saw 0.9 s). It was in 5 of 10 earlier quiet runs, so 2 of 2 is not new information.
+- The region row is unchanged (9.2 s) and `/locate` too: QUAYFAST does not touch them.
+
+For the district-ceiling question: the 3 s ceiling is missed by a factor of two by one tile, and the cause is known and local to the screen's biome reads; fixing that is a smaller job than moving the ceiling.
 The hold cap (TeleportHold, TPHOLD15) and the district-plan ceiling: see the questions in [QUESTIONS.md](../QUESTIONS.md) (the TeleportHold cap line; John decided 2026-11-01: 60 s, now the default). The numbers: a cold metropolis arrival holds 32.8 to 33.2 s, the slowest chunk is 24.6 s. A 15 s cap releases the player about 18 s before the destination is ready.
 
 ## 8. Options for the cold-arrival wait (for John)

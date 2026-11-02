@@ -203,7 +203,7 @@ Item codes (PARREADS, MAINSTUB, TPHOLD, ...) and run terms, one row each. **Gene
 | STREETSNOW |  | snow left on streets after clearing (6.17 follow-up, StreetAirFix) | done | [[docs/log/2026-10-27-p6-roadclear2|2026-10-27-p6-roadclear2]] |
 | SUBDIVIDE |  | old-town lot subdivision (5.13) | done | [[docs/archive/roadmap-phase-5|roadmap-phase-5]] |
 | suite slot |  | one of the few slots that limit how many full fast test suites run at once | - | [[CLAUDE|CLAUDE]] |
-| SWITCHBACK |  | exterior flights round a plinth that turn every step or two; make switchbacks more generous | polish | [[docs/ROADMAP|ROADMAP polish]] |
+| SWITCHBACK |  | exterior flights round a plinth that turn every step or two; make switchbacks more generous (done by 6.31... | done | [[docs/log/2026-10-31-p6-stairjog|2026-10-31-p6-stairjog]] |
 | T1 |  | Phase 5 step: terrain dump tool and first dumps | done | [[docs/log/2026-10-21-p5-t1-dumps|log]] |
 | T2 |  | Phase 5 step: gate terrain | done | [[docs/log/2026-10-21-p5-t2-gate-terrain|log]] |
 | TA |  | Phase 5 step: terrain toolkit (Phase 5, 5.3 groundwork) | done | [[docs/log/2026-10-21-p5-ta-terrain|log]] |
@@ -233,6 +233,6 @@ Item codes (PARREADS, MAINSTUB, TPHOLD, ...) and run terms, one row each. **Gene
 | warmer |  | RegionWarmer: plans settlements and roads on background threads ahead of the player, so chunks don't wait | - | [[docs/NOTES|NOTES]] |
 | worker pool |  | the machines `scripts/remote.sh` and `scripts/anywhere.sh` send jobs to, listed in the gitignored... | - | [[CLAUDE|CLAUDE]] |
 | WORKERSFLAKE |  | WorkersShutdownTest flake | done | [[docs/log/2026-10-28-workersflake|log]] |
-| WORKSHOP |  | workshop lean-to stores: a back door to the yard and the right furniture (became part of DS35DOORS) | polish | [[docs/ROADMAP|ROADMAP polish]] |
+| WORKSHOP |  | workshop lean-to stores: a back door to the yard and the right furniture (became part of DS35DOORS) | done | [[docs/log/2026-10-28-ds35doors|2026-10-28-ds35doors]] |
 | WPOTFLAKE |  | flake: WorldPlannerOrderTest's 8-thread tiny-cache case timed out on a loaded host (compute-bound, not a... | done | [[docs/log/2026-10-28-wpotflake|log]] |
 | XVFBLEAK2 |  | `test-all.sh` exported CI=1, so Loom wrapped the client in its own Xvfb on software OpenGL instead of the... | done | [[CLAUDE|CLAUDE]] |

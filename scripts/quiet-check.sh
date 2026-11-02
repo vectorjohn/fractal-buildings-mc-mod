@@ -289,7 +289,7 @@ case $MODE in
 		} > "$WDIR/start"
 		if (( ! BEE )); then
 			# the sampler runs until --window-end (DIR/stop) or its owner exits; it is the owner's child, so ours
-			"$0" --sample-loop "$WDIR" > /dev/null 2>&1 < /dev/null &
+			"$0" --sample-loop "$WDIR" > /dev/null 2>&1 < /dev/null 9>&- &
 			echo $! > "$WDIR/sampler.pid"
 		fi
 		echo "quiet-check: window start $( ((BEE)) && echo "$WL" || hostname) owner=$OWNER$( [[ -n $bmax ]] && echo " $WL-max-id=$bmax other-active=[${bact% }] own-job=${OWNJOB:--}")$( ((BEE)) || echo " sample=${SAMPLE}s") ($(date '+%F %T'))"
