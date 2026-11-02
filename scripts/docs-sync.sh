@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# The coordinator's periodic docs-feedback sync (coordinator.md "John's review loop" steps 1, 2,
+# The coordinator's docs-feedback sync, run every 10 min by its Haiku docs watcher (prompt in
+# .claude/prompts/docs-watcher.md; coordinator.md "John's review loop" steps 1, 2,
 # 4 and 5, plus the post-merge check), done mechanically so a quiet check costs one line.
 #
 #   scripts/docs-sync.sh [--run-branch B] [--checkout DIR] [--docs DIR] [--main BRANCH] [--no-silverbullet]

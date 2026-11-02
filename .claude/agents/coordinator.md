@@ -132,6 +132,8 @@ means one was missed: regenerate then.
    `docs/research/INDEX.md` if research is in scope. To resume a run, read its
    ledger first; it tells you everything else. After a restart, run
    `scripts/remote.sh --list` in the integration checkout and re-attach unfetched worker jobs (`scripts/remote.sh --attach <job>`) instead of re-running them.
+   Then run `scripts/docs-sync.sh` once and start the docs watcher ("John's
+   review loop (docs-feedback)").
 2. Work out the scope: exactly which items. "Phase 3" means every unchecked
    item in it. Build a **dependency picture**: which items are ready now, and
    what each waiting item waits for. Write it in the ledger.
@@ -427,19 +429,36 @@ John reads and comments on docs in the worktree
 served by SilverBullet on `127.0.0.1:3000`. He doesn't commit; his feedback
 is signed `@John` (inline `-- @John`, or a line `@John <date>: ...`, which
 agents answer as a threaded, indented list item `  - @<role> <date>: ...` naming
-the role that answered) and may include questions for agents. You alone sync it,
-after each merge into the run branch and on a periodic check (~30 min).
+the role that answered) and may include questions for agents. You alone sync it.
 
-**Run `scripts/docs-sync.sh` from the integration checkout; act only on a
+**Your only routine job here is keeping one docs watcher running** (John
+2026-10-30: wake only on change). No cron job and no periodic check of your
+own. The watcher is a cheap Haiku agent: `Agent` with `subagent_type:
+assistant`, `model: haiku`, `run_in_background: true`, and the prompt in
+`.claude/prompts/docs-watcher.md` copied verbatim, with the integration
+checkout and run branch filled in. It runs `scripts/docs-sync.sh` every 10 min
+in 110-min rounds, restarts its own rounds (John authorised that), and
+finishes only when there is something to act on (after a feedback merge it
+waits until a sync 5 min later finds nothing new, so one report covers a
+burst of edits):
+
+- **On a new session or after a crash** (no watcher agent running): run
+  `scripts/docs-sync.sh` once by hand and act on its exit code (below), then
+  start the watcher. Note its agent id in the ledger.
+- **When it finishes**, its report gives docs-sync's exit code: act on it as
+  below (10: feedback merged, do step 3; 11, 12, 1 as described), then start
+  a fresh watcher with the same prompt. Never leave the run without one.
+- You may also run `scripts/docs-sync.sh` by hand at any time (e.g. right
+  after a merge into the run branch); it is safe beside the watcher.
+
+**`scripts/docs-sync.sh` runs from the integration checkout; act only on a
 non-zero exit.** It does steps 1, 2, 4 and 5 below plus the post-merge check
 mechanically and prints one line, `docs-sync: nothing new`, when there is
 nothing to do. Exit 10: John's feedback was merged; read the diff it names and
 do step 3. Exit 11: `main` has commits the run branch lacks; merge it (step 1).
 Exit 12: a post-merge run newly FAIL / KILLED / DIED (handle as in "Act on the
 verdict"). Exit 1: an error or conflict, merge aborted and left clean; do the
-step it names by hand. The periodic check's cron prompt is: "run
-scripts/docs-sync.sh; if it prints nothing new, end the turn with no other
-action". The steps it automates, for doing them by hand:
+step it names by hand. The steps it automates, for doing them by hand:
 
 1. In that worktree, if `git status` shows changes, commit them all as
    `John feedback: <files>`. Never discard, reset or stash John's edits.
@@ -467,9 +486,8 @@ action". The steps it automates, for doing them by hand:
    If not, restart it from that worktree:
    `setsid -f scripts/dev silverbullet -L 127.0.0.1 -p 3000 . > /tmp/claude-1500/silverbullet-docs-feedback.log 2>&1 < /dev/null`.
 
-On a new session: run `scripts/docs-sync.sh` (it checks the server) and
-re-create the periodic check with CronCreate (the prompt above); cron jobs are
-session-only and expire after 7 days.
+On a new session: the manual `scripts/docs-sync.sh` run above also checks the
+server; then start the watcher. Don't create a cron job for docs sync.
 
 John's own branches, `john/<claude branch it came from>` (e.g.
 `john/adr-worldgen`), and `john-work` are merged into the run branch and
