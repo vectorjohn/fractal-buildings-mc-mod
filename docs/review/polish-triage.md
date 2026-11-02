@@ -28,13 +28,20 @@ In the ROADMAP: the Drop lines are removed, P7 lines end in `(P7: 7.x)`, P6 line
 4. **Doors with no path from the street** (from your Phase 5 review "Waterfront quays and bridges"): back-row shops behind a waterfront with no visible path or door toward the road. Today's checks stop at the lot edge, so nothing tells us how often a building is cut off. Fix: add a `door-reaches-street` check to `city-check`, measure, and fix if the count isn't near zero. Small to medium; I'm not sure how common it is now, after DS35DOORS (more entrances) and 6.20 DOORBANK (no doors facing a street wall).
 5. **Perf rows that fail their ceiling on the perf worker** (decision only): the region row (11.3-11.6 s against 10 s, failing on the vanilla base too) and the cold district plan p95 (3.67 s against 3 s). The release heavy run includes `perf.sh`, so these fail it until you pick a ceiling or a fix. This isn't new work: it's your two open lines in [QUESTIONS](../QUESTIONS.md) ("REGIONPERF budget" and "Cold district plan ceiling").
 
+- @John 2026-11-02: I approve all these. However, if (4.) causes us to drop buildings or something, then no, don’t deal with 4 and we can push it to P7. For 5 I think we have a new plan going forward, perf items can be marked known but we don’t want to forget about them.
+
 # Not sure
 
 - **Thin deck into open water** (playtest 2026-10-28, 21.01.30): filed as P7 7.3 bridges, but nobody has diagnosed it. If it's a crossing deck that ends in the water (a road to nowhere), it's the 6.22 DEADPORT (road to nowhere over a bridge) kind and could be P6.
+  - @John 2026-11-02: look into it. See if it’s DEADPORT.
 - **PARREADS** (parallel terrain reads) line dropped: the unbound tags and the busy-host timings are fixed. Part (1), a structure start tracing quays on a worldgen thread, is much smaller since QUAYLAZY (lazy quay trace) but not zero. PERFORMANCE.md tracks what remains.
+  - @John 2026-11-02: not sure. What is even the question here? I think this line can go away.
 - **SWITCHBACK** (more generous exterior flights) dropped as done by 6.31 STAIRJOG (straight entrance flights). The architect's landing sizes and headroom weren't checked one by one; what's left is in the 6.31 line (P7 7.24).
+  - @John 2026-11-02: if there is more work, it’s P7.
 - **Plains palette** (your Phase 4 REVIEW request) dropped as done by PALETTE: plains walls are now birch planks with one stripped-birch accent. It's worth a look in game if you still see speckle.
+  - @John 2026-11-02: drop this as done. I’ll re-raise if needed.
 - **6.15 ROADJOIN** (roads between settlements meet the streets) is still open in Phase 6. Its three backlog lines (route preference and two lips on one seed) are filed as Keep, not as part of closing 6.15.
+  - @John 2026-11-02: check if they’re done. If not, P7.
 
 # All lines
 

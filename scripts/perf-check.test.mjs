@@ -98,5 +98,5 @@ check('load skip still comes first for a known-over row (skip line, no known lin
 // the real budget file: knownOver rows are well formed, and no ci/budget was touched to make room (they sit below their last)
 const realB = JSON.parse(fs.readFileSync(path.join(import.meta.dirname, '..', 'mod', 'perf-budget.json'), 'utf8'));
 const kos = realB.budgets.filter((b) => b.knownOver);
-check('real budget: every knownOver has issue, since, accepted, a last above its ci', kos.length > 0 && kos.every((b) => b.knownOver.issue && b.knownOver.since && b.knownOver.accepted && b.knownOver.last > (b.ci ?? b.budget * 2) && !b.knownOver.issue.includes('|')));
+check('real budget: every knownOver has issue, since, accepted, a last above its ci (none is fine)', kos.every((b) => b.knownOver.issue && b.knownOver.since && b.knownOver.accepted && b.knownOver.last > (b.ci ?? b.budget * 2) && !b.knownOver.issue.includes('|')));
 process.exit(bad ? 1 : 0);

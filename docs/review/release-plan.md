@@ -108,6 +108,7 @@ or is already in the Polish backlog.
   city can wait half a minute or more, or land before the city is there.
   For P6, decide the budget, re-measure quietly, and say it in the
   README. Making it faster is P7. Tag `#backlog-p6` (the decision only).
+  - @John 2026-11-02: not entirely sure what the question is here. 
 - [ ] **Batched heavy run on the release candidate**: `test-all.sh --full`
   plus the order test and `perf.sh`. Waiting for the release candidate:
   the latest batch, HEAVY13, passed at 1ea75a7d (2026-11-01; perf rows over
