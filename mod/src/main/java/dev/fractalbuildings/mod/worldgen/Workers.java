@@ -127,12 +127,19 @@ public final class Workers {
 		}
 	}
 
-	/** Tests: waits until the pool has no queued or running task (or the timeout, in ms, passes). */
+	/**
+	 * Tests: waits until the pool has no queued or running task (or the timeout, in ms, passes). A worker that has taken a task off the
+	 * queue but not yet marked itself active shows as idle for a moment, so idle must hold on several polls in a row (WarmingGameTest
+	 * "warm refused" flake: the next warm was submitted while the previous task's flag was still set).
+	 */
 	public static boolean awaitIdle(ThreadPoolExecutor p, long timeoutMs) {
 		long end = System.nanoTime() + timeoutMs * 1_000_000L;
-		while (p.getActiveCount() > 0 || !p.getQueue().isEmpty()) {
+		int idle = 0;
+		while (idle < 4) {
+			if (p.getActiveCount() > 0 || !p.getQueue().isEmpty()) idle = 0; else idle++;
+			if (idle >= 4) break;
 			if (System.nanoTime() > end) return false;
-			try { Thread.sleep(5); } catch (InterruptedException e) { Thread.currentThread().interrupt(); return false; }
+			try { Thread.sleep(idle == 0 ? 5 : 2); } catch (InterruptedException e) { Thread.currentThread().interrupt(); return false; }
 		}
 		return true;
 	}

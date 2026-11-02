@@ -20,7 +20,7 @@ import net.minecraft.world.level.Level;
 
 /**
  * Plans ahead of moving players (plan B4, P2). Once a second, for each player in the overworld, the workers {@code warm} the region and
- * the road networks around the player and around where the player will be in {@link #LEAD_SECONDS} at the current speed, and
+ * the road networks around the player and around where the player will be in {@link #leadBlocks} at the current speed (longer the faster the player moves), and
  * {@code prefetch} the tile under each of those points (its buildings, and the plans of its neighbours). All of it fills pure caches:
  * it changes how long a chunk takes, never what it contains (ADR 0003 D6; the game test compares a warmed and a cold world).
  *
@@ -30,10 +30,20 @@ import net.minecraft.world.level.Level;
 public final class RegionWarmer {
 	/** Ticks between two warms of one player. */
 	static final int PERIOD = 20;
-	/** How far ahead along the current velocity the second warm point lies, seconds. Elytra at 60 b/s reaches 300 blocks. */
+	/** How far ahead along the current velocity the second warm point lies, seconds, for a walker (at or below {@link #SLOW_SPEED}). */
 	static final double LEAD_SECONDS = 5;
-	/** Longest lead, blocks. */
-	static final double MAX_LEAD = 600;
+	/** The lead in seconds for a fast flyer (at or above {@link #FAST_SPEED}); in between it grows linearly (METROWARM: an elytra flight at 60 b/s warms 1800 blocks ahead, not 300). */
+	static final double FAST_LEAD_SECONDS = 30;
+	/** Speeds, blocks per second, below which the lead is {@link #LEAD_SECONDS} and above which it is {@link #FAST_LEAD_SECONDS}. */
+	static final double SLOW_SPEED = 10, FAST_SPEED = 40;
+	/** Longest lead, blocks (fireworks elytra tops out near 60 b/s). */
+	static final double MAX_LEAD = 1800;
+
+	/** The look-ahead distance in blocks for a speed in blocks per second: grows with speed, capped at {@link #MAX_LEAD}. Pure. */
+	static double leadBlocks(double speed) {
+		double f = Math.max(0, Math.min(1, (speed - SLOW_SPEED) / (FAST_SPEED - SLOW_SPEED)));
+		return Math.min(speed * (LEAD_SECONDS + (FAST_LEAD_SECONDS - LEAD_SECONDS) * f), MAX_LEAD);
+	}
 
 	/** {@code -Dfractalbuildings.quayTrace=whole}: warm the whole city's quay trace again (METROFILL R1 behaviour); changes no output, only timing. */
 	static final boolean WHOLE_QUAYS = "whole".equals(System.getProperty("fractalbuildings.quayTrace"));
@@ -87,7 +97,7 @@ public final class RegionWarmer {
 		s.lastX = x;
 		s.lastZ = z;
 		s.seen = true;
-		double len = Math.hypot(vx, vz), lead = Math.min(len * LEAD_SECONDS, MAX_LEAD);
+		double len = Math.hypot(vx, vz), lead = leadBlocks(len);
 		double ax = len < 1e-6 ? x : x + vx / len * lead, az = len < 1e-6 ? z : z + vz / len * lead;
 		return submit(planner, s, (int) Math.floor(x), (int) Math.floor(z), (int) Math.floor(ax), (int) Math.floor(az), workers);
 	}

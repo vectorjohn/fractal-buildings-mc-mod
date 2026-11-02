@@ -50,6 +50,7 @@ Item codes (PARREADS, MAINSTUB, TPHOLD, ...) and run terms, one row each. **Gene
 | DG |  | Phase 5 step: district grid | done | [[docs/log/2026-10-21-p5-dg-grid|log]] |
 | DISTPERF | 6.27 | district cold plan time regression | done | [[docs/ROADMAP|ROADMAP 6.27]] |
 | DL |  | Phase 5 step: district layout (5.2 detail half) | done | [[docs/log/2026-10-21-p5-dl-layout|log]] |
+| DOCKS | 7.27 | a terminal hamlet across water gets a dock at each end instead of a bridge | open | [[docs/ROADMAP|ROADMAP 7.27]] |
 | docs-feedback |  | the worktree where John edits docs in SilverBullet; the coordinator syncs it into the run branch | - | [[CLAUDE|CLAUDE]] |
 | DOOR2 |  | wide-door steps on sloped blocks | done | [[docs/log/2026-10-26-p7-door2|log]] |
 | DOORAIR | 6.32 | door steps claim street headroom | done | [[docs/ROADMAP|ROADMAP 6.32]] |
@@ -108,6 +109,7 @@ Item codes (PARREADS, MAINSTUB, TPHOLD, ...) and run terms, one row each. **Gene
 | LAMPS |  | every high-rise room gets a standing lantern and a hung one (`HighriseRooms.hooks` adds `light` and always... | polish | [[docs/ROADMAP|ROADMAP polish]] |
 | LEAFORDER | 6.28 | end state of crowns over streets varies between runs | done | [[docs/ROADMAP|ROADMAP 6.28]] |
 | LINKBRAID | 7.25 | roads between settlements that share a valley share a road | open | [[docs/ROADMAP|ROADMAP 7.25]] |
+| LONGDECK |  | with DECKDIAG steps 1-2 (F1, F2) | done | [[docs/log/2026-11-02-p6-longdeck|log]] |
 | LOTRAIL |  | railed flights inside the lot, landings as wide as the door | done | [[docs/log/2026-10-25-p6-lotrail|log]] |
 | MAINSTEP | 6.33 | a 3-wide step at the main door | done | [[docs/ROADMAP|ROADMAP 6.33]] |
 | MAINSTUB | 6.25 | main roads that end at a gate with nothing beyond | done | [[docs/ROADMAP|ROADMAP 6.25]] |
@@ -115,6 +117,7 @@ Item codes (PARREADS, MAINSTUB, TPHOLD, ...) and run terms, one row each. **Gene
 | MC1 |  | Phase 5 step: join rule (region half of 5.8) | done | [[docs/log/2026-10-21-p5-mc1-join|log]] |
 | MC2 |  | Phase 5 step: cities across cells (5.8) | done | [[docs/log/2026-10-21-p5-mc2-cells|log]] |
 | METROFILL | 7.20 | dense city cores are filled | open | [[docs/ROADMAP|ROADMAP 7.20]], [[docs/plans/metrofill|plan]] |
+| METROWARM | 6.34 | the region warmer looks ahead by flight speed | done | [[docs/ROADMAP|ROADMAP 6.34]] |
 | MINLOT |  | lots on slopes leave room for a setback | done | [[docs/log/2026-10-26-p6-minlot|log]] |
 | OPENPLAN |  | open plan between public rooms | done | [[docs/log/2026-10-21-p5-openplan|log]] |
 | ORDERFAIL |  | order test failed at s1_m10 (lava lakes in dug-in buildings) | done | [[docs/log/2026-10-27-orderfail|log]] |
