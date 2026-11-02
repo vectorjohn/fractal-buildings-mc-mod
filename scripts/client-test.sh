@@ -49,7 +49,7 @@
 #
 # Layers (TESTLAYERS): FB_LAYER=quick (default here) runs Hello, District (B1), Gameplay (B5), Terrain (B3), TeleportHold; FB_LAYER=full adds
 # Roads, Foliage, PortalHold (6.30) and the compat world (about twice the time). FB_ONLY=<TestClass>[,<TestClass>...] (e.g. RoadsClientGameTest) runs only those client tests,
-# whatever the layer; a name that is no client test class exits 2 with the valid names, before the lock (RUNGUARD). Fly-through and perf stay opt-in (FB_FLY, FB_PERF). The district-order test (B2) is not a client test: scripts/order-test.sh.
+# whatever the layer; a name that is no client test class exits 2 with the valid names, before the lock (RUNGUARD). Fly-through, perf and the ROADJOIN in-game check stay opt-in (FB_FLY, FB_PERF, FB_ROADJOIN). The district-order test (B2) is not a client test: scripts/order-test.sh.
 #
 # Test hooks (for checking the watchdog without a game; see docs/NOTES.md):
 #   FB_CLIENT_CMD   run this bash command instead of xvfb-run + Gradle
@@ -105,6 +105,7 @@ if [[ -n ${FB_ONLY:-} ]]; then
 		printf '%s\n' "${CLIENT_TESTS[@]}" | grep -qxF -- "$n" || UNKNOWN+=("$n")
 		case $n in
 			FlyThroughClientGameTest) [[ -n ${FB_FLY:-} ]] || { echo "client-test: FB_ONLY=$n needs FB_FLY set (the fly-through is opt-in and would skip itself)" >&2; exit 2; } ;;
+			RoadJoinClientGameTest) [[ -n ${FB_ROADJOIN:-} ]] || { echo "client-test: FB_ONLY=$n needs FB_ROADJOIN set (the ROADJOIN in-game check is opt-in and would skip itself)" >&2; exit 2; } ;;
 			PerfClientGameTest) [[ -n ${FB_PERF:-} ]] || { echo "client-test: FB_ONLY=$n needs FB_PERF set (the perf test is opt-in and would skip itself)" >&2; exit 2; } ;;
 		esac
 	done
