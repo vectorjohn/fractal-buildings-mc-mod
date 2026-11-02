@@ -36,6 +36,18 @@ class CityCheckTest {
 		String r = Files.readString(md);
 		assertTrue(r.contains("9 sites (scenes: auto:2), 0 failing, 0 violations"), r.substring(0, Math.min(300, r.length()))); // ROADS: no rule is ignored any more
 		for (String name : List.of("gate-temperate-city", "gate-coast-city", "gate-metropolis-temperate", "gate-joined-city")) assertTrue(r.contains("| " + name + " |"), name);
+		assertFalse(r.contains("## Door reach"), "6.38 DOORREACH: every door on the gate windows reaches a street\n" + r);
+		assertTrue(r.contains("door-reaches-street (6.38 DOORREACH): "), "the summary line is always written");
+	}
+
+	/** 6.38 DOORREACH: the walled hill town (its tower on legs was the one door the first measure could not place: its flight ends under the body). */
+	@Test
+	void everyDoorOfTheHillTownReachesAStreet(@TempDir Path dir) throws Exception {
+		Path md = dir.resolve("hill.md");
+		assertEquals(0, run("city-check", "--seeds", "541", "--terrain", "noise:5:75:25:200+river:-120:24:6", "--sites", "at:1537,-1436,town,410", "--scenes", "auto:300", "--out", md.toString()));
+		String r = Files.readString(md);
+		assertTrue(r.contains("door-reaches-street (6.38 DOORREACH): 648 buildings"), r.substring(0, 400));
+		assertFalse(r.contains("## Door reach"), r);
 	}
 
 	@Test

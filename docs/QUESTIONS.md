@@ -13,6 +13,7 @@ Every decision waiting for you, one line each, newest first under each heading. 
 - [ ] **Backlog section** (2026-10-29): may the other Phase 7 items move to a new "Backlog (unscheduled)" section, where `#backlog` notes also go? [release-plan.md](review/release-plan.md) Q7.
 
 # Perf
+- [ ] **TILEPLANS: accept 50 raw tile plans or fix?** (2026-11-02, 6.42 TILEPLANS (perf row "raw tile plans computed" over its ceiling)): the row is 50 against a ceiling of 46 (was 38) since LONGDECK e8c5740e: approaches that used to be dropped now route and draw, and each prefetches the tiles round its first 24 stations (s2_m2 9 → 21 plans; chunk fills unchanged). Options: (1) accept 50 as knownOver; (2) a fix: prefetch only the stations read, cheap-reject alternate approaches before drawing (needs the road corpus tests re-run). Held until you say go. [log](log/2026-11-02-p6-tileplans.md)
 
 
 # Rules (DS proposals)

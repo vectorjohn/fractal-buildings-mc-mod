@@ -57,7 +57,7 @@ Item codes (PARREADS, MAINSTUB, TPHOLD, ...) and run terms, one row each. **Gene
 | DOORAIR | 6.32 | door steps claim street headroom | done | [[docs/ROADMAP|ROADMAP 6.32]] |
 | DOORBANK | 6.20 | doors below an embankment street | done | [[docs/ROADMAP|ROADMAP 6.20]] |
 | DOORGLASS |  | a shop-front door set between glass panes; panes don't attach to a door, so the glazing stops short of it.... | polish | [[docs/ROADMAP|ROADMAP polish]] |
-| DOORREACH | 6.38 | a `door-reaches-street` check | open | [[docs/ROADMAP|ROADMAP 6.38]] |
+| DOORREACH | 6.38 | a `door-reaches-street` check | done | [[docs/ROADMAP|ROADMAP 6.38]] |
 | DORMER |  | dormer stairs: dormer roofs built as stair blocks (John's 2026-10-26 playtest) | polish | [[docs/ROADMAP|ROADMAP polish]] |
 | DS-n |  | a numbered design rule (DS-1, DS-45, ...) in the design standards | - | [[docs/design/STANDARDS|STANDARDS]] |
 | DS34LOOKS |  | remaining work on DS-34 (high-rises come in several looks) | open | [[docs/design/STANDARDS|STANDARDS]] |
@@ -225,6 +225,7 @@ Item codes (PARREADS, MAINSTUB, TPHOLD, ...) and run terms, one row each. **Gene
 | TESTSPEED2 |  | share planned sites across planner-core test classes | done | [[docs/log/2026-10-28-testspeed2|log]] |
 | THINDECK | 6.40 | a city street laid flat across a deep lake | done | [[docs/ROADMAP|ROADMAP 6.40]] |
 | TIDY |  | pre-gate tidy | done | [[docs/log/2026-10-21-p5-tidy|log]] |
+| TILEPLANS | 6.42 | the CASCADE "raw tile plans" perf row is 50 against its ceiling 46 | open | [[docs/ROADMAP|ROADMAP 6.42]] |
 | to-main |  | merging the run branch into main, after a full test run | - | [[docs/runs/2026-10-22-phase6|2026-10-22-phase6]] |
 | TOKENSAVE |  | agent-definition change to save tokens: at most 3 coding items, verdict blocks, Sonnet verifiers for small... | done | [coordinator](../.claude/agents/coordinator.md) |
 | TOMAINn |  | the n-th merge of the run branch into main (TOMAIN3, ...) | - | [[docs/runs/2026-10-22-phase6|2026-10-22-phase6]] |

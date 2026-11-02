@@ -96,6 +96,7 @@ final class CityCheckCommand {
 		Result[] results = new Result[jobs.size()];
 		final int sceneCount = scenes;
 		final PlanOptions opts = CityCommand.planOptions(o);
+		DOOR_REACH.set(0); DOOR_REACH_EDGE.set(0); // per run (the counters are static)
 		IntStream.range(0, results.length).parallel().forEach(i -> results[i] = check(jobs.get(i), sceneCount, opts));
 		String md = toMarkdown(results, scenes, ignore);
 		int lotLosses = 0; // METROFILL R2: the DS-47 lot-loss guard
@@ -139,6 +140,7 @@ final class CityCheckCommand {
 	/** Glazing of every building in the scenes built (DS-33 report, 7.12). */
 	private static final Glazing.Report GLAZING = new Glazing.Report();
 	/** Entrance door rise of every building in the scenes built (DS-45 report, SHOPLOW S0). */
+	private static final java.util.concurrent.atomic.AtomicInteger DOOR_REACH = new java.util.concurrent.atomic.AtomicInteger(), DOOR_REACH_EDGE = new java.util.concurrent.atomic.AtomicInteger();
 	private static final DoorRise.Report DOOR_RISE = new DoorRise.Report();
 	private static final java.util.concurrent.atomic.AtomicInteger GATE_CUTS = new java.util.concurrent.atomic.AtomicInteger();
 	/** 6.25 MAINSTUB: gateless exit roads seen, those over the stub limit as planned and after the cut, and the roads cut. */
@@ -252,6 +254,7 @@ final class CityCheckCommand {
 				DistrictScenes.Built b = CityPlanner.scene(city, id, p.terrain(), p.biome(), true);
 				for (Violation v : b.scene().violations()) problems.add(v.invariant() + ": " + id + " " + v.message());
 				for (Violation v : b.plan().violations()) problems.add(v.invariant() + ": " + id + " scene " + v.message());
+				{ var dr = dev.fractalbuildings.core.check.DoorReach.check(b.scene()); DOOR_REACH.addAndGet(dr.buildings()); DOOR_REACH_EDGE.addAndGet(dr.edge()); for (Violation v : dr.violations()) warnings.add(v.invariant() + ": " + id + " " + v.message()); }
 				for (var pb : b.scene().buildings()) GLAZING.add(pb.shell().spec().type(), Glazing.measure(pb));
 				// doors exist only in scenes built with interiors; the exterior scene above has none (violations of this one are not listed: the interior rules are check's)
 				if (doorRiseOn) DOOR_RISE.add(DoorRise.measure(CityPlanner.scene(city, id, p.terrain(), p.biome(), false).scene(), p.terrain()));
@@ -282,6 +285,7 @@ final class CityCheckCommand {
 		StringBuilder sb = new StringBuilder("# city-check\n\n");
 		sb.append("exit-stub (6.25 MAINSTUB; gateless exit roads running over ").append(dev.fractalbuildings.core.settlement.ExitTrim.MAX_STUB).append(" columns past their last built lot): ").append(STUB_ROADS.get()).append(" roads, ").append(STUB_BEFORE.get()).append(" over as planned, ").append(STUB_CUT.get()).append(" cut, ").append(STUB_AFTER.get()).append(" over after the cut\n\n");
 		sb.append("gate-cut > ").append(dev.fractalbuildings.core.check.GateCut.LIMIT).append(" (EXIT gates whose street end is more than that below or above the ground; report only, fix is 7.19): ").append(GATE_CUTS.get()).append("\n\n");
+		sb.append("door-reaches-street (6.38 DOORREACH): ").append(DOOR_REACH.get()).append(" buildings checked in the scenes, ").append(DOOR_REACH_EDGE.get()).append(" walks left the scene unresolved\n\n");
 		int bad = 0, problems = 0;
 		TreeMap<String, Integer> byInvariant = new TreeMap<>();
 		for (Result r : rs) {
@@ -309,6 +313,10 @@ final class CityCheckCommand {
 			design.forEach((k, n) -> sb.append(k).append(" ").append(n).append("; "));
 			sb.append("\n\n");
 		}
+		// 6.38 DOORREACH: itemised, report only (the failures found on the 64-block world dumps are 2-block banks between a raised street and its lot: grading, 7.11)
+		StringBuilder reach = new StringBuilder();
+		for (Result r : rs) for (String w : r.warnings()) if (w.startsWith(dev.fractalbuildings.core.check.DoorReach.RULE + ":")) reach.append("- ").append(r.job().label()).append(" ").append(r.siteId()).append(" ").append(w.substring(w.indexOf(':') + 2)).append('\n');
+		if (reach.length() > 0) sb.append("## Door reach (DOORREACH 6.38, report only)\n\n").append(reach).append('\n');
 		String artefacts = coarseEmpties(rs);
 		if (!artefacts.isEmpty()) sb.append(artefacts).append('\n');
 		sb.append("| site | id | tier | radius | cells | districts | lots | scenes | hub piece % | strays | violations | ms |\n|---|---|---|---|---|---|---|---|---|---|---|---|\n");
