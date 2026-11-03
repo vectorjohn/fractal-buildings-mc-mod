@@ -11,6 +11,48 @@ Development happens inside the Nix dev shell (`nix/flake.nix`): `scripts/dev` fo
 shell, `scripts/dev <cmd>` for one command (cached; bare fallback
 `nix develop path:./nix -c <cmd>`).
 
+## Building
+
+**You need** JDK 25 (Minecraft 26.3 requires it). Gradle comes with the repo
+as `./gradlew`; don't install it separately. The build has no Java toolchain
+block and won't download a JDK (`auto-download=false` in `gradle.properties`),
+so Gradle compiles with the JDK it runs on: put a JDK 25 on `PATH` or point
+`JAVA_HOME` at it. The project's own way is the Nix dev shell, which provides
+the JDK: prefix each command with `scripts/dev` (for example
+`scripts/dev ./gradlew :mod:build -x check`). Without Nix, run `./gradlew`
+directly. The first build downloads Minecraft, Fabric Loader, Fabric API and
+the Loom plugin into `~/.gradle`, which can take several minutes; after that
+a build takes seconds.
+
+**Build the mod jar without running any tests:**
+
+```sh
+./gradlew :mod:build -x check
+```
+
+(`./gradlew :mod:assemble` does the same.) It skips every test: the mod's
+unit tests, the server game tests (`runGameTest`, which `check` runs) and the
+planner-core tests. It took 9 s with `~/.gradle` already populated.
+
+**The jar to install** is `mod/build/libs/fractalbuildings-<version>.jar`,
+for example `fractalbuildings-0.1.0+26.3.jar`. Copy it into your `mods/`
+folder alongside Fabric Loader and Fabric API. The planner library
+(`planner-core`) is bundled inside it, so there is nothing else to install.
+Ignore the `-sources.jar` next to it.
+
+**Build with tests:**
+
+- `./gradlew :mod:build`: the mod jar plus the mod's unit tests and server
+  game tests.
+- `./gradlew build`: all three modules (`planner-core`, `cli`, `mod`) with
+  their tests, plus the check that `planner-core` never imports Minecraft.
+- `scripts/test-all.sh`: the full suite, including the viewer and the
+  Minecraft client game tests; it enters the Nix dev shell itself and runs
+  the client under a virtual display. `--no-client` skips the client tests.
+
+The other commands (single test layers, the CLI, the viewer, galleries) are
+listed in [CLAUDE.md](CLAUDE.md) under "Build and test commands".
+
 ## Long runs with agents
 
 `.claude/agents/` defines six agents for working through the roadmap without

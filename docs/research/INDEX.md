@@ -18,6 +18,7 @@ the end of its track's list. Notes use [TEMPLATE.md](TEMPLATE.md).
 - [Moog's structures](mods/moogs-structures.md) — scattered single-piece templates, not settlements; take per-set disable toggle, spacing slider and strict flatness veto; LGPL-3.0 code, NBTs All Rights Reserved (not opened) — status: reviewed
 - [Recurrent Complex](mods/recurrent-complex.md) — best prior art for rule-driven variation: plan-once transformers, inherited boolean variables, reachability-checked room-grid mazes (MC-free, tested core); 1.12-era, order-dependent; MIT + Apache-2.0 maze core — status: reviewed
 - [Astruct](mods/astruct.md) — cautionary prototype: off-thread jigsaw placed near players only, clamped to 64–256 blocks, single Y, no blending, player-path-dependent; only its hashed cell centres are worth borrowing; MIT — status: reviewed
+- [Multiloader (Fabric + NeoForge)](mods/multiloader.md) — feasibility for our mod: only 14 of ~70 mod files touch Fabric, MC 26.x unobfuscated; MultiLoader-template split is M (~1.5-2 weeks, Fabric stays the test platform; full test parity L); rec Fabric-only for 0.1.0, split in P7+, Connector check once it supports 26.3; CC0 template — status: new
 
 ## Track 2: GDMC (`gdmc/`)
 

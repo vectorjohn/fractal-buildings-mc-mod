@@ -10,6 +10,7 @@ thead td { white-space: nowrap !important ;}
 #sb-main .cm-editor .cm-content {
   --editor-width: unset;
   max-width: unset;
+  padding: 5px 2em;
 }
 
 ```

@@ -25,6 +25,7 @@ Item codes (PARREADS, MAINSTUB, TPHOLD, ...) and run terms, one row each. **Gene
 | BASEMENT | 7.18 | storeys below the entrance (cellars, undercrofts, walk-outs, high-rise plant levels) | open | [[docs/ROADMAP|ROADMAP 7.18]] |
 | BEARDFIT | 7.26 | entrance flights fitted to the ground the beard leaves | open | [[docs/ROADMAP|ROADMAP 7.26]] |
 | BEDFIX |  | bed halves lost at chunk borders | done | [[docs/log/2026-10-23-p6-bedfix|log]] |
+| BIGBLOCK |  | city street blocks the size of a whole tile at the city edge | - | [[docs/ROADMAP|ROADMAP]] |
 | BLK16 |  | fix: the entrance-reachable check failed at the steepest allowed grade (Phase 5) | done | [[docs/runs/2026-10-21-phase5|2026-10-21-phase5]] |
 | BRIDGEENDS |  | bridge ends and high road embankments faced in foundation stone (abutments) | done | [[docs/REVIEW|REVIEW]] |
 | CACHE |  | retention for in-flight and recently used tiles | done | [[docs/log/2026-10-22-p6-cache|log]] |
@@ -73,6 +74,7 @@ Item codes (PARREADS, MAINSTUB, TPHOLD, ...) and run terms, one row each. **Gene
 | FALLSTREETS | 7.19 | streets on falling ground stay near the ground | open | [[docs/ROADMAP|ROADMAP 7.19]] |
 | FBNOTE |  | in-game playtest note command | done | [[docs/ROADMAP|ROADMAP]] |
 | FBNOTEON | 6.39 | `/fbnote` on by default for bug reports | done | [[docs/ROADMAP|ROADMAP 6.39]] |
+| FBNOTESEED | 6.44 | `/fbnote` records the world seed on a server when the player is an operator | open | [[docs/ROADMAP|ROADMAP 6.44]] |
 | FBWATCH |  | debug switch that logs every worldgen block write inside watched boxes (who wrote what) | done | [[docs/NOTES|NOTES]] |
 | FLY2 |  | fly-through redesign (6.8) | done | [[docs/log/2026-10-26-p6-fly2|log]] |
 | FLYCAP |  | fly-through captures only stable frames | done | [[docs/log/2026-10-26-p6-flycap|log]] |
@@ -120,6 +122,7 @@ Item codes (PARREADS, MAINSTUB, TPHOLD, ...) and run terms, one row each. **Gene
 | METROFILL | 7.20 | dense city cores are filled | open | [[docs/ROADMAP|ROADMAP 7.20]], [[docs/plans/metrofill|plan]] |
 | METROWARM | 6.34 | the region warmer looks ahead by flight speed | done | [[docs/ROADMAP|ROADMAP 6.34]] |
 | MINLOT |  | lots on slopes leave room for a setback | done | [[docs/log/2026-10-26-p6-minlot|log]] |
+| MULTILOADER |  | run on NeoForge as well as Fabric | - | [[docs/ROADMAP|ROADMAP]] |
 | OPENPLAN |  | open plan between public rooms | done | [[docs/log/2026-10-21-p5-openplan|log]] |
 | ORDERFAIL |  | order test failed at s1_m10 (lava lakes in dug-in buildings) | done | [[docs/log/2026-10-27-orderfail|log]] |
 | ORDERHANG |  | order-test shutdown hang | done | [[docs/log/2026-10-31-p6-orderhang|log]] |

@@ -34,24 +34,28 @@ The name comes from my early interest in fractal algorithms, and things like the
 
 * Use your usual mod loader.
 * No dependencies.
-* **Allows server-only**: clients can be pure vanilla.
+* **Allows server-only** installs: clients can be pure vanilla.
 * Create a **new world**. Settlements only appear in chunks generated with the mod installed, since it is part of worldgen.
+
+## Coming Soon 
+
+* Cross loader compatibility: this is intended to work with either Fabric or NeoForge
+* Bridges: longer crossings, bridges that look like bridges.
+* More building variety. All the buildings are different but there are a few distinct styles. Need to use more materials, shape variety, etc.
+* Roads need some attention. Better pathing, more connections between settlements.
 
 ## Config
 
-`config/fractalbuildings.json` sets the defaults for *new* worlds: how often
+**You don’t have to configure anything**, but the things you can configure are in
+`config/fractalbuildings.json`. It sets the defaults for *new* worlds: how often
 settlements appear, the largest settlement size, and which styles are used. A
 world copies these values when it is created and keeps them, so editing the file
 never changes an existing world. `/fb config` shows the current world's values.
 
 To set it up, copy [the example](fractalbuildings.example.json) to
 `config/fractalbuildings.json` in your game folder before launching the game (or
-before creating the world it should apply to) and change the values; each
-setting has a one-line note.
+before creating the world it should apply to) and change the values.
 
-The `/fbnote` switch (see "Reporting a bug") is in a separate client file:
-copy [fractalbuildings-client.example.properties](fractalbuildings-client.example.properties)
-to `config/fractalbuildings-client.properties`.
 
 *(C3: when this file moves to the root `README.md`, point both links at `docs/release/`, or link the files on the release page.)*
 
@@ -61,15 +65,16 @@ to `config/fractalbuildings-client.properties`.
 - **Terrain mods**: tested with *(C3 fills in the list from step 6.6, e.g.
   Terralith, Tectonic, Lithostitched, TerraBlender)*.
 - Other structure mods: not tested; structures may overlap our settlements.
+- _Works_ with Distant Horizons, but the DH chunk loading doesn’t seem to trigger city generation.
+- I played with Minecraft Physics. Works great, but collapsing really does a number on a highrise.
 
 ## Known issues
 
-- This is an **alpha**. Back up worlds you care about.
 - **Updating the mod mid-world**: chunks generated after an update follow the new
   version's plans, so a settlement half-explored before the update can show a seam.
   The log warns when it sees pieces from another version.
 - **First trip into a big city**: teleporting or taking a portal into a large city
-  nobody has visited yet can take up to about half a minute, with "Generating
+  _nobody has visited_ yet can take up to about half a minute, with "Generating
   terrain…" on screen; the server keeps running normally meanwhile. If it takes
   more than a minute, the trip is cancelled and you can simply try again.
 - Streets on very steep ground: a street may run on a raised bank or sit in a deep
@@ -82,16 +87,16 @@ to `config/fractalbuildings-client.properties`.
 
 ## Reporting a bug
 
-In game, press `T` and type `/fbnote <what is wrong>`, for example `/fbnote stairs don't reach the top floor`. Stand where you can see the
+In game, type `/fbnote <what is wrong>`, for example `/fbnote stairs don't reach the top floor`. Stand where you can see the
 problem and look at it first: the note records your position and the block under the crosshair.
 
-- About a tenth of a second later the chat says `fbnote saved <name>`. Two files appear in the `screenshots/` folder of your game directory
+- A message on screen says `fbnote saved <name>`. Two files appear in the `screenshots/` folder of your game directory
   (the `.minecraft` folder, or your launcher's instance folder): `<date_time>.png` (a normal screenshot) and `<date_time>.json` (your
   comment, world seed, position, biome, the block you looked at, the mod version and, in singleplayer, which settlement, building and room
-  you were in).
+  you were in). This is very useful for reproducing the issue!
 - Attach both files to the issue (see "Reporting problems"). On a multiplayer server the note has no seed and no settlement details, only
-  position, biome and block, so add the server address and the world seed if you know it.
-- The command needs the mod on your client. To turn it off, set `notes=false` in `config/fractalbuildings-client.properties` (see "Config").
+  position, biome and block, so add the server address and the world seed if you know it. (#TODO fix this: seed is available to ops)
+- The command needs the mod on your client.
 
 ## Reporting problems
 

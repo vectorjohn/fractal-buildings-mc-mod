@@ -93,7 +93,7 @@ or is already in the Polish backlog.
 
 ## Release work
 
-- [ ] **Performance on first arrival** (REVIEW "REGIONPERF"). Decided by
+- [x] **Performance on first arrival** (REVIEW "REGIONPERF"). Decided by
   John 2026-11-02 (run ledger): a cold metropolis arrival of about 35 s is
   acceptable for 0.1.0; teleport and portal holds never release into unready
   chunks and abort with a "try again" message after a 60 s safety limit
