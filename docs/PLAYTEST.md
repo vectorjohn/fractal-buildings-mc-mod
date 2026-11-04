@@ -28,7 +28,7 @@ Two files appear in the game directory's `screenshots/` folder: `<yyyy-MM-dd_HH.
 | Field | Content |
 |---|---|
 | `comment`, `time`, `gameTime` | your text, UTC time, world tick |
-| `seed`, `dimension` | world seed (a number, or a string when above 2^53; `null` on a remote server), e.g. `minecraft:overworld` |
+| `seed`, `dimension` | world seed (a number, or a string when above 2^53; `null` on a remote server unless you are an operator there: the client runs `/seed` quietly and records the reply, `null` if none comes within 2 s), e.g. `minecraft:overworld` |
 | `position` | exact `x y z`, `yaw`, `pitch` (paste into `/tp x y z yaw pitch`) |
 | `biome`, `target` | biome id; the block under the crosshair (`block`, `x y z`, `face`) or `null` |
 | `mod` | mod `version`; `commit` (git HEAD) in a development run |

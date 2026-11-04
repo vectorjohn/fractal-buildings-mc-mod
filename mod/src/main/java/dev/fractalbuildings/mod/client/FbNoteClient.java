@@ -21,17 +21,22 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommands;
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
+import net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.Screenshot;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.contents.TranslatableContents;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.player.Player;
@@ -62,6 +67,7 @@ public final class FbNoteClient implements ClientModInitializer {
 		if (!enabled()) return;
 		ClientCommandRegistrationCallback.EVENT.register((dispatcher, ctx) -> register(dispatcher, true));
 		ClientTickEvents.END_CLIENT_TICK.register(FbNoteClient::tick);
+		ClientReceiveMessageEvents.ALLOW_GAME.register(FbNoteClient::allowGame);
 		FractalBuildingsMod.LOGGER.info("[FBNOTE] /fbnote enabled");
 	}
 
@@ -94,7 +100,59 @@ public final class FbNoteClient implements ClientModInitializer {
 		})));
 	}
 
+	/** Client ticks to wait for the server's {@code /seed} reply before the note is written without a seed (about 2 s). */
+	static final int SEED_TIMEOUT_TICKS = 40;
+	static final String SEED_KEY = "commands.seed.success";
+	private static final Pattern SEED_NUMBER = Pattern.compile("-?\\d+");
+	/** Test hook: treat the world as a remote server even in singleplayer, so the {@code /seed} route can be tested without a dedicated server. */
+	public static volatile boolean testForceRemote;
+
+	private static Consumer<Long> seedWaiter;
+	private static int seedTicks;
+
+	/** The seed in the rendered text of vanilla's {@code /seed} reply ("Seed: [123]", any language: the seed is the only number); null when there is none. */
+	static Long parseSeed(String rendered) {
+		if (rendered == null) return null;
+		Matcher m = SEED_NUMBER.matcher(rendered);
+		if (!m.find()) return null;
+		try {
+			return Long.parseLong(m.group());
+		} catch (NumberFormatException e) {
+			return null;
+		}
+	}
+
+	/** True if the server's command tree offers {@code /seed} to this player, i.e. they have the permission (the server sends a player only the commands they may run). */
+	static boolean canAskSeed(Minecraft client) {
+		var conn = client.getConnection();
+		return conn != null && conn.getCommands().getRoot().getChild("seed") != null;
+	}
+
+	/** Runs vanilla {@code /seed} and calls {@code done} with the seed, or with null on a timeout; the reply is kept out of the chat. */
+	static void requestSeed(Minecraft client, Consumer<Long> done) {
+		if (seedWaiter != null) seedWaiter.accept(null);
+		seedWaiter = done;
+		seedTicks = SEED_TIMEOUT_TICKS;
+		client.getConnection().sendCommand("seed");
+	}
+
+	private static boolean allowGame(Component message, boolean overlay) {
+		if (seedWaiter == null || overlay) return true;
+		if (!(message.getContents() instanceof TranslatableContents tc) || !SEED_KEY.equals(tc.getKey())) return true;
+		Long seed = parseSeed(message.getString());
+		if (seed == null) return true;
+		Consumer<Long> w = seedWaiter;
+		seedWaiter = null;
+		w.accept(seed);
+		return false;
+	}
+
 	private static void tick(Minecraft client) {
+		if (seedWaiter != null && --seedTicks <= 0) {
+			Consumer<Long> w = seedWaiter;
+			seedWaiter = null;
+			w.accept(null);
+		}
 		if (pendingText == null) return;
 		if (--pendingTicks > 0) return;
 		String text = pendingText;
@@ -124,7 +182,7 @@ public final class FbNoteClient implements ClientModInitializer {
 		note.put("screenshot", name + ".png");
 		note.put("time", Instant.now().toString());
 		note.put("gameTime", level.getGameTime());
-		MinecraftServer server = client.getSingleplayerServer();
+		MinecraftServer server = testForceRemote ? null : client.getSingleplayerServer();
 		note.put("seed", server == null ? null : server.overworld().getSeed());
 		note.put("dimension", level.dimension().identifier().toString());
 		BlockPos bp = player.blockPosition();
@@ -158,14 +216,22 @@ public final class FbNoteClient implements ClientModInitializer {
 		final String shotName = name;
 		Screenshot.grab(dir, shotName + ".png", client.gameRenderer.mainRenderTarget(), 1, msg -> client.execute(() -> {
 			if (client.player != null) client.player.sendSystemMessage(Component.literal("fbnote saved " + shotName + " (.png, .json)"
-					+ (singleplayer ? "" : "; planner details (settlement, building, room) are singleplayer-only, so the note has position, biome and block only")));
+					+ (singleplayer ? "" : "; planner details (settlement, building, room) are singleplayer-only, so the note has position, biome and block (and the seed, for an operator)")));
 		}));
 		if (server == null) {
 			Map<String, Object> pl = new LinkedHashMap<>();
 			pl.put("available", false);
 			pl.put("note", "planner data is only recorded in singleplayer (the integrated server runs in this process); this is a remote server");
 			note.put("planner", pl);
-			write(json, note);
+			if (canAskSeed(client)) {
+				// an operator: ask vanilla /seed (reply hidden from chat); the file is written when the reply or the timeout is in
+				requestSeed(client, seed -> {
+					note.put("seed", seed);
+					write(json, note);
+				});
+			} else {
+				write(json, note);
+			}
 			return;
 		}
 		int x = bp.getX(), y = bp.getY(), z = bp.getZ();

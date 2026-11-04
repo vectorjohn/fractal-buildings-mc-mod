@@ -28,4 +28,14 @@ class FbNoteCommandTest {
 		// a bare /fbnote has no executable node
 		assertNull(d.parse("fbnote", null).getContext().getCommand());
 	}
+
+	@Test
+	void parsesSeedReply() {
+		assertEquals(987654321L, FbNoteClient.parseSeed("Seed: [987654321]"));
+		assertEquals(-4172144997902289642L, FbNoteClient.parseSeed("Seed: [-4172144997902289642]"));
+		assertEquals(0L, FbNoteClient.parseSeed("Startwert: [0]"));
+		assertNull(FbNoteClient.parseSeed("Unknown or incomplete command"));
+		assertNull(FbNoteClient.parseSeed("Seed: [99999999999999999999]"));
+		assertNull(FbNoteClient.parseSeed(null));
+	}
 }

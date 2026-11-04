@@ -94,8 +94,9 @@ problem and look at it first: the note records your position and the block under
   (the `.minecraft` folder, or your launcher's instance folder): `<date_time>.png` (a normal screenshot) and `<date_time>.json` (your
   comment, world seed, position, biome, the block you looked at, the mod version and, in singleplayer, which settlement, building and room
   you were in). This is very useful for reproducing the issue!
-- Attach both files to the issue (see "Reporting problems"). On a multiplayer server the note has no seed and no settlement details, only
-  position, biome and block, so add the server address and the world seed if you know it. (#TODO fix this: seed is available to ops)
+- Attach both files to the issue (see "Reporting problems"). On a multiplayer server the note has no settlement details, only
+  position, biome and block, plus the world seed if you are an operator there (the command quietly asks the server for `/seed`);
+  otherwise add the server address and the world seed if you know it.
 - The command needs the mod on your client.
 
 ## Reporting problems

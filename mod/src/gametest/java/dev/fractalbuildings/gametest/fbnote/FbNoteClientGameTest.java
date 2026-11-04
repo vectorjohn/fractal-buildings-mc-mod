@@ -115,6 +115,33 @@ public class FbNoteClientGameTest implements FabricClientGameTest {
 				throw new RuntimeException(ex);
 			}
 			context.takeScreenshot("fbnote-room");
+			// the remote-server path as an operator: forced remote, the note must get the seed from vanilla /seed (the player of a test world may run it)
+			context.runOnClient(client -> {
+				if (client.getConnection().getCommands().getRoot().getChild("seed") == null) throw new AssertionError("test player cannot see /seed");
+				dev.fractalbuildings.mod.client.FbNoteClient.testForceRemote = true;
+			});
+			try {
+				File first = found[1];
+				context.runOnClient(client -> client.player.connection.sendCommand("fbnote remote op"));
+				File[] second = new File[1];
+				for (int i = 0; i < 200 && second[0] == null; i++) {
+					context.waitTicks(5);
+					context.runOnClient(client -> {
+						File[] fs = new File(client.gameDirectory, "screenshots").listFiles((d, n) -> n.endsWith(".json") && !n.equals(first.getName()));
+						if (fs != null) for (File f : fs) if (f.length() > 0) second[0] = f;
+					});
+				}
+				if (second[0] == null) throw new AssertionError("FBNOTE: no second note");
+				JsonObject j2 = JsonParser.parseString(Files.readString(second[0].toPath())).getAsJsonObject();
+				System.out.println("FBNOTE remote sidecar:\n" + Files.readString(second[0].toPath()));
+				check("remote op".equals(j2.get("comment").getAsString()), "remote comment");
+				check(!j2.getAsJsonObject("planner").get("available").getAsBoolean(), "remote note has no planner data");
+				check(j2.get("seed") != null && "987654321".equals(j2.get("seed").getAsString()), "op seed from /seed: " + j2.get("seed"));
+			} catch (java.io.IOException ex) {
+				throw new RuntimeException(ex);
+			} finally {
+				dev.fractalbuildings.mod.client.FbNoteClient.testForceRemote = false;
+			}
 		}
 	}
 
