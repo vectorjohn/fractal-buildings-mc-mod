@@ -675,11 +675,13 @@ public class WorldPlanner {
 	/** As above; a plaza also counts when the column lies within {@code plazaExtra} of its rectangle. */
 	OptionalInt streetLevel(SettlementSite site, int x, int z, int extra, int plazaExtra) {
 		var home = grid.tileOf(x, z);
+		int reach = STREET_SLACK + extra + plazaExtra;
 		int bestD = Integer.MAX_VALUE, bestY = 0;
 		String bestId = "";
 		for (int dz = -1; dz <= 1; dz++) {
 			for (int dx = -1; dx <= 1; dx++) {
 				int ix = home.ix() + dx, iz = home.iz() + dz;
+				if ((dx != 0 || dz != 0) && !nearTile(ix, iz, x, z, reach)) continue;
 				Optional<TileInfo> info = tile(ix, iz);
 				if (info.isEmpty() || !info.get().site().id().equals(site.id())) continue;
 				for (var s : rawPlan(ix, iz).plan().streets()) {
@@ -693,6 +695,7 @@ public class WorldPlanner {
 		for (int dz = -1; dz <= 1; dz++) {
 			for (int dx = -1; dx <= 1; dx++) {
 				int ix = home.ix() + dx, iz = home.iz() + dz;
+				if ((dx != 0 || dz != 0) && !nearTile(ix, iz, x, z, reach)) continue;
 				Optional<TileInfo> info = tile(ix, iz);
 				if (info.isEmpty() || !info.get().site().id().equals(site.id())) continue;
 				for (var p : rawPlan(ix, iz).plan().plazas()) {
@@ -1220,27 +1223,53 @@ public class WorldPlanner {
 		return false;
 	}
 
-	/** One approach as drawn (street pins at the exit and wherever it meets a street, the port pin, the water rule), or null when it breaks WR2/WR4. */
-	private Approach drawApproach(SettlementSite site, RoadNet.Settlement owner, ApproachNodes an, boolean air) {
-		var r = an.road();
-		double[][] st = dev.fractalbuildings.core.road.Curve.stations(an.nodes());
-		if (st.length < 2) return null;
-		// the district tiles around the first stations, side by side, before the serial streetLevel loop reads them in station order
+	/**
+	 * TILEPLANS: a neighbouring tile's streets and plazas lie within {@code Districts.MARGIN} of its rectangle, and a street within
+	 * {@code width / 2 + 1 + extra} (at most 6 + extra) of the column counts; so a tile whose rectangle is farther than
+	 * {@code STREET_SLACK + extra + plazaExtra} from the column cannot be the answer and its plan is not computed for it.
+	 */
+	private boolean nearTile(int ix, int iz, int x, int z, int reach) {
+		var t = grid.tile(ix, iz);
+		return x >= t.minX() - reach && x < t.maxX() + reach && z >= t.minZ() - reach && z < t.maxZ() + reach;
+	}
+
+	/** Slack of {@link #nearTile}: the margin streets are kept outside a tile, the widest street's reach, and room for a plaza's own overhang. */
+	private static final int STREET_SLACK = dev.fractalbuildings.core.settlement.Districts.MARGIN + 6 + 34;
+
+	/** Plans, side by side, the tiles of the site in the 3x3 around stations {@code from} (inclusive) to {@code to} (exclusive) that {@link #nearTile} says a street within {@code reach} could be in. */
+	private void prefetchAround(SettlementSite site, double[][] st, int from, int to, int reach) {
 		java.util.LinkedHashMap<Long, int[]> around = new java.util.LinkedHashMap<>();
-		for (int k = 0; k < st.length - 1 && k < 24; k++) {
+		for (int k = from; k < to; k++) {
 			var home = grid.tileOf((int) Math.round(st[k][0]), (int) Math.round(st[k][1]));
-			for (int dz = -1; dz <= 1; dz++) for (int dx = -1; dx <= 1; dx++) around.putIfAbsent(key(home.ix() + dx, home.iz() + dz), new int[] {home.ix() + dx, home.iz() + dz});
+			int x = (int) Math.round(st[k][0]), z = (int) Math.round(st[k][1]);
+			for (int dz = -1; dz <= 1; dz++) for (int dx = -1; dx <= 1; dx++) {
+				if ((dx != 0 || dz != 0) && !nearTile(home.ix() + dx, home.iz() + dz, x, z, reach)) continue;
+				around.putIfAbsent(key(home.ix() + dx, home.iz() + dz), new int[] {home.ix() + dx, home.iz() + dz});
+			}
 		}
 		List<int[]> tilesAround = new ArrayList<>(around.values());
 		prefetch(tilesAround.size(), i -> {
 			int[] t = tilesAround.get(i);
 			if (tile(t[0], t[1]).filter(info -> info.site().id().equals(site.id())).isPresent()) rawPlan(t[0], t[1]);
 		});
+	}
+
+	/** One approach as drawn (street pins at the exit and wherever it meets a street, the port pin, the water rule), or null when it breaks WR2/WR4. */
+	private Approach drawApproach(SettlementSite site, RoadNet.Settlement owner, ApproachNodes an, boolean air) {
+		var r = an.road();
+		double[][] st = dev.fractalbuildings.core.road.Curve.stations(an.nodes());
+		if (st.length < 2) return null;
+		// TILEPLANS: the exit station first (its 3x3 side by side). An exit with no street there (an alternate-gate candidate that does not
+		// meet one) reads no other tile: the later loops run only with a pin, so nothing else is planned for it.
 		java.util.TreeMap<Integer, Integer> pins = new java.util.TreeMap<>();
+		prefetchAround(site, st, 0, 1, STREET_SLACK + EXIT_REACH);
+		OptionalInt first = streetLevel(site, (int) Math.round(st[0][0]), (int) Math.round(st[0][1]), EXIT_REACH);
+		// the district tiles around the following stations, side by side, before the serial streetLevel loop reads them in station order
+		if (first.isPresent()) prefetchAround(site, st, 1, Math.min(st.length - 1, 24), STREET_SLACK);
 		// the exit end meets the district street (ROADJOIN: surfaces within a step); the port end is the graph road's contract
 		int lastRun = -1;
 		for (int k = 0; k < st.length - 1 && k < 24; k++) {
-			OptionalInt lv = streetLevel(site, (int) Math.round(st[k][0]), (int) Math.round(st[k][1]), k == 0 ? EXIT_REACH : 0);
+			OptionalInt lv = k == 0 ? first : streetLevel(site, (int) Math.round(st[k][0]), (int) Math.round(st[k][1]), 0);
 			if (lv.isEmpty()) { if (k == 0) pins.clear(); break; }
 			pins.put(k, lv.getAsInt());
 			lastRun = k;

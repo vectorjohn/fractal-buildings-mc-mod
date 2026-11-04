@@ -6,17 +6,7 @@ Every decision waiting for you, one line each, newest first under each heading. 
 
 # Release (0.1.0)
 
-- [ ] **Server-only wording** (2026-11-02, from the release status audit): Phase 6 plan decision 8. The SRVONLY spike (server-only install test) found that a client with only Fabric Loader, and not our mod, joins a modded server fine; may the player README say "clients don't need the mod" (today it says "this is untested")? [release-plan.md](review/release-plan.md) "Phase 6 plan decisions 7 and 8", [server-only spike](research/spikes/server-only.md).
 - [ ] **Release basics** (2026-11-02, from the release status audit; files since 2026-10-22): read the LICENSE (MIT), the CHANGELOG draft, the [player README](release/README-player.md) and the placeholder icon before C3 (cutting the release) uses them. [REVIEW](REVIEW.md) "A5 release basics".
-- [ ] **Release scope** (2026-10-29): is the P6 checklist the whole release scope, with nothing added? See [release-plan.md](review/release-plan.md) section 3, Q1.
-- [ ] **P7 features** (2026-10-29): which 3-5 features make up P7? [release-plan.md](review/release-plan.md) Q6.
-- [ ] **Backlog section** (2026-10-29): may the other Phase 7 items move to a new "Backlog (unscheduled)" section, where `#backlog` notes also go? [release-plan.md](review/release-plan.md) Q7.
-
-# Perf
-- [ ] **TILEPLANS: accept 50 raw tile plans or fix?** (fix option 2 in progress since 2026-11-04; accepting it as knownOver stays the fallback) (2026-11-02, 6.42 TILEPLANS (perf row "raw tile plans computed" over its ceiling)): the row is 50 against a ceiling of 46 (was 38) since LONGDECK e8c5740e: approaches that used to be dropped now route and draw, and each prefetches the tiles round its first 24 stations (s2_m2 9 → 21 plans; chunk fills unchanged). Options: (1) accept 50 as knownOver; (2) a fix: prefetch only the stations read, cheap-reject alternate approaches before drawing (needs the road corpus tests re-run). Held until you say go. [log](log/2026-11-02-p6-tileplans.md)
-
-
-# Rules (DS proposals)
 - [ ] **DS-19 amendment 2: how long may a city street cross water?** (2026-11-02, from THINDECK (6.40, no thin road decks over water in cities), merged 4bd2abe9): (a) streets inside a city with lots on both sides: up to 40 blocks, or 20? (20 is what the code does now; the snow-city gate window loses one block of lots at 20, keeps it at 40); (b) edge streets: built whole inside their tile, max 20; (c) an edge street kept because other streets need it for their hub link: bank to bank only, max 100 (decks up to 145 blocks exist today, from before THINDECK); plus "no half streets" (full width or none). Architect proposal in the run ledger "Proposed rules" (source .claude/reports/p6-thindeck-architect.md).
 
 - [ ] **DS-55 to DS-73 and amendments** (2026-10-29; updated 2026-10-31): accept, edit or drop each proposal still open: DS-55 and DS-57 to DS-73, and the amendments to DS-6, DS-20 (cut trees go whole), DS-25, DS-35 (the main door is the marked one; doors on the axis), DS-36, DS-45 (secondary doors near the ground), DS-47, DS-52, DS-54 (joins are level) and DS-56 (exit roads with nothing beyond). Decided since and filed: DS-56 itself, the DS-54 narrowing, DS-75, DS-76, DS-77 and the DS-45 high-rise and DS-35 small-wing amendments. [STANDARDS.md](design/STANDARDS.md), "Proposed by agents".

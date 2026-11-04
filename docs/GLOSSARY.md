@@ -229,7 +229,7 @@ Item codes (PARREADS, MAINSTUB, TPHOLD, ...) and run terms, one row each. **Gene
 | TESTSPEED2 |  | share planned sites across planner-core test classes | done | [[docs/log/2026-10-28-testspeed2|log]] |
 | THINDECK | 6.40 | a city street laid flat across a deep lake | done | [[docs/ROADMAP|ROADMAP 6.40]] |
 | TIDY |  | pre-gate tidy | done | [[docs/log/2026-10-21-p5-tidy|log]] |
-| TILEPLANS | 6.42 | the CASCADE "raw tile plans" perf row is 50 against its ceiling 46 | open | [[docs/ROADMAP|ROADMAP 6.42]] |
+| TILEPLANS | 6.42 | the CASCADE "raw tile plans" perf row is 50 against its ceiling 46 | done | [[docs/ROADMAP|ROADMAP 6.42]] |
 | to-main |  | merging the run branch into main, after a full test run | - | [[docs/runs/2026-10-22-phase6|2026-10-22-phase6]] |
 | TOKENSAVE |  | agent-definition change to save tokens: at most 3 coding items, verdict blocks, Sonnet verifiers for small... | done | [coordinator](../.claude/agents/coordinator.md) |
 | TOMAINn |  | the n-th merge of the run branch into main (TOMAIN3, ...) | - | [[docs/runs/2026-10-22-phase6|2026-10-22-phase6]] |

@@ -14,6 +14,8 @@ were corrected in place. Item codes are in [GLOSSARY.md](../GLOSSARY.md).
    and up) has a commit on its branch, not yet verified. DECKDIAG (why decks run
    along water, plus the dead-end case (c) of 6.22) is being diagnosed. The
    step 5 in-game check comes after both.
+   - @John 2026-11-04: are these followed up on? @coordinator
+     - @coordinator 2026-11-04: yes, all done. LONGDECK merged e8c5740e (with DECKDIAG steps 1-2), DECKDIAG step 3 (shore-aware approach reroute) f949e57a, and the step 5 in-game check (an opt-in client test over your spots, max step 1) 92bd6191; 6.15 is ticked and the slow-test batches HEAVY14 and HEAVY15 passed with it. Left as known issues: the second metropolis exit (3200,1792) has no road because its link was dropped, and your shots 21.35.56 and 21.36.39 still need coordinates (REVIEW item). ROADJOIN no longer blocks the release.
 2. **P6 work in flight that the checklist doesn't list** (started from your
    2026-11-01 and 11-02 answers): TPABORT (holds abort after 60 s instead of
    releasing into unready chunks), 6.34 METROWARM (the region warmer looks
