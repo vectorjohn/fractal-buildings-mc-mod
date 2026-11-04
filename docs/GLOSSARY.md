@@ -74,7 +74,7 @@ Item codes (PARREADS, MAINSTUB, TPHOLD, ...) and run terms, one row each. **Gene
 | FALLSTREETS | 7.19 | streets on falling ground stay near the ground | open | [[docs/ROADMAP|ROADMAP 7.19]] |
 | FBNOTE |  | in-game playtest note command | done | [[docs/ROADMAP|ROADMAP]] |
 | FBNOTEON | 6.39 | `/fbnote` on by default for bug reports | done | [[docs/ROADMAP|ROADMAP 6.39]] |
-| FBNOTESEED | 6.44 | `/fbnote` records the world seed on a server when the player is an operator | open | [[docs/ROADMAP|ROADMAP 6.44]] |
+| FBNOTESEED | 6.44 | `/fbnote` records the world seed on a server when the player is an operator | done | [[docs/ROADMAP|ROADMAP 6.44]] |
 | FBWATCH |  | debug switch that logs every worldgen block write inside watched boxes (who wrote what) | done | [[docs/NOTES|NOTES]] |
 | FLY2 |  | fly-through redesign (6.8) | done | [[docs/log/2026-10-26-p6-fly2|log]] |
 | FLYCAP |  | fly-through captures only stable frames | done | [[docs/log/2026-10-26-p6-flycap|log]] |
@@ -129,6 +129,7 @@ Item codes (PARREADS, MAINSTUB, TPHOLD, ...) and run terms, one row each. **Gene
 | ORDERMEM |  | the order test picks how many worlds to run at once from free memory | done | [[CLAUDE|CLAUDE]] |
 | ORDERPORT |  | order-test never loses a run to a port collision | done | [[docs/log/2026-11-01-orderport|log]] |
 | ORDERSIM |  | engine-free chunk-order tests | done | [[docs/ROADMAP|ROADMAP]], [[docs/plans/ordersim|plan]] |
+| ORDERSTAIR | 6.43 | a porch stair at a landing turn changed shape by chunk order | done | [[docs/ROADMAP|ROADMAP 6.43]] |
 | PARREADS |  | parallel terrain reads for cold settlement planning | done | [[docs/ROADMAP|ROADMAP]] |
 | PARTITIONS |  | high-rise corridors in exposed brick on both sides; inner walls should be plaster (DS-49) | polish | [[docs/ROADMAP|ROADMAP polish]], [[docs/design/STANDARDS|STANDARDS]] |
 | PBLOCKS |  | process item: the generated block reference for the design agents (`scripts/design-blocks.sh`) | done | [[docs/design/blocks|blocks]] |

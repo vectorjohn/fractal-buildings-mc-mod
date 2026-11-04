@@ -37,7 +37,10 @@ public final class Shapes {
 	public static Shape of(RoleView g, int x, int y, int z, Role role, String blockId, Hints h) {
 		switch (role) {
 			case DOOR: return door(g, x, y, z, h);
-			case STAIR: return stair(g, x, y, z, h);
+			case STAIR: { // ORDERSTAIR: a stair block takes the corner Minecraft would give it, as roof stairs do (a landing turn makes one)
+				Shape s = stair(g, x, y, z, h);
+				return s.facing() == null ? s : roofStair(g, x, y, z, s.facing());
+			}
 			case ROOF_STAIR_N: case ROOF_STAIR_E: case ROOF_STAIR_S: case ROOF_STAIR_W:
 				return roofStair(g, x, y, z, role.roofStairFacing());
 			case ROOF_SLAB: return Shape.slab(Shape.Half.BOTTOM);
@@ -93,7 +96,7 @@ public final class Shapes {
 	}
 
 	/**
-	 * A roof stair (DS-36): its facing is the role's; the corner shape follows Minecraft's own rule over the roof stairs
+	 * A roof stair (DS-36), or an interior or porch stair block (ORDERSTAIR): its facing is the role's (the flight's); the corner shape follows Minecraft's own rule over the roof stairs
 	 * beside it in the world ({@link RoleView#stairAt}: roof, interior and porch stairs, other buildings of the tile; a stair in front turned across makes an outer corner, one behind an inner corner), so the
 	 * game would pick the same state if it updated the block itself.
 	 */

@@ -103,6 +103,24 @@ public final class OrderServerHarness {
 
 	private static String blockName(BlockState s) { return SpillKinds.name(s); }
 
+	/**
+	 * ORDERSTAIR: the planner's cells in a 5 x 3 x 5 box round an unknown cell (or the {@code -Dfb.order.probe=x,y,z} cell), each with its
+	 * piece, role, raster shape, wanted state and the world's state, so a changed block can be traced to the piece that placed it.
+	 */
+	private static void logAround(ServerLevel level, WorldPlanner planner, List<TileInfo> tiles, int cx, int cy, int cz) {
+		Box3 box = new Box3(cx - 2, cy - 1, cz - 2, 5, 3, 5);
+		BlockPos.MutableBlockPos q = new BlockPos.MutableBlockPos();
+		for (TileInfo ti : tiles) {
+			List<dev.fractalbuildings.core.world.PieceRef> refs = new ArrayList<>();
+			for (BuildingPiece b : planner.buildings(ti.ix(), ti.iz())) refs.add(b.ref());
+			for (GroundPiece g : planner.ground(ti.ix(), ti.iz())) refs.add(g.ref());
+			for (var r : refs) planner.raster(r, box, (x, y, z, role, id, shape) -> {
+				if (id.equals("minecraft:air")) return;
+				FractalBuildingsMod.LOGGER.info("[B2]   around {},{},{}: {} {} {} {} want {} world {}", x, y, z, r, role, id, shape, BlockMapper.state(role, id, shape), level.getBlockState(q.set(x, y, z)));
+			});
+		}
+	}
+
 	private static String load() {
 		try {
 			return Files.readString(Path.of("/proc/loadavg")).split(" ")[0];
@@ -319,12 +337,19 @@ public final class OrderServerHarness {
 								unknownSolid++;
 								if (unknownSolid <= 10) { // CITYQ r6: where they are (cobblestone->stone in 5 of 7 orders)
 									int ux = PieceLedger.x(k), uy = PieceLedger.y(k), uz = PieceLedger.z(k);
+									dev.fractalbuildings.mod.FractalBuildingsMod.LOGGER.info("[B2] unknown solid cell {},{},{} want {} have {}", ux, uy, uz, want, have); // ORDERSTAIR: the full states
+									if (unknownSolid <= 3) logAround(level, planner, tiles, ux, uy, uz);
 									dev.fractalbuildings.mod.FractalBuildingsMod.LOGGER.info("[B2] unknown solid cell {},{},{} want {} has {}; above {}; below {}; around N {} E {} S {} W {}", ux, uy, uz, blockName(want), blockName(have), blockName(level.getBlockState(p.set(ux, uy + 1, uz))), blockName(level.getBlockState(p.set(ux, uy - 1, uz))), blockName(level.getBlockState(p.set(ux, uy, uz - 1))), blockName(level.getBlockState(p.set(ux + 1, uy, uz))), blockName(level.getBlockState(p.set(ux, uy, uz + 1))), blockName(level.getBlockState(p.set(ux - 1, uy, uz))));
 								}
 							}
 							if (firstBad.isEmpty()) firstBad = PieceLedger.x(k) + "," + PieceLedger.y(k) + "," + PieceLedger.z(k) + " want " + want + " have " + have;
 						}
 					}
+				}
+				String probe = System.getProperty("fb.order.probe"); // ORDERSTAIR: -Dfb.order.probe=x,y,z logs the plan round a cell in every run
+				if (probe != null) {
+					String[] pc = probe.split(",");
+					logAround(level, planner, tiles, Integer.parseInt(pc[0].trim()), Integer.parseInt(pc[1].trim()), Integer.parseInt(pc[2].trim()));
 				}
 				HookReadback.Result hookResult = HookReadback.check(level, hooks);
 				result[0] = new Run(label, PieceLedger.digest(ledger), perChunk(ledger), sha(worldSolid.entrySet()), ledger.size(), dups, ref.size(), missing, extra, wrong, solid, solidBad, solidTrees, air, airBad,

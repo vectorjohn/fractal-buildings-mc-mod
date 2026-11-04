@@ -117,6 +117,41 @@ class StairSeamTest {
 		assertEquals(List.of(), fails, "roof stairs whose shape Minecraft would change (" + bad + ")");
 	}
 
+	/**
+	 * ORDERSTAIR: the same for interior and porch stairs ({@link Role#STAIR} cells that are stair blocks). A porch flight that turns at a landing
+	 * puts a stair turned across in front of the last step; before ORDERSTAIR the raster left that step straight while Minecraft gives an outer
+	 * corner, so a vanilla tree beside it in a later neighbour chunk ({@code updateShapeAtEdge}) turned it by chunk order (order test
+	 * {@code forward}, 1222,67,-9441, HEAVY14).
+	 */
+	@Test
+	void everyInteriorAndPorchStairHasMinecraftsShapeOverTheWholeTile() {
+		int stairs = 0, corners = 0, bad = 0;
+		List<String> fails = new ArrayList<>();
+		for (String gate : GATES) {
+			WorldPlanner w = GateWorld.load(gate).sharedPlanner();
+			for (List<BuildingPiece> bs : tiles(gate, 3)) {
+				Map<Long, Cell> m = world(w, bs);
+				for (var e : m.entrySet()) {
+					Cell c = e.getValue();
+					if (c.role() != Role.STAIR || c.shape().facing() == null) continue;
+					long k = e.getKey();
+					int x = (int) (k >>> 40) - 100000, y = (int) ((k >>> 24) & 0xffff) - 1000, z = (int) (k & 0xffffff) - 100000;
+					Shape.Corner want = minecraft(m, x, y, z, c.shape().facing());
+					stairs++;
+					if (want != null) corners++;
+					if (want != c.shape().corner()) {
+						bad++;
+						if (fails.size() < 10) fails.add(gate + " " + x + "," + y + "," + z + " STAIR " + c.shape().facing() + " has " + c.shape().corner() + ", Minecraft gives " + want);
+					}
+				}
+			}
+		}
+		System.out.println("[stairseam] interior/porch stairs " + stairs + ", corners " + corners + ", wrong " + bad);
+		assertTrue(stairs > 1000, "interior/porch stairs " + stairs);
+		assertTrue(corners > 0, "no corner among the interior/porch stairs: the check would not see the ORDERSTAIR case");
+		assertEquals(List.of(), fails, "interior/porch stairs whose shape Minecraft would change (" + bad + ")");
+	}
+
 	@Test
 	void theSeamIsTheStairsAcrossTheClipBesideThePiecesOwnStairs() {
 		int pieces = 0, seamCells = 0;
