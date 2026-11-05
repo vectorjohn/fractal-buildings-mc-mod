@@ -18,7 +18,8 @@ generates buildings and cities). The coordinator gives you:
 5. a merge instruction: `merge: on-complete` (default), `merge: partial-ok`,
    `merge: hold` (check and report, then wait: the coordinator resumes you
    with `merge` once the design review is settled), `merge: docs-only`
-   (spikes), `merge: none`, `merge: train` (see "Merge trains"), or
+   (spikes), `merge: none`, `merge: queue` (enqueue for the merge queue;
+   see "`merge: queue`"), `merge: train` (see "Merge trains"), or
    `merge: to-main`; or `heavy-batch: <range>` (see "Batched heavy run")
 6. the **level**: `level: quick` (default) or `level: full` (determinism,
    threading, worldgen/chunk-generation changes, re-verification after
@@ -308,7 +309,35 @@ hold the merge lock for it: two Gradle runs in one checkout wipe each other's
 `build/test-results/*/binary` and fail with `EOFException` /
 `KryoException` and no failing test (`docs/NOTES.md`).
 
+### `merge: queue` (the merge queue, W10)
+
+Check exactly as for `on-complete`, and write the step-5 message file the
+same way (semantic first line). Then, only when the verdict is COMPLETE (or
+`partial-ok` as above), **enqueue instead of merging**, in one short call:
+
+```sh
+I/scripts/merge-queue.sh add --cleanup I <integration branch> claude/<slug> <message file>
+# QUEUED <slug> <head> | exit 2 bad input | 3 the item is in a train now | 8 subject refused (FB_SUBJECT_STRICT=1)
+```
+
+It pins the branch's current head (the one you checked; commits added later
+are not merged) and copies the message. Add `--start` only when the brief
+says so (the coordinator normally runs the runner). Don't wait for the merge
+or a test: the queue squashes, runs the fast suite once per train, bisects,
+fast-forwards the run branch and moves the board lanes itself. Report
+`## Merge: queued (<head sha>); scripts/merge-queue.sh list`. Without a
+`merge: queue` line, merge directly with `squash-merge.sh` as above: both
+paths stay in use while the queue runs beside manual merges, and `to-main`,
+docs-only and anything the coordinator wants merged at once always go
+through `squash-merge.sh`. Re-verifying an item the queue failed or held
+(`MERGE CONFLICT`, regen guard): check the new commits, then `add` again (it
+replaces the queued head).
+
 ### `merge: train` (2–4 small items)
+
+The by-hand train, for when the coordinator briefs `merge: train` (normally
+small items go through the merge queue, `merge: queue` above, which does all
+of the following mechanically).
 
 You get one block (ask, report, worktree, branch, range) per item, all small
 and independent. For **each** item, do steps 1–4 and 7–9 of "Check"
@@ -452,7 +481,7 @@ is FAILING or INCOMPLETE. The block, at most 8 lines:
 ```
 ## Verdict block
 Verdict: COMPLETE | INCOMPLETE | FAILING   (train: one line per item; heavy batch: PASS | FAIL (<culprit sha>))
-Merge: merged <sha>, post-merge pending | not merged (<reason>) | MERGE CONFLICT (<files>) | none
+Merge: merged <sha>, post-merge pending | queued (<head sha>) | not merged (<reason>) | MERGE CONFLICT (<files>) | none
 Breaking: <N>   then one line each: <what> — <evidence>   (at most 2; "+N more in the report")
 Evidence: <evidence folder(s), or "none">
 For the user: <one line, or "none">
@@ -463,7 +492,7 @@ The report file starts with the same block, then:
 
 ```
 ## Verdict: COMPLETE | INCOMPLETE | FAILING
-## Merge: merged <sha>; post-merge: pending (scripts/postmerge-status.sh <slug>) | PASS | FAIL (<evidence>) | none | not merged (<reason>) | MERGE CONFLICT (<files>)
+## Merge: merged <sha>; post-merge: pending (scripts/postmerge-status.sh <slug>) | PASS | FAIL (<evidence>) | queued (<head sha>) | none | not merged (<reason>) | MERGE CONFLICT (<files>)
 ## Tests
 - <command> (where) → <summary lines with counts>
 - heavy: <evidence folder accepted | run by me: folder | not needed | batched>

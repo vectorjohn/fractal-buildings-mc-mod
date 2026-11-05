@@ -301,13 +301,39 @@ and batch 2-4 of them as a merge train (below) rather than one verifier
 each. Keep the default model for new mechanics, threading, determinism,
 rendering, worldgen, re-verification after FAILING, and `merge: to-main`.
 
-**Merge trains.** Give one verifier 2–4 small, independent items
-(data tweaks, docs plus a test, small contained fixes) with `merge: train`, one
-block per item. It reviews each diff separately, squash-merges them one after
-another, runs the fast suite once, and on a failure bisects, reverts the
-culprit and reports it FAILING (re-open it). A train of such items can run on
-`model: "sonnet"` too. Never for large items or anything that needs
-`level: full`.
+**Merge trains go through the merge queue** (W10, `scripts/merge-queue.sh`;
+the user, 2026-11-05: a script may fast-forward the run branch after the
+train's suite passes, trains of 4). Brief verifiers with `merge: queue`: each
+checks its item as usual and enqueues it (`merge-queue.sh add`, lane
+`merge-queue`) instead of merging. Keep one runner going while items are
+queued: `scripts/merge-queue.sh start <integration checkout> <run branch>`
+(detached through `scripts/bg.sh`, label `merge-queue`; it exits when the
+queue is empty, so start it again after new adds, or brief the verifier
+with `--start`). Per train of up to 4 it squashes the items onto the run
+branch head in its own worktree, regenerates goldens for items that changed
+them (guarded to the generated files each branch touched), runs the fast
+suite once (the test ledger skips a tree that already passed), bisects a red
+train, and fast-forwards the run branch under the merge lock: the run branch
+only ever reaches a tested tree, so there is nothing to revert and no
+post-merge run to check. Read the outcome with `scripts/merge-queue.sh list`
+/ `log` (or the board): `merged` (lane merged; record it in the ledger as
+done), `failed` (lane `blocked`; the culprit of a red suite or the regen
+guard, with the evidence folder: re-open it like FAILING), `conflict` (still
+queued with a `MERGE CONFLICT` note; it retries by itself once the run
+branch moves; if it stays, have the coder merge the run branch in and the
+verifier re-`add` it). A `BASE_FAILS` event means the run branch itself fails
+the fast suite: the runner stops and nothing is blamed; fix the run branch
+first. When it prints `HEAVY BATCH DUE`, start the heavy batch below.
+`merge-queue.sh stop` stops it after the current train (`--now` undoes the
+train; its items go back to queued). For the first day it runs beside
+direct merges (`merge: on-complete` with `squash-merge.sh`, which stays for
+`to-main`, docs-only and anything that must land at once); both take the
+merge lock, and the queue rebuilds a train when the run branch moved under
+it (no retest when the new commits need no fast layer, `test-scope.sh`).
+The old LLM train (`merge: train`: one verifier squash-merges 2–4 small
+items, runs the fast suite once, bisects and reverts) remains the fallback
+when the queue is not usable. Never for large items or anything that needs
+`level: full` either way.
 
 **Batched heavy runs.** Items merge after the quick check, so the heavy layers
 (client game tests, `scripts/perf.sh`, `scripts/flythrough.sh`) run on the run

@@ -15,7 +15,7 @@ git init -q -b run "$R"
 git -C "$R" config user.email selftest@example.invalid; git -C "$R" config user.name selftest
 mkdir -p "$R/scripts/lib" "$R/docs" "$R/.claude"
 cp "$SRC"/{squash-merge,review-check,postmerge-run,postmerge-status}.sh "$R/scripts/"
-cp "$SRC/lib/locks.sh" "$R/scripts/lib/"
+cp "$SRC/lib/locks.sh" "$SRC/lib/squash.sh" "$R/scripts/lib/"
 printf '# Review\n' > "$R/docs/REVIEW.md"; printf '# Review archive\n' > "$R/docs/REVIEW-ARCHIVE.md"
 printf '/.claude/\n' > "$R/.gitignore"
 git -C "$R" add -A; git -C "$R" commit -qm base

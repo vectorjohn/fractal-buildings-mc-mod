@@ -26,7 +26,7 @@
 #   timeout 3600 scripts/squash-merge.sh [--cleanup] [--wait] <integration checkout> <integration branch> \
 #       claude/<slug> <message file> ['<post-merge test command>']
 # A merge train: call it once per branch with no test command, then run
-# scripts/snapshot-test.sh once on the last commit.
+# scripts/snapshot-test.sh once on the last commit (by hand; scripts/merge-queue.sh does trains mechanically).
 #
 # Exit codes: 0 merged (sha printed; post-merge tests, if any, PENDING, or passed with --wait) |
 #   2 checkout not clean / wrong branch / bad arguments |
@@ -70,6 +70,8 @@ fi
 ROOT=$(dirname "$(git -C "$I" rev-parse --path-format=absolute --git-common-dir)")
 # Merge lock through scripts/lib/locks.sh (W2): holder note, waiter reports, self-deadlock refusal.
 . "$HERE/lib/locks.sh"
+# The squash steps themselves (shared with scripts/merge-queue.sh).
+. "$HERE/lib/squash.sh"
 LOCK="$ROOT/.claude/merge.lock"
 exec 9>>"$LOCK"
 lrc=0; fb_lock_take 9 "$LOCK" "squash-merge $FB" "${FB_MERGE_LOCK_WAIT:-1800}" || lrc=$?
@@ -85,37 +87,31 @@ dirty=$(git -C "$I" status --porcelain --untracked-files=no -- . ':!docs/runs')
 [ "$(git -C "$I" branch --show-current)" = "$IB" ] \
   || { echo "integration checkout not on $IB"; exit 2; }
 
-if ! git -C "$I" merge --squash "$FB"; then
+if ! fb_squash_stage "$I" "$FB"; then
   echo "MERGE CONFLICT in:"
-  git -C "$I" diff --name-only --diff-filter=U
-  git -C "$I" reset --merge
+  printf '%s\n' "$FB_SQUASH_CONFLICTS"
+  fb_squash_reset "$I"
   git -C "$I" status --porcelain --untracked-files=no -- . ':!docs/runs'
   exit 3
 fi
 
 # Union-merged files: report added lines that now occur more than once.
-for f in docs/research/INDEX.md docs/NOTES.md docs/ASSUMPTIONS.md docs/REVIEW.md; do
-  git -C "$I" diff --cached -U0 -- "$f" | sed -n 's/^+\([^+].*\)$/\1/p' \
-    | sort -u | while IFS= read -r line; do
-        n=$(git -C "$I" show ":$f" | grep -cxF -- "$line")
-        [ "$n" -gt 1 ] && echo "DUPLICATE in $f ($n x): $line"
-      done
-done
+fb_squash_dups "$I"
 
 # Union merge of REVIEW.md can resurrect archived items (edited or ticked
 # copies the exact DUPLICATE check above misses), or a stale second copy of an
 # item with the same title. Refuse the merge if it does.
-if ! "$HERE/review-check.sh" -C "$I" --source index --base HEAD; then
+if ! fb_squash_review "$I" "$HERE"; then
   echo "REVIEW CHECK FAILED: not merged; resetting. Remove the items above from"
   echo "docs/REVIEW.md on $FB (run scripts/review-check.sh there) and merge again."
-  git -C "$I" reset --merge
+  fb_squash_reset "$I"
   exit 7
 fi
 
 # Commit only the index (never -a); docs/runs edits stay uncommitted.
-if ! git -C "$I" commit -F "$MSG"; then
+if ! fb_squash_commit "$I" "$MSG"; then
   echo "commit failed; resetting"
-  git -C "$I" reset --merge
+  fb_squash_reset "$I"
   exit 4
 fi
 SHA=$(git -C "$I" rev-parse HEAD)
@@ -125,21 +121,7 @@ echo "MERGED $SHA"
 fb_lock_drop 9 "$LOCK"; exec 9>&-
 
 # Cleanup before any test, so a caller killed during the tests leaves nothing half-done.
-if [ "$CLEANUP" = 1 ]; then
-  if [ "$FB" = "$IB" ] || [[ $FB != claude/* || $FB == claude/run-* ]]; then
-    echo "CLEANUP REFUSED for $FB (integration, run or non-claude branch); nothing removed"
-  else
-    FWT=$(git -C "$I" worktree list --porcelain | awk -v b="branch refs/heads/$FB" \
-      '/^worktree /{w=substr($0,10)} $0==b{print w; exit}')
-    if [ -n "$FWT" ] && ! git -C "$I" worktree remove "$FWT"; then
-      echo "CLEANUP KEPT $FWT and $FB: worktree remove failed (above); remove both by hand"
-    elif git -C "$I" branch -D "$FB" > /dev/null; then
-      echo "CLEANUP removed ${FWT:-(no worktree)} and branch $FB"
-    else
-      echo "CLEANUP removed ${FWT:-(no worktree)}; branch $FB NOT deleted (above)"
-    fi
-  fi
-fi
+[ "$CLEANUP" = 1 ] && fb_cleanup_branch "$I" "$IB" "$FB"
 
 [ -n "$TEST" ] || exit 0
 SLUG=${FB#claude/}
