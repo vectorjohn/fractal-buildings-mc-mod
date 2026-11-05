@@ -324,6 +324,8 @@ head, keep the culprit's worktree and branch, and report it FAILING
 merged items' worktrees. One report, one section per item.
 
 ### Batched heavy run (`heavy-batch: <range>`)
+Run every layer of a heavy batch (and of a to-main run) as `FB_RETEST=1 scripts/evidence.sh ...`, so the test ledger (W3) never reuses an earlier pass.
+
 
 No item to review: you check the run branch after several merges. Run the
 heavy layers on a snapshot of the integration branch head `H`:

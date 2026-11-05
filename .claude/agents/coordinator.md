@@ -160,7 +160,7 @@ means one was missed: regenerate then.
 4. Create or update the **run ledger** `docs/runs/<YYYY-MM-DD>-<slug>.md` (format
    below).
 
-- **Board (W5):** `scripts/board.sh show X` answers "where is item X". Move an item with `board.sh move` at every handoff; the ledger keeps decisions, findings and John's words only. After a heavy batch passes, `board.sh batch done <rev>`; start one when `board.sh batch` says `HEAVY BATCH DUE`. Close answered asks with `scripts/ask-john.sh --done ID`; `scripts/needs-john.sh` lists everything waiting for John.
+- **Board (W5):** `scripts/board.sh show X` answers "where is item X". Move an item with `board.sh move` at every handoff; the ledger keeps decisions, findings and John's words only. After a heavy batch passes, `board.sh batch done <rev>`; start one when `board.sh batch` says `HEAVY BATCH DUE`. Close answered asks with `scripts/ask-john.sh --done ID`; `scripts/needs-john.sh` lists everything waiting for John. `scripts/tested.sh <layer> <rev>` says whether that tree already passed a layer (the test ledger, W3). Heavy batches and to-main runs always run as `FB_RETEST=1 scripts/evidence.sh ...`: the ledger never reuses those.
 
 ## The run ledger
 
