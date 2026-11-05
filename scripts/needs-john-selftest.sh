@@ -103,6 +103,13 @@ check "answered question left out" hasnt "$page" "Answered one"
 check "review items counted (top level only)" has "$page" "2 open in [REVIEW.md]"
 check "newest review title" has "$page" "**New item (2026-11-05)**"
 check "john branch ahead" has "$page" '`john/foo`: 1 commit(s)'
+
+# --- watchdog findings (W8)
+check "no watchdog file: not checked" has "$page" "Not checked (no \`.claude/status/watchdog.tsv\`"
+printf 'orphan:pg-1\tact\torphan: process group 1 runs on\tkill -TERM -- -1\nquiet:a\tnote\tquiet agent a\t\n' > "$T/state/status/watchdog.tsv"
+page=$("$N")
+check "watchdog act finding listed with its command" has "$page" '- orphan: process group 1 runs on `kill -TERM -- -1`'
+check "watchdog note left out" hasnt "$page" "quiet agent a"
 check "--quiet prints nothing" [ -z "$("$N" --quiet)" ]
 check "bad option exits 2" [ "$(rc "$N" --frobnicate)" = 2 ]
 

@@ -36,12 +36,16 @@
 #   7 merge would bring back items archived in docs/REVIEW-ARCHIVE.md, or a
 #     second copy of a docs/REVIEW.md item title (reset;
 #     items printed; fix the feature branch, see scripts/review-check.sh) |
-#   8 subject format refused (only with FB_SUBJECT_STRICT=1; nothing merged).
+#   8 subject format refused (only with FB_SUBJECT_STRICT=1; nothing merged) |
+#   9 refused: merge.lock is already held by this process's caller (LOCK SELF-DEADLOCK; nothing merged).
+# The merge lock goes through scripts/lib/locks.sh: merge.lock.holder names the holder while it is
+# held, a waiter prints the holder every 5 min, and scripts/locks.sh list shows both.
 # Subject format (H1, docs/plans/workflow-history.md): the message's first line should be
 # `type(CODE): summary`, type one of feat fix perf test docs build chore revert, scope the item code
 # (else the area). A first line that doesn't match prints a `SUBJECT FORMAT` warning and merges anyway;
 # FB_SUBJECT_STRICT=1 refuses it (exit 8, before the lock) instead, for when the warning period ends.
-# Test hook: FB_POSTMERGE_DIR (state dir of postmerge-run.sh / postmerge-status.sh).
+# Test hooks: FB_POSTMERGE_DIR (state dir of postmerge-run.sh / postmerge-status.sh), FB_MERGE_LOCK_WAIT
+# (seconds to wait for the merge lock, default 1800).
 set -u
 CLEANUP=0 WAIT=0
 while [ $# -gt 0 ]; do
@@ -52,7 +56,7 @@ while [ $# -gt 0 ]; do
     *) break ;;
   esac
 done
-[ $# -ge 4 ] || { sed -n '2,44p' "$0" | sed 's/^# \{0,1\}//'; exit 2; }
+[ $# -ge 4 ] || { sed -n '2,48p' "$0" | sed 's/^# \{0,1\}//'; exit 2; }
 I=$1 IB=$2 FB=$3 MSG=$4 TEST=${5:-}
 HERE="$(cd "$(dirname "$0")" && pwd)"
 [ -s "$MSG" ] || { echo "message file $MSG missing or empty"; exit 4; }
@@ -64,8 +68,17 @@ if ! printf '%s\n' "$SUBJ" | grep -Eq '^(feat|fix|perf|test|docs|build|chore|rev
   echo "SUBJECT FORMAT: first line '$SUBJ' is not 'type(CODE): summary' (feat fix perf test docs build chore revert); merging anyway"
 fi
 ROOT=$(dirname "$(git -C "$I" rev-parse --path-format=absolute --git-common-dir)")
-exec 9>"$ROOT/.claude/merge.lock"
-flock -w 1800 9 || { echo "merge lock not acquired in 30 min"; exit 6; }
+# Merge lock through scripts/lib/locks.sh (W2): holder note, waiter reports, self-deadlock refusal.
+. "$HERE/lib/locks.sh"
+LOCK="$ROOT/.claude/merge.lock"
+exec 9>>"$LOCK"
+lrc=0; fb_lock_take 9 "$LOCK" "squash-merge $FB" "${FB_MERGE_LOCK_WAIT:-1800}" || lrc=$?
+case $lrc in
+  0) ;;
+  8) exit 9 ;;   # LOCK SELF-DEADLOCK (fb_lock_take printed it): our caller already holds merge.lock
+  *) echo "merge lock not acquired in 30 min"; exit 6 ;;
+esac
+trap 'fb_lock_note_clear "$LOCK"' EXIT
 
 dirty=$(git -C "$I" status --porcelain --untracked-files=no -- . ':!docs/runs')
 [ -z "$dirty" ] || { echo "integration checkout not clean:"; echo "$dirty"; exit 2; }
@@ -109,7 +122,7 @@ SHA=$(git -C "$I" rev-parse HEAD)
 echo "MERGED $SHA"
 
 # Release the lock now (flock -u drops it even if a child inherited fd 9).
-flock -u 9; exec 9>&-
+fb_lock_drop 9 "$LOCK"; exec 9>&-
 
 # Cleanup before any test, so a caller killed during the tests leaves nothing half-done.
 if [ "$CLEANUP" = 1 ]; then

@@ -14,7 +14,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 T=$(mktemp -d)
 trap 'pkill -f "$T/" 2>/dev/null; rm -rf "$T"' EXIT
 mkdir -p "$T/root/scripts/lib" "$T/w/jobs" "$T/w/q" "$T/bin" "$T/wbin"
-cp "$ROOT/scripts/remote.sh" "$T/root/scripts/"; cp "$ROOT/scripts/lib/workers.sh" "$T/root/scripts/lib/"
+cp "$ROOT/scripts/remote.sh" "$T/root/scripts/"; cp "$ROOT/scripts/lib/workers.sh" "$ROOT/scripts/lib/procs.sh" "$T/root/scripts/lib/"
 echo hello > "$T/root/README"
 printf '[w]\nhost = fake-host\nroles = heavy suite\nslots = 2\npreemptible = yes\n' > "$T/workers.conf"
 echo boot-1 > "$T/boot_id"; printf 'MemTotal:       16000000 kB\n' > "$T/meminfo"

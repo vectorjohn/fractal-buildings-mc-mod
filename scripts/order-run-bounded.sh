@@ -15,6 +15,13 @@ set -u
 VF="$1"; TMO="$2"; GRACE="$3"; shift 4
 setsid "$@" &
 pid=$!
+# Process registry (W8, scripts/lib/procs.sh): this run's process group, owned by this script, so
+# scripts/watchdog.sh can report it as an orphan if this script dies and leaves the server behind.
+# shellcheck source=lib/procs.sh
+. "$(dirname "${BASH_SOURCE[0]}")/lib/procs.sh"
+fb_proc_register "pg-$pid" kind=pgroup "pgid=$pid" "owner=$$" "label=order-test run ${VF##*/}" \
+	"budget=$((TMO + GRACE + 120))" "log=${ORDER_BIND_LOG:-}" "cmd=$(printf '%s ' "$@" | cut -c1-200)"
+trap 'fb_proc_unregister "pg-$pid"' EXIT
 t0=$SECONDS; tv=""
 killgrp() { kill -TERM -- "-$pid" 2>/dev/null || true; for _ in 1 2 3 4 5 6 7 8 9 10; do kill -0 "$pid" 2>/dev/null || break; sleep 1; done; kill -KILL -- "-$pid" 2>/dev/null || true; wait "$pid" 2>/dev/null || true; }
 trap 'killgrp; exit 143' TERM INT HUP

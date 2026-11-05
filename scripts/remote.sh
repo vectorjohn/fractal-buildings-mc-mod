@@ -87,6 +87,8 @@ fi
 
 # shellcheck source-path=SCRIPTDIR source=lib/workers.sh
 . "$(dirname "${BASH_SOURCE[0]}")/lib/workers.sh"
+# shellcheck source-path=SCRIPTDIR source=lib/procs.sh
+. "$(dirname "${BASH_SOURCE[0]}")/lib/procs.sh"
 HOST="" WSPEC="" WSPEC_RAW_OK=1 WNAME=""
 HOST_SET=0
 MODE=run KEEP=0 GPU=1 ATTACH=""
@@ -227,6 +229,19 @@ state_write() {
 		echo "boot=$BOOT0"; echo "memtotal=$MEM0"
 		for f in "${FETCH[@]}"; do echo "fetch=$f"; done
 	} > "$STATE.tmp.$$" && mv "$STATE.tmp.$$" "$STATE"
+	proc_note
+}
+# Process registry (W8, scripts/lib/procs.sh): one entry per job not yet finished business, pointing at
+# this state file, so scripts/watchdog.sh can report a job whose waiter died (and say --attach). Removed
+# once the job is fetched, cancelled or gone.
+proc_note() {
+	[[ -n $NAME ]] || return 0
+	case "$STATUS" in
+		fetched | cancelled | gone) fb_proc_unregister "remote-$NAME" ;;
+		*) fb_proc_register "remote-$NAME" kind=remote "owner=${WAITER%@*}" "label=remote job $NAME on ${WNAME:-$HOST}" \
+			"budget=0" "since=${STARTED:-$(date +%s)}" "worktree=$ROOT" "state=$STATE" "worker=${WNAME:-$HOST}" \
+			"job=$NAME" "cmd=$(printf '%s' "$CMDQ" | cut -c1-200)" ;;
+	esac
 }
 state_read() {   # $1 file: sets the globals from it
 	local k v line

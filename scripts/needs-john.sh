@@ -7,6 +7,8 @@
 #   1. open asks from scripts/ask-john.sh (blocking first), with the command to paste
 #   2. permission denials: tool calls the Claude Code auto-mode classifier refused, found in this
 #      project's agent transcripts (last FB_DENIAL_HOURS, default 48), with agent, reason and command
+#   2b. stuck work: the "act" findings of scripts/watchdog.sh (.claude/status/watchdog.tsv), with the
+#      suggested command (the watchdog never runs it)
 #   3. files only John reviews (build files, flake, gradle.properties, viewer/package.json, .envrc,
 #      .claude/settings.json) changed on the run branch since main
 #   4. open docs/QUESTIONS.md lines (from the run branch), by heading
@@ -142,6 +144,22 @@ gen() {
 		done
 		[[ "$nden" -gt 20 ]] && echo "- ... and $((nden - 20)) more (\`.claude/status/denials.tsv\`)"
 	else echo "None in the last $HOURS h."; fi
+
+	# 2b. stuck work the watchdog found (W8; it reports only and never stops anything)
+	echo; echo "# Stuck work"; echo
+	local wd="$ST/watchdog.tsv" nwd wage
+	if [[ -f "$wd" ]]; then
+		nwd=$(awk -F'\t' '$2 == "act"' "$wd" | wc -l)
+		wage=$(( $(date +%s) - $(stat -c %Y "$wd") ))
+		if [[ "$nwd" -gt 0 ]]; then
+			echo "Found by \`scripts/watchdog.sh\` ($((wage / 60)) min ago). It never stops anything; a command is only a suggestion, for whoever is sure the process is ours:"
+			echo
+			awk -F'\t' '$2 == "act" { c = $4; gsub(/`/, "'"'"'", c); printf "- %s", $3; if (c != "") printf " `%s`", c; print "" }' "$wd" | head -n 20
+		else echo "Nothing ($((wage / 60)) min ago)."; fi
+		if [[ "$wage" -gt 1800 ]]; then
+			echo; echo "The watchdog page is $((wage / 60)) min old: is its timer running? (\`systemctl --user list-timers fb-watchdog.timer\`)"
+		fi
+	else echo "Not checked (no \`.claude/status/watchdog.tsv\`: run \`scripts/watchdog.sh\`, or install its timer with \`--install-timer\`)."; fi
 
 	# 3. files only John reviews
 	echo; echo "# Files only you review"; echo

@@ -196,6 +196,14 @@ and mention them in the ROADMAP testing section.
 
 ### Environment quirks
 
+- **No synchronous long waits** (W7, CLAUDE.md "Parallel work"): a run that
+  can wait more than about 10 min (a full `test-all.sh`, a client run, a
+  suite slot, a worker queue) starts detached:
+  `scripts/bg.sh --ev <slug> <slug>-<what> -- <command>` (evidence under the
+  item slug, routed by `anywhere.sh`;
+  `--direct` for a command that routes itself). Then check
+  `scripts/bg.sh status <label>` or wait with `scripts/bg.sh wait <label> --max <S>`
+  as a background Bash call; stop your own job with `scripts/bg.sh stop <label>`.
 - A worker run that ends `JOB LOST (worker preempted)` (exit 75) is not a result: rerun it, say so in your report; not a failure, not a flake.
 - Waiting on a long or heavy job (a worker run, `scripts/anywhere.sh`, a
   client test in the background): wait with one long Monitor / until loop on

@@ -13,8 +13,9 @@ trap cleanup EXIT
 R=$T/repo
 git init -q -b run "$R"
 git -C "$R" config user.email selftest@example.invalid; git -C "$R" config user.name selftest
-mkdir -p "$R/scripts" "$R/docs" "$R/.claude"
+mkdir -p "$R/scripts/lib" "$R/docs" "$R/.claude"
 cp "$SRC"/{squash-merge,review-check,postmerge-run,postmerge-status}.sh "$R/scripts/"
+cp "$SRC/lib/locks.sh" "$R/scripts/lib/"
 printf '# Review\n' > "$R/docs/REVIEW.md"; printf '# Review archive\n' > "$R/docs/REVIEW-ARCHIVE.md"
 printf '/.claude/\n' > "$R/.gitignore"
 git -C "$R" add -A; git -C "$R" commit -qm base
@@ -135,6 +136,25 @@ FB_SUBJECT_STRICT=1 "$SM" "$R" run claude/subjbad "$T/msg" > "$T/m9.out" 2>&1; r
 check "bad subject, strict: exit 8" "$rc" 8
 check "bad subject, strict: REFUSED line" "$(grep -c '^SUBJECT FORMAT REFUSED' "$T/m9.out")" 1
 check "bad subject, strict: nothing merged" "$(git -C "$R" rev-parse HEAD)" "$H0"
+
+# 9. merge lock through lib/locks.sh (W2 follow-up): no note left behind, self-deadlock refused (exit 9),
+#    a waiter names the holder and gives up with exit 6, then merges once the lock is free
+check "no holder note left after the merges" "$([ -e "$R/.claude/merge.lock.holder" ] && echo left || echo none)" none
+branch selflock
+H0=$(git -C "$R" rev-parse HEAD)
+flock "$R/.claude/merge.lock" "$SM" "$R" run claude/selflock "$T/goodmsg" > "$T/m10.out" 2>&1; rc=$?
+check "caller holds merge.lock: exit 9" "$rc" 9
+check "caller holds merge.lock: SELF-DEADLOCK line" "$(grep -c '^LOCK SELF-DEADLOCK' "$T/m10.out")" 1
+check "caller holds merge.lock: nothing merged" "$(git -C "$R" rev-parse HEAD)" "$H0"
+flock "$R/.claude/merge.lock" sleep 4 & HOLD=$!
+sleep 0.5
+FB_MERGE_LOCK_WAIT=1 "$SM" "$R" run claude/selflock "$T/goodmsg" > "$T/m11.out" 2>&1; rc=$?
+check "lock busy: exit 6" "$rc" 6
+check "lock busy: waiter names the holder" "$(grep -c '^lock: waiting for merge.lock, held by pid' "$T/m11.out")" 1
+wait "$HOLD"
+"$SM" "$R" run claude/selflock "$T/goodmsg" > "$T/m12.out" 2>&1; rc=$?
+check "lock free again: merged" "$rc" 0
+check "lock free again: no holder note left" "$([ -e "$R/.claude/merge.lock.holder" ] && echo left || echo none)" none
 
 echo "$fails failure(s)"
 [ "$fails" = 0 ]

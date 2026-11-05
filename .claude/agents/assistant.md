@@ -54,6 +54,9 @@ an expensive or hard-to-undo change.
   can be yours when the coordinator asks.
   Run heavy layers through `scripts/evidence.sh`, and anything on a shared
   branch through `scripts/snapshot-test.sh`, never in its checkout.
+  Anything that can wait more than about 10 min starts detached with
+  `scripts/bg.sh <label> -- <command>` (W7, no synchronous long waits); poll
+  `scripts/bg.sh status <label>` or wait in a background Bash call.
 - **Small proofs of concept**: a throwaway experiment to answer a question
   (does this three.js approach render 100k voxels smoothly; how does this
   grammar library behave). Keep it in your worktree, write the findings to a

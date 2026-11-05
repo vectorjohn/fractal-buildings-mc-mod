@@ -139,6 +139,11 @@ exec 9>> "$HEAVY_LOCK"
 log "waiting for heavy lock $HEAVY_LOCK ..."
 # holder note, a waiter line every 5 min, refusal (exit 8) when an ancestor holds it (scripts/lib/locks.sh)
 fb_lock_take 9 "$HEAVY_LOCK" "client-test FB_LAYER=$FB_LAYER${FB_ONLY:+ FB_ONLY=$FB_ONLY}" || exit $?
+# Process registry (W8, scripts/lib/procs.sh): the game's process group, so scripts/watchdog.sh can tell
+# an orphan of ours (this script gone, the group alive) from anything else.
+# shellcheck source=lib/procs.sh
+. "$ROOT/scripts/lib/procs.sh"
+REG=""
 RENDERER="FB_VK=$VK"
 if [[ -n ${FB_VK_DRIVER_FILES:-} ]]; then RENDERER="worker GPU (FB_VK_DRIVER_FILES)"; fi
 log "heavy lock taken (pid $$); timeout ${TIMEOUT}s, crash grace ${GRACE}s, renderer $RENDERER, layer FB_LAYER=$FB_LAYER${FB_ONLY:+, FB_ONLY=$FB_ONLY}"
@@ -163,6 +168,7 @@ cleanup() {
 	local rc=$?
 	trap - EXIT INT TERM HUP
 	kill_group "script exiting"
+	[[ -n $REG ]] && fb_proc_unregister "$REG"
 	[[ -n $TAILPID ]] && kill "$TAILPID" 2> /dev/null || true
 	fb_lock_drop 9 "$HEAVY_LOCK"
 	exit "$rc"
@@ -220,6 +226,13 @@ run_once() { # renderer [gradle args]; sets rc, REASON, CRASH_AT
 	tail -n +1 -f --pid="$CHILD" "$OUT_LOG" 9>&- &
 	TAILPID=$!
 	log "started pid $CHILD (process group ${PGID:-none}); output in $OUT_LOG"
+	[[ -n $REG ]] && fb_proc_unregister "$REG"
+	REG=""
+	if [[ -n $PGID ]]; then
+		REG="pg-$PGID"
+		fb_proc_register "$REG" kind=pgroup "pgid=$PGID" "owner=$$" "label=client-test FB_LAYER=$FB_LAYER${FB_ONLY:+ FB_ONLY=$FB_ONLY}" \
+			"budget=$((TIMEOUT + 300))" "log=$OUT_LOG" "worktree=$ROOT" "cmd=$(printf "%s " "${CMD[@]}" | cut -c1-200)"
+	fi
 
 	CRASH_AT="" REASON=""
 	while kill -0 "$CHILD" 2> /dev/null; do

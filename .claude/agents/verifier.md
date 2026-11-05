@@ -98,6 +98,12 @@ Work by path: `cd <worktree> && ...` or `git -C <worktree> ...`.
      when `scripts/remote.sh --check` succeeds); or let
      `scripts/evidence.sh <slug> scripts/anywhere.sh -- <command>` start it on
      whichever host frees first (its `route:` line in EVIDENCE.md says which).
+   **No synchronous long waits** (W7): start a heavy layer or full suite that
+   can wait more than about 10 min detached,
+   `scripts/bg.sh --ev <slug> <slug>-<layer> -- <command>` (or `--direct` with
+   `scripts/remote.sh -- <command>`), then poll `scripts/bg.sh status <label>`
+   in short calls or wait with `scripts/bg.sh wait <label> --max <S>` as a
+   background Bash call; the evidence folder is the one `bg.sh status` names.
    Report the summary lines with counts, and which host ran them; quote the relevant error for a
    failure. A failure that passes on rerun is a **flake**: see "Flakes".
    The scratchpad directory is shared with other subagents of the coordinator:

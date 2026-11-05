@@ -3,6 +3,7 @@
 set -u
 D="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"; B="$D/order-run-bounded.sh"
 T="$(mktemp -d)"; trap 'rm -rf "$T"' EXIT; fails=0
+export FB_PROCS_DIR="$T/procs"   # process registry (W8) in the temp dir
 check() { if [ "$2" = "$3" ]; then echo "ok   $1"; else echo "FAIL $1: got '$2' want '$3'"; fails=$((fails+1)); fi; }
 # 1: verdict, then ignores everything and sleeps (child too): bounded, SHUTDOWN SLOW, exit 0, child dead
 rm -f "$T/v"; s=$SECONDS
@@ -18,4 +19,11 @@ check "clean exit: no SHUTDOWN SLOW" "$(grep -c 'SHUTDOWN SLOW' "$T/err2")" 0
 # 3: no verdict, hangs: run timeout 124
 rm -f "$T/v"; "$B" "$T/v" 3 5 -- sleep 300 2> "$T/err3"; rc=$?
 check "no verdict: timeout exit 124" $rc 124
+# 4: process registry (W8): the run is registered while it runs, gone afterwards
+rm -f "$T/v"; "$B" "$T/v" 30 5 -- bash -c "sleep 2; echo PASS > $T/v" 2> /dev/null & W=$!
+sleep 1
+check "registry: entry while running" "$(grep -l '^kind=pgroup' "$T"/procs/pg-*.proc 2>/dev/null | wc -l)" 1
+check "registry: owner is the wrapper" "$(sed -n 's/^owner=//p' "$T"/procs/pg-*.proc 2>/dev/null)" "$W"
+wait $W
+check "registry: removed at the end" "$(ls "$T"/procs/ 2>/dev/null | wc -l)" 0
 exit $fails
