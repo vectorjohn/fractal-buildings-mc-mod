@@ -82,7 +82,7 @@ reported as `partial`. Non-breaking ones: fix if trivial, otherwise record a
 list them in the report.
 
 Judgments only the human can make (does it look like a person built it; does
-a style read right; in-game feel) go in `docs/REVIEW.md` (format at its top). A question that needs John's decision also gets a line in `docs/QUESTIONS.md` (format at its top).
+a style read right; in-game feel) go in `docs/REVIEW.md` (format at its top). A question that needs John's decision also gets a line in `docs/QUESTIONS.md` (format at its top). Something only John can do or allow and that is done once he answers (a permission the classifier denied that you need, a process you may not kill, a change on another machine) goes through `scripts/ask-john.sh "<one line>"` (`--blocking` if you are stopped, `--cmd` with the command he can paste), not a chat line; it lands on `.claude/status/needs-john.md`.
 When you add an item there, copy the 1-3 key files it asks John to look at
 into `docs/review/<item-slug>/` (downscaled, about 1 MB per item at most) and
 link the copies relatively; `.claude/reports/` is gitignored and John can't

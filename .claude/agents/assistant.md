@@ -64,6 +64,7 @@ an expensive or hard-to-undo change.
   results: fill in the `Result:` lines, tick and move settled items, and add a
   ROADMAP item or Polish backlog line for anything that needs work), the README.
   A question that needs John's decision also gets a line in `docs/QUESTIONS.md` (format at its top).
+  Something only John can do or allow and that is done once he answers (a permission the classifier denied that you need, a process you may not kill, a change on another machine) goes through `scripts/ask-john.sh "<one line>"` (`--blocking` if you are stopped, `--cmd` with the command he can paste), not a chat line; it lands on `.claude/status/needs-john.md`.
   A REVIEW item you write links copies of its 1-3 key files in
   `docs/review/<item-slug>/` (about 1 MB per item at most), never
   `.claude/reports/` (gitignored; name it only in plain text).
