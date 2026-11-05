@@ -107,7 +107,10 @@ n=$(ahead "$RUN" "$DB")
 if [ "$RC" != 1 ] && [ "$n" -gt 0 ]; then
   OUT=$(mktemp); trap 'rm -f "$OUT"' EXIT
   (
-    flock 9 || exit 1
+    # holder note, waiter lines, self-deadlock refusal (scripts/lib/locks.sh)
+    . "$SELF/lib/locks.sh"
+    fb_lock_take 9 "$ROOT/.claude/merge.lock" "docs-sync merge of $DB into $RUN" 2>&3 || { echo "merge lock not taken (lock messages on stderr)"; exit 1; }
+    trap 'fb_lock_note_clear "$ROOT/.claude/merge.lock"' EXIT
     [ "$(git -C "$C" branch --show-current)" = "$RUN" ] || { echo "checkout $C is not on $RUN"; exit 1; }
     # clean apart from unstaged docs/runs/ edits (the coordinator's ledger; same exclusion as squash-merge.sh)
     DIRTY=$(git -C "$C" status --porcelain --untracked-files=no -- . ':!docs/runs')
@@ -131,7 +134,7 @@ if [ "$RC" != 1 ] && [ "$n" -gt 0 ]; then
     if ! git -C "$C" commit -q -m "Merge branch '$DB' into $RUN"; then
       echo "merge commit failed"; git -C "$C" merge --abort; exit 1
     fi
-  ) 9>"$ROOT/.claude/merge.lock" > "$OUT" 2>&1
+  ) 9>>"$ROOT/.claude/merge.lock" 3>&2 > "$OUT" 2>&1
   if [ $? -ne 0 ]; then
     say "ERROR $(head -n1 "$OUT")"; tail -n +2 "$OUT"; want 1; ACT=1
   else

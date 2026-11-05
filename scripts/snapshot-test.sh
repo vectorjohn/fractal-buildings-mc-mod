@@ -59,9 +59,12 @@ else
     echo "--name $NAME: $WT is on branch $(git -C "$WT" symbolic-ref --short HEAD), not a snapshot; pick another name"
     exit 2
   fi
-  exec 8>"$LOCKF"
+  mkdir -p "$ROOT/.claude"; exec 8>>"$LOCKF"
   echo "waiting for $LOCKF ..."
-  flock -w "${FB_SNAPSHOT_WAIT:-10800}" 8 || { echo "snapshot lock $NAME not acquired"; exit 6; }
+  # holder note, a waiter line every 5 min, refusal (exit 8) when an ancestor holds it (scripts/lib/locks.sh)
+  . "$(cd "$(dirname "$0")" && pwd)/lib/locks.sh"
+  fb_lock_take 8 "$LOCKF" "snapshot-test --name $NAME $LABEL at ${SHA:0:10}" "${FB_SNAPSHOT_WAIT:-10800}"; lrc=$?
+  [ "$lrc" = 0 ] || { echo "snapshot lock $NAME not acquired"; exit "$lrc"; }
   if [ -e "$WT/.git" ]; then
     OLD=$(git -C "$WT" rev-parse HEAD 2>/dev/null || echo none)
     git -C "$WT" checkout -q --detach -f "$SHA" || { echo "could not move $WT to $SHA"; exit 2; }
@@ -90,4 +93,5 @@ if [ "$COLD" = 1 ]; then
     git -C "$ROOT" worktree remove --force "$WT" || echo "could not remove $WT; remove it by hand"
   fi
 fi
+[ -n "${LOCKF:-}" ] && fb_lock_note_clear "$LOCKF"
 exit $RC

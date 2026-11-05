@@ -70,6 +70,11 @@ printf '%s\tclient-full\t0\tlocal\t/x\n' "$t2" > "$T/state/tested.tsv"
 out=$("$B" batch); check "tested.tsv (no header) anchors the count" has "$out" "1 of 4"
 printf '%s\tclient-full\t1\tlocal\t/x\n%s\tfast\t0\tlocal\t/x\n' "$t2" "$t2" > "$T/state/tested.tsv"
 out=$("$B" batch); check "a failed or other layer is no anchor" has "$out" "2 of 4"
+# the real W3 format (scripts/lib/tested.sh): time first, and the heavy batch's test-all --full key
+printf 'time\ttree\tlayer\texit\thost\trenderer\tcommit\tlabel\tevidence\tcommand\n2026-11-05T00:00:00Z\t%s\tfast+client-full+order\t0\tlocal\t-\tc\theavy\t/x\tscripts/test-all.sh --full\n' "$t2" > "$T/state/tested.tsv"
+out=$("$B" batch); check "W3 ledger: test-all --full row anchors the count" has "$out" "1 of 4"
+printf 'time\ttree\tlayer\texit\thost\trenderer\tcommit\tlabel\tevidence\tcommand\n2026-11-05T00:00:00Z\t%s\tfast+client-quick\t0\tlocal\t-\tc\tx\t/x\tscripts/test-all.sh\n' "$t2" > "$T/state/tested.tsv"
+out=$("$B" batch); check "W3 ledger: client-quick is no anchor" has "$out" "2 of 4"
 rm -f "$T/state/tested.tsv"
 "$B" batch done claude/run-x >/dev/null
 out=$("$B" batch); check "batch done at head resets" has "$out" "0 of 4"

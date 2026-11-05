@@ -133,9 +133,12 @@ cd "$ROOT"
 
 # Take the lock on fd 9. Every child below is started with 9>&- so nothing but
 # this shell holds it, and it is released when this shell exits however it exits.
+# shellcheck source=lib/locks.sh
+. "$ROOT/scripts/lib/locks.sh"
 exec 9>> "$HEAVY_LOCK"
 log "waiting for heavy lock $HEAVY_LOCK ..."
-flock 9
+# holder note, a waiter line every 5 min, refusal (exit 8) when an ancestor holds it (scripts/lib/locks.sh)
+fb_lock_take 9 "$HEAVY_LOCK" "client-test FB_LAYER=$FB_LAYER${FB_ONLY:+ FB_ONLY=$FB_ONLY}" || exit $?
 RENDERER="FB_VK=$VK"
 if [[ -n ${FB_VK_DRIVER_FILES:-} ]]; then RENDERER="worker GPU (FB_VK_DRIVER_FILES)"; fi
 log "heavy lock taken (pid $$); timeout ${TIMEOUT}s, crash grace ${GRACE}s, renderer $RENDERER, layer FB_LAYER=$FB_LAYER${FB_ONLY:+, FB_ONLY=$FB_ONLY}"
@@ -161,7 +164,7 @@ cleanup() {
 	trap - EXIT INT TERM HUP
 	kill_group "script exiting"
 	[[ -n $TAILPID ]] && kill "$TAILPID" 2> /dev/null || true
-	flock -u 9 2> /dev/null || true
+	fb_lock_drop 9 "$HEAVY_LOCK"
 	exit "$rc"
 }
 trap cleanup EXIT

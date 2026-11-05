@@ -25,7 +25,7 @@
 # run branch's first-parent commits since the last heavy batch for which scripts/test-scope.sh asks for
 # a client layer or the order test (docs-only and tooling merges don't count). The last batch is the
 # newer of: a `batch done` record, and (when the test ledger .claude/tested.tsv exists, W3) the newest
-# passed client-full row whose tree is a run-branch commit. Due at FB_HEAVY_EVERY (default 4).
+# passed row whose layer includes client-full (client-test.sh FB_LAYER=full, or test-all.sh --full: fast+client-full+order) and whose tree is a run-branch commit. Due at FB_HEAVY_EVERY (default 4).
 #
 # State (not committed, shared by every worktree like the locks): <main root>/.claude/board/
 #   items.tsv    slug lane since agent branch host note added
@@ -192,7 +192,7 @@ batch_state() {
 				for (i=1;i<=n;i++) { if (c[i]~/^tree/) ti=i; if (c[i]=="layer") li=i; if (c[i]~/^(exit|result|status|rc)$/) ei=i }
 				next }
 			/^#/ { next }
-			{ t=$(ti?ti:1); l=$(li?li:2); e=$(ei?ei:3); if (t ~ /^[0-9a-f]+$/ && l==L && (e=="0" || toupper(e)=="PASS")) print t }' "$TESTED")
+			{ t=$(ti?ti:1); l=$(li?li:2); e=$(ei?ei:3); if (t ~ /^[0-9a-f]+$/ && index("+" l "+", "+" L "+") && (e=="0" || toupper(e)=="PASS")) print t }' "$TESTED")
 	fi
 	local anchor="" asrc="" commits=() h t
 	while read -r h t; do

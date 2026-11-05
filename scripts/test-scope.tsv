@@ -60,6 +60,11 @@ path	scripts/WorldQuery.java	test-infra	-	offline save reader (W13): run scripts
 path	scripts/anywhere*	test-infra	-	host router (PERFROUTE, worker pool): run scripts/anywhere-selftest.sh (fake workers, ~2 min, no ssh)
 path	scripts/lib/workers.sh	test-infra	-	worker pool reader: run scripts/anywhere-selftest.sh and scripts/quiet-check-selftest.sh (fake pools, no ssh)
 path	scripts/workers.conf.example	test-infra	-	worker pool example (no code): read it
+path	scripts/locks*	test-infra	-	lock hygiene CLI (W2): run scripts/locks-selftest.sh (temp locks, ~15 s)
+path	scripts/lib/locks.sh	test-infra	-	lock library of client-test, perf, snapshot-test, docs-sync, server-only-test (W2): run scripts/locks-selftest.sh and scripts/docs-sync-selftest.sh
+path	scripts/tested*	test-infra	-	test ledger query (W3): run scripts/tested-selftest.sh (temp repo, seconds)
+path	scripts/lib/tested.sh	test-infra	-	test ledger format and layer keys (W3): run scripts/tested-selftest.sh
+path	scripts/evidence.sh	test-infra	-	evidence pinning and the test ledger (ALREADY PASSED): run scripts/tested-selftest.sh and scripts/locks-selftest.sh
 path	scripts/perf*	test-infra	perf	perf runner and budget check
 path	scripts/flythrough.sh	test-infra	flythrough	fly-through runner
 path	scripts/server-only-test.sh	test-infra	server-only	server-only runner

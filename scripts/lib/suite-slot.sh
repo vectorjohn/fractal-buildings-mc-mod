@@ -24,7 +24,7 @@ suite_slot_dir() {
 }
 
 suite_slot_acquire() {
-	local what=${1:-$PWD} n=${FB_SUITE_SLOTS:-2} dir i f fd waited=0 start=$SECONDS
+	local what=${1:-$PWD} n=${FB_SUITE_SLOTS:-2} dir i f fd waited=0 start=$SECONDS last=$SECONDS
 	SUITE_SLOT_FD="" SUITE_SLOT_FILE=""
 	[[ -n "${FB_SUITE_SLOT_HELD:-}" ]] && return 0
 	[[ "$n" =~ ^[0-9]+$ ]] || { echo "suite-slot: FB_SUITE_SLOTS must be a number, got '$n'" >&2; return 2; }
@@ -45,8 +45,11 @@ suite_slot_acquire() {
 			fi
 			exec {fd}>&-
 		done
+		# every FB_LOCK_NOTE_EVERY s (default 300) say again who holds the slots (W2 lock hygiene)
+		if (( waited )) && (( SECONDS - last >= ${FB_LOCK_NOTE_EVERY:-300} )); then waited=0; fi
 		if (( ! waited )); then
 			waited=1
+			last=$SECONDS
 			echo "suite-slot: waiting for suite slot (all $n busy; FB_SUITE_SLOTS=$n):" >&2
 			for ((i = 1; i <= n; i++)); do
 				printf '  slot %s: %s\n' "$i" "$(head -n1 "$dir/suite.lock.$i" 2>/dev/null)" >&2

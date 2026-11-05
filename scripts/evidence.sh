@@ -23,8 +23,15 @@
 # it runs (client-test.sh, perf.sh, test-all.sh) take the heavy lock where they need it.
 # Concurrent runs get their own folders, but runs overlapping in ONE worktree share its build/ paths, so
 # each also copies whatever the other wrote meanwhile; use separate worktrees for clean evidence.
+# Test ledger (W3): every run appends a row to <main root>/.claude/tested.tsv (tree, layer, exit, host,
+# renderer, commit, label, folder; format in scripts/lib/tested.sh). When the worktree is clean and that
+# exact tree already passed the same reusable layer (test-all, client-test, order-test, server-only,
+# Gradle test/build/check, npm test) with its evidence folder still there, it does not rerun: it prints
+# "ALREADY PASSED <old folder>", writes a folder pointing to it and exits 0. FB_RETEST=1 always reruns
+# (heavy batches, to-main). perf, profile, fly-through, galleries, attaches and other commands always run.
+# Query: scripts/tested.sh LAYER [REV].
 set -uo pipefail
-[ $# -ge 2 ] || { sed -n '2,25p' "$0" | sed 's/^# \{0,1\}//'; exit 2; }
+[ $# -ge 2 ] || { sed -n '2,32p' "$0" | sed 's/^# \{0,1\}//'; exit 2; }
 LABEL=$1; shift
 WT=$(git rev-parse --show-toplevel) || exit 2
 MAIN_ROOT=$(dirname "$(git -C "$WT" rev-parse --path-format=absolute --git-common-dir)")
@@ -63,6 +70,28 @@ if [ -n "$JOB_STATE" ]; then
   full=$(git -C "$WT" rev-parse --verify -q "${JOB_COMMIT%-dirty}^{commit}") && SHA=$full
 fi
 
+# Test ledger (W3; scripts/lib/tested.sh): the layer this command runs and the tree it runs on.
+# shellcheck source=lib/tested.sh
+. "$(dirname "${BASH_SOURCE[0]}")/lib/tested.sh" 2>/dev/null || {
+  # an old checkout without the library: no ledger, nothing skipped
+  tested_layer() { TESTED_LAYER=- TESTED_REUSABLE=0; }; tested_tree() { echo dirty; }; tested_record() { :; }; tested_lookup() { return 1; }
+}
+if [ -n "$JOB_STATE" ]; then
+  # the job's command and forwarded FB_* variables, as remote.sh quoted them (printf %q)
+  JOB_ENV=$(sed -n 's/^env=//p' "$JOB_STATE")
+  eval "jw=($JOB_ENV $JOB_CMD)" 2>/dev/null || jw=($JOB_CMD)
+  tested_layer "${jw[@]}"
+  case "$JOB_COMMIT" in *-dirty|'') TREE=dirty ;; *) TREE=$(git -C "$WT" rev-parse --verify -q "$SHA^{tree}" || echo dirty) ;; esac
+  TESTED_REUSABLE=0   # an attach fetches a job that ran; never skipped
+else
+  tested_layer "$@"
+  TREE=$(tested_tree "$WT")
+fi
+
+# Looked up before this run creates its own folder (which could reuse a deleted folder's name).
+PREV=""
+if [ "${FB_RETEST:-0}" != 1 ] && [ "$TESTED_REUSABLE" = 1 ]; then PREV=$(tested_lookup "$TREE" "$TESTED_LAYER") || PREV=""; fi
+
 # The folder is created atomically (mkdir without -p on the leaf): when another run with the same label
 # already took <sha10>-<stamp> (both started in the same second), this one gets <sha10>-<stamp>-2, -3, ...
 # Before this, such runs shared one folder, one start mark and one EVIDENCE.md (VILLROAD, 2026-10-28).
@@ -73,6 +102,27 @@ until mkdir "$OUT" 2>/dev/null; do
   n=$((n + 1)); OUT="$PARENT/${SHA:0:10}-$STAMP-$n"
   [ "$n" -le 100 ] || { echo "evidence.sh: cannot create a folder under $PARENT" >&2; exit 2; }
 done
+# ALREADY PASSED: the identical tree passed this layer before and its evidence is still there. Heavy
+# batches and the to-main run set FB_RETEST=1 and always rerun.
+if [ -n "$PREV" ]; then
+  IFS=$'\t' read -r P_TIME _ _ _ P_HOST _ P_COMMIT P_LABEL P_EV _ <<< "$PREV"
+  {
+    echo "# Evidence: $LABEL (ALREADY PASSED, not rerun)"
+    echo
+    echo "- commit: $SHA ($(git -C "$WT" log -1 --format=%s "$SHA"))"
+    echo "- tree: $TREE (clean)"
+    echo "- command: $*"
+    echo "- layer: $TESTED_LAYER"
+    echo "- exit: 0 (reused)"
+    echo "- reused: passed at $P_TIME on $P_HOST, commit $P_COMMIT, label $P_LABEL"
+    echo "- original evidence: $P_EV"
+    echo "- rerun anyway: FB_RETEST=1 scripts/evidence.sh $LABEL $*"
+  } > "$OUT/EVIDENCE.md"
+  tested_record "$TREE" "$TESTED_LAYER" reused "$P_HOST" - "$SHA" "$LABEL" "$OUT" "$*"
+  echo "ALREADY PASSED $P_EV (layer $TESTED_LAYER, tree ${TREE:0:12}, passed $P_TIME on $P_HOST; FB_RETEST=1 reruns)"
+  echo "EVIDENCE $OUT (exit 0)"
+  exit 0
+fi
 MARK="$OUT/.start"; touch "$MARK"
 # An attach copies what the job wrote since it started (rsync keeps the worker's mtimes).
 [ -n "$JOB_STARTED" ] && touch -d "@$JOB_STARTED" "$MARK"
@@ -125,5 +175,19 @@ rm -f "$MARK"
   echo "- files (${#copied[@]}):"
   for r in "${copied[@]}"; do echo "    $r"; done
 } > "$OUT/EVIDENCE.md"
+# Ledger row: host from the remote state or anywhere route this run wrote, renderer from the client log.
+HOST=local REND=-
+for r in "${copied[@]}"; do
+  case "$r" in
+    build/remote/*.state) h=$(sed -n 's/^worker=//p' "$OUT/$r"); [ -n "$h" ] && HOST=$h ;;
+    build/anywhere/*) h=$(sed -n 's/^anywhere: -> \([^ ]*\).*/\1/p' "$OUT/$r" | tail -n1); [ -n "$h" ] && [ "$HOST" = local ] && HOST=$h ;;
+  esac
+done
+[ -n "$JOB_STATE" ] && { h=$(sed -n 's/^worker=//p' "$JOB_STATE"); [ -n "$h" ] && HOST=$h; }
+for r in "${copied[@]}"; do
+  case "$r" in *.log) d=$(grep -ho 'Using graphics device: .*' "$OUT/$r" 2>/dev/null | head -n1 | cut -c24-100); [ -n "$d" ] && { REND=$d; break; } ;; esac
+done
+tested_record "$TREE" "$TESTED_LAYER" "$RC" "$HOST" "$REND" "$SHA" "$LABEL" "$OUT" "$*"
+echo "- ledger: layer $TESTED_LAYER, tree $TREE, host $HOST (scripts/tested.sh)" >> "$OUT/EVIDENCE.md"
 echo "EVIDENCE $OUT (exit $RC)"
 exit $RC

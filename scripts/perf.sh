@@ -37,6 +37,8 @@ else
 	MAIN_ROOT="$ROOT"
 fi
 HEAVY_LOCK="$MAIN_ROOT/.claude/heavy.lock"
+# shellcheck source=lib/locks.sh
+. "$ROOT/scripts/lib/locks.sh"   # holder note, waiter lines, self-deadlock refusal
 mkdir -p "$(dirname "$HEAVY_LOCK")" "$ROOT/mod/build/perf"
 cd "$ROOT"
 PLANNER_ONLY=0; CHECK_ONLY=0; CLIENT=0; MOD_ONLY=0; WORLD_ONLY=0
@@ -65,8 +67,8 @@ if [ "$CHECK_ONLY" = 0 ]; then
 	# a failing gradle run (build error, test exception, crashed client) must fail the script: no `| ... || true`
 	if [ "$MOD_ONLY" = 0 ] && [ "$WORLD_ONLY" = 0 ]; then
 	set +e
-	exec 9>"$HEAVY_LOCK"
-	flock 9
+	exec 9>>"$HEAVY_LOCK"
+	fb_lock_take 9 "$HEAVY_LOCK" "perf.sh planner" || exit $?
 	qc start
 	"$ROOT/scripts/dev" --fresh ./gradlew --console=plain --no-daemon :mod:test -Dfb.perf=1 --tests '*PerfPlannerTest*' --rerun-tasks 9>&- > "$LOGDIR/planner.log" 2>&1
 	rc=$?
@@ -74,7 +76,7 @@ if [ "$CHECK_ONLY" = 0 ]; then
 	grep -E "PERF |FAILED" "$LOGDIR/planner.log" || true
 	if [ "$rc" != 0 ]; then echo "PERF FAIL: the planner run exited $rc (see $LOGDIR/planner.log)" >&2; tail -30 "$LOGDIR/planner.log" >&2; exit 1; fi
 	qc after-planner
-	exec 9>&-
+	fb_lock_drop 9 "$HEAVY_LOCK"; exec 9>&-
 	fi
 	if [ "$PLANNER_ONLY" = 0 ] && [ "$CLIENT" = 1 ]; then
 		# scripts/client-test.sh takes the heavy lock itself and watches for hangs and crashes
@@ -87,8 +89,8 @@ if [ "$CHECK_ONLY" = 0 ]; then
 	elif [ "$PLANNER_ONLY" = 0 ]; then
 		# both worlds under one hold of the heavy lock (fd 9; the children do not inherit it, so a daemon cannot keep it)
 		mkdir -p "$SRV"
-		exec 9>"$HEAVY_LOCK"
-		flock 9
+		exec 9>>"$HEAVY_LOCK"
+		fb_lock_take 9 "$HEAVY_LOCK" "perf.sh world" || exit $?
 		qc world-start
 		VARIANTS="${FB_PERF_VARIANTS:-mod base}"; [ "$MOD_ONLY" = 1 ] && VARIANTS=mod && export FB_LANE_LOG=1 # per-start [LANE-START] lines, diagnostics only
 		MODES="main"; [ "${FB_PERF_ARRIVAL:-1}" = 1 ] && [ "$MOD_ONLY" = 0 ] && MODES="main arrival" # COLDARRIVAL: a second pair of fresh worlds, so the metropolis is cold

@@ -34,7 +34,7 @@ allow-nether=true
 P
 	echo "portalcold: case $c (waiting for heavy lock)" >&2
 	set +e
-	flock "${FB_HEAVY_LOCK:-$MAIN_ROOT/.claude/heavy.lock}" timeout 1500 "$ROOT/scripts/dev" --fresh ./gradlew --console=plain --no-daemon :mod:runPortalColdServer -Pfb.portalCase="$c" -Pfb.portalOut="$OUT" > "$OUT/server-$c.log" 2>&1
+	"$ROOT/scripts/locks.sh" hold "${FB_HEAVY_LOCK:-$MAIN_ROOT/.claude/heavy.lock}" --label "portalcold $c" -- timeout 1500 "$ROOT/scripts/dev" --fresh ./gradlew --console=plain --no-daemon :mod:runPortalColdServer -Pfb.portalCase="$c" -Pfb.portalOut="$OUT" > "$OUT/server-$c.log" 2>&1
 	r=$?
 	set -e
 	grep -E "\[PORTAL\]" "$OUT/server-$c.log" | sed 's/.*\[PORTAL\] /  /' || true
