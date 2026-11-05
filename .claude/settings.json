@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(scripts/squash-merge.sh *)",
+      "Bash(timeout * scripts/squash-merge.sh *)",
+      "Bash(/home/agent/fractal-buildings-mc-mod/.claude/worktrees/*/scripts/squash-merge.sh *)",
+      "Bash(timeout * /home/agent/fractal-buildings-mc-mod/.claude/worktrees/*/scripts/squash-merge.sh *)",
+      "Bash(scripts/promote.sh *)",
+      "Bash(/home/agent/fractal-buildings-mc-mod/.claude/worktrees/*/scripts/promote.sh *)",
+      "Bash(scripts/world-query.sh *)",
+      "Bash(/home/agent/fractal-buildings-mc-mod/.claude/worktrees/*/scripts/world-query.sh *)"
+    ],
+    "deny": [
+      "Bash(*squash-merge.sh * main *)",
+      "Bash(*squash-merge.sh * main)"
+    ]
+  }
+}

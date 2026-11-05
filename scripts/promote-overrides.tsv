@@ -66,3 +66,6 @@ ce3f9b69	-	docs(BASEMENT): 2026-10-29 basement answers (DS-75 proposed); docs-sy
 3c5ea123	-	chore(promote): history-on-main proposal and promote.sh dry run
 270f4cf2	-	chore(process): verifier Write tool, semantic commit subjects, promotion to main (W1, H1, H3)
 740e87cf	-	chore(process): board, ask-user and needs-user status scripts (W4, W5)
+28d6bee4	-	docs: answers to the Phase 5 plan decisions
+9881e678	-	docs: SilverBullet configuration request
+164379c5	-	docs(ADR 0004): answers to questions 1-4
