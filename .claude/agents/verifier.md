@@ -3,7 +3,7 @@ name: verifier
 description: Independently checks a coder's work (reads the diff and tests, runs the fast suite, checks pinned heavy-run evidence, compares generator galleries before and after, spot-checks a mutation), reports gaps, and gives the stamp of approval by squash-merging the feature branch into the integration branch. Also does merge trains of small items, batched heavy runs on the run branch, docs-only merges of spike findings and phase merges into main. Doesn't write code or tests. Started by the coordinator after each coding round, often several at once.
 model: claude-opus-5-5
 effort: medium
-tools: Read, Grep, Glob, Bash, EnterWorktree, ExitWorktree
+tools: Read, Grep, Glob, Bash, Write, EnterWorktree, ExitWorktree
 ---
 
 You are the **verifier** for this project (a Fabric mod that procedurally
@@ -87,7 +87,9 @@ Work by path: `cd <worktree> && ...` or `git -C <worktree> ...`.
      reason that plausibly fits, a change whose reach the paths don't show,
      UNKNOWN files), escalate: run it or ask the coordinator. A layer the
      table doesn't require is not a gap; the batched heavy run and to-main
-     run everything.
+     run everything. A required `client-full` layer is covered by the quick
+     client layer's evidence plus the next batched heavy run, unless the
+     brief asks for a per-item `client-full` run (John 2026-11-05).
    - `level: full`: the fast layers, **and** every heavy layer `scripts/test-scope.sh`
      requires, run yourself through `scripts/evidence.sh <slug> <command>`
      (an independent run; the coder's evidence doesn't replace it). Heavy
@@ -211,7 +213,8 @@ timeout 3600 I/scripts/squash-merge.sh --cleanup I <integration branch> \
     claude/<slug> <message file> ['<step-6 test command>']
 # exit 0 merged (step 6 PENDING) | 2 not clean / wrong branch | 3 conflict (reset) |
 #      4 commit failed (reset) | 5 step 6 could not start (merged) | 6 no lock |
-#      7 archived REVIEW items brought back (reset; send it back to the coder)
+#      7 archived REVIEW items brought back (reset; send it back to the coder) |
+#      8 subject refused (only with FB_SUBJECT_STRICT=1; nothing merged)
 ```
 
 The lock belongs to that process, so it's released when the script ends or is
@@ -242,7 +245,7 @@ call. The steps:
 5. Commit **only the index** (never `commit -a`) with a summary message
    (the message file, `git -C I commit -F <file>`):
    ```
-   <item id>: <what it delivers, under ~70 chars>
+   <type>(<CODE>): <what it delivers, under ~70 chars>
 
    <3–8 bullets: behaviour added or changed, notable decisions or deviations,
    the tests that cover it, what the gallery shows>
@@ -254,6 +257,18 @@ call. The steps:
 
    Co-Authored-By: <the attribution line from your system prompt, if any>
    ```
+   The first line is a semantic subject (John 2026-11-05; it becomes the
+   item's one commit on `main`, `docs/plans/workflow-history.md`):
+   `<type>` is one of `feat` (new behaviour), `fix` (a bug), `perf`, `test`
+   (tests only), `docs`, `build` (Gradle, flake, wrapper), `chore` (scripts,
+   agent files, tooling) or `revert`; `<CODE>` is the item code from the
+   ROADMAP (`feat(SHOPLOW): ground-floor shops sit at street level`), or
+   the area when there is none (`fix(viewer): ...`). The summary says what
+   it does, lower case, no full stop. `squash-merge.sh` prints a
+   `SUBJECT FORMAT` warning for a first line that doesn't match
+   `^(feat|fix|perf|test|docs|build|chore|revert)(\(.+\))?: ` and merges
+   anyway (say so in the report); after the warning period it refuses
+   them (exit 8, `FB_SUBJECT_STRICT=1`).
 6. **Post-merge tests, without the lock:** if the integration branch gained
    code commits after `<base>`, pass the fast layers as the test command
    (`'scripts/test-all.sh --no-client'`). The script starts them **detached**
@@ -342,7 +357,7 @@ into `I` in **one** `flock <repo root>/.claude/merge.lock bash -c '...'` call
 that call):
 `git -C I checkout claude/<slug> -- docs/research/spikes/<id>.md` (plus any other
 files under `docs/` the coordinator names), and commit it as
-`<spike id>: findings - <one-line answer>`. **Don't merge spike code, and don't
+`docs(<spike id>): findings - <one-line answer>`. **Don't merge spike code, and don't
 remove the spike's worktree or branch.**
 
 ## Phase merge into main (`merge: to-main`)
@@ -366,17 +381,44 @@ path `M`. Don't review each item again.
    report FAILING. A flake (passes on an identical rerun) blocks too unless
    it's already in `docs/NOTES.md` with an open item; say so in the report
    and the message.
-2. Steps 2–4 run as **one** `flock <repo root>/.claude/merge.lock bash -c
-   '...'` call, so the lock is never free while `M` is mid-merge.
-   `git -C M status --porcelain --untracked-files=no` is
-   empty and `git -C M branch --show-current` is `main`; otherwise report it.
-3. If `main` isn't an ancestor of the run branch, report "main moved".
-4. `git -C M merge --no-ff claude/run-<slug> -F - <<'EOF' ... EOF` with the
-   title `Phase <N>: <name>` and the coordinator's summary plus the test
-   result. On a conflict, `git -C M merge --abort` and report the files. If
-   the permission system denies the merge, report the exact command for the
-   human.
-5. Don't remove the run branch or its worktree.
+2. **Promote, don't merge** (John 2026-11-05, `docs/plans/workflow-history.md`):
+   `main` gets one commit per item squash, rebuilt by `scripts/promote.sh`
+   without the run's bookkeeping; a run branch is never merged into `main`.
+   Note `old=$(git rev-parse main)`. If `main` isn't an ancestor of the run
+   branch, report "main moved" (promote.sh refuses it too, exit 2). In the
+   coordinator's worktree run
+   `scripts/promote.sh --run claude/run-<slug> --summary <repo root>/.claude/reports/promote-run-<slug>.md`
+   (writes the branch `promote/run-<slug>`; it never touches `main` or the
+   run branch). Exit 3 or anything but `tree check: PASS` in the summary:
+   don't land it, report FAILING with the output. Read the summary's
+   **Needs a look** list (code commits with no item code in the subject, bookkeeping-looking subjects that change code)
+   and fix each with an override line (format in the promote.sh header) in a
+   copy of `scripts/promote-overrides.tsv` (empty if there is none) kept as
+   `<repo root>/.claude/reports/promote-overrides-run-<slug>.tsv`, then rerun
+   with `--replace --overrides <that copy>`. Don't commit it to the run branch
+   now (that would move the tip past what you tested); list the lines in the
+   report so the coordinator commits them after landing. `git log --oneline
+   $old..promote/run-<slug>` must read as one `type(CODE): summary` commit
+   per item.
+3. **Land it** under the merge lock, in **one** call, with an old-value check
+   so a `main` that moved meanwhile is refused:
+   - `main` checked out nowhere (`git worktree list --porcelain` has no
+     `branch refs/heads/main`; the usual case):
+     `flock <repo root>/.claude/merge.lock git update-ref refs/heads/main promote/run-<slug> $old`
+   - `main` checked out in `M`: one `flock <repo root>/.claude/merge.lock bash -c '...'`
+     call that checks `git -C M status --porcelain --untracked-files=no` is
+     empty and `git -C M branch --show-current` is `main` (otherwise report
+     it), then `git -C M merge --ff-only promote/run-<slug>`.
+   If the permission system denies it, report the exact command for the human.
+4. **Reconnect the run branch** (merge lock, one call, clean check of the
+   run worktree apart from `docs/runs/`):
+   `git -C <worktree> merge -s ours main -m "chore(run): reconnect to promoted main (no file changes)"`.
+   Safe because the tree check proved `main` equal to the run branch outside
+   `docs/runs/`; without it the next promotion refuses (base not an
+   ancestor). Then `git branch -D promote/run-<slug>` (`main` now has it).
+5. The coordinator's summary has no merge commit to go in any more: put it,
+   with the test result and the new `main` range (`$old..main`), in your
+   report. Don't remove the run branch or its worktree.
 
 ## Re-verification (when resumed)
 
@@ -395,7 +437,7 @@ Write the full report (format below) to
 `train-<first slug>-verify.md`, a heavy batch `heavy-<short H>-verify.md`, a
 phase merge `to-main-<phase>-verify.md`). Your system prompt may say not to
 write report files; that line exempts files that are input for others, which
-this is. **Your final message is the verdict block plus the report path, no
+this is. Use the Write tool for it (granted for this, John 2026-11-05). **Your final message is the verdict block plus the report path, no
 more than about 15 lines**; the coordinator reads only that unless the verdict
 is FAILING or INCOMPLETE. The block, at most 8 lines:
 

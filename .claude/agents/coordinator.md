@@ -140,8 +140,8 @@ means one was missed: regenerate then.
 3. **Set up your branch.** Three levels:
    - `main`, in the **main checkout** (the repo root:
      `dirname "$(git rev-parse --path-format=absolute --git-common-dir)"`).
-     The human browses it. It changes only through merges (see "Merging into
-     `main`"). Never commit to it directly.
+     The human browses it. It changes only through promotions (see "Merging into
+     `main`"). Never commit to it directly, and never merge a run branch into it.
    - **Your branch**, `claude/run-<slug>`, in the worktree
      `<repo root>/.claude/worktrees/run-<slug>`: the **integration branch** and
      **integration checkout**. Finished items land here.
@@ -202,6 +202,12 @@ changes, headless rendering on the Intel iGPU or lavapipe)? What evidence would 
 carries the detail; the brief names the item, adds context, says what "done"
 means under the **completion bar** (CLAUDE.md), and names the agents working in
 parallel on neighbouring code.
+Before a brief names an environment variable or option (`FB_LAYER`, `FB_ONLY`,
+a script flag), check it with that script's `--help` (or its header): a
+misspelt or invented name used to be ignored without a word.
+Ask for a per-item `client-full` run (`FB_LAYER=full`) in the brief only when
+the item needs it before merging; otherwise the full client layer waits for the
+batched heavy run (John 2026-11-05).
 
 **2. Judge the size and pick the agent.**
 - *Small or medium, clear*: one `coder`.
@@ -299,8 +305,9 @@ culprit and reports it FAILING (re-open it). A train of such items can run on
 
 **Batched heavy runs.** Items merge after the quick check, so the heavy layers
 (client game tests, `scripts/perf.sh`, `scripts/flythrough.sh`) run on the run
-branch in batches: every 3–4 merges, at a batch boundary, and always before
-`merge: to-main`. Start a verifier with `heavy-batch: <last batched
+branch in batches: **every 4 merges** (counted in merges, not hours), at a
+batch boundary, and always before `merge: to-main` (John 2026-11-05). A
+per-item `client-full` run happens only when the brief asks for it. Start a verifier with `heavy-batch: <last batched
 head>..<integration head>` and the integration checkout. It runs
 them on a snapshot, so merges carry on meanwhile. Record each run in the
 ledger's "Heavy runs" (range, head, PASS/FAIL, evidence folder). On FAIL it
@@ -378,7 +385,8 @@ Research flows to the human **as each note is written**, not in a final report.
   committed as it's finished.
 - When a batch comes back, merge it yourself (docs only, merge lock), add one
   `INDEX.md` line per note (name, link, one-line verdict, status `new`), and
-  merge the run branch into `main` so the human sees it (see below). Then
+  promote the run branch to `main` so the human sees it (docs-only, see
+  "Merging into `main`"). Then
   start the track's next batch, steering it by the INDEX statuses
   (`deep-dive`: spend more on it; `drop`: stop) and the human's comments.
 - After the first 8–10 notes, tell the human it's time for the **early skim**
@@ -490,25 +498,50 @@ On a new session: the manual `scripts/docs-sync.sh` run above also checks the
 server; then start the watcher. Don't create a cron job for docs sync.
 
 John's own branches, `john/<claude branch it came from>` (e.g.
-`john/adr-worldgen`), and `john-work` are merged into the run branch and
-`main` like any reviewed work (merge lock; never rewrite them).
+`john/adr-worldgen`), and `john-work` are merged into the run branch like any
+reviewed work (merge lock; never rewrite them) and reach `main` by promotion.
 
 ## Merging into `main`
+
+`main` gets **promoted commits only** (John 2026-11-05,
+`docs/plans/workflow-history.md`): `scripts/promote.sh` rebuilds the run
+branch's new work as one `type(CODE): summary` commit per item squash, without
+the ledgers in `docs/runs/`, and `main` is moved to that. A run branch is
+never merged into `main`. Landing a promotion (the verifier's `merge: to-main`
+steps 2-4, or you for docs-only):
+
+```sh
+old=$(git rev-parse main)
+scripts/promote.sh --run claude/run-<slug> --summary <repo root>/.claude/reports/promote-run-<slug>.md
+#   needs "tree check: PASS"; read its "Needs a look" list
+flock <repo root>/.claude/merge.lock git update-ref refs/heads/main promote/run-<slug> $old
+#   (if `main` is checked out somewhere: git -C <that checkout> merge --ff-only promote/run-<slug>,
+#    after a clean check, in the same flock call)
+flock <repo root>/.claude/merge.lock git -C <integration checkout> \
+    merge -s ours main -m "chore(run): reconnect to promoted main (no file changes)"
+git branch -D promote/run-<slug>
+```
+
+The `-s ours` merge only records `main` as merged (the tree check proved the
+content equal outside `docs/runs/`), so the next promotion finds `main` as an
+ancestor; without it promote.sh refuses.
 
 - **At each phase boundary**: update the ROADMAP status table on your branch,
   commit, then start a verifier with `merge: to-main`, the phase's items and
   outcomes, the main checkout's path, the last passing batched heavy run
-  (head, evidence folder) if any, and a **summary for the merge commit**
-  (title `Phase <N>: <name>`, one line per item with its outcome, blocked
-  items and why, assumptions the human may want to override). If `main` has
-  moved on, have a `lead-coder` merge `main` into your branch first.
+  (head, evidence folder) if any, and a **phase summary** (`Phase <N>:
+  <name>`, one line per item with its outcome, blocked items and why,
+  assumptions the human may want to override; it goes in the verifier's
+  report and your ledger, since a promotion has no merge commit). If `main`
+  is not an ancestor of your branch, merge `main` into your branch first
+  (merge lock; a `lead-coder` if it conflicts). Afterwards commit any
+  override lines the verifier lists (`scripts/promote-overrides.tsv`).
 - **Docs-only changes may go to `main` at any time**, so research and ADRs
-  reach the human quickly: if everything on the run branch since the last
-  `main` merge is under `docs/`, merge it yourself (merge lock;
-  `git -C <main checkout> merge --no-ff claude/run-<slug>`), after checking the
-  main checkout is clean and on `main`. If the human has local changes there,
-  skip it and say so.
-- If the permission system denies a merge into `main`, record the command in
+  reach the human quickly: if `git diff --name-only main claude/run-<slug>
+  -- . ':!docs/'` is empty (everything since the last promotion is under
+  `docs/`), promote and land it yourself as above. If `main` is checked out
+  somewhere with local changes from the human, skip it and say so.
+- If the permission system denies landing on `main`, record the command in
   the ledger, give it to the human, and keep going.
 - **At a phase merge, tidy the docs** (or have an `assistant` do it on a branch):
   shrink the finished phase in ROADMAP to a short summary with its open known
@@ -547,11 +580,11 @@ not a reason to stop.
 ## Finishing
 
 When every item in scope is done, blocked, or awaiting a gate:
-1. Make sure finished work is merged into `main`.
+1. Make sure finished work is promoted to `main`.
 2. Wait for (or record) every agent still in flight; leave nothing running
    unrecorded.
 3. Commit the ledger.
-4. Report to the human: what got done (with merge commits into `main`); what's
+4. Report to the human: what got done (with the promoted range on `main`); what's
    unfinished and why; gates awaiting them and their review packages;
    unmerged branches and worktrees (including spikes) and what each holds;
    assumptions they may want to override; files to review (build, flake,

@@ -130,7 +130,9 @@ merging the integration branch into yours (below), and after your last code
 commit. **Which layers: run what `scripts/test-scope.sh <integration branch>`
 prints** (required ones always; "consider" ones when the printed reason applies,
 and say in the report which you ran or skipped; UNKNOWN files mean every layer,
-and add a row to `scripts/test-scope.tsv`). Policy and edge cases (a building
+and add a row to `scripts/test-scope.tsv`). Where it requires `client-full`,
+run the quick client layer and leave the full one to the batched heavy run,
+unless your brief asks for `client-full` (John 2026-11-05). Policy and edge cases (a building
 change that moves footprints or ground claims, a new block kind):
 `docs/TESTING.md`. Don't repeat a passing run just to be sure.
 Keep tool output small: `tail` or `grep` logs, don't print full Gradle

@@ -122,5 +122,19 @@ check "run branch: CLEANUP REFUSED" "$(grep -c '^CLEANUP REFUSED' "$T/m7.out")" 
 check "list shows every run" "$("$ST" | wc -l)" 7
 check "unknown run exits 2" "$(status nosuch)" 2
 
+# 8. subject format (H1): warning by default, refusal with FB_SUBJECT_STRICT=1, quiet on a good subject
+check "bad subject: SUBJECT FORMAT warning" "$(grep -c '^SUBJECT FORMAT: ' "$T/m1.out")" 1
+printf 'feat(SELFTEST): a good subject\n\nbody\n' > "$T/goodmsg"
+branch subjok
+FB_SUBJECT_STRICT=1 "$SM" "$R" run claude/subjok "$T/goodmsg" > "$T/m8.out" 2>&1; rc=$?
+check "good subject, strict: merged" "$rc" 0
+check "good subject: no warning" "$(grep -c '^SUBJECT FORMAT' "$T/m8.out")" 0
+branch subjbad
+H0=$(git -C "$R" rev-parse HEAD)
+FB_SUBJECT_STRICT=1 "$SM" "$R" run claude/subjbad "$T/msg" > "$T/m9.out" 2>&1; rc=$?
+check "bad subject, strict: exit 8" "$rc" 8
+check "bad subject, strict: REFUSED line" "$(grep -c '^SUBJECT FORMAT REFUSED' "$T/m9.out")" 1
+check "bad subject, strict: nothing merged" "$(git -C "$R" rev-parse HEAD)" "$H0"
+
 echo "$fails failure(s)"
 [ "$fails" = 0 ]
