@@ -1,0 +1,68 @@
+# Commit subject overrides for scripts/promote.sh (history workflow, docs/plans/workflow-history.md step H2).
+# Tab-separated: <run sha prefix> <class: code|docs|bk|-> [subject]. "-" keeps the derived class; the subject
+# replaces the derived first line of the promoted commit that this run commit heads (body and trailers stay).
+# The sha is the commit on the run branch's first-parent line (the one "Needs a look" lists), never a
+# feature-branch commit inside a merge: promote.sh refuses those. Rows for commits already on main, or for
+# another run's commits, are skipped, so one file serves the main rewrite (E1) and the Phase 6 promotion (E2).
+# Subjects follow `type(CODE): summary` (verifier.md); without an item code the scope is the area.
+# From Phase 6 on the verifier writes semantic subjects itself, so new rows should rarely be needed.
+# Every row was classifiable from its diff and merge message; none waits on John (2026-11-05).
+
+# Rewrite of main (Phases 0-5 and the earlier Phase 6 merges), from the 2026-11-02 dry run
+eb50c754	-	feat: Phase 0 scaffolding: Gradle modules, boundary check, CLI, viewer, mod, test-all
+cbfd76eb	-	chore(silverbullet): SilverBullet plugs (Silversearch, Mermaid), research EPUB script, INDEX notes
+284af7e6	-	docs(research): Phase 1 complete: deep-dives, landscape synthesis, SilverBullet conventions
+beb73b20	-	docs(worldgen): Phase 2 worldgen spikes S1-S8 and ADR 0003 draft; client tests force SDL x11
+7af85040	-	docs(ADR): Phase 2 gate passed: ADR 0003 accepted (supersedes 0002) with quiet-machine S6 numbers
+2d70bc74	-	feat(viewer): Phase 3 gate follow-ups: tilted gallery top view, jettied wings and setbacks
+d8b2ce6e	-	feat: Phase 4 building generator depth: v1 pipeline, roofs, facades, interiors, 9 types, 5 styles
+e4d14dbd	-	feat(tower): Phase 4 gate follow-ups: stilted watchtowers, viewer guide, review conventions
+7ee555d9	-	feat(shop): open ground storeys for shops (arcade, market hall), workshop porch
+2c3cd867	-	feat(interior): interior circulation: hub door graph, passages, archways
+55412f34	-	test(T2): nine real-terrain gate windows with a site table
+316dfb2d	-	chore(silverbullet): CONFIG.md ADR tag; SB_SPACE_IGNORE hides source and data
+f3209968	-	chore(viewer): Phase 5 gate review pack (capture spec, featured scenes)
+fe7c51e5	-	feat(settlement): Phase 5 gate follow-ups: ROADS2, OPENPLAN, WALLWALK, SKYLINE, ROADS3
+b83f0ee0	-	feat(rail): rail role beside exterior flights, landings and lookout stairs
+55899225	-	test(viewer): e2e takes a free preview port per run
+40abde5d	-	chore(repo): untrack mod/logs files re-added by B1
+850f7886	-	feat(terrain): terrain in a real world: street earth and headroom, deep foundations
+4a994be3	-	chore(scripts): OCR and scaling utilities for gameplay screenshot galleries
+934626b4	-	feat(remote): scripts/remote.sh runs builds and tests on a remote worker
+
+# Phase 6 (main..claude/run-phase6), from the 2026-11-02 dry run plus 3c5ea123, 270f4cf2 and 740e87cf (2026-11-05)
+a56281cd	-	feat(roads): roads between settlements, planner half (road graph, port tag, approaches, roads CLI)
+7af866f1	-	chore(design): generated block reference for the design reviewers
+c809a0fa	-	chore(process): two-level verification, evidence pinning, merge trains, short merge lock
+16c06741	-	chore(process): warm persistent post-merge snapshot worktree
+b820a078	-	docs(design): John's 2026-10-25 design decisions (DS-1, DS-23..29, savanna and mass-timber briefs)
+538398a0	-	test(viewer): load-scaled e2e budgets; DS-39 and DS-40 proposed
+86be78e0	-	chore(silverbullet): John's CONFIG.md edit
+49983a7b	-	feat(windows): generous windows (1x2 default, 2x2 common), glazing report, window-size check
+05164b81	-	docs(design): file John's 2026-10-26 answers, DS-41..43, REVIEW archive
+56ae97ca	-	chore(review): review-check.sh keeps archived REVIEW items from coming back
+ed5aa374	-	chore(test): FB_VK=intel renderer switch for client tests, Intel iGPU spike note
+df9f187c	-	chore(SHOPLOW): door-rise baseline tool and tables
+f526aab6	-	chore(test): Intel iGPU by default for client tests, lavapipe fallback
+48369a83	-	chore(test): scripts/test-scope.sh and the docs/TESTING.md policy
+36110559	-	fix(tooling): review-check catches duplicate titles; test-scope reads the current checkout
+a15d5cc1	-	chore(test): at most 2 full fast suites machine-wide (suite slots)
+686cf4ea	-	chore(remote): remote worker support from main (scripts/remote.sh), with fixes
+4c815d6e	-	fix(snapshot-test): own lock file instead of heavy.lock (self-deadlock)
+6cc9cf53	-	fix(remote): remote.sh fixes from the first remote worker run
+d5f2a27d	-	chore(order-test): EULA wording for the standing approval; polish lines, ROOMWALK note
+0ae0c46a	-	chore(anywhere): scripts/anywhere.sh routes test runs to whichever host frees first
+cc346f11	-	chore(order-test): writes eula=true itself (standing approval), local servers only
+4b04d2dd	-	build(DEVSHELL): move the flake to nix/ (path: flake), cached scripts/dev wrapper, root stub
+ce3f9b69	-	docs(BASEMENT): John's 2026-10-29 basement answers (DS-75 proposed); docs-sync ignores ledger edits
+4cdeaffc	-	revert(MAINSTUB): undo MAINSTUB-CORE (whole-settlement path never cuts the core tile)
+1b3f6e54	-	fix(test): client-test and server-only-test unset CI so Loom does not nest xvfb-run
+43f28d14	-	docs(design): file John's 2026-10-31 answers; prune QUESTIONS.md and stop union-merging it
+68699407	-	docs(explainer): explainer page builder: seed to city, where it reads terrain, where the time goes
+96b6e549	-	chore(remote): worker pool in .claude/workers.conf; remote.sh --worker, anywhere.sh routes across it
+2a0655fb	-	test(PERFKNOWN): perf-check self-test accepts a budget file with no knownOver rows
+32629e3d	-	docs(process): document the Haiku docs watcher
+7457c1f8	-	fix(SRVONLY): server-only-test finds Xvfb through xvfb-run on workers
+3c5ea123	-	chore(promote): history-on-main proposal and promote.sh dry run
+270f4cf2	-	chore(process): verifier Write tool, semantic commit subjects, promotion to main (W1, H1, H3)
+740e87cf	-	chore(process): board, ask-john and needs-john status scripts (W4, W5)

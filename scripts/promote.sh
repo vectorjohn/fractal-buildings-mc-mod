@@ -13,30 +13,44 @@
 #   docs  docs that explain or decide (docs/design, docs/plans, research
 #         notes, ADRs, CLAUDE.md, agent files, README ...)
 #   bk    bookkeeping only: ledgers, ROADMAP, REVIEW, QUESTIONS, NOTES,
-#         ASSUMPTIONS, GLOSSARY, INDEX lines, work logs, docs/review/
+#         ASSUMPTIONS, GLOSSARY, INDEX lines, work logs, docs/review/,
+#         scripts/promote-overrides.tsv
 #         (a merge of --base back into the run branch is bk too)
 # and groups them: every code commit starts a group; a docs commit starts
 # one unless the open group is docs too (adjacent docs coalesce); bk
 # commits fold into the open group (leading bk joins the first group).
 # Each group becomes ONE commit whose tree is the run branch's tree at the
-# group's last commit (excluded paths kept as they are on --base), written
+# group's last commit (excluded paths kept as they are on --base; when
+# --base has commits the run had not merged yet at that point, they are
+# merged in with git merge-tree so the promoted commit does not revert
+# them; a file changed on both sides takes the run's side and gets
+# --base's lines with the run's merge of --base), written
 # with git commit-tree: no cherry-picks, so no conflicts, and the last tree
 # equals the run tip's by construction (checked anyway; exit 3 if not).
 # Messages are semantic, `type(CODE): summary`, derived from the subject
-# and paths; the body lists the folded run commits and a
+# and paths (a subject already in that form, as verifier.md writes them
+# since H1, is kept as written); the body lists the folded run commits and a
 # `Run-commits: A..B` trailer; the last commit carries
 # `Promoted-from: <run tip>`.
 #
 # It never touches --base or any existing branch: it writes --branch
 # (default promote/<run slug>; --dry-run: claude/promote-dryrun) and refuses
 # if that exists, unless --replace and the name starts with promote/ or
-# claude/promote-. Landing it is `git merge --ff-only <branch>` on main
-# (coordinator, merge lock), then `git merge main` into the run branch so
-# the next promotion sees main as an ancestor.
+# claude/promote-. Landing it (verifier.md "Phase merge into main",
+# coordinator.md): under the merge lock, `git update-ref refs/heads/main
+# promote/<slug> <old main>` (or `git merge --ff-only` where main is
+# checked out), then `git merge -s ours main` into the run branch, so the
+# next promotion sees main as an ancestor without changing a file (the
+# tree check proved the trees equal outside the excluded paths).
 #
 # Overrides (--overrides, default scripts/promote-overrides.tsv if present):
 # tab-separated `<run sha prefix> <class: code|docs|bk|-> [message]`; a
-# message replaces the derived subject line of the group that commit heads.
+# message replaces the derived subject line of the group that commit heads
+# (a message on a commit that heads no group is listed under "Needs a look").
+# A row must name a first-parent commit of the walked range; rows for older
+# commits (already promoted, base history) or for commits the run cannot
+# reach (another run's rows) are skipped and counted, and a row naming a
+# commit inside a merged side branch is refused (exit 2).
 # --onto REV stacks the new commits on REV instead of --base (used once, to
 # put a promotion on a rewritten main): REV must equal --base outside the
 # excluded paths, which then come from REV.
@@ -96,11 +110,26 @@ if [ -f "$top/docs/GLOSSARY.md" ]; then
   while IFS=$'\t' read -r n c; do [ -n "${num2code[$n]:-}" ] || num2code[$n]=$c; done < <(
     awk -F' *\\| *' '$3 ~ /^[0-9]+\.[0-9]+[a-z]?$/ {print $3 "\t" $2}' "$top/docs/GLOSSARY.md")
 fi
-declare -A ov_class=() ov_msg=()
+# Overrides apply only to first-parent commits of this range. A row naming an
+# older commit (already promoted, or base history) or a commit the run tip
+# cannot reach (another run's row in the shared file) is skipped and counted;
+# a row naming a commit the run reaches but does not walk (a feature-branch
+# commit inside a merge) would silently never apply, so it is refused.
+declare -A ov_class=() ov_msg=() inrange=()
+for c in "${commits[@]}"; do inrange[$c]=1; done
+range_start=${range%%..*} ov_used=0 ov_old=0 ov_other=0
 if [ -n "$overrides" ] && [ -f "$overrides" ]; then
   while IFS=$'\t' read -r s c m; do
     case "$s" in ''|\#*) continue ;; esac
     full=$(git rev-parse --verify -q "$s^{commit}") || { echo "promote: override $s not found" >&2; exit 2; }
+    case "$c" in code|docs|bk|-) ;; *) echo "promote: override $s: class '$c' is not code, docs, bk or -" >&2; exit 2 ;; esac
+    if [ -z "${inrange[$full]:-}" ]; then
+      if git merge-base --is-ancestor "$full" "$range_start"; then ov_old=$((ov_old+1)); continue; fi
+      if ! git merge-base --is-ancestor "$full" "$run_sha"; then ov_other=$((ov_other+1)); continue; fi
+      echo "promote: override $s ($(git log -1 --format=%s "$full")) is outside the walked range $range:" >&2
+      echo "  not a first-parent commit of $run; name the run-branch commit that merged it" >&2; exit 2
+    fi
+    ov_used=$((ov_used+1))
     [ "$c" = - ] || ov_class[$full]=$c; [ -z "${m:-}" ] || ov_msg[$full]=$m
   done < "$overrides"
 fi
@@ -109,7 +138,7 @@ is_bk_path() {
   case "$1" in
     docs/runs/*|docs/log/*|docs/review/*|docs/archive/*|docs/ROADMAP.md|docs/REVIEW.md|docs/REVIEW-ARCHIVE.md|\
     docs/QUESTIONS.md|docs/NOTES.md|docs/ASSUMPTIONS.md|docs/PERFORMANCE.md|docs/GLOSSARY.md|docs/glossary-extra.tsv|\
-    docs/research/INDEX.md|docs/adr/INDEX.md) return 0 ;;
+    docs/research/INDEX.md|docs/adr/INDEX.md|scripts/promote-overrides.tsv) return 0 ;;
   esac; return 1
 }
 is_docs_path() { case "$1" in docs/*|Library/*|README.md|CLAUDE.md|.claude/agents/*) return 0 ;; esac; return 1; }
@@ -192,10 +221,25 @@ groups+=("$head $first $prev")
 tmpd=$(mktemp -d); idx=$tmpd/index; trap 'rm -rf "$tmpd"' EXIT
 start=${onto_sha:-$base_sha}
 parent=$start parent_tree=$(git rev-parse "$start^{tree}")
-made=() skipped=0 n=0 total=${#groups[@]}
+made=() skipped=0 nkept=0 nconf=0 n=0 total=${#groups[@]}
+declare -A msg_used=() confpaths=()
 for g in "${groups[@]}"; do
   read -r h f l <<<"$g"; n=$((n+1))
-  GIT_INDEX_FILE=$idx git read-tree "$l"
+  src=$l mb=$(git merge-base "$base_sha" "$l")
+  conflicted=()
+  if [ "$mb" != "$base_sha" ]; then   # --base has commits the run had not merged yet here: keep them, do not revert them
+    nkept=$((nkept+1)); rc=0
+    mt=$(git merge-tree --write-tree --name-only --no-messages --merge-base="$mb" "$base_sha" "$l" 2>/dev/null) || rc=$?
+    if [ $rc -le 1 ] && [ -n "$mt" ]; then
+      src=${mt%%$'\n'*}
+      [ $rc = 0 ] || { mapfile -t conflicted < <(tail -n +2 <<<"$mt" | sort -u); nconf=$((nconf+1)); for p in "${conflicted[@]}"; do confpaths[$p]=1; done; }
+    else review+=("$(git rev-parse --short "$h") merge-tree failed against unmerged $base changes; this promoted commit lacks them until the run merges $base"); fi
+  fi
+  GIT_INDEX_FILE=$idx git read-tree "$src"
+  for p in ${conflicted[@]+"${conflicted[@]}"}; do   # a conflicted file takes the run's side; base's lines arrive with the run's merge of base
+    GIT_INDEX_FILE=$idx git rm -q -f --cached --ignore-unmatch -- "$p" >/dev/null
+    git ls-tree --full-tree "$l" -- "$p" | GIT_INDEX_FILE=$idx git update-index --index-info
+  done
   for x in ${excludes[@]+"${excludes[@]}"}; do
     GIT_INDEX_FILE=$idx git rm -r -q -f --cached --ignore-unmatch -- "$x" >/dev/null
     git ls-tree -r --full-tree "$start" -- "$x" | GIT_INDEX_FILE=$idx git update-index --index-info
@@ -208,13 +252,16 @@ for g in "${groups[@]}"; do
     if [[ "${label[$h]}" == John:* ]]; then
       code=""; rest=${label[$h]#John: }; [[ "$rest" != Merge* ]] || rest="review feedback"
       if [[ "$rest" =~ ^[^\ ]+\.md(\ [^\ ]+)*$ ]]; then fl=""; for w in $rest; do fl="${fl:+$fl, }${w##*/}"; done; rest="notes on $fl"; fi
-      rest="John's ${rest#John }"
+      rest=${rest#John: }; rest=${rest#John }; rest="John's $rest"
     fi
   fi
   [ "${cls[$h]}" != bk ] || { t=chore; code=""; rest="run bookkeeping"; }
-  if [ -z "$code" ] && [ "${cls[$h]}" = code ]; then review+=("$(git rev-parse --short "$h") no item code in subject: ${label[$h]}"); fi
+  semantic=""   # already `type(CODE): summary` (verifier.md since H1): kept as written
+  if [ "${cls[$h]}" != bk ] && [[ "${label[$h]#John: }" =~ ^(feat|fix|perf|test|docs|build|chore|revert)(\([^\)]+\))?:\ .+ ]]; then semantic=${label[$h]#John: }; fi
+  if [ -z "$code" ] && [ -z "$semantic" ] && [ "${cls[$h]}" = code ] && [ -z "${ov_msg[$h]:-}" ]; then review+=("$(git rev-parse --short "$h") no item code in subject: ${label[$h]}"); fi
   subject="$t${code:+($code)}: $(lcfirst "$rest")"
-  [ -z "${ov_msg[$h]:-}" ] || subject=${ov_msg[$h]}
+  [ -z "$semantic" ] || subject=$semantic
+  [ -z "${ov_msg[$h]:-}" ] || { subject=${ov_msg[$h]}; msg_used[$h]=1; }
   {
     echo "$subject"; echo
     if [ "$(git log -1 --format=%P "$h" | wc -w)" = 1 ]; then   # keep the item squash's own body
@@ -236,6 +283,10 @@ for g in "${groups[@]}"; do
   made+=("$new"); parent=$new parent_tree=$tree
 done
 
+for c in "${!ov_msg[@]}"; do
+  [ -n "${msg_used[$c]:-}" ] || review+=("$(git rev-parse --short "$c") override message unused (not the head of a non-empty group): ${ov_msg[$c]}")
+done
+
 # Tree check: promoted tip == run tip, except excluded paths.
 pathspec=(.); for x in ${excludes[@]+"${excludes[@]}"}; do pathspec+=(":(exclude)$x"); done
 if git diff --quiet "$parent" "$run_sha" -- "${pathspec[@]}"; then check="PASS (identical to $run outside: ${excludes[*]:-nothing})"
@@ -251,6 +302,9 @@ out() {
   echo "- run first-parent commits: ${#commits[@]} (code $ncode, docs $ndocs, bookkeeping $nbk)"
   echo "- promoted commits: ${#made[@]} (empty groups dropped: $skipped)"
   echo "- excluded paths (kept as on the commit it stacks on): ${excludes[*]:-none}"
+  ovshow=${overrides#"$top"/}; echo "- overrides: ${ovshow:-none} ($ov_used applied; skipped: $ov_old already promoted or base history, $ov_other for other runs)"
+  echo "- groups built on $base changes the run had not merged yet (kept, not reverted): $nkept"
+  if [ $nconf -gt 0 ]; then echo "- of those, $nconf took the run's side in files changed on both sides ($base's lines arrive with the run's merge of $base): $(printf '%s\n' "${!confpaths[@]}" | sort | paste -sd' ')"; fi
   echo "- tree check: $check"
   echo; echo "# Needs a look (${#review[@]})"; echo
   if [ ${#review[@]} -eq 0 ]; then echo "none"; else printf -- '- %s\n' "${review[@]}"; fi
@@ -259,5 +313,5 @@ out() {
   echo '```'
 }
 if [ -n "$summary" ]; then out > "$summary"; echo "promote: summary in $summary"; fi
-out > "$tmpd/summary"; sed -n 1,9p "$tmpd/summary"
+out > "$tmpd/summary"; sed -n 1,11p "$tmpd/summary"
 [ "$check" != FAIL ] || exit 3
