@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Is this host quiet enough for a timing to count as a measurement? (John 2026-10-30/31: a timing taken on a
+# Is this host quiet enough for a timing to count as a measurement? (the user, 2026-10-30/31: a timing taken on a
 # busy machine is not a measurement and is not reported as a result; CLAUDE.md "Parallel work".)
 #
 #   scripts/quiet-check.sh [--own-heavy] [--worker W] [--own-job L] [--cpu C] [--wait S] [--label L]    one look now

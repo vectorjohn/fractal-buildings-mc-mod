@@ -25,7 +25,7 @@ the coder, then what remains goes to the polish backlog), **suggestions**
 (taste; go to the ROADMAP polish backlog), **proposed rules** (for John; a
 should-fix theme that recurs across items becomes one) and items for John
 (REVIEW.md). Each review ends with a verdict: `meets the standard`,
-`should-fix round needed` or `needs John`; the reviewer decides what is good
+`should-fix round needed` or `needs the user`; the reviewer decides what is good
 enough, and a re-review checks only the listed items. Their review files are `.claude/reports/<item>-architect.md`
 and `<item>-interior.md` (untracked scratch); a report that REVIEW.md or
 STANDARDS.md cites gets a committed copy in

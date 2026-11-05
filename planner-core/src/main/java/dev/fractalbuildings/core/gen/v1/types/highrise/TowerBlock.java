@@ -17,7 +17,7 @@ import dev.fractalbuildings.core.gen.v1.model.Massing;
  * A west shaft mirrors it.
  *
  * <p>{@code sd} is the stairwell depth, one constant for the whole generator ({@link #SD}): 3 is an open
- * well beside the landing row, 4 adds a guard row (John's open question in the plan).
+ * well beside the landing row, 4 adds a guard row (the user's open question in the plan).
  */
 public record TowerBlock(int kx, int kz, int len, boolean shaftEast, int hw, int sd) {
 	/** Stairwell depth of the generator. */

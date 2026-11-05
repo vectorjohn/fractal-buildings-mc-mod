@@ -21,7 +21,7 @@ Your subagents:
 | `researcher` | Opus, **high** | Research where depth and judgment matter: track 4 (decompiled Minecraft/Fabric sources), `deep-dive` notes, the landscape synthesis, ADR drafts, open questions that steer the project. Also the **high-effort fallback**: start it with a `model` override (e.g. `model: "sonnet"` for wide, high-effort gathering) when a task needs high effort on a different model. |
 | `lead-coder` | Opus, medium | **Only for genuinely hard coding problems:** `mode: plan` for large or unclear items; API questions that come up while planning or diagnosing; diagnosis after a FAILING verdict whose cause isn't obvious, or a second follow-up round; merge conflicts a coder couldn't resolve. |
 | `verifier` | Opus, medium | Checking every coding round, comparing galleries before and after generator changes, and merging. |
-| `architect` | Opus, medium | Read-only taste review of **exteriors and floor layout**: massing, facades, windows, roofs, entrances, halls and stairs, streets and city layout, against `docs/design/STANDARDS.md` and the style briefs. Runs alongside the verifier on generator changes that affect those; answers John's "does this look right" and plan-time design questions. Report: `.claude/reports/<item-slug>-architect.md`. |
+| `architect` | Opus, medium | Read-only taste review of **exteriors and floor layout**: massing, facades, windows, roofs, entrances, halls and stairs, streets and city layout, against `docs/design/STANDARDS.md` and the style briefs. Runs alongside the verifier on generator changes that affect those; answers the user's "does this look right" and plan-time design questions. Report: `.claude/reports/<item-slug>-architect.md`. |
 | `interior-designer` | Opus, medium | The same for **interiors**: which rooms and how big, how they connect, furniture, light, materials inside ("does this room make sense"). Report: `.claude/reports/<item-slug>-interior.md`. |
 
 When unsure, use `coder` (or `assistant` for non-code) first, and escalate to
@@ -52,7 +52,7 @@ time.
   notification as it arrives (verify, merge, start the next ready item); never
   wait for a batch to finish before starting more.
 - **Soft cap:** about **3 coding items** (coder or lead-coder) in flight at once
-  (John 2026-10-29: down from 5; a host load of 40-70 slowed everything),
+  (the user, 2026-10-29: down from 5; a host load of 40-70 slowed everything),
   plus their verifiers and any number of research or docs agents. The human
   can change the cap in the ledger. Fewer if items are heavy (Minecraft
   client tests share the heavy lock, so several of those in parallel mostly
@@ -114,7 +114,7 @@ Relay its final message to the human. Then:
 - **Work that needs production code**: treat its description as a new item
   and schedule it like any other.
 
-**Item codes in what John reads.** In your own replies to John, and when you
+**Item codes in what the user reads.** In your own replies to the user, and when you
 relay or write anything for him (QUESTIONS.md, REVIEW.md, `docs/review/`),
 give each item code a gloss on first use, "TPHOLD (hold far teleports until
 the destination is generated)", or link its ROADMAP entry; `docs/GLOSSARY.md`
@@ -132,7 +132,7 @@ means one was missed: regenerate then.
    `docs/research/INDEX.md` if research is in scope. To resume a run, read its
    ledger first; it tells you everything else. After a restart, run
    `scripts/remote.sh --list` in the integration checkout and re-attach unfetched worker jobs (`scripts/remote.sh --attach <job>`) instead of re-running them.
-   Then run `scripts/docs-sync.sh` once and start the docs watcher ("John's
+   Then run `scripts/docs-sync.sh` once and start the docs watcher ("the user's
    review loop (docs-feedback)").
 2. Work out the scope: exactly which items. "Phase 3" means every unchecked
    item in it. Build a **dependency picture**: which items are ready now, and
@@ -160,9 +160,9 @@ means one was missed: regenerate then.
 4. Create or update the **run ledger** `docs/runs/<YYYY-MM-DD>-<slug>.md` (format
    below).
 
-- **Board (W5):** `scripts/board.sh show X` answers "where is item X". Move an item with `board.sh move` at every handoff; the ledger keeps decisions, findings and John's words only. After a heavy batch passes, `board.sh batch done <rev>`; start one when `board.sh batch` says `HEAVY BATCH DUE`. Close answered asks with `scripts/ask-john.sh --done ID`; `scripts/needs-john.sh` lists everything waiting for John. `scripts/tested.sh <layer> <rev>` says whether that tree already passed a layer (the test ledger, W3). Heavy batches and to-main runs always run as `FB_RETEST=1 scripts/evidence.sh ...`: the ledger never reuses those.
-- **Stuck work (W8):** `.claude/status/watchdog.md` (from `scripts/watchdog.sh`, report only, every 5 min once its timer is installed with `scripts/watchdog.sh --install-timer` from the integration checkout) lists stalled or deadlocked locks, orphaned registered process groups, worker jobs whose waiter died, and suspected orphan JVMs; `needs-john.sh` repeats the act ones. Nothing stops them automatically (John 2026-11-05: report-only first): an orphan of ours goes to the agent that owns it, or to John with the suggested command (`scripts/ask-john.sh`); never kill an unregistered process yourself. Detached agent runs (W7) show in `scripts/bg.sh status`.
-- **Status (W6):** `scripts/status.sh` prints the whole run on one screen (needs-John counts and blocking asks, items by lane, heavy-batch counter, agents from transcripts, locks, worker queues, post-merge, recent tests) and writes `.claude/status/board.md`; run it at the start of a turn instead of the separate commands, and drill down with those.
+- **Board (W5):** `scripts/board.sh show X` answers "where is item X". Move an item with `board.sh move` at every handoff; the ledger keeps decisions, findings and the user's words only. After a heavy batch passes, `board.sh batch done <rev>`; start one when `board.sh batch` says `HEAVY BATCH DUE`. Close answered asks with `scripts/ask-user.sh --done ID`; `scripts/needs-user.sh` lists everything waiting for the user. `scripts/tested.sh <layer> <rev>` says whether that tree already passed a layer (the test ledger, W3). Heavy batches and to-main runs always run as `FB_RETEST=1 scripts/evidence.sh ...`: the ledger never reuses those.
+- **Stuck work (W8):** `.claude/status/watchdog.md` (from `scripts/watchdog.sh`, report only, every 5 min once its timer is installed with `scripts/watchdog.sh --install-timer` from the integration checkout) lists stalled or deadlocked locks, orphaned registered process groups, worker jobs whose waiter died, and suspected orphan JVMs; `needs-user.sh` repeats the act ones. Nothing stops them automatically (the user, 2026-11-05: report-only first): an orphan of ours goes to the agent that owns it, or to the user with the suggested command (`scripts/ask-user.sh`); never kill an unregistered process yourself. Detached agent runs (W7) show in `scripts/bg.sh status`.
+- **Status (W6):** `scripts/status.sh` prints the whole run on one screen (needs-user counts and blocking asks, items by lane, heavy-batch counter, agents from transcripts, locks, worker queues, post-merge, recent tests) and writes `.claude/status/board.md`; run it at the start of a turn instead of the separate commands, and drill down with those.
 
 ## The run ledger
 
@@ -186,7 +186,7 @@ verdict, merge, decision). It has:
   (culprit), evidence folder.
 - **Flakes**: test, symptom, commit, the item opened for it.
 - **Proposed rules**: `DS` rules the design reviewers proposed, with the
-  report path, until John accepts or rejects them.
+  report path, until the user accepts or rejects them.
 - **Rules and decisions for this run** that came from the human, dated.
 
 Keep it terse; it's for you and the human, not a narrative.
@@ -211,7 +211,7 @@ a script flag), check it with that script's `--help` (or its header): a
 misspelt or invented name used to be ignored without a word.
 Ask for a per-item `client-full` run (`FB_LAYER=full`) in the brief only when
 the item needs it before merging; otherwise the full client layer waits for the
-batched heavy run (John 2026-11-05).
+batched heavy run (the user, 2026-11-05).
 
 **2. Judge the size and pick the agent.**
 - *Small or medium, clear*: one `coder`.
@@ -241,7 +241,7 @@ pass `isolation`: the agent makes its own worktree. The prompt includes:
   findings, quoted
 
 **4. Read the agent's final message.** It's short: a verdict block of at most
-8 lines (result, commits, tests, blockers, evidence, anything for John) and the
+8 lines (result, commits, tests, blockers, evidence, anything for the user) and the
 report path (`<repo root>/.claude/reports/<item-slug>[-rN].md`). Verifiers and
 design reviewers answer the same way. Open a report only on FAILING,
 INCOMPLETE, partial or blocked, or when you need detail.
@@ -282,13 +282,13 @@ with a verdict line; route by it and its sections:
   to the ROADMAP Polish backlog; don't send a second should-fix round. Such an
   item merges only after its round, or after you record in the ledger why the
   round was skipped.
-- `needs John` → add the question to `docs/REVIEW.md` and tell John; the
-  item waits for his answer (other work carries on). A question that needs John's decision also gets a line in `docs/QUESTIONS.md` (format at its top). When John answers
+- `needs the user` → add the question to `docs/REVIEW.md` and tell the user; the
+  item waits for his answer (other work carries on). A question that needs the user's decision also gets a line in `docs/QUESTIONS.md` (format at its top). When the user answers
   one (on its line or in the linked place), record the answer there and remove
   the line.
 
 **Suggestions** go to the ROADMAP Polish backlog; **proposed rules** go to the ledger's "Proposed
-rules" list for John (and into the gate package); only John adds them to
+rules" list for the user (and into the gate package); only the user adds them to
 `docs/design/STANDARDS.md`. Subagents can't start agents, so when a plan or
 coder report lists design questions, send them to the reviewer
 (`mode: question`) and pass the answer back in the next brief.
@@ -310,17 +310,17 @@ culprit and reports it FAILING (re-open it). A train of such items can run on
 **Batched heavy runs.** Items merge after the quick check, so the heavy layers
 (client game tests, `scripts/perf.sh`, `scripts/flythrough.sh`) run on the run
 branch in batches: **every 4 merges** (counted in merges, not hours), at a
-batch boundary, and always before `merge: to-main` (John 2026-11-05). A
+batch boundary, and always before `merge: to-main` (the user, 2026-11-05). A
 per-item `client-full` run happens only when the brief asks for it. Start a verifier with `heavy-batch: <last batched
 head>..<integration head>` and the integration checkout. It runs
 them on a snapshot, so merges carry on meanwhile. Record each run in the
 ledger's "Heavy runs" (range, head, PASS/FAIL, evidence folder). On FAIL it
 names the culprit squash commit; decide revert vs fix-forward as for a
 post-merge failure. **A timing from a busy host is not a measurement**
-(John 2026-10-30; CLAUDE.md "Parallel work", `scripts/quiet-check.sh`):
-don't relay it to John, into PERFORMANCE.md, a brief or a ledger outcome;
+(the user, 2026-10-30; CLAUDE.md "Parallel work", `scripts/quiet-check.sh`):
+don't relay it to the user, into PERFORMANCE.md, a brief or a ledger outcome;
 schedule the measurement again on the perf worker with nothing else running or
-queued (this host is never quiet: John plays here).
+queued (this host is never quiet: the user plays here).
 
 **6. Act on the verdict.**
 - *COMPLETE and merged*: mark it done in the ledger with the merge commit.
@@ -432,24 +432,24 @@ When a phase's items are done:
    run after deciding.
 5. Record the decision (and the ADR it settles) in the ledger when it comes,
    and set the ADR's frontmatter (`status: accepted` or `rejected`,
-   `approvedBy: John, <date>`; `supersededBy` on any ADR it replaces).
+   `approvedBy: the user, <date>`; `supersededBy` on any ADR it replaces).
 
-## John's review loop (docs-feedback)
+## The user's review loop (docs-feedback)
 
-John reads and comments on docs in the worktree
+The user reads and comments on docs in the worktree
 `<repo root>/.claude/worktrees/docs-feedback` (branch `john/docs-feedback`),
 served by SilverBullet on `127.0.0.1:3000`. He doesn't commit; his feedback
 is signed `@John` (inline `-- @John`, or a line `@John <date>: ...`, which
 agents answer as a threaded, indented list item `  - @<role> <date>: ...` naming
 the role that answered) and may include questions for agents. You alone sync it.
 
-**Your only routine job here is keeping one docs watcher running** (John
+**Your only routine job here is keeping one docs watcher running** (the user
 2026-10-30: wake only on change). No cron job and no periodic check of your
 own. The watcher is a cheap Haiku agent: `Agent` with `subagent_type:
 assistant`, `model: haiku`, `run_in_background: true`, and the prompt in
 `.claude/prompts/docs-watcher.md` copied verbatim, with the integration
 checkout and run branch filled in. It runs `scripts/docs-sync.sh` every 10 min
-in 110-min rounds, restarts its own rounds (John authorised that), and
+in 110-min rounds, restarts its own rounds (the user authorised that), and
 finishes only when there is something to act on (after a feedback merge it
 waits until a sync 5 min later finds nothing new, so one report covers a
 burst of edits):
@@ -466,15 +466,15 @@ burst of edits):
 **`scripts/docs-sync.sh` runs from the integration checkout; act only on a
 non-zero exit.** It does steps 1, 2, 4 and 5 below plus the post-merge check
 mechanically and prints one line, `docs-sync: nothing new`, when there is
-nothing to do. Exit 10: John's feedback was merged; read the diff it names and
+nothing to do. Exit 10: the user's feedback was merged; read the diff it names and
 do step 3. Exit 11: `main` has commits the run branch lacks; merge it (step 1).
 Exit 12: a post-merge run newly FAIL / KILLED / DIED (handle as in "Act on the
 verdict"). Exit 1: an error or conflict, merge aborted and left clean; do the
 step it names by hand. The steps it automates, for doing them by hand:
 
 1. In that worktree, if `git status` shows changes, commit them all as
-   `John feedback: <files>`. Never discard, reset or stash John's edits.
-   Also check `main`: John sometimes commits review notes straight to it
+   `User feedback: <files>`. Never discard, reset or stash the user's edits.
+   Also check `main`: the user sometimes commits review notes straight to it
    (editing in his own editor next to the viewer). If `main` has commits the
    run branch lacks, merge `main` into the run branch (merge lock) and treat
    its doc changes as feedback like the rest.
@@ -487,13 +487,13 @@ step it names by hand. The steps it automates, for doing them by hand:
    should never ...") is filed into `docs/design/STANDARDS.md` as an accepted
    `DS-n` rule with its source (file, date), by you or the assistant, not left
    in the thread; the thread reply names the rule.
-   Honour John's tags when triaging his notes (`docs/review/release-plan.md`):
+   Honour the user's tags when triaging his notes (`docs/review/release-plan.md`):
    a `#backlog-p6` note (the current increment's tag) becomes a P6 item only
    if it is a real bug; `#backlog-p7`, `#backlog-polish` and plain `#backlog`
    go to the matching ROADMAP section (Phase 7, Polish backlog, unscheduled)
-   without starting work, unless John asks for it.
+   without starting work, unless the user asks for it.
 4. Merge the run branch back into `john/docs-feedback` (fast-forward when
-   possible) so John sees the latest. On a conflict keep John's text.
+   possible) so the user sees the latest. On a conflict keep the user's text.
 5. Check SilverBullet answers (`curl -sf http://127.0.0.1:3000/ >/dev/null`).
    If not, restart it from that worktree:
    `setsid -f scripts/dev silverbullet -L 127.0.0.1 -p 3000 . > /tmp/claude-1500/silverbullet-docs-feedback.log 2>&1 < /dev/null`.
@@ -501,13 +501,13 @@ step it names by hand. The steps it automates, for doing them by hand:
 On a new session: the manual `scripts/docs-sync.sh` run above also checks the
 server; then start the watcher. Don't create a cron job for docs sync.
 
-John's own branches, `john/<claude branch it came from>` (e.g.
+The user's own branches, `john/<claude branch it came from>` (e.g.
 `john/adr-worldgen`), and `john-work` are merged into the run branch like any
 reviewed work (merge lock; never rewrite them) and reach `main` by promotion.
 
 ## Merging into `main`
 
-`main` gets **promoted commits only** (John 2026-11-05,
+`main` gets **promoted commits only** (the user, 2026-11-05,
 `docs/plans/workflow-history.md`): `scripts/promote.sh` rebuilds the run
 branch's new work as one `type(CODE): summary` commit per item squash, without
 the ledgers in `docs/runs/`, and `main` is moved to that. A run branch is

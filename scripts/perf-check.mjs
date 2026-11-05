@@ -7,7 +7,7 @@
 // skip(load)). Exit: 0 ok | 1 FAIL above a ceiling, or a missing row in a full run | 5 a guarded row far over its ceiling while skipped.
 // Flags: --allow-absent (planner-, world- or check-only runs: no missing row fails); --allow-absent-prefix P (repeatable: only missing
 // rows whose key starts with P are allowed; perf.sh passes `arrival.` when FB_PERF_ARRIVAL=0 skipped the cold-arrival worlds).
-// PERFKNOWN (John 2026-11-02: a ceiling is never raised to make a run pass; exceeding one is a bug, accepted for 0.1.0): a row may
+// PERFKNOWN (the user, 2026-11-02: a ceiling is never raised to make a run pass; exceeding one is a bug, accepted for 0.1.0): a row may
 // carry `knownOver: { issue, since, accepted, last, lastAt?, margin? }`. Above its ci it prints `PERF KNOWN OVER (bug, accepted for
 // <accepted>: <issue>)`, shows KNOWN OVER in summary.md and does not fail the run (not a pass either). It still FAILS when the value
 // is more than `margin` (default 0.25) above `last` (a regression on top of the known bug: `PERF KNOWN OVER WORSE`), or when `last`
@@ -44,7 +44,7 @@ for (const b of spec.budgets) {
 		const d = data['flight.lookups.done'], j = data['flight.lookups.joined'], i = data['flight.lookups.inline'];
 		v = d === undefined || (d + j + i) === 0 ? undefined : (100 * i) / (d + j + i); // no lookups at all = nothing measured, not 0 % (PERFSRV r4)
 	} else v = data[b.key];
-	const reportOnly = b.budget === null || b.budget === undefined; // COLDARRIVAL: measured and printed, never judged (John sets budgets)
+	const reportOnly = b.budget === null || b.budget === undefined; // COLDARRIVAL: measured and printed, never judged (the user sets budgets)
 	const ci = reportOnly ? null : (b.ci ?? b.budget * 2);
 	let st = 'ok';
 	if (typeof v !== 'number') { st = 'absent'; absent++; if (!absentAllowed(b)) absentBad++; }
@@ -89,7 +89,7 @@ fs.writeFileSync(path.join(dir, 'summary.md'), md);
 if (load >= 2) console.log(`NOTE: highest loadavg seen during the run was ${load}: treat misses as noise until re-measured on a quiet machine.`);
 if (skipped) console.log(`${skipped} timing rows were above their ceiling but not failed because the load reached ${load} (>= ${LOAD_SKIP}); counts, sizes and heap are always enforced. NOT a pass for these rows:`);
 for (const l of skipLines) console.log(l);
-if (known) console.log(`${known} row(s) above their ceiling are KNOWN OVER: bugs accepted for 0.1.0 (John's rule of 2026-11-02), not failed and NOT a pass:`);
+if (known) console.log(`${known} row(s) above their ceiling are KNOWN OVER: bugs accepted for 0.1.0 (the user's rule of 2026-11-02), not failed and NOT a pass:`);
 for (const l of knownAll) console.log(l);
 if (farLines.length) console.log(`PERF SKIPPED ROW FAR OVER CEILING: ${farLines.length} load-skipped row(s) above loadSkipGuard x ci; load does not explain that:\n${farLines.join('\n')}`);
 if (absent) { console.log(`${absent} budgets had no measurement${!allowAbsent && absentBad < absent ? ` (${absent - absentBad} allowed by --allow-absent-prefix ${absentPrefixes.join(' ')})` : ''}`); if (absentBad) { console.log('PERF FAIL: rows are missing from a full run (a step failed or was skipped)'); process.exit(1); } }

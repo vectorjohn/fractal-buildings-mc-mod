@@ -85,12 +85,12 @@
             # spins and pins to the ground). Without XInput2, SDL emulates relative mode by warping.
             SDL_VIDEO_X11_XINPUT2 = "0";
 
-            # SilverBullet (John reads the docs with it; docs/SILVERBULLET.md): gitignore-style
+            # SilverBullet (the user reads the docs with it; docs/SILVERBULLET.md): gitignore-style
             # patterns, one per line, hiding files from the space: not listed, indexed or in pickers
             # (a direct URL still serves them).
             # Read once at server start: restart SilverBullet after changing them.
             # .claude/ holds agent worktrees, reports and locks; SB must not index or edit them.
-            # Source, build and data files are hidden too (John reviews code elsewhere); the
+            # Source, build and data files are hidden too (the user reviews code elsewhere); the
             # space keeps markdown, images, SVG/CSV/text attached to docs, and SB plugs.
             SB_SPACE_IGNORE = pkgs.lib.concatStringsSep "\n" [
               # build output, game run dirs, agent state

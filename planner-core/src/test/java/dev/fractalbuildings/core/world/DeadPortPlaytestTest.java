@@ -12,7 +12,7 @@ import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 
 /**
- * 6.22 DEADPORT on John's playtest world of 2026-10-28 (seed 1573336981619055086, fixtures {@code pt1573-metro-s8} over {@code pt1573-world-s64}):
+ * 6.22 DEADPORT on the user's playtest world of 2026-10-28 (seed 1573336981619055086, fixtures {@code pt1573-metro-s8} over {@code pt1573-world-s64}):
  * the metropolis s4_m2 round his "roads to nowhere" shots (20.02.18 at 3542,-2186; 20.42.25 at 3881,-1241; 20.43.12 at 3963,-1185; 20.25.33
  * at 3386,-1316). Those four are not dead-end ports: no intercity road or approach column lies within two chunks of any of them; they are the
  * metropolis's own main roads (r3_m3_3, an exit road over a bridge to a hashed exit gate with no link beyond; r3_m2_2, a main road ending
@@ -24,7 +24,7 @@ class DeadPortPlaytestTest {
 	static final int[][] SPOTS = {{3542, -2186}, {3881, -1241}, {3963, -1185}, {3386, -1316}};
 
 	@Test
-	void johnsMetropolis() {
+	void playtestMetropolis() {
 		WorldPlanner w = JoinWorld.pt1573();
 		RoadNet net = w.roads();
 		SettlementSite site = w.siteOf(new Cell(4, -2)).orElseThrow();

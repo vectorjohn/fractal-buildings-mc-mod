@@ -52,7 +52,7 @@ setsid bash -c '. "$1/lib/locks.sh"; exec 9>>"$2/heavy.lock"; fb_lock_take 9 "$2
 setsid bash -c 'exec 8>>"$1/merge.lock"; flock 8; flock "$1/merge.lock" true' _ "$T/locks" & G4=$!; PIDS+=("$G4")
 # g. an unregistered "JVM" in the repo, re-parented, its group leader gone
 env -u WAYLAND_DISPLAY setsid bash -c 'cd "$1"; (exec -a "$2-KnotClient" bash -c "sleep 120; :") & disown' _ "$D" "$TAG" < /dev/null > /dev/null 2>&1
-# g2. the same with a desktop display (John's own client): never listed
+# g2. the same with a desktop display (the user's own client): never listed
 WAYLAND_DISPLAY=wayland-0 setsid bash -c 'cd "$1"; (exec -a "$2-KnotClient-desk" bash -c "sleep 120; :") & disown' _ "$D" "$TAG" < /dev/null > /dev/null 2>&1
 # h. transcripts: one quiet for 40 min, one handed back, one fresh
 printf '{"type":"assistant","message":{"content":[{"type":"tool_use","name":"Bash","input":{"command":"x","description":"Run the slow thing"}}]}}\n' > "$T/tr/s1/subagents/agent-quiet1.jsonl"

@@ -86,7 +86,7 @@ for f in "$BASE/eula.txt" "$MAIN_ROOT/mod/build/run/order/eula.txt"; do
 done
 if [ -z "$EULA" ]; then
 	mkdir -p "$BASE"; echo eula=true > "$BASE/eula.txt"; EULA="$BASE/eula.txt"
-	echo "order-test: no eula.txt found; wrote eula=true to $EULA (local test servers, 127.0.0.1, online-mode=false: standing EULA approval in CLAUDE.md, John 2026-10-22/26)" >&2
+	echo "order-test: no eula.txt found; wrote eula=true to $EULA (local test servers, 127.0.0.1, online-mode=false: standing EULA approval in CLAUDE.md, the user, 2026-10-22/26)" >&2
 fi
 
 OUT="$ROOT/build/order-test"

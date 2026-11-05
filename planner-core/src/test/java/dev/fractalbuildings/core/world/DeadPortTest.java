@@ -114,7 +114,7 @@ class DeadPortTest {
 	}
 
 	/**
-	 * Step (c), pending John: w12345 town s3_m6 cannot join its link to s4_m7 (no exit faces it and no exit gate reaches it dry), but s4_m7
+	 * Step (c), pending the user: w12345 town s3_m6 cannot join its link to s4_m7 (no exit faces it and no exit gate reaches it dry), but s4_m7
 	 * has no other link both of whose ends are joined, so dropping it would orphan s4_m7: the road stays, counted as a dead end.
 	 */
 	@Test

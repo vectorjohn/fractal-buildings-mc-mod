@@ -18,7 +18,7 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
 /**
  * 6.15 ROADJOIN diagnosis probe (lead-coder 2026-10-27; a tool, not a regression test, so it only runs when {@code FB_ROADJOIN} is
- * set). Plans John's playtest world 1709797029209580947 on the committed fixtures ({@code FB_ROADJOIN=1}), or on dumps in a directory
+ * set). Plans the user's playtest world 1709797029209580947 on the committed fixtures ({@code FB_ROADJOIN=1}), or on dumps in a directory
  * ({@code FB_ROADJOIN=DIR}, files {@code pt-hamlet-s2, pt-metro-s8, pt-world-s64}, finest first, any missing skipped), and prints:
  * <ul>
  *   <li>{@code probe}: every approach of the settlements of {@code FB_ROADJOIN_CELLS} ("3,1;1,2", or "all" for the cells -1..4 x -1..5)

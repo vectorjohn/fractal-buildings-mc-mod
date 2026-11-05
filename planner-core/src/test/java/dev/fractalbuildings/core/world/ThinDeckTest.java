@@ -17,7 +17,7 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 
 /**
- * 6.40 THINDECK on John's playtest world (seed 1573336981619055086, metropolis s4_m2): the lattice street on the border x=4480 between tiles
+ * 6.40 THINDECK on the user's playtest world (seed 1573336981619055086, metropolis s4_m2): the lattice street on the border x=4480 between tiles
  * 27,-6 (planned) and 28,-6 (not planned) ran over a lake 12 to 25 deep (z -960..-919). Tile 27 built its west two columns, nothing built
  * the east half or the centre-line piers: a thin slab in the air (playtest shot 21.01.30 at 4492,68,-950).
  */

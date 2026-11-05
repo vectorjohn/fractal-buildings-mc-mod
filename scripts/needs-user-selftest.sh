@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
-# Self-test for scripts/ask-john.sh and scripts/needs-john.sh: asks (blocking first, --done, --list),
+# Self-test for scripts/ask-user.sh and scripts/needs-user.sh: asks (blocking first, --done, --list),
 # classifier denials found in fake transcripts (agent label, reason, command, --ack, no re-adding),
 # build files changed since main, open QUESTIONS.md and REVIEW.md lines, john/* branches. Uses a
 # throwaway git repo, state dir and transcript dir; touches nothing shared. Exit 0 all pass, 1 a failure.
-#   scripts/needs-john-selftest.sh
+#   scripts/needs-user-selftest.sh
 set -uo pipefail
 HERE=$(cd "$(dirname "$0")" && pwd)
-T=$(mktemp -d "${TMPDIR:-/tmp}/needs-john-selftest.XXXXXX"); trap 'rm -rf "$T"' EXIT
+T=$(mktemp -d "${TMPDIR:-/tmp}/needs-user-selftest.XXXXXX"); trap 'rm -rf "$T"' EXIT
 export FB_STATE_DIR="$T/state" FB_REPO="$T/repo" FB_TRANSCRIPTS="$T/tx" FB_AGENT=selftest FB_RUN_BRANCH=claude/run-x
 unset FB_ITEM FB_DENIAL_HOURS
-A="$HERE/ask-john.sh" N="$HERE/needs-john.sh" PAGE="$T/state/status/needs-john.md"
+A="$HERE/ask-user.sh" N="$HERE/needs-user.sh" PAGE="$T/state/status/needs-user.md"
 fails=0
 ok()   { echo "ok   $1"; }
 bad()  { echo "FAIL $1"; fails=$((fails+1)); }
@@ -24,7 +24,7 @@ g() { git -C "$T/repo" -c user.name=t -c user.email=t@t -c commit.gpgsign=false 
 mkdir -p "$T/repo/docs" && echo a > "$T/repo/README.md" && g init -q -b main && g add -A && g commit -qm init
 g checkout -qb claude/run-x
 cat > "$T/repo/docs/QUESTIONS.md" <<'EOF'
-# Open questions for John
+# Open questions for the user
 
 Intro text.
 
@@ -38,7 +38,7 @@ Intro text.
 - [ ] **Roads first** (2026-10-31): run the prototype?
 EOF
 cat > "$T/repo/docs/REVIEW.md" <<'EOF'
-# Things for John to review
+# Things for the user to review
 
 - [ ] **Old item**: look at it.
   - [ ] a sub-item that is not counted
@@ -68,16 +68,16 @@ echo '{"agentType":"coder","description":"FOO coder"}' > "$T/tx/s1/subagents/age
 id1=$("$A" "first, not blocking"); check "ask prints an id" [ "$id1" = A1 ]
 id2=$("$A" --blocking --item FOO --cmd 'kill 4242' "please kill 4242"); check "second id" [ "$id2" = A2 ]
 check "empty ask exits 2" [ "$(rc "$A" "  ")" = 2 ]
-check "page written by ask-john" test -s "$PAGE"
+check "page written by ask-user" test -s "$PAGE"
 page=$(cat "$PAGE")
 check "blocking ask listed first" before "$page" "**A2**" "**A1**"
 check "ask shows agent and item" has "$page" "selftest, FOO"
 check "ask shows its command" has "$page" '`kill 4242`'
 out=$("$A" --list); check "--list shows open asks" has "$out" "please kill 4242"
-"$A" --done A2 "done by John" >/dev/null
+"$A" --done A2 "done by the user" >/dev/null
 check "--done twice exits 1" [ "$(rc "$A" --done A2)" = 1 ]
 page=$(cat "$PAGE"); check "closed ask leaves the page" hasnt "$page" "please kill 4242"
-out=$("$A" --list --all); check "--list --all shows the answer" has "$out" "answer: done by John"
+out=$("$A" --list --all); check "--list --all shows the answer" has "$out" "answer: done by the user"
 
 # --- denials
 page=$("$N")
@@ -113,4 +113,4 @@ check "watchdog note left out" hasnt "$page" "quiet agent a"
 check "--quiet prints nothing" [ -z "$("$N" --quiet)" ]
 check "bad option exits 2" [ "$(rc "$N" --frobnicate)" = 2 ]
 
-echo; if [[ $fails == 0 ]]; then echo "needs-john-selftest: all passed"; else echo "needs-john-selftest: $fails FAILED"; exit 1; fi
+echo; if [[ $fails == 0 ]]; then echo "needs-user-selftest: all passed"; else echo "needs-user-selftest: $fails FAILED"; exit 1; fi

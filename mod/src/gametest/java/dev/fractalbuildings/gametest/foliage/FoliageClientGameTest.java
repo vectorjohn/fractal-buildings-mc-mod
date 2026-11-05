@@ -32,7 +32,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.status.ChunkStatus;
 
 /**
- * FOLIAGE (John's playtest 2026-10-23): no leaf, log or vine hangs in the air above a street or an intercity road in a forest. For each
+ * FOLIAGE (the user's playtest 2026-10-23): no leaf, log or vine hangs in the air above a street or an intercity road in a forest. For each
  * seed a fresh world is built twice, once with {@link FoliageClear#ENABLED} off (the "before" control: orphans must exist, or the test
  * proves nothing) and once on. In each, the most forested settlement within reach of the origin and the most forested stretch of road
  * are generated, and the 14 blocks above every street column (ledger: the highest claimed cell is air) and road column are read: a leaf

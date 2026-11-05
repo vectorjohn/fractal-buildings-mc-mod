@@ -13,7 +13,7 @@ import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 /**
- * PALETTE (Phase 6, John's playtest: walls read "noisy, checkerboardy"): the bulk roles of every style keep their
+ * PALETTE (Phase 6, the user's playtest: walls read "noisy, checkerboardy"): the bulk roles of every style keep their
  * variants close in colour, so per-cell variation reads as texture. Colours come from {@code block-colours.json}
  * (texture averages), and the viewer's {@code colours} lists must stay parallel to the palette (same length, same colour).
  */

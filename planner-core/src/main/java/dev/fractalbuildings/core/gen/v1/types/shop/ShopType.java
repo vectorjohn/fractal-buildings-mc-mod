@@ -72,7 +72,7 @@ public final class ShopType implements BuildingType {
 	}
 
 	// lots 7..12 wide (no side margin: shops stand shoulder to shoulder), 12..24 deep
-	// a lot whose relief exceeds 1 in SHOP_GRADE is rejected by the spec policy (as the city block's). SHOPLOW (John, J1): loosened from 12 to 4 now that the site pass digs a shop in
+	// a lot whose relief exceeds 1 in SHOP_GRADE is rejected by the spec policy (as the city block's). SHOPLOW (the user, J1): loosened from 12 to 4 now that the site pass digs a shop in
 	// (S2, a cut of at most 4): about 6 of relief on a 9x14 lot, 8 on the widest; the lot planner's front-rise limit (Briefs.SHOP_FRONT_RISE) keeps the door near the street
 	private static final int SHOP_GRADE = 4;
 	private static final TypeLimits LIMITS = new TypeLimits(7, 11, 2, 4, 1, 1, 1, false,

@@ -1,19 +1,19 @@
 #!/usr/bin/env bash
 # The coordinator's docs-feedback sync, run every 10 min by its Haiku docs watcher (prompt in
-# .claude/prompts/docs-watcher.md; coordinator.md "John's review loop" steps 1, 2,
+# .claude/prompts/docs-watcher.md; coordinator.md "the user's review loop" steps 1, 2,
 # 4 and 5, plus the post-merge check), done mechanically so a quiet check costs one line.
 #
 #   scripts/docs-sync.sh [--run-branch B] [--checkout DIR] [--docs DIR] [--main BRANCH] [--no-silverbullet]
 #     --checkout  the integration checkout (default: the checkout this is run from, else this script's)
 #     --run-branch the run branch (default: the branch --checkout is on; must be claude/run-*)
-#     --docs      John's docs worktree (default <repo root>/.claude/worktrees/docs-feedback); its
+#     --docs      the user's docs worktree (default <repo root>/.claude/worktrees/docs-feedback); its
 #                 branch is whatever it has checked out (normally john/docs-feedback)
-#     --main      the branch John sometimes commits to directly (default main)
+#     --main      the branch the user sometimes commits to directly (default main)
 #     --no-silverbullet  skip the SilverBullet check (tests)
 #
 # Steps, in order:
 #   1. docs worktree: if `git status` shows changes, `git add -A` and commit them as
-#      "John feedback: <files>". Never discards, resets or stashes.
+#      "User feedback: <files>". Never discards, resets or stashes.
 #   2. main: if it has commits the run branch lacks, report it (the coordinator merges it).
 #   3. if the docs branch has commits the run branch lacks: under <root>/.claude/merge.lock, in
 #      --checkout (must be on the run branch, with nothing staged and clean apart from
@@ -23,7 +23,7 @@
 #      scripts/review-check.sh on the index, commit; on a conflict or review-check failure
 #      `merge --abort` (the checkout is left as it was).
 #   4. fast-forward the docs branch to the run branch (`merge --ff-only`); never forces. A non-ff
-#      or a refusal (John's unsaved edits overlap) is reported and John's text is left alone.
+#      or a refusal (the user's unsaved edits overlap) is reported and the user's text is left alone.
 #   5. SilverBullet: `curl -sf http://127.0.0.1:3000/`; if down, restart it from the docs worktree
 #      (setsid -f scripts/dev silverbullet -L 127.0.0.1 -p 3000 .) and wait up to 30 s for it.
 #   6. post-merge runs (scripts/postmerge-status.sh --all): FAIL / KILLED / DIED runs not reported
@@ -35,7 +35,7 @@
 #   1   error or conflict (merge aborted, checkout left clean; or ff refused, SilverBullet won't start)
 #   12  a post-merge run newly FAIL / KILLED / DIED (slug, sha, status printed)
 #   11  main has commits the run branch lacks (needs the coordinator's merge)
-#   10  John's feedback merged into the run branch (merge sha, changed files, diff stat printed:
+#   10  the user's feedback merged into the run branch (merge sha, changed files, diff stat printed:
 #       read it with `git show --stat <sha>` / `git diff <sha>^1 <sha>`)
 #   0   nothing to act on: exactly one line "docs-sync: nothing new" (or a SilverBullet-restarted /
 #       fast-forward-only line, which needs no action)
@@ -78,15 +78,15 @@ want() { # <code>: keep the higher-priority one (1 > 12 > 11 > 10 > 0)
 }
 ahead() { git -C "$C" rev-list --count "$1..$2" 2>/dev/null || echo 0; }
 
-# 1. commit John's edits.
+# 1. commit the user's edits.
 if [ -e "$(git -C "$DOCS" rev-parse --git-path MERGE_HEAD)" ]; then
   say "ERROR docs worktree $DOCS has a merge in progress; left alone"; want 1; ACT=1
 elif [ -n "$(git -C "$DOCS" status --porcelain)" ]; then
   git -C "$DOCS" add -A || die "git add failed in $DOCS"
   FILES=$(git -C "$DOCS" diff --cached --name-only | paste -sd' ')
   [ ${#FILES} -le 200 ] || FILES="${FILES:0:200} ..."
-  if git -C "$DOCS" commit -q -m "John feedback: $FILES"; then
-    say "committed John's edits in $DB: $(git -C "$DOCS" rev-parse --short HEAD) ($FILES)"; ACT=1
+  if git -C "$DOCS" commit -q -m "User feedback: $FILES"; then
+    say "committed the user's edits in $DB: $(git -C "$DOCS" rev-parse --short HEAD) ($FILES)"; ACT=1
   else
     say "ERROR commit failed in $DOCS (edits left staged, untouched)"; want 1; ACT=1
   fi
@@ -139,7 +139,7 @@ if [ "$RC" != 1 ] && [ "$n" -gt 0 ]; then
     say "ERROR $(head -n1 "$OUT")"; tail -n +2 "$OUT"; want 1; ACT=1
   else
     SHA=$(git -C "$C" rev-parse HEAD)
-    say "JOHN FEEDBACK MERGED into $RUN: $SHA (read: git -C $C diff $SHA^1 $SHA)"
+    say "USER FEEDBACK MERGED into $RUN: $SHA (read: git -C $C diff $SHA^1 $SHA)"
     echo "  files: $(git -C "$C" diff --name-only "$SHA^1" "$SHA" | paste -sd' ')"
     git -C "$C" diff --stat "$SHA^1" "$SHA" | sed 's/^/  /'
     want 10; ACT=1
@@ -149,11 +149,11 @@ fi
 # 4. fast-forward the docs branch to the run branch.
 if [ "$RC" != 1 ] && [ "$(ahead "$DB" "$RUN")" -gt 0 ]; then
   if [ "$(ahead "$RUN" "$DB")" -gt 0 ]; then
-    say "ERROR $DB has commits $RUN lacks; not fast-forwarded (John's text kept, nothing forced)"; want 1; ACT=1
+    say "ERROR $DB has commits $RUN lacks; not fast-forwarded (the user's text kept, nothing forced)"; want 1; ACT=1
   elif MSG=$(git -C "$DOCS" merge -q --ff-only "$RUN" 2>&1); then
     QUIET+=("fast-forwarded $DB to $(git -C "$DOCS" rev-parse --short HEAD)")
   else
-    say "ERROR fast-forward of $DB to $RUN refused (John's text kept):"; echo "$MSG" | sed 's/^/  /'
+    say "ERROR fast-forward of $DB to $RUN refused (the user's text kept):"; echo "$MSG" | sed 's/^/  /'
     want 1; ACT=1
   fi
 fi

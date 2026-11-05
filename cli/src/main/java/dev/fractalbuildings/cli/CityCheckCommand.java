@@ -242,7 +242,7 @@ final class CityCheckCommand {
 				if (row.over()) { gateCuts++; warnings.add("gate-cut: " + row + " (> " + dev.fractalbuildings.core.check.GateCut.LIMIT + ", fix is 7.19)"); }
 			}
 			if (gateCuts > 0) GATE_CUTS.addAndGet(gateCuts);
-			// proposed rule "arterials form one network" (METROFILL R1): a warning until John accepts it
+			// proposed rule "arterials form one network" (METROFILL R1): a warning until the user accepts it
 			for (Violation v : dev.fractalbuildings.core.check.SettlementChecks.cityArterialsConnected(city.districts().values())) warnings.add(v.invariant() + ": " + v.message());
 			// METROFILL M0: fill metrics and the three DS-47 checks, report only
 			FillStats fill = FillStats.of(city);

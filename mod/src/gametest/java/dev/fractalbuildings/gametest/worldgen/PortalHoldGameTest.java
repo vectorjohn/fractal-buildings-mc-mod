@@ -168,7 +168,7 @@ public class PortalHoldGameTest {
 		});
 	}
 
-	/** John 2026-11-02: past the stuck-generation limit the trip is cancelled, never sent into chunks that are not ready. */
+	/** The user, 2026-11-02: past the stuck-generation limit the trip is cancelled, never sent into chunks that are not ready. */
 	@GameTest
 	public void defaultLimitIsPinned(GameTestHelper helper) {
 		check(PortalHold.DEFAULT_MAX_HOLD_MILLIS == 60_000L, "default stuck-generation limit " + PortalHold.DEFAULT_MAX_HOLD_MILLIS);

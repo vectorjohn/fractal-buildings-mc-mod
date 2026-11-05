@@ -19,7 +19,7 @@ import java.util.List;
 public final class Profile {
 	private Profile() {}
 
-	/** Longest wet run a single span may bridge, blocks (John, 2026-10-23). */
+	/** Longest wet run a single span may bridge, blocks (the user, 2026-10-23). */
 	public static final int MAX_CROSSING = 20;
 	/** Crossings closer than this count as one run. */
 	public static final int MIN_CROSSING_GAP = 32;
@@ -57,7 +57,7 @@ public final class Profile {
 		return deck;
 	}
 
-	/** A wet run longer than this is never built as an approach deck, crossing or not (a road running along a lake, John's road-0 case; ROADJOIN, architect 2026-10-27). */
+	/** A wet run longer than this is never built as an approach deck, crossing or not (a road running along a lake, the user's road-0 case; ROADJOIN, architect 2026-10-27). */
 	public static final int MAX_DECK_RUN = 100;
 
 	/**
@@ -115,7 +115,7 @@ public final class Profile {
 	}
 
 	/**
-	 * Whether a long wet run lies along the water rather than across it (DECKDIAG F2, John 2026-11-01 "a run along water is never built";
+	 * Whether a long wet run lies along the water rather than across it (DECKDIAG F2, the user, 2026-11-01 "a run along water is never built";
 	 * the architect's revised DS-19 test (3)). Water under {@link #ALONG_DEEP} deep does not count for the stations of (b) (a puddle or marsh fringe is no crossing); the centre line of (a) and (c) counts any water, as DECKDIAG measured it. The run is a crossing when all of:
 	 * (a) water lies under at least half of its centre line; (b) at the stations whose own column is deep water, the water reaches past
 	 * {@link #ALONG_NEAR} blocks on both sides at least half the time, and there is one such station; (c) the longest unbroken stretch of water
@@ -243,7 +243,7 @@ public final class Profile {
 
 	/**
 	 * As above with the longest wet run that may be decked ({@code maxRun}; a longer run counts in {@code longRuns} and the approach is dropped
-	 * or rerouted). LONGDECK (John 2026-11-02): towns and up deck up to {@link #MAX_DECK_RUN}; hamlets and villages only {@link #MAX_CROSSING}.
+	 * or rerouted). LONGDECK (the user, 2026-11-02): towns and up deck up to {@link #MAX_DECK_RUN}; hamlets and villages only {@link #MAX_CROSSING}.
 	 */
 	public static ApproachResult approach(double[][] st, TerrainProbe exact, java.util.SortedMap<Integer, Integer> pins, int width, boolean airUnder, int maxRun) {
 		int n = st.length;

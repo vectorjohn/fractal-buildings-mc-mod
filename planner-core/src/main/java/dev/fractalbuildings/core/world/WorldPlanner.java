@@ -893,7 +893,7 @@ public class WorldPlanner {
 		DROPPED,
 		/**
 		 * One end does not serve it, but dropping it would orphan the settlement that does (that settlement has no other link both of whose
-		 * ends serve it): the road and the serving end's approach stay, and the other port is a dead end (step c, waits for John).
+		 * ends serve it): the road and the serving end's approach stay, and the other port is a dead end (step c, waits for the user).
 		 */
 		DEAD_END
 	}

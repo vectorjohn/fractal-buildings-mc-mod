@@ -58,13 +58,13 @@ import net.minecraft.world.level.dimension.DimensionType;
  *       returns the minimum height for a chunk without a FULL-level ticket, and vanilla's search depends on that (the first column it
  *       reads in each cold chunk). With the hold the exit portal therefore comes out where the unheld call would have put it.</li>
  * </ul>
- * Nothing else is waited for: not the player's view distance, not the arrival chunks, no planner warming (John 2026-10-31: "I want to wait
+ * Nothing else is waited for: not the player's view distance, not the arrival chunks, no planner warming (the user, 2026-10-31: "I want to wait
  * the minimum, even if that means the player sees loading chunks. I just want to avoid the possible server crash.").
  *
  * <p>Every entity is held, not only players (a mob or item would freeze the server the same way); players get the action-bar message.
  * Spectators are not held (vanilla never creates a portal for them). An entity that leaves the portal ends its wait; the request is dropped
  * after {@link #IDLE_TICKS} without anyone inside. After {@link #maxHoldMillis} (a stuck-generation limit, not a budget) the trip is
- * CANCELLED, never sent into chunks that are not ready (John 2026-11-02): the entity stays on this side and a player is told to try again. The end portal is not held (its exits are fixed: the End platform or the spawn point).
+ * CANCELLED, never sent into chunks that are not ready (the user, 2026-11-02): the entity stays on this side and a player is told to try again. The end portal is not held (its exits are fixed: the End platform or the spawn point).
  *
  * <p>Timing only: the destination is vanilla's, computed by vanilla from the entity's position when it finally goes. Server-only. Off with
  * {@code -Dfractalbuildings.portalHold=false}.
@@ -75,7 +75,7 @@ public final class PortalHold {
 		Identifier.fromNamespaceAndPath(FractalBuildingsMod.MOD_ID, "portal_hold"), new TicketType(20L * 60 * 3, TicketType.FLAG_LOADING));
 
 	/**
-	 * The default of {@link #maxHoldMillis}: 60 s, set by John 2026-11-02 so a player never has to cancel a teleport they want to abort. Not a budget ("We wait how long it takes"): the trip goes as soon as
+	 * The default of {@link #maxHoldMillis}: 60 s, set by the user on 2026-11-02 so a player never has to cancel a teleport they want to abort. Not a budget ("We wait how long it takes"): the trip goes as soon as
 	 * its chunks are ready, and this catches a request that does not complete in time (the PORTALCOLD-M worst case was 65 s into a cold metropolis on the perf worker, so a slow machine can hit it: the player tries again, and the generated chunks are kept). Proceeding earlier would move
 	 * the rest of the wait onto the server thread (the freeze the hold exists to avoid), so at the limit the trip is cancelled instead.
 	 */

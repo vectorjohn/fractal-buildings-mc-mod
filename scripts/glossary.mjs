@@ -124,7 +124,7 @@ for (const f of sorted(join(DOCS, 'log'), /\.md$/).reverse()) {
 		if (!m || m[1].length < 4 || entries.has(m[1])) continue;
 		let rest = m[2], qual = '';
 		const open = rest.indexOf('(');
-		if (open >= 0 && /^[\w\s-]*$/.test(rest.slice(0, open))) { // skip the "(John, [shot](...): ...)" source note
+		if (open >= 0 && /^[\w\s-]*$/.test(rest.slice(0, open))) { // skip the "(<name>, [shot](...): ...)" source note
 			qual = rest.slice(0, open).trim();
 			let depth = 0, j = open;
 			for (; j < rest.length; j++) {

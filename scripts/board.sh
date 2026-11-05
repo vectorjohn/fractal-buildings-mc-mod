@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # The item board: which lane every item is in, who has it, and when the next heavy batch is due.
-# The one place that answers "where is item X" (the run ledger keeps decisions, findings and John's
+# The one place that answers "where is item X" (the run ledger keeps decisions, findings and the user's
 # words; docs/plans/workflow-history.md W5, workflow proposal option 1a).
 #
 #   scripts/board.sh move SLUG LANE [agent=ID] [branch=B] [host=H] [note=TEXT]   (adds SLUG if new)
@@ -18,10 +18,10 @@
 #                                                      .claude/status/lanes.md after every change)
 #   scripts/board.sh lanes                             the valid lanes
 #
-# Lanes: ready coding verify merge-queue merged heavy-batch awaiting-john blocked done.
+# Lanes: ready coding verify merge-queue merged heavy-batch awaiting-user blocked done.
 # Fields: agent (agent id or role), branch, host (where its heavy job runs), note (one line).
 #
-# Heavy batch counter (John's decision 3, 2026-11-05: heavy layers in batches every 4 merges): counts the
+# Heavy batch counter (the user's decision 3, 2026-11-05: heavy layers in batches every 4 merges): counts the
 # run branch's first-parent commits since the last heavy batch for which scripts/test-scope.sh asks for
 # a client layer or the order test (docs-only and tooling merges don't count). The last batch is the
 # newer of: a `batch done` record, and (when the test ledger .claude/tested.tsv exists, W3) the newest
@@ -36,7 +36,7 @@
 # Exit: 0 ok | 1 not found / exists | 2 bad usage.
 set -uo pipefail
 usage() { sed -n '2,/^set -uo pipefail/p' "$0" | sed '$d' | sed 's/^# \{0,1\}//'; }
-LANES=(ready coding verify merge-queue merged heavy-batch awaiting-john blocked done)
+LANES=(ready coding verify merge-queue merged heavy-batch awaiting-user blocked done)
 KEYS=(agent branch host note)
 die() { echo "board: $*" >&2; exit 2; }
 
@@ -63,6 +63,15 @@ mkdir -p "$B" "$STATE/status" || die "cannot create $B"
 [[ -f "$ITEMS" ]] || printf '# slug\tlane\tsince\tagent\tbranch\thost\tnote\tadded\n' > "$ITEMS"
 [[ -f "$HIST" ]] || printf '# time\tslug\tfrom\tto\tfields\tactor\n' > "$HIST"
 [[ -f "$BATCHES" ]] || printf '# time\trev\ttree\tnote\tactor\n' > "$BATCHES"
+# The lane awaiting-user was called awaiting-john until 2026-11-05: the old name is accepted on the command line, and rows
+# still in it are moved to the new name on the first run (under the board lock).
+OLD_LANE=awaiting-john
+if grep -q $'\t'"$OLD_LANE"$'\t' "$ITEMS"; then
+	exec {mlk}>"$B/.lock"; flock "$mlk"
+	awk -F'\t' -v OFS='\t' -v o="$OLD_LANE" '!/^#/ && $2==o { $2="awaiting-user" } 1' "$ITEMS" > "$ITEMS.tmp.$$" && mv "$ITEMS.tmp.$$" "$ITEMS"
+	flock -u "$mlk"
+fi
+canon_lane() { if [[ "$1" == "$OLD_LANE" ]]; then echo awaiting-user; else echo "$1"; fi; }
 
 now() { date -u +%Y-%m-%dT%H:%M:%SZ; }
 clean() { printf '%s' "$1" | tr '\t\r\n' '   '; }
@@ -89,6 +98,7 @@ write_row() {
 # change OP SLUG LANE(or -) key=value...: add/move/set under the board lock
 change() {
 	local op=$1 slug=$2 lane=$3; shift 3
+	lane=$(canon_lane "$lane")
 	slug_check "$slug"
 	[[ "$lane" == - ]] || lane_check "$lane"
 	declare -A f=() given=()
@@ -134,7 +144,7 @@ age() { # ISO -> "3h", "2d"
 
 list() {
 	local all=0 want=() l
-	for l in "$@"; do if [[ "$l" == --all ]]; then all=1; else lane_check "$l"; want+=("$l"); fi; done
+	for l in "$@"; do if [[ "$l" == --all ]]; then all=1; else l=$(canon_lane "$l"); lane_check "$l"; want+=("$l"); fi; done
 	if [[ ${#want[@]} -eq 0 ]]; then for l in "${LANES[@]}"; do [[ $all == 1 || "$l" != done ]] && want+=("$l"); done; fi
 	local any=0
 	for l in "${want[@]}"; do

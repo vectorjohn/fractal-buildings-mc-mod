@@ -35,7 +35,7 @@ import net.minecraft.world.level.chunk.status.ChunkStatus;
 /**
  * STEPBURY (6.13) and TREEIN (6.14), in the world.
  *
- * <p><b>Steps</b> (John's desert world, seed 1709797029209580947, the high-rises near 1266,2411): every exterior step of the buildings
+ * <p><b>Steps</b> (the user's desert world, seed 1709797029209580947, the high-rises near 1266,2411): every exterior step of the buildings
  * within 70 blocks of that point is read back: the two blocks over it must not be solid (a flight closed by the terrain a {@code beard_thin}
  * raised, sand), and the step block itself must be there. The world is built twice: with the claimed headroom off
  * ({@link InstancePassV1#HEADROOM_ENABLED}, the control: it must find buried steps, or the test proves nothing) and on.

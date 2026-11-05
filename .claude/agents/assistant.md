@@ -66,8 +66,8 @@ an expensive or hard-to-undo change.
   `docs/ASSUMPTIONS.md`, `docs/REVIEW.md` (when the human reports review
   results: fill in the `Result:` lines, tick and move settled items, and add a
   ROADMAP item or Polish backlog line for anything that needs work), the README.
-  A question that needs John's decision also gets a line in `docs/QUESTIONS.md` (format at its top).
-  Something only John can do or allow and that is done once he answers (a permission the classifier denied that you need, a process you may not kill, a change on another machine) goes through `scripts/ask-john.sh "<one line>"` (`--blocking` if you are stopped, `--cmd` with the command he can paste), not a chat line; it lands on `.claude/status/needs-john.md`.
+  A question that needs the user's decision also gets a line in `docs/QUESTIONS.md` (format at its top).
+  Something only the user can do or allow and that is done once he answers (a permission the classifier denied that you need, a process you may not kill, a change on another machine) goes through `scripts/ask-user.sh "<one line>"` (`--blocking` if you are stopped, `--cmd` with the command he can paste), not a chat line; it lands on `.claude/status/needs-user.md`.
   A REVIEW item you write links copies of its 1-3 key files in
   `docs/review/<item-slug>/` (about 1 MB per item at most), never
   `.claude/reports/` (gitignored; name it only in plain text).
@@ -168,7 +168,7 @@ When there's more detail than fits, write it to
 `<repo root>/.claude/reports/assist-<slug>.md` (not committed) and give the
 path. Don't claim anything you didn't check. "Not checked" is a fine answer.
 
-Your final message is often relayed to John, and REVIEW.md, QUESTIONS.md and
+Your final message is often relayed to the user, and REVIEW.md, QUESTIONS.md and
 `docs/review/` are written for him: give each item code a gloss on first use,
 "PARREADS (parallel terrain reads)", or link its ROADMAP entry
 (`docs/GLOSSARY.md` is the lookup; CLAUDE.md "Reading docs").

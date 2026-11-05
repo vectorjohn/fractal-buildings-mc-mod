@@ -31,7 +31,7 @@ import net.minecraft.world.phys.Vec3;
  * arrive. {@code ServerPlayerTeleportMixin} hands such a teleport here: the player stays put, the {@link RegionWarmer} warms the
  * destination, a ticket loads the destination chunk and its neighbours to FULL, an action-bar message says so, and the teleport is
  * replayed when they are ready, and only then: if the destination is still not FULL after the stuck-generation limit
- * ({@link #timeoutMillis}) the teleport is cancelled and the player stays where they were (John 2026-11-02: never release into chunks that
+ * ({@link #timeoutMillis}) the teleport is cancelled and the player stays where they were (the user, 2026-11-02: never release into chunks that
  * are not ready, vanilla would generate them synchronously on the server thread and could crash it). Server-only (unmodded clients work), asynchronous (polled once a
  * tick, never blocks), and it only changes timing: the generated blocks are the same.
  *
@@ -47,7 +47,7 @@ public final class TeleportHold {
 	/** Jumps shorter than this are never held, whatever the view distance. */
 	static final int MIN_DISTANCE = 64;
 	/**
-	 * The default of {@link #timeoutMillis}: 60 s, set by John 2026-11-02 so a player never has to cancel a teleport they want to abort. Not a budget ("We wait how long it takes"): the hold ends as soon as the
+	 * The default of {@link #timeoutMillis}: 60 s, set by the user on 2026-11-02 so a player never has to cancel a teleport they want to abort. Not a budget ("We wait how long it takes"): the hold ends as soon as the
 	 * 3 x 3 is FULL, and this limit only catches a generation that is stuck. At the limit the teleport is ABORTED, never replayed into chunks
 	 * that are not FULL.
 	 */
@@ -58,8 +58,8 @@ public final class TeleportHold {
 	public static volatile Integer minDistanceOverride = null;
 	public static volatile boolean enabled = !"false".equals(System.getProperty("fractalbuildings.teleportHold"));
 	/**
-	 * TPHOLD15 option 3 (John: "hold for what the tile requires"): on a planner-backed level the hold ends once the destination tile is planned
-	 * and warmed, without waiting for the 3 x 3 chunks. OFF by default, and enabling it VIOLATES John's 2026-11-02 rule (never teleport into
+	 * TPHOLD15 option 3 (the user: "hold for what the tile requires"): on a planner-backed level the hold ends once the destination tile is planned
+	 * and warmed, without waiting for the 3 x 3 chunks. OFF by default, and enabling it VIOLATES the user's 2026-11-02 rule (never teleport into
 	 * chunks that are not FULL): the teleport then places the player in a chunk that is
 	 * not FULL yet, and vanilla loads it synchronously on the server thread, which freezes the whole server until it is generated (observed:
 	 * about 40 s on the perf worker after a 15 s limit, see docs/log/2026-10-31-p6-tphold15.md). Players never fall or take damage. On with

@@ -37,15 +37,15 @@ setup
 check "quiet: exit 0" "$(sync)" 0
 check "quiet: one line" "$(cat "$T/out")" "docs-sync: nothing new"
 
-# 2. John edits a doc: committed, merged (exit 10), docs fast-forwarded to the run branch
+# 2. The user edits a doc: committed, merged (exit 10), docs fast-forwarded to the run branch
 echo "@John 2026-10-29: why?" >> "$D/docs/a.md"
 check "feedback: exit 10" "$(sync)" 10
-check "feedback: commit subject" "$(git -C "$R" log -1 --format=%s john/docs-feedback^2)" "John feedback: docs/a.md"
-has "feedback: merged line" "JOHN FEEDBACK MERGED into claude/run-x: $(git -C "$C" rev-parse HEAD)"
+check "feedback: commit subject" "$(git -C "$R" log -1 --format=%s john/docs-feedback^2)" "User feedback: docs/a.md"
+has "feedback: merged line" "USER FEEDBACK MERGED into claude/run-x: $(git -C "$C" rev-parse HEAD)"
 has "feedback: file list" "files: docs/a.md"
 check "feedback: merge commit on run" "$(git -C "$C" log -1 --format=%s)" "Merge branch 'john/docs-feedback' into claude/run-x"
 check "feedback: docs ff'd to run" "$(git -C "$D" rev-parse HEAD)" "$(git -C "$C" rev-parse HEAD)"
-check "feedback: John's text on run" "$(tail -n1 "$C/docs/a.md")" "@John 2026-10-29: why?"
+check "feedback: the user's text on run" "$(tail -n1 "$C/docs/a.md")" "@John 2026-10-29: why?"
 check "feedback: second run quiet" "$(sync)" 0
 check "feedback: second run line" "$(cat "$T/out")" "docs-sync: nothing new"
 
@@ -57,14 +57,14 @@ has "ff: nothing new" "^docs-sync: nothing new (fast-forwarded john/docs-feedbac
 check "ff: docs at run" "$(git -C "$D" rev-parse HEAD)" "$(git -C "$C" rev-parse HEAD)"
 
 # 4. main has commits the run branch lacks: exit 11, not merged by the script
-echo "john on main" > "$R/docs/m.md"; commit_in "$R" "John note on main"
+echo "user on main" > "$R/docs/m.md"; commit_in "$R" "user note on main"
 check "main: exit 11" "$(sync)" 11
 has "main: line" "MAIN MOVED: main has 1 commit"
 check "main: not merged" "$(git -C "$C" rev-list --count claude/run-x..main)" 1
 git -C "$C" merge -q --no-ff -m "merge main" main
 check "main merged: exit 0" "$(sync)" 0
 
-# 5. conflict: run branch and John edit the same line -> exit 1, merge aborted, all kept
+# 5. conflict: run branch and the user edit the same line -> exit 1, merge aborted, all kept
 setup
 sed -i 's/line one/line ONE run/' "$C/docs/a.md"; commit_in "$C" "run edit"
 RUNHEAD=$(git -C "$C" rev-parse HEAD)
@@ -74,10 +74,10 @@ has "conflict: names file" "merge of john/docs-feedback conflicted: docs/a.md"
 check "conflict: run head unchanged" "$(git -C "$C" rev-parse HEAD)" "$RUNHEAD"
 check "conflict: checkout clean" "$(git -C "$C" status --porcelain)" ""
 check "conflict: no MERGE_HEAD" "$(test -e "$(git -C "$C" rev-parse --git-path MERGE_HEAD)" && echo yes || echo no)" no
-check "conflict: John's commit kept" "$(git -C "$D" log -1 --format=%s)" "John feedback: docs/a.md"
-check "conflict: John's text kept" "$(head -n1 "$D/docs/a.md")" "line one -- @John no"
+check "conflict: the user's commit kept" "$(git -C "$D" log -1 --format=%s)" "User feedback: docs/a.md"
+check "conflict: the user's text kept" "$(head -n1 "$D/docs/a.md")" "line one -- @John no"
 
-# 6. review-check failure: John's edit brings back an archived item -> exit 1, aborted
+# 6. review-check failure: the user's edit brings back an archived item -> exit 1, aborted
 setup
 printf -- '- [ ] **Old item** done\n' >> "$D/docs/REVIEW.md"
 RUNHEAD=$(git -C "$C" rev-parse HEAD)
@@ -86,13 +86,13 @@ has "review-check: line" "review-check failed"
 check "review-check: run head unchanged" "$(git -C "$C" rev-parse HEAD)" "$RUNHEAD"
 check "review-check: checkout clean" "$(git -C "$C" status --porcelain)" ""
 
-# 7. dirty integration checkout: exit 1, nothing merged, John's commit kept
+# 7. dirty integration checkout: exit 1, nothing merged, the user's commit kept
 setup
 echo dirty >> "$C/docs/a.md"
 echo "@John: x" >> "$D/docs/REVIEW.md"
 check "dirty: exit 1" "$(sync)" 1
 has "dirty: line" "is not clean"
-check "dirty: John committed" "$(git -C "$D" log -1 --format=%s)" "John feedback: docs/REVIEW.md"
+check "dirty: the user committed" "$(git -C "$D" log -1 --format=%s)" "User feedback: docs/REVIEW.md"
 check "dirty: run not merged" "$(git -C "$C" rev-list --count claude/run-x..john/docs-feedback)" 1
 
 # 7b. only uncommitted docs/runs/ edits (the coordinator's ledger): merged, ledger left as it was
@@ -100,11 +100,11 @@ setup
 echo "- in flight: X" >> "$C/docs/runs/ledger.md"; echo "# new run" > "$C/docs/runs/new.md"
 echo "@John: ledger ok?" >> "$D/docs/a.md"
 check "ledger dirty: exit 10" "$(sync)" 10
-has "ledger dirty: merged line" "JOHN FEEDBACK MERGED into claude/run-x"
+has "ledger dirty: merged line" "USER FEEDBACK MERGED into claude/run-x"
 check "ledger dirty: merge has no docs/runs" "$(git -C "$C" diff --name-only HEAD^1 HEAD -- docs/runs)" ""
 check "ledger dirty: edit kept" "$(tail -n1 "$C/docs/runs/ledger.md")" "- in flight: X"
 check "ledger dirty: still uncommitted" "$(git -C "$C" status --porcelain -- docs/runs | paste -sd,)" " M docs/runs/ledger.md,?? docs/runs/new.md"
-check "ledger dirty: John's text on run" "$(tail -n1 "$C/docs/a.md")" "@John: ledger ok?"
+check "ledger dirty: the user's text on run" "$(tail -n1 "$C/docs/a.md")" "@John: ledger ok?"
 
 # 7c. dirty ledger and the docs branch changed docs/runs/: exit 1, nothing merged, both kept
 setup
@@ -115,7 +115,7 @@ check "ledger touched: exit 1" "$(sync)" 1
 has "ledger touched: line" "would touch docs/runs/ .*docs/runs/ledger.md"
 check "ledger touched: run head unchanged" "$(git -C "$C" rev-parse HEAD)" "$RUNHEAD"
 check "ledger touched: coordinator edit kept" "$(tail -n1 "$C/docs/runs/ledger.md")" "- coordinator line"
-check "ledger touched: John committed" "$(git -C "$D" log -1 --format=%s)" "John feedback: docs/runs/ledger.md"
+check "ledger touched: the user committed" "$(git -C "$D" log -1 --format=%s)" "User feedback: docs/runs/ledger.md"
 check "ledger touched: no MERGE_HEAD" "$(test -e "$(git -C "$C" rev-parse --git-path MERGE_HEAD)" && echo yes || echo no)" no
 
 # 7d. dirty ledger and a conflict elsewhere: aborted, ledger edit kept
@@ -155,7 +155,7 @@ echo "x" > "$R/docs/m2.md"; commit_in "$R" "main again"
 echo "@John: y" >> "$D/docs/a.md"
 printf 'status=KILLED\nsha=dddddddddd44\nslug=p6-k\nrc=143\nstart=%s\nend=%s\nlog=/nonexistent\n' "$now" "$now" > "$PM/dddddddddd-p6-k.result"
 check "priority: exit 12" "$(sync)" 12
-has "priority: feedback printed" "JOHN FEEDBACK MERGED"
+has "priority: feedback printed" "USER FEEDBACK MERGED"
 has "priority: main printed" "MAIN MOVED"
 has "priority: killed printed" "POSTMERGE KILLED p6-k"
 

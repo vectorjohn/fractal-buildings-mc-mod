@@ -30,7 +30,7 @@ const out = path.join(dir, 'gallery');
 const r = buildGallery(dir, out, { date: '2026-10-28', width: 640 });
 check('three shots, two notes', r.entries === 3 && r.notes === 2);
 const md = fs.readFileSync(path.join(out, 'REVIEW.md'), 'utf8');
-check('frontmatter', md.startsWith('---\nstatus: Ready for review\nauthor: John\ncommit: abcd1234\n') && md.includes('seed: 1709797029209580947'));
+check('frontmatter', md.startsWith('---\nstatus: Ready for review\nauthor: user\ncommit: abcd1234\n') && md.includes('seed: 1709797029209580947'));
 check('image embed and caption', md.includes('![[2026-10-28_12.00.00.jpg|800]]\nstairs don\'t go to top\n'));
 check('coords and planner ids', md.includes('`2721 67 2696`') && md.includes('settlement s3_1 (village)') && md.includes('building b4 (highrise, desert, seed 77, 9 storeys)') && md.includes('room r2 (bedroom, storey 3)') && md.includes('lot d1_2.l4'));
 check('target block', md.includes('looking at stone_bricks `2721 66 2696`'));

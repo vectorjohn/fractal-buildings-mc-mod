@@ -2,7 +2,7 @@
 #
 #   source scripts/vk-select.sh && fb_vk_select    # reads FB_VK; exports VK_DRIVER_FILES etc.
 #
-# FB_VK=intel (the default since John's go-ahead on 2026-10-26): Mesa's Intel Vulkan driver (ANV) on
+# FB_VK=intel (the default since the user's go-ahead on 2026-10-26): Mesa's Intel Vulkan driver (ANV) on
 # the Intel UHD 770 iGPU. Before switching, it checks that the Intel ICD file exists, that an Intel
 # render node (/dev/dri/renderD*, driver i915 or xe) is there and accessible, and that `vulkaninfo`
 # with only the Intel ICD lists an Intel GPU. If any check fails it logs why and falls back to

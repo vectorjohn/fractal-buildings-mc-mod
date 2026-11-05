@@ -26,7 +26,7 @@ import java.util.TreeSet;
  * 6.15 ROADJOIN test harness (docs/plans/roadjoin.md): a {@link WorldPlanner} on layered recorded dumps (the finest dump covering a
  * column answers), and {@link #joins} measures, for each approach of a settlement, how its drawn columns meet the settlement's streets.
  *
- * <p>Fixtures: {@code pt1709-world-s64} (John's playtest world 1709797029209580947, the 64-block region map: region decisions are exact,
+ * <p>Fixtures: {@code pt1709-world-s64} (the user's playtest world 1709797029209580947, the 64-block region map: region decisions are exact,
  * since the region layer reads lattice columns only) under {@code pt1709-join-s2} (2-block crop x 3136..3776, z 1344..1920: hamlet s3_1 and
  * the metropolis s1_2's two north-east exits). On the crop the planner reproduces the playtest world block for block at the hamlet join
  * (checked against the saved world's region files, 2026-10-27).
@@ -80,7 +80,7 @@ final class JoinWorld {
 
 	static final long PT1573_SEED = 1573336981619055086L;
 
-	/** John's playtest world of 2026-10-28 (6.22 DEADPORT): the step-8 crop round metropolis s4_m2 over the 64-block world map. */
+	/** The user's playtest world of 2026-10-28 (6.22 DEADPORT): the step-8 crop round metropolis s4_m2 over the 64-block world map. */
 	static WorldPlanner pt1573() {
 		return new WorldPlanner(PT1573_SEED, WorldConfig.defaults(), probes(read(GateWorld.FIXTURES, "pt1573-metro-s8", "pt1573-world-s64")), null, WorldPlanner.Caches.DEFAULT);
 	}

@@ -4,7 +4,7 @@
 #   scripts/server-only-test.sh [--seed N] [--keep]
 #
 # 1. writes mod/build/run/serverOnly/{eula.txt,server.properties} (EULA accepted for local
-#    testing only, by John 2026-10-22; online-mode=false; bound to 127.0.0.1:25599 only),
+#    testing only, by the user, 2026-10-22; online-mode=false; bound to 127.0.0.1:25599 only),
 # 2. starts the server (Loom run config `serverOnly`) with its console on a FIFO,
 # 3. `locate`s a settlement, starts the unmodded client (tools/vanilla-client: Minecraft +
 #    Fabric Loader only, no Fabric API, no fractalbuildings) under Xvfb on the Intel iGPU
@@ -49,7 +49,7 @@ cleanup() {
 }
 trap cleanup EXIT
 
-# EULA: John agreed on 2026-10-22 for local testing only (docs/ASSUMPTIONS.md); this dir only.
+# EULA: the user agreed on 2026-10-22 for local testing only (docs/ASSUMPTIONS.md); this dir only.
 echo "eula=true" > "$SRV/eula.txt"
 rm -rf "$SRV/world" "$SRV/logs"
 cat > "$SRV/server.properties" <<P

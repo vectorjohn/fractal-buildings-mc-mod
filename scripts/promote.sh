@@ -154,7 +154,7 @@ for c in "${commits[@]}"; do
     if git merge-base --is-ancestor "${parents[1]}" "$base_sha"; then cls[$c]=bk; label[$c]="$subj"; why[$c]="merge of $base"; continue; fi
     if [[ "$subj" =~ ^Merge[^:]*:\ (.+)$ ]]; then lab=${BASH_REMATCH[1]}
     else lab=$(git log --reverse --no-merges --format=%s "${parents[0]}..${parents[1]}" | head -1 || true); [ -n "$lab" ] || lab=$subj; fi
-    [[ "$subj" == *john/* ]] && lab="John: ${lab#John feedback: }"
+    [[ "$subj" == *john/* ]] && { [[ "$lab" =~ ^[A-Z][a-z]+\ feedback:\ (.*)$ ]] && lab=${BASH_REMATCH[1]}; lab="Review: $lab"; }   # the user's own branches (john/*, CLAUDE.md); docs-sync commits "User feedback: <files>"
   fi
   k=bk
   while IFS= read -r p; do
@@ -171,7 +171,7 @@ done
 # Semantic subject for a group head.
 scope_of() { # label -> "CODE<TAB>summary" (CODE may be empty)
   local s=$1 num="" code="" rest
-  s=${s#John: }; s=${s#Merge branch claude/}
+  s=${s#Review: }; s=${s#Merge branch claude/}
   if [[ "$s" =~ ^P[0-9]+[-\ ](.*)$ ]]; then s=${BASH_REMATCH[1]}; fi
   if [[ "$s" =~ ^([0-9]+\.[0-9]+[a-z]?)(\ \([^\)]*\))?:?\ (.*)$ ]]; then num=${BASH_REMATCH[1]}; s=${BASH_REMATCH[3]}; fi
   if [[ "$s" =~ ^([A-Z][A-Z0-9]*[a-z]?([-_][A-Z0-9]+[a-z]?)*)(\ \([^\)]*\))?[:\ ]\ *(.*)$ ]] && [ ${#BASH_REMATCH[1]} -ge 2 ]; then
@@ -200,7 +200,7 @@ type_of() { # head commit -> type
   if [[ "$subj" =~ \b[Ff]ix(es|ed)?\b|FIX\b|never|no\ longer ]]; then echo fix; return; fi
   echo feat
 }
-lcfirst() { local s=$1; if [[ "$s" =~ ^[A-Z][a-z]+([ ,:]|$) ]] && ! [[ "$s" =~ ^(John|Intel|Xvfb|Minecraft|Fabric|SilverBullet)\b ]]; then s="$(tr '[:upper:]' '[:lower:]' <<<"${s:0:1}")${s:1}"; fi; printf '%s' "$s"; }
+lcfirst() { local s=$1; if [[ "$s" =~ ^[A-Z][a-z]+([ ,:]|$) ]] && ! [[ "$s" =~ ^(Intel|Xvfb|Minecraft|Fabric|SilverBullet)\b ]]; then s="$(tr '[:upper:]' '[:lower:]' <<<"${s:0:1}")${s:1}"; fi; printf '%s' "$s"; }
 
 # Group.
 groups=()   # "head first last" per group
@@ -249,15 +249,15 @@ for g in "${groups[@]}"; do
   IFS=$'\x1f' read -r code rest <<<"$(scope_of "${label[$h]}")"
   t=$(type_of "$h")
   if [ "${cls[$h]}" = docs ]; then
-    if [[ "${label[$h]}" == John:* ]]; then
-      code=""; rest=${label[$h]#John: }; [[ "$rest" != Merge* ]] || rest="review feedback"
+    if [[ "${label[$h]}" == Review:* ]]; then
+      code=""; rest=${label[$h]#Review: }; [[ "$rest" != Merge* ]] || rest="review feedback"
       if [[ "$rest" =~ ^[^\ ]+\.md(\ [^\ ]+)*$ ]]; then fl=""; for w in $rest; do fl="${fl:+$fl, }${w##*/}"; done; rest="notes on $fl"; fi
-      rest=${rest#John: }; rest=${rest#John }; rest="John's $rest"
+      [[ "$rest" == review* ]] || rest="review $rest"
     fi
   fi
   [ "${cls[$h]}" != bk ] || { t=chore; code=""; rest="run bookkeeping"; }
   semantic=""   # already `type(CODE): summary` (verifier.md since H1): kept as written
-  if [ "${cls[$h]}" != bk ] && [[ "${label[$h]#John: }" =~ ^(feat|fix|perf|test|docs|build|chore|revert)(\([^\)]+\))?:\ .+ ]]; then semantic=${label[$h]#John: }; fi
+  if [ "${cls[$h]}" != bk ] && [[ "${label[$h]#Review: }" =~ ^(feat|fix|perf|test|docs|build|chore|revert)(\([^\)]+\))?:\ .+ ]]; then semantic=${label[$h]#Review: }; fi
   if [ -z "$code" ] && [ -z "$semantic" ] && [ "${cls[$h]}" = code ] && [ -z "${ov_msg[$h]:-}" ]; then review+=("$(git rev-parse --short "$h") no item code in subject: ${label[$h]}"); fi
   subject="$t${code:+($code)}: $(lcfirst "$rest")"
   [ -z "$semantic" ] || subject=$semantic

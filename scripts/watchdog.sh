@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Host-wide watchdog, REPORT ONLY (W8 of docs/plans/workflow-history.md, workflow proposal option 5a;
-# John 2026-11-05, decision 5: report-only first). One pass looks for stuck and abandoned work and
+# the user, 2026-11-05, decision 5: report-only first). One pass looks for stuck and abandoned work and
 # writes what it found; it never stops, kills or changes a process, a lock or a job. The only files it
 # deletes are process-registry entries whose owner and processes are both gone (or whose worker job
 # is finished business): bookkeeping, not processes.
@@ -35,8 +35,8 @@
 #   worktree   a claude/* worktree whose branch is merged (or its content is) into the run branch, with
 #              no commit for a day and no process inside it (note; checked once an hour)
 #
-# Files (in <main root>/.claude/status/; FB_STATE_DIR overrides the .claude dir, as for needs-john.sh):
-#   watchdog.md   the current findings, rewritten every pass (scripts/needs-john.sh lists the act ones)
+# Files (in <main root>/.claude/status/; FB_STATE_DIR overrides the .claude dir, as for needs-user.sh):
+#   watchdog.md   the current findings, rewritten every pass (scripts/needs-user.sh lists the act ones)
 #   watchdog.tsv  the same, machine-readable: key, level (act|note), text, suggested command
 #   watchdog.log  one line per change only: NEW <key> <text> / CLEARED <key>
 #   watchdog.cpu, watchdog.keys, watchdog.worktrees: its own memory between passes
@@ -275,7 +275,7 @@ while read -r pid ppid pg uid et args; do
 	[[ -n ${REGPG[$pg]:-} ]] && continue                # registered: section 3
 	cwd=$(readlink "/proc/$pid/cwd" 2>/dev/null) || continue
 	[[ $cwd == "$MAIN_ROOT"/* || $cwd == "$MAIN_ROOT" ]] || continue   # not this repo: not ours to judge
-	grep -qz '^WAYLAND_DISPLAY=' "/proc/$pid/environ" 2>/dev/null && continue   # a desktop client (John's)
+	grep -qz '^WAYLAND_DISPLAY=' "/proc/$pid/environ" 2>/dev/null && continue   # a desktop client (the user's)
 	[[ -e /proc/$pg ]] && continue                      # its group leader is still there
 	ppg=$(awk -v p="$ppid" '$1 == p { print $3; exit }' <<<"$PS")
 	[[ $ppg == "$pg" ]] && continue                     # its parent is in its own group: its starter is still there

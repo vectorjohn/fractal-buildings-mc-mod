@@ -80,4 +80,10 @@ rm -f "$T/state/tested.tsv"
 out=$("$B" batch); check "batch done at head resets" has "$out" "0 of 4"
 check "batch done on a bad rev exits 2" [ "$(rc "$B" batch done nosuchrev)" = 2 ]
 
+# --- the old lane name awaiting-john: accepted on the command line, old rows migrated
+out=$("$B" move p6-old awaiting-john); check "old lane name accepted" has "$out" "p6-old added in awaiting-user"
+printf 'p6-older\tawaiting-john\t2026-11-01T00:00:00Z\t-\t-\t-\t-\t2026-11-01T00:00:00Z\n' >> "$T/state/board/items.tsv"
+out=$("$B" list awaiting-john); check "old rows migrated" has "$out" "p6-older"
+check "no row left in the old lane" [ "$(awk -F'\t' '$2=="awaiting-john"' "$T/state/board/items.tsv" | wc -l)" = 0 ]
+
 echo; if [[ $fails == 0 ]]; then echo "board-selftest: all passed"; else echo "board-selftest: $fails FAILED"; exit 1; fi

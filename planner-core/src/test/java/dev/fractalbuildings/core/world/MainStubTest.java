@@ -17,7 +17,7 @@ import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 
 /**
- * 6.25 MAINSTUB: main roads that end at a gate with nothing beyond it. John's playtest 2026-10-28 (metropolis s4_m2 of seed
+ * 6.25 MAINSTUB: main roads that end at a gate with nothing beyond it. The user's playtest 2026-10-28 (metropolis s4_m2 of seed
  * 1573336981619055086: 20.02.18, 20.42.25, 20.43.12) and the two exit roads of the 6.22 review whose link the road layer drops (w12345 s2_1
  * g4 at 2560,1984 and s6_6 g13 at 7040,6080) run past their last lot to a gate in open ground; with the cut none runs more than
  * {@link ExitTrim#MAX_STUB} columns past its last lot or street.
@@ -34,7 +34,7 @@ class MainStubTest {
 	}
 
 	@Test
-	void johnsMetropolisCutsItsTwoStubs() {
+	void playtestMetropolisCutsItsTwoStubs() {
 		WorldPlanner w = JoinWorld.pt1573();
 		SettlementSite site = w.siteOf(new Cell(4, -2)).orElseThrow();
 		List<ExitTrim.Stub> before = stubs(w, site, false), after = stubs(w, site, true);
@@ -146,7 +146,7 @@ class MainStubTest {
 		}
 	}
 
-	/** John's 20.02.18: r3_m3_3 bridges to four lots at a hashed exit gate with no road beyond; the road stops at the near bank and those lots are not built. */
+	/** The user's 20.02.18: r3_m3_3 bridges to four lots at a hashed exit gate with no road beyond; the road stops at the near bank and those lots are not built. */
 	@Test
 	void theBridgeToNowhereIsGone() {
 		WorldPlanner w = JoinWorld.pt1573();

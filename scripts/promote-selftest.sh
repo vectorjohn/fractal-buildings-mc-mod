@@ -18,7 +18,7 @@ echo l1 >> docs/runs/ledger.md; c "Ledger: start"
 echo a1 >> mod/src/main/A.java; echo log > docs/log/a.md; c "6.1 ALPHA: first feature"
 echo l2 >> docs/runs/ledger.md; echo r > docs/ROADMAP.md; c "Ledger: ALPHA merged"
 echo p > docs/plans/beta.md; c "BETA: plan"
-git checkout -q -b john/docs-feedback; echo j > docs/STANDARDS.md; c "John feedback: docs/STANDARDS.md"
+git checkout -q -b john/docs-feedback; echo j > docs/STANDARDS.md; c "User feedback: docs/STANDARDS.md"
 git checkout -q claude/run-x; git merge -q --no-ff john/docs-feedback -m "Merge branch 'john/docs-feedback' into claude/run-x"
 echo b1 >> mod/src/main/A.java; c "BETA: faster lookups"
 echo l3 >> docs/runs/ledger.md; c "Ledger: BETA merged"
@@ -49,22 +49,22 @@ echo x > other; c "direct commit on main"
 scripts/promote.sh --run claude/run-x --branch promote/x >/dev/null 2>&1 && fail "accepted a diverged base"
 
 # 4 (b): a docs-feedback merge on the run branch after a code commit gets its own
-# docs commit named after John's files; one touching only bookkeeping folds.
+# docs commit named after the user's files; one touching only bookkeeping folds.
 newrepo r4
 git checkout -q -b claude/run-x
 echo a1 >> mod/src/main/A.java; c "ALPHA: first feature"
 git checkout -q -b john/docs-feedback; echo j > docs/STANDARDS.md; mkdir -p docs/design; echo k > docs/design/x.md
-c "John feedback: docs/STANDARDS.md docs/design/x.md"
+c "User feedback: docs/STANDARDS.md docs/design/x.md"
 git checkout -q claude/run-x; git merge -q --no-ff john/docs-feedback -m "Merge branch 'john/docs-feedback' into claude/run-x"
 git checkout -q john/docs-feedback; git merge -q --ff-only claude/run-x   # docs-sync.sh fast-forwards it
-echo q > docs/REVIEW.md; c "John feedback: docs/REVIEW.md"
+echo q > docs/REVIEW.md; c "User feedback: docs/REVIEW.md"
 git checkout -q claude/run-x; git merge -q --no-ff john/docs-feedback -m "Merge branch 'john/docs-feedback' into claude/run-x"
 echo z >> mod/src/main/A.java; c "fix(GAMMA): keep the thing"   # semantic subjects (verifier.md, H1) pass through
 git checkout -q -b claude/delta; echo d > mod/src/main/D.java; c "DELTA: work"
 git checkout -q claude/run-x; git merge -q --no-ff claude/delta -m "Merge claude/delta: feat(DELTA): a new thing"
 scripts/promote.sh --run claude/run-x --summary "$t/s4.md" >/dev/null
 got=$(hist main..promote/run-x)
-[ "$got" = "feat(ALPHA): first feature|docs: John's notes on STANDARDS.md, x.md|fix(GAMMA): keep the thing|feat(DELTA): a new thing|" ] || fail "docs-feedback: $got"
+[ "$got" = "feat(ALPHA): first feature|docs: review notes on STANDARDS.md, x.md|fix(GAMMA): keep the thing|feat(DELTA): a new thing|" ] || fail "docs-feedback: $got"
 grep -q "Needs a look (0)" "$t/s4.md" || fail "semantic subjects flagged"
 git log -1 --format=%B promote/run-x~2 | grep -q "plus 1 bookkeeping commits" || fail "bookkeeping-only feedback merge not folded"
 grep -q 'tree check: PASS' "$t/s4.md" || fail "docs-feedback tree check"
@@ -77,7 +77,7 @@ newrepo r5
 echo one > conf.txt; c "conf"
 git checkout -q -b claude/run-x
 echo a1 >> mod/src/main/A.java; echo run > conf.txt; c "ALPHA: first feature"
-git checkout -q main; echo tool > scripts/tool.sh; echo main > conf.txt; c "John: a tool on main"
+git checkout -q main; echo tool > scripts/tool.sh; echo main > conf.txt; c "a tool on main"
 git checkout -q claude/run-x
 echo b1 >> mod/src/main/A.java; c "BETA: second"
 git merge -q --no-ff main -m "Merge main into claude/run-x" >/dev/null 2>&1 || true

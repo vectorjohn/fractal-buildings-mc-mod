@@ -13,7 +13,7 @@ import java.util.TreeSet;
 public final class MassingCheck {
 	private MassingCheck() {}
 
-	/** Largest jetty overhang per side, in blocks (John, REVIEW 3.12: "wider with an overhang on top"). */
+	/** Largest jetty overhang per side, in blocks (the user, REVIEW 3.12: "wider with an overhang on top"). */
 	public static final int JETTY_MAX = 2;
 	/** Largest front overhang of a shop arcade (a jetty carrying the upper storeys over a walkway on posts), in blocks. */
 	public static final int ARCADE_MAX = 3;

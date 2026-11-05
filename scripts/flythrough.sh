@@ -9,7 +9,7 @@
 # fraction, file) to --out (default mod/build/flythrough); the full-size PNGs are in mod/build/screenshots/fly-*.png.
 # WHEN TO RUN IT: opt-in and slow (minutes per frame at big render distance). Run it for review packs, phase gates and changes that
 # affect how cities look; not on every small change, and it is not part of scripts/test-all.sh (the default client layer skips it).
-# Wide shots (John 2026-10-26): hamlet/village/town views at --rd 24, city and metropolis sweeps at --rd-big 32 on the Intel iGPU
+# Wide shots (the user, 2026-10-26): hamlet/village/town views at --rd 24, city and metropolis sweeps at --rd-big 32 on the Intel iGPU
 # (FB_VK is passed through to client-test.sh; the fill wait scales with the render distance, FB_FLY_FILL_S overrides its cap):
 #   FB_VK=intel scripts/flythrough.sh --rd 24 --rd-big 32
 # --roads (ROADS1 r2): instead of the six frames per settlement, one frame per kind of road surface (RoadLook) plus a built asphalt comparison strip.

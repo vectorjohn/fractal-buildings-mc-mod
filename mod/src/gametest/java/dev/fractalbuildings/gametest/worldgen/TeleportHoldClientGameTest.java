@@ -71,7 +71,7 @@ public class TeleportHoldClientGameTest implements FabricClientGameTest {
 	}
 
 	/**
-	 * John 2026-11-02 (never release into chunks that are not ready): a survival player teleports into a cold metropolis core at surface + 2
+	 * The user, 2026-11-02 (never release into chunks that are not ready): a survival player teleports into a cold metropolis core at surface + 2
 	 * while the stuck-generation limit is short (3 s here, so it always passes: the metropolis takes far longer; the real limit is 60 sutes).
 	 * The hold must ABORT: the player stays at the origin with full health for the next seconds, the destination is never entered and the
 	 * release hook never fires. (Before, the hold released the player into non-FULL chunks and the test checked they survived.)

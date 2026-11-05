@@ -31,7 +31,7 @@
 #     does not inherit it), so it is released whenever this script exits; the
 #     EXIT/INT/TERM/HUP traps also kill whatever is left of the group.
 #
-# Renderer (FB_VK, default intel since 2026-10-26; John approved the Intel UHD 770 iGPU that day, CLAUDE.md).
+# Renderer (FB_VK, default intel since 2026-10-26; the user approved the Intel UHD 770 iGPU that day, CLAUDE.md).
 # scripts/vk-select.sh, sourced inside the dev shell, points the Vulkan loader at Mesa's Intel ICD (ANV)
 # and sets MESA_VK_WSI_DEBUG=sw (Xvfb has no DRI3). If the ICD, an Intel render node or a vulkaninfo
 # check is missing or fails, it logs "client-test: FALLBACK to lavapipe: <why>" and uses lavapipe. If

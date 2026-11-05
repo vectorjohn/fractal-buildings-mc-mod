@@ -14,7 +14,7 @@ import java.util.List;
 import java.util.TreeMap;
 
 /**
- * DECKDIAG F2: the along test (Profile.alongBank, the architect's revised DS-19 test 3) on the real long decks of John's playtest world:
+ * DECKDIAG F2: the along test (Profile.alongBank, the architect's revised DS-19 test 3) on the real long decks of the user's playtest world:
  * k2_1_0 (21.31.49, the crossing he approved), s8_10 and sm4_m6 are crossings; sm11_m2 (a hamlet's deck along a lake shore) is not (s4_1 is only a coarse-dump case, see shoreRunsAreAlong).
  */
 class DeckAlongTest {
@@ -39,7 +39,7 @@ class DeckAlongTest {
 		WorldPlanner w = JoinWorld.deckdiag();
 		var k = skeletonProfile(w, 1, 2, "k2_1_0", null);
 		assertTrue(k.crossings().stream().anyMatch(c -> c.length() > 20), "it is a long crossing");
-		assertEquals(0, k.alongRuns(), "John's approved crossing at 21.31.49 is not along water");
+		assertEquals(0, k.alongRuns(), "the user's approved crossing at 21.31.49 is not along water");
 		assertEquals(0, skeletonProfile(w, 8, 10, "k8_10_0", null).alongRuns(), "s8_10");
 		assertEquals(0, skeletonProfile(w, -4, -6, "km4_m6_0", null).alongRuns(), "sm4_m6 (80 over a 26 neck) is interim, not along");
 	}

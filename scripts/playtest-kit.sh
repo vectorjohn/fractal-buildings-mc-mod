@@ -11,7 +11,7 @@
 # map.svg; then refreshes the generated block of <out>/README.md (seed table, open Phase 6 ROADMAP items). The rest of that
 # README and <out>/KNOWN-ISSUES.md are hand-written: re-read them on the release candidate.
 #
-# Seeds: a seed may be `random` (a fresh 63-bit seed, printed). Default: John's two playtest worlds plus one fixed fresh seed.
+# Seeds: a seed may be `random` (a fresh 63-bit seed, printed). Default: the user's two playtest worlds plus one fixed fresh seed.
 # Frames: --fly runs scripts/flythrough.sh for the seeds through scripts/anywhere.sh, pinned as evidence `playtest-kit-fly`
 # (heavy, 30-90 minutes; it waits for a free host), then uses mod/build/flythrough; --fly-from DIR uses an earlier fly-through
 # output (a dir with manifest.tsv and the JPEGs, e.g. .claude/reports/<label>-evidence/<sha>-<time>/mod/build/flythrough).
@@ -54,8 +54,8 @@ if [ -z "$TITLES" ]; then
 	t=()
 	for s in "${resolved[@]}"; do
 		case "$s" in
-			1709797029209580947) t+=("John's playtest world of 2026-10-26 (notes: docs/review/phase6/playtest-comments)") ;;
-			1573336981619055086) t+=("John's playtest world of 2026-10-28 (notes: docs/review/phase6/playtest-2026-10-28)") ;;
+			1709797029209580947) t+=("the user's playtest world of 2026-10-26 (notes: docs/review/phase6/playtest-comments)") ;;
+			1573336981619055086) t+=("the user's playtest world of 2026-10-28 (notes: docs/review/phase6/playtest-2026-10-28)") ;;
 			*) t+=("fresh seed, not played before") ;;
 		esac
 	done

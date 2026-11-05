@@ -2,7 +2,7 @@
 // Turns a folder of screenshots plus their /fbnote sidecars (FBNOTE; docs/PLAYTEST.md) into a markdown gallery for review:
 //
 //   scripts/dev scripts/playtest-gallery.mjs <screenshots-dir> [--out docs/review/playtest-<date>] [--date YYYY-MM-DD]
-//       [--width 1280] [--quality 82] [--notes-only] [--author John]
+//       [--width 1280] [--quality 82] [--notes-only] [--author NAME]
 //
 // Writes <out>/REVIEW.md (same layout as docs/review/phase6/playtest-comments/REVIEW.md: frontmatter, one `![[image|800]]` per shot with
 // the comment under it) and a downscaled JPEG per image (ImageMagick; the PNGs stay where they are). A screenshot without a sidecar is
@@ -71,7 +71,7 @@ const most = (xs) => {
 };
 
 /** The REVIEW.md text for entries [{base, note}] whose images are <base>.jpg. */
-export function renderMarkdown(entries, { date, author = 'John' }) {
+export function renderMarkdown(entries, { date, author = 'user' }) {
 	const notes = entries.map((e) => e.note).filter(Boolean);
 	const commit = most(notes.map((n) => n.mod?.commit));
 	const seed = most(notes.map((n) => n.seed));
@@ -127,6 +127,8 @@ function main(argv) {
 		process.exit(2);
 	}
 	opt.date ??= new Date().toISOString().slice(0, 10);
+	// Default author: the first word of git's user.name (the person who played), else "user".
+	opt.author ??= (spawnSync('git', ['config', 'user.name'], { encoding: 'utf8' }).stdout ?? '').trim().split(/\s+/)[0] || 'user';
 	const out = opt.out ?? path.join('docs', 'review', `playtest-${opt.date}`);
 	const r = buildGallery(pos[0], out, opt);
 	console.log(`${r.entries} screenshots (${r.notes} with notes) -> ${r.md}`);

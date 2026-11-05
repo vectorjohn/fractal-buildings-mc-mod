@@ -28,7 +28,7 @@ public final class ExtraDoors {
 	public static final int BIG_FOOTPRINT = 80;
 
 	/**
-	 * Where on the ground a secondary door may stand, from a first placement of the building (DS-35 on sloping lots, John 2026-10-28): a score for the
+	 * Where on the ground a secondary door may stand, from a first placement of the building (DS-35 on sloping lots, the user, 2026-10-28): a score for the
 	 * cell just outside a door on a face (shell-local x, z), higher is better, {@link Integer#MIN_VALUE} for no door there. {@code GeneratorV1} sets
 	 * one on this thread when the placement walled a door up, and asks again; null (the first try) leaves the choice to the bay order alone.
 	 */

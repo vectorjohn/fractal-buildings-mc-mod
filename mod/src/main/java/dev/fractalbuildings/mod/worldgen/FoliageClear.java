@@ -13,7 +13,7 @@ import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.LevelChunkSection;
 
 /**
- * Removes the foliage our air clear cut loose (FOLIAGE, John's playtest 2026-10-23: "leaves floating above the road").
+ * Removes the foliage our air clear cut loose (FOLIAGE, the user's playtest 2026-10-23: "leaves floating above the road").
  *
  * <p>A road or street clears the 4 blocks above its surface (and the whole column up to the old ground). A vanilla tree that stood there
  * loses its lower trunk or canopy, and what is left above hangs in the air. After the clear this pass reads the foliage around the chunk

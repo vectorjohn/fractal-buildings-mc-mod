@@ -89,7 +89,7 @@ Work by path: `cd <worktree> && ...` or `git -C <worktree> ...`.
      table doesn't require is not a gap; the batched heavy run and to-main
      run everything. A required `client-full` layer is covered by the quick
      client layer's evidence plus the next batched heavy run, unless the
-     brief asks for a per-item `client-full` run (John 2026-11-05).
+     brief asks for a per-item `client-full` run (the user, 2026-11-05).
    - `level: full`: the fast layers, **and** every heavy layer `scripts/test-scope.sh`
      requires, run yourself through `scripts/evidence.sh <slug> <command>`
      (an independent run; the coder's evidence doesn't replace it). Heavy
@@ -263,7 +263,7 @@ call. The steps:
 
    Co-Authored-By: <the attribution line from your system prompt, if any>
    ```
-   The first line is a semantic subject (John 2026-11-05; it becomes the
+   The first line is a semantic subject (the user, 2026-11-05; it becomes the
    item's one commit on `main`, `docs/plans/workflow-history.md`):
    `<type>` is one of `feat` (new behaviour), `fix` (a bug), `perf`, `test`
    (tests only), `docs`, `build` (Gradle, flake, wrapper), `chore` (scripts,
@@ -346,9 +346,9 @@ fly-through frames, and read the perf table. A run that ends with `perf: NOT A M
 (busy host, `mod/build/perf/quiet.txt`; CLAUDE.md "Parallel work") gives no timing results:
 report its count rows and failures only, and say the timings were not measured. A `PERF SKIPPED (load)` row is not a pass:
 name it in the report; `PERF SKIPPED ROW FAR OVER CEILING` (perf.sh exit 5) is a
-FAIL like any other, not load noise. A `PERF KNOWN OVER` row (a bug John accepted for 0.1.0, `knownOver` in
+FAIL like any other, not load noise. A `PERF KNOWN OVER` row (a bug the user accepted for 0.1.0, `knownOver` in
 `mod/perf-budget.json`) is not a pass either: name it; never accept a change that raises a `ci` or `budget`, or adds
-`knownOver`, without John's acceptance. If something fails, rerun only
+`knownOver`, without the user's acceptance. If something fails, rerun only
 that command once (a pass is a flake: see "Flakes"); if it fails again,
 bisect over the squash commits in `<range>` with that command
 (`--name heavy`), as in a train. **Don't revert**: report the culprit
@@ -389,7 +389,7 @@ path `M`. Don't review each item again.
    report FAILING. A flake (passes on an identical rerun) blocks too unless
    it's already in `docs/NOTES.md` with an open item; say so in the report
    and the message.
-2. **Promote, don't merge** (John 2026-11-05, `docs/plans/workflow-history.md`):
+2. **Promote, don't merge** (the user, 2026-11-05, `docs/plans/workflow-history.md`):
    `main` gets one commit per item squash, rebuilt by `scripts/promote.sh`
    without the run's bookkeeping; a run branch is never merged into `main`.
    Note `old=$(git rev-parse main)`. If `main` isn't an ancestor of the run
@@ -445,7 +445,7 @@ Write the full report (format below) to
 `train-<first slug>-verify.md`, a heavy batch `heavy-<short H>-verify.md`, a
 phase merge `to-main-<phase>-verify.md`). Your system prompt may say not to
 write report files; that line exempts files that are input for others, which
-this is. Use the Write tool for it (granted for this, John 2026-11-05). **Your final message is the verdict block plus the report path, no
+this is. Use the Write tool for it (granted for this, the user, 2026-11-05). **Your final message is the verdict block plus the report path, no
 more than about 15 lines**; the coordinator reads only that unless the verdict
 is FAILING or INCOMPLETE. The block, at most 8 lines:
 
@@ -455,7 +455,7 @@ Verdict: COMPLETE | INCOMPLETE | FAILING   (train: one line per item; heavy batc
 Merge: merged <sha>, post-merge pending | not merged (<reason>) | MERGE CONFLICT (<files>) | none
 Breaking: <N>   then one line each: <what> — <evidence>   (at most 2; "+N more in the report")
 Evidence: <evidence folder(s), or "none">
-For John: <one line, or "none">
+For the user: <one line, or "none">
 Report: <report path>
 ```
 
@@ -487,8 +487,8 @@ The report file starts with the same block, then:
 ## Human review
 - <id>: <what to look at> — <what to judge>   (only what a human must judge, not already in docs/REVIEW.md; or "none")
   (name the 1-3 files to look at; a REVIEW item links copies in docs/review/<item-slug>/, never .claude/reports/)
-  (a question that needs John's decision also gets a line in docs/QUESTIONS.md); to ask John something directly, use `scripts/ask-john.sh [--blocking] "<line>"`, not chat
-  (John reads these: gloss each item code on first use, "MAINSTUB (main roads that end at a gate)", or link its ROADMAP entry; docs/GLOSSARY.md is the lookup)
+  (a question that needs the user's decision also gets a line in docs/QUESTIONS.md); to ask the user something directly, use `scripts/ask-user.sh [--blocking] "<line>"`, not chat
+  (the user reads these: gloss each item code on first use, "MAINSTUB (main roads that end at a gate)", or link its ROADMAP entry; docs/GLOSSARY.md is the lookup)
 ```
 
 COMPLETE: works as asked, main behaviour tested, tests pass. INCOMPLETE: tests

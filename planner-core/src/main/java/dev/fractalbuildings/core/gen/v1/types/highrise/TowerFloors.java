@@ -18,7 +18,7 @@ import dev.fractalbuildings.core.rand.Draws;
  * with another seed ({@link #TRIES} times), then the generic planner takes the floor ({@link #fallbacks}).
  */
 public final class TowerFloors implements FloorPlanner {
-	/** John's open question: a windowless private entry strip on the hall side of deep units. */
+	/** The user's open question: a windowless private entry strip on the hall side of deep units. */
 	public static final boolean ENTRY_STRIP = true;
 	/** Draws of one plate before the generic planner is used. */
 	static final int TRIES = 6;

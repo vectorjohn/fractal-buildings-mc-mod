@@ -20,7 +20,7 @@
 #   3. scripts/perf-check.mjs compares both with the budget (fails above the CI ceiling, warns above the budget) and prints a table;
 #      a timing row skipped for load prints a `PERF SKIPPED (load)` line, and a `loadSkipGuard` row (first tile, region cold,
 #      /locate fresh) skipped far over its ceiling exits 5 (`PERF SKIPPED ROW FAR OVER CEILING`); self-test node scripts/perf-check.test.mjs;
-#      a row over its ceiling with `knownOver` (a bug John accepted for 0.1.0; ceilings are never raised) prints `PERF KNOWN OVER` and
+#      a row over its ceiling with `knownOver` (a bug the user accepted for 0.1.0; ceilings are never raised) prints `PERF KNOWN OVER` and
 #      does not fail unless 25 % worse than its recorded value; also writes mod/build/perf/summary.md.
 # Quiet-machine rule (CLAUDE.md): a timing from a busy host is not a measurement. scripts/quiet-check.sh judges the host when the
 # heavy lock is taken and after each step (no other job or agent work on the host: locks, other jobs of the worker it runs in, other processes' CPU;

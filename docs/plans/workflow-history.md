@@ -31,7 +31,7 @@ Workflow (John approved the build order as proposed):
 | 1 | Verifier `Write`; `FB_*` validation; `gradlew --stop` ban | **partly**: validation done (RUNGUARD: `client-test.sh` exits 2 on a bad `FB_LAYER`/`FB_ONLY`/`FB_VK`, `remote.sh` forwards `FB_*`); ban done (CLAUDE.md, coder, verifier, assistant); `Write` not done |
 | 2 | Lock notes, self-deadlock check | **partly**: suite slots write notes; HEAVY2 fixed by `snapshot-heavy.lock`; no `lib/locks.sh`, heavy/merge locks silent |
 | 3 | Test ledger (`tested.tsv`) | not done |
-| 4 | `ask-john.sh` / `needs-john.sh` | **partly**: `docs/QUESTIONS.md` is a hand-kept "needs John" list; no script, no denial scan |
+| 4 | `ask-user.sh` / `needs-user.sh` | **partly**: `docs/QUESTIONS.md` is a hand-kept "needs John" list; no script, no denial scan |
 | 5 | `board.sh` lanes | not done (ledger "In flight" prose) |
 | 6 | `status.sh` | not done (pieces: `anywhere.sh --status`, `postmerge-status.sh`, `remote.sh --list`) |
 | 7 | `bg.sh`, no synchronous long waits | **partly**: post-merge runs detached with result files (`postmerge-run.sh`), `remote.sh` state files and `--attach`; no general helper or rule |
@@ -55,7 +55,7 @@ Each step is one agent. Assistant unless marked coder. Steps in the same group r
 - **W1** (row 1 rest, S): `Write` in `verifier.md` tools; coordinator brief template: "check a variable with `--help` before naming it"; coordinator heavy-batch rule "every 3-4 merges" becomes "every 4 merges", per-item `client-full` only when the brief asks (decision 3). Files: `.claude/agents/verifier.md` (frontmatter), `coordinator.md`.
 - **W2** (row 2, S): `scripts/lib/locks.sh` (suite-slot code generalised) for heavy, merge and snapshot locks: holder note, waiter prints holder every 5 min, refuse when the holder is the waiter's ancestor; `scripts/locks.sh` lists all. Self-test.
 - **W3** (row 3, S): test ledger in `evidence.sh`: `.claude/tested.tsv`, `scripts/tested.sh`, `ALREADY PASSED`, `FB_RETEST=1` (set by heavy batches and to-main). CLAUDE.md line.
-- **W4** (row 4, S): `ask-john.sh` and `needs-john.sh` writing `.claude/status/needs-john.md`; it lists open `docs/QUESTIONS.md` lines too, so QUESTIONS stays the committed record and the script adds the live items (asks, classifier denials, build-file changes, REVIEW counts).
+- **W4** (row 4, S): `ask-user.sh` and `needs-user.sh` writing `.claude/status/needs-user.md`; it lists open `docs/QUESTIONS.md` lines too, so QUESTIONS stays the committed record and the script adds the live items (asks, classifier denials, build-file changes, REVIEW counts).
 - **W5** (row 5, S): `board.sh` lanes, history, merge counter for decision 3 ("heavy batch due" at 4); `coordinator.md` uses it for "where is item X", the ledger keeps decisions only.
 - **W13** (row 13, S): `world-query.sh` from McaTop and FloatingSnow.
 - **H1** (history, S): semantic subjects. `verifier.md` step 5: first line `type(CODE): summary` (types feat, fix, perf, test, docs, build, chore, revert; scope the item code, else the area); `squash-merge.sh` warns when the first line doesn't match `^(feat|fix|perf|test|docs|build|chore|revert)(\(.+\))?: ` (warning now, refusal after a week of clean merges). Touches `verifier.md` like W1, in another section.
@@ -74,7 +74,7 @@ Each step is one agent. Assistant unless marked coder. Steps in the same group r
 
 - **W10** (row 10, M; after W3, W5, C9, H1; lead-coder review): `merge-queue.sh`, trains of 4, regen guard, one fast suite, ff-only, bisect; takes the verifier's semantic message file as is. Runs beside manual merges for a day before it replaces them.
 - **W11** (row 11, M; after W8): `reap.sh --mine` / `--orphans`, report-only first, kills after a clean week.
-- **W12** (row 12, S; after W6): copy `board.md` and `needs-john.md` into a git-ignored `STATUS.md` in the docs-feedback space each minute, plus a `coordinator.md` line. No Haiku digest.
+- **W12** (row 12, S; after W6): copy `board.md` and `needs-user.md` into a git-ignored `STATUS.md` in the docs-feedback space each minute, plus a `coordinator.md` line. No Haiku digest.
 
 **Group 4 (world cache; independent of the merge queue, can start once W13 is in)**
 

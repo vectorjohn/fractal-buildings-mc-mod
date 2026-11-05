@@ -22,7 +22,7 @@ import net.minecraft.world.level.levelgen.Heightmap;
 
 /**
  * ROADJOIN step 5 (6.15), in the world. Opt-in ({@code FB_ROADJOIN=1}; use {@code FB_ONLY=RoadJoinClientGameTest}), never part of the quick or
- * full layer. Seed 1709797029209580947 (John's desert world). For each spot (the hamlet gate, the metropolis exits, John's 21.31.49 and
+ * full layer. Seed 1709797029209580947 (the user's desert world). For each spot (the hamlet gate, the metropolis exits, the user's 21.31.49 and
  * 21.26.27 positions) every planned road column (graph roads and approaches, as the road layer draws them) within {@code R} blocks that no
  * district claims (D5: the district wins) is read back: the top solid block (no leaves) of each, and every pair of 4-adjacent such columns must
  * differ by at most 1. Steps between a road column and a neighbouring district column (the join with the street) are logged, and asserted
@@ -64,8 +64,8 @@ public class RoadJoinClientGameTest implements FabricClientGameTest {
 			spots.add(new Spot("hamlet-gate", 3616, 1440));
 			spots.add(new Spot("metropolis-exit-a", 3200, 1696));
 			spots.add(new Spot("metropolis-exit-b", 3200, 1792)); // step 3 moved the exit 3264,1856 here
-			spots.add(new Spot("john-21.31.49", 3201, 1683));
-			spots.add(new Spot("john-21.26.27", 3623, 1443));
+			spots.add(new Spot("playtest-21.31.49", 3201, 1683));
+			spots.add(new Spot("playtest-21.26.27", 3623, 1443));
 		}
 		try (TestSingleplayerContext world = context.worldBuilder().setUseConsistentSettings(false).adjustSettings(c -> c.setSeed(seed)).create()) {
 			context.runOnClient(client -> client.options.chatVisibility().set(net.minecraft.world.entity.player.ChatVisiblity.HIDDEN));

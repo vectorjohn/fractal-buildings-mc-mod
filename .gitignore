@@ -53,6 +53,6 @@ replay_*.log
 viewer/gallery-data/
 viewer/dist-gallery/
 mod/logs/
-# Generated state shared by every worktree (scripts/board.sh, ask-john.sh, needs-john.sh)
+# Generated state shared by every worktree (scripts/board.sh, ask-user.sh, needs-user.sh)
 /.claude/board/
 /.claude/status/

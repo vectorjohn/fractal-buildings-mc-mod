@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # world-query.sh: read a saved Minecraft world offline, straight from its region files (W13,
 # docs/plans/workflow-history.md). No server, no game, no lock: safe for reviewers and for
-# John's own saves (it opens files read-only and never takes session.lock).
+# the user's own saves (it opens files read-only and never takes session.lock).
 #
 #   scripts/world-query.sh [--dim D] <command> <world> [args]
 #

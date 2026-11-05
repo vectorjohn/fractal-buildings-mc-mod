@@ -42,7 +42,7 @@ public class TeleportHoldGameTest {
 		TeleportHold.timeoutMillis = TeleportHold.DEFAULT_TIMEOUT_MILLIS;
 	}
 
-	/** John 2026-11-02: the limit is a 60 s stuck-generation limit (John 2026-11-02) that aborts, and release-on-plan is off unless its property is set. */
+	/** The user, 2026-11-02: the limit is a 60 s stuck-generation limit (the user, 2026-11-02) that aborts, and release-on-plan is off unless its property is set. */
 	@GameTest
 	public void defaultsArePinned(GameTestHelper helper) {
 		check(TeleportHold.DEFAULT_TIMEOUT_MILLIS == 60_000L, "default stuck-generation limit " + TeleportHold.DEFAULT_TIMEOUT_MILLIS);

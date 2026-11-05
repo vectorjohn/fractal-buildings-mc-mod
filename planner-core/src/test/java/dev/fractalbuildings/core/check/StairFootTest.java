@@ -15,7 +15,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
-/** STAIRFOOT: {@code stair-foot}, the step in front of a door has floor behind it (John's playtest 2026-10-27, a high-rise roof door over the stairwell opening). */
+/** STAIRFOOT: {@code stair-foot}, the step in front of a door has floor behind it (the user's playtest 2026-10-27, a high-rise roof door over the stairwell opening). */
 class StairFootTest {
 	private static SceneDoc gen(String type, long seed, String style, int w, int d) {
 		ProbeSpecs.Probes p = ProbeSpecs.parse("flat:70");

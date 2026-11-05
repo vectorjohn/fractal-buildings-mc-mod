@@ -82,10 +82,10 @@ reported as `partial`. Non-breaking ones: fix if trivial, otherwise record a
 list them in the report.
 
 Judgments only the human can make (does it look like a person built it; does
-a style read right; in-game feel) go in `docs/REVIEW.md` (format at its top). A question that needs John's decision also gets a line in `docs/QUESTIONS.md` (format at its top). Something only John can do or allow and that is done once he answers (a permission the classifier denied that you need, a process you may not kill, a change on another machine) goes through `scripts/ask-john.sh "<one line>"` (`--blocking` if you are stopped, `--cmd` with the command he can paste), not a chat line; it lands on `.claude/status/needs-john.md`.
-When you add an item there, copy the 1-3 key files it asks John to look at
+a style read right; in-game feel) go in `docs/REVIEW.md` (format at its top). A question that needs the user's decision also gets a line in `docs/QUESTIONS.md` (format at its top). Something only the user can do or allow and that is done once he answers (a permission the classifier denied that you need, a process you may not kill, a change on another machine) goes through `scripts/ask-user.sh "<one line>"` (`--blocking` if you are stopped, `--cmd` with the command he can paste), not a chat line; it lands on `.claude/status/needs-user.md`.
+When you add an item there, copy the 1-3 key files it asks the user to look at
 into `docs/review/<item-slug>/` (downscaled, about 1 MB per item at most) and
-link the copies relatively; `.claude/reports/` is gitignored and John can't
+link the copies relatively; `.claude/reports/` is gitignored and the user can't
 open it, so name it only in plain text as the forensic source.
 That file is not a substitute for a test you could write.
 
@@ -132,7 +132,7 @@ prints** (required ones always; "consider" ones when the printed reason applies,
 and say in the report which you ran or skipped; UNKNOWN files mean every layer,
 and add a row to `scripts/test-scope.tsv`). Where it requires `client-full`,
 run the quick client layer and leave the full one to the batched heavy run,
-unless your brief asks for `client-full` (John 2026-11-05). Policy and edge cases (a building
+unless your brief asks for `client-full` (the user, 2026-11-05). Policy and edge cases (a building
 change that moves footprints or ground claims, a new block kind):
 `docs/TESTING.md`. Don't repeat a passing run just to be sure.
 Keep tool output small: `tail` or `grep` logs, don't print full Gradle
@@ -264,7 +264,7 @@ Commits: <sha> <subject>; <sha> <subject>   (or "<N> commits, <first>..<last>")
 Tests: <layers run> → <pass/fail with counts>; heavy: <pass/fail | not needed>
 Blockers: <N>   then one line each (at most 2; "+N more in the report")
 Evidence: <evidence folder(s), or "none">
-For John: <one line, or "none">
+For the user: <one line, or "none">
 
 ## Result: done | partial | blocked
 ## Did
@@ -289,7 +289,7 @@ For John: <one line, or "none">
 ```
 
 **The report file starts with the verdict block** (at most 8 lines: result,
-commits, tests, blockers, evidence, anything for John). **Your final message is
+commits, tests, blockers, evidence, anything for the user). **Your final message is
 that block plus the report path, no more than about 15 lines** (add at most
 2–4 notes that matter most). It is all the coordinator reads unless the result
 is partial or blocked or the verifier fails it; the detail stays in the file.

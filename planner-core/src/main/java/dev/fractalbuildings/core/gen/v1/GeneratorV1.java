@@ -103,7 +103,7 @@ public final class GeneratorV1 implements Generator {
 	/**
 	 * The placement of this spec. When the ground walls up a secondary door (DS-35), or its flight cannot be railed inside the lot (DS-8), the
 	 * shell is generated again with a {@link ExtraDoors.Survey} of the first placement: every non-front face is tried, each cell scored by the
-	 * flight it needs (a level cell first), the cells that failed banned, until every door stands or no cell is left (John, REVIEW 2026-10-28:
+	 * flight it needs (a level cell first), the cells that failed banned, until every door stands or no cell is left (the user, REVIEW 2026-10-28:
 	 * second doors on sloping lots). The placement builds the flight with the DS-45 runs and landings, and walls a door up only when none fits.
 	 */
 	/** A placement and, when the door retry already walked it, whether every furnished room keeps a clear lane (null: not walked). */

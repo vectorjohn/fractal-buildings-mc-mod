@@ -51,7 +51,7 @@ public final class EntranceCount {
 	 * True if the ground leaves no wall cell of {@code volume} (null: of any ground mass) on a face other than the front (local north) with open
 	 * ground outside at most the door floor and at most {@link #MAX_DROP} below it, and lot room straight out for that flight: a back or side door
 	 * on every such face would be buried in the slope or stand high above it, so the generator walls it up and the count rules are not enforced
-	 * for it. Every non-front face is tried, as the generator does (DS-35 on slopes, John 2026-10-28). {@code ground} is the effective ground.
+	 * for it. Every non-front face is tried, as the generator does (DS-35 on slopes, the user, 2026-10-28). {@code ground} is the effective ground.
 	 */
 	public static boolean blocked(PlacedBuilding b, TerrainProbe ground, List<Lot> lots, String volume) { return blocked(b, ground, ground, lots, volume); }
 
@@ -157,7 +157,7 @@ public final class EntranceCount {
 	/**
 	 * As {@link #measure(PlacedBuilding, boolean)}, not enforcing a count rule only where {@link #blocked} says the ground leaves no non-front face a
 	 * door could stand on (for the whole building, and for each workshop wing and lean-to on its own). Slopes are enforced like level lots
-	 * (John, REVIEW 2026-10-28: DS-35 holds on sloping lots).
+	 * (the user, REVIEW 2026-10-28: DS-35 holds on sloping lots).
 	 */
 	public static Result measure(PlacedBuilding b, TerrainProbe ground, TerrainProbe raw, List<Lot> lots) {
 		return measure(b, blocked(b, ground, raw, lots, null), v -> blocked(b, ground, raw, lots, v)); // the natural ground and the site's: a dug-in well round the building is no way out, a cut makes the flight longer (the walker of DS-45)

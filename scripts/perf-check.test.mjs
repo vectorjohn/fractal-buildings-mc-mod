@@ -60,7 +60,7 @@ const noArr = run({ 'other.ms': 5 }, ['--allow-absent-prefix', 'arrival.']);
 check('--allow-absent-prefix arrival.: missing arrival row passes', noArr.status === 0 && noArr.stdout.includes('1 allowed by --allow-absent-prefix arrival.'));
 const noOther = run({}, ['--allow-absent-prefix', 'arrival.']);
 check('--allow-absent-prefix arrival.: another missing row still fails', noOther.status === 1 && noOther.stdout.includes('rows are missing'));
-// PERFKNOWN (John 2026-11-02: never raise a ceiling; exceeding one is a bug, accepted for 0.1.0): knownOver rows
+// PERFKNOWN (the user, 2026-11-02: never raise a ceiling; exceeding one is a bug, accepted for 0.1.0): knownOver rows
 const ko = { issue: 'PERFORMANCE.md known perf bugs: test row', since: '2026-11-02', accepted: '0.1.0', last: 5000 };
 budget.budgets = [{ key: 'k.ms', label: 'k', unit: 'ms', budget: 1000, ci: 3000, knownOver: ko }];
 function summary(world) { // run() but keep summary.md
