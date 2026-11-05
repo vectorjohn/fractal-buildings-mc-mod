@@ -19,7 +19,7 @@ cd <integration checkout> && end=$(( $(date +%s) + 6600 )); merged=0; while [ $(
 (rc 10 = the user's feedback merged: it keeps syncing every 5 min until a sync finds nothing new, then reports once — a 5-min debounce. Any other non-zero rc reports at once.)
 
 When the command finishes:
-- output ends with ROUND-END → start the same command again (you are authorised to restart yourself indefinitely; the user approved this). Do not report.
+- output ends with ROUND-END → start the same command again (you are authorised to restart yourself indefinitely; the user approved this). Do not report, and do not end your turn with a status message: a ROUND-END is never a reason to finish.
 - otherwise (FEEDBACK MERGED or STOP rc=N) → finish, with a final message of at most 10 lines: the rc, the merge sha(s) and files from docs-sync's output, verbatim key lines. The coordinator acts and starts a new watcher.
 Never print the full command output into your own reasoning beyond that; never run anything else.
 ---PROMPT END---
