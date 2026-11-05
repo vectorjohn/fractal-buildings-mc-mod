@@ -4,34 +4,47 @@
 # "unavailable: <why>" and the rest still renders):
 #
 #   Needs the user     open asks (BLOCKING ones in full), denials, open QUESTIONS lines   needs-user.sh
+#   Watchdog       its act findings in full, notes counted, the page's age             .claude/status/watchdog.md
 #   Items          every item not done, by lane, plus the heavy-batch counter          board.sh (items.tsv, batch)
 #   Agents         subagents and sessions active in the last FB_STATUS_AGENT_HOURS     Claude Code transcripts
 #                  (default 2): role, task, last activity, last tool, worktree
+#   Background jobs  running bg.sh jobs, and finished ones of the last 24 h            bg.sh status
 #   Locks          held locks and waiters (free ones counted)                         locks.sh list
 #   Machines       local load, suite slots, heavy lock, each worker's queue;          anywhere.sh --status,
 #                  remote jobs not yet fetched (any worktree)                         build/remote/*.state
 #   Post-merge     the last 5 runs, plus any non-PASS among the last 20                postmerge-status.sh
 #   Recent tests   the last 5 rows of the test ledger                                  tested.sh --list --all
 #
-#   scripts/status.sh [--run-branch B] [--quiet] [--no-refresh] [--skip S,S]
+#   scripts/status.sh [--run-branch B] [--quiet] [--no-refresh] [--skip S,S] [--publish]
 #     --quiet       write the page, print only its path
 #     --no-refresh  read .claude/status/needs-user.md as it is instead of regenerating it first
-#     --skip S,S    leave sections out: user items agents locks machines postmerge tests
+#     --skip S,S    leave sections out: user watchdog items agents jobs locks machines postmerge tests
 #                   (also FB_STATUS_SKIP; "machines" is the only one that talks to the workers)
+#     --publish     also write STATUS.md, the page the user reads in SilverBullet (W12), at the root of
+#                   the docs-feedback space (FB_STATUS_PAGE_DIR, default <main root>/.claude/worktrees/
+#                   docs-feedback): board.md plus the full needs-user.md, links into the hidden
+#                   .claude/ turned into plain paths, `- [ ]` asks into plain list items (no tasks in
+#                   SilverBullet's index), a stray `#word` backticked (no tag). Written only while git
+#                   ignores STATUS.md there (root .gitignore `/STATUS.md`), so it can never be committed
+#                   as feedback; otherwise it says why and exits 3. scripts/docs-sync.sh skips it too.
+#   scripts/status.sh --install-timer [--every MIN]   systemd user timer fb-status.timer running
+#                   `status.sh --quiet --publish` every MIN minutes (default 1) from THIS checkout's
+#                   script (only while the agent user has a session); --uninstall-timer, --print-units
 #
 # Read-only for the run: it changes no branch, lock, item or job. It writes board.md, and (unless
 # --no-refresh) needs-user.md through needs-user.sh; board.sh may extend its scope cache. Each source
 # runs under `timeout FB_STATUS_TIMEOUT` (default 20 s); a normal run takes a few seconds, most of it
-# the worker probes. W12 copies board.md into the SilverBullet space; links are relative to the repo root.
+# the worker probes. Links are relative to the repo root (--publish rewrites the ones into .claude/).
 # Run branch: --run-branch / FB_RUN_BRANCH, else the newest claude/run-* branch.
 # Test hooks: FB_STATE_DIR (instead of <main root>/.claude; also sets FB_LOCK_DIR, FB_POSTMERGE_DIR,
 # FB_TESTED_FILE when those are unset), FB_REPO, FB_TRANSCRIPTS (colon-separated transcript dirs),
 # FB_STATUS_SCRIPTS (directory of the helper scripts). Self-test: scripts/status-selftest.sh.
-# Exit: 0 page written (even with sections unavailable) | 1 page not written | 2 bad usage.
+# Exit: 0 page written (even with sections unavailable) | 1 page not written | 2 bad usage |
+# 3 board.md written but STATUS.md not published (--publish: no docs space, or STATUS.md not ignored).
 set -uo pipefail
 usage() { sed -n '2,/^set -uo pipefail/p' "$0" | sed '$d' | sed 's/^# \{0,1\}//'; }
 die() { echo "status: $*" >&2; exit 2; }
-QUIET=0 REFRESH=1 SKIP=${FB_STATUS_SKIP:-} RUN_BRANCH=${FB_RUN_BRANCH:-}
+QUIET=0 REFRESH=1 SKIP=${FB_STATUS_SKIP:-} RUN_BRANCH=${FB_RUN_BRANCH:-} PUBLISH=0 UNITS="" EVERY=1
 while [[ $# -gt 0 ]]; do
 	case "$1" in
 		--quiet) QUIET=1 ;;
@@ -39,6 +52,11 @@ while [[ $# -gt 0 ]]; do
 		--skip) [[ $# -ge 2 ]] || die "--skip S,S"; SKIP+=",$2"; shift ;;
 		--skip=*) SKIP+=",${1#*=}" ;;
 		--run-branch) [[ $# -ge 2 ]] || die "--run-branch B"; RUN_BRANCH=$2; shift ;;
+		--publish) PUBLISH=1 ;;
+		--print-units) UNITS=print ;;
+		--install-timer) UNITS=install ;;
+		--uninstall-timer) UNITS=uninstall ;;
+		--every) EVERY=${2:-}; [[ $EVERY =~ ^[1-9][0-9]*$ ]] || die "--every needs minutes"; shift ;;
 		-h|--help) usage; exit 0 ;;
 		*) die "unknown argument $1 (--help)" ;;
 	esac
@@ -47,13 +65,54 @@ done
 norm=""
 for s in ${SKIP//,/ }; do
 	[[ "$s" == john ]] && s=user   # the old key for the "Needs the user" section, kept as an alias
-	case "$s" in user|items|agents|locks|machines|postmerge|tests) ;; *) die "unknown section '$s' in --skip" ;; esac
+	case "$s" in user|watchdog|items|agents|jobs|locks|machines|postmerge|tests) ;; *) die "unknown section '$s' in --skip" ;; esac
 	norm+=",$s"
 done
 SKIP=$norm
 skipped() { [[ ",$SKIP," == *",$1,"* ]]; }
 
 HERE=$(cd "$(dirname "$0")" && pwd)
+
+# ---- systemd user timer (W12: keeps STATUS.md in the SilverBullet space fresh) ----------------------
+UNIT_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user"
+units() {
+	cat <<EOF
+# --- fb-status.service
+[Unit]
+Description=fractal-buildings status page (scripts/status.sh --publish)
+
+[Service]
+Type=oneshot
+Nice=10
+Environment=PATH=$PATH
+ExecStart=$HERE/status.sh --quiet --publish
+# --- fb-status.timer
+[Unit]
+Description=fractal-buildings status page every $EVERY min
+
+[Timer]
+OnBootSec=1min
+OnUnitActiveSec=${EVERY}min
+AccuracySec=10s
+
+[Install]
+WantedBy=timers.target
+EOF
+}
+case $UNITS in
+	print) units; exit 0 ;;
+	install)
+		mkdir -p "$UNIT_DIR" || exit 2
+		units | awk -v d="$UNIT_DIR" '/^# --- /{ f = d "/" $3; next } { print > f }'
+		systemctl --user daemon-reload && systemctl --user enable --now fb-status.timer || exit 1
+		echo "status: timer installed ($UNIT_DIR/fb-status.{service,timer}, every $EVERY min, $HERE/status.sh)"
+		exit 0 ;;
+	uninstall)
+		systemctl --user disable --now fb-status.timer 2>/dev/null
+		rm -f "$UNIT_DIR/fb-status.service" "$UNIT_DIR/fb-status.timer"
+		systemctl --user daemon-reload 2>/dev/null
+		echo "status: timer removed"; exit 0 ;;
+esac
 S=${FB_STATUS_SCRIPTS:-$HERE}
 REPO=${FB_REPO:-$(git -C "$HERE" rev-parse --show-toplevel 2>/dev/null)} || die "not in a git checkout"
 MAIN_ROOT=$(dirname "$(git -C "$REPO" rev-parse --path-format=absolute --git-common-dir 2>/dev/null)") || die "not in a git checkout"
@@ -110,6 +169,40 @@ sec_user() {
 	echo "Open asks: **$na**; permission denials: **$den**; open questions: **${q:-0}**. Details: [needs-user.md](.claude/status/needs-user.md) (generated $(sed -n 's/^Generated by `scripts\/needs-user.sh` at \([^ ]*\).*/\1/p' "$f" | head -n1))."
 	if [[ -n "$blocking" ]]; then echo; printf '%s\n' "$blocking"; fi
 	if (( na > 0 )) && [[ -z "$blocking" ]]; then echo; printf '%s\n' "$asks" | head -n 5; fi
+}
+
+sec_watchdog() {
+	echo "# Watchdog"; echo
+	local f="$STATE/status/watchdog.md"
+	if [[ ! -s "$f" ]]; then echo "unavailable: no \`.claude/status/watchdog.md\` (no pass yet; \`scripts/watchdog.sh --install-timer\` runs one every 5 min)"; return; fi
+	local age act nn na stale=""
+	age=$(( $(date +%s) - $(stat -c %Y "$f") ))
+	act=$(awk '/^# /{s=$0; next} s ~ /^# Needs action/ && /^- /' "$f")
+	nn=$(awk '/^# /{s=$0; next} s ~ /^# Notes/ && /^- /' "$f" | wc -l)
+	na=$(printf '%s' "$act" | grep -c . || true)
+	(( age > 900 )) && stale=" **Stale**: no pass for over 15 min (is \`fb-watchdog.timer\` running?)."
+	echo "Needs action: **$na**; notes: **$nn**. Last pass $(age_s "$age") ago.$stale Full list: [watchdog.md](.claude/status/watchdog.md); a fresh pass: \`scripts/watchdog.sh\`."
+	if [[ -n "$act" ]]; then echo; printf '%s\n' "$act" | head -n 10; fi
+}
+
+sec_jobs() {
+	echo "# Background jobs"; echo
+	local dir=${FB_BG_DIR:-$STATE/status/jobs}
+	if [[ ! -d "$dir" ]]; then echo "None yet (\`scripts/bg.sh LABEL -- COMMAND\` starts one)."; return; fi
+	# bg.sh status also marks a RUNNING job whose runner is gone as DIED; its lines: STATUS LABEL rc=N START CMD...
+	FB_BG_DIR=$dir src bg.sh "$S/bg.sh" status || { echo "$SRC_OUT" | head -n1; return; }
+	local cut rows n
+	cut=$(date -u -d '24 hours ago' +%FT%TZ)
+	rows=$(printf '%s\n' "$SRC_OUT" | awk -v cut="$cut" '$3 ~ /^rc=/ && ($1 == "RUNNING" || $4 >= cut)')
+	n=$(printf '%s\n' "$SRC_OUT" | awk '$3 ~ /^rc=/' | wc -l)
+	if [[ -z "$rows" ]]; then echo "None running or finished in the last 24 h ($n older; \`scripts/bg.sh status\`)."; return; fi
+	echo "| State | Label | Exit | Started | Command |"
+	echo "|---|---|---|---|---|"
+	printf '%s\n' "$rows" | head -n 12 | while read -r st label rc start cmd; do
+		rc=${rc#rc=}
+		printf '| %s | %s | %s | %s ago | `%s` |\n' "$st" "$label" "${rc:--}" "$(age_iso "$start")" "$(printf '%s' "$cmd" | cut -c1-60 | tr '|`' '/'"'")"
+	done
+	echo; echo "Newest first, running ones and the last 24 h; $n on record. One job's log tail: \`scripts/bg.sh status LABEL\`."
 }
 
 LANES=(ready coding verify merge-queue merged heavy-batch awaiting-user blocked)
@@ -274,12 +367,62 @@ gen() {
 	echo
 	echo "Generated by \`scripts/status.sh\` at $(now) on $(hostname -s 2>/dev/null || echo ?). Run branch \`${RUN_BRANCH:-none}\` at ${head:-(not found)}."
 	local s
-	for s in user items agents locks machines postmerge tests; do
+	for s in user watchdog items agents jobs locks machines postmerge tests; do
 		skipped "$s" && continue
 		echo; "sec_$s"
 	done
 }
 
+# for_sb FILE: a page as SilverBullet should get it: links into .claude/ (hidden in the space) become
+# plain code paths, `- [ ]` / `- [x]` items plain list items (no tasks in the user's task index), and a
+# `#word` outside code is backticked so it is not indexed as a tag
+for_sb() {
+	awk '
+		/^```/ { code = !code; print; next }
+		code { print; next }
+		{
+			while (match($0, /\[[^]]*\]\(\.claude\/[^)]*\)/)) {
+				p = substr($0, RSTART, RLENGTH); sub(/^\[[^]]*\]\(/, "", p); sub(/\)$/, "", p)
+				$0 = substr($0, 1, RSTART - 1) "`" p "`" substr($0, RSTART + RLENGTH)
+			}
+			sub(/^- \[[ xX]\] /, "- ")
+			out = ""; rest = $0
+			while (match(rest, /(^|[ (])#[A-Za-z][A-Za-z0-9_-]*/)) {
+				pre = substr(rest, 1, RSTART - 1); tok = substr(rest, RSTART, RLENGTH); lead = ""
+				if (substr(tok, 1, 1) != "#") { lead = substr(tok, 1, 1); tok = substr(tok, 2) }
+				out = out pre lead
+				# inside inline code already (odd number of backticks so far): leave it
+				t = out; if (gsub(/`/, "", t) % 2) out = out tok; else out = out "`" tok "`"
+				rest = substr(rest, RSTART + RLENGTH)
+			}
+			print out rest
+		}' "$1"
+}
+publish() {
+	local dir=${FB_STATUS_PAGE_DIR:-$MAIN_ROOT/.claude/worktrees/docs-feedback}
+	if [[ ! -d "$dir" ]]; then echo "status: not published: no docs space at $dir" >&2; return 3; fi
+	# git must ignore STATUS.md there, or docs-sync could commit it as the user's feedback; check-ignore
+	# also answers no for a tracked file, so a committed STATUS.md is never overwritten
+	if ! git -C "$dir" check-ignore -q STATUS.md 2>/dev/null; then
+		echo "status: not published: git does not ignore STATUS.md in $dir (its .gitignore needs /STATUS.md)" >&2; return 3
+	fi
+	local tmp="$STATE/status/STATUS.md.tmp.$$" nu="$STATE/status/needs-user.md"
+	{
+		echo "# Status"
+		echo
+		echo "Generated by \`scripts/status.sh --publish\` (every minute while \`fb-status.timer\` runs). Not in git; edits here are overwritten. Answer asks and questions where they live, such as [QUESTIONS.md](docs/QUESTIONS.md)."
+		echo
+		for_sb "$OUT" | sed '1{/^# Run status$/d}' | sed '1{/^$/d}'
+		if [[ -s "$nu" ]] && ! skipped user; then
+			echo; echo "# Needs the user: full list"; echo
+			for_sb "$nu" | sed '1{/^# /d}' | sed '1{/^$/d}'
+		fi
+	} > "$tmp" && mv -f "$tmp" "$dir/STATUS.md" || { rm -f "$tmp"; echo "status: could not write $dir/STATUS.md" >&2; return 1; }
+}
+
 tmp="$OUT.tmp.$$"
 gen > "$tmp" 2>/dev/null && mv "$tmp" "$OUT" || { rm -f "$tmp"; echo "status: could not write $OUT" >&2; exit 1; }
+prc=0
+if (( PUBLISH )); then publish; prc=$?; fi
 if (( QUIET )); then echo "$OUT"; else cat "$OUT"; fi
+exit "$prc"
