@@ -49,6 +49,7 @@ templates, `#query` fenced blocks, Space Script) is gone in 2.x.
   Exception: links inside **tables** open in a new tab as markdown links, so the
   generated [GLOSSARY](GLOSSARY.md) uses wiki links in its table (see "Links:
   what opens where" below; the convention for other docs is John's choice).
+- **Images: `![alt](relative/path.jpg)`, never `![[file.jpg]]` embeds**, and keep the image inside `docs/release/` for files there: they are published outside SilverBullet (GitHub, Modrinth, CurseForge), which don't render wiki embeds or `|800` width hints.
 - **Tasks:** `- [ ]` and `- [x]` only (ROADMAP items, REVIEW entries). They are
   indexed and clickable in SilverBullet. No custom states like `[IN PROGRESS]`:
   GitHub doesn't render them.

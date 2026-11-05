@@ -169,6 +169,7 @@ So the habit John asks about exists only for offline block reads; looking is alw
 # Other fixes found on the way
 
 - **Verifiers can't write report files**: `verifier.md`'s frontmatter is `tools: Read, Grep, Glob, Bash, EnterWorktree, ExitWorktree`, with no `Write`, so a verifier has to write its report through a Bash heredoc, which the classifier may refuse. Add `Write` to its tools, or add `scripts/report.sh <slug>` that writes stdin to `.claude/reports/<slug>.md`. S, assistant. (Agent definitions only take effect in sessions started after they reach the checkout the session runs in.)
+  - @John 2026-11-05: agreed, lets allow that
 - **Briefs naming things that don't exist yet** (`FB_ONLY`): the coordinator's brief template should say "check with `--help` before using a variable", and 1c makes a wrong variable fail loudly.
 - **Scratchpad shared between agents** (ledger 2026-10-22, "testall.log clobbered"): `bg.sh` and evidence write under the worktree, never the scratchpad.
 
@@ -197,12 +198,26 @@ Items 1-5 are a day's work for one assistant and change nothing about how items 
 # What John decides
 
 1. **Merge queue**: may a script fast-forward the run branch after the train's suite passes (the verifier still verifies each item; the script only merges and tests)? Train size (proposed 4).
+   - @John 2026-11-05: yes
 2. **Golden regeneration**: OK to regenerate goldens and fixtures after merge, guarded to the generated files the branch itself touched?
+   - @John 2026-11-05: yes
 3. **Heavy layers only in batches**: per-item `client-full` dropped unless the brief asks for it; batch every 4 merges or 6 h?
+   - @John 2026-11-05: 4 merges
 4. **Test ledger reuse**: OK to skip a layer that already passed on the identical tree (always rerun in heavy batches and to-main)?
+   - @John 2026-11-05: yes
 5. **Reaping**: report-only first (proposed), then automatic kills of registered orphans past their budget? Allow `reap.sh --mine` for agents?
+   - @John 2026-11-05: yes
 6. **Permissions**: add allow rules for the merge and reap scripts in `.claude/settings.json`?
+   - @John 2026-11-05: yes
 7. **Where you look**: terminal (`watch scripts/status.sh`), a file, or a page in SilverBullet (needs a git-ignored file in docs-feedback)?
+   - @John 2026-11-05: SilverBullet, but we’ll play it by ear. If it’s changed too much maybe what I really want is a real dashboard page. Anyhow, lets try SB for now.
 8. **The perf worker**: allow `job kill` on queued jobs, and does `anywhere.sh` count the perf worker as 3 slots now that `job help` says 3 at a time?
+   - @John 2026-11-05: yes, and yes
 9. **Haiku digest**: wanted, or the generated board only?
+   - @John 2026-11-05: just the board for now
 10. **Reference worlds**: build them (which seeds; add your playtest seed?), and is a "stale, N commits behind" world acceptable for looks reviews of things the change didn't touch, or only an exact one? Disk budget (~2 GB per host proposed)?
+    - @John 2026-11-05: yes. Choose any playtest seed. I’m wary of optimizing for one seed though - it seems like we want more of a world cache. E.g. an issue comes up in testing on a new seed or new place in a seed, that world seed +
+    - area is generated and later reused by other tests/checks. Yes it can be stale but it’s probably a judgment call if you think it’s too stale for what is being tested.
+
+@coordinator I like this plan. I just came across it (forgot it in a pile if other stuff) - I think _some_ of it we may have already done, but definitely some looks useful. I approve of the proposed build order. -- @John 2026-11-05
+  - @coordinator 2026-11-05: noted; plan in [workflow-history.md](../plans/workflow-history.md), with what is already done per row and your ten answers (row 14 becomes a world cache keyed by seed and area, per point 10).

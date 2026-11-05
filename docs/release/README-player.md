@@ -1,4 +1,5 @@
 # Fractal Buildings
+![Fractal Buildings](gallery/2026-10-27_19.03.48_2.jpg)
 
 *Draft player README (Phase 6 step A5). Step C3 moves it to the repository's
 `README.md`, adds screenshots and fills in the links; the agents' README moves to
@@ -17,8 +18,7 @@ The name comes from my early interest in fractal algorithms, and things like the
 - **Settlements of every size**: hamlets and villages in the countryside, towns,
   and cities and metropolises spread over many chunks, with a downtown of tall
   buildings and an old town round the centre.
-- **Planned to fit the land**: streets follow the terrain and are graded where
-  they cross slopes; Settlements are interconnected with roads, so if you happen upon a path in the wilderness you can follow it to a town.
+- **Planned to fit the land**: streets follow the terrain. Settlements are interconnected with roads, so if you happen upon a path in the wilderness you can follow it to a town.
 - **Various building types**: houses, shops, workshops, civic buildings and
   high-rises.
 - **Styles by biome**: materials and roof shapes change with the climate. City in a forest? Mass timber highrises! Town in the desert? Flat roofs and sandstone.
@@ -43,6 +43,7 @@ The name comes from my early interest in fractal algorithms, and things like the
 * Bridges: longer crossings, bridges that look like bridges.
 * More building variety. All the buildings are different but there are a few distinct styles. Need to use more materials, shape variety, etc.
 * Roads need some attention. Better pathing, more connections between settlements.
+* Building interior elaboration. Custom furniture and fixture builds (e.g. “this is how to build a kitchen” pieces). These can be hand built in game and then used to populate interiors of buildings. Right now large buildings have big sparse rooms.
 
 ## Config
 

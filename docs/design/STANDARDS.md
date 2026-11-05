@@ -880,11 +880,11 @@ and Minecraft block facts ([blocks.md](blocks.md), from John's
 ## DS-19 No causeways or long bridges (for now)
 
 - **Rule:** roads cross water only by a single span of at most 20 blocks;
-  otherwise they route round or the link is dropped. No causeways. Big
+  otherwise they route round or the link is dropped. No causeways. A deck stands clear of the water, never in it: its underside is above the water surface, with at least 1 block of air under it on spans over 6 and at town tier and up (agent's numbers); anything lower counts as a causeway (John 2026-11-05, from DS-63). Big
   bridges wait for ROADMAP 7.3.
 - **Why:** road-0 "looks more like someone built a road straight down the middle of a river."
 - **Scope:** roads between settlements (and streets).
-- **Enforcement:** code, exists: `Profile.MAX_CROSSING = 20`, `ProfileTest`.
+- **Enforcement:** code, exists: `Profile.MAX_CROSSING = 20`, `ProfileTest`. Clearance: code candidate `deck-clearance` in the `roads` report and `city-check`; none today.
 - **Status:** accepted. **Source:** John, REVIEW S10, 2026-10-22; [ADR 0004](../adr/0004-roads-between-settlements.md) answers, 2026-10-23.
 
 ## DS-19 amendment: one interim crossing deck at towns and up
@@ -1528,7 +1528,7 @@ copies are under `docs/review/` where they exist.
 - **Enforcement:** code candidate: every terrace cell set (flat roof at a
   storey's floor level, 2+ deep) has a door onto it and a DS-38 guard, or
   no glass at floor level beside it; folds into DS-38's check. None today.
-- **Status:** proposed. **Source:** architect, playtest 2026-10-28
+- **Status:** approved by @John 2026-11-05. **Source:** architect, playtest 2026-10-28
   questions, Q1 ([answers](../review/playtest1028-qs/architect.md), from
   playtest1028-qs-architect.md).
 
@@ -1553,7 +1553,7 @@ copies are under `docs/review/` where they exist.
   frontage, plus a bridge-on-unserved-exit check; extend `main-dead-end`
   to count lot-free exit length. Partial today (6.22 DEADPORT, 6.25
   MAINSTUB).
-- **Status:** proposed (amends DS-56, accepted 2026-10-31). **Source:** architect,
+- **Status:** approved by @John 2026-11-05 (amends DS-56, accepted 2026-10-31). **Source:** architect,
   p6-mainstub-architect.md and p6-deadport-architect.md (2026-10-29).
 
 ## DS-57 Roads don't double back
@@ -1569,7 +1569,7 @@ copies are under `docs/review/` where they exist.
 - **Enforcement:** code candidate `road-doubles-back` in `city-check` (max
   bend and detour ratio per road), plus a guard in the route builders.
   None today.
-- **Status:** proposed. **Source:** architect, 6.23 HAMLETEMPTY review
+- **Status:** approved by @John 2026-11-05. **Source:** architect, 6.23 HAMLETEMPTY review
   2026-10-29 (p6-hamletempty-architect.md).
 
 ## DS-58 Steps are as wide as the door
@@ -1587,7 +1587,7 @@ copies are under `docs/review/` where they exist.
 - **Enforcement:** code: every door cell of the opening has a half-step
   surface in front (extend `RasterEntranceWalkTest` or the planned DS-54
   walk graph). The 6.19 PORCHSTEP code follows it; no general check.
-- **Status:** proposed. **Source:** architect, 6.19 PORCHSTEP review
+- **Status:** approved by @John 2026-11-05. **Source:** architect, 6.19 PORCHSTEP review
   2026-10-29 (p6-porchstep-architect.md).
 
 ## DS-59 Landmarks are never silently dropped
@@ -1603,7 +1603,7 @@ copies are under `docs/review/` where they exist.
 - **Scope:** all tiers.
 - **Enforcement:** code candidate in the `settlement` check: every
   landmark lot has status `build`. None today.
-- **Status:** proposed. **Source:** architect, 6.20 DOORBANK review
+- **Status:** approved by @John 2026-11-05. **Source:** architect, 6.20 DOORBANK review
   2026-10-29 (p6-doorbank-architect.md).
 
 ## DS-60 Every dwelling sleeps someone
@@ -1617,7 +1617,7 @@ copies are under `docs/review/` where they exist.
 - **Scope:** house, workshop, shop.
 - **Enforcement:** code candidate: a bed count per dwelling in `check`.
   None today.
-- **Status:** proposed. **Source:** interior designer, DS35DOORS review
+- **Status:** approved by @John 2026-11-05. **Source:** interior designer, DS35DOORS review
   2026-10-28 ([p6-ds35doors-interior.md](../review/phase6/ds35doors/p6-ds35doors-interior.md)).
 
 ## DS-61 A door never empties a room
@@ -1631,7 +1631,7 @@ copies are under `docs/review/` where they exist.
 - **Scope:** all types.
 - **Enforcement:** code candidate: a required-piece check after
   `HookLayout`. None today.
-- **Status:** proposed. **Source:** interior designer, DS35DOORS review
+- **Status:** approved by @John 2026-11-05. **Source:** interior designer, DS35DOORS review
   2026-10-28 ([p6-ds35doors-interior.md](../review/phase6/ds35doors/p6-ds35doors-interior.md)).
 
 ## DS-45 amendment: secondary doors near the ground
@@ -1644,7 +1644,7 @@ copies are under `docs/review/` where they exist.
   temple 2388, high-rise 977), which is not a yard door.
 - **Scope:** all types with secondary doors.
 - **Enforcement:** code candidate: extend `door-rise` to secondary doors.
-- **Status:** proposed (amends DS-45). **Source:** architect, DS35DOORS
+- **Status:** approved by @John 2026-11-05 (amends DS-45). **Source:** architect, DS35DOORS
   review 2026-10-28 ([p6-ds35doors-architect.md](../review/phase6/ds35doors/p6-ds35doors-architect.md)).
 
 ## DS-35 amendment: the main door is the marked one
@@ -1659,7 +1659,7 @@ copies are under `docs/review/` where they exist.
 - **Scope:** all styles.
 - **Enforcement:** code candidate: trim or canopy around the main door;
   no secondary door wider than it.
-- **Status:** proposed (amends DS-35). **Source:** architect, DS35DOORS
+- **Status:** approved by @John 2026-11-05 (amends DS-35). **Source:** architect, DS35DOORS
   review 2026-10-28 ([p6-ds35doors-architect.md](../review/phase6/ds35doors/p6-ds35doors-architect.md)).
 
 ## DS-35 amendment: doors on the axis
@@ -1673,7 +1673,7 @@ copies are under `docs/review/` where they exist.
 - **Scope:** formal fronts (high-rises, halls, temples, symmetric styles).
 - **Enforcement:** code candidate: door centre equals the facade axis on
   fronts flagged symmetric.
-- **Status:** proposed (amends DS-35). **Source:** architect, DS35DOORS
+- **Status:** approved by @John 2026-11-05 (amends DS-35). **Source:** architect, DS35DOORS
   review 2026-10-28 ([p6-ds35doors-architect.md](../review/phase6/ds35doors/p6-ds35doors-architect.md)).
 
 ## DS-36 amendment: one roof block per building
@@ -1688,7 +1688,7 @@ copies are under `docs/review/` where they exist.
 - **Scope:** pitched roofs, all styles.
 - **Enforcement:** code candidate: roof palette resolution takes one
   entry per building.
-- **Status:** proposed (amends DS-36). **Source:** architect, DS36ROOFS
+- **Status:** approved by @John 2026-11-05 (amends DS-36). **Source:** architect, DS36ROOFS
   review 2026-10-28 (p6-ds36roofs-architect.md).
 
 ## DS-52 amendment: the gate width is the street's
@@ -1718,7 +1718,7 @@ copies are under `docs/review/` where they exist.
   and later).
 - **Enforcement:** code candidate: a `city-check` before/after guard per
   changed district (lot count).
-- **Status:** proposed (amends DS-47). **Source:** architect, 7.20
+- **Status:** approved by @John 2026-11-05 (amends DS-47). **Source:** architect, 7.20
   METROFILL R2 review 2026-10-27 (p7-metrofill-r2-architect.md).
 
 ## DS-62 Roads meet foreign villages at a street
@@ -1756,7 +1756,7 @@ copies are under `docs/review/` where they exist.
 - **Enforcement:** code: `JoinWorld`'s `maxStep` at most 1 over all
   contacts (the test's bar is 2 today), and `road-half-steps` (DS-31)
   across piece boundaries.
-- **Status:** proposed (amends DS-54; drafted as "Joins are level" before
+- **Status:** approved by @John 2026-11-05 (amends DS-54; drafted as "Joins are level" before
   DS-54 existed). **Source:** architect, ROADJOIN questions 2026-10-27
   (roadjoin-qs-architect.md) and ROADJOIN S1 review
   ([p6-roadjoin-s1-architect.md](../review/roadjoin/p6-roadjoin-s1-architect.md)).
@@ -1774,8 +1774,10 @@ copies are under `docs/review/` where they exist.
 - **Scope:** crossings and district bridges, all tiers.
 - **Enforcement:** code candidate `deck-clearance` in the `roads` report
   and `city-check`. None today.
-- **Status:** proposed. **Source:** architect, ROADJOIN questions
+- **Status:** dropped by John 2026-11-05 (rails: DS-8 amendment; level ends: DS-54 amendment "joins are level"; clearance: DS-19; deck materials: styles/README "Bridge decks"). **Source:** architect, ROADJOIN questions
   2026-10-27 (roadjoin-qs-architect.md).
+  - @John 2026-11-05: Does this really need to be said? I’m wary of building up too many tiny little rules that should be covered by a more general rule. It feels like “bridges underwater” doesn’t need to be spelled out. Is there a good argument in favor of this rule?
+    - @architect 2026-11-05: Mostly no: the rails are DS-8 ("railings that hold" amendment), the level ends are the DS-54 "joins are level" amendment you approved today, and only "the deck stands clear of the water" is new (your flooded 21.31.49 deck breaks no accepted rule as written), so I'd drop DS-63 and add one sentence to DS-19: "A deck stands clear of the water, never in it: its underside is above the water surface, with at least 1 block of air under it on spans over 6 and at town tier and up; anything lower counts as a causeway" (check `deck-clearance` under DS-19's Enforcement). "No dirt_path or gravel over water" is a material choice for the styles README "Bridge decks" row. General test for the other proposed rules: a rule earns its own number only if a generator could obey every accepted rule and still produce the failure; otherwise it is a check, or a clause on the rule it refines. Say yes and the coordinator makes these three edits.
 
 ## DS-64 Store rooms are closets
 
@@ -1789,7 +1791,7 @@ copies are under `docs/review/` where they exist.
   programme).
 - **Enforcement:** code candidate: `TowerPlateTest`, plus a share check in
   `HighriseProgrammeTest`.
-- **Status:** proposed. **Source:** interior designer with architect
+- **Status:** approved by @John 2026-11-05. **Source:** interior designer with architect
   notes, HR-B3a review 2026-10-26 (p7-hr-b3a-design.md).
 
 ## DS-65 Towers keep a clear shaft

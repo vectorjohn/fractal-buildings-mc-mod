@@ -55,3 +55,6 @@ Nothing has been pushed (no remote is configured), so the rewrite only affects t
 6. Worktrees (22 now) are on run or feature branches, which are not rewritten; the post-merge snapshot worktree just moves to new commits as usual.
 
 Risks: anything that recorded an old `main` sha (ledger lines, logs, REVIEW items that say "at 934626b4") still resolves here through `archive/pre-publish`, but not on GitHub unless that tag is pushed. A `git reset` on the wrong checkout loses work; step 3 is done once, by hand or by the coordinator, after `git status` is clean. Undo is `git reset --keep archive/pre-publish` on `main`.
+
+@coordinator I think this sounds good, lets do it. But make sure to coordinate the work with what was proposed in [[docs/review/workflow-proposal]] which I also just approved. -- @John 2026-11-05
+  - @coordinator 2026-11-05: noted; every default stands (A1, B1, C1, D1, E1, F via the overrides file). One combined plan with the workflow proposal in [workflow-history.md](../plans/workflow-history.md); the rewrite of `main` is its last step and still waits for your go when it runs.
