@@ -39,6 +39,40 @@ fi
 HEAVY_LOCK="$MAIN_ROOT/.claude/heavy.lock"
 # shellcheck source=lib/locks.sh
 . "$ROOT/scripts/lib/locks.sh"   # holder note, waiter lines, self-deadlock refusal
+# Process registry (W8/W11, scripts/lib/procs.sh): each Gradle run gets its own process group (job control,
+# so it stays in this session and scripts/quiet-check.sh still counts it as ours), registered with this
+# script as owner: scripts/watchdog.sh reports it and scripts/reap.sh can stop it if this script dies.
+# The EXIT trap stops a run still going when this script ends (error, Ctrl-C, TERM).
+# shellcheck source=lib/procs.sh
+. "$ROOT/scripts/lib/procs.sh"
+RUN_PG=""
+stop_run() {
+	[ -n "$RUN_PG" ] || return 0
+	if kill -0 -- "-$RUN_PG" 2>/dev/null; then
+		echo "perf: stopping process group $RUN_PG (TERM)" >&2
+		kill -TERM -- "-$RUN_PG" 2>/dev/null
+		for _ in 1 2 3 4 5 6 7 8 9 10; do kill -0 -- "-$RUN_PG" 2>/dev/null || break; sleep 1; done
+		kill -KILL -- "-$RUN_PG" 2>/dev/null || true
+	fi
+	fb_proc_unregister "pg-$RUN_PG"; RUN_PG=""
+}
+trap stop_run EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM HUP
+run_reg() { # LABEL BUDGET_S OUTFILE CMD...: CMD in its own registered process group, output to OUTFILE; returns CMD's exit
+	local label=$1 budget=$2 out=$3 pid rc
+	shift 3
+	set -m; "$@" 9>&- < /dev/null > "$out" 2>&1 & pid=$!; set +m
+	if [ "$(ps -o pgid= -p "$pid" 2>/dev/null | tr -d ' ')" = "$pid" ]; then   # never register a group we can't prove is ours
+		RUN_PG=$pid
+		fb_proc_register "pg-$pid" kind=pgroup "pgid=$pid" "owner=$$" "label=perf.sh $label" "budget=$budget" "log=$out" \
+			"worktree=$ROOT" "cmd=$(printf '%s ' "$@" | cut -c1-200)"
+	fi
+	wait "$pid"; rc=$?
+	[ -n "$RUN_PG" ] && fb_proc_unregister "pg-$RUN_PG"
+	RUN_PG=""
+	return "$rc"
+}
 mkdir -p "$(dirname "$HEAVY_LOCK")" "$ROOT/mod/build/perf"
 cd "$ROOT"
 PLANNER_ONLY=0; CHECK_ONLY=0; CLIENT=0; MOD_ONLY=0; WORLD_ONLY=0
@@ -70,7 +104,7 @@ if [ "$CHECK_ONLY" = 0 ]; then
 	exec 9>>"$HEAVY_LOCK"
 	fb_lock_take 9 "$HEAVY_LOCK" "perf.sh planner" || exit $?
 	qc start
-	"$ROOT/scripts/dev" --fresh ./gradlew --console=plain --no-daemon :mod:test -Dfb.perf=1 --tests '*PerfPlannerTest*' --rerun-tasks 9>&- > "$LOGDIR/planner.log" 2>&1
+	run_reg planner 3600 "$LOGDIR/planner.log" "$ROOT/scripts/dev" --fresh ./gradlew --console=plain --no-daemon :mod:test -Dfb.perf=1 --tests '*PerfPlannerTest*' --rerun-tasks
 	rc=$?
 	set -e
 	grep -E "PERF |FAILED" "$LOGDIR/planner.log" || true
@@ -118,9 +152,9 @@ max-tick-time=-1
 P
 			set +e
 			if [ "$v" = base ]; then
-				timeout "${FB_PERF_TIMEOUT:-3600}" "$ROOT/scripts/dev" --fresh ./gradlew --console=plain --no-daemon -p tools/vanilla-server runPerfBase -Pfb.perfMode=$mode -Pfb.perfOut="$LOGDIR" 9>&- > "$LOGDIR/$OUTN-$v.log" 2>&1
+				run_reg "world $mode $v" $(( ${FB_PERF_TIMEOUT:-3600} + 300 )) "$LOGDIR/$OUTN-$v.log" timeout "${FB_PERF_TIMEOUT:-3600}" "$ROOT/scripts/dev" --fresh ./gradlew --console=plain --no-daemon -p tools/vanilla-server runPerfBase -Pfb.perfMode=$mode -Pfb.perfOut="$LOGDIR"
 			else
-				timeout "${FB_PERF_TIMEOUT:-3600}" "$ROOT/scripts/dev" --fresh ./gradlew --console=plain --no-daemon :mod:runPerfServer -Pfb.perfVariant=$v -Pfb.perfMode=$mode -Pfb.perfOut="$LOGDIR" ${FB_PERF_QUAYTRACE:+-Pfb.quayTrace=$FB_PERF_QUAYTRACE} ${FB_PERF_SAMPLE:+-Pfb.perfSample=$FB_PERF_SAMPLE} 9>&- > "$LOGDIR/$OUTN-$v.log" 2>&1
+				run_reg "world $mode $v" $(( ${FB_PERF_TIMEOUT:-3600} + 300 )) "$LOGDIR/$OUTN-$v.log" timeout "${FB_PERF_TIMEOUT:-3600}" "$ROOT/scripts/dev" --fresh ./gradlew --console=plain --no-daemon :mod:runPerfServer -Pfb.perfVariant=$v -Pfb.perfMode=$mode -Pfb.perfOut="$LOGDIR" ${FB_PERF_QUAYTRACE:+-Pfb.quayTrace=$FB_PERF_QUAYTRACE} ${FB_PERF_SAMPLE:+-Pfb.perfSample=$FB_PERF_SAMPLE}
 			fi
 			rc=$?
 			set -e

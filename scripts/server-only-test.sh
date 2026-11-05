@@ -38,6 +38,22 @@ FIFO="$OUT/console.fifo"; mkfifo "$FIFO"
 SLOG="$SRV/logs/latest.log"; CLOG="$ROOT/tools/vanilla-client/run/logs/latest.log"
 RES="$OUT/result.txt"; : > "$RES"
 say() { echo "$*" | tee -a "$RES"; }
+# Process registry (W8/W11, scripts/lib/procs.sh): the server, Xvfb and client each run in their own
+# process group, registered with this script as owner, so scripts/watchdog.sh reports them and
+# scripts/reap.sh can stop them if this script dies; cleanup unregisters each group once it is gone
+# (one that outlives cleanup stays registered, and shows as an orphan).
+# shellcheck source=lib/procs.sh
+. "$ROOT/scripts/lib/procs.sh"
+REGS=""
+reg_pg() { # PID LABEL LOG
+	local i
+	# setsid runs in the child after the fork: give it a moment to lead its own group
+	for i in 1 2 3 4 5 6 7 8 9 10; do [ "$(ps -o pgid= -p "$1" 2>/dev/null | tr -d ' ')" = "$1" ] && break; sleep 0.2; done
+	[ "$(ps -o pgid= -p "$1" 2>/dev/null | tr -d ' ')" = "$1" ] || return 0   # only a group we can prove is ours
+	fb_proc_register "pg-$1" kind=pgroup "pgid=$1" "owner=$$" "label=server-only-test $2" "budget=3600" "log=$3" "worktree=$ROOT"
+	REGS="$REGS $1"
+}
+unreg_gone() { local g; sleep 1; for g in $REGS; do kill -0 -- "-$g" 2>/dev/null || fb_proc_unregister "pg-$g"; done; }
 SPID=""; CPID=""
 cleanup() {
 	[ -n "$CPID" ] && kill -- -"$CPID" 2>/dev/null
@@ -46,6 +62,7 @@ cleanup() {
 	fi
 	[ -n "${XPID:-}" ] && kill "$XPID" 2>/dev/null
 	exec 3>&- 2>/dev/null
+	unreg_gone
 }
 trap cleanup EXIT
 
@@ -84,7 +101,7 @@ fi
 cd "$ROOT"
 exec 3<>"$FIFO"
 setsid ./gradlew --console=plain :mod:runServerOnly <&3 > "$OUT/gradle-server.log" 2>&1 &
-SPID=$!
+SPID=$!; reg_pg "$SPID" server "$OUT/gradle-server.log"
 for i in $(seq 1 240); do grep -q 'Done (' "$SLOG" 2>/dev/null && break; sleep 2; done
 grep -q 'Done (' "$SLOG" 2>/dev/null || { say "FAIL: server did not start"; exit 1; }
 say "server up; listening: $(ss -ltnp 2>/dev/null | grep ":$PORT " | awk '{print $4}' | tr '\n' ' ')"
@@ -108,8 +125,8 @@ O
 export DISPLAY_NUM=97
 # No LD_LIBRARY_PATH for Xvfb: with the dev shell's it offers an sRGB GLX visual and the client renders
 # OpenGL on llvmpipe instead of the Vulkan driver vk-select picks (HEAVY6, 2026-10-29).
-env -u LD_LIBRARY_PATH "$XVFB" :$DISPLAY_NUM -screen 0 1280x720x24 >"$OUT/xvfb.log" 2>&1 &
-XPID=$!
+env -u LD_LIBRARY_PATH setsid "$XVFB" :$DISPLAY_NUM -screen 0 1280x720x24 >"$OUT/xvfb.log" 2>&1 &
+XPID=$!; reg_pg "$XPID" Xvfb "$OUT/xvfb.log"
 sleep 2
 kill -0 "$XPID" 2>/dev/null || { XPID=""; say "FAIL: Xvfb ($XVFB) exited at startup: $(tail -3 "$OUT/xvfb.log" | tr '\n' ' ')"; exit 2; }
 say "Xvfb: $XVFB on :$DISPLAY_NUM"
@@ -119,7 +136,7 @@ say "Xvfb: $XVFB on :$DISPLAY_NUM"
 source "$ROOT/scripts/vk-select.sh"
 FB_VK_LOG_TAG=server-only-test fb_vk_select 2> >(tee -a "$RES" >&2) || { say "FAIL: bad FB_VK"; exit 2; }
 env -u WAYLAND_DISPLAY -u CI DISPLAY=:$DISPLAY_NUM SDL_VIDEODRIVER=x11 setsid ./gradlew --console=plain -p tools/vanilla-client -PserverPort=$PORT runClient > "$OUT/gradle-client.log" 2>&1 &
-CPID=$!
+CPID=$!; reg_pg "$CPID" "vanilla client" "$OUT/gradle-client.log"
 for i in $(seq 1 180); do grep -q 'Vanilla joined the game' "$SLOG" 2>/dev/null && break; sleep 2; done
 grep -q 'Vanilla joined the game' "$SLOG" || { say "FAIL: client did not join"; exit 1; }
 say "client joined: $(grep 'Vanilla joined\|logged in with entity' "$SLOG" | head -2 | tr '\n' '|')"
