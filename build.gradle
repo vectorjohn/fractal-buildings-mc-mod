@@ -14,3 +14,11 @@ subprojects {
 		options.encoding = 'UTF-8'
 	}
 }
+
+// REGENGOLDENS (workflow plan C9): one step that refreshes every golden and fixture the tests compare against. ONLY after a verified,
+// intended change; read `git diff` afterwards. See docs/TESTING.md "Regenerating goldens".
+tasks.register('regenGoldens') {
+	group = 'verification'
+	description = 'Regenerates all golden digests and fixtures (planner-core and cli). Only after a verified intended change.'
+	dependsOn ':planner-core:regenGoldens', ':cli:regenGoldens'
+}

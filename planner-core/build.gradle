@@ -129,3 +129,54 @@ tasks.named('test') {
 	forkEvery = 0
 	maxHeapSize = "${testHeapMb}m" // TESTSPEED2: the shared gate-window planners (GateWorld.sharedPlanner) hold about 70 MB each
 }
+
+// REGENGOLDENS (workflow plan C9): refresh every golden the planner-core tests compare against, in one step. Only for AFTER a verified,
+// intended change (for example after a merge that legitimately changes output): it makes the tests pass by rewriting what they expect,
+// so review `git diff` on the files it touches before committing; never run it to get a red test green. The golden tests already write
+// the new file to build/golden/** (or build/*.actual.json) when they differ, so this task runs just those tests with failures ignored,
+// copies what they wrote over the committed files, and leaves everything else alone. A clean tree gives no diff (RegenGoldensTest).
+// Files it cannot handle: a golden for a removed type or case stays (delete it by hand); GoldenDigestTest also wants a GeneratorV0.GEN_VERSION bump.
+tasks.register('regenGoldens', Test) {
+	group = 'verification'
+	description = 'Rewrites the golden digests and viewer fixtures the planner-core tests compare against (only after a verified intended change).'
+	testClassesDirs = sourceSets.test.output.classesDirs
+	classpath = sourceSets.test.runtimeClasspath
+	ignoreFailures = true
+	maxHeapSize = "${testHeapMb}m"
+	outputs.upToDateWhen { false }
+	filter {
+		includeTestsMatching 'dev.fractalbuildings.core.determinism.GoldenDigestTest'
+		includeTestsMatching 'dev.fractalbuildings.core.gen.v1.GoldenDigestV1Test'
+		includeTestsMatching 'dev.fractalbuildings.core.settlement.SettlementGoldenTest'
+		includeTestsMatching 'dev.fractalbuildings.core.region.RegionPlannerTest.goldenDecisions'
+		includeTestsMatching 'dev.fractalbuildings.core.region.FieldRegionViewTest.goldenSites'
+		includeTestsMatching 'dev.fractalbuildings.core.gen.v1.types.shop.MarketHallTest.marketHallsAreDeterministicAndMatchTheGoldenDigests'
+		includeTestsMatching 'dev.fractalbuildings.core.ir.SampleFixtureTest'
+		includeTestsMatching 'dev.fractalbuildings.core.check.ViolationsFixtureTest'
+	}
+	def buildDir_ = layout.buildDirectory.get().asFile
+	def projDir = projectDir
+	doFirst {
+		delete(new File(buildDir_, 'golden'), new File(buildDir_, 'sample-house.actual.json'), new File(buildDir_, 'sample-house-violations.actual.json'))
+	}
+	doLast {
+		def copied = []
+		def gold = new File(buildDir_, 'golden')
+		if (gold.exists()) {
+			fileTree(gold).files.each { f ->
+				def rel = gold.toPath().relativize(f.toPath()).toString()
+				def dst = new File(projDir, "src/test/resources/golden/${rel}")
+				dst.parentFile.mkdirs()
+				dst.bytes = f.bytes
+				copied << "planner-core/src/test/resources/golden/${rel}"
+			}
+		}
+		[['sample-house.actual.json', '../viewer/fixtures/sample-house.json'],
+		 ['sample-house-violations.actual.json', '../viewer/fixtures/sample-house-violations.json']].each { p ->
+			def src = new File(buildDir_, p[0])
+			if (src.exists()) { new File(projDir, p[1]).bytes = src.bytes; copied << p[1] }
+		}
+		logger.lifecycle("regenGoldens (planner-core): ${copied ? 'rewrote ' + copied.size() + ' file(s)' : 'nothing differed'}")
+		copied.each { logger.lifecycle("  ${it}") }
+	}
+}

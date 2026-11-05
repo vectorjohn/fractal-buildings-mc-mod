@@ -34,3 +34,52 @@ tasks.named('test') {
 	inputs.dir('../fixtures/terrain').withPropertyName('terrainFixtures')
 	inputs.dir('../viewer/fixtures/settlement').withPropertyName('settlementFixtures')
 }
+
+// REGENGOLDENS (workflow plan C9): rewrite the CLI-side goldens and viewer fixtures the CLI tests byte-compare (floorplan texts, v0-seed1,
+// the sample settlement, the skeleton and district fixtures), using the commands in viewer/fixtures/settlement/*/README.md. Only after a
+// verified, intended change; review `git diff` before committing. Run through the root task `./gradlew regenGoldens` (also does planner-core).
+tasks.register('regenGoldens') {
+	group = 'verification'
+	description = 'Rewrites the CLI goldens and the viewer fixtures written by fractal-cli (only after a verified intended change).'
+	dependsOn 'classes'
+	def root = rootDir
+	def cp = sourceSets.main.runtimeClasspath
+	def execOps = project.services.get(org.gradle.process.ExecOperations)
+	def cmds = [
+		['gen', '--gen', 'v0', '--seed', '1', '--lot', '16x12', '--style', 'medieval', '--terrain', 'plane:64:1:0:4', '--check', '--out', 'viewer/fixtures/v0-seed1.json'],
+		['sample-city', '--out-dir', 'viewer/fixtures/settlement/sample'],
+		['city', '--seed', '12345', '--terrain', 'recorded:fixtures/terrain/w12345-river-s8.json.gz', '--site', '-900,-3500,town,300', '--out-dir', 'viewer/fixtures/settlement/skeleton/river-town'],
+		['city', '--seed', '12345', '--terrain', 'recorded:fixtures/terrain/world-12345-s64.json.gz', '--cell', '6,6', '--out-dir', 'viewer/fixtures/settlement/skeleton/joined-metropolis'],
+		['city', '--seed', '12345', '--terrain', 'recorded:fixtures/terrain/w12345-river-s8.json.gz', '--site', '-900,-3500,town,300', '--districts', '--out-dir', 'viewer/fixtures/settlement/districts/river-town'],
+		['city', '--seed', '1', '--terrain', 'recorded:fixtures/terrain/w1-mixed-s8.json.gz', '--site', '8500,-3300,city,450', '--districts', '--out-dir', 'viewer/fixtures/settlement/districts/mixed-city'],
+		['city', '--seed', '1001', '--terrain', 'noise:1:70:7:220+river:-120:24:6', '--site', '0,0,city,700', '--cell-size', '512', '--districts', '--out-dir', 'viewer/fixtures/settlement/districts/synth-city']]
+	doLast {
+		cmds.each { args ->
+			def out = new File(root, args[args.indexOf('--out-dir') >= 0 ? args.indexOf('--out-dir') + 1 : args.indexOf('--out') + 1])
+			// whole fixture directories are rewritten (the tests also compare the file set); READMEs stay
+			if (args.contains('--out-dir') && out.exists()) {
+				out.listFiles().findAll { it.name != 'README.md' }.each { it.isDirectory() ? it.deleteDir() : it.delete() }
+			}
+			def r = execOps.javaexec {
+				classpath = cp
+				mainClass = 'dev.fractalbuildings.cli.Main'
+				workingDir = root
+				it.args = args
+				ignoreExitValue = true
+			}
+			logger.lifecycle("regenGoldens (cli): ${args[0]} -> ${out.name} (exit ${r.exitValue})")
+		}
+	}
+}
+
+tasks.register('regenFloorplanGoldens', Test) {
+	group = 'verification'
+	description = 'Rewrites cli/src/test/resources/floorplan/* (FB_UPDATE_GOLDEN) (part of regenGoldens).'
+	testClassesDirs = sourceSets.test.output.classesDirs
+	classpath = sourceSets.test.runtimeClasspath
+	ignoreFailures = true
+	outputs.upToDateWhen { false }
+	environment 'FB_UPDATE_GOLDEN', '1'
+	filter { includeTestsMatching 'dev.fractalbuildings.cli.FloorplanCommandTest' }
+}
+tasks.named('regenGoldens') { dependsOn 'regenFloorplanGoldens' }
