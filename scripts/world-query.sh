@@ -20,7 +20,7 @@
 #     `region`, `DIM-1`, `DIM1`), a dimension folder or a region folder;
 #   - `seed:S@X,Z[,R]`: a cached world covering that place, resolved through
 #     `scripts/worlds.sh path --seed S --at X,Z [--radius R]` (W14, the world cache; until it
-#     exists this form exits 3). The cache stamps each save with `fractal-world.properties`
+#     exists this form exits 3; while reading it holds the entry's use lock). The cache stamps each save with `fractal-world.properties`
 #     (seed, area, commit, created) next to level.dat, which `info` prints as `stamp.*` rows,
 #     so a verdict can cite "world S @ commit, N commits behind" and judge staleness.
 #
@@ -67,6 +67,9 @@ for ((i = 0; i < ${#args[@]}; i++)); do
 				fi
 				echo "world-query: ${args[i]} -> $resolved" >&2
 				args[i]="$resolved"
+				# a shared lock on the entry's use.lock while we read, so `worlds.sh prune` leaves it
+				# alone; the fd is inherited through exec by the java reader
+				if [[ -f $resolved/../use.lock ]]; then exec {ulfd}<"$resolved/../use.lock"; flock -s "$ulfd"; fi
 			fi
 			;;
 	esac

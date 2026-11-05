@@ -63,3 +63,5 @@ mod/logs/
 # The generated status page in the SilverBullet space (scripts/status.sh --publish writes it at the
 # root of the docs-feedback worktree; it must never be committed as feedback)
 /STATUS.md
+# World cache (scripts/worlds.sh, W14): generated saves shared by every worktree
+/.claude/worlds/
