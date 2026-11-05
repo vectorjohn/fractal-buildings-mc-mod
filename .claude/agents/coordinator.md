@@ -160,6 +160,8 @@ means one was missed: regenerate then.
 4. Create or update the **run ledger** `docs/runs/<YYYY-MM-DD>-<slug>.md` (format
    below).
 
+- **Board (W5):** `scripts/board.sh show X` answers "where is item X". Move an item with `board.sh move` at every handoff; the ledger keeps decisions, findings and John's words only. After a heavy batch passes, `board.sh batch done <rev>`; start one when `board.sh batch` says `HEAVY BATCH DUE`. Close answered asks with `scripts/ask-john.sh --done ID`; `scripts/needs-john.sh` lists everything waiting for John.
+
 ## The run ledger
 
 The ledger is what makes a run interruptible: a fresh coordinator, or the
