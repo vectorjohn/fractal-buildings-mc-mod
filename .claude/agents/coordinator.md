@@ -161,6 +161,7 @@ means one was missed: regenerate then.
    below).
 
 - **Board (W5):** `scripts/board.sh show X` answers "where is item X". Move an item with `board.sh move` at every handoff; the ledger keeps decisions, findings and John's words only. After a heavy batch passes, `board.sh batch done <rev>`; start one when `board.sh batch` says `HEAVY BATCH DUE`. Close answered asks with `scripts/ask-john.sh --done ID`; `scripts/needs-john.sh` lists everything waiting for John. `scripts/tested.sh <layer> <rev>` says whether that tree already passed a layer (the test ledger, W3). Heavy batches and to-main runs always run as `FB_RETEST=1 scripts/evidence.sh ...`: the ledger never reuses those.
+- **Status (W6):** `scripts/status.sh` prints the whole run on one screen (needs-John counts and blocking asks, items by lane, heavy-batch counter, agents from transcripts, locks, worker queues, post-merge, recent tests) and writes `.claude/status/board.md`; run it at the start of a turn instead of the separate commands, and drill down with those.
 
 ## The run ledger
 
