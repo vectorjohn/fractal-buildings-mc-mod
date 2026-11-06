@@ -43,7 +43,7 @@ The name comes from my early interest in fractal algorithms, and things like the
 * Bridges: longer crossings, bridges that look like bridges.
 * More building variety. All the buildings are different but there are a few distinct styles. Need to use more materials, shape variety, etc.
 * Roads need some attention. Better pathing, more connections between settlements.
-* Building interior elaboration. Custom furniture and fixture builds (e.g. “this is how to build a kitchen” pieces). These can be hand built in game and then used to populate interiors of buildings. Right now large buildings have big sparse rooms.
+* Building interior elaboration. Custom furniture and fixture builds (e.g. “this is how to build a kitchen” pieces). These can be hand built in game and then used tod populate interiors of buildings. Right now large buildings have big sparse rooms.
 
 ## Config
 
