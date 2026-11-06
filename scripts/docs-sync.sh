@@ -13,8 +13,8 @@
 #
 # Steps, in order:
 #   1. docs worktree: if `git status` shows changes, `git add -A` and commit them as
-#      "User feedback: <files>". Never discards, resets or stashes. STATUS.md at the root is the
-#      generated status page (scripts/status.sh --publish, W12): never committed, never a change.
+#      "User feedback: <files>". Never discards, resets or stashes. STATUS.md and STATUS/ at the root are the
+#      generated status pages (scripts/status.sh --publish, W12): never committed, never a change.
 #   2. main: if it has commits the run branch lacks, report it (the coordinator merges it).
 #   3. if the docs branch has commits the run branch lacks: under <root>/.claude/merge.lock, in
 #      --checkout (must be on the run branch, with nothing staged and clean apart from
@@ -80,7 +80,7 @@ want() { # <code>: keep the higher-priority one (1 > 12 > 11 > 10 > 0)
 ahead() { git -C "$C" rev-list --count "$1..$2" 2>/dev/null || echo 0; }
 
 # 1. commit the user's edits.
-NOT_FEEDBACK=(":(top,exclude)STATUS.md")   # the generated status page, in case .gitignore lacks it
+NOT_FEEDBACK=(":(top,exclude)STATUS.md" ":(top,exclude)STATUS/")   # the generated status pages, in case .gitignore lacks them
 if [ -e "$(git -C "$DOCS" rev-parse --git-path MERGE_HEAD)" ]; then
   say "ERROR docs worktree $DOCS has a merge in progress; left alone"; want 1; ACT=1
 elif [ -n "$(git -C "$DOCS" status --porcelain -- "${NOT_FEEDBACK[@]}")" ]; then

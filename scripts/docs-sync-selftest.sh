@@ -166,10 +166,11 @@ check "silverbullet: exit 1" "$(FB_SB_URL=http://127.0.0.1:9/ FB_SB_START='touch
 has "silverbullet: line" "SilverBullet down"
 check "silverbullet: restart ran in docs worktree" "$(test -e "$D/sb-started" && echo yes || echo no)" yes
 
-# 10b. the generated status page (W12): STATUS.md at the docs root is never feedback, even before
+# 10b. the generated status pages (W12): STATUS.md and STATUS/ at the docs root are never feedback, even before
 # .gitignore lists it; an edit beside it is committed without it
 setup
 echo "# Status (generated)" > "$D/STATUS.md"
+mkdir -p "$D/STATUS"; echo "# Watchdog (copy)" > "$D/STATUS/watchdog.md"; echo "# Jobs (copy)" > "$D/STATUS/jobs.md"
 check "status page: exit 0" "$(sync)" 0
 check "status page: nothing new" "$(cat "$T/out")" "docs-sync: nothing new"
 check "status page: no commit" "$(git -C "$D" rev-list --count claude/run-x..john/docs-feedback)" 0
@@ -178,6 +179,8 @@ check "status page + edit: exit 10" "$(sync)" 10
 check "status page + edit: only the edit" "$(git -C "$R" log -1 --format=%s john/docs-feedback^2)" "User feedback: docs/a.md"
 check "status page + edit: page untracked" "$(git -C "$D" ls-files STATUS.md)" ""
 check "status page + edit: page kept" "$(cat "$D/STATUS.md")" "# Status (generated)"
+check "status page + edit: STATUS/ untracked" "$(git -C "$D" ls-files STATUS)" ""
+check "status page + edit: STATUS/ kept" "$(cat "$D/STATUS/watchdog.md")" "# Watchdog (copy)"
 
 # 11. defaults: run from inside the checkout with no arguments picks its branch
 setup

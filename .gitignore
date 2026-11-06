@@ -60,8 +60,9 @@ mod/logs/
 /.claude/status/
 # Merge queue state (scripts/merge-queue.sh)
 /.claude/merge-queue/
-# The generated status page in the SilverBullet space (scripts/status.sh --publish writes it at the
-# root of the docs-feedback worktree; it must never be committed as feedback)
+# The generated status page and its STATUS/ pages in the SilverBullet space (scripts/status.sh --publish writes them at the
+# root of the docs-feedback worktree; they must never be committed as feedback)
 /STATUS.md
+/STATUS/
 # World cache (scripts/worlds.sh, W14): generated saves shared by every worktree
 /.claude/worlds/

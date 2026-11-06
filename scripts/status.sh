@@ -22,12 +22,17 @@
 #                   (also FB_STATUS_SKIP; "machines" is the only one that talks to the workers)
 #     --publish     also write STATUS.md, the page the user reads in SilverBullet (W12), at the root of
 #                   the docs-feedback space (FB_STATUS_PAGE_DIR, default <main root>/.claude/worktrees/
-#                   docs-feedback): board.md plus the full needs-user.md, links into the hidden
-#                   .claude/ turned into plain paths, `- [ ]` asks into plain list items (no tasks in
-#                   SilverBullet's index), a stray `#word` backticked (no tag). Written only while git
-#                   ignores STATUS.md there (root .gitignore `/STATUS.md`), so it can never be committed
-#                   as feedback; otherwise it says why and exits 3. scripts/docs-sync.sh skips it too.
-#                   Quiet when nothing changed: SilverBullet treats a new mtime as an edit, so STATUS.md is
+#                   docs-feedback): board.md plus the full needs-user.md, `- [ ]` asks into plain list
+#                   items (no tasks in SilverBullet's index), a stray `#word` backticked (no tag). Beside
+#                   it, in STATUS/, the pages it points to in the hidden .claude/, as copies SilverBullet
+#                   shows: needs-user, watchdog (+ the tail of watchdog.log), lanes (board history), jobs
+#                   (bg.sh jobs, log tails of the last 24 h), merge-queue (its event log), reap (the tail
+#                   of reap.log; FB_STATUS_LOG_LINES lines, default 40); links into .claude/ become links
+#                   to those copies, other .claude/ links plain paths. Written only while git ignores
+#                   them there (root .gitignore `/STATUS.md` and `/STATUS/`), so they can never be
+#                   committed as feedback; otherwise it says why and exits 3 (STATUS.md alone, with plain
+#                   paths, when only STATUS/ is not ignored). scripts/docs-sync.sh skips both too.
+#                   Quiet when nothing changed: SilverBullet treats a new mtime as an edit, so each page is
 #                   replaced only when its content differs from the page already there, compared with the
 #                   volatile parts masked (timestamps, loads, agents' last tool, finished-agent counts,
 #                   "N s ago"); ages on it are coarse buckets (<1h, <6h, <1d, then days) so they don't tick
@@ -46,7 +51,7 @@
 # FB_TESTED_FILE when those are unset), FB_REPO, FB_TRANSCRIPTS (colon-separated transcript dirs),
 # FB_STATUS_SCRIPTS (directory of the helper scripts). Self-test: scripts/status-selftest.sh.
 # Exit: 0 page written (even with sections unavailable) | 1 page not written | 2 bad usage |
-# 3 board.md written but STATUS.md not published (--publish: no docs space, or STATUS.md not ignored).
+# 3 board.md written but STATUS.md or its STATUS/ pages not published (--publish: no docs space, or not ignored).
 set -uo pipefail
 usage() { sed -n '2,/^set -uo pipefail/p' "$0" | sed '$d' | sed 's/^# \{0,1\}//'; }
 die() { echo "status: $*" >&2; exit 2; }
@@ -379,17 +384,33 @@ gen() {
 	done
 }
 
-# for_sb FILE: a page as SilverBullet should get it: links into .claude/ (hidden in the space) become
-# plain code paths, `- [ ]` / `- [x]` items plain list items (no tasks in the user's task index), and a
-# `#word` outside code is backticked so it is not indexed as a tag
+# for_sb FILE [sub]: a page as SilverBullet should get it: a link into .claude/ (hidden in the space) becomes
+# a link to its copy in STATUS/ when that page is published there (PAGES_OK=1 and its name in PAGES), else
+# a plain code path; `- [ ]` / `- [x]` items plain list items (no tasks in the user's task index), and a
+# `#word` outside code is backticked so it is not indexed as a tag. With "sub" the page goes into STATUS/:
+# copies link each other by name, and other relative links get a leading ../ (SilverBullet resolves that)
 for_sb() {
-	awk '
+	awk -v mode="${2:-root}" -v ok="${PAGES_OK:-0}" -v pages=" ${PAGES[*]} " '
 		/^```/ { code = !code; print; next }
 		code { print; next }
 		{
+			if (mode == "sub") {   # repo-relative links one folder up (not URLs, anchors, absolute, ../ or .claude/)
+				out = ""; rest = $0
+				while (match(rest, /\]\([^)]*\)/)) {
+					l = substr(rest, RSTART + 2, RLENGTH - 3)
+					if (l !~ /^([a-z]+:|#|\/|\.\.\/|\.claude\/)/) l = "../" l
+					out = out substr(rest, 1, RSTART - 1) "](" l ")"; rest = substr(rest, RSTART + RLENGTH)
+				}
+				$0 = out rest
+			}
 			while (match($0, /\[[^]]*\]\(\.claude\/[^)]*\)/)) {
-				p = substr($0, RSTART, RLENGTH); sub(/^\[[^]]*\]\(/, "", p); sub(/\)$/, "", p)
-				$0 = substr($0, 1, RSTART - 1) "`" p "`" substr($0, RSTART + RLENGTH)
+				t = substr($0, RSTART, RLENGTH); p = t; sub(/^\[[^]]*\]\(/, "", p); sub(/\)$/, "", p)
+				txt = t; sub(/\]\(.*$/, "", txt); sub(/^\[/, "", txt)
+				n = p; sub(/^\.claude\/status\//, "", n); b = n; sub(/\.md$/, "", b)
+				if (ok && p ~ /^\.claude\/status\/[a-z-]+\.md$/ && index(pages, " " b " "))
+					rep = "[" txt "](" (mode == "sub" ? "" : "STATUS/") n ")"
+				else rep = "`" p "`"
+				$0 = substr($0, 1, RSTART - 1) rep substr($0, RSTART + RLENGTH)
 			}
 			sub(/^- \[[ xX]\] /, "- ")
 			out = ""; rest = $0
@@ -432,19 +453,98 @@ page_key() {
 		-e 's/load [0-9]+(\.[0-9]+)?/load N/g' -e 's/[0-9]+ s ago/N s ago/g' -e 's/[0-9]+ finished/N finished/g' \
 		-e '/^\| (active|quiet) \|/s/`[^`]*`/`T`/g' "$1"
 }
+# The pages published beside STATUS.md, in STATUS/ (copies of what the page points into .claude/ for, plus log
+# tails): needs-user, watchdog (+ the tail of watchdog.log), lanes (board history), jobs (bg.sh jobs with log
+# tails), merge-queue (its event log), reap (the tail of reap.log)
+PAGES=(needs-user watchdog lanes jobs merge-queue reap)
+PAGES_OK=0
+LOGN=${FB_STATUS_LOG_LINES:-40}
+# fence FILE N: the last N lines of a log as a code block (escape codes and long lines cut)
+fence() {
+	echo '```'
+	if [[ -s "$1" ]]; then tail -n "$2" "$1" | sed -e 's/\x1b\[[0-9;?]*[A-Za-z]//g' -e 's/```/`` `/g' | cut -c1-200
+	else echo "(empty)"; fi
+	echo '```'
+}
+# page_src NAME: the raw markdown of one STATUS/ page, before for_sb; nonzero when there is nothing to show
+page_src() {
+	local st="$STATE/status"
+	case $1 in
+		needs-user|lanes)
+			if [[ -s "$st/$1.md" ]]; then cat "$st/$1.md"
+			else echo "# ${1^}"; echo; echo "unavailable: no \`.claude/status/$1.md\` yet."; fi ;;
+		watchdog)
+			if [[ -s "$st/watchdog.md" ]]; then cat "$st/watchdog.md"
+			else echo "# Watchdog"; echo; echo "unavailable: no \`.claude/status/watchdog.md\` (no pass yet)."; fi
+			echo; echo "# Log"; echo; echo "The last $LOGN lines of \`.claude/status/watchdog.log\`, newest last:"; echo
+			fence "$st/watchdog.log" "$LOGN" ;;
+		jobs)
+			local dir=${FB_BG_DIR:-$st/jobs} cut rows label
+			echo "# Background jobs"; echo
+			echo "Jobs started with \`scripts/bg.sh\`: every one on record, then the last 15 lines of each one running or started in the last 24 h."; echo
+			if [[ ! -d "$dir" ]]; then echo "None yet."; return 0; fi
+			FB_BG_DIR=$dir src bg.sh "$S/bg.sh" status || { echo "$SRC_OUT" | head -n1; return 0; }
+			block "$(printf '%s\n' "$SRC_OUT" | awk '$3 ~ /^rc=/' | cut -c1-160)"
+			cut=$(date -u -d '24 hours ago' +%FT%TZ)
+			rows=$(printf '%s\n' "$SRC_OUT" | awk -v cut="$cut" '$3 ~ /^rc=/ && ($1 == "RUNNING" || $4 >= cut) { print $1, $2 }' | head -n 12)
+			[[ -n "$rows" ]] || return 0
+			while read -r s label; do
+				echo; echo "# $label ($s)"; echo; fence "$dir/$label.log" 15
+			done <<<"$rows" ;;
+		merge-queue)
+			echo "# Merge queue"; echo
+			echo "The last 30 events (\`scripts/merge-queue.sh log 30\`):"; echo
+			if src merge-queue.sh "$S/merge-queue.sh" log 30; then block "$(printf '%s\n' "$SRC_OUT" | cut -c1-200)"
+			else echo "$SRC_OUT" | head -n1; fi ;;
+		reap)
+			echo "# Reaper log"; echo
+			echo "The last $LOGN lines of \`.claude/status/reap.log\` (\`scripts/reap.sh\`), newest last:"; echo
+			fence "$st/reap.log" "$LOGN" ;;
+	esac
+}
+# put_page TMP DEST: move TMP to DEST unless only the masked parts differ; then the old file, and so its
+# mtime, is left alone (SilverBullet reads a new mtime as an edit)
+put_page() {
+	if [[ -f "$2" ]] && cmp -s <(page_key "$1") <(page_key "$2"); then rm -f "$1"; return 0; fi
+	mv -f "$1" "$2" || { rm -f "$1"; echo "status: could not write $2" >&2; return 1; }
+}
 publish() {
-	local dir=${FB_STATUS_PAGE_DIR:-$MAIN_ROOT/.claude/worktrees/docs-feedback}
+	local dir=${FB_STATUS_PAGE_DIR:-$MAIN_ROOT/.claude/worktrees/docs-feedback} rc=0 p
 	if [[ ! -d "$dir" ]]; then echo "status: not published: no docs space at $dir" >&2; return 3; fi
 	# git must ignore STATUS.md there, or docs-sync could commit it as the user's feedback; check-ignore
 	# also answers no for a tracked file, so a committed STATUS.md is never overwritten
 	if ! git -C "$dir" check-ignore -q STATUS.md 2>/dev/null; then
 		echo "status: not published: git does not ignore STATUS.md in $dir (its .gitignore needs /STATUS.md)" >&2; return 3
 	fi
-	local tmp="$STATE/status/STATUS.md.tmp.$$" nu="$STATE/status/needs-user.md"
+	# the same for every page in STATUS/; without them STATUS.md is still written, with plain paths
+	PAGES_OK=1
+	for p in "${PAGES[@]}"; do git -C "$dir" check-ignore -q "STATUS/$p.md" 2>/dev/null || PAGES_OK=0; done
+	if (( ! PAGES_OK )); then
+		echo "status: STATUS/ pages not published: git does not ignore them in $dir (its .gitignore needs /STATUS/)" >&2; rc=3
+	elif [[ -e "$dir/STATUS" && ! -d "$dir/STATUS" ]] || ! mkdir -p "$dir/STATUS"; then
+		echo "status: STATUS/ pages not published: cannot make $dir/STATUS" >&2; PAGES_OK=0; rc=1
+	fi
+	local tmp="$STATE/status/STATUS.md.tmp.$$" nu="$STATE/status/needs-user.md" ptmp="$STATE/status/page.tmp.$$" more=""
+	if (( PAGES_OK )); then
+		for p in "${PAGES[@]}"; do
+			{
+				page_src "$p" > "$ptmp.src"
+				sed -n '1{/^# /p}' "$ptmp.src"
+				echo
+				echo "Copy made by \`scripts/status.sh --publish\` (rewritten only when it changes; not in git, edits here are overwritten). Back to [Status](../STATUS.md)."
+				# the source title is printed above; a leading blank line after it would double up
+				sed '1{/^# /d}' "$ptmp.src" > "$ptmp.body"
+				for_sb "$ptmp.body" sub
+			} | coarse_ages > "$ptmp" || { rc=1; rm -f "$ptmp"; continue; }
+			put_page "$ptmp" "$dir/STATUS/$p.md" || rc=1
+		done
+		rm -f "$ptmp.src" "$ptmp.body"
+		more=" Full pages: [needs the user](STATUS/needs-user.md), [watchdog](STATUS/watchdog.md) (with its log), [board history](STATUS/lanes.md), [background jobs](STATUS/jobs.md) (with log tails), [merge queue](STATUS/merge-queue.md), [reaper log](STATUS/reap.md)."
+	fi
 	{
 		echo "# Status"
 		echo
-		echo "Generated by \`scripts/status.sh --publish\`, checked every few minutes while \`fb-status.timer\` runs and rewritten only when something on it changes, so the time below is when it last changed. Ages are coarse (<1h, <6h, <1d, then days); loads and agents' last tools are as of that time. Not in git; edits here are overwritten. Answer asks and questions where they live, such as [QUESTIONS.md](docs/QUESTIONS.md)."
+		echo "Generated by \`scripts/status.sh --publish\`, checked every few minutes while \`fb-status.timer\` runs and rewritten only when something on it changes, so the time below is when it last changed. Ages are coarse (<1h, <6h, <1d, then days); loads and agents' last tools are as of that time. Not in git; edits here are overwritten. Answer asks and questions where they live, such as [QUESTIONS.md](docs/QUESTIONS.md).$more"
 		echo
 		for_sb "$OUT" | sed '1{/^# Run status$/d}' | sed '1{/^$/d}'
 		if [[ -s "$nu" ]] && ! skipped user; then
@@ -452,10 +552,8 @@ publish() {
 			for_sb "$nu" | sed '1{/^# /d}' | sed '1{/^$/d}'
 		fi
 	} | coarse_ages > "$tmp" || { rm -f "$tmp"; echo "status: could not write $dir/STATUS.md" >&2; return 1; }
-	# nothing changed but the masked parts: leave the old file, and so its mtime, alone (SilverBullet
-	# reads a new mtime as an edit)
-	if [[ -f "$dir/STATUS.md" ]] && cmp -s <(page_key "$tmp") <(page_key "$dir/STATUS.md"); then rm -f "$tmp"; return 0; fi
-	mv -f "$tmp" "$dir/STATUS.md" || { rm -f "$tmp"; echo "status: could not write $dir/STATUS.md" >&2; return 1; }
+	put_page "$tmp" "$dir/STATUS.md" || return 1
+	return "$rc"
 }
 
 tmp="$OUT.tmp.$$"
