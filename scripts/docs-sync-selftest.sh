@@ -182,6 +182,22 @@ check "status page + edit: page kept" "$(cat "$D/STATUS.md")" "# Status (generat
 check "status page + edit: STATUS/ untracked" "$(git -C "$D" ls-files STATUS)" ""
 check "status page + edit: STATUS/ kept" "$(cat "$D/STATUS/watchdog.md")" "# Watchdog (copy)"
 
+# 10c. the normal case since W12: .gitignore lists STATUS.md and STATUS/ and both exist beside the user's edit;
+# git add must not fail on the ignored paths, the edit is committed, the pages are not
+setup
+printf '/.claude/\n/STATUS.md\n/STATUS/\n' > "$C/.gitignore"; commit_in "$C" "ignore status pages"
+git -C "$D" merge -q --ff-only claude/run-x
+echo "# Status (generated)" > "$D/STATUS.md"
+mkdir -p "$D/STATUS"; echo "# Watchdog (copy)" > "$D/STATUS/watchdog.md"
+check "ignored status: exit 0 alone" "$(sync)" 0
+echo "@John: feedback beside ignored pages" >> "$D/docs/a.md"
+check "ignored status + edit: exit 10" "$(sync)" 10
+check "ignored status + edit: no error" "$(grep -c ERROR "$T/out")" 0
+check "ignored status + edit: only the edit" "$(git -C "$R" log -1 --format=%s john/docs-feedback^2)" "User feedback: docs/a.md"
+check "ignored status + edit: pages untracked" "$(git -C "$D" ls-files STATUS.md STATUS | paste -sd,)" ""
+check "ignored status + edit: pages kept" "$(cat "$D/STATUS.md")" "# Status (generated)"
+check "ignored status + edit: the user's text on run" "$(tail -n1 "$C/docs/a.md")" "@John: feedback beside ignored pages"
+
 # 11. defaults: run from inside the checkout with no arguments picks its branch
 setup
 check "defaults: exit 0" "$(cd "$C" && FB_POSTMERGE_DIR=$PM "$DS" --no-silverbullet > "$T/out" 2>&1; echo $?)" 0

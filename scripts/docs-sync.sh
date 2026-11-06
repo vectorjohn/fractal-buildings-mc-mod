@@ -84,7 +84,10 @@ NOT_FEEDBACK=(":(top,exclude)STATUS.md" ":(top,exclude)STATUS/")   # the generat
 if [ -e "$(git -C "$DOCS" rev-parse --git-path MERGE_HEAD)" ]; then
   say "ERROR docs worktree $DOCS has a merge in progress; left alone"; want 1; ACT=1
 elif [ -n "$(git -C "$DOCS" status --porcelain -- "${NOT_FEEDBACK[@]}")" ]; then
-  git -C "$DOCS" add -A -- "${NOT_FEEDBACK[@]}" || die "git add failed in $DOCS"
+  # Stage everything, then unstage the status pages. Not `add -A -- <exclude pathspecs>`: when .gitignore lists
+  # STATUS.md and STATUS/ (the normal case), git add exits 1 ("paths are ignored") although it staged the rest.
+  git -C "$DOCS" add -A || die "git add failed in $DOCS"
+  git -C "$DOCS" reset -q -- ":(top)STATUS.md" ":(top)STATUS/" || die "git reset of the status pages failed in $DOCS"
   FILES=$(git -C "$DOCS" diff --cached --name-only | paste -sd' ')
   [ ${#FILES} -le 200 ] || FILES="${FILES:0:200} ..."
   if git -C "$DOCS" commit -q -m "User feedback: $FILES"; then
