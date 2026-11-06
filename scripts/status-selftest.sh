@@ -188,6 +188,29 @@ has  "hidden link made a path"   '`.claude/status/needs-user.md`' "$P"
 has  "repo link kept"            "[QUESTIONS.md](docs/QUESTIONS.md)" "$P"
 [[ -z $(git -C "$DOCS" status --porcelain -- STATUS.md) ]] && ok "page invisible to git status" || bad "git status shows STATUS.md"
 ls "$DOCS" -a | grep -q tmp && bad "temp file left in the docs space" || ok "no temp file in the docs space"
+has  "page ages are coarse"      "Last pass <1h ago" "$P"
+hasnt "no minute ages on the page" "Last pass 20m ago" "$P"
+# quiet when nothing changed: SilverBullet treats a new mtime as an edit
+mt() { stat -c %Y "$P"; }
+touch -d '-1 hour' "$P"; m0=$(mt)
+sleep 1   # so the generated-at second differs between the two runs
+"$ST" --skip machines,agents --quiet --publish > "$OUT" 2>&1; rc=$?
+[[ $rc == 0 && $(mt) == "$m0" ]] && ok "no change: STATUS.md left alone (same mtime)" || bad "no-change publish rewrote STATUS.md (rc $rc)"
+touch -d '-35 minutes' "$STATE/status/watchdog.md"   # 20m -> 35m ago: both <1h, still stale
+"$ST" --skip machines,agents --quiet --publish > "$OUT" 2>&1
+[[ $(mt) == "$m0" ]] && ok "an age ticking inside its bucket: left alone" || bad "age tick rewrote STATUS.md"
+ls "$DOCS" "$STATE/status" | grep -q 'STATUS.md.tmp' && bad "temp file left after a no-change publish" || ok "no temp file after a no-change publish"
+printf 'delta\tready\t2026-11-05T10:00:00Z\tcoder-2\tclaude/delta\t\tnew one\t2026-11-05T09:00:00Z\n' >> "$STATE/board/items.tsv"
+"$ST" --skip machines,agents --quiet --publish > "$OUT" 2>&1
+[[ $(mt) != "$m0" ]] && ok "new item: STATUS.md rewritten" || bad "new item did not rewrite STATUS.md"
+has  "new item on the page"      "| ready | delta |" "$P"
+touch -d '-1 hour' "$P"; m0=$(mt)
+mv "$S/locks.sh" "$T/locks.sh.keep"
+printf '#!/usr/bin/env bash\nprintf "%%-32s %%s\\n" heavy.lock "held: pid 42 since 2026-11-05 10:00:00: client-test" merge.lock "held: pid 77 since 2026-11-05 10:02:00: squash-merge" postmerge.lock free\n' > "$S/locks.sh"; chmod +x "$S/locks.sh"
+"$ST" --skip machines,agents --quiet --publish > "$OUT" 2>&1
+[[ $(mt) != "$m0" ]] && ok "lock taken: STATUS.md rewritten" || bad "a newly held lock did not rewrite STATUS.md"
+has  "held lock on the page"     "pid 77" "$P"
+mv "$T/locks.sh.keep" "$S/locks.sh"
 # a stray #word becomes code, a #word inside backticks and a heading stay
 cp "$STATE/status/needs-user.md" "$T/nu.keep"
 printf '%s\n' '# Needs the user' '' 'ask about #tagged thing and `#kept2`' > "$STATE/status/needs-user.md"
@@ -198,7 +221,8 @@ hasnt "no double backticks"      '``#kept2' "$P"
 cp "$T/nu.keep" "$STATE/status/needs-user.md"
 unset FB_STATUS_PAGE_DIR
 "$ST" --print-units | grep -q 'ExecStart=.*/status.sh --quiet --publish' && ok "timer unit runs --publish" || bad "unit lacks --publish"
-"$ST" --print-units | grep -q 'OnUnitActiveSec=1min' && ok "timer every minute by default" || bad "timer not every minute"
+"$ST" --print-units | grep -q 'OnUnitActiveSec=5min' && ok "timer every 5 min by default" || bad "timer not every 5 min"
+"$ST" --every 15 --print-units | grep -q 'OnUnitActiveSec=15min' && ok "--every 15 sets the interval" || bad "--every ignored"
 
 "$ST" --skip machines,agents --quiet > "$OUT" 2>&1; rc=$?
 [[ $rc == 0 && $(cat "$OUT") == "$B" ]] && ok "--quiet prints the path" || bad "--quiet: rc $rc, $(cat "$OUT")"
