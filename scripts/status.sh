@@ -35,13 +35,15 @@
 #                   Quiet when nothing changed: SilverBullet treats a new mtime as an edit, so each page is
 #                   replaced only when its content differs from the page already there, compared with the
 #                   volatile parts masked (timestamps, loads, agents' last tool, finished-agent counts,
-#                   "N s ago"); ages on it are coarse buckets (<1h, <6h, <1d, then days) so they don't tick
+#                   "N s ago", "N min ago"); ages on it are coarse buckets (<1h, <6h, <1d, then days) so they don't tick
 #                   every run. Unchanged: the file (and its mtime) is left alone. board.md is still
 #                   rewritten every run.
 #   scripts/status.sh --install-timer [--every MIN]   systemd user timer fb-status.timer running
 #                   `status.sh --quiet --publish` every MIN minutes (default 5) from THIS checkout's
 #                   script (only while the agent user has a session); --uninstall-timer, --print-units
 #
+# Times: every page this writes shows the host's local time with its zone ("2026-11-05 22:40 PST"; TZ, else
+# /etc/localtime). The stores it reads keep UTC (...Z); lib/localtime.sh converts them as the page is written.
 # Read-only for the run: it changes no branch, lock, item or job. It writes board.md, and (unless
 # --no-refresh) needs-user.md through needs-user.sh; board.sh may extend its scope cache. Each source
 # runs under `timeout FB_STATUS_TIMEOUT` (default 20 s); a normal run takes a few seconds, most of it
@@ -125,6 +127,8 @@ case $UNITS in
 		echo "status: timer removed"; exit 0 ;;
 esac
 S=${FB_STATUS_SCRIPTS:-$HERE}
+# shellcheck source=lib/localtime.sh
+. "$HERE/lib/localtime.sh"
 REPO=${FB_REPO:-$(git -C "$HERE" rev-parse --show-toplevel 2>/dev/null)} || die "not in a git checkout"
 MAIN_ROOT=$(dirname "$(git -C "$REPO" rev-parse --path-format=absolute --git-common-dir 2>/dev/null)") || die "not in a git checkout"
 STATE=${FB_STATE_DIR:-$MAIN_ROOT/.claude}
@@ -142,7 +146,8 @@ if [[ -z "$RUN_BRANCH" ]]; then
 	RUN_BRANCH=$(git -C "$REPO" for-each-ref --sort=-committerdate --format='%(refname:short)' 'refs/heads/claude/run-*' | head -n1)
 fi
 export FB_RUN_BRANCH=$RUN_BRANCH
-now() { date -u +%Y-%m-%dT%H:%M:%SZ; }
+# a UTC stamp like the stores hold; fb_localtime turns it into local time with the rest of the page
+now() { date -u +%Y-%m-%dT%H:%MZ; }
 esc() { sed 's/|/\\|/g'; }
 age_s() { # seconds -> 5m / 3h / 2d
 	local d=$1
@@ -300,8 +305,8 @@ sec_agents() {
 }
 
 
-# lock_age LINE: a suite slot note says "since 2026-11-05 14:14:45:" in local time with no zone, while this page stamps
-# UTC, so the two read 8 h apart; show the holder's age instead ("for 21m (since 14:14:45 PST)"), parsed as local time.
+# lock_age LINE: a suite slot note says "since 2026-11-05 14:14:45:" in local time with no zone; show the holder's age
+# and the zone instead ("for 21m (since 14:14:45 PST)"), parsed as local time like the rest of the page.
 lock_age() {
 	local l=$1 s e
 	if [[ $l =~ since\ ([0-9]{4}-[0-9]{2}-[0-9]{2}\ [0-9]{2}:[0-9]{2}:[0-9]{2}): ]]; then
@@ -366,7 +371,7 @@ sec_tests() {
 	local F=${FB_TESTED_FILE:-$STATE/tested.tsv}
 	if [[ -s "$F" ]]; then
 		echo "| Time | Layer | Exit | Host | Label | Tree |"; echo "|---|---|---|---|---|---|"
-		tail -n +2 "$F" | tail -n 5 | awk -F'\t' '{ printf "| %s | %s | %s | %s | %s | %s |\n", substr($1,1,16), $3, $4, $5, $8, substr($2,1,10) }'
+		tail -n +2 "$F" | tail -n 5 | awk -F'\t' '{ t = substr($1,1,16); if ($1 ~ /Z$/) t = t "Z"; printf "| %s | %s | %s | %s | %s | %s |\n", t, $3, $4, $5, $8, substr($2,1,10) }'
 	else block "$(printf '%s\n' "$SRC_OUT" | cut -c1-160)"; fi
 	echo; echo "Has tree X passed layer L: \`scripts/tested.sh L X\`."
 }
@@ -447,10 +452,11 @@ coarse_ages() {
 			print out rest
 		}'
 }
-# page_key FILE: the page with what changes on every run masked, for the "did anything change" test
+# page_key FILE: the page with what changes on every run masked, for the "did anything change" test; UTC and
+# local stamps mask differently, so a page still in UTC (written before lib/localtime.sh) is rewritten once
 page_key() {
-	sed -E -e 's/[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}(:[0-9]{2})?Z/TS/g' \
-		-e 's/load [0-9]+(\.[0-9]+)?/load N/g' -e 's/[0-9]+ s ago/N s ago/g' -e 's/[0-9]+ finished/N finished/g' \
+	sed -E -e 's/[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}(:[0-9]{2})?Z/TS/g' -e "s/$FB_LOCALTIME_RE/TSL/g" \
+		-e 's/load [0-9]+(\.[0-9]+)?/load N/g' -e 's/[0-9]+ (s|min) ago/N s ago/g' -e 's/[0-9]+ finished/N finished/g' \
 		-e '/^\| (active|quiet) \|/s/`[^`]*`/`T`/g' "$1"
 }
 # The pages published beside STATUS.md, in STATUS/ (copies of what the page points into .claude/ for, plus log
@@ -535,7 +541,7 @@ publish() {
 				# the source title is printed above; a leading blank line after it would double up
 				sed '1{/^# /d}' "$ptmp.src" > "$ptmp.body"
 				for_sb "$ptmp.body" sub
-			} | coarse_ages > "$ptmp" || { rc=1; rm -f "$ptmp"; continue; }
+			} | fb_localtime | coarse_ages > "$ptmp" || { rc=1; rm -f "$ptmp"; continue; }
 			put_page "$ptmp" "$dir/STATUS/$p.md" || rc=1
 		done
 		rm -f "$ptmp.src" "$ptmp.body"
@@ -551,13 +557,13 @@ publish() {
 			echo; echo "# Needs the user: full list"; echo
 			for_sb "$nu" | sed '1{/^# /d}' | sed '1{/^$/d}'
 		fi
-	} | coarse_ages > "$tmp" || { rm -f "$tmp"; echo "status: could not write $dir/STATUS.md" >&2; return 1; }
+	} | fb_localtime | coarse_ages > "$tmp" || { rm -f "$tmp"; echo "status: could not write $dir/STATUS.md" >&2; return 1; }
 	put_page "$tmp" "$dir/STATUS.md" || return 1
 	return "$rc"
 }
 
 tmp="$OUT.tmp.$$"
-gen > "$tmp" 2>/dev/null && mv "$tmp" "$OUT" || { rm -f "$tmp"; echo "status: could not write $OUT" >&2; exit 1; }
+gen 2>/dev/null | fb_localtime > "$tmp" && mv "$tmp" "$OUT" || { rm -f "$tmp"; echo "status: could not write $OUT" >&2; exit 1; }
 prc=0
 if (( PUBLISH )); then publish; prc=$?; fi
 if (( QUIET )); then echo "$OUT"; else cat "$OUT"; fi

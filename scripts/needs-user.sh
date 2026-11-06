@@ -48,6 +48,8 @@ mkdir -p "$ST" || die "cannot create $ST"
 HOURS=${FB_DENIAL_HOURS:-48}
 [[ "$HOURS" =~ ^[0-9]+$ ]] || die "FB_DENIAL_HOURS must be a whole number of hours"
 now() { date -u +%Y-%m-%dT%H:%M:%SZ; }
+# z16 STAMP: a stored UTC stamp cut to the minute, keeping its Z so status.sh can show it in local time
+z16() { if [[ $1 == *Z ]]; then printf "%sZ" "${1:0:16}"; else printf "%s" "${1:0:16}"; fi; }
 
 if [[ -n "$ACK" ]]; then
 	exec {lk}>"$DEN.lock"; flock "$lk"
@@ -124,7 +126,7 @@ gen() {
 		nask=$(awk -F'\t' '!/^#/ && $3=="open"' "$ASKS" | wc -l)
 		awk -F'\t' '!/^#/ && $3=="open" { print ($4=="yes" ? 0 : 1) "\t" $0 }' "$ASKS" | sort -t$'\t' -k1,1 -k3,3 | cut -f2- | tr '\t' '\037' |
 		while IFS=$'\037' read -r id opened _ blocking agent item text cmd _; do
-			printf -- '- [ ] %s**%s** (%s, %s%s): %s\n' "$([[ $blocking == yes ]] && echo 'BLOCKING ')" "$id" "${opened:0:16}" "$agent" "${item:+, $item}" "$text"
+			printf -- '- [ ] %s**%s** (%s, %s%s): %s\n' "$([[ $blocking == yes ]] && echo 'BLOCKING ')" "$id" "$(z16 "$opened")" "$agent" "${item:+, $item}" "$text"
 			[[ -n "$cmd" ]] && printf '  - to do it: `%s`\n' "$cmd"
 		done
 	fi
@@ -140,7 +142,7 @@ gen() {
 		awk -F'\t' -v c="$cutoff" '!/^#/ && $7=="open" && $2>=c' "$DEN" | sort -t$'\t' -k2,2r | head -n 20 | tr '\t' '\037' |
 		while IFS=$'\037' read -r id t agent reason tool cmd _; do
 			cmd=${cmd//\`/\'}
-			printf -- '- %s %s, **%s**, id %s: %s `%s`\n' "${t:0:16}" "$agent" "$reason" "${id: -8}" "$tool" "${cmd:0:200}"
+			printf -- '- %s %s, **%s**, id %s: %s `%s`\n' "$(z16 "$t")" "$agent" "$reason" "${id: -8}" "$tool" "${cmd:0:200}"
 		done
 		[[ "$nden" -gt 20 ]] && echo "- ... and $((nden - 20)) more (\`.claude/status/denials.tsv\`)"
 	else echo "None in the last $HOURS h."; fi
