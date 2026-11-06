@@ -270,6 +270,22 @@ and Minecraft block facts ([blocks.md](blocks.md), from John's
   inside the lot; street-to-door is not tested (not checked further).
 - **Status:** accepted. **Source:** John, REVIEW (tr-coast), 2026-10-21.
 
+## DS-6 amendment: a built path to every main door
+
+- **Addition** to DS-6: every main door is reached by a built
+  path from the street (paving, steps or a ramp, at most 3 risers per
+  run). Raw terrain counts only where it rises at most 1 per cell with no
+  step over 1.
+- **Why:** a house on a bank whose terrain ledges passed as DS-6's "some
+  sort of path" (seed 1 `dm10_31.l0`, `dm9_29.l10`, `dm9_28.l19`).
+  Overlaps the accepted DS-54 (no full-block rise on the route).
+- **Scope:** houses, shops and workshops, all tiers.
+- **Enforcement:** code candidate: the street-to-door half of DS-6
+  (planned in 7.19; the DS-54 walk graph); until then, in `door-rise`, a
+  run of 0-1 at rise 3+ is a finding.
+- **Status:** accepted (Approved by @John on 2026-11-06; amends accepted DS-6). **Source:** architect, SHOPLOW S2
+  review 2026-10-26 (p7-shoplow-s2-architect.md).
+
 ## DS-7 No shopfront at the top of a bare flight
 
 - **Rule:** a shop lifted above the street has a landing, deck or balcony
@@ -578,6 +594,37 @@ and Minecraft block facts ([blocks.md](blocks.md), from John's
   the architect, playtest answers 2026-10-31, Q1
   ([architect.md](../review/playtest1031-qs/architect.md)).
 
+## DS-45 amendment: secondary doors near the ground
+
+- **Addition** to DS-45: a back or side door rises at most 3 as
+  a plain flight, or 4-5 with a landing (the house default). Beyond that
+  it moves to another non-front face; failing that it is walled back to a
+  window, and its room keeps its normal programme.
+- **Why:** side-door flights of 9-19 risers after DS35DOORS (house 584,
+  temple 2388, high-rise 977), which is not a yard door.
+- **Scope:** all types with secondary doors.
+- **Enforcement:** code candidate: extend `door-rise` to secondary doors.
+- **Status:** accepted (approved by @John 2026-11-05; amends accepted DS-45). **Source:** architect, DS35DOORS
+  review 2026-10-28 ([p6-ds35doors-architect.md](../review/phase6/ds35doors/p6-ds35doors-architect.md)).
+
+## DS-58 Steps are as wide as the door
+
+- **Rule:** an exterior step or flight is at least as wide as the door it
+  serves: double and cart doors get a step under both leaves, and a
+  landing where the flight turns is at least the door width plus the
+  walker's cell.
+- **Why:** a half-width step under a double door reads as an error and
+  leaves a jump under the other leaf (60/60 flat cart doors, 13/17
+  river-town double doors before 6.19;
+  [cart door after](../review/p6-porchstep/cart-door-step.png)). Earlier:
+  SHOPLOW S2 review (workshop approach as wide as the cart door).
+- **Scope:** all types, all exterior doors.
+- **Enforcement:** code: every door cell of the opening has a half-step
+  surface in front (extend `RasterEntranceWalkTest` or the planned DS-54
+  walk graph). The 6.19 PORCHSTEP code follows it; no general check.
+- **Status:** accepted (approved by @John 2026-11-05). **Source:** architect, 6.19 PORCHSTEP review
+  2026-10-29 (p6-porchstep-architect.md).
+
 ## DS-54 The built environment is walkable without jumping
 
 - **Rule** (narrowed to routes, John 2026-10-31): these routes are
@@ -631,6 +678,28 @@ and Minecraft block facts ([blocks.md](blocks.md), from John's
   [playtest notes 2026-10-28](../review/phase6/playtest-2026-10-28/review.md),
   20.36.35.
 
+## DS-54 amendment: joins are level
+
+- **Addition** to DS-54: where two road pieces meet or touch
+  (approach and street, street and bridge, road and bridge, graph route
+  and approach, a crossing, an approach passing a street end), the
+  surfaces differ by at most 0.5 along travel (at most 1 until slab
+  surfaces are confirmed in game), or are kept at least 2 apart with clear
+  ground between. The difference is taken up on the lower-ranked piece,
+  at 1 in 4 at most. Exit gates sit within 2 of the ground (DS-46 extended
+  to gates; 4 hard).
+- **Why:** John's 21.26.27 and 21.31.49 shots (playtest 2026-10-26); 17
+  of 22 approaches met their street with a step of 2 or more; later the
+  s10_1 9-block shelf and the k2_1_0 / k2_1_1 contacts.
+- **Scope:** all roads.
+- **Enforcement:** code: `JoinWorld`'s `maxStep` at most 1 over all
+  contacts (the test's bar is 2 today), and `road-half-steps` (DS-31)
+  across piece boundaries.
+- **Status:** accepted (approved by @John 2026-11-05; amends accepted DS-54; drafted as "Joins are level" before
+  DS-54 existed). **Source:** architect, ROADJOIN questions 2026-10-27
+  (roadjoin-qs-architect.md) and ROADJOIN S1 review
+  ([p6-roadjoin-s1-architect.md](../review/roadjoin/p6-roadjoin-s1-architect.md)).
+
 # Interiors
 
 ## DS-13 Rooms look lived-in
@@ -651,6 +720,19 @@ and Minecraft block facts ([blocks.md](blocks.md), from John's
 - **Scope:** kitchens.
 - **Enforcement:** code, planned (furniture catalogue).
 - **Status:** accepted. **Source:** John, 2026-10-23 ([plans/furniture.md](../plans/furniture.md), open question 2).
+
+## DS-72 Decorative job blocks are deliberate
+
+- **Rule:** at most one job block per stall or work piece, matching its
+  trade; never a job block as filler.
+- **Why:** villagers claim job blocks, and scattered ones produce wrong
+  trades.
+- **Scope:** all furniture outside kitchens (DS-14 covers kitchens).
+- **Enforcement:** code candidate: a catalogue tag on each piece listing
+  its allowed job blocks.
+- **Status:** accepted (Approved by @John on 2026-11-06). **Source:** interior designer, market stalls
+  answer 2026-10-26
+  ([market-stalls-interior.md](../review/reports/market-stalls-interior.md)).
 
 ## DS-15 Fireplaces have chimneys
 
@@ -819,6 +901,63 @@ and Minecraft block facts ([blocks.md](blocks.md), from John's
   ([basements-interior.md](../review/reports/basements-interior.md),
   "Basements are service space").
 
+## DS-71 Covered public floors show their use
+
+- **Rule:** a covered public floor shows what it is for: a market floor
+  has stalls, an arcade has shopfronts or benches; never a bare covered
+  slab.
+- **Why:** an empty covered floor reads as a carport (5.12 polish line
+  "market hall floor is empty").
+- **Scope:** market halls, arcades, loggias.
+- **Enforcement:** guideline; code candidate: furniture hooks on the open
+  storey.
+- **Status:** accepted (Approved by @John on 2026-11-06). **Source:** architect, SHOPLOW S4 review
+  2026-10-26
+  ([p7-shoplow-s4-architect.md](../review/reports/p7-shoplow-s4-architect.md)).
+
+## DS-60 Every dwelling sleeps someone
+
+- **Rule:** a house, a workshop's living wing and a shop's dwelling each
+  have at least one bed. Where the programme has no bedroom, a kitchen-hall
+  takes a bed in its far corner.
+- **Why:** a home with no bed reads as wrong, and villages need beds. 5-7
+  of 30 medieval and 10 of 30 plain houses had no bed (base 77abb369);
+  John's playtest note "1 bed in each tiny house" (21.29.47).
+- **Scope:** house, workshop, shop.
+- **Enforcement:** code candidate: a bed count per dwelling in `check`.
+  None today.
+- **Status:** accepted (approved by @John 2026-11-05). **Source:** interior designer, DS35DOORS review
+  2026-10-28 ([p6-ds35doors-interior.md](../review/phase6/ds35doors/p6-ds35doors-interior.md)).
+
+## DS-61 A door never empties a room
+
+- **Rule:** adding a door, arch or stair keeps the room's required pieces
+  (a kitchen's stove, a bedroom's bed, a chapel's seat, a living room's
+  hearth). Otherwise the opening moves, or the use moves to a room that
+  fits.
+- **Why:** DS35DOORS left rooms that are a label with no furniture; the
+  ROOMWALK review found a wall-walk door that stripped a bed.
+- **Scope:** all types.
+- **Enforcement:** code candidate: a required-piece check after
+  `HookLayout`. None today.
+- **Status:** accepted (approved by @John 2026-11-05). **Source:** interior designer, DS35DOORS review
+  2026-10-28 ([p6-ds35doors-interior.md](../review/phase6/ds35doors/p6-ds35doors-interior.md)).
+
+## DS-64 Store rooms are closets
+
+- **Rule:** a `storage` room is at most about 25 cells and 2:1, and a
+  larger leftover with a window takes a habitable use of its floor;
+  storage is at most about 15 % of a floor's net area (agent's numbers).
+- **Why:** storage became the default filler for leftovers (2110 rooms of
+  real towers): big, bright, empty rooms and corridor floors with no
+  units on one side.
+- **Scope:** high-rises and city blocks (houses already cap by
+  programme).
+- **Enforcement:** code candidate: `TowerPlateTest`, plus a share check in
+  `HighriseProgrammeTest`.
+- **Status:** accepted (approved by @John 2026-11-05). **Source:** interior designer with architect
+  notes, HR-B3a review 2026-10-26 (p7-hr-b3a-design.md).
+
 # Settlements
 
 ## DS-17 No detached roads
@@ -970,6 +1109,19 @@ and Minecraft block facts ([blocks.md](blocks.md), from John's
 - **Enforcement:** code, in progress (FOLIAGE item, paused).
 - **Status:** accepted. **Source:** John, playtest 2026-10-23 (run ledger phase 6).
 
+## DS-20 amendment: cut trees go whole
+
+- **Clarification** of DS-20: a tree whose trunk a road or
+  building cuts is removed whole.
+- **Why:** crowns left floating over roads because a neighbour chunk's
+  crown propped them up; 6.28 ROADLEAFORDER now removes them. The
+  architect leaves whether to write it into the rule to John.
+- **Scope:** foliage beside roads and buildings.
+- **Enforcement:** code, exists since ROADLEAFORDER (the road foliage
+  pass); client foliage tests.
+- **Status:** accepted (Approved by @John on 2026-11-06; clarifies accepted DS-20). **Source:** architect,
+  ROADLEAFORDER review 2026-10-29 (p6-roadleaforder-architect.md).
+
 ## DS-30 One road material
 
 - **Rule:** each road, street, lane, path and bridge deck is surfaced in one
@@ -1072,6 +1224,21 @@ and Minecraft block facts ([blocks.md](blocks.md), from John's
 - **Status:** #Approved by @John on 2026-10-28. **Source:** architect, playtest questions
   2026-10-27 ([playtest1026-qs-architect.md](../review/reports/playtest1026-qs-architect.md), P5).
 
+## DS-73 Arterials form one network
+
+- **Rule:** in city and metropolis, every arterial piece reaches the main
+  arterial network (or its ring) without stepping down to a lower class
+  on the way; an arterial does not start or end at a crossing with a
+  lower-class road, except at the settlement edge or a gate.
+- **Why:** an avenue that starts and stops between minor streets inverts
+  the street hierarchy, so a player can't read it.
+- **Scope:** city and metropolis.
+- **Enforcement:** code candidate `arterials-connected` (count arterial
+  components, allowing those at the edge).
+- **Status:** accepted (Approved by @John on 2026-11-06). **Source:** architect, METROFILL R1 review
+  2026-10-26
+  ([p7-metrofill-r1-architect.md](../review/reports/p7-metrofill-r1-architect.md)).
+
 ## DS-76 Links that share a valley share a road
 
 - **Rule:** two roads between settlements don't run side by side within
@@ -1114,6 +1281,46 @@ and Minecraft block facts ([blocks.md](blocks.md), from John's
   John, [QUESTIONS.md](../QUESTIONS.md), 2026-10-31 ("Yes, approved.");
   proposed by the architect, playtest 2026-10-28 questions, Q2
   ([answers](../review/playtest1028-qs/architect.md)).
+
+## DS-56 amendment: exit roads with nothing beyond
+
+- **Addition** to DS-56 (accepted 2026-10-31): an exit gate keeps its exit
+  road only while a drawn road continues beyond it. Otherwise the road is
+  kept only through continuous frontage from the town outward, ending at
+  the last junction or one lot depth past the last lot, in a turning head
+  (city) or at the last house (village, town); never across a bridge or a
+  lot-free run over about 32 blocks to an outlying cluster smaller than a
+  quarter (no plaza or landmark, under about 8 built lots; agent's
+  numbers), and that cluster is not built. Wall gates are exempt.
+- **Why:** John, playtest 2026-10-28
+  ([20.02.18](../review/phase6/playtest-2026-10-28/images/2026-10-28_20.02.18.jpg),
+  "roads to nowhere, especially with such a highly engineered bridge");
+  measured 84 and 219 lot-free blocks of main road to gates with dropped
+  links (w12345 s2_1 g4, s6_6 g13). Fourth occurrence (6.16 DEADMAIN,
+  the 2026-10-28 shots, DEADPORT, MAINSTUB).
+- **Scope:** town, city and metropolis exits; wall gates exempt.
+- **Enforcement:** code candidate: `exit-stub` measured along continuous
+  frontage, plus a bridge-on-unserved-exit check; extend `main-dead-end`
+  to count lot-free exit length. Partial today (6.22 DEADPORT, 6.25
+  MAINSTUB).
+- **Status:** accepted (approved by @John 2026-11-05; amends DS-56, accepted 2026-10-31). **Source:** architect,
+  p6-mainstub-architect.md and p6-deadport-architect.md (2026-10-29).
+
+## DS-57 Roads don't double back
+
+- **Rule:** no road, street or link turns more than 90 degrees at a bend
+  except at a junction or a switchback on a slope. A road leaves its
+  street toward its destination, never past it, and its length stays
+  within about 1.3x the straight distance to its target unless terrain
+  forces more (agent's number).
+- **Why:** 9 hairpin, triangle and Z routes found in the HAMLETEMPTY
+  review; related to DS-56's dead-end stubs.
+- **Scope:** settlement roads and link exits, all tiers.
+- **Enforcement:** code candidate `road-doubles-back` in `city-check` (max
+  bend and detour ratio per road), plus a guard in the route builders.
+  None today.
+- **Status:** accepted (approved by @John 2026-11-05). **Source:** architect, 6.23 HAMLETEMPTY review
+  2026-10-29 (p6-hamletempty-architect.md).
 
 ## DS-21 Hamlets and villages are not ruler-straight
 
@@ -1222,6 +1429,52 @@ and Minecraft block facts ([blocks.md](blocks.md), from John's
   It's minecraft, we don't do diagonals! But I want to wait and see how
   we can do with the new density rules."
 
+## DS-47 amendment: a road that yields hands over its frontage
+
+- **Addition** to DS-47: removing a street for being redundant
+  does not remove the buildings it served: its lot rows front the
+  surviving road and its branch streets re-root on it. At density 50 and
+  up, a road removal never lowers a district's lot count.
+- **Why:** a DS-47 violation in the METROFILL R2 review: in all 3 cities
+  R2 changed, dropping a border street deleted the lots that fronted it
+  and often every street branching off it (gate-coast-city, x -7344).
+- **Scope:** city and metropolis, every road-dropping step (R2, R3, L1
+  and later).
+- **Enforcement:** code candidate: a `city-check` before/after guard per
+  changed district (lot count).
+- **Status:** accepted (approved by @John 2026-11-05; amends accepted DS-47). **Source:** architect, 7.20
+  METROFILL R2 review 2026-10-27 (p7-metrofill-r2-architect.md).
+
+## DS-70 Every square is framed
+
+- **Rule:** at least 70 % (town) or 80 % (city and up) of a square's
+  perimeter is building fronts, with at most one mouth per side (agent's
+  numbers).
+- **Why:** squares are rooms; unfronted squares are the "empty pads"
+  (John's PLAZAS remark, REVIEW 6.8; METROFILL A9).
+- **Scope:** town and up.
+- **Enforcement:** code candidate in `city-check`, per square (ROADMAP
+  7.21 SQUARES).
+- **Status:** accepted (Approved by @John on 2026-11-06). **Source:** architect, SHOPLOW S4 review
+  2026-10-26
+  ([p7-shoplow-s4-architect.md](../review/reports/p7-shoplow-s4-architect.md)).
+
+## DS-59 Landmarks are never silently dropped
+
+- **Rule:** when a fallback (bank, steep, generation failed) would empty
+  a lot in the settlement's landmark list, the planner builds the
+  landmark another way (podium, regenerate) or moves it to another lot.
+  The landmark list matches what is built.
+- **Why:** landmarks end views and anchor squares. In
+  gate-metropolis-temperate the landmark temple `l24` (lot d15_m36.l1,
+  door 6 below its street) was emptied by the DOORBANK fallback while
+  `settlement.json` still listed it.
+- **Scope:** all tiers.
+- **Enforcement:** code candidate in the `settlement` check: every
+  landmark lot has status `build`. None today.
+- **Status:** accepted (approved by @John 2026-11-05). **Source:** architect, 6.20 DOORBANK review
+  2026-10-29 (p6-doorbank-architect.md).
+
 # Building and facade
 
 Proposed by agents (the design-agents assistant, from the research notes and
@@ -1240,6 +1493,22 @@ DS-25 with an exception for deliberate repeating patterns.
   ([depth-and-layering](../research/aesthetics/depth-and-layering.md)).
 - **Scope:** all. **Enforcement:** code, partial (style `massing.ground/typical` = 4; minimum not tested).
 - **Status:** accepted. **Source:** assistant, 2026-10-25; accepted John 2026-10-25 (coordinator chat).
+
+## DS-69 Open ground floors are tall and lit
+
+- **Rule:** an open ground floor under a building where people walk (a
+  market house's trading floor, an arcade, a loggia, a covered passage, a
+  stilted house's undercroft) is at least 4 clear and lit (DS-24). Or, as
+  a DS-23 clarification: "open arcades and market-house undercrofts 4-5
+  clear; enclosed market halls 6-10".
+- **Why:** SHOPLOW S4's 2- and 3-clear undercrofts read as crawlspaces;
+  DS-23's "market halls 6-10" covers the enclosed hall, not this.
+- **Scope:** all types with a walkable open ground storey.
+- **Enforcement:** code candidate: storey-0 clear height of open storeys;
+  a light hook in any covered walkable cell.
+- **Status:** accepted (Approved by @John on 2026-11-06). **Source:** architect, SHOPLOW S4 review
+  2026-10-26
+  ([p7-shoplow-s4-architect.md](../review/reports/p7-shoplow-s4-architect.md)).
 
 ## DS-24 No dark rooms
 
@@ -1398,6 +1667,35 @@ DS-25 with an exception for deliberate repeating patterns.
   ([p6-ds35doors-interior.md](../review/phase6/ds35doors/p6-ds35doors-interior.md),
   "For John").
 
+## DS-35 amendment: the main door is the marked one
+
+- **Addition** to DS-35, defining "smaller and plainer": 1x2 is
+  the smallest door, so in every style the main entrance carries a mark
+  the secondary doors lack (a surround or head, a canopy, or more width),
+  and no secondary door is wider or more marked than the main one.
+- **Why:** in the `plain` style the secondary door was identical to the
+  main one (both 1x2, no surround, head or canopy; no main-door trim in
+  8/8 plain houses and 12/12 plain halls).
+- **Scope:** all styles.
+- **Enforcement:** code candidate: trim or canopy around the main door;
+  no secondary door wider than it.
+- **Status:** accepted (approved by @John 2026-11-05; amends accepted DS-35). **Source:** architect, DS35DOORS
+  review 2026-10-28 ([p6-ds35doors-architect.md](../review/phase6/ds35doors/p6-ds35doors-architect.md)).
+
+## DS-35 amendment: doors on the axis
+
+- **Addition** to DS-35: on a symmetric front the main door is
+  centred. Its width matches the front's parity (2 leaves on an even
+  front, 1 or 3 on an odd one), or the bays shift to stay symmetric about
+  the door.
+- **Why:** the 2-wide high-rise main door sat half a block off the
+  facade axis on 10 of 10 high-rises (odd, symmetric fronts).
+- **Scope:** formal fronts (high-rises, halls, temples, symmetric styles).
+- **Enforcement:** code candidate: door centre equals the facade axis on
+  fronts flagged symmetric.
+- **Status:** accepted (approved by @John 2026-11-05; amends accepted DS-35). **Source:** architect, DS35DOORS
+  review 2026-10-28 ([p6-ds35doors-architect.md](../review/phase6/ds35doors/p6-ds35doors-architect.md)).
+
 ## DS-36 Smooth pitched roofs
 
 - **Rule:** pitched roofs are laid in stairs (1 up per 1 across) or slabs
@@ -1416,6 +1714,21 @@ DS-25 with an exception for deliberate repeating patterns.
   notes: [notes/roofs.md](notes/roofs.md).
 - **Status:** #Approved by @John on 2026-10-28. **Source:** John, playtest notes 2026-10-25;
   drafted by the architect.
+
+## DS-36 amendment: one roof block per building
+
+- **Addition** to DS-36: a pitched roof is laid in one block
+  family; a style's alternative roof tones are chosen per building (or
+  per street), never mixed cell by cell.
+- **Why:** a roof is the largest surface seen from a distance; the
+  per-cell mix reads as speckle (DS-2) or patching (DS36ROOFS should-fix;
+  earlier, brick and red tiles on one roof in the FLY2 review). The
+  DS36ROOFS r2 palette change (ASSUMPTIONS 2026-10-28) is a stopgap.
+- **Scope:** pitched roofs, all styles.
+- **Enforcement:** code candidate: roof palette resolution takes one
+  entry per building.
+- **Status:** accepted (approved by @John 2026-11-05; amends accepted DS-36). **Source:** architect, DS36ROOFS
+  review 2026-10-28 (p6-ds36roofs-architect.md).
 
 ## DS-39 Floor-to-ceiling glazing is a per-style-and-type choice
 
@@ -1502,16 +1815,6 @@ DS-25 with an exception for deliberate repeating patterns.
   ([basements-interior.md](../review/reports/basements-interior.md),
   "Basements are lit throughout"); John's answer in the same file.
 
-# Proposed by agents
-
-New proposals go here (`proposed`, with the source); John accepts, edits or
-drops them, and accepted ones move to the section they belong in.
-
-Filed 2026-10-29 (assistant) from the reviewer proposals still awaiting
-John. Each is `proposed`; an amendment names the rule it amends. Sources
-under `.claude/reports/` are named in plain text (not linkable); linked
-copies are under `docs/review/` where they exist.
-
 ## DS-55 Terraces have doors, roofs look like roofs
 
 - **Rule:** a flat setback or lower roof that a storey looks onto at its
@@ -1528,168 +1831,19 @@ copies are under `docs/review/` where they exist.
 - **Enforcement:** code candidate: every terrace cell set (flat roof at a
   storey's floor level, 2+ deep) has a door onto it and a DS-38 guard, or
   no glass at floor level beside it; folds into DS-38's check. None today.
-- **Status:** approved by @John 2026-11-05. **Source:** architect, playtest 2026-10-28
+- **Status:** accepted (approved by @John 2026-11-05). **Source:** architect, playtest 2026-10-28
   questions, Q1 ([answers](../review/playtest1028-qs/architect.md), from
   playtest1028-qs-architect.md).
 
-## DS-56 amendment: exit roads with nothing beyond
+# Proposed by agents
 
-- **Proposed addition** to DS-56 (accepted 2026-10-31): an exit gate keeps its exit
-  road only while a drawn road continues beyond it. Otherwise the road is
-  kept only through continuous frontage from the town outward, ending at
-  the last junction or one lot depth past the last lot, in a turning head
-  (city) or at the last house (village, town); never across a bridge or a
-  lot-free run over about 32 blocks to an outlying cluster smaller than a
-  quarter (no plaza or landmark, under about 8 built lots; agent's
-  numbers), and that cluster is not built. Wall gates are exempt.
-- **Why:** John, playtest 2026-10-28
-  ([20.02.18](../review/phase6/playtest-2026-10-28/images/2026-10-28_20.02.18.jpg),
-  "roads to nowhere, especially with such a highly engineered bridge");
-  measured 84 and 219 lot-free blocks of main road to gates with dropped
-  links (w12345 s2_1 g4, s6_6 g13). Fourth occurrence (6.16 DEADMAIN,
-  the 2026-10-28 shots, DEADPORT, MAINSTUB).
-- **Scope:** town, city and metropolis exits; wall gates exempt.
-- **Enforcement:** code candidate: `exit-stub` measured along continuous
-  frontage, plus a bridge-on-unserved-exit check; extend `main-dead-end`
-  to count lot-free exit length. Partial today (6.22 DEADPORT, 6.25
-  MAINSTUB).
-- **Status:** approved by @John 2026-11-05 (amends DS-56, accepted 2026-10-31). **Source:** architect,
-  p6-mainstub-architect.md and p6-deadport-architect.md (2026-10-29).
+New proposals go here (`proposed`, with the source); John accepts, edits or
+drops them, and accepted ones move to the section they belong in.
 
-## DS-57 Roads don't double back
-
-- **Rule:** no road, street or link turns more than 90 degrees at a bend
-  except at a junction or a switchback on a slope. A road leaves its
-  street toward its destination, never past it, and its length stays
-  within about 1.3x the straight distance to its target unless terrain
-  forces more (agent's number).
-- **Why:** 9 hairpin, triangle and Z routes found in the HAMLETEMPTY
-  review; related to DS-56's dead-end stubs.
-- **Scope:** settlement roads and link exits, all tiers.
-- **Enforcement:** code candidate `road-doubles-back` in `city-check` (max
-  bend and detour ratio per road), plus a guard in the route builders.
-  None today.
-- **Status:** approved by @John 2026-11-05. **Source:** architect, 6.23 HAMLETEMPTY review
-  2026-10-29 (p6-hamletempty-architect.md).
-
-## DS-58 Steps are as wide as the door
-
-- **Rule:** an exterior step or flight is at least as wide as the door it
-  serves: double and cart doors get a step under both leaves, and a
-  landing where the flight turns is at least the door width plus the
-  walker's cell.
-- **Why:** a half-width step under a double door reads as an error and
-  leaves a jump under the other leaf (60/60 flat cart doors, 13/17
-  river-town double doors before 6.19;
-  [cart door after](../review/p6-porchstep/cart-door-step.png)). Earlier:
-  SHOPLOW S2 review (workshop approach as wide as the cart door).
-- **Scope:** all types, all exterior doors.
-- **Enforcement:** code: every door cell of the opening has a half-step
-  surface in front (extend `RasterEntranceWalkTest` or the planned DS-54
-  walk graph). The 6.19 PORCHSTEP code follows it; no general check.
-- **Status:** approved by @John 2026-11-05. **Source:** architect, 6.19 PORCHSTEP review
-  2026-10-29 (p6-porchstep-architect.md).
-
-## DS-59 Landmarks are never silently dropped
-
-- **Rule:** when a fallback (bank, steep, generation failed) would empty
-  a lot in the settlement's landmark list, the planner builds the
-  landmark another way (podium, regenerate) or moves it to another lot.
-  The landmark list matches what is built.
-- **Why:** landmarks end views and anchor squares. In
-  gate-metropolis-temperate the landmark temple `l24` (lot d15_m36.l1,
-  door 6 below its street) was emptied by the DOORBANK fallback while
-  `settlement.json` still listed it.
-- **Scope:** all tiers.
-- **Enforcement:** code candidate in the `settlement` check: every
-  landmark lot has status `build`. None today.
-- **Status:** approved by @John 2026-11-05. **Source:** architect, 6.20 DOORBANK review
-  2026-10-29 (p6-doorbank-architect.md).
-
-## DS-60 Every dwelling sleeps someone
-
-- **Rule:** a house, a workshop's living wing and a shop's dwelling each
-  have at least one bed. Where the programme has no bedroom, a kitchen-hall
-  takes a bed in its far corner.
-- **Why:** a home with no bed reads as wrong, and villages need beds. 5-7
-  of 30 medieval and 10 of 30 plain houses had no bed (base 77abb369);
-  John's playtest note "1 bed in each tiny house" (21.29.47).
-- **Scope:** house, workshop, shop.
-- **Enforcement:** code candidate: a bed count per dwelling in `check`.
-  None today.
-- **Status:** approved by @John 2026-11-05. **Source:** interior designer, DS35DOORS review
-  2026-10-28 ([p6-ds35doors-interior.md](../review/phase6/ds35doors/p6-ds35doors-interior.md)).
-
-## DS-61 A door never empties a room
-
-- **Rule:** adding a door, arch or stair keeps the room's required pieces
-  (a kitchen's stove, a bedroom's bed, a chapel's seat, a living room's
-  hearth). Otherwise the opening moves, or the use moves to a room that
-  fits.
-- **Why:** DS35DOORS left rooms that are a label with no furniture; the
-  ROOMWALK review found a wall-walk door that stripped a bed.
-- **Scope:** all types.
-- **Enforcement:** code candidate: a required-piece check after
-  `HookLayout`. None today.
-- **Status:** approved by @John 2026-11-05. **Source:** interior designer, DS35DOORS review
-  2026-10-28 ([p6-ds35doors-interior.md](../review/phase6/ds35doors/p6-ds35doors-interior.md)).
-
-## DS-45 amendment: secondary doors near the ground
-
-- **Proposed addition** to DS-45: a back or side door rises at most 3 as
-  a plain flight, or 4-5 with a landing (the house default). Beyond that
-  it moves to another non-front face; failing that it is walled back to a
-  window, and its room keeps its normal programme.
-- **Why:** side-door flights of 9-19 risers after DS35DOORS (house 584,
-  temple 2388, high-rise 977), which is not a yard door.
-- **Scope:** all types with secondary doors.
-- **Enforcement:** code candidate: extend `door-rise` to secondary doors.
-- **Status:** approved by @John 2026-11-05 (amends DS-45). **Source:** architect, DS35DOORS
-  review 2026-10-28 ([p6-ds35doors-architect.md](../review/phase6/ds35doors/p6-ds35doors-architect.md)).
-
-## DS-35 amendment: the main door is the marked one
-
-- **Proposed addition** to DS-35, defining "smaller and plainer": 1x2 is
-  the smallest door, so in every style the main entrance carries a mark
-  the secondary doors lack (a surround or head, a canopy, or more width),
-  and no secondary door is wider or more marked than the main one.
-- **Why:** in the `plain` style the secondary door was identical to the
-  main one (both 1x2, no surround, head or canopy; no main-door trim in
-  8/8 plain houses and 12/12 plain halls).
-- **Scope:** all styles.
-- **Enforcement:** code candidate: trim or canopy around the main door;
-  no secondary door wider than it.
-- **Status:** approved by @John 2026-11-05 (amends DS-35). **Source:** architect, DS35DOORS
-  review 2026-10-28 ([p6-ds35doors-architect.md](../review/phase6/ds35doors/p6-ds35doors-architect.md)).
-
-## DS-35 amendment: doors on the axis
-
-- **Proposed addition** to DS-35: on a symmetric front the main door is
-  centred. Its width matches the front's parity (2 leaves on an even
-  front, 1 or 3 on an odd one), or the bays shift to stay symmetric about
-  the door.
-- **Why:** the 2-wide high-rise main door sat half a block off the
-  facade axis on 10 of 10 high-rises (odd, symmetric fronts).
-- **Scope:** formal fronts (high-rises, halls, temples, symmetric styles).
-- **Enforcement:** code candidate: door centre equals the facade axis on
-  fronts flagged symmetric.
-- **Status:** approved by @John 2026-11-05 (amends DS-35). **Source:** architect, DS35DOORS
-  review 2026-10-28 ([p6-ds35doors-architect.md](../review/phase6/ds35doors/p6-ds35doors-architect.md)).
-
-## DS-36 amendment: one roof block per building
-
-- **Proposed addition** to DS-36: a pitched roof is laid in one block
-  family; a style's alternative roof tones are chosen per building (or
-  per street), never mixed cell by cell.
-- **Why:** a roof is the largest surface seen from a distance; the
-  per-cell mix reads as speckle (DS-2) or patching (DS36ROOFS should-fix;
-  earlier, brick and red tiles on one roof in the FLY2 review). The
-  DS36ROOFS r2 palette change (ASSUMPTIONS 2026-10-28) is a stopgap.
-- **Scope:** pitched roofs, all styles.
-- **Enforcement:** code candidate: roof palette resolution takes one
-  entry per building.
-- **Status:** approved by @John 2026-11-05 (amends DS-36). **Source:** architect, DS36ROOFS
-  review 2026-10-28 (p6-ds36roofs-architect.md).
+Filed 2026-10-29 (assistant) from the reviewer proposals still awaiting
+John. Each is `proposed`; an amendment names the rule it amends. Sources
+under `.claude/reports/` are named in plain text (not linkable); linked
+copies are under `docs/review/` where they exist.
 
 ## DS-52 amendment: the gate width is the street's
 
@@ -1704,22 +1858,6 @@ copies are under `docs/review/` where they exist.
   exit street's width, and width is non-increasing from exit to port.
 - **Status:** proposed (clarifies DS-52). **Source:** architect, DSROADS
   review 2026-10-28 ([p6-dsroads-architect.md](../review/dsroads/p6-dsroads-architect.md)).
-
-## DS-47 amendment: a road that yields hands over its frontage
-
-- **Proposed addition** to DS-47: removing a street for being redundant
-  does not remove the buildings it served: its lot rows front the
-  surviving road and its branch streets re-root on it. At density 50 and
-  up, a road removal never lowers a district's lot count.
-- **Why:** a DS-47 violation in the METROFILL R2 review: in all 3 cities
-  R2 changed, dropping a border street deleted the lots that fronted it
-  and often every street branching off it (gate-coast-city, x -7344).
-- **Scope:** city and metropolis, every road-dropping step (R2, R3, L1
-  and later).
-- **Enforcement:** code candidate: a `city-check` before/after guard per
-  changed district (lot count).
-- **Status:** approved by @John 2026-11-05 (amends DS-47). **Source:** architect, 7.20
-  METROFILL R2 review 2026-10-27 (p7-metrofill-r2-architect.md).
 
 ## DS-62 Roads meet foreign villages at a street
 
@@ -1739,28 +1877,6 @@ copies are under `docs/review/` where they exist.
 - **Status:** proposed. **Source:** architect, VILLROAD review 2026-10-27
   (p6-villroad-architect.md).
 
-## DS-54 amendment: joins are level
-
-- **Proposed addition** to DS-54: where two road pieces meet or touch
-  (approach and street, street and bridge, road and bridge, graph route
-  and approach, a crossing, an approach passing a street end), the
-  surfaces differ by at most 0.5 along travel (at most 1 until slab
-  surfaces are confirmed in game), or are kept at least 2 apart with clear
-  ground between. The difference is taken up on the lower-ranked piece,
-  at 1 in 4 at most. Exit gates sit within 2 of the ground (DS-46 extended
-  to gates; 4 hard).
-- **Why:** John's 21.26.27 and 21.31.49 shots (playtest 2026-10-26); 17
-  of 22 approaches met their street with a step of 2 or more; later the
-  s10_1 9-block shelf and the k2_1_0 / k2_1_1 contacts.
-- **Scope:** all roads.
-- **Enforcement:** code: `JoinWorld`'s `maxStep` at most 1 over all
-  contacts (the test's bar is 2 today), and `road-half-steps` (DS-31)
-  across piece boundaries.
-- **Status:** approved by @John 2026-11-05 (amends DS-54; drafted as "Joins are level" before
-  DS-54 existed). **Source:** architect, ROADJOIN questions 2026-10-27
-  (roadjoin-qs-architect.md) and ROADJOIN S1 review
-  ([p6-roadjoin-s1-architect.md](../review/roadjoin/p6-roadjoin-s1-architect.md)).
-
 ## DS-63 Bridges clear the water
 
 - **Rule:** a deck's underside is never below the water surface. Spans
@@ -1778,21 +1894,6 @@ copies are under `docs/review/` where they exist.
   2026-10-27 (roadjoin-qs-architect.md).
   - @John 2026-11-05: Does this really need to be said? I’m wary of building up too many tiny little rules that should be covered by a more general rule. It feels like “bridges underwater” doesn’t need to be spelled out. Is there a good argument in favor of this rule?
     - @architect 2026-11-05: Mostly no: the rails are DS-8 ("railings that hold" amendment), the level ends are the DS-54 "joins are level" amendment you approved today, and only "the deck stands clear of the water" is new (your flooded 21.31.49 deck breaks no accepted rule as written), so I'd drop DS-63 and add one sentence to DS-19: "A deck stands clear of the water, never in it: its underside is above the water surface, with at least 1 block of air under it on spans over 6 and at town tier and up; anything lower counts as a causeway" (check `deck-clearance` under DS-19's Enforcement). "No dirt_path or gravel over water" is a material choice for the styles README "Bridge decks" row. General test for the other proposed rules: a rule earns its own number only if a generator could obey every accepted rule and still produce the failure; otherwise it is a check, or a clause on the rule it refines. Say yes and the coordinator makes these three edits.
-
-## DS-64 Store rooms are closets
-
-- **Rule:** a `storage` room is at most about 25 cells and 2:1, and a
-  larger leftover with a window takes a habitable use of its floor;
-  storage is at most about 15 % of a floor's net area (agent's numbers).
-- **Why:** storage became the default filler for leftovers (2110 rooms of
-  real towers): big, bright, empty rooms and corridor floors with no
-  units on one side.
-- **Scope:** high-rises and city blocks (houses already cap by
-  programme).
-- **Enforcement:** code candidate: `TowerPlateTest`, plus a share check in
-  `HighriseProgrammeTest`.
-- **Status:** approved by @John 2026-11-05. **Source:** interior designer with architect
-  notes, HR-B3a review 2026-10-26 (p7-hr-b3a-design.md).
 
 ## DS-65 Towers keep a clear shaft
 
@@ -1871,104 +1972,3 @@ copies are under `docs/review/` where they exist.
 - **Status:** proposed. **Source:** architect, METROFILL plan answer
   2026-10-26
   ([metrofill-plan-architect.md](../review/reports/metrofill-plan-architect.md)).
-
-## DS-69 Open ground floors are tall and lit
-
-- **Rule:** an open ground floor under a building where people walk (a
-  market house's trading floor, an arcade, a loggia, a covered passage, a
-  stilted house's undercroft) is at least 4 clear and lit (DS-24). Or, as
-  a DS-23 clarification: "open arcades and market-house undercrofts 4-5
-  clear; enclosed market halls 6-10".
-- **Why:** SHOPLOW S4's 2- and 3-clear undercrofts read as crawlspaces;
-  DS-23's "market halls 6-10" covers the enclosed hall, not this.
-- **Scope:** all types with a walkable open ground storey.
-- **Enforcement:** code candidate: storey-0 clear height of open storeys;
-  a light hook in any covered walkable cell.
-- **Status:** proposed. **Source:** architect, SHOPLOW S4 review
-  2026-10-26
-  ([p7-shoplow-s4-architect.md](../review/reports/p7-shoplow-s4-architect.md)).
-
-## DS-70 Every square is framed
-
-- **Rule:** at least 70 % (town) or 80 % (city and up) of a square's
-  perimeter is building fronts, with at most one mouth per side (agent's
-  numbers).
-- **Why:** squares are rooms; unfronted squares are the "empty pads"
-  (John's PLAZAS remark, REVIEW 6.8; METROFILL A9).
-- **Scope:** town and up.
-- **Enforcement:** code candidate in `city-check`, per square (ROADMAP
-  7.21 SQUARES).
-- **Status:** proposed. **Source:** architect, SHOPLOW S4 review
-  2026-10-26
-  ([p7-shoplow-s4-architect.md](../review/reports/p7-shoplow-s4-architect.md)).
-
-## DS-71 Covered public floors show their use
-
-- **Rule:** a covered public floor shows what it is for: a market floor
-  has stalls, an arcade has shopfronts or benches; never a bare covered
-  slab.
-- **Why:** an empty covered floor reads as a carport (5.12 polish line
-  "market hall floor is empty").
-- **Scope:** market halls, arcades, loggias.
-- **Enforcement:** guideline; code candidate: furniture hooks on the open
-  storey.
-- **Status:** proposed. **Source:** architect, SHOPLOW S4 review
-  2026-10-26
-  ([p7-shoplow-s4-architect.md](../review/reports/p7-shoplow-s4-architect.md)).
-
-## DS-72 Decorative job blocks are deliberate
-
-- **Rule:** at most one job block per stall or work piece, matching its
-  trade; never a job block as filler.
-- **Why:** villagers claim job blocks, and scattered ones produce wrong
-  trades.
-- **Scope:** all furniture outside kitchens (DS-14 covers kitchens).
-- **Enforcement:** code candidate: a catalogue tag on each piece listing
-  its allowed job blocks.
-- **Status:** proposed. **Source:** interior designer, market stalls
-  answer 2026-10-26
-  ([market-stalls-interior.md](../review/reports/market-stalls-interior.md)).
-
-## DS-6 amendment: a built path to every main door
-
-- **Proposed addition** to DS-6: every main door is reached by a built
-  path from the street (paving, steps or a ramp, at most 3 risers per
-  run). Raw terrain counts only where it rises at most 1 per cell with no
-  step over 1.
-- **Why:** a house on a bank whose terrain ledges passed as DS-6's "some
-  sort of path" (seed 1 `dm10_31.l0`, `dm9_29.l10`, `dm9_28.l19`).
-  Overlaps the accepted DS-54 (no full-block rise on the route).
-- **Scope:** houses, shops and workshops, all tiers.
-- **Enforcement:** code candidate: the street-to-door half of DS-6
-  (planned in 7.19; the DS-54 walk graph); until then, in `door-rise`, a
-  run of 0-1 at rise 3+ is a finding.
-- **Status:** proposed (amends DS-6). **Source:** architect, SHOPLOW S2
-  review 2026-10-26 (p7-shoplow-s2-architect.md).
-
-## DS-73 Arterials form one network
-
-- **Rule:** in city and metropolis, every arterial piece reaches the main
-  arterial network (or its ring) without stepping down to a lower class
-  on the way; an arterial does not start or end at a crossing with a
-  lower-class road, except at the settlement edge or a gate.
-- **Why:** an avenue that starts and stops between minor streets inverts
-  the street hierarchy, so a player can't read it.
-- **Scope:** city and metropolis.
-- **Enforcement:** code candidate `arterials-connected` (count arterial
-  components, allowing those at the edge).
-- **Status:** proposed. **Source:** architect, METROFILL R1 review
-  2026-10-26
-  ([p7-metrofill-r1-architect.md](../review/reports/p7-metrofill-r1-architect.md)).
-
-## DS-20 amendment: cut trees go whole (optional)
-
-- **Proposed clarification** of DS-20: a tree whose trunk a road or
-  building cuts is removed whole.
-- **Why:** crowns left floating over roads because a neighbour chunk's
-  crown propped them up; 6.28 ROADLEAFORDER now removes them. The
-  architect leaves whether to write it into the rule to John.
-- **Scope:** foliage beside roads and buildings.
-- **Enforcement:** code, exists since ROADLEAFORDER (the road foliage
-  pass); client foliage tests.
-- **Status:** proposed (clarifies DS-20). **Source:** architect,
-  ROADLEAFORDER review 2026-10-29 (p6-roadleaforder-architect.md).

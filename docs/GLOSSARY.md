@@ -153,6 +153,7 @@ Item codes (PARREADS, MAINSTUB, TPHOLD, ...) and run terms, one row each. **Gene
 | PREG |  | process item: game tests register themselves | done | [[docs/log/2026-10-25-proc-gametest-reg|2026-10-25-proc-gametest-reg]] |
 | PROFILE |  | profile of the metropolis worst case against plain vanilla on the same seed | done | [[docs/review/profile-metropolis|profile-metropolis]] |
 | PROPFIX |  | V1PropertyTest skips policy rejections | done | [[docs/log/2026-10-21-p5-propfix|log]] |
+| QCHAR |  | neighbourhood character | - | [[docs/ROADMAP|ROADMAP]] |
 | quay trace |  | tracing the quay lines along water for a waterfront settlement tile; slow, so the warmer does it ahead of... | - | [[docs/PERFORMANCE|PERFORMANCE]] |
 | QUAYFAST |  | 4b: cold district plan fix | open | [[docs/ROADMAP|ROADMAP]], [[docs/plans/quayfast|plan]] |
 | QUAYLAZY |  | , a lazy quay trace that runs in parallel | - | [[docs/plans/quaylazy|plan]] |

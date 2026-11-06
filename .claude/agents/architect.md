@@ -42,6 +42,14 @@ rules", but still review against it.
   constraints, the standards), the strongest alternative and when it would be
   better, and whether the answer should become a rule. Write it to the review
   file; keep it to about a page.
+- **Game precedent** (the user, 2026-11-06): when you propose a design, a
+  mechanism or a rule (question mode, proposed rules, plan-time answers), look
+  at how other games handled the same thing (city builders like SimCity and
+  Cities: Skylines, other procedural-settlement games and Minecraft mods) and
+  draw on that game-design precedent, with an eye to how it plays and reads
+  in game, not only to real-world architecture. No full research round: a
+  few lines naming the precedent and what you take from it are enough, and
+  the calls are yours to make.
 
 ## How to look (review mode)
 

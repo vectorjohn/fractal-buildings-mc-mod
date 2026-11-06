@@ -5,7 +5,7 @@ Fractal Buildings grows settlements from tiny hamlets to sprawling metropolises 
 
 ## Backstory
 
-This project stemmed from a first grader who really wants to play Minecraft to smash things. Usually my things. So I wanted to revisit an idea I’ve been kicking around for a decade to have “villages” in Minecraft be generated more organically and with more variety. And as a side effect, it gives my kid something to smash without messing up my builds. Pairs well with guns or explosive mods, and Mincraft Physics mod.
+This project stemmed from a first grader who really wants to play Minecraft to smash things. Usually my things. So I wanted to revisit an idea I’ve been kicking around for a decade to have “villages” in Minecraft be generated more organically and with more variety. And as a side effect, it gives my kid something to smash without messing up my builds. Pairs well with guns or explosive mods, and Minecraft Physics mod.
 The name comes from my early interest in fractal algorithms, and things like the [“fern” fractal](https://en.wikipedia.org/wiki/Barnsley_fern) that grows something organic from simple rules. 
 
 ## What it does
@@ -47,7 +47,7 @@ settlements appear, the largest settlement size, and which styles are used. A
 world copies these values when it is created and keeps them, so editing the file
 never changes an existing world. `/fb config` shows the current world's values.
 
-To set it up, copy [the example](fractalbuildings.example.json) to
+To set it up, copy fractalbuildings.example.json to
 `config/fractalbuildings.json` in your game folder before launching the game (or
 before creating the world it should apply to) and change the values.
 
@@ -77,29 +77,20 @@ before creating the world it should apply to) and change the values.
   just ends or drops a block or more). A house beside such a street can have its
   door well below or above the road, so you may have to walk round or dig to reach
   it. A city gatehouse on a steep slope can stand high above the road it guards.
-- City walls are rare on real terrain.
-- *(C3: the remaining items from the release review.)*
 
 ## Reporting a bug
 
 In game, type `/fbnote <what is wrong>`, for example `/fbnote stairs don't reach the top floor`. Stand where you can see the
 problem and look at it first: the note records your position and the block under the crosshair.
 
-- A message on screen says `fbnote saved <name>`. Two files appear in the `screenshots/` folder of your game directory
+- Two files appear in the `screenshots/` folder of your game directory
   (the `.minecraft` folder, or your launcher's instance folder): `<date_time>.png` (a normal screenshot) and `<date_time>.json` (your
   comment, world seed, position, biome, the block you looked at, the mod version and, in singleplayer, which settlement, building and room
   you were in). This is very useful for reproducing the issue!
-- Attach both files to the issue (see "Reporting problems"). On a multiplayer server the note has no settlement details, only
-  position, biome and block, plus the world seed if you are an operator there (the command quietly asks the server for `/seed`);
-  otherwise add the server address and the world seed if you know it.
-- The command needs the mod on your client.
-
-## Reporting problems
-
-Open an issue at *(C3: issue tracker link)* with:
-
-- the mod version, Minecraft and Fabric Loader versions, and your other mods;
-- the world seed and the coordinates (F3 screen) of the problem;
+- Attach both files to the issue (see "Reporting problems"). On a multiplayer server the note has no settlement details.
+- The `/fbnote` command needs the client to have the mod installed.
+- Open an issue at https://github.com/vectorjohn/fractal-buildings-mc-mod/issues/ 
+- Include the mod version, Minecraft and Fabric Loader versions, and your other mods (**unless you used `/fbnote`);
 - the `/fbnote` files (screenshot and `.json`, see above), or at least a screenshot, and `logs/latest.log` if the game crashed or warned.
 
 ## Licence

@@ -86,6 +86,8 @@ it first; that bloats your context.
   this look right" (exteriors, streets, a city) to `architect`, "does this
   room make sense" to `interior-designer`, with the message quoted, what to
   look at (gallery or screenshot paths, if he named them) and `slug:`.
+  An `architect` question that asks for a design or mechanism also asks it
+  to draw on how other games did it (game precedent; the user, 2026-11-06).
 - **Everything else goes to `assistant`**: questions about the project, the
   code or where the run stands, doc and plan edits, ideas to note down, utility
   scripts, API research, agent-config changes, alarms or reminders. If unsure,

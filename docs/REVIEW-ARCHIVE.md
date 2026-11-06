@@ -438,3 +438,8 @@ Where an answer became a rule, ROADMAP item or plan change, the agent's
   - @John 2026-10-27: I think a real inn building type. 
     - @assistant 2026-10-27: recorded on ROADMAP 7.22 INN: a real `inn` type (taproom with bar and fire, kitchen, 3-5 guest rooms upstairs, stable yard on the road) in about half of the road hamlets with 3+ lots, away from both ends. The bigger-hamlet-house option is dropped.
   - @assistant 2026-11-02: settled and filed (7.22 INN); archived from REVIEW.md.
+
+- [x] **A5 release basics (p6-a5-release)**: the files a first release needs, for you to read before C3 uses them. `LICENSE` (MIT, "Copyright (c) 2026 John Reeves"), [CHANGELOG.md](../CHANGELOG.md), the player README draft [release/README-player.md](release/README-player.md) (describes what Phase 6 is building; C3 cuts what does not ship), and the placeholder icon `mod/src/main/resources/assets/fractalbuildings/icon.png`. Build change: `mod/build.gradle` names the jar `fractalbuildings-0.1.0+26.3.jar` and puts `LICENSE` in it.
+  Result: all ready (John 2026-11-05, on the QUESTIONS.md line "Release basics"). Accepted for C3 (cutting the release): `LICENSE` (MIT), the [CHANGELOG.md](../CHANGELOG.md) draft, the player README with his edits, and his new icon (263x263, replacing the placeholder at the same path).
+  - @John 2026-11-05: all ready
+  - @assistant 2026-11-06: settled and filed (QUESTIONS line removed); archived from REVIEW.md.
