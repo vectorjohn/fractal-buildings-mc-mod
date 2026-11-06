@@ -27,6 +27,8 @@
 #   scripts/worlds.sh generate --seed S --chunks CX0,CZ0,CX1,CZ1 --out DIR   (internal; what ensure
 #        dispatches) pregenerate those chunks into DIR/world, write DIR/gen.properties.
 #
+# Each generated save also carries world/fractalbuildings/places.json (`/fb places`, C15): the planner's settlements, districts,
+# notable buildings, gates and links in the area.
 # Cache: <main repo root>/.claude/worlds/ (gitignored, shared by every worktree; FB_WORLDS_DIR overrides).
 # One entry per seed + chunk-aligned area + commit: <cache>/<id>/ with world/ (the save, its stamp
 # world/fractal-world.properties: seed, center, radius, chunks, blocks, commit, dirty, created, host,
@@ -502,6 +504,12 @@ P
 			log "tile $tiles: chunks $tx,$tz..$tx1,$tz1 generated ($total so far, $(( $(now) - start )) s)"
 		done
 	done
+	off=$(wc -l < "$SLOG")
+	# C15: the planner's places index of the generated area, written to <world>/fractalbuildings/places.json (kept with the save)
+	local pr=$(( (cx1 - cx0 + 1) * 8 > (cz1 - cz0 + 1) * 8 ? (cx1 - cx0 + 1) * 8 : (cz1 - cz0 + 1) * 8 )); ((pr > 4096)) && pr=4096
+	echo "fb places $pr $(( (cx0 + cx1 + 1) * 8 )) $(( (cz0 + cz1 + 1) * 8 ))" >&3
+	for i in $(seq 1 120); do grep -q "written to fractalbuildings/places.json" "$SLOG" 2>/dev/null && break; deadline || break; sleep 1; done
+	grep -q "written to fractalbuildings/places.json" "$SLOG" 2>/dev/null || log "WARN: no places index written (fb places gave no answer)"
 	off=$(wc -l < "$SLOG")
 	echo "save-all flush" >&3
 	for i in $(seq 1 300); do tail -n +"$((off + 1))" "$SLOG" | grep -q 'Saved the game' && break; deadline || break; sleep 1; done

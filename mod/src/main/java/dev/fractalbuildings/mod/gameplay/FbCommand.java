@@ -2,11 +2,18 @@ package dev.fractalbuildings.mod.gameplay;
 
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
+import com.mojang.brigadier.arguments.IntegerArgumentType;
 import dev.fractalbuildings.core.settlement.Tier;
 import dev.fractalbuildings.core.world.SettlementInfo;
 import dev.fractalbuildings.core.world.WorldPlanner;
+import dev.fractalbuildings.core.world.PlacesIndex;
+import dev.fractalbuildings.core.world.PlaytestNote;
 import dev.fractalbuildings.mod.api.Settlements;
 import dev.fractalbuildings.mod.worldgen.WorldPlanners;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Optional;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.minecraft.ChatFormatting;
@@ -35,6 +42,12 @@ public final class FbCommand {
 		for (Tier t : Tier.values()) locate.then(Commands.literal(t.json).executes(c -> locate(c.getSource(), t)));
 		d.register(Commands.literal("fb")
 				.then(Commands.literal("info").executes(c -> info(c.getSource())))
+				.then(Commands.literal("places").requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
+						.executes(c -> places(c.getSource(), PLACES_RADIUS, null, null))
+						.then(Commands.argument("radius", IntegerArgumentType.integer(16, PLACES_MAX_RADIUS))
+								.executes(c -> places(c.getSource(), IntegerArgumentType.getInteger(c, "radius"), null, null))
+								.then(Commands.argument("x", IntegerArgumentType.integer()).then(Commands.argument("z", IntegerArgumentType.integer())
+										.executes(c -> places(c.getSource(), IntegerArgumentType.getInteger(c, "radius"), IntegerArgumentType.getInteger(c, "x"), IntegerArgumentType.getInteger(c, "z")))))))
 				.then(locate));
 	}
 
@@ -79,6 +92,38 @@ public final class FbCommand {
 						.withHoverEvent(new HoverEvent.ShowText(Component.translatable("chat.coordinates.tooltip"))));
 		s.sendSuccess(() -> Component.literal("The nearest " + i.tier().json + " (" + i.site().id() + ", radius " + i.site().radius() + ") is at ").append(coords)
 				.append(" (" + Math.round(i.distance()) + " blocks away)"), false);
+		return 1;
+	}
+
+	/** Default and largest radius of {@code /fb places}, blocks. */
+	static final int PLACES_RADIUS = 256, PLACES_MAX_RADIUS = 4096;
+
+	/** File the index is written to, relative to the world folder. */
+	public static final String PLACES_FILE = "fractalbuildings/places.json";
+
+	/** Writes the places index for the square around (x, z) to {@code <world>/fractalbuildings/places.json}; returns the index. */
+	public static java.util.Map<String, Object> writePlaces(WorldPlanner w, Path worldRoot, int x, int z, int radius) throws IOException {
+		java.util.Map<String, Object> index = PlacesIndex.build(w, x, z, radius);
+		Path file = worldRoot.resolve(PLACES_FILE);
+		Files.createDirectories(file.getParent());
+		Files.writeString(file, PlaytestNote.json(index), StandardCharsets.UTF_8);
+		return index;
+	}
+
+	private static int places(CommandSourceStack s, int radius, Integer x, Integer z) {
+		Optional<WorldPlanner> w = planner(s);
+		if (w.isEmpty()) return 0;
+		int cx = x != null ? x : (int) Math.floor(s.getPosition().x()), cz = z != null ? z : (int) Math.floor(s.getPosition().z());
+		Path root = s.getServer().getWorldPath(net.minecraft.world.level.storage.LevelResource.ROOT);
+		java.util.Map<String, Object> m;
+		try {
+			m = writePlaces(w.get(), root, cx, cz, radius);
+		} catch (IOException e) {
+			s.sendFailure(Component.literal("Could not write " + PLACES_FILE + ": " + e));
+			return 0;
+		}
+		@SuppressWarnings("unchecked") var sets = (java.util.List<java.util.Map<String, Object>>) m.get("settlements");
+		s.sendSuccess(() -> Component.literal("Places within " + radius + " blocks of " + cx + "," + cz + ": " + sets.size() + " settlement(s), written to " + PLACES_FILE), false);
 		return 1;
 	}
 }

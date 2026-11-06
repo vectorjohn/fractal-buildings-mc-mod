@@ -254,6 +254,9 @@ public class WorldPlanner {
 
 	private static long key(int ix, int iz) { return ((long) ix << 32) ^ (iz & 0xffffffffL); }
 
+	/** The region cell that owns a block column (the places index, C15). */
+	Cell cellAt(int x, int z) { return CellGeometry.owner(field, x, z); }
+
 	/** The settlement's source: its skeletons and road network, shared by all its tiles. */
 	SkeletonSource source(SettlementSite site) { return sources.get(site.id(), id -> newSource(site)); }
 
