@@ -6,7 +6,8 @@ Every decision waiting for you, one line each, newest first under each heading. 
 
 # Release (0.1.0)
 
-- [ ] **Release basics** (2026-11-02, from the release status audit; files since 2026-10-22): read the LICENSE (MIT), the CHANGELOG draft, the [player README](release/README-player.md) and the placeholder icon before C3 (cutting the release) uses them. [REVIEW](REVIEW.md) "A5 release basics".
+- [x] **Release basics** (2026-11-02, from the release status audit; files since 2026-10-22): read the LICENSE (MIT), the CHANGELOG draft, the [player README](release/README-player.md) and the placeholder icon before C3 (cutting the release) uses them. [REVIEW](REVIEW.md) "A5 release basics".
+  - @John 2026-11-05: all ready
 
 - [ ] **DS-55 to DS-73 and amendments** (2026-10-29; updated 2026-10-31): accept, edit or drop each proposal still open: DS-55 and DS-57 to DS-73, and the amendments to DS-6, DS-20 (cut trees go whole), DS-25, DS-35 (the main door is the marked one; doors on the axis), DS-36, DS-45 (secondary doors near the ground), DS-47, DS-52, DS-54 (joins are level) and DS-56 (exit roads with nothing beyond). Decided since and filed: DS-56 itself, the DS-54 narrowing, DS-75, DS-76, DS-77 and the DS-45 high-rise and DS-35 small-wing amendments. [STANDARDS.md](design/STANDARDS.md), "Proposed by agents".
 

@@ -1,11 +1,6 @@
 # Fractal Buildings
 ![Fractal Buildings](gallery/2026-10-27_19.03.48_2.jpg)
 
-*Draft player README (Phase 6 step A5). Step C3 moves it to the repository's
-`README.md`, adds screenshots and fills in the links; the agents' README moves to
-`docs/AGENTS.md`. Features listed here are what Phase 6 is building; C3 removes
-anything that didn't make the release.*
-
 Fractal Buildings grows settlements from tiny hamlets to sprawling metropolises in your world. No two buildings or settlements are alike. Everything is planned from the world seed and the terrain under it, and every building is planned for its own lot.
 
 ## Backstory
@@ -17,7 +12,7 @@ The name comes from my early interest in fractal algorithms, and things like the
 
 - **Settlements of every size**: hamlets and villages in the countryside, towns,
   and cities and metropolises spread over many chunks, with a downtown of tall
-  buildings and an old town round the centre.
+  buildings and an old town round the center.
 - **Planned to fit the land**: streets follow the terrain. Settlements are interconnected with roads, so if you happen upon a path in the wilderness you can follow it to a town.
 - **Various building types**: houses, shops, workshops, civic buildings and
   high-rises.
@@ -27,8 +22,7 @@ The name comes from my early interest in fractal algorithms, and things like the
   the countryside).
 - `/locate structure fractalbuildings:village` (and `hamlet`, `town`, `city`,
   `metropolis`) finds the nearest settlement.
-- **Deterministic**: the same seed gives the same cities, whatever order chunks
-  are generated in.
+- **Deterministic**: the same seed gives the same cities, whatever order chunks are generated in.
 
 ## Install
 
