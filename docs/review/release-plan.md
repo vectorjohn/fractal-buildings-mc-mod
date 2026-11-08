@@ -147,6 +147,7 @@ or is already in the Polish backlog.
   commits); details to come from him, no action yet.
 - [ ] **C3 cut the release** (section 2, "Cutting a release"). Not started;
   it waits for everything above.
+  - 2026-11-07: steps 3 and 4 done on `main` (version already `0.1.0`; CHANGELOG dated, with the jar's SHA-256, a reproducible build).
 
 ## Not release-blocking: move out of P6
 
