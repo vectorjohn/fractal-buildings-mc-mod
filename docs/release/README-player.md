@@ -26,9 +26,7 @@ The name comes from my early interest in fractal algorithms, and things like the
 
 ## Install
 
-* Use your usual mod loader.
-* No dependencies.
-* **Allows server-only** installs: clients can be pure vanilla.
+* Fabric only: Fabric Loader 0.19.5+, Minecraft 26.3, Java 25, and **Fabric API**. Use your usual launcher.
 * Create a **new world**. Settlements only appear in chunks generated with the mod installed, since it is part of worldgen.
 
 ## Coming Soon 
@@ -52,13 +50,11 @@ To set it up, copy fractalbuildings.example.json to
 before creating the world it should apply to) and change the values.
 
 
-*(C3: when this file moves to the root `README.md`, point both links at `docs/release/`, or link the files on the release page.)*
-
 ## Compatibility
 
 - **Vanilla villages** still generate, except inside and next to our settlements.
-- **Terrain mods**: tested with *(C3 fills in the list from step 6.6, e.g.
-  Terralith, Tectonic, Lithostitched, TerraBlender)*.
+- **Terrain mods**: tested with Lithostitched, Terralith, Tectonic, Terralith and
+  Tectonic together, and TerraBlender.
 - Other structure mods: not tested; structures may overlap our settlements.
 - _Works_ with Distant Horizons, but the DH chunk loading doesn’t seem to trigger city generation.
 - I played with Minecraft Physics. Works great, but collapsing really does a number on a highrise.
@@ -78,20 +74,11 @@ before creating the world it should apply to) and change the values.
   door well below or above the road, so you may have to walk round or dig to reach
   it. A city gatehouse on a steep slope can stand high above the road it guards.
 
-## Reporting a bug
+## Reporting problems
 
-In game, type `/fbnote <what is wrong>`, for example `/fbnote stairs don't reach the top floor`. Stand where you can see the
-problem and look at it first: the note records your position and the block under the crosshair.
+Open an issue at https://github.com/vectorjohn/fractal-buildings-mc-mod/issues/ with the mod, Minecraft and Fabric Loader versions, your other mods, a screenshot, and `logs/latest.log` if the game crashed.
 
-- Two files appear in the `screenshots/` folder of your game directory
-  (the `.minecraft` folder, or your launcher's instance folder): `<date_time>.png` (a normal screenshot) and `<date_time>.json` (your
-  comment, world seed, position, biome, the block you looked at, the mod version and, in singleplayer, which settlement, building and room
-  you were in). This is very useful for reproducing the issue!
-- Attach both files to the issue (see "Reporting problems"). On a multiplayer server the note has no settlement details.
-- The `/fbnote` command needs the client to have the mod installed.
-- Open an issue at https://github.com/vectorjohn/fractal-buildings-mc-mod/issues/ 
-- Include the mod version, Minecraft and Fabric Loader versions, and your other mods (**unless you used `/fbnote`);
-- the `/fbnote` files (screenshot and `.json`, see above), or at least a screenshot, and `logs/latest.log` if the game crashed or warned.
+Easier: look at the problem and type `/fbnote <what is wrong>` in game (needs the mod on your client). It saves a screenshot and a `.json` file with your position, seed and versions to the `screenshots/` folder of your game directory; attach both instead.
 
 ## Licence
 
