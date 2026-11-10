@@ -84,6 +84,7 @@ in `.claude/reports/` (John, 2026-10-28; earlier report copies are in
   7. Release: Modrinth first, `0.1.0+26.3`, alpha, MIT. **You publish**; the page name and whether the repo goes public are yours to decide.
      - @assistant 2026-11-02: answered in QUESTIONS.md (John 2026-11-01): Modrinth (you may not be listed there because of AI) and CurseForge, name "Fractal Buildings", source public; history cleanup before `main` waits for your details. Recorded in [release-plan.md](review/release-plan.md) Q9 and the ROADMAP Phase 6 notes.
   8. Server-only install: probably works for vanilla clients, but untested (testing it needs a dedicated server and the EULA, which is yours to accept).
+     - @assistant 2026-11-09: out of date: server-only installs are tested (`scripts/server-only-test.sh`, a dedicated server with the mod and an unmodded client; passed 2026-11-07 and 2026-11-08) and John has played that way. The player README names Fabric API and does not repeat it (John, 2026-11-09).
   9. Terralith and Tectonic: run their jars as black boxes in compatibility tests, as the S2 and S7 spikes did (their licence forbids using their work to test AI systems; we never read their code or data). If you object, they are listed as untested.
   10. Deferred past the first release: per-wing ground levels on slopes, density-function flattening, a published settlement density function, and 6.10 unless it is ready in time.
   Result:
