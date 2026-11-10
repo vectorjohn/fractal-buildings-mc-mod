@@ -110,36 +110,30 @@ or is already in the Polish backlog.
   README. Making it faster is P7. Tag `#backlog-p6` (the decision only).
   - @John 2026-11-02: Sounds good.
     - @assistant 2026-11-02: Noted, no change. This is the REGIONPERF item (performance on first arrival), which you settled earlier today: a cold metropolis arrival of about 35 s is fine for 0.1.0, and holds abort after 60 s. What is left is the README sentence on the wait and the TPABORT merge (holds that abort after 60 s with a "try again" message), both already listed above.
-- [ ] **Batched heavy run on the release candidate**: `test-all.sh --full`
-  plus the order test and `perf.sh`. Waiting for the release candidate:
-  the latest batch, HEAVY13, passed at 1ea75a7d (2026-11-01; perf rows over
-  their ceilings are the accepted known bugs). Code merged since (QUAYFAST
-  steps 0-6, TPHOLD60, MAINSTEP) and the P6 work still in flight need one
-  more batch on the candidate; none is running now. Blocks: it's the evidence that the jar works.
-  Tag `#backlog-p6`.
-- [ ] **C2 review pack and playtest kit** ([plan](../plans/phase6.md),
-  step C2). Mostly done: the kit script and a first kit were merged
+- [x] **Batched heavy run on the release candidate**: skipped by the user,
+  2026-11-09 ("No heavy test run"). The last batch, HEAVY13, passed at
+  1ea75a7d (2026-11-01; perf rows over their ceilings are the accepted known
+  bugs).
+- [x] **C2 review pack and playtest kit** ([plan](../plans/phase6.md),
+  step C2). Done as far as needed: the kit script and a first kit were merged
   (76707ba8, 50873017, 2026-10-29) and the seeds updated to your two worlds
-  plus a fresh one (5bfb8a16); still open: regenerate it with
-  `scripts/playtest-kit.sh --fly` on the release candidate. It holds per-seed recipes, settlements near spawn,
-  fly-through frames and known issues. Blocks: the gate playtest needs it.
-  Tag `#backlog-p6`.
-- [ ] **The gate playtest itself**: three seeds, one hour each, on the
-  release candidate. Waiting for the release candidate, then John. You've played two seeds on older builds.
-  *Decided (Q5, John 2026-11-01: "yes they count"):* those two played seeds
-  count toward the three; only the third, fresh seed of the
-  [gate kit](phase6/gate-kit/README.md) is played on the release candidate.
-- [ ] **Release basics** (REVIEW "A5 release basics"). Needs John to read the
-  LICENSE, the CHANGELOG draft, the [player README](../release/README-player.md)
-  and the placeholder icon. The files were merged a94cda2f (2026-10-22) and
-  haven't changed since; the REVIEW item has no result yet.
-- [ ] **Phase 6 plan decisions 7 and 8** (REVIEW "Phase 6 plan: decisions
-  for John"). Needs John: who publishes, where, under what name, and whether
-  the source goes public; and the server-only install wording (the SRVONLY
-  spike found that a client with only Fabric Loader, and not our mod, joins
-  fine, so the README can say "clients don't need the mod").
-  Decision 7 is answered (Q9, "Publishing" below); decision 8 (the wording) is not.
-  The player README still says "this is untested".
+  plus a fresh one (5bfb8a16). The regeneration with `--fly` on the release
+  candidate was only for the third-seed playtest, which the user skipped
+  (2026-11-09).
+- [x] **The gate playtest itself**: three seeds, one hour each.
+  *Decided (Q5, John 2026-11-01: "yes they count"):* your two played seeds
+  count toward the three. The third, fresh seed on the release candidate was
+  skipped by the user, 2026-11-09.
+- [x] **Release basics** (REVIEW "A5 release basics"). Reviewed by John:
+  the LICENSE, the CHANGELOG, the [player README](../release/README-player.md),
+  the icon (`icon.png`, a real one) and `logo.png`, the larger image CurseForge
+  needs.
+- [x] **Phase 6 plan decisions 7 and 8** (REVIEW "Phase 6 plan: decisions
+  for John"). Decision 7 is answered (Q9, "Publishing" below). Decision 8,
+  the server-only wording, is settled (John, 2026-11-09): the player README
+  names Fabric API and doesn't repeat the server-only point, which is said
+  elsewhere. Server-only installs are tested (`scripts/server-only-test.sh`,
+  the SRVONLY spike, and John's own play).
 - **Publishing** (Q9, John 2026-11-01): Modrinth (John may not be listed
   there because of AI) and CurseForge, under the name "Fractal Buildings";
   the source goes public. Before it reaches `main`, John wants the history

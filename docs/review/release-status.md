@@ -70,8 +70,8 @@ were corrected in place. Item codes are in [GLOSSARY.md](../GLOSSARY.md).
 | Batched heavy run on the release candidate | Waiting for the candidate: HEAVY13 passed at 1ea75a7d (2026-11-01) | one batch after the in-flight P6 work merges; none running now | in-flight P6 items |
 | C2 review pack and playtest kit | Mostly done: 76707ba8, 50873017 (2026-10-29); seeds 5bfb8a16 | regenerate with `scripts/playtest-kit.sh --fly` on the candidate | the candidate; [[docs/review/phase6/gate-kit/README|gate kit]] |
 | Gate playtest (three seeds) | Waiting for the candidate, then you; your two played seeds count (Q5) | the third, fresh seed on the candidate | the candidate |
-| Release basics (A5) | Waiting on you since 2026-10-22: files merged a94cda2f | your read; REVIEW result | [[docs/QUESTIONS|QUESTIONS]] "Release basics" |
-| Plan decisions 7 and 8 | 7 decided (Q9, 2026-11-01); 8 waiting on you | server-only wording; README still says "untested" | [[docs/QUESTIONS|QUESTIONS]] "Server-only wording" |
+| Release basics (A5) | Reviewed by John (ticked 2026-11-09) | none | none |
+| Plan decisions 7 and 8 | Both decided: 7 (Q9, 2026-11-01); 8 by John 2026-11-09 (README names Fabric API, no server-only repeat) | none | none |
 | Publishing | Decided (Q9): Modrinth and CurseForge, "Fractal Buildings", source public | history cleanup details | you, before `main` |
 | C3 cut the release | Not started | everything above | all rows above |
 | TPABORT (holds abort, not release, after 60 s) | In progress: 3 commits on its branch | verify and merge | not on the checklist; no ROADMAP box |
